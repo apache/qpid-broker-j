@@ -343,7 +343,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         try
         {
             QpidByteBuffer payload = xfr.getPayload();
-            int payloadSent = _connection.sendFrame(getSendingChannel(), xfr, payload);
+            int payloadSent = _connection.sendFrame(_sendingChannel, xfr, payload);
 
             if(payload != null && payloadSent < payload.remaining() && payloadSent >= 0)
             {
@@ -372,7 +372,6 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         }
         catch(OversizeFrameException e)
         {
-            e.printStackTrace();
             throw new ConnectionScopedRuntimeException(e);
         }
     }
@@ -392,12 +391,12 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
             case ACTIVE:
                 detachLinks();
                 remoteEnd(end);
-                short sendChannel = getSendingChannel();
+                short sendChannel = _sendingChannel;
                 _connection.sendEnd(sendChannel, new End(), true);
                 _state = SessionState.ENDED;
                 break;
             default:
-                sendChannel = getSendingChannel();
+                sendChannel = _sendingChannel;
                 End reply = new End();
                 Error error = new Error();
                 error.setCondition(AmqpError.ILLEGAL_STATE);
@@ -464,11 +463,6 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     {
         _nextIncomingTransferId = new SequenceNumber(nextIncomingId.intValue());
 
-    }
-
-    public short getSendingChannel()
-    {
-        return _sendingChannel;
     }
 
     public void receiveDisposition(final Disposition disposition)
@@ -574,7 +568,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
 
     private void send(final FrameBody frameBody)
     {
-        _connection.sendFrame(getSendingChannel(), frameBody);
+        _connection.sendFrame(_sendingChannel, frameBody);
     }
 
     public boolean isSyntheticError(final Error error)
@@ -587,17 +581,17 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         switch (_state)
         {
             case BEGIN_SENT:
-                _connection.sendEnd(getSendingChannel(), end, false);
+                _connection.sendEnd(_sendingChannel, end, false);
                 _state = SessionState.END_PIPE;
                 break;
             case ACTIVE:
                 detachLinks();
-                short sendChannel = getSendingChannel();
+                short sendChannel = _sendingChannel;
                 _connection.sendEnd(sendChannel, end, true);
                 _state = SessionState.END_SENT;
                 break;
             default:
-                sendChannel = getSendingChannel();
+                sendChannel = _sendingChannel;
                 End reply = new End();
                 Error error = new Error();
                 error.setCondition(AmqpError.ILLEGAL_STATE);
@@ -613,127 +607,104 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     public void receiveTransfer(final Transfer transfer)
     {
         _nextIncomingTransferId.incr();
-    /*
-                _availableIncomingCredit--;
-    */
 
         UnsignedInteger handle = transfer.getHandle();
 
 
-        LinkEndpoint endpoint = _remoteLinkEndpoints.get(handle);
+        LinkEndpoint linkEndpoint = _remoteLinkEndpoints.get(handle);
 
-        if (endpoint == null)
+        if (linkEndpoint == null)
         {
-            //TODO - error unknown link
-            System.err.println("Unknown endpoint " + transfer);
+            Error error = new Error();
+            error.setCondition(AmqpError.ILLEGAL_STATE);
+            error.setDescription("TRANSFER called on Session for link handle " + handle + " which is not attached");
+            _connection.close(error);
 
         }
-
-        UnsignedInteger deliveryId = transfer.getDeliveryId();
-        if (deliveryId == null)
+        else if(!(linkEndpoint instanceof ReceivingLinkEndpoint))
         {
-            deliveryId = ((ReceivingLinkEndpoint) endpoint).getLastDeliveryId();
-        }
 
-        Delivery delivery = _incomingUnsettled.get(deliveryId);
-        if (delivery == null)
-        {
-            delivery = new Delivery(transfer, endpoint);
-            _incomingUnsettled.put(deliveryId, delivery);
-            if (delivery.isSettled() || Boolean.TRUE.equals(transfer.getAborted()))
-            {
-/*
-                    _availableIncomingCredit++;
-*/
-            }
+            Error error = new Error();
+            error.setCondition(ConnectionError.FRAMING_ERROR);
+            error.setDescription("TRANSFER called on Session for link handle " + handle + " which is a sending ink not a receiving link");
+            _connection.close(error);
 
-            if (Boolean.TRUE.equals(transfer.getMore()))
-            {
-                ((ReceivingLinkEndpoint) endpoint).setLastDeliveryId(transfer.getDeliveryId());
-            }
         }
         else
         {
-            if (delivery.getDeliveryId().equals(deliveryId))
-            {
-                delivery.addTransfer(transfer);
-                if (delivery.isSettled())
-                {
-/*
-                        _availableIncomingCredit++;
-*/
-                }
-                else if (Boolean.TRUE.equals(transfer.getAborted()))
-                {
-/*
-                        _availableIncomingCredit += delivery.getTransfers().size();
-*/
-                }
+            ReceivingLinkEndpoint endpoint = ((ReceivingLinkEndpoint) linkEndpoint);
 
-                if (!Boolean.TRUE.equals(transfer.getMore()))
+            UnsignedInteger deliveryId = transfer.getDeliveryId();
+            if (deliveryId == null)
+            {
+                deliveryId = endpoint.getLastDeliveryId();
+            }
+
+            Delivery delivery = _incomingUnsettled.get(deliveryId);
+            if (delivery == null)
+            {
+                delivery = new Delivery(transfer, endpoint);
+                _incomingUnsettled.put(deliveryId, delivery);
+
+                if (Boolean.TRUE.equals(transfer.getMore()))
                 {
-                    ((ReceivingLinkEndpoint) endpoint).setLastDeliveryId(null);
+                    endpoint.setLastDeliveryId(transfer.getDeliveryId());
                 }
             }
             else
             {
-                // TODO - error
-                System.err.println("Incorrect transfer id " + transfer);
+                if (delivery.getDeliveryId().equals(deliveryId))
+                {
+                    delivery.addTransfer(transfer);
+
+                    if (!Boolean.TRUE.equals(transfer.getMore()))
+                    {
+                        endpoint.setLastDeliveryId(null);
+                    }
+                }
+                else
+                {
+                    End reply = new End();
+
+                    Error error = new Error();
+                    error.setCondition(AmqpError.ILLEGAL_STATE);
+                    error.setDescription("TRANSFER called on Session for link handle "
+                                         + handle
+                                         + " with incorrect delivery id "
+                                         + transfer.getDeliveryId());
+                    reply.setError(error);
+                    _connection.sendEnd(_sendingChannel, reply, true);
+
+                    return;
+
+                }
+            }
+
+            endpoint.receiveTransfer(transfer, delivery);
+
+            if ((delivery.isComplete() && delivery.isSettled() || Boolean.TRUE.equals(transfer.getAborted())))
+            {
+                _incomingUnsettled.remove(deliveryId);
             }
         }
-
-        if (endpoint != null)
-        {
-            endpoint.receiveTransfer(transfer, delivery);
-        }
-
-        if ((delivery.isComplete() && delivery.isSettled() || Boolean.TRUE.equals(transfer.getAborted())))
-        {
-            _incomingUnsettled.remove(deliveryId);
-        }
-
     }
 
-    public Collection<LinkEndpoint> getLocalLinkEndpoints()
+    private Collection<LinkEndpoint> getLocalLinkEndpoints()
     {
         return new ArrayList<>(_localLinkEndpoints.keySet());
     }
 
-    public boolean isEnded()
+    boolean isEnded()
     {
         return _state == SessionState.ENDED || _connection.isClosed();
     }
 
-    public void settle(final Role role, final UnsignedInteger deliveryId)
-    {
-        if(role == Role.RECEIVER)
-        {
-            Delivery d = _incomingUnsettled.remove(deliveryId);
-            if(d != null)
-            {
-/*
-                _availableIncomingCredit += d.getTransfers().size();
-*/
-            }
-        }
-        else
-        {
-            Delivery d = _outgoingUnsettled.remove(deliveryId);
-/*            if(d != null)
-            {
-                _availableOutgoingCredit += d.getTransfers().size();
-
-            }*/
-        }
-
-    }
-
-    public UnsignedInteger getIncomingWindowSize()
+    UnsignedInteger getIncomingWindowSize()
     {
         return UnsignedInteger.valueOf(_availableIncomingCredit);
     }
 
-    public AccessControlContext getAccessControllerContext()
+    AccessControlContext getAccessControllerContext()
     {
         return _accessControllerContext;
     }
@@ -1118,9 +1089,11 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         }
         catch (AccessControlException e)
         {
-            //TODO
-            _logger.info("Security error", e);
-            throw new ConnectionScopedRuntimeException(e);
+            Error error = new Error();
+            error.setCondition(AmqpError.UNAUTHORIZED_ACCESS);
+            error.setDescription(e.getMessage());
+
+            _connection.close(error);
         }
         catch (QueueExistsException e)
         {
@@ -1131,7 +1104,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         return queue;
     }
 
-    public ServerTransaction getTransaction(Binary transactionId)
+    ServerTransaction getTransaction(Binary transactionId)
     {
         // TODO should treat invalid id differently to null
         ServerTransaction transaction = _openTransactions.get(binaryToInteger(transactionId));
@@ -1146,8 +1119,9 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         return transaction;
     }
 
-    public void remoteEnd(End end)
+    void remoteEnd(End end)
     {
+        // TODO - if the end has a non empty error we should log it
         Iterator<Map.Entry<Integer, ServerTransaction>> iter = _openTransactions.entrySet().iterator();
 
         while(iter.hasNext())
@@ -1217,13 +1191,6 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     }
 
     @Override
-    public String getClientID()
-    {
-        // TODO
-        return "";
-    }
-
-    @Override
     public void close()
     {
         performCloseTasks();
@@ -1234,7 +1201,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         }
     }
 
-    protected void performCloseTasks()
+    private void performCloseTasks()
     {
 
         if(_closed.compareAndSet(false, true))
@@ -1362,7 +1329,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     @Override
     public int getChannelId()
     {
-        return getSendingChannel();
+        return _sendingChannel;
     }
 
     @Override
@@ -1385,7 +1352,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                                     authorizedPrincipal,
                                     remoteAddress,
                                     getVirtualHost().getName(),
-                                    getSendingChannel())  + "] ";
+                                    _sendingChannel) + "] ";
     }
 
     @Override
@@ -1419,7 +1386,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         return _subject;
     }
 
-    VirtualHost<?> getVirtualHost()
+    private VirtualHost<?> getVirtualHost()
     {
         return _connection.getVirtualHost();
     }
@@ -1687,7 +1654,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     @Override
     public String toString()
     {
-        return "Session_1_0[" + _connection + ": " + getSendingChannel() + ']';
+        return "Session_1_0[" + _connection + ": " + _sendingChannel + ']';
     }
 
 
@@ -1732,7 +1699,8 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
             {
                 return UnsignedInteger.valueOf(i);
             }
-        } while(++i != 0);
+        }
+        while(++i != 0);
 
         // TODO
         throw new RuntimeException();

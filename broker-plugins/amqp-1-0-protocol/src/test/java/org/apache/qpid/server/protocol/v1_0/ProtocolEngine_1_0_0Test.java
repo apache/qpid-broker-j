@@ -153,7 +153,33 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
                 .registerTransactionLayer()
                 .registerSecurityLayer();
 
-        _frameWriter = new FrameWriter(registry);
+        _frameWriter = new FrameWriter(registry, new ByteBufferSender()
+                                                {
+
+                                                    @Override
+                                                    public boolean isDirectBufferPreferred()
+                                                    {
+                                                        return false;
+                                                    }
+
+                                                    @Override
+                                                    public void send(final QpidByteBuffer msg)
+                                                    {
+                                                        _protocolEngine_1_0_0.received(msg);
+                                                    }
+
+                                                    @Override
+                                                    public void flush()
+                                                    {
+
+                                                    }
+
+                                                    @Override
+                                                    public void close()
+                                                    {
+
+                                                    }
+                                                });
     }
 
     public void testProtocolEngineWithNoSaslNonTLSandAnon() throws Exception
@@ -167,11 +193,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
                                                                    .getHeaderIdentifier()));
 
         Open open = new Open();
-        _frameWriter.setValue(AMQFrame.createAMQFrame((short)0,open));
-        QpidByteBuffer buf = QpidByteBuffer.allocate(64*1024);
-        _frameWriter.writeToBuffer(buf);
-        buf.flip();
-        _protocolEngine_1_0_0.received(buf);
+        _frameWriter.send(AMQFrame.createAMQFrame((short)0,open));
 
         verify(_virtualHost).registerConnection(any(AMQPConnection.class));
         AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
@@ -190,11 +212,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance().getHeaderIdentifier()));
 
         Open open = new Open();
-        _frameWriter.setValue(AMQFrame.createAMQFrame((short)0,open));
-        QpidByteBuffer buf = QpidByteBuffer.allocate(64*1024);
-        _frameWriter.writeToBuffer(buf);
-        buf.flip();
-        _protocolEngine_1_0_0.received(buf);
+        _frameWriter.send(AMQFrame.createAMQFrame((short)0,open));
 
         verify(_virtualHost, never()).registerConnection(any(AMQPConnection.class));
         verify(_networkConnection).close();
@@ -220,11 +238,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance().getHeaderIdentifier()));
 
         Open open = new Open();
-        _frameWriter.setValue(AMQFrame.createAMQFrame((short)0,open));
-        QpidByteBuffer buf = QpidByteBuffer.allocate(64*1024);
-        _frameWriter.writeToBuffer(buf);
-        buf.flip();
-        _protocolEngine_1_0_0.received(buf);
+        _frameWriter.send(AMQFrame.createAMQFrame((short)0,open));
 
         verify(_virtualHost).registerConnection(any(AMQPConnection.class));
         AuthenticatedPrincipal authPrincipal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
@@ -253,22 +267,13 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
 
         SaslInit init = new SaslInit();
         init.setMechanism(Symbol.valueOf("ANONYMOUS"));
-        _frameWriter.setValue(new SASLFrame(init));
-        QpidByteBuffer buf = QpidByteBuffer.allocate(64*1024);
-        _frameWriter.writeToBuffer(buf);
-
-        buf.flip();
-        _protocolEngine_1_0_0.received(buf);
+        _frameWriter.send(new SASLFrame(init));
 
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance()
                                                                    .getHeaderIdentifier()));
 
         Open open = new Open();
-        _frameWriter.setValue(AMQFrame.createAMQFrame((short)0,open));
-        buf = QpidByteBuffer.allocate(64*1024);
-        _frameWriter.writeToBuffer(buf);
-        buf.flip();
-        _protocolEngine_1_0_0.received(buf);
+        _frameWriter.send(AMQFrame.createAMQFrame((short)0,open));
 
         verify(_virtualHost).registerConnection(any(AMQPConnection.class));
         AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
@@ -288,4 +293,32 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
     {
         when(_subjectCreator.getMechanisms()).thenReturn(Arrays.asList(mechanisms));
     }
+
+    private final ByteBufferSender _sender = new ByteBufferSender()
+    {
+
+        @Override
+        public boolean isDirectBufferPreferred()
+        {
+            return false;
+        }
+
+        @Override
+        public void send(final QpidByteBuffer msg)
+        {
+            _protocolEngine_1_0_0.received(msg);
+        }
+
+        @Override
+        public void flush()
+        {
+
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+    };
 }

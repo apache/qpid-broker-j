@@ -23,261 +23,57 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.transport.ByteBufferSender;
 
-public class FrameWriter implements ValueWriter<AMQFrame>
+public class FrameWriter
 {
-    private Registry _registry;
-    private AMQFrame _frame;
-    private State _state = State.DONE;
-    private ValueWriter _typeWriter;
-    private int _size = -1;
+    private final ByteBufferSender _sender;
+    private final ValueWriter.Registry _registry;
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[] {};
-    private QpidByteBuffer _payload;
 
-    enum State
-    {
-        SIZE_0,
-        SIZE_1,
-        SIZE_2,
-        SIZE_3,
-        DOFF,
-        TYPE,
-        CHANNEL_0,
-        CHANNEL_1,
-        DELEGATE,
-        PAYLOAD,
-        DONE
-    }
-
-    public FrameWriter(final Registry registry)
+    public FrameWriter(final ValueWriter.Registry registry, final ByteBufferSender sender)
     {
         _registry = registry;
+        _sender = sender;
     }
 
-    public boolean isComplete()
+    public <T> int send(AMQFrame<T> frame)
     {
-        return _state == State.DONE;
-    }
+        final QpidByteBuffer payload = frame.getPayload() == null ? null : frame.getPayload().duplicate();
 
-    public boolean isCacheable()
-    {
-        return false;
-    }
+        final int payloadLength = payload == null ? 0 : payload.remaining();
+        final T frameBody = frame.getFrameBody();
 
-    public int writeToBuffer(QpidByteBuffer buffer)
-    {
-        int remaining;
-
-
-
-        while((remaining = buffer.remaining()) != 0 && _state != State.DONE)
+        final ValueWriter<T> typeWriter = frameBody == null ? null : _registry.getValueWriter(frameBody);
+        int bodySize;
+        if (typeWriter == null)
         {
-            switch(_state)
-            {
-                case SIZE_0:
-
-                    int payloadLength = _payload == null ? 0 : _payload.remaining();
-
-                    if(_typeWriter!=null)
-                    {
-
-
-                        QpidByteBuffer qpidByteBuffer = remaining > 8
-                                ? buffer.duplicate().position(buffer.position() + 8)
-                                : QpidByteBuffer.wrap(EMPTY_BYTE_ARRAY);
-
-                        _size = _typeWriter.writeToBuffer(qpidByteBuffer) + 8 + payloadLength;
-                        qpidByteBuffer.dispose();
-                    }
-                    else
-                    {
-                        _size = 8 + payloadLength;
-                    }
-                    if(remaining >= 4)
-                    {
-                        buffer.putInt(_size);
-
-                        if(remaining >= 8)
-                        {
-                            buffer.put((byte)2); // DOFF
-                            buffer.put(_frame.getFrameType()); // AMQP Frame Type
-                            buffer.putShort(_frame.getChannel());
-
-                            if(_size - payloadLength > remaining)
-                            {
-                                buffer.position(buffer.limit());
-                                _state = State.DELEGATE;
-                            }
-                            else if(_size > remaining )
-                            {
-                                buffer.position(buffer.position()+_size-8-payloadLength);
-                                if(payloadLength > 0)
-                                {
-
-                                    QpidByteBuffer dup = _payload.slice();
-                                    int payloadUsed = buffer.remaining();
-                                    dup.limit(payloadUsed);
-                                    buffer.put(dup);
-                                    dup.dispose();
-                                    _payload.position(_payload.position()+payloadUsed);
-                                }
-                                _state = State.PAYLOAD;
-                            }
-                            else
-                            {
-
-                                buffer.position(buffer.position()+_size-8-payloadLength);
-                                if(payloadLength > 0)
-                                {
-                                    buffer.put(_payload);
-
-                                }
-
-                                if (_payload != null)
-                                {
-                                    _payload.dispose();
-                                    _payload = null;
-                                }
-
-                                _frame = null;
-                                _typeWriter = null;
-                                _state = State.DONE;
-                            }
-
-                        }
-                        else
-                        {
-                            _state = State.DOFF;
-                        }
-                        break;
-                    }
-                    else
-                    {
-                        buffer.put((byte)((_size >> 24) & 0xFF));
-                        if(!buffer.hasRemaining())
-                        {
-                            _state = State.SIZE_1;
-                            break;
-                        }
-                    }
-
-                case SIZE_1:
-                    buffer.put((byte)((_size >> 16) & 0xFF));
-                    if(!buffer.hasRemaining())
-                    {
-                        _state = State.SIZE_2;
-                        break;
-                    }
-                case SIZE_2:
-                    buffer.put((byte)((_size >> 8) & 0xFF));
-                    if(!buffer.hasRemaining())
-                    {
-                        _state = State.SIZE_3;
-                        break;
-                    }
-                case SIZE_3:
-                    buffer.put((byte)(_size & 0xFF));
-                    if(!buffer.hasRemaining())
-                    {
-                        _state = State.DOFF;
-                        break;
-                    }
-                case DOFF:
-                    buffer.put((byte)2); // Always 2 (8 bytes)
-                    if(!buffer.hasRemaining())
-                    {
-                        _state = State.TYPE;
-                        break;
-                    }
-                case TYPE:
-                    buffer.put((byte)0);
-                    if(!buffer.hasRemaining())
-                    {
-                        _state = State.CHANNEL_0;
-                        break;
-                    }
-                case CHANNEL_0:
-                    buffer.put((byte)((_frame.getChannel() >> 8) & 0xFF));
-                    if(!buffer.hasRemaining())
-                    {
-                        _state = State.CHANNEL_1;
-                        break;
-                    }
-                case CHANNEL_1:
-                    buffer.put((byte)(_frame.getChannel() & 0xFF));
-                    if(!buffer.hasRemaining())
-                    {
-                        _state = State.DELEGATE;
-                        break;
-                    }
-                case DELEGATE:
-                    _typeWriter.writeToBuffer(buffer);
-                    if(_typeWriter.isComplete())
-                    {
-                        _state = State.PAYLOAD;
-                        _frame = null;
-                        _typeWriter = null;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                case PAYLOAD:
-                    if(_payload == null || _payload.remaining() == 0)
-                    {
-                        _state = State.DONE;
-                        _frame = null;
-                        _typeWriter = null;
-                        if (_payload != null)
-                        {
-                            _payload.dispose();
-                        }
-                        _payload = null;
-
-                    }
-                    else if(buffer.hasRemaining())
-                    {
-                        buffer.put(_payload);
-                        if(_payload.remaining() == 0)
-                        {
-                            _state = State.DONE;
-                            _frame = null;
-                            _typeWriter = null;
-                            _payload.dispose();
-                            _payload = null;
-                        }
-                    }
-
-            }
-        }
-
-        return _size;
-    }
-
-    public void setValue(AMQFrame frame)
-    {
-        _frame = frame;
-        _state = State.SIZE_0;
-        _payload = frame.getPayload() == null ? null : frame.getPayload().duplicate();
-
-        final int payloadLength = _payload == null ? 0 : _payload.remaining();
-        final Object frameBody = frame.getFrameBody();
-
-        _typeWriter = frameBody == null ? null : _registry.getValueWriter(frameBody);
-        if (_typeWriter == null)
-        {
-            _size = 8 + payloadLength;
+            bodySize = 8;
         }
         else
         {
-            _typeWriter.setValue(_frame.getFrameBody());
+            typeWriter.setValue(frame.getFrameBody());
             QpidByteBuffer qpidByteBuffer = QpidByteBuffer.wrap(EMPTY_BYTE_ARRAY);
-            _size = _typeWriter.writeToBuffer(qpidByteBuffer) + 8 + payloadLength;
+            bodySize = typeWriter.writeToBuffer(qpidByteBuffer) + 8;
         }
+
+        QpidByteBuffer body = QpidByteBuffer.allocate(_sender.isDirectBufferPreferred(), bodySize);
+        final int totalSize = bodySize + payloadLength;
+        body.putInt(totalSize);
+        body.put((byte)2); // DOFF
+        body.put(frame.getFrameType()); // AMQP Frame Type
+        body.putShort(frame.getChannel());
+        typeWriter.writeToBuffer(body);
+        body.flip();
+
+        _sender.send(body);
+        body.dispose();
+        if(payload != null)
+        {
+            _sender.send(payload);
+            payload.dispose();
+        }
+        return totalSize;
     }
 
-    public int getSize()
-    {
-        return _size;
-    }
 }

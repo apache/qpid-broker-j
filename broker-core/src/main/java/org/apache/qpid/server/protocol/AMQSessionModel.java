@@ -40,17 +40,15 @@ import org.apache.qpid.transport.network.Ticker;
  */
 public interface AMQSessionModel<T extends AMQSessionModel<T>> extends Comparable<AMQSessionModel>, Deletable<T>
 {
-    public UUID getId();
+    UUID getId();
 
-    public AMQPConnection<?> getAMQPConnection();
+    AMQPConnection<?> getAMQPConnection();
 
-    public String getClientID();
+    void close();
 
-    public void close();
+    void close(AMQConstant cause, String message);
 
-    public void close(AMQConstant cause, String message);
-
-    public LogSubject getLogSubject();
+    LogSubject getLogSubject();
 
     /**
      * This method is called from the housekeeping thread to check the status of
@@ -67,7 +65,7 @@ public interface AMQSessionModel<T extends AMQSessionModel<T>> extends Comparabl
      * @param idleWarn time in milliseconds before alerting on idle transaction
      * @param idleClose time in milliseconds before closing connection with idle transaction
      */
-    public void checkTransactionStatus(long openWarn, long openClose, long idleWarn, long idleClose);
+    void checkTransactionStatus(long openWarn, long openClose, long idleWarn, long idleClose);
 
     void block(Queue<?> queue);
 

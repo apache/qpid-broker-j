@@ -120,11 +120,8 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     private static Logger LOGGER = LoggerFactory.getLogger(AMQPConnection_1_0.class);
     private static final Logger FRAME_LOGGER = LoggerFactory.getLogger("FRM");
-    private static final Logger RAW_LOGGER = LoggerFactory.getLogger("RAW");
 
-
-
-    private static final long CLOSE_RESPONSE_TIMEOUT = 10000l;
+    private static final long CLOSE_RESPONSE_TIMEOUT = 10000L;
 
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
@@ -267,7 +264,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
         setDesiredIdleTimeout(1000L * broker.getConnection_heartBeatDelay());
 
-        _frameWriter =  new FrameWriter(getDescribedTypeRegistry());
+        _frameWriter =  new FrameWriter(getDescribedTypeRegistry(), getSender());
 
 
     }
@@ -598,84 +595,45 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         short myChannelId;
         if (begin.getRemoteChannel() != null)
         {
-            myChannelId = begin.getRemoteChannel().shortValue();
-            Session_1_0 sessionEndpoint;
-            try
-            {
-                sessionEndpoint = _sendingSessions[myChannelId];
-            }
-            catch (IndexOutOfBoundsException e)
-            {
-                final Error error = new Error();
-                error.setCondition(ConnectionError.FRAMING_ERROR);
-                error.setDescription("BEGIN received on channel " + channel + " with given remote-channel "
-                                     + begin.getRemoteChannel() + " which is outside the valid range of 0 to "
-                                     + _channelMax + ".");
-                closeConnection(error);
-                return;
-            }
-            if (sessionEndpoint != null)
-            {
-                if (_receivingSessions[channel] == null)
-                {
-                    _receivingSessions[channel] = sessionEndpoint;
-                    sessionEndpoint.setReceivingChannel(channel);
-                    sessionEndpoint.setNextIncomingId(begin.getNextOutgoingId());
-                    sessionEndpoint.setOutgoingSessionCredit(begin.getIncomingWindow());
-
-                    if (sessionEndpoint.getState() == SessionState.END_SENT)
-                    {
-                        _sendingSessions[myChannelId] = null;
-                    }
-                }
-                else
-                {
-                    final Error error = new Error();
-                    error.setCondition(ConnectionError.FRAMING_ERROR);
-                    error.setDescription("BEGIN received on channel " + channel + " which is already in use.");
-                    closeConnection(error);
-                }
-            }
-            else
-            {
-                final Error error = new Error();
-                error.setCondition(ConnectionError.FRAMING_ERROR);
-                error.setDescription("BEGIN received on channel " + channel + " with given remote-channel "
-                                     + begin.getRemoteChannel() + " which is not known as a begun session.");
-                closeConnection(error);
-            }
-
+            final Error error = new Error();
+            error.setCondition(ConnectionError.FRAMING_ERROR);
+            error.setDescription("BEGIN received on channel " + channel + " with given remote-channel "
+                                 + begin.getRemoteChannel() + ". Since the broker does not spontaneously start channels, this must be an error.");
+            closeConnection(error);
 
         }
         else // Peer requesting session creation
         {
 
-            myChannelId = getFirstFreeChannel();
-            if (myChannelId == -1)
-            {
-                // close any half open channel
-                myChannelId = getFirstFreeChannel();
-
-            }
-
             if (_receivingSessions[channel] == null)
             {
-                Session_1_0 sessionEndpoint = new Session_1_0(this, begin);
+                myChannelId = getFirstFreeChannel();
+                if (myChannelId == -1)
+                {
+                    final Error error = new Error();
+                    error.setCondition(ConnectionError.FRAMING_ERROR);
+                    error.setDescription("BEGIN received on channel " + channel + ". There are no free channels for the broker to responsd on.");
+                    closeConnection(error);
 
-                _receivingSessions[channel] = sessionEndpoint;
-                _sendingSessions[myChannelId] = sessionEndpoint;
+                }
+                Session_1_0 session = new Session_1_0(this, begin);
+
+                _receivingSessions[channel] = session;
+                _sendingSessions[myChannelId] = session;
 
                 Begin beginToSend = new Begin();
 
-                sessionEndpoint.setReceivingChannel(channel);
-                sessionEndpoint.setSendingChannel(myChannelId);
+                session.setReceivingChannel(channel);
+                session.setSendingChannel(myChannelId);
                 beginToSend.setRemoteChannel(UnsignedShort.valueOf(channel));
-                beginToSend.setNextOutgoingId(sessionEndpoint.getNextOutgoingId());
-                beginToSend.setOutgoingWindow(sessionEndpoint.getOutgoingWindowSize());
-                beginToSend.setIncomingWindow(sessionEndpoint.getIncomingWindowSize());
+                beginToSend.setNextOutgoingId(session.getNextOutgoingId());
+                beginToSend.setOutgoingWindow(session.getOutgoingWindowSize());
+                beginToSend.setIncomingWindow(session.getIncomingWindowSize());
                 sendFrame(myChannelId, beginToSend);
 
-                remoteSessionCreation(sessionEndpoint);
+                _sessions.add(session);
+                sessionAdded(session);
+
             }
             else
             {
@@ -686,13 +644,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
             }
 
         }
-
-    }
-
-    private void remoteSessionCreation(final Session_1_0 session)
-    {
-        _sessions.add(session);
-        sessionAdded(session);
 
     }
 
@@ -1219,16 +1170,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                 updateLastReadTime();
                 try
                 {
-                    if (RAW_LOGGER.isDebugEnabled())
-                    {
-                        QpidByteBuffer dup = msg.duplicate();
-                        byte[] data = new byte[dup.remaining()];
-                        dup.get(data);
-                        dup.dispose();
-                        Binary bin = new Binary(data);
-                        RAW_LOGGER.debug("RECV[" + getNetwork().getRemoteAddress() + "] : " + bin.toString());
-                    }
-
                     int remaining;
 
                     do
@@ -1384,45 +1325,17 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     public void send(final AMQFrame amqFrame, ByteBuffer buf)
     {
-
         updateLastWriteTime();
         FRAME_LOGGER.debug("SEND[{}|{}] : {}",
                            getNetwork().getRemoteAddress(),
                            amqFrame.getChannel(),
                            amqFrame.getFrameBody());
 
-        _frameWriter.setValue(amqFrame);
-
-        QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(_frameWriter.getSize());
-
-        try
+        int size = _frameWriter.send(amqFrame);
+        if (size > getMaxFrameSize())
         {
-            int size = _frameWriter.writeToBuffer(buffer);
-            if (size > getMaxFrameSize())
-            {
-                throw new OversizeFrameException(amqFrame, size);
-            }
-
-            buffer.flip();
-
-            if (RAW_LOGGER.isDebugEnabled())
-            {
-                QpidByteBuffer dup = buffer.duplicate();
-                byte[] data = new byte[dup.remaining()];
-                dup.get(data);
-                dup.dispose();
-                Binary bin = new Binary(data);
-                RAW_LOGGER.debug("SEND[" + getNetwork().getRemoteAddress() + "] : " + bin.toString());
-            }
-
-            getSender().send(buffer);
-
+            throw new OversizeFrameException(amqFrame, size);
         }
-        finally
-        {
-            buffer.dispose();
-        }
-
     }
 
     public void send(short channel, FrameBody body)

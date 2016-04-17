@@ -190,11 +190,6 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
         }
     }
 
-    public void receiveTransfer(final Transfer transfer, final Delivery delivery)
-    {
-        // TODO
-    }
-
     public void receiveFlow(final Flow flow)
     {
     }
@@ -222,20 +217,15 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
 
     public void settle(final Binary deliveryTag)
     {
-        Delivery delivery = _unsettledTransfers.remove(deliveryTag);
-        if(delivery != null)
-        {
-            getSession().settle(getRole(),delivery.getDeliveryId());
-        }
-
+        _unsettledTransfers.remove(deliveryTag);
     }
 
-    public void setLocalHandle(final UnsignedInteger localHandle)
+    void setLocalHandle(final UnsignedInteger localHandle)
     {
         _localHandle = localHandle;
     }
 
-    public void receiveAttach(final Attach attach)
+    void receiveAttach(final Attach attach)
     {
         switch (_state)
         {
@@ -279,12 +269,12 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
         }
     }
 
-    public boolean isAttached()
+    boolean isAttached()
     {
         return _state == State.ATTACHED;
     }
 
-    public boolean isDetached()
+    boolean isDetached()
     {
         return _state == State.DETACHED || _session.isEnded();
     }
@@ -294,7 +284,7 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
         return _session;
     }
 
-    public UnsignedInteger getLocalHandle()
+    UnsignedInteger getLocalHandle()
     {
         return _localHandle;
     }

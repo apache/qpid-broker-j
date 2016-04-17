@@ -118,8 +118,7 @@ public class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLinkListener>
         return Role.RECEIVER;
     }
 
-    @Override
-    public void receiveTransfer(final Transfer transfer, final Delivery delivery)
+    void receiveTransfer(final Transfer transfer, final Delivery delivery)
     {
         TransientState transientState;
         final Binary deliveryTag = delivery.getDeliveryTag();

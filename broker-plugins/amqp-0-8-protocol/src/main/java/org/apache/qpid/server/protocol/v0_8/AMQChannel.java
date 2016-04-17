@@ -1387,11 +1387,6 @@ public class AMQChannel
         return _connection;
     }
 
-    public String getClientID()
-    {
-        return _connection.getClientId();
-    }
-
     public LogSubject getLogSubject()
     {
         return _logSubject;

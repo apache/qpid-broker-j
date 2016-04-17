@@ -808,11 +808,6 @@ public class ServerSession extends Session
         return getConnection().getAmqpConnection();
     }
 
-    public String getClientID()
-    {
-        return getConnection().getClientId();
-    }
-
     @Override
     public ServerConnection getConnection()
     {

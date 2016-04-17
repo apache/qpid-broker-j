@@ -297,12 +297,6 @@ public class MockConsumer implements ConsumerTarget
         }
 
         @Override
-        public String getClientID()
-        {
-            return null;
-        }
-
-        @Override
         public void close()
         {
         }
