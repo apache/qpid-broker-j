@@ -30,6 +30,7 @@ define(["dojo/_base/declare",
         "dgrid/Selection",
         "dgrid/extensions/Pagination",
         "dgrid/Selector",
+        "dgrid/extensions/ColumnResizer",
         "dstore/Memory",
         'dstore/legacy/DstoreAdapter',
         "qpid/management/query/DropDownSelect",
@@ -68,6 +69,7 @@ define(["dojo/_base/declare",
                  Selection,
                  Pagination,
                  Selector,
+                 ColumnResizer,
                  Memory,
                  DstoreAdapter,
                  DropDownSelect,
@@ -307,14 +309,15 @@ define(["dojo/_base/declare",
                                              },
                                 _buildGrid:  function(store, select)
                                              {
-                                                var CustomGrid = declare([ Grid, Keyboard, Selection, Pagination ]);
+                                                var CustomGrid = declare([ Grid, Keyboard, Selection, Pagination, ColumnResizer ]);
                                                 var grid = new CustomGrid({
                                                                               columns: this._getColumns(select),
                                                                               collection: store,
                                                                               rowsPerPage: 100,
                                                                               selectionMode: 'single',
                                                                               cellNavigation: false,
-                                                                              className: 'dgrid-autoheight'
+                                                                              className: 'dgrid-autoheight',
+                                                                              adjustLastColumn: true
                                                                           },
                                                                           this.queryResultGrid);
                                                 this._resultsGrid = grid;

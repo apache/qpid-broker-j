@@ -118,6 +118,7 @@ function(declare, lang, array, json, domConstruct, template, Grid, Keyboard, Sel
                         * widget inner fields
                         */
                        _optionsGrid: null,
+                       _descending: false,
 
                        postCreate:  function()
                                     {
@@ -156,7 +157,6 @@ function(declare, lang, array, json, domConstruct, template, Grid, Keyboard, Sel
                                                                  collection: this.store,
                                                                  selectionMode: 'multiple',
                                                                  cellNavigation: true,
-                                                                 sort: this.nameProperty,
                                                                  allowSelectAll: true,
                                                                  minRowsPerPage : this.items ? this.items.length : 100,
                                                                  deselectOnRefresh: false
@@ -164,6 +164,7 @@ function(declare, lang, array, json, domConstruct, template, Grid, Keyboard, Sel
                                                                this.optionsGrid);
                                       grid.on('dgrid-select', lang.hitch(this, this._selectionChanged));
                                       grid.on('dgrid-deselect', lang.hitch(this, this._selectionChanged));
+                                      grid.on('dgrid-sort', lang.hitch(this, function(event){this._descending = event.sort[0].descending}));
                                       grid.setTotal(this.items ? this.items.length : 0);
                                       this._optionsGrid =  grid;
                                    },
@@ -195,6 +196,7 @@ function(declare, lang, array, json, domConstruct, template, Grid, Keyboard, Sel
                                         this.store = store;
                                         this._optionsGrid.set("columns", this._getOptionColumns());
                                         this._optionsGrid.set("minRowsPerPage", data.items?data.items.length:100);
+                                        this._optionsGrid.set("sort", [{property:this.nameProperty,descending:this._descending}]);
                                         this._applyFilter();
                                         this._optionsGrid.setTotal(this.items ? this.items.length : 0);
                                       }
