@@ -377,7 +377,63 @@ define(["dojo/_base/declare",
                                                   for (var i in attributes)
                                                   {
                                                      var attribute = attributes[i].replace(/^\s+|\s+$/gm,'');
-                                                     columns[attribute] = attribute;
+                                                     var definition = {label: attribute};
+                                                     if (this._columns)
+                                                     {
+                                                       var columnData = this._columns[attribute];
+                                                       if (columnData)
+                                                       {
+                                                         if (columnData.type == "Date")
+                                                         {
+                                                           var that = this;
+                                                           definition.formatter = function(value, object)
+                                                                                  {
+                                                                                    if (!isNaN(value) &&  parseInt(Number(value)) == value &&  !isNaN(parseInt(value, 10)))
+                                                                                    {
+                                                                                      return that._management.userPreferences.formatDateTime(value);
+                                                                                    }
+                                                                                    return value ? entities.encode(String(value)) : "";
+                                                                                  };
+                                                         }
+                                                         else if (columnData.type == "Map")
+                                                         {
+                                                           definition.renderCell = function(object, value, node)
+                                                                                  {
+                                                                                    if (value)
+                                                                                    {
+                                                                                      var list = domConstruct.create("div", {}, node);
+                                                                                      for(var i in value)
+                                                                                      {
+                                                                                         domConstruct.create("div",
+                                                                                                              {innerHTML: entities.encode(String(i))
+                                                                                                                          + ": "
+                                                                                                                          + entities.encode(json.stringify(value[i]))},
+                                                                                                              list);
+                                                                                      }
+                                                                                      return list;
+                                                                                    }
+                                                                                    return "";
+                                                                                  };
+                                                         }
+                                                         else if (columnData.type == "List" || columnData.type == "Set")
+                                                         {
+                                                           definition.renderCell = function(object,value, node)
+                                                                                  {
+                                                                                    if (value)
+                                                                                    {
+                                                                                      var list = domConstruct.create("div", {}, node);
+                                                                                      for(var i in value)
+                                                                                      {
+                                                                                         domConstruct.create("div", {innerHTML:entities.encode(String(value[i]))}, list)
+                                                                                      }
+                                                                                      return list;
+                                                                                    }
+                                                                                    return  "";
+                                                                                  };
+                                                         }
+                                                       }
+                                                     }
+                                                     columns[attribute] = definition ;
                                                   }
                                                }
                                                return columns;
@@ -486,12 +542,13 @@ define(["dojo/_base/declare",
                                                   this.selectExpression.set("value", "");
                                                   this.whereExpression.set("value", "");
                                                   this.whereExpressionBuilder.clearWhereCriteria();
-                                                  var columns = this._extractFieldsFromMetadata(metadata);
-                                                  this.selectColumnsButton.set("data", {items: columns,
+                                                  var data = this._combineTypeAttributesAndStatistics(metadata);
+                                                  this._columns = data.asObject;
+                                                  this.selectColumnsButton.set("data", {items: data.asArray,
                                                                                        idProperty: "id",
                                                                                        selected:[],
                                                                                        nameProperty: "attributeName"});
-                                                  this.selectWhereButton.set("data", {items: columns,
+                                                  this.selectWhereButton.set("data", {items: data.asArray,
                                                                                       selected:[],
                                                                                       idProperty: "id",
                                                                                       nameProperty: "attributeName"});
@@ -560,10 +617,10 @@ define(["dojo/_base/declare",
                                                 return undefined;
                                               }
                                             },
-                                _extractFieldsFromMetadata: function(metadata)
+                                _combineTypeAttributesAndStatistics: function(metadata)
                                             {
-                                              var columns = [];
-                                              var helper = {};
+                                              var columnsArray = [];
+                                              var columnsObject = {};
                                               var validTypes = [];
                                               var typeAttribute = null;
                                               for(var i in metadata)
@@ -574,9 +631,8 @@ define(["dojo/_base/declare",
                                                 for(var name in attributes)
                                                 {
                                                   var attribute = attributes[name];
-                                                  if (!(name in helper))
+                                                  if (!(name in columnsObject))
                                                   {
-                                                    helper[name] = true;
                                                     var attributeData = {id: name,
                                                                          attributeName: name,
                                                                          type: attribute.type,
@@ -587,7 +643,8 @@ define(["dojo/_base/declare",
                                                     {
                                                       typeAttribute = attributeData;
                                                     }
-                                                    columns.push(attributeData );
+                                                    columnsObject[name] = attributeData;
+                                                    columnsArray.push(attributeData );
                                                   }
                                                 }
 
@@ -595,14 +652,15 @@ define(["dojo/_base/declare",
                                                 for(var name in statistics)
                                                 {
                                                   var statistic = statistics[name];
-                                                  if (!(name in helper))
+                                                  if (!(name in columnsObject))
                                                   {
-                                                    helper[name] = true;
-                                                    columns.push( {id: name,
-                                                                   attributeName: name,
-                                                                   type: statistic.type,
-                                                                   description: statistic.description,
-                                                                   columnType: "statistics"});
+                                                    var statisticData = {id: name,
+                                                                         attributeName: name,
+                                                                         type: statistic.type,
+                                                                         description: statistic.description,
+                                                                         columnType: "statistics"};
+                                                    columnsArray.push(statisticData);
+                                                    columnsObject[name] = statisticData;
                                                   }
                                                 }
                                               }
@@ -610,7 +668,7 @@ define(["dojo/_base/declare",
                                               {
                                                 typeAttribute.validValues = validTypes;
                                               }
-                                              return columns;
+                                              return {asArray: columnsArray, asObject: columnsObject};
                                             }
                             });
         });
