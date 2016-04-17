@@ -77,17 +77,17 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
 
     var sqlEscape =                    function(value)
                                        {
-                                         return value.replace("'", "'''");
+                                         return value.replace(/'/g, "'''");
                                        }
 
     var sqlLikeEscape =                function(value)
                                        {
-                                         return sqlEscape(value).replace("%", "\\%").replace("_", "\\_");
+                                         return sqlEscape(value).replace(/%/g, "\\%").replace(/_/g, "\\_");
                                        }
 
     var sqlValue =                     function(value, type)
                                        {
-                                         return (isNumericType(type) || type === "Boolean") ? value : "'" + sqlEscape(value) + "'"
+                                         return (isNumericType(type) || type === "Boolean" || type === "Date") ? value : "'" + sqlEscape(value) + "'"
                                        }
 
     var isNumericType =                function(type)
@@ -371,7 +371,7 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                                        {
                                                          var time = this.timeEditor.value;
                                                          var value = date.getTime() + (time ? time.getTime() : 0) ;
-                                                         this.value = new Date(value).toISOString();
+                                                         this.value = "to_date('" + new Date(value).toISOString() + "')";
                                                          this.emit("change", this.value);
                                                        }
                                                      },
