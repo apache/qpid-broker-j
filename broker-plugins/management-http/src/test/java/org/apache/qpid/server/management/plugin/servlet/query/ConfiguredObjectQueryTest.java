@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -39,6 +38,7 @@ import javax.xml.bind.DatatypeConverter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -47,12 +47,11 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
     private static final String NUMBER_ATTR = "numberAttr";
     private static final String DATE_ATTR = "dateAttr";
 
+    private final List<ConfiguredObject<?>> _objects = new ArrayList<>();
     private ConfiguredObjectQuery _query;
 
-    public void testSingleResultNoClauses() throws Exception
+    public void testNoClauses_SingleResult() throws Exception
     {
-        final List<ConfiguredObject<?>> objects = new ArrayList<>();
-
         final UUID objectUuid = UUID.randomUUID();
         final String objectName = "obj1";
 
@@ -62,9 +61,9 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
             put(ConfiguredObject.NAME, objectName);
         }});
 
-        objects.add(obj1);
+        _objects.add(obj1);
 
-        _query = new ConfiguredObjectQuery(objects, null, null);
+        _query = new ConfiguredObjectQuery(_objects, null, null);
 
         final List<String> headers = _query.getHeaders();
         assertEquals("Unexpected headers", Lists.newArrayList(ConfiguredObject.ID, ConfiguredObject.NAME), headers);
@@ -76,10 +75,8 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected row", Lists.newArrayList(objectUuid, objectName), row);
     }
 
-    public void testTwoResultNoClauses() throws Exception
+    public void testNoClauses_TwoResult() throws Exception
     {
-        final List<ConfiguredObject<?>> objects = new ArrayList<>();
-
         final UUID object1Uuid = UUID.randomUUID();
         final String object1Name = "obj1";
 
@@ -98,10 +95,10 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
             put(ConfiguredObject.NAME, object2Name);
         }});
 
-        objects.add(obj1);
-        objects.add(obj2);
+        _objects.add(obj1);
+        _objects.add(obj2);
 
-        _query = new ConfiguredObjectQuery(objects, null, null);
+        _query = new ConfiguredObjectQuery(_objects, null, null);
 
         List<List<Object>> results = _query.getResults();
         assertEquals("Unexpected number of results", 2, results.size());
@@ -114,10 +111,63 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected row", Lists.newArrayList(object2Uuid, object2Name), row2);
     }
 
+    public void testSelectClause() throws Exception
+    {
+        final UUID objectUuid = UUID.randomUUID();
+
+        ConfiguredObject obj = createCO(new HashMap<String, Object>()
+        {{
+            put(ConfiguredObject.ID, objectUuid);
+            put(NUMBER_ATTR, 1234);
+        }});
+
+        _objects.add(obj);
+
+        _query = new ConfiguredObjectQuery(_objects,
+                                           String.format("%s,%s", ConfiguredObject.ID, NUMBER_ATTR),
+                                           null);
+
+        List<List<Object>> results = _query.getResults();
+        assertEquals("Unexpected number of results", 1, results.size());
+
+        final List<String> headers = _query.getHeaders();
+        assertEquals("Unexpected headers", Lists.newArrayList(ConfiguredObject.ID, NUMBER_ATTR), headers);
+
+        final Iterator<List<Object>> iterator = results.iterator();
+        List<Object> row = iterator.next();
+        assertEquals("Unexpected row", Lists.newArrayList(objectUuid, 1234), row);
+    }
+
+    public void testSelectClause_ColumnAliases() throws Exception
+    {
+        final UUID objectUuid = UUID.randomUUID();
+
+        ConfiguredObject obj = createCO(new HashMap<String, Object>()
+        {{
+            put(ConfiguredObject.ID, objectUuid);
+            put(ConfiguredObject.NAME, "myObj");
+            put(NUMBER_ATTR, 1234);
+        }});
+
+        _objects.add(obj);
+
+        _query = new ConfiguredObjectQuery(_objects,
+                                           String.format("%s,CONCAT(%s,%s) AS alias", ConfiguredObject.ID, ConfiguredObject.NAME, NUMBER_ATTR),
+                                           null);
+
+        List<List<Object>> results = _query.getResults();
+        assertEquals("Unexpected number of results", 1, results.size());
+
+        final List<String> headers = _query.getHeaders();
+        assertEquals("Unexpected headers", Lists.newArrayList(ConfiguredObject.ID, "alias"), headers);
+
+        final Iterator<List<Object>> iterator = results.iterator();
+        List<Object> row = iterator.next();
+        assertEquals("Unexpected row", Lists.newArrayList(objectUuid, "myObj1234"), row);
+    }
+
     public void testQuery_StringEquality() throws Exception
     {
-        final List<ConfiguredObject<?>> objects = new ArrayList<>();
-
         final UUID objectUuid = UUID.randomUUID();
         final String objectName = "obj2";
 
@@ -133,10 +183,10 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
             put(ConfiguredObject.NAME, objectName);
         }});
 
-        objects.add(nonMatch);
-        objects.add(match);
+        _objects.add(nonMatch);
+        _objects.add(match);
 
-        _query = new ConfiguredObjectQuery(objects, null, String.format("name = '%s'", objectName));
+        _query = new ConfiguredObjectQuery(_objects, null, String.format("name = '%s'", objectName));
 
         final List<String> headers = _query.getHeaders();
         assertEquals("Unexpected headers", Lists.newArrayList(ConfiguredObject.ID, ConfiguredObject.NAME), headers);
@@ -151,8 +201,6 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
 
     public void testQuery_DateInequality() throws Exception
     {
-        final List<ConfiguredObject<?>> objects = new ArrayList<>();
-
         final long now = System.currentTimeMillis();
         final UUID objectUuid = UUID.randomUUID();
         final long oneDayInMillis = TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS);
@@ -171,10 +219,10 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
             put(DATE_ATTR, tomorrow);
         }});
 
-        objects.add(nonMatch);
-        objects.add(match);
+        _objects.add(nonMatch);
+        _objects.add(match);
 
-        _query = new ConfiguredObjectQuery(objects,
+        _query = new ConfiguredObjectQuery(_objects,
                                            String.format("%s,%s", ConfiguredObject.ID, DATE_ATTR),
                                            String.format("%s > NOW()", DATE_ATTR));
 
@@ -188,11 +236,10 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
 
     public void testQuery_DateEquality() throws Exception
     {
-        final List<ConfiguredObject<?>> objects = new ArrayList<>();
-
         final long now = System.currentTimeMillis();
         final Calendar calendar = Calendar.getInstance();
         calendar.setTimeInMillis(now);
+        String nowIso8601Str = DatatypeConverter.printDateTime(calendar);
 
         final UUID objectUuid = UUID.randomUUID();
 
@@ -208,12 +255,13 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
             put(DATE_ATTR, new Date(now));
         }});
 
-        objects.add(nonMatch);
-        objects.add(match);
+        _objects.add(nonMatch);
+        _objects.add(match);
 
-        _query = new ConfiguredObjectQuery(objects,
+        _query = new ConfiguredObjectQuery(_objects,
                                            String.format("%s,%s", ConfiguredObject.ID, DATE_ATTR),
-                                           String.format("%s = TO_DATE('%s')", DATE_ATTR, DatatypeConverter.printDateTime(calendar)));
+                                           String.format("%s = TO_DATE('%s')", DATE_ATTR,
+                                                         nowIso8601Str));
 
         List<List<Object>> results = _query.getResults();
         assertEquals("Unexpected number of results", 1, results.size());
@@ -221,6 +269,99 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
         assertEquals("Unexpected row", objectUuid, row.get(0));
+    }
+
+    public void testQuery_DateExpressions() throws Exception
+    {
+        final UUID objectUuid = UUID.randomUUID();
+
+        ConfiguredObject match = createCO(new HashMap<String, Object>()
+        {{
+            put(ConfiguredObject.ID, objectUuid);
+            put(DATE_ATTR, new Date(0));
+        }});
+
+        _objects.add(match);
+
+        _query = new ConfiguredObjectQuery(_objects,
+                                           String.format("%s,%s", ConfiguredObject.ID, DATE_ATTR),
+                                           String.format("%s = DATE_ADD(TO_DATE('%s'), '%s')",
+                                                         DATE_ATTR,
+                                                         "1970-01-01T10:00:00Z",
+                                                         "-PT10H"));
+
+        List<List<Object>> results = _query.getResults();
+        assertEquals("Unexpected number of results", 1, results.size());
+
+        final Iterator<List<Object>> iterator = results.iterator();
+        List<Object> row = iterator.next();
+        assertEquals("Unexpected row", objectUuid, row.get(0));
+    }
+
+    public void testDateToString() throws Exception
+    {
+        final UUID objectUuid = UUID.randomUUID();
+
+        ConfiguredObject match = createCO(new HashMap<String, Object>()
+        {{
+            put(ConfiguredObject.ID, objectUuid);
+            put(DATE_ATTR, new Date(0));
+        }});
+
+        _objects.add(match);
+
+        _query = new ConfiguredObjectQuery(_objects,
+                                           String.format("%s, TO_STRING(%s)", ConfiguredObject.ID, DATE_ATTR),
+                                           null);
+
+        List<List<Object>> results = _query.getResults();
+        assertEquals("Unexpected number of results", 1, results.size());
+
+        final Iterator<List<Object>> iterator = results.iterator();
+        List<Object> row = iterator.next();
+        assertEquals("Unexpected row", Lists.newArrayList(objectUuid, "1970-01-01T00:00:00Z"), row);
+    }
+
+    public void testDateToFormattedString() throws Exception
+    {
+        final UUID objectUuid = UUID.randomUUID();
+
+        ConfiguredObject match = createCO(new HashMap<String, Object>()
+        {{
+            put(ConfiguredObject.ID, objectUuid);
+            put(DATE_ATTR, new Date(0));
+        }});
+
+        _objects.add(match);
+
+        _query = new ConfiguredObjectQuery(_objects,
+                                           String.format("%s, TO_STRING(%s,'%s', 'UTC')",
+                                                         ConfiguredObject.ID,
+                                                         DATE_ATTR,
+                                                         "%1$tF %1$tZ"),
+                                           null);
+
+        List<List<Object>> results = _query.getResults();
+        assertEquals("Unexpected number of results", 1, results.size());
+
+        final Iterator<List<Object>> iterator = results.iterator();
+        List<Object> row = iterator.next();
+        assertEquals("Unexpected row", Lists.newArrayList(objectUuid, "1970-01-01 UTC"), row);
+    }
+
+    public void testFunctionActualParameterMismatch() throws Exception
+    {
+        try
+        {
+            _query = new ConfiguredObjectQuery(_objects,
+                                               "TO_STRING() /*Too few arguments*/ ",
+                                               null);
+            fail("Exception not thrown");
+        }
+        catch (SelectorParsingException e)
+        {
+            // PASS
+        }
     }
 
     private ConfiguredObject createCO(final HashMap<String, Object> map)

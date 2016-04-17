@@ -29,10 +29,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 
 import javax.xml.bind.DatatypeConverter;
+import javax.xml.datatype.DatatypeConfigurationException;
+import javax.xml.datatype.DatatypeFactory;
+import javax.xml.datatype.Duration;
 
 import org.apache.qpid.filter.Expression;
+import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.server.model.ConfiguredObject;
 
 public class ConfiguredObjectExpressionFactory
@@ -40,7 +45,20 @@ public class ConfiguredObjectExpressionFactory
 
     private static final String PARENT_ATTR = "$parent";
     private static Set<String> SPECIAL_ATTRIBUTES = new HashSet<>(Arrays.asList(PARENT_ATTR));
+    private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
+    private static final DatatypeFactory DATATYPE_FACTORY;
 
+    static
+    {
+        try
+        {
+            DATATYPE_FACTORY = DatatypeFactory.newInstance();
+        }
+        catch (DatatypeConfigurationException e)
+        {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     enum FilterFunction
     {
@@ -83,8 +101,7 @@ public class ConfiguredObjectExpressionFactory
             }
         },
 
-        TO_DATE
-                {
+        TO_DATE {
             @Override
             ConfiguredObjectExpression asExpression(final List<Expression> args)
             {
@@ -110,13 +127,100 @@ public class ConfiguredObjectExpressionFactory
                         }
                         catch (IllegalArgumentException e)
                         {
-                            throw new IllegalArgumentException(TO_DATE
-                                                               + " requires an ISO-8601 format date or date/time.", e);
+                            throw new IllegalArgumentException(TO_DATE + " requires an ISO-8601 format date or date/time.", e);
                         }
                     }
                 };
             }
 
+        },
+
+        DATE_ADD {
+            @Override
+            ConfiguredObjectExpression asExpression (final List<Expression> args)
+            {
+                if (args == null || args.size() != 2)
+                {
+                    throw new IllegalArgumentException(DATE_ADD.name() + " requires two arguments.");
+                }
+
+                return new ConfiguredObjectExpression()
+                {
+                    @Override
+                    public Object evaluate(final ConfiguredObject<?> object)
+                    {
+                        Object date = args.get(0).evaluate(object);
+                        Object period = args.get(1).evaluate(object);
+                        if (!(date instanceof Date) || !(period instanceof String))
+                        {
+                            throw new IllegalArgumentException(String.format("%s requires a (Date, String) not a"
+                                                                             + " (%s,%s)",
+                                                                             DATE_ADD,
+                                                                             date.getClass().getSimpleName(),
+                                                                             period.getClass().getSimpleName()));
+                        }
+                        try
+                        {
+                            Date copy = new Date(((Date) date).getTime());
+                            final Duration duration = DATATYPE_FACTORY.newDuration((String) period);
+                            duration.addTo(copy);
+                            return copy;
+                        }
+                        catch (IllegalArgumentException e)
+                        {
+                            throw new IllegalArgumentException(DATE_ADD + " requires an ISO-8601 format duration.", e);
+                        }
+                    }
+                };
+            }
+        },
+
+        TO_STRING {
+            @Override
+            ConfiguredObjectExpression asExpression(final List<Expression> args)
+            {
+                if (args == null || (args.size() == 0 || args.size() > 3))
+                {
+                    throw new IllegalArgumentException(TO_STRING.name() + " requires (Object[,{printf format specifier},[{timezone name}]]).");
+                }
+
+                return new ConfiguredObjectExpression()
+                {
+                    @Override
+                    public Object evaluate(final ConfiguredObject<?> object)
+                    {
+                        Object obj = args.get(0).evaluate(object);
+                        Object format = args.size() > 1 ? args.get(1).evaluate(object) : null;
+                        Object timezoneName = args.size() > 2 ? args.get(2).evaluate(object) : null;
+                        if (obj instanceof Date)
+                        {
+                            final Calendar cal = timezoneName == null ? Calendar.getInstance(UTC) : Calendar.getInstance(TimeZone.getTimeZone(
+                                    (String) timezoneName));
+                            cal.setTime((Date) obj);
+                            if (format == null)
+                            {
+                                return DatatypeConverter.printDateTime(cal);
+                            }
+                            else
+                            {
+                                return String.format((String)format, cal);
+                            }
+                        }
+                        else
+                        {
+                            // TODO If obj itself is another configured object perhaps we should just use its name or id? The CO.toString value probably isn't too useful.
+                            if (format == null)
+                            {
+                                return String.valueOf(obj);
+                            }
+                            else
+                            {
+                                return String.format((String)format, obj);
+                            }
+                        }
+                    }
+                };
+            }
         };
 
         abstract ConfiguredObjectExpression asExpression( List<Expression> args );
@@ -146,12 +250,20 @@ public class ConfiguredObjectExpressionFactory
     {
         try
         {
-            FilterFunction function = FilterFunction.valueOf(functionName.toUpperCase());
+            FilterFunction function = null;
+            try
+            {
+                function = FilterFunction.valueOf(functionName.toUpperCase());
+            }
+            catch (IllegalArgumentException e)
+            {
+                throw new ParseException("Unknown function name : '" + functionName + "'");
+            }
             return function.asExpression(args);
         }
         catch(IllegalArgumentException e)
         {
-            throw new ParseException("Unknown function name " + functionName);
+            throw new ParseException("Function parameter mismatch : '" + functionName + "'", e);
         }
     }
 

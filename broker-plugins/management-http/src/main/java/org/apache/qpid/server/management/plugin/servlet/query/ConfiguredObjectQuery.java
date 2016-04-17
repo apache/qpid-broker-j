@@ -93,7 +93,7 @@ public final class ConfiguredObjectQuery
             }
             catch (ParseException | TokenMgrError e)
             {
-                throw new SelectorParsingException("Unable to parse select clause");
+                throw new SelectorParsingException("Unable to parse select clause", e);
             }
         }
         else
@@ -142,7 +142,7 @@ public final class ConfiguredObjectQuery
                 }
                 catch (RuntimeException e)
                 {
-                    LOGGER.debug("Error while evaluating object against where clause", e);
+                    throw new EvaluationException("Error while evaluating object against where clause", e);
                 }
             }
 

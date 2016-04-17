@@ -77,6 +77,10 @@ public class ParseException extends Exception {
     super(message);
   }
 
+  public ParseException(String message, Throwable t) {
+        super(message, t);
+    }
+
 
   /**
    * This is the last token that has been consumed successfully.  If
