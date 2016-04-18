@@ -458,7 +458,7 @@ public class ManagedPeerCertificateTrustStoreImpl
         }
 
         @Override
-        public List<String> AttrgetSubjectAltNames()
+        public List<String> getSubjectAltNames()
         {
             try
             {
