@@ -180,7 +180,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     private boolean _openComplete;
     private boolean _openFailed;
     private volatile State _state = State.UNINITIALIZED;
-    private volatile long _lastOpenedTime;
+    private volatile Date _lastOpenedTime;
 
     protected static Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parentsMap(ConfiguredObject<?>... parents)
     {
@@ -988,7 +988,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 }
             });
             _openComplete = true;
-            _lastOpenedTime = System.currentTimeMillis();
+            _lastOpenedTime = new Date();
         }
     }
 
@@ -2794,7 +2794,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     }
 
     @Override
-    public final long getLastOpenedTime()
+    public final Date getLastOpenedTime()
     {
         return _lastOpenedTime;
     }

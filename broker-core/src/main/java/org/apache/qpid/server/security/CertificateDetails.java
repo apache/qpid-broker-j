@@ -35,7 +35,7 @@ public interface CertificateDetails extends ManagedAttributeValue
     String getIssuerName();
     String getSubjectName();
     List<String> getSubjectAltNames();
-    long getValidFrom();
-    long getValidUntil();
+    Date getValidFrom();
+    Date getValidUntil();
 
 }

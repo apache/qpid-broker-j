@@ -152,13 +152,13 @@ public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> i
     @Override
     public Date getCertificateValidEnd()
     {
-        return _certificate == null ? new Date(0) : _certificate.getNotAfter();
+        return _certificate == null ? null : _certificate.getNotAfter();
     }
 
     @Override
     public Date getCertificateValidStart()
     {
-        return _certificate == null ? new Date(0) : _certificate.getNotBefore();
+        return _certificate == null ? null : _certificate.getNotBefore();
     }
 
 

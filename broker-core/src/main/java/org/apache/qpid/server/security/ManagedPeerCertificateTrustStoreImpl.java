@@ -26,19 +26,16 @@ import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.GregorianCalendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.concurrent.Callable;
 
 import javax.net.ssl.TrustManager;
@@ -461,7 +458,7 @@ public class ManagedPeerCertificateTrustStoreImpl
         }
 
         @Override
-        public List<String> getSubjectAltNames()
+        public List<String> AttrgetSubjectAltNames()
         {
             try
             {
@@ -489,15 +486,15 @@ public class ManagedPeerCertificateTrustStoreImpl
         }
 
         @Override
-        public long getValidFrom()
+        public Date getValidFrom()
         {
-            return _x509cert.getNotBefore().getTime();
+            return _x509cert.getNotBefore();
         }
 
         @Override
-        public long getValidUntil()
+        public Date getValidUntil()
         {
-            return _x509cert.getNotAfter().getTime();
+            return _x509cert.getNotAfter();
         }
     }
 }
