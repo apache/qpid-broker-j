@@ -178,6 +178,7 @@ define(["dojo/_base/declare",
                                                this.selectColumnsButton.startup();
                                                this.selectWhereButton.startup();
                                                this.whereExpressionBuilder.set("whereFieldsSelector", this.selectWhereButton );
+                                               this.whereExpressionBuilder.set("userPreferences", this._management.userPreferences );
                                                this.whereExpressionBuilder.startup();
                                                this.whereExpressionBuilder.on("change", lang.hitch(this, this._standardModeWhereChanged));
 
@@ -430,7 +431,7 @@ define(["dojo/_base/declare",
                                                                                   {
                                                                                     if (!isNaN(value) &&  parseInt(Number(value)) == value &&  !isNaN(parseInt(value, 10)))
                                                                                     {
-                                                                                      return that._management.userPreferences.formatDateTime(value);
+                                                                                      return that._management.userPreferences.formatDateTime(value, {addOffset: true, appendTimeZone: true});
                                                                                     }
                                                                                     return value ? entities.encode(String(value)) : "";
                                                                                   };
@@ -464,7 +465,7 @@ define(["dojo/_base/declare",
                                                                                       var list = domConstruct.create("div", {}, node);
                                                                                       for(var i in value)
                                                                                       {
-                                                                                         domConstruct.create("div", {innerHTML:entities.encode(String(value[i]))}, list)
+                                                                                         domConstruct.create("div", {innerHTML:entities.encode(json.stringify(value[i]))}, list)
                                                                                       }
                                                                                       return list;
                                                                                     }

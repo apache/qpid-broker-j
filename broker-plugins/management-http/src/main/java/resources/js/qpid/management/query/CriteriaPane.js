@@ -30,6 +30,7 @@ define([
   "dojo/text!query/CriteriaPane.html",
   "dojox/html/entities",
   "dojo/Evented",
+  "dojo/number",
   "dijit/_WidgetBase",
   "dijit/_TemplatedMixin",
   "dijit/_WidgetsInTemplateMixin",
@@ -45,7 +46,7 @@ define([
   "dijit/form/NumberSpinner",
   "dojo/domReady!"
 ],
-function(declare, array, lang, string, domConstruct, domStyle, has, template, entities, Evented)
+function(declare, array, lang, string, domConstruct, domStyle, has, template, entities, Evented, number)
 {
     var ANY = "any";
     var IS_NULL = "is null";
@@ -74,6 +75,8 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                               GREATER_EQUAL_THAN];
     var ENUM_CONDITIONS = [ANY,IS_NULL,IS_NOT_NULL,IN,NOT_IN];
     var DATE_CONDITIONS = [ANY,IS_NULL,IS_NOT_NULL,EQUAL,NOT_EQUAL,LESS_THAN,LESS_EQUAL_THAN,GREATER_THAN,GREATER_EQUAL_THAN];
+    var UNSUPPORTED_TYPES_CONDITIONS = [ANY,IS_NULL,IS_NOT_NULL];
+    var UNSUPPORTED_TYPES = ["Map","Collection","Set","List"];
 
     var sqlEscape =                    function(value)
                                        {
@@ -182,13 +185,22 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                          }
                                          else
                                          {
+                                            if (UNSUPPORTED_TYPES.indexOf(type) != -1)
+                                            {
+                                                return UNSUPPORTED_TYPES_CONDITIONS;
+                                            }
+
                                             if (validValues && validValues.length)
                                             {
                                                 return ENUM_CONDITIONS;
                                             }
-                                            return STRING_CONDITIONS;
+                                            else
+                                            {
+                                                return STRING_CONDITIONS;
+                                            }
                                          }
                                        }
+
     var arrayToOptions =               function(conditions, defaultValue)
                                        {
                                          var options = [];
@@ -202,6 +214,12 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
     var conditionHasWidget =           function(condition)
                                        {
                                          return array.indexOf(CONDITIONS_NOT_NEEDING_WIDGET,condition) == -1;
+                                       }
+    var isInt =                        function isInt(value)
+                                       {
+                                         return !isNaN(value) &&
+                                                parseInt(Number(value)) == value &&
+                                                !isNaN(parseInt(value, 10));
                                        }
 
     // dojo TimeTextBox has a bug in Firefox
@@ -219,7 +237,6 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                                        domConstruct.create("span",{innerHTML:"T"}, domNode);
                                                        var timeNode = domConstruct.create("div",{}, domNode);
                                                        this.hoursEditor = new dijit.form.NumberSpinner({name: "hours",
-                                                                                                        disabled: this.disabled,
                                                                                                         constraints:{ max:23, min:0 },
                                                                                                         style: {width: "4em"},
                                                                                                         intermediateChanges: this.intermediateChanges,
@@ -229,7 +246,6 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                                        domConstruct.create("span",{innerHTML:":"}, domNode);
                                                        var minutesNode = domConstruct.create("div",{}, domNode);
                                                        this.minutesEditor = new dijit.form.NumberSpinner({name: "minutes",
-                                                                                                          disabled: this.disabled,
                                                                                                           constraints:{ max:59, min:0 },
                                                                                                           style: {width: "4em"},
                                                                                                           intermediateChanges: this.intermediateChanges,
@@ -239,7 +255,6 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                                        domConstruct.create("span",{innerHTML:":"}, domNode);
                                                        var secondsNode = domConstruct.create("div",{}, domNode);
                                                        this.secondsEditor = new dijit.form.NumberSpinner({name: "seconds",
-                                                                                                           disabled: this.disabled,
                                                                                                            constraints:{ max:59, min:0 },
                                                                                                            style: {width: "4em"},
                                                                                                            intermediateChanges: this.intermediateChanges,
@@ -249,7 +264,6 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                                        domConstruct.create("span",{innerHTML:"."}, domNode);
                                                        var millisecondsNode = domConstruct.create("div",{}, domNode);
                                                        this.millisecondsEditor = new dijit.form.NumberSpinner({name: "milliseconds",
-                                                                                                            disabled: this.disabled,
                                                                                                             constraints:{ max:999, min:0 },
                                                                                                             style: {width: "5em"},
                                                                                                             intermediateChanges: this.intermediateChanges,
@@ -267,25 +281,25 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                                      },
                                            _setValue:function()
                                                      {
-                                                       var date = new Date(0);
-                                                       if (isFinite(this.hoursEditor.value) )
+                                                       var time = 0
+                                                       if (isInt(this.hoursEditor.value) )
                                                        {
-                                                        date.setHours(this.hoursEditor.value);
+                                                         time = time + this.hoursEditor.value * 60 * 60 * 1000;
                                                        }
-                                                       if (isFinite(this.minutesEditor.value))
+                                                       if (isInt(this.minutesEditor.value))
                                                        {
-                                                         date.setMinutes(this.minutesEditor.value);
+                                                         time = time + this.minutesEditor.value * 60 * 1000;
                                                        }
-                                                       if (isFinite(this.secondsEditor.value))
+                                                       if (isInt(this.secondsEditor.value))
                                                        {
-                                                        date.setSeconds(this.secondsEditor.value);
+                                                         time = time + this.secondsEditor.value * 1000;
                                                        }
-                                                       if (isFinite(this.millisecondsEditor.value))
+                                                       if (isInt(this.millisecondsEditor.value))
                                                        {
-                                                        date.setMilliseconds(this.millisecondsEditor.value);
+                                                         time = time + this.millisecondsEditor.value;
                                                        }
-                                                       this.value = date;
-                                                       this.emit("change", date);
+                                                       this.value = new Date(time - new Date().getTimezoneOffset() * 60 * 1000);
+                                                       this.emit("change", this.value);
                                                      },
                                            _setDisabledAttr:function(value)
                                                      {
@@ -328,8 +342,8 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                                                                           {},
                                                                                           domNode);
                                                        this.dateEditor = new dijit.form.DateTextBox({name: "date",
-                                                                                                     disabled: this.disabled,
-                                                                                                     intermediateChanges: true},
+                                                                                                     intermediateChanges: true,
+                                                                                                     constraints: {datePattern: "yyyy-MM-dd"}},
                                                                                                     dateNode);
                                                        this.dateEditor.on("change", lang.hitch(this, this._setValue));
                                                        var timeNode = domConstruct.create("div",{}, domNode);
@@ -344,7 +358,6 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                                        else
                                                        {
                                                          this.timeEditor = new dijit.form.TimeTextBox({name: "time",
-                                                                                                       disabled: this.disabled,
                                                                                                        intermediateChanges: true,
                                                                                                        value: this.value,
                                                                                                        constraints: {
@@ -370,10 +383,31 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                                        if (date)
                                                        {
                                                          var time = this.timeEditor.value;
-                                                         var value = date.getTime() + (time ? time.getTime() : 0) ;
-                                                         this.value = "to_date('" + new Date(value).toISOString() + "')";
+                                                         var value = date.getTime() + (time ? time.getTime() + time.getTimezoneOffset() * 60 * 1000 : 0);
+                                                         this.value = value;
+                                                         this._setExpressionAttr(value);
                                                          this.emit("change", this.value);
                                                        }
+                                                     },
+                                           _setExpressionAttr: function(value)
+                                                     {
+                                                        var formattedDate = this.userPreferences.formatDateTime(value, {selector: "date", datePattern: "yyyy-MM-dd"});
+                                                        var formattedTime = this.userPreferences.formatDateTime(value, {selector: "time", datePattern: "HH:mm:ss.SSS"});
+                                                        var timeZoneOffset = "";
+                                                        var timeZone = this.userPreferences.getTimeZoneInfo();
+                                                        if (timeZone && timeZone.offset)
+                                                        {
+                                                          var timeZoneOfsetInMinutes = timeZone.offset;
+                                                          timeZoneOffset = (timeZoneOfsetInMinutes>0? "+" : "-")
+                                                               + number.format(timeZoneOfsetInMinutes/60, {pattern: "00"})
+                                                               + ":" + number.format(timeZoneOfsetInMinutes%60, {pattern: "00"});
+                                                        }
+
+                                                        this.expression = "to_date('" + formattedDate + "T" + formattedTime + timeZoneOffset +"')";
+                                                     },
+                                           _getExpressionAttr:function()
+                                                     {
+                                                       return this.expression;
                                                      },
                                            _setDisabledAttr: function(value)
                                                      {
@@ -381,34 +415,33 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                                        this.disabled = value;
                                                        this.dateEditor.set("disabled", value);
                                                        this.timeEditor.set("disabled", value);
-                                                       if (value)
-                                                       {
-                                                         this._setValue();
-                                                       }
-                                                       else
-                                                       {
-                                                         this._setValueAttr(undefined);
-                                                       }
                                                      },
                                            _setValueAttr: function(value)
                                                      {
                                                        var date;
-                                                       if (value instanceof Date || isFinite(value))
-                                                       {
-                                                         var date = value instanceof Date ? value : new Date(value);
-                                                       }
-                                                       else
+                                                       if (value instanceof Date )
                                                        {
                                                          date = value;
                                                        }
-                                                       this.dateEditor.set("value", date);
-                                                       this.timeEditor.set("value", date);
-                                                       this.value = value;
+                                                       else if (isInt(value))
+                                                       {
+                                                         date =  new Date(value);
+                                                       }
+                                                       if (date)
+                                                       {
+                                                         this.dateEditor.set("value", date);
+                                                         this.timeEditor.set("value", date);
+                                                         this.value = date;
+                                                       }
                                                        this.inherited(arguments);
                                                      },
                                            _getValueAttr: function()
                                                      {
                                                        return this.value;
+                                                     },
+                                           isValid: function()
+                                                     {
+                                                        return !!this.value;
                                                      }
                                          });
 
@@ -434,6 +467,7 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                         criteriaName: null,
                         typeName: null,
                         typeValidValues: null,
+                        userPreferences: null,
 
                         /**
                          * auxiliary fields
@@ -469,24 +503,24 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                                   var val = this.typeValidValues[i];
                                                   domConstruct.create("option", {innerHTML: entities.encode(String(val)), value: val}, domNode);
                                                 }
-                                                this.valueEditor = new dijit.form.MultiSelect({disabled: true}, domNode);
+                                                this.valueEditor = new dijit.form.MultiSelect({intermediateChanges: true,
+                                                                                               multiple: true}, domNode);
                                             }
-                                            if (this.typeName === "Date")
+                                            else if (this.typeName === "Date")
                                             {
-                                                this.valueEditor = new DateTimePicker({disabled: true}, domNode);
+                                                this.valueEditor = new DateTimePicker({intermediateChanges: true,
+                                                                                       userPreferences: this.userPreferences}, domNode);
                                             }
                                             else
                                             {
                                                 this.valueEditor = isNumericType(this.typeName)
                                                                 ? new dijit.form.NumberTextBox({
                                                                                                 value: 0,
-                                                                                                disabled: true,
                                                                                                 required:true,
                                                                                                 intermediateChanges: true,
                                                                                                 invalidMessage:'Please enter a numeric value.'},
                                                                                                domNode)
                                                                 : new dijit.form.ValidationTextBox({value: '',
-                                                                                                    disabled: true,
                                                                                                     required:true,
                                                                                                     intermediateChanges: true},
                                                                                                     domNode);
@@ -545,7 +579,7 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                         },
                         _getConditionValue: function()
                                         {
-                                            return this.valueEditor.value;
+                                            return this.valueEditor.expression || this.valueEditor.value;
                                         },
                         _removalRequested: function()
                                         {
@@ -590,7 +624,7 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                           this._removable = removable
                                           this.removeCriteria.set("disabled", !removable);
                                         },
-                        isValidCriteria:        function()
+                        isValidCriteria:function()
                                         {
                                           if (!this.valueEditor.get("disabled"))
                                           {
@@ -603,12 +637,6 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                             {
                                               var value = this.valueEditor.value;
                                               return value && value.length;
-                                            }
-
-                                            if (this.valueEditor instanceof DateTimePicker)
-                                            {
-                                              var value = this.valueEditor.value;
-                                              return !!value;
                                             }
                                           }
                                           return true;

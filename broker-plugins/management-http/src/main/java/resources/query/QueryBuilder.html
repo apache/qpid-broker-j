@@ -18,7 +18,7 @@
   -->
 
 <div>
-    <div class="dijit dijitToolbar">
+    <div class="dijit queryToolBar">
         <label>Scope : <span data-dojo-attach-point="scope"></span></label>
         <label>Category : <span data-dojo-attach-point="categoryName"></span></label>
         <span data-dojo-attach-point="standardSearch">
@@ -40,7 +40,7 @@
              data-dojo-props="title:'Switch to \'Advanced\' search using SQL-like expressions'">Advanced</div>
 
         <div data-dojo-attach-point="whereExpressionBuilder"
-             data-dojo-type="qpid/management/query/WhereExpression"></div>
+             data-dojo-type="qpid/management/query/WhereExpression" class="dijitToolbar"></div>
         <div data-dojo-attach-point="advancedSearch"  style="display:none;">
             <div class="advancedSearchItem">
                 <div class="advancedSearchLabel">Select :</div>

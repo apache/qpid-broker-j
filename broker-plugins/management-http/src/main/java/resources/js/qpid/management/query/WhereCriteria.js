@@ -68,6 +68,7 @@ function(declare, array, lang, string, template, entities, popup, CriteriaPane, 
                          * constructor arguments
                          */
                         attributeDetails: null,
+                        userPreferences: null,
 
                         /**
                          * inner fields
@@ -105,7 +106,8 @@ function(declare, array, lang, string, template, entities, popup, CriteriaPane, 
                                      {
                                        var criteriaPane = new CriteriaPane({criteriaName: this.attributeDetails.attributeName,
                                                                             typeName: this.attributeDetails.type,
-                                                                            typeValidValues: this.attributeDetails.validValues});
+                                                                            typeValidValues: this.attributeDetails.validValues,
+                                                                            userPreferences: this.userPreferences});
                                        this.criteriaContainer.addChild(criteriaPane);
                                        criteriaPane.on("change", lang.hitch(this, this._criteriaConditionChanged));
                                        this._updateRemovable();

@@ -451,3 +451,20 @@ div .messages {
 {
   padding: 1em 0em 1em 3.2em;
 }
+
+.queryToolBar {
+    background-color: #efefef;
+    background-image: linear-gradient(rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 100%);
+    background-repeat: repeat-x;
+    border-bottom: 1px solid #b5bcc7;
+    padding: 2px 0 2px 4px;
+}
+
+.queryToolBar .dijitToolbar
+{
+    padding: 0px; !important;
+    border-bottom: none !important;
+    background-image:  none !important;
+    background-color: inherit !important;
+    background-repeat: inherit !important;
+}

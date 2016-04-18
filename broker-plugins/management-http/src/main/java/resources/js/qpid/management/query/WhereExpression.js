@@ -37,6 +37,7 @@ function(declare, array, lang, domConstruct, Evented, ContentPane, WhereCriteria
                         whereExpression: "",
                         whereFieldsSelector: null,
                         _whereItems: {},
+                        userPreferences: null,
 
                         postCreate: function()
                                     {
@@ -79,7 +80,8 @@ function(declare, array, lang, domConstruct, Evented, ContentPane, WhereCriteria
                                     },
                         _createWhereCriteriaWidget: function(item)
                                     {
-                                      var whereCriteria = new WhereCriteria({attributeDetails: item},
+                                      var whereCriteria = new WhereCriteria({attributeDetails: item,
+                                                                             userPreferences: this.userPreferences},
                                                                             domConstruct.create("div"));
                                       this.addChild(whereCriteria);
                                       whereCriteria.startup();
@@ -143,6 +145,10 @@ function(declare, array, lang, domConstruct, Evented, ContentPane, WhereCriteria
                                       {
                                         this.whereFieldsSelector.set("data", {selected:[]});
                                       }
+                                    },
+                        _setUserPreferences: function(value)
+                                    {
+                                        this.userPreferences = value;
                                     }
                    });
 });
