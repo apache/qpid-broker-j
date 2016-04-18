@@ -594,15 +594,11 @@ define(["dojo/_base/lang",
                             if (data)
                             {
                                 var transformed = [];
+                                var headers = data.headers;
                                 try
                                 {
                                     if (data.results)
                                     {
-                                        var headers = select.split(",");
-                                        for (var i in headers)
-                                        {
-                                            headers[i] = headers[i].replace(/^\s+|\s+$/gm,'');
-                                        }
                                         for (var r in data.results)
                                         {
                                             var results = data.results[r];
@@ -619,7 +615,8 @@ define(["dojo/_base/lang",
                                 }
                                 finally
                                 {
-                                  deferred.resolve(transformed);
+                                  headers.shift();
+                                  deferred.resolve({headers: headers, items:transformed});
                                 }
                             }
                             else

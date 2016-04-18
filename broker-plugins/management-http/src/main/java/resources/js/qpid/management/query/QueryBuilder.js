@@ -76,21 +76,6 @@ define(["dojo/_base/declare",
                  WhereExpression
                  )
         {
-            var selectExpressionToArray =   function(value)
-                                            {
-                                              var columns = [];
-                                              if (value)
-                                              {
-                                                var attributes = value.split(",");
-                                                for (var i in attributes)
-                                                {
-                                                   var attribute = attributes[i].replace(/^\s+|\s+$/gm,'');
-                                                   columns.push(attribute);
-                                                }
-                                              }
-                                              return columns;
-                                            };
-
             var arrayToSelectExpression =   function(value)
                                             {
                                               var expression = "";
@@ -105,7 +90,7 @@ define(["dojo/_base/declare",
                                               }
                                               return expression;
                                             };
-            var predefinedCategories =      [ {id: "queue", name: "queue"},  {id: "connection", name: "connection"} ];
+            var predefinedCategories =      [ {id: "queue", name: "Queue"},  {id: "connection", name: "Connection"} ];
 
             return declare( "qpid.management.query.QueryBuilder",
                             [dijit._Widget, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin],
@@ -223,13 +208,13 @@ define(["dojo/_base/declare",
                                                                                     transformIntoObjects: true});
                                                result.then(function(data)
                                                            {
-                                                             that._showResults(data, select);
+                                                             that._showResults(data.items, data.headers);
                                                            },
                                                            function(error)
                                                            {
                                                              if (error && error.response && error.response.status == 404)
                                                              {
-                                                               that._showResults([], select);
+                                                               that._showResults([], []);
                                                              }
                                                              else
                                                              {
@@ -317,7 +302,7 @@ define(["dojo/_base/declare",
                                                if (this._standardModeLastSelectExpression != this.selectExpression.value)
                                                {
                                                  this._standardModeLastSelectExpression = this.selectExpression.value;
-                                                 this.selectColumnsButton.set("data", {selected: selectExpressionToArray(this.selectExpression.value)});
+                                                 this.selectColumnsButton.set("data", {selected: this._lastHeaders});
                                                  var promise = this.selectColumnsButton.get("selectedItems");
                                                  dojo.when(promise,
                                                            lang.hitch(this,
@@ -328,28 +313,29 @@ define(["dojo/_base/declare",
                                                                       }));
                                                }
                                              },
-                                _showResults:function(data, select)
+                                _showResults:function(items, headers)
                                              {
-                                               var store = new Memory({data: data, idProperty: 'id'});
+                                               this._lastHeaders = headers;
+                                               var store = new Memory({data: items, idProperty: 'id'});
                                                if (!this._resultsGrid)
                                                {
-                                                 if (select)
+                                                 if (items)
                                                  {
-                                                   this._buildGrid(store, select);
+                                                   this._buildGrid(store, this._lastHeaders);
                                                  }
                                                }
                                                else
                                                {
                                                  this._resultsGrid.set("collection", store);
-                                                 this._resultsGrid.set("columns", this._getColumns(select));
+                                                 this._resultsGrid.set("columns", this._getColumns(this._lastHeaders));
                                                  this._resultsGrid.refresh();
                                                }
                                              },
-                                _buildGrid:  function(store, select)
+                                _buildGrid:  function(store, headers)
                                              {
                                                 var CustomGrid = declare([ Grid, Keyboard, Selection, Pagination, ColumnResizer ]);
                                                 var grid = new CustomGrid({
-                                                                              columns: this._getColumns(select),
+                                                                              columns: this._getColumns(headers),
                                                                               collection: store,
                                                                               rowsPerPage: 100,
                                                                               selectionMode: 'single',
@@ -409,15 +395,14 @@ define(["dojo/_base/declare",
                                                               }
                                                             });
                                              },
-                                _getColumns: function(select)
+                                _getColumns: function(attributes)
                                              {
                                                var columns = {};
-                                               if (select)
+                                               if (attributes)
                                                {
-                                                  var attributes = select.split(",");
                                                   for (var i in attributes)
                                                   {
-                                                     var attribute = attributes[i].replace(/^\s+|\s+$/gm,'');
+                                                     var attribute = attributes[i];
                                                      var definition = {label: attribute};
                                                      if (this._columns)
                                                      {
@@ -482,7 +467,7 @@ define(["dojo/_base/declare",
                                 _createScopeList: function()
                                              {
                                                var that = this;
-                                               var result = this._management.query({select: "$parent.name, name, id",
+                                               var result = this._management.query({select: "$parent.name as parentName, name, id",
                                                                                    category : "virtualhost",
                                                                                    transformIntoObjects: true});
                                                var deferred = new dojo.Deferred();
@@ -504,15 +489,16 @@ define(["dojo/_base/declare",
                                                            });
                                                return deferred.promise;
                                              },
-                                _scopeDataReceived: function(data)
+                                _scopeDataReceived: function(result)
                                              {
                                                this._scopeModelObjects = {};
                                                var defaultValue = undefined;
                                                var items = [{id:undefined, name: "Broker"}];
+                                               var data = result.items;
                                                for(var i =0 ; i<data.length;i++)
                                                {
                                                  var name = data[i].name;
-                                                 var parentName = data[i]["$parent.name"];
+                                                 var parentName = data[i]["parentName"];
                                                  items.push({id: data[i].id,  name: "VH:" + parentName + "/" + name});
                                                  this._scopeModelObjects[data[i].id] = {name: name,
                                                                                         type: "virtualhost",
@@ -549,7 +535,7 @@ define(["dojo/_base/declare",
                                               var categoryList = new dijit.form.ComboBox({name: "category",
                                                                                           placeHolder: "Select Category",
                                                                                           store: categoryStore,
-                                                                                          value: this._category || "queue",
+                                                                                          value: this._category || "Queue",
                                                                                           required: true,
                                                                                           invalidMessage: "Invalid category specified"
                                                                                          },
