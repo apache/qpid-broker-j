@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -169,7 +170,7 @@ abstract class AttributeValueConverter<T>
         }
     };
 
-    public static final String BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----";
+    public static final Pattern BASE64_PATTERN = Pattern.compile("^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$");
 
     static final AttributeValueConverter<Certificate> CERTIFICATE_CONVERTER = new AttributeValueConverter<Certificate>()
     {
@@ -207,14 +208,14 @@ abstract class AttributeValueConverter<T>
             else if(value instanceof String)
             {
                 String strValue = AbstractConfiguredObject.interpolate(object, (String) value);
-                if (strValue.startsWith(BEGIN_CERTIFICATE))
-                {
-                    return convert(strValue.getBytes(StandardCharsets.UTF_8), object);
-                }
-                else
+                if (BASE64_PATTERN.matcher(strValue).matches())
                 {
                     byte[] certificateBytes = BINARY_CONVERTER.convert(strValue, object);
                     return convert(certificateBytes, object);
+                }
+                else
+                {
+                    return convert(strValue.getBytes(StandardCharsets.UTF_8), object);
                 }
             }
             else if(value == null)
