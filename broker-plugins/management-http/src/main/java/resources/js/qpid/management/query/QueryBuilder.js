@@ -204,11 +204,10 @@ define(["dojo/_base/declare",
                                                var result = this._management.query({select: select,
                                                                                     where: where,
                                                                                     parent: modelObj,
-                                                                                    category: category,
-                                                                                    transformIntoObjects: true});
+                                                                                    category: category});
                                                result.then(function(data)
                                                            {
-                                                             that._showResults(data.items, data.headers);
+                                                             that._showResults(data.results, data.headers);
                                                            },
                                                            function(error)
                                                            {
@@ -316,10 +315,10 @@ define(["dojo/_base/declare",
                                 _showResults:function(items, headers)
                                              {
                                                this._lastHeaders = headers;
-                                               var store = new Memory({data: items, idProperty: 'id'});
+                                               var store = new Memory({data: items, idProperty: 0});
                                                if (!this._resultsGrid)
                                                {
-                                                 if (items)
+                                                 if (items && items.length)
                                                  {
                                                    this._buildGrid(store, this._lastHeaders);
                                                  }
@@ -397,13 +396,19 @@ define(["dojo/_base/declare",
                                              },
                                 _getColumns: function(attributes)
                                              {
-                                               var columns = {};
+                                               var columns = [];
                                                if (attributes)
                                                {
                                                   for (var i in attributes)
                                                   {
+                                                     if (i == 0)
+                                                     {
+                                                        // skip first id column as it was added by management
+                                                        continue;
+                                                     }
                                                      var attribute = attributes[i];
-                                                     var definition = {label: attribute};
+                                                     var column = {label: attribute, field: i};
+                                                     columns.push(column);
                                                      if (this._columns)
                                                      {
                                                        var columnData = this._columns[attribute];
@@ -412,7 +417,7 @@ define(["dojo/_base/declare",
                                                          if (columnData.type == "Date")
                                                          {
                                                            var that = this;
-                                                           definition.formatter = function(value, object)
+                                                           column.formatter = function(value, object)
                                                                                   {
                                                                                     if (!isNaN(value) &&  parseInt(Number(value)) == value &&  !isNaN(parseInt(value, 10)))
                                                                                     {
@@ -423,7 +428,7 @@ define(["dojo/_base/declare",
                                                          }
                                                          else if (columnData.type == "Map")
                                                          {
-                                                           definition.renderCell = function(object, value, node)
+                                                           column.renderCell = function(object, value, node)
                                                                                   {
                                                                                     if (value)
                                                                                     {
@@ -443,7 +448,7 @@ define(["dojo/_base/declare",
                                                          }
                                                          else if (columnData.type == "List" || columnData.type == "Set")
                                                          {
-                                                           definition.renderCell = function(object,value, node)
+                                                           column.renderCell = function(object,value, node)
                                                                                   {
                                                                                     if (value)
                                                                                     {
@@ -459,7 +464,6 @@ define(["dojo/_base/declare",
                                                          }
                                                        }
                                                      }
-                                                     columns[attribute] = definition ;
                                                   }
                                                }
                                                return columns;
@@ -467,9 +471,8 @@ define(["dojo/_base/declare",
                                 _createScopeList: function()
                                              {
                                                var that = this;
-                                               var result = this._management.query({select: "$parent.name as parentName, name, id",
-                                                                                   category : "virtualhost",
-                                                                                   transformIntoObjects: true});
+                                               var result = this._management.query({select: "$parent.name as parentName, name",
+                                                                                   category : "virtualhost"});
                                                var deferred = new dojo.Deferred();
                                                result.then(function(data)
                                                            {
@@ -494,12 +497,12 @@ define(["dojo/_base/declare",
                                                this._scopeModelObjects = {};
                                                var defaultValue = undefined;
                                                var items = [{id:undefined, name: "Broker"}];
-                                               var data = result.items;
+                                               var data = result.results;
                                                for(var i =0 ; i<data.length;i++)
                                                {
-                                                 var name = data[i].name;
-                                                 var parentName = data[i]["parentName"];
-                                                 items.push({id: data[i].id,  name: "VH:" + parentName + "/" + name});
+                                                 var name = data[i][2];
+                                                 var parentName = data[i][1];
+                                                 items.push({id: data[i][0],  name: "VH:" + parentName + "/" + name});
                                                  this._scopeModelObjects[data[i].id] = {name: name,
                                                                                         type: "virtualhost",
                                                                                         parent: {name: parentName,
@@ -579,7 +582,7 @@ define(["dojo/_base/declare",
                                                                                       selected:[],
                                                                                       idProperty: "id",
                                                                                       nameProperty: "attributeName"});
-                                                  this._showResults([], "");
+                                                  this._showResults([], []);
                                                 }
                                               }
                                             },

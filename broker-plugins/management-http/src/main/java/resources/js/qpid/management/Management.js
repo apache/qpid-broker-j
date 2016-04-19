@@ -552,8 +552,11 @@ define(["dojo/_base/lang",
     //                     coma separated list of fields to select
     //               category: String?
     //                     category of the object
-    //               virtualhost: String?
-    //                     virtualhost name
+    //               parent: Object?
+    //                     hierarchy object defining query scope,
+    //                     if not set queries will be executed against broker.
+    //                     Virtual host query scope can be defined by setting parent
+    //                     into corresponding object representing a virtual host hierarchy
     //
     //   requestOptions: Object?
     //               is optional request settings
@@ -573,7 +576,8 @@ define(["dojo/_base/lang",
             lang.mixin(request,requestOptions);
         }
 
-        // id should be selected always
+        // id should be always selected
+        // and present with index 0
         var select = "id";
         if (query.select)
         {
@@ -585,53 +589,7 @@ define(["dojo/_base/lang",
           parameters.where=query.where
         }
         request.query = parameters;
-        var promise = this.get(request);
-        if (query.select && query.transformIntoObjects)
-        {
-            var deferred = new Deferred();
-            promise.then( function(data)
-                          {
-                            if (data)
-                            {
-                                var transformed = [];
-                                var headers = data.headers;
-                                try
-                                {
-                                    if (data.results)
-                                    {
-                                        for (var r in data.results)
-                                        {
-                                            var results = data.results[r];
-                                            var object = {};
-                                            for (var i in headers)
-                                            {
-                                                var headerName = headers[i];
-                                                var headerValue = results[i];
-                                                object[headerName] = headerValue;
-                                            }
-                                            transformed.push(object);
-                                        }
-                                    }
-                                }
-                                finally
-                                {
-                                  headers.shift();
-                                  deferred.resolve({headers: headers, items:transformed});
-                                }
-                            }
-                            else
-                            {
-                                deferred.reject({message: "User identifier is not found!"
-                                                          + " Authentication failed!"});
-                            }
-                          },
-                          function(error)
-                          {
-                            deferred.reject(error);
-                          });
-            return deferred.promise;
-        }
-        return promise;
+        return this.get(request);
     };
 
     return Management;

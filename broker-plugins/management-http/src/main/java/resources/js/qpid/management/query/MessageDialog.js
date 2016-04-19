@@ -61,7 +61,6 @@ function(declare, lang, array, json, domConstruct, template, Evented, entities)
                                     {
                                       this.inherited(arguments);
                                       this._postCreate();
-                                      console.log("Message box is created");
                                     },
                        _postCreate: function()
                                     {
