@@ -29,6 +29,7 @@ import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -168,6 +169,7 @@ abstract class AttributeValueConverter<T>
         }
     };
 
+    public static final String BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----";
 
     static final AttributeValueConverter<Certificate> CERTIFICATE_CONVERTER = new AttributeValueConverter<Certificate>()
     {
@@ -205,8 +207,15 @@ abstract class AttributeValueConverter<T>
             else if(value instanceof String)
             {
                 String strValue = AbstractConfiguredObject.interpolate(object, (String) value);
-                byte[] certificateBytes = BINARY_CONVERTER.convert(strValue, object);
-                return convert(certificateBytes, object);
+                if (strValue.startsWith(BEGIN_CERTIFICATE))
+                {
+                    return convert(strValue.getBytes(StandardCharsets.UTF_8), object);
+                }
+                else
+                {
+                    byte[] certificateBytes = BINARY_CONVERTER.convert(strValue, object);
+                    return convert(certificateBytes, object);
+                }
             }
             else if(value == null)
             {

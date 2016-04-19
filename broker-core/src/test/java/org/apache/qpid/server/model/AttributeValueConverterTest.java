@@ -259,4 +259,25 @@ public class AttributeValueConverterTest extends QpidTestCase
         assertEquals("CN=app2@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA", x509Certificate.getSubjectX500Principal().getName());
         assertEquals("CN=MyRootCA,O=ACME,ST=Ontario,C=CA", x509Certificate.getIssuerX500Principal().getName());
     }
+
+    public void testPEMCertificateConverter() throws ParseException
+    {
+        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes);
+        AttributeValueConverter<Certificate> certificateConverter = getConverter(Certificate.class, Certificate.class);
+        StringBuffer pemCertificate = new StringBuffer("-----BEGIN CERTIFICATE-----\n");
+        int offset = 0;
+        while(BASE_64_ENCODED_CERTIFICATE.length() - offset > 64)
+        {
+            pemCertificate.append(BASE_64_ENCODED_CERTIFICATE.substring(offset, offset + 64)).append('\n');
+            offset += 64;
+        }
+        pemCertificate.append(BASE_64_ENCODED_CERTIFICATE.substring(offset));
+        pemCertificate.append("\n-----END CERTIFICATE-----\n");
+
+        Certificate certificate = certificateConverter.convert(pemCertificate.toString(), object);
+        assertTrue("Unexpected certificate", certificate instanceof X509Certificate);
+        X509Certificate x509Certificate = (X509Certificate)certificate;
+        assertEquals("CN=app2@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA", x509Certificate.getSubjectX500Principal().getName());
+        assertEquals("CN=MyRootCA,O=ACME,ST=Ontario,C=CA", x509Certificate.getIssuerX500Principal().getName());
+    }
 }
