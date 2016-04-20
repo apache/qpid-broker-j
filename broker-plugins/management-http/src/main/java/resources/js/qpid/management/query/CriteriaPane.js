@@ -385,25 +385,44 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                                          var time = this.timeEditor.value;
                                                          var value = date.getTime() + (time ? time.getTime() + time.getTimezoneOffset() * 60 * 1000 : 0);
                                                          this.value = value;
-                                                         this._setExpressionAttr(value);
+                                                         this._buildExpression(value);
                                                          this.emit("change", this.value);
                                                        }
                                                      },
-                                           _setExpressionAttr: function(value)
+                                           _buildExpression: function(value)
                                                      {
-                                                        var formattedDate = this.userPreferences.formatDateTime(value, {selector: "date", datePattern: "yyyy-MM-dd"});
-                                                        var formattedTime = this.userPreferences.formatDateTime(value, {selector: "time", datePattern: "HH:mm:ss.SSS"});
+                                                        var formattedDate = this.userPreferences.formatDateTime(value,
+                                                                                          {selector: "date",
+                                                                                           datePattern: "yyyy-MM-dd"});
+                                                        var formattedTime = this.userPreferences.formatDateTime(value,
+                                                                                          {selector: "time",
+                                                                                          datePattern: "HH:mm:ss.SSS"});
                                                         var timeZoneOffset = "";
                                                         var timeZone = this.userPreferences.getTimeZoneInfo();
-                                                        if (timeZone && timeZone.offset)
+                                                        if (timeZone)
                                                         {
-                                                          var timeZoneOfsetInMinutes = timeZone.offset;
-                                                          timeZoneOffset = (timeZoneOfsetInMinutes>0? "+" : "-")
-                                                               + number.format(timeZoneOfsetInMinutes/60, {pattern: "00"})
-                                                               + ":" + number.format(timeZoneOfsetInMinutes%60, {pattern: "00"});
+                                                          var timeZoneOffsetInMinutes = timeZone.offset;
+                                                          if (!timeZoneOffsetInMinutes)
+                                                          {
+                                                            timeZoneOffset = "Z";
+                                                          }
+                                                          else
+                                                          {
+                                                            if (timeZoneOffsetInMinutes>0)
+                                                            {
+                                                              timeZoneOffset = "+";
+                                                            }
+                                                            timeZoneOffset = timeZoneOffset
+                                                                             + number.format(timeZoneOffsetInMinutes/60,
+                                                                                             {pattern: "00"})
+                                                                             + ":"
+                                                                             + number.format(timeZoneOffsetInMinutes%60,
+                                                                                             {pattern: "00"});
+                                                          }
                                                         }
-
-                                                        this.expression = "to_date('" + formattedDate + "T" + formattedTime + timeZoneOffset +"')";
+                                                        this.expression = "to_date('"
+                                                                          + formattedDate + "T"
+                                                                          + formattedTime + timeZoneOffset +"')";
                                                      },
                                            _getExpressionAttr:function()
                                                      {

@@ -130,7 +130,7 @@ define(["dojo/_base/declare",
                                 _searchScopeSelector: null,
                                 _lastCategory: null,
                                 _lastSearchQuery: null,
-                                _showWarningOnAdvancedWhereChanged: true,
+                                _showWarningOnChangesInAdvancedMode: true,
 
                                 constructor: function(args)
                                              {
@@ -152,9 +152,9 @@ define(["dojo/_base/declare",
                                                this._createCategoryList();
 
                                                // advanced mode widgets
+                                               this.whereExpression.on("blur", lang.hitch(this, this._showAdvanceModeWarningIfRequired));
+                                               this.selectExpression.on("blur", lang.hitch(this, this._showAdvanceModeWarningIfRequired));
                                                this.selectExpression.on("change", lang.hitch(this, this._advancedModeSelectChanged));
-                                               this.whereExpression.on("blur", lang.hitch(this, this._advancedModeWhereChanged));
-                                               this.whereExpression.on("change", lang.hitch(this, function(){this._showWarningOnAdvancedWhereChanged=true;}));
                                                this.selectExpression.on("keyUp", lang.hitch(this, this._advancedModeKeyPressed));
                                                this.whereExpression.on("keyUp", lang.hitch(this, this._advancedModeKeyPressed));
 
@@ -176,7 +176,7 @@ define(["dojo/_base/declare",
                                              },
                                 search:      function()
                                              {
-                                               var select, where;
+                                               var select, where, callback;
                                                if (this._standardMode)
                                                {
                                                   select = this._standardModeLastSelectExpression;
@@ -186,7 +186,7 @@ define(["dojo/_base/declare",
                                                {
                                                  select = this.selectExpression.value;
                                                  where = this.whereExpression.value;
-                                                 this._resetStandardSearchWidgetsIfAdvancedChanged();
+                                                 callback = lang.hitch(this, this._resetStandardSearchWidgetsIfAdvancedChanged);
                                                }
 
                                                var category = this._categorySelector.value.toLowerCase();
@@ -195,10 +195,10 @@ define(["dojo/_base/declare",
                                                  var scope = this._searchScopeSelector.value;
                                                  this._lastSearchQuery = {scope:scope, select: select, where: where, category: category};
                                                  var modelObj = this._scopeModelObjects[scope];
-                                                 this._doSearch( modelObj, category, select, where);
+                                                 this._doSearch( modelObj, category, select, where, callback);
                                                }
                                              },
-                                _doSearch:   function(modelObj, category, select, where)
+                                _doSearch:   function(modelObj, category, select, where, callback)
                                              {
                                                var that = this;
                                                var result = this._management.query({select: select,
@@ -208,6 +208,10 @@ define(["dojo/_base/declare",
                                                result.then(function(data)
                                                            {
                                                              that._showResults(data.results, data.headers);
+                                                             if (callback)
+                                                             {
+                                                               callback();
+                                                             }
                                                            },
                                                            function(error)
                                                            {
@@ -221,24 +225,26 @@ define(["dojo/_base/declare",
                                                              }
                                                            });
                                              },
-                                _advancedModeWhereChanged:  function()
+                                _showAdvanceModeWarningIfRequired: function()
                                              {
-                                               if (this._standardModeLastWhereExpression &&
-                                                   this._standardModeLastWhereExpression!= this.whereExpression.value &&
-                                                   !this._standardMode )
+                                               if (!this._standardMode &&
+                                                    ( this.selectExpression.value != this._standardModeLastSelectExpression ||
+                                                      this.whereExpression.value != this._standardModeLastWhereExpression ))
                                                {
                                                  var userPreferences = this._management.userPreferences;
                                                  var displayWarning = !userPreferences || !userPreferences.query ||
                                                                      (userPreferences.query.displaySwitchModeWarning == undefined
                                                                       || userPreferences.query.displaySwitchModeWarning );
-                                                 if (displayWarning && this._showWarningOnAdvancedWhereChanged)
+                                                 if (displayWarning && this._showWarningOnChangesInAdvancedMode)
                                                  {
                                                    if (!this._switchModeWarningDialog)
                                                    {
                                                      var that = this;
+                                                     var formattedMessage = "<div>On switching to Standard Mode,</div>"
+                                                                          + " <div>all modifications made to where clause</div>"
+                                                                          + " <div>and any expressions within the select clause will be lost.</div>";
                                                      this._switchModeWarningDialog = new qpid.management.query.MessageDialog({title: "Warning!",
-                                                                                                                             message: "<div>On switching into Standard Mode where expression will be erased.</div>"
-                                                                                                                                      + "<div>Copying of where expression from  Advanced Mode into Standard Mode is unsupported!</div>"},
+                                                                                                                             message: formattedMessage},
                                                                                                                              domConstruct.create("div"));
                                                      this._switchModeWarningDialog.on( "execute",
                                                                                        function(stopDisplaying)
@@ -255,18 +261,22 @@ define(["dojo/_base/declare",
                                                                                          }
                                                                                          else
                                                                                          {
-                                                                                           that._showWarningOnAdvancedWhereChanged = false;
+                                                                                           that._showWarningOnChangesInAdvancedMode = false;
                                                                                          }
+                                                                                         that.search();
                                                                                        });
                                                      this._switchModeWarningDialog.on( "cancel",
                                                                                        function(val)
                                                                                        {
                                                                                          that.whereExpression.set("value", that._standardModeLastWhereExpression);
+                                                                                         that.selectExpression.set("value", that._standardModeLastSelectExpression);
                                                                                        });
                                                    }
                                                    this._switchModeWarningDialog.show();
+                                                   return true;
                                                  }
                                                }
+                                               return false;
                                              },
                                 _advancedModeSelectChanged: function()
                                              {
@@ -301,7 +311,11 @@ define(["dojo/_base/declare",
                                                if (this._standardModeLastSelectExpression != this.selectExpression.value)
                                                {
                                                  this._standardModeLastSelectExpression = this.selectExpression.value;
-                                                 this.selectColumnsButton.set("data", {selected: this._lastHeaders});
+
+                                                 // update selected from headers ignoring id
+                                                 var headers = lang.clone(this._lastHeaders);
+                                                 headers.shift();
+                                                 this.selectColumnsButton.set("data", {selected: headers});
                                                  var promise = this.selectColumnsButton.get("selectedItems");
                                                  dojo.when(promise,
                                                            lang.hitch(this,
@@ -591,7 +605,10 @@ define(["dojo/_base/declare",
                                               var key = evt.keyCode;
                                               if (key == dojo.keys.ENTER && this.selectExpression.value)
                                               {
-                                                this.search();
+                                                if (!this._showAdvanceModeWarningIfRequired())
+                                                {
+                                                  this.search();
+                                                }
                                               }
                                             },
                                 _modeChanged: function()
