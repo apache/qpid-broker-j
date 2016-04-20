@@ -226,16 +226,16 @@ public abstract class UnaryExpression<T> implements Expression<T>
             _allowNonJms = allowNonJms;
         }
 
-        public Object evaluate(E message)
+        public Object evaluate(E expression)
         {
 
-            Object rvalue = getRight().evaluate(message);
+            Object rvalue = getRight().evaluate(expression);
             if (rvalue == null || !(_allowNonJms || rvalue instanceof String))
             {
                 return null;
             }
 
-            if (((_inList != null) && isInList(rvalue, message)) ^ _not)
+            if (((_inList != null) && isInList(rvalue, expression)) ^ _not)
             {
                 return Boolean.TRUE;
             }
@@ -246,36 +246,49 @@ public abstract class UnaryExpression<T> implements Expression<T>
 
         }
 
-        private boolean isInList(final Object rvalue, final E message)
+        private boolean isInList(final Object rvalue, final E expression)
         {
             for(Object entry : _inList)
             {
-                Object value = entry instanceof Expression ? ((Expression<E>)entry).evaluate(message) : entry;
-                if (rvalue instanceof Enum && value instanceof String)
+                Object currentRvalue = rvalue;
+                Object listItemValue = entry instanceof Expression ? ((Expression<E>)entry).evaluate(expression) : entry;
+                if (currentRvalue instanceof Enum && listItemValue instanceof String)
                 {
-                    try
-                    {
-                        Class rclazz = rvalue.getClass();
-                        value = Enum.valueOf(rclazz, (String)value);
-                    }
-                    catch (IllegalArgumentException iae)
-                    {
-                    }
+                    listItemValue = convertStringToEnumValue(currentRvalue.getClass(), (String) listItemValue);
                 }
-                if((rvalue == null && value == null) || (rvalue != null && rvalue.equals(value)))
+                if (listItemValue instanceof Enum && currentRvalue instanceof String)
+                {
+                    currentRvalue = convertStringToEnumValue(listItemValue.getClass(), (String) currentRvalue);
+                }
+
+                if((currentRvalue == null && listItemValue == null) || (currentRvalue != null && currentRvalue.equals(listItemValue)))
                 {
                     return true;
                 }
-                if(rvalue instanceof Number && value instanceof Number)
+                if(currentRvalue instanceof Number && listItemValue instanceof Number)
                 {
-                    Number num1 = (Number) rvalue;
-                    Number num2 = (Number) value;
+                    Number num1 = (Number) currentRvalue;
+                    Number num2 = (Number) listItemValue;
                     return num1.doubleValue() == num2.doubleValue() && num1.longValue() == num2.longValue();
                 }
             }
             return false;
         }
 
+        private Object convertStringToEnumValue(final Class<?> enumType, String candidateValue)
+        {
+            try
+            {
+                Class rclazz = enumType;
+                return Enum.valueOf(rclazz, candidateValue);
+            }
+            catch (IllegalArgumentException iae)
+            {
+                return candidateValue;
+            }
+        }
+
+        @Override
         public String toString()
         {
             StringBuilder answer = new StringBuilder(String.valueOf(getRight()));

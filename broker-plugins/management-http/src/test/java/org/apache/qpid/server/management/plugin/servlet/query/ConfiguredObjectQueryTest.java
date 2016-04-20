@@ -393,18 +393,6 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
 
         _query = new ConfiguredObjectQuery(_objects,
                                            String.format("%s", ConfiguredObject.ID),
-                                           String.format("%s in ('%s', '%s', '%s')",
-                                                         ENUM_ATTR,
-                                                         "toad", Snakes.VIPER, Snakes.PYTHON));
-
-        results = _query.getResults();
-        assertEquals("Unexpected number of results - emumAttr with set", 1, results.size());
-
-        row = _query.getResults().iterator().next();
-        assertEquals("Unexpected row", objectUuid, row.get(0));
-
-        _query = new ConfiguredObjectQuery(_objects,
-                                           String.format("%s", ConfiguredObject.ID),
                                            String.format("%s <> '%s'", ENUM_ATTR, "toad"));
 
         results = _query.getResults();
@@ -417,6 +405,42 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         results = _query.getResults();
         assertEquals("Unexpected number of results - two attributes of type enum", 1, results.size());
 
+    }
+    public void testQuery_EnumEquality_InExpresssions() throws Exception
+    {
+        final UUID objectUuid = UUID.randomUUID();
+
+        ConfiguredObject obj = createCO(new HashMap<String, Object>()
+        {{
+            put(ConfiguredObject.ID, objectUuid);
+            put(ENUM_ATTR, Snakes.PYTHON);
+            put(ENUM2_ATTR, Snakes.PYTHON);
+        }});
+
+        _objects.add(obj);
+
+        _query = new ConfiguredObjectQuery(_objects,
+                                           String.format("%s", ConfiguredObject.ID),
+                                           String.format("%s in ('%s', '%s', '%s')",
+                                                         ENUM_ATTR,
+                                                         "toad", Snakes.VIPER, Snakes.PYTHON));
+
+        List<List<Object>> results = _query.getResults();
+        assertEquals("Unexpected number of results - emumAttr with set including the enum's constants", 1, results.size());
+
+        _query = new ConfiguredObjectQuery(_objects,
+                                           String.format("%s", ConfiguredObject.ID),
+                                           String.format("%s in (%s)", ENUM_ATTR, ENUM2_ATTR));
+
+        results = _query.getResults();
+        assertEquals("Unexpected number of results - enumAttr with set including enum2Attr", 1, results.size());
+
+        _query = new ConfiguredObjectQuery(_objects,
+                                           String.format("%s", ConfiguredObject.ID),
+                                           String.format("'%s' in (%s)", Snakes.PYTHON, ENUM_ATTR));
+
+        results = _query.getResults();
+        assertEquals("Unexpected number of results - attribute within the set", 1, results.size());
     }
 
     public void testFunctionActualParameterMismatch() throws Exception
