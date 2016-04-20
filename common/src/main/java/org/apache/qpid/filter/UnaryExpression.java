@@ -114,7 +114,7 @@ public abstract class UnaryExpression<T> implements Expression<T>
         }
         else if (clazz == BigDecimal.class)
         {
-            // We ussually get a big deciamal when we have Long.MIN_VALUE constant in the
+            // We usually get a big decimal when we have Long.MIN_VALUE constant in the
             // Selector.  Long.MIN_VALUE is too big to store in a Long as a positive so we store it
             // as a Big decimal.  But it gets Negated right away.. to here we try to covert it back
             // to a Long.

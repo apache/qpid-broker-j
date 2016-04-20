@@ -47,6 +47,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
     private static final String NUMBER_ATTR = "numberAttr";
     private static final String DATE_ATTR = "dateAttr";
     private static final String ENUM_ATTR = "enumAttr";
+    private static final String ENUM2_ATTR = "enum2Attr";
 
     enum Snakes
     {
@@ -365,6 +366,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         {{
             put(ConfiguredObject.ID, objectUuid);
             put(ENUM_ATTR, Snakes.PYTHON);
+            put(ENUM2_ATTR, Snakes.PYTHON);
         }});
 
         _objects.add(obj);
@@ -374,9 +376,19 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
                                            String.format("%s = '%s'", ENUM_ATTR, Snakes.PYTHON));
 
         List<List<Object>> results = _query.getResults();
-        assertEquals("Unexpected number of results", 1, results.size());
+        assertEquals("Unexpected number of results - enumAttr equality with enum constant", 1, results.size());
 
         List<Object> row = _query.getResults().iterator().next();
+        assertEquals("Unexpected row", objectUuid, row.get(0));
+
+        _query = new ConfiguredObjectQuery(_objects,
+                                           String.format("%s", ConfiguredObject.ID),
+                                           String.format("'%s' = %s", Snakes.PYTHON, ENUM_ATTR));
+
+        results = _query.getResults();
+        assertEquals("Unexpected number of results - enum constant equality with enumAttr", 1, results.size());
+
+        row = _query.getResults().iterator().next();
         assertEquals("Unexpected row", objectUuid, row.get(0));
 
         _query = new ConfiguredObjectQuery(_objects,
@@ -386,7 +398,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
                                                          "toad", Snakes.VIPER, Snakes.PYTHON));
 
         results = _query.getResults();
-        assertEquals("Unexpected number of results", 1, results.size());
+        assertEquals("Unexpected number of results - emumAttr with set", 1, results.size());
 
         row = _query.getResults().iterator().next();
         assertEquals("Unexpected row", objectUuid, row.get(0));
@@ -396,7 +408,14 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
                                            String.format("%s <> '%s'", ENUM_ATTR, "toad"));
 
         results = _query.getResults();
-        assertEquals("Unexpected number of results", 1, results.size());
+        assertEquals("Unexpected number of results - enumAttr not equal enum constant", 1, results.size());
+
+        _query = new ConfiguredObjectQuery(_objects,
+                                           String.format("%s", ConfiguredObject.ID),
+                                           String.format("%s = %s", ENUM_ATTR, ENUM2_ATTR));
+
+        results = _query.getResults();
+        assertEquals("Unexpected number of results - two attributes of type enum", 1, results.size());
 
     }
 
