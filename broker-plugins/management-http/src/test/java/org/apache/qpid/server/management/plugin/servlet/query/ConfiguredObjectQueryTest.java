@@ -406,6 +406,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         assertEquals("Unexpected number of results - two attributes of type enum", 1, results.size());
 
     }
+
     public void testQuery_EnumEquality_InExpresssions() throws Exception
     {
         final UUID objectUuid = UUID.randomUUID();

@@ -269,7 +269,10 @@ public abstract class UnaryExpression<T> implements Expression<T>
                 {
                     Number num1 = (Number) currentRvalue;
                     Number num2 = (Number) listItemValue;
-                    return num1.doubleValue() == num2.doubleValue() && num1.longValue() == num2.longValue();
+                    if (num1.doubleValue() == num2.doubleValue() && num1.longValue() == num2.longValue())
+                    {
+                        return true;
+                    }
                 }
             }
             return false;
