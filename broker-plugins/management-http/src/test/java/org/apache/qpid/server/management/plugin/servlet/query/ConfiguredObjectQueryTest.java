@@ -46,6 +46,14 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
 {
     private static final String NUMBER_ATTR = "numberAttr";
     private static final String DATE_ATTR = "dateAttr";
+    private static final String ENUM_ATTR = "enumAttr";
+
+    enum Snakes
+    {
+        ANACONDA,
+        PYTHON,
+        VIPER
+    };
 
     private final List<ConfiguredObject<?>> _objects = new ArrayList<>();
     private ConfiguredObjectQuery _query;
@@ -347,6 +355,49 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
         assertEquals("Unexpected row", Lists.newArrayList(objectUuid, "1970-01-01 UTC"), row);
+    }
+
+    public void testQuery_EnumEquality() throws Exception
+    {
+        final UUID objectUuid = UUID.randomUUID();
+
+        ConfiguredObject obj = createCO(new HashMap<String, Object>()
+        {{
+            put(ConfiguredObject.ID, objectUuid);
+            put(ENUM_ATTR, Snakes.PYTHON);
+        }});
+
+        _objects.add(obj);
+
+        _query = new ConfiguredObjectQuery(_objects,
+                                           String.format("%s", ConfiguredObject.ID),
+                                           String.format("%s = '%s'", ENUM_ATTR, Snakes.PYTHON));
+
+        List<List<Object>> results = _query.getResults();
+        assertEquals("Unexpected number of results", 1, results.size());
+
+        List<Object> row = _query.getResults().iterator().next();
+        assertEquals("Unexpected row", objectUuid, row.get(0));
+
+        _query = new ConfiguredObjectQuery(_objects,
+                                           String.format("%s", ConfiguredObject.ID),
+                                           String.format("%s in ('%s', '%s', '%s')",
+                                                         ENUM_ATTR,
+                                                         "toad", Snakes.VIPER, Snakes.PYTHON));
+
+        results = _query.getResults();
+        assertEquals("Unexpected number of results", 1, results.size());
+
+        row = _query.getResults().iterator().next();
+        assertEquals("Unexpected row", objectUuid, row.get(0));
+
+        _query = new ConfiguredObjectQuery(_objects,
+                                           String.format("%s", ConfiguredObject.ID),
+                                           String.format("%s <> '%s'", ENUM_ATTR, "toad"));
+
+        results = _query.getResults();
+        assertEquals("Unexpected number of results", 1, results.size());
+
     }
 
     public void testFunctionActualParameterMismatch() throws Exception

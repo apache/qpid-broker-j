@@ -251,6 +251,17 @@ public abstract class UnaryExpression<T> implements Expression<T>
             for(Object entry : _inList)
             {
                 Object value = entry instanceof Expression ? ((Expression<E>)entry).evaluate(message) : entry;
+                if (rvalue instanceof Enum && value instanceof String)
+                {
+                    try
+                    {
+                        Class rclazz = rvalue.getClass();
+                        value = Enum.valueOf(rclazz, (String)value);
+                    }
+                    catch (IllegalArgumentException iae)
+                    {
+                    }
+                }
                 if((rvalue == null && value == null) || (rvalue != null && rvalue.equals(value)))
                 {
                     return true;

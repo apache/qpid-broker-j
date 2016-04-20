@@ -522,6 +522,24 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
                     return Boolean.FALSE;
                 }
             }
+            else if (lv instanceof Enum)
+            {
+                if (rv instanceof String)
+                {
+                    try
+                    {
+                        rv = Enum.valueOf(lc, (String) rv);
+                    }
+                    catch (IllegalArgumentException e)
+                    {
+                        return Boolean.FALSE;
+                    }
+                }
+                else
+                {
+                    return Boolean.FALSE;
+                }
+            }
             else
             {
                 return Boolean.FALSE;
