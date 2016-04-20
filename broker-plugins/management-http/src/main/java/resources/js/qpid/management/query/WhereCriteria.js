@@ -109,7 +109,7 @@ function(declare, array, lang, string, template, entities, popup, CriteriaPane, 
                                                                             typeValidValues: this.attributeDetails.validValues,
                                                                             userPreferences: this.userPreferences});
                                        this.criteriaContainer.addChild(criteriaPane);
-                                       criteriaPane.on("change", lang.hitch(this, this._criteriaConditionChanged));
+                                       criteriaPane.on("change", lang.hitch(this, this._criteriaChanged));
                                        this._updateRemovable();
                                        return criteriaPane;
                                      },
@@ -155,7 +155,7 @@ function(declare, array, lang, string, template, entities, popup, CriteriaPane, 
                                         var expression = this._getUserFriendlyExpression();
                                         this.criteria.set("label", expression);
                                       },
-                        _criteriaConditionChanged: function(criteria)
+                        _criteriaConditionChanged: function()
                                       {
                                         var isValid =  this._validateCriteria();
                                         if (isValid)
@@ -165,6 +165,10 @@ function(declare, array, lang, string, template, entities, popup, CriteriaPane, 
                                           this._updateRemovable();
                                         }
                                         this.doneButton.set("disabled", !isValid);
+                                      },
+                        _criteriaChanged: function(criteria)
+                                      {
+                                        this._criteriaConditionChanged();
                                         if (criteria && criteria.get("removed"))
                                         {
                                           var prev = this.criteriaMatchCondition;
