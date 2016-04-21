@@ -104,9 +104,16 @@ define(["dojo/query",
             that.management.post({url: url}, {certificate: cert}).then(uploadComplete, uploadError);
         }
 
-        function uploadComplete() { addButton.set("disabled", false); }
+        function uploadComplete() {
+            addButton.set("disabled", false);
+            addButton.reset();
+        }
 
-        function uploadError(error) { that.management.errorHandler(error) ; addButton.set("disabled", false);  }
+        function uploadError(error) {
+            that.management.errorHandler(error);
+            addButton.set("disabled", false);
+            addButton.reset();
+        }
 
         function onFileSelected() {
             if(addButton.domNode.children[0].files) {
