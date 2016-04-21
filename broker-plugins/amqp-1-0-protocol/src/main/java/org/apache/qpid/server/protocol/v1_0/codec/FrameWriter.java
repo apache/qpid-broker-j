@@ -63,7 +63,10 @@ public class FrameWriter
         body.put((byte)2); // DOFF
         body.put(frame.getFrameType()); // AMQP Frame Type
         body.putShort(frame.getChannel());
-        typeWriter.writeToBuffer(body);
+        if(typeWriter != null)
+        {
+            typeWriter.writeToBuffer(body);
+        }
         body.flip();
 
         _sender.send(body);
