@@ -305,7 +305,7 @@ public class EndToEndTest extends QpidBrokerTestCase
     private File createTemporaryOutputDirectory() throws IOException
     {
         String tmpDir = System.getProperty("java.io.tmpdir");
-        File csvDir = new File(tmpDir, "csv");
+        File csvDir = new File(tmpDir, getTestName() + "_" + System.currentTimeMillis());
         csvDir.mkdir();
         csvDir.deleteOnExit();
         return csvDir;

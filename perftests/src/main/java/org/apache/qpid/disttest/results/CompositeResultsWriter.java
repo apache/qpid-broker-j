@@ -59,7 +59,7 @@ public class CompositeResultsWriter implements ResultsWriter
     {
         for (ResultsWriter writer : _writers)
         {
-            writer.begin();
+            writer.end();
         }
 
     }
