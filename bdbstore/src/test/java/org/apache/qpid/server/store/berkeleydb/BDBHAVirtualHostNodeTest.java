@@ -38,13 +38,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.sleepycat.je.Durability;
 import com.sleepycat.je.EnvironmentConfig;
+import com.sleepycat.je.rep.NoConsistencyRequiredPolicy;
 import com.sleepycat.je.rep.ReplicatedEnvironment;
 import com.sleepycat.je.rep.ReplicationConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.RemoteReplicationNode;
@@ -809,6 +809,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         ReplicationConfig replicationConfig = new ReplicationConfig(groupName, nodeName, "localhost:" + nodePortNumber );
         replicationConfig.setNodePriority(0);
         replicationConfig.setHelperHosts(helperAddress);
+        replicationConfig.setConsistencyPolicy(NoConsistencyRequiredPolicy.NO_CONSISTENCY);
         EnvironmentConfig envConfig = new EnvironmentConfig();
         envConfig.setAllowCreate(true);
         envConfig.setTransactional(true);

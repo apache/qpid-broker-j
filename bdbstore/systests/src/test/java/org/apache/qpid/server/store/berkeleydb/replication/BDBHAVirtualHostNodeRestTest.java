@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.sleepycat.je.Durability;
 import com.sleepycat.je.EnvironmentConfig;
+import com.sleepycat.je.rep.NoConsistencyRequiredPolicy;
 import com.sleepycat.je.rep.ReplicatedEnvironment;
 import com.sleepycat.je.rep.ReplicationConfig;
 import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
@@ -301,6 +302,7 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
         environmentPathFile.mkdirs();
         ReplicationConfig replicationConfig = new ReplicationConfig((String)nodeData.get(BDBHAVirtualHostNode.GROUP_NAME), nodeName, nodeHostPort);
         replicationConfig.setHelperHosts((String)nodeData.get(BDBHAVirtualHostNode.ADDRESS));
+        replicationConfig.setConsistencyPolicy(NoConsistencyRequiredPolicy.NO_CONSISTENCY);
         EnvironmentConfig envConfig = new EnvironmentConfig();
         envConfig.setAllowCreate(true);
         envConfig.setTransactional(true);
