@@ -487,9 +487,18 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         // Check sending a message ends up with the subscriber
         _queue.enqueue(messageA, null, null);
-        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
 
-        assertEquals(messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage());
+        final long timeout = System.currentTimeMillis() + QUEUE_RUNNER_WAIT_TIME;
+
+        QueueEntry lastSeen = null;
+        while (timeout > System.currentTimeMillis() &&
+               ((lastSeen = _consumer.getQueueContext().getLastSeenEntry()) == null || lastSeen.getMessage() == null))
+        {
+            Thread.sleep(10);
+        }
+
+        assertEquals("Queue context did not see expected message within timeout",
+                     messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage());
 
         // Check we cannot add a second subscriber to the queue
         MockConsumer subB = new MockConsumer();
