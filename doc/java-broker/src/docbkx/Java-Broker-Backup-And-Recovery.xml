@@ -78,6 +78,7 @@
     <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost-Node-BDB-HA">
       <title>BDB-HA</title>
       <para>See <xref linkend="Java-Broker-Backup-And-Recovery-Virtualhost-Node-BDB"/></para>
+      <note><para>BDB-HA VirtualHost node backups are node specific. You cannot use the backup of one node to recover a different node. To backup a group a backup of each node needs to be taken separately.</para></note>
     </section>
     <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost-Node-Derby">
       <title>Derby</title>
