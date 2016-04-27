@@ -19,6 +19,7 @@
  *
  */
 define(["dojo/parser",
+        "dojo/promise/all",
         "dojo/query",
         "dojo/_base/connect",
         "dijit/registry",
@@ -35,7 +36,7 @@ define(["dojo/parser",
         "qpid/management/editVirtualHost",
         "dojo/text!showVirtualHost.html",
         "dojo/domReady!"],
-       function (parser, query, connect, registry, entities, properties, updater, util, formatter, UpdatableStore, addQueue, addExchange, addLogger, EnhancedGrid, editVirtualHost, template) {
+       function (parser, all, query, connect, registry, entities, properties, updater, util, formatter, UpdatableStore, addQueue, addExchange, addLogger, EnhancedGrid, editVirtualHost, template) {
 
            function VirtualHost(name, parent, controller) {
                this.name = name;
@@ -368,48 +369,35 @@ define(["dojo/parser",
            {
                var thisObj = this;
 
-               this.management.load(this.modelObj)
-                   .then(function(data) {
-                       thisObj.vhostData = data[0] || {name: thisObj.modelObj.name,statistics:{messagesIn:0,bytesIn:0,messagesOut:0,bytesOut:0}};
-                       thisObj.management.get({url: thisObj.management.objectToURL(thisObj.modelObj) + "/getConnections" })
-                           .then(function(data){
-                               thisObj.vhostData["connections"] = data;
-
-                               if (callback)
-                               {
-                                   callback();
-                               }
-
-                               try
-                               {
-                                   thisObj._update();
-                               }
-                               catch(e)
-                               {
-                                   if (console && console.error)
-                                   {
-                                       console.error(e);
-                                   }
-                               }
-
-                           },
-                           function(error)
-                           {
-                               util.tabErrorHandler(error, { updater:thisObj,
-                                   contentPane: thisObj.tabObject.contentPane,
-                                   tabContainer: thisObj.tabObject.controller.tabContainer,
-                                   name: thisObj.modelObj.name,
-                                   category: "Virtual Host" });
-                           });
-                   },
-                   function(error)
+               var vhostLoadedPromise = this.management.load(this.modelObj);
+               var connectionsPromise = this.management.get({url: this.management.objectToURL(this.modelObj) + "/getConnections"});
+               all({vhostLoadedPromise: vhostLoadedPromise, connectionsPromise: connectionsPromise}).then(function(results) {
+                   thisObj.vhostData = results.vhostLoadedPromise[0] || {name: thisObj.modelObj.name,statistics:{messagesIn:0,bytesIn:0,messagesOut:0,bytesOut:0}};
+                   thisObj.vhostData.connections = results.connectionsPromise;
+                   if (callback)
                    {
-                       util.tabErrorHandler(error, { updater:thisObj,
-                                                     contentPane: thisObj.tabObject.contentPane,
-                                                     tabContainer: thisObj.tabObject.controller.tabContainer,
-                                                     name: thisObj.modelObj.name,
-                                                     category: "Virtual Host" });
-                   });
+                       callback();
+                   }
+                   try
+                   {
+                       thisObj._update();
+                   }
+                   catch(e)
+                   {
+                       if (console && console.error)
+                       {
+                           console.error(e);
+                       }
+                   }
+               },
+               function(error)
+               {
+                   util.tabErrorHandler(error, { updater:thisObj,
+                       contentPane: thisObj.tabObject.contentPane,
+                       tabContainer: thisObj.tabObject.controller.tabContainer,
+                       name: thisObj.modelObj.name,
+                       category: "Virtual Host" });
+               });
            };
 
            Updater.prototype._update = function()
