@@ -23,12 +23,12 @@
         <label>Category : <span data-dojo-attach-point="categoryName"></span></label>
         <span data-dojo-attach-point="standardSearch">
             <span data-dojo-type="qpid/management/query/DropDownSelect"
-                 data-dojo-attach-point="selectColumnsButton"
+                 data-dojo-attach-point="standardSelectChooser"
                  data-dojo-props="title: 'Select fields to display',label:'Columns'">
             </span>
 
             <span data-dojo-type="qpid/management/query/DropDownSelect"
-                  data-dojo-attach-point="selectWhereButton"
+                  data-dojo-attach-point="standardWhereChooser"
                   data-dojo-props="title: 'Specify Filtering Conditions',label:'Conditions'">
             </span>
         </span>
@@ -40,13 +40,13 @@
              data-dojo-props="title:'Switch to \'Advanced\' search using SQL-like expressions'"
              class="alignRight">Advanced</div>
         <div class="clear"></div>
-        <div data-dojo-attach-point="whereExpressionBuilder"
+        <div data-dojo-attach-point="standardWhereExpressionBuilder"
              data-dojo-type="qpid/management/query/WhereExpression" class="dijitToolbar"></div>
         <div data-dojo-attach-point="advancedSearch"  style="display:none;">
             <div class="advancedSearchItem">
                 <div class="advancedSearchLabel">Select :</div>
                 <div class="advancedSearchField">
-                    <textarea data-dojo-attach-point="selectExpression" type="text"
+                    <textarea data-dojo-attach-point="advancedSelect" type="text"
                                data-dojo-type="dijit/form/SimpleTextarea"
                                data-dojo-props=" name: 'select',
                                                  rows: 1,
@@ -59,13 +59,26 @@
             <div class="advancedSearchItem">
                 <div class="advancedSearchLabel">Where : </div>
                 <div class="advancedSearchField" >
-                    <textarea data-dojo-attach-point="whereExpression" type="text"
+                    <textarea data-dojo-attach-point="advancedWhere" type="text"
                               data-dojo-type="dijit/form/SimpleTextarea"
                               data-dojo-props=" name: 'where',
                                                 rows: 1,
                                                 intermediateChanges: true,
                                                 placeHolder: 'where expression',
-                                                title: 'Enter sql like where conditions',
+                                                title: 'Enter where conditions using sql syntax',
+                                                promptMessage: 'Use JMS filter syntax to specify where conditions'" rows="1"></textarea>
+                </div>
+            </div>
+            <div class="advancedSearchItem">
+                <div class="advancedSearchLabel">Order : </div>
+                <div class="advancedSearchField" >
+                    <textarea data-dojo-attach-point="advancedOrderBy" type="text"
+                              data-dojo-type="dijit/form/SimpleTextarea"
+                              data-dojo-props=" name: 'orderBy',
+                                                rows: 1,
+                                                intermediateChanges: true,
+                                                placeHolder: 'order expression',
+                                                title: 'Enter order by conditions using sql syntax',
                                                 promptMessage: 'Use JMS filter syntax to specify where conditions'" rows="1"></textarea>
                 </div>
             </div>

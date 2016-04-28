@@ -36,7 +36,8 @@ import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.rep.NoConsistencyRequiredPolicy;
 import com.sleepycat.je.rep.ReplicatedEnvironment;
 import com.sleepycat.je.rep.ReplicationConfig;
-import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
+
+import org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet;
 import org.apache.qpid.server.model.RemoteReplicationNode;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHost;
@@ -256,7 +257,7 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
 
         // try to add not permitted node
         Map<String, Object> nodeData = createNodeAttributeMap(NODE2, intruderPort, _node1HaPort);
-        getRestTestHelper().submitRequest(_baseNodeRestUrl + NODE2, "PUT", nodeData, RestServlet.SC_UNPROCESSABLE_ENTITY);
+        getRestTestHelper().submitRequest(_baseNodeRestUrl + NODE2, "PUT", nodeData, AbstractServlet.SC_UNPROCESSABLE_ENTITY);
 
         assertRemoteNodes(NODE1, NODE3);
     }

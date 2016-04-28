@@ -26,7 +26,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
+import org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet;
 import org.apache.qpid.server.model.Binding;
 
 public class BindingRestTest extends QpidRestTestCase
@@ -128,6 +128,6 @@ public class BindingRestTest extends QpidRestTestCase
         attributes.put(Binding.ARGUMENTS, "blah");
 
         responseCode = getRestTestHelper().submitRequest(bindingUrl, "PUT", attributes);
-        assertEquals("Update should be unsupported", RestServlet.SC_UNPROCESSABLE_ENTITY, responseCode);
+        assertEquals("Update should be unsupported", AbstractServlet.SC_UNPROCESSABLE_ENTITY, responseCode);
     }
 }

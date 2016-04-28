@@ -32,7 +32,7 @@ import org.apache.qpid.server.logging.BrokerFileLogger;
 import org.apache.qpid.server.logging.BrokerMemoryLogger;
 import org.apache.qpid.server.logging.BrokerNameAndLevelLogInclusionRule;
 import org.apache.qpid.server.management.plugin.HttpManagement;
-import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
+import org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet;
 import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -667,7 +667,7 @@ public class BrokerACLTest extends QpidRestTestCase
         attributes.put(GroupProvider.TYPE, FileBasedGroupProviderImpl.GROUP_FILE_PROVIDER_TYPE);
         attributes.put(FileBasedGroupProvider.PATH, "/path/to/file");
         responseCode = getRestTestHelper().submitRequest("groupprovider/" + groupProviderName, "PUT", attributes);
-        assertEquals("Setting of group provider attributes should be allowed but not supported", RestServlet.SC_UNPROCESSABLE_ENTITY, responseCode);
+        assertEquals("Setting of group provider attributes should be allowed but not supported", AbstractServlet.SC_UNPROCESSABLE_ENTITY, responseCode);
     }
 
     public void testSetGroupProviderAttributesDenied() throws Exception

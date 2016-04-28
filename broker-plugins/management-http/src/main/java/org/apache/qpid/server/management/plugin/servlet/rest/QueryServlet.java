@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.server.management.plugin.servlet.query.ConfiguredObjectQuery;
+import org.apache.qpid.server.management.plugin.servlet.query.EvaluationException;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
 
@@ -71,23 +72,34 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
             if (category != null)
             {
                 List<ConfiguredObject<?>> objects = getAllObjects(parent, category, request);
-                Map<String, List<?>> resultsObject = new LinkedHashMap<>();
+                Map<String, Object> resultsObject = new LinkedHashMap<>();
 
                 try
                 {
                     ConfiguredObjectQuery query = new ConfiguredObjectQuery(objects,
                                                                             request.getParameter("select"),
-                                                                            request.getParameter("where"));
+                                                                            request.getParameter("where"),
+                                                                            request.getParameter("orderBy"),
+                                                                            request.getParameter("limit"),
+                                                                            request.getParameter("offset"));
 
                     resultsObject.put("headers", query.getHeaders());
                     resultsObject.put("results", query.getResults());
+                    resultsObject.put("total", query.getTotalNumberOfRows());
                     sendJsonResponse(resultsObject, request, response);
                 }
                 catch (SelectorParsingException e)
                 {
                     sendJsonErrorResponse(request,
                                           response,
-                                          HttpServletResponse.SC_NOT_FOUND,
+                                          HttpServletResponse.SC_BAD_REQUEST,
+                                          e.getMessage());
+                }
+                catch (EvaluationException e)
+                {
+                    sendJsonErrorResponse(request,
+                                          response,
+                                          SC_UNPROCESSABLE_ENTITY,
                                           e.getMessage());
                 }
             }

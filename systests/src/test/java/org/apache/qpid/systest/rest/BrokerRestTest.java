@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.configuration.CommonProperties;
-import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
+import org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -139,7 +139,7 @@ public class BrokerRestTest extends QpidRestTestCase
             brokerAttributes.put(entry.getKey(), entry.getValue());
             int response = getRestTestHelper().submitRequest("broker", "PUT", brokerAttributes);
             assertEquals("Unexpected update response for invalid attribute " + entry.getKey() + "=" + entry.getValue(),
-                    RestServlet.SC_UNPROCESSABLE_ENTITY, response);
+                         AbstractServlet.SC_UNPROCESSABLE_ENTITY, response);
         }
 
     }

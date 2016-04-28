@@ -57,6 +57,7 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public abstract class AbstractServlet extends HttpServlet
 {
+    public static final int SC_UNPROCESSABLE_ENTITY = 422;
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractServlet.class);
     public static final String CONTENT_DISPOSITION = "Content-disposition";
 

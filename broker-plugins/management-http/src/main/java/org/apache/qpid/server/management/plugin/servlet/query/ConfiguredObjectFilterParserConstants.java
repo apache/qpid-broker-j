@@ -60,23 +60,27 @@ public interface ConfiguredObjectFilterParserConstants {
   /** RegularExpression Id. */
   int AS = 19;
   /** RegularExpression Id. */
-  int DECIMAL_LITERAL = 20;
+  int ASC = 20;
   /** RegularExpression Id. */
-  int HEX_LITERAL = 21;
+  int DESC = 21;
   /** RegularExpression Id. */
-  int OCTAL_LITERAL = 22;
+  int DECIMAL_LITERAL = 22;
   /** RegularExpression Id. */
-  int FLOATING_POINT_LITERAL = 23;
+  int HEX_LITERAL = 23;
   /** RegularExpression Id. */
-  int EXPONENT = 24;
+  int OCTAL_LITERAL = 24;
   /** RegularExpression Id. */
-  int STRING_LITERAL = 25;
+  int FLOATING_POINT_LITERAL = 25;
   /** RegularExpression Id. */
-  int FUNCTIONNAME = 26;
+  int EXPONENT = 26;
   /** RegularExpression Id. */
-  int ID = 27;
+  int STRING_LITERAL = 27;
   /** RegularExpression Id. */
-  int QUOTED_ID = 28;
+  int FUNCTIONNAME = 28;
+  /** RegularExpression Id. */
+  int ID = 29;
+  /** RegularExpression Id. */
+  int QUOTED_ID = 30;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -103,6 +107,8 @@ public interface ConfiguredObjectFilterParserConstants {
     "\"FALSE\"",
     "\"NULL\"",
     "\"AS\"",
+    "\"ASC\"",
+    "\"DESC\"",
     "<DECIMAL_LITERAL>",
     "<HEX_LITERAL>",
     "<OCTAL_LITERAL>",

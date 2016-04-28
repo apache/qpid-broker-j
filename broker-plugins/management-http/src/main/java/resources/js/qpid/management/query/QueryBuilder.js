@@ -33,6 +33,7 @@ define(["dojo/_base/declare",
         "dgrid/extensions/ColumnResizer",
         "dstore/Memory",
         'dstore/legacy/DstoreAdapter',
+        "qpid/management/query/QueryStore",
         "qpid/management/query/DropDownSelect",
         "qpid/management/query/WhereExpression",
         "dojo/Evented",
@@ -72,27 +73,12 @@ define(["dojo/_base/declare",
                  ColumnResizer,
                  Memory,
                  DstoreAdapter,
-                 DropDownSelect,
-                 WhereExpression
+                 QueryStore
                  )
         {
-            var arrayToSelectExpression =   function(value)
-                                            {
-                                              var expression = "";
-                                              if (lang.isArray(value))
-                                              {
-                                                for(var i=0; i<value.length ;i++)
-                                                {
-                                                  var selection = value[i] && value[i].hasOwnProperty("attributeName") ?
-                                                                  value[i].attributeName : value[i];
-                                                  expression = expression + (i > 0 ? "," : "") + selection;
-                                                }
-                                              }
-                                              return expression;
-                                            };
             var predefinedCategories =      [ {id: "queue", name: "Queue"},  {id: "connection", name: "Connection"} ];
 
-            return declare( "qpid.management.query.QueryBuilder",
+            var QueryBuilder = declare( "qpid.management.query.QueryBuilder",
                             [dijit._Widget, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin],
                             {
                                  //Strip out the apache comment header from the template html as comments unsupported.
@@ -104,15 +90,16 @@ define(["dojo/_base/declare",
                                 scope:null,
                                 categoryName: null,
                                 advancedSearch: null,
-                                selectExpression: null,
-                                whereExpression: null,
+                                advancedSelect: null,
+                                advancedWhere: null,
                                 standardSearch: null,
-                                selectColumnsButton: null,
-                                selectWhereButton: null,
+                                standardSelectChooser: null,
+                                standardWhereChooser: null,
                                 searchButton: null,
                                 modeButton: null,
-                                whereExpressionBuilder: null,
+                                standardWhereExpressionBuilder: null,
                                 queryResultGrid: null,
+                                advancedOrderBy: null,
 
                                 /**
                                  * constructor parameter
@@ -123,14 +110,12 @@ define(["dojo/_base/declare",
                                  * Inner fields
                                  */
                                 _standardMode: true,
-                                _standardModeLastWhereExpression: null,
-                                _standardModeLastSelectExpression: null,
                                 _scopeModelObjects: {},
                                 _categorySelector: null,
                                 _searchScopeSelector: null,
-                                _lastCategory: null,
-                                _lastSearchQuery: null,
-                                _showWarningOnChangesInAdvancedMode: true,
+                                _lastStandardModeSelect: [],
+                                _sort: [],
+                                _lastHeaders: [],
 
                                 constructor: function(args)
                                              {
@@ -152,214 +137,218 @@ define(["dojo/_base/declare",
                                                this._createCategoryList();
 
                                                // advanced mode widgets
-                                               this.whereExpression.on("blur", lang.hitch(this, this._showAdvanceModeWarningIfRequired));
-                                               this.selectExpression.on("blur", lang.hitch(this, this._showAdvanceModeWarningIfRequired));
-                                               this.selectExpression.on("change", lang.hitch(this, this._advancedModeSelectChanged));
-                                               this.selectExpression.on("keyUp", lang.hitch(this, this._advancedModeKeyPressed));
-                                               this.whereExpression.on("keyUp", lang.hitch(this, this._advancedModeKeyPressed));
+                                               this.advancedSelect.on("change", lang.hitch(this, this._toggleSearchButton));
+                                               this.advancedSelect.on("blur", lang.hitch(this, this._advancedModeSelectChanged));
+                                               this.advancedWhere.on("blur", lang.hitch(this, this._advancedModeWhereChanged));
+                                               this.advancedOrderBy.on("blur", lang.hitch(this, this._advancedModeOrderByChanged));
+                                               this.advancedSelect.on("keyDown", lang.hitch(this, this._advancedModeKeyPressed));
+                                               this.advancedWhere.on("keyDown", lang.hitch(this, this._advancedModeKeyPressed));
+                                               this.advancedOrderBy.on("keyDown", lang.hitch(this, this._advancedModeKeyPressed));
 
                                                // standard mode widgets
-                                               this.selectColumnsButton.on("change", lang.hitch(this, this._standardModeSelectChanged));
-                                               this.selectColumnsButton.startup();
-                                               this.selectWhereButton.startup();
-                                               this.whereExpressionBuilder.set("whereFieldsSelector", this.selectWhereButton );
-                                               this.whereExpressionBuilder.set("userPreferences", this._management.userPreferences );
-                                               this.whereExpressionBuilder.startup();
-                                               this.whereExpressionBuilder.on("change", lang.hitch(this, this._standardModeWhereChanged));
+                                               this.standardSelectChooser.on("change", lang.hitch(this, this._standardModeSelectChanged));
+                                               this.standardSelectChooser.startup();
+                                               this.standardWhereChooser.startup();
+                                               this.standardWhereExpressionBuilder.set("whereFieldsSelector", this.standardWhereChooser );
+                                               this.standardWhereExpressionBuilder.set("userPreferences", this._management.userPreferences );
+                                               this.standardWhereExpressionBuilder.startup();
+                                               this.standardWhereExpressionBuilder.on("change", lang.hitch(this, this._standardModeWhereChanged));
 
                                                // search & mode buttons
                                                this.searchButton.on("click", lang.hitch(this, this.search));
-                                               this.modeButton.on("click", lang.hitch(this, this._modeChanged));
+                                               this.modeButton.on("click", lang.hitch(this, this._showModeSwitchWarningIfRequired));
 
+                                               this._buildGrid();
                                                this._categoryChanged();
                                                this._toggleSearchButton();
                                              },
                                 search:      function()
                                              {
-                                               var select, where, callback;
-                                               if (this._standardMode)
-                                               {
-                                                  select = this._standardModeLastSelectExpression;
-                                                  where = this._standardModeLastWhereExpression;
-                                               }
-                                               else
-                                               {
-                                                 select = this.selectExpression.value;
-                                                 where = this.whereExpression.value;
-                                                 callback = lang.hitch(this, this._resetStandardSearchWidgetsIfAdvancedChanged);
-                                               }
-
-                                               var category = this._categorySelector.value.toLowerCase();
-                                               if (select && category)
-                                               {
+                                                 var category = this._categorySelector.value.toLowerCase();
                                                  var scope = this._searchScopeSelector.value;
-                                                 this._lastSearchQuery = {scope:scope, select: select, where: where, category: category};
                                                  var modelObj = this._scopeModelObjects[scope];
-                                                 this._doSearch( modelObj, category, select, where, callback);
-                                               }
+                                                 this._store.selectClause = this._store.selectClause;
+                                                 this._store.where = this._store.where;
+                                                 this._store.category = category;
+                                                 this._store.parent = modelObj;
+                                                 this._store.orderBy = this._store.orderBy;
+                                                 this._resultsGrid.refresh();
                                              },
-                                _doSearch:   function(modelObj, category, select, where, callback)
-                                             {
-                                               var that = this;
-                                               var result = this._management.query({select: select,
-                                                                                    where: where,
-                                                                                    parent: modelObj,
-                                                                                    category: category});
-                                               result.then(function(data)
-                                                           {
-                                                             that._showResults(data.results, data.headers);
-                                                             if (callback)
-                                                             {
-                                                               callback();
-                                                             }
-                                                           },
-                                                           function(error)
-                                                           {
-                                                             if (error && error.response && error.response.status == 404)
-                                                             {
-                                                               that._showResults([], []);
-                                                             }
-                                                             else
-                                                             {
-                                                               alert(error.message ? error.message: error);
-                                                             }
-                                                           });
-                                             },
-                                _showAdvanceModeWarningIfRequired: function()
-                                             {
-                                               if (!this._standardMode &&
-                                                    ( this.selectExpression.value != this._standardModeLastSelectExpression ||
-                                                      this.whereExpression.value != this._standardModeLastWhereExpression ))
-                                               {
-                                                 var userPreferences = this._management.userPreferences;
-                                                 var displayWarning = !userPreferences || !userPreferences.query ||
-                                                                     (userPreferences.query.displaySwitchModeWarning == undefined
-                                                                      || userPreferences.query.displaySwitchModeWarning );
-                                                 if (displayWarning && this._showWarningOnChangesInAdvancedMode)
-                                                 {
-                                                   if (!this._switchModeWarningDialog)
-                                                   {
-                                                     var that = this;
-                                                     var formattedMessage = "<div>On switching to Standard Mode,</div>"
-                                                                          + " <div>all modifications made to where clause</div>"
-                                                                          + " <div>and any expressions within the select clause will be lost.</div>";
-                                                     this._switchModeWarningDialog = new qpid.management.query.MessageDialog({title: "Warning!",
-                                                                                                                             message: formattedMessage},
-                                                                                                                             domConstruct.create("div"));
-                                                     this._switchModeWarningDialog.on( "execute",
-                                                                                       function(stopDisplaying)
-                                                                                       {
-                                                                                         if (stopDisplaying)
-                                                                                         {
-                                                                                            if (!userPreferences.query)
-                                                                                            {
-                                                                                              userPreferences.query= {};
-                                                                                            }
-                                                                                            userPreferences.query.displaySwitchModeWarning = false;
-                                                                                            userPreferences.save({query:  userPreferences.query});
-
-                                                                                         }
-                                                                                         else
-                                                                                         {
-                                                                                           that._showWarningOnChangesInAdvancedMode = false;
-                                                                                         }
-                                                                                         that.search();
-                                                                                       });
-                                                     this._switchModeWarningDialog.on( "cancel",
-                                                                                       function(val)
-                                                                                       {
-                                                                                         that.whereExpression.set("value", that._standardModeLastWhereExpression);
-                                                                                         that.selectExpression.set("value", that._standardModeLastSelectExpression);
-                                                                                       });
-                                                   }
-                                                   this._switchModeWarningDialog.show();
-                                                   return true;
-                                                 }
-                                               }
-                                               return false;
-                                             },
+                                _showModeSwitchWarningIfRequired: function()
+                                            {
+                                                var userPreferences = this._management.userPreferences;
+                                                var displayWarning = (!userPreferences || !userPreferences.query ||
+                                                                      (userPreferences.query.displaySwitchModeWarning == undefined ||
+                                                                       userPreferences.query.displaySwitchModeWarning));
+                                                if (this._standardMode && displayWarning && QueryBuilder.showWarningOnModeChange)
+                                                {
+                                                    if (!this._switchModeWarningDialog)
+                                                    {
+                                                        var formattedMessage = "<div>Switching to advanced mode is a one-way street,<br/>"
+                                                            + "switching back from advanced mode to standard mode will<br/>"
+                                                            + "completely reset the query.</div>";
+                                                        this._switchModeWarningDialog = new qpid.management.query.MessageDialog({
+                                                            title: "Warning!",
+                                                            message: formattedMessage},
+                                                            domConstruct.create("div"));
+                                                        this._switchModeWarningDialog.on("execute",
+                                                            lang.hitch(this, function(stopDisplaying)
+                                                            {
+                                                                if (stopDisplaying)
+                                                                {
+                                                                    if (!userPreferences.query)
+                                                                    {
+                                                                        userPreferences.query = {};
+                                                                    }
+                                                                    userPreferences.query.displaySwitchModeWarning = false;
+                                                                    userPreferences.save({query: userPreferences.query},
+                                                                        null,
+                                                                        function(error){console.log("Saving user preferences failed: " + error);}
+                                                                    );
+                                                                }
+                                                                else
+                                                                {
+                                                                    QueryBuilder.showWarningOnModeChange = false;
+                                                                }
+                                                                this._modeChanged();
+                                                            }));
+                                                    }
+                                                    this._switchModeWarningDialog.show();
+                                                }
+                                                else
+                                                {
+                                                    this._modeChanged();
+                                                }
+                                            },
                                 _advancedModeSelectChanged: function()
                                              {
-                                               this._toggleSearchButton(this.selectExpression.value);
+                                               this._store.selectClause = this.advancedSelect.value;
                                              },
+                                _advancedModeWhereChanged: function()
+                                             {
+                                                 this._store.where = this.advancedWhere.value;
+                                             },
+                                _advancedModeOrderByChanged: function()
+                                            {
+                                                this._store.orderBy = this.advancedOrderBy.value;
+                                            },
                                 _toggleSearchButton: function(select)
                                              {
                                                var criteriaNotSet = !select;
                                                this.searchButton.set("disabled",criteriaNotSet);
                                                this.searchButton.set("title", criteriaNotSet?"Please, choose fields to display in order to enable search":"Search");
                                              },
-                                _standardModeSelectChanged: function(result)
+                                _buildOrderByExpression: function()
                                              {
-                                               this._standardModeLastSelectExpression = arrayToSelectExpression(result);
-                                               this.selectExpression.set("value", this._standardModeLastSelectExpression);
+                                               var orderByExpression = "";
+                                               if (this._sort && this._sort.length)
+                                               {
+                                                 var orders = []
+                                                 for (var i = 0; i < this._sort.length; ++i)
+                                                 {
+                                                   orders.push(parseInt(this._sort[i].property) + (this._sort[i].descending? " desc" : ""));
+                                                 }
+                                                 orderByExpression = orders.join(",");
+                                               }
+                                               this.advancedOrderBy.set("value", orderByExpression);
+                                               return orderByExpression;
+                                             },
+                                _buildSelectExpression: function(value)
+                                             {
+                                                var expression = "";
+                                                if (lang.isArray(value))
+                                                {
+                                                    for(var i=0; i<value.length ;i++)
+                                                    {
+                                                        var selection = value[i] && value[i].hasOwnProperty("attributeName") ?
+                                                            value[i].attributeName : value[i];
+                                                        expression = expression + (i > 0 ? "," : "") + selection;
+                                                    }
+                                                }
+                                                return expression;
+                                             },
+                                _normalizeSorting: function(selectedColumns)
+                                             {
+                                                 var newSort = [];
+                                                 for (var i = 0; i < this._sort.length; ++i) {
+                                                     var sortColumnIndex = parseInt(this._sort[i].property) - 1;
+                                                     var sortDescending = this._sort[i].descending;
+                                                     if (sortColumnIndex < this._lastStandardModeSelect.length) {
+                                                         var oldSortedColumnName = this._lastStandardModeSelect[sortColumnIndex].attributeName;
+                                                         for (var j = 0; j < selectedColumns.length; ++j) {
+                                                             if (selectedColumns[j].attributeName === oldSortedColumnName) {
+                                                                 newSort.push({
+                                                                     property: "" + (j + 1),
+                                                                     descending: sortDescending
+                                                                 });
+                                                                 break;
+                                                             }
+                                                         }
+                                                     }
+                                                 }
+                                                 this._sort = newSort;
+                                             },
+                                _standardModeSelectChanged: function(selectedColumns)
+                                             {
+                                               this._normalizeSorting(selectedColumns);
+                                               this._store.orderBy = this._buildOrderByExpression();
+                                               this._store.selectClause = this._buildSelectExpression(selectedColumns);
+                                               this._lastStandardModeSelect = lang.clone(selectedColumns);
+                                               this._toggleSearchButton(this._store.selectClause);
                                                this.search();
                                              },
                                 _standardModeWhereChanged: function(result)
                                              {
-                                                this._standardModeLastWhereExpression = result;
-                                                this.whereExpression.set("value", result);
+                                                this._store.where = result;
                                                 this.search();
                                              },
-                                _resetStandardSearchWidgetsIfAdvancedChanged: function()
+                                _buildGrid:  function()
                                              {
-                                               if (this._standardModeLastWhereExpression && this._standardModeLastWhereExpression != this.whereExpression.value)
-                                               {
-                                                 this._standardModeLastWhereExpression = "";
-                                                 this.whereExpressionBuilder.clearWhereCriteria();
-                                               }
+                                                this._store = new QueryStore({
+                                                    management: this.management,
+                                                    category: this._categorySelector.value.toLowerCase(),
+                                                    parent: this._scopeModelObjects[this._searchScopeSelector.value],
+                                                    zeroBased: false});
 
-                                               if (this._standardModeLastSelectExpression != this.selectExpression.value)
-                                               {
-                                                 this._standardModeLastSelectExpression = this.selectExpression.value;
-
-                                                 // update selected from headers ignoring id
-                                                 var headers = lang.clone(this._lastHeaders);
-                                                 headers.shift();
-                                                 this.selectColumnsButton.set("data", {selected: headers});
-                                                 var promise = this.selectColumnsButton.get("selectedItems");
-                                                 dojo.when(promise,
-                                                           lang.hitch(this,
-                                                                      function(selectedItems)
-                                                                      {
-                                                                        var val = arrayToSelectExpression(selectedItems);
-                                                                        this._standardModeLastSelectExpression = val;
-                                                                      }));
-                                               }
-                                             },
-                                _showResults:function(items, headers)
-                                             {
-                                               this._lastHeaders = headers;
-                                               var store = new Memory({data: items, idProperty: 0});
-                                               if (!this._resultsGrid)
-                                               {
-                                                 if (items && items.length)
-                                                 {
-                                                   this._buildGrid(store, this._lastHeaders);
-                                                 }
-                                               }
-                                               else
-                                               {
-                                                 this._resultsGrid.set("collection", store);
-                                                 this._resultsGrid.set("columns", this._getColumns(this._lastHeaders));
-                                                 this._resultsGrid.refresh();
-                                               }
-                                             },
-                                _buildGrid:  function(store, headers)
-                                             {
                                                 var CustomGrid = declare([ Grid, Keyboard, Selection, Pagination, ColumnResizer ]);
-                                                var grid = new CustomGrid({
-                                                                              columns: this._getColumns(headers),
-                                                                              collection: store,
+
+                                                var grid = new CustomGrid({   collection: this._store,
                                                                               rowsPerPage: 100,
                                                                               selectionMode: 'single',
                                                                               cellNavigation: false,
                                                                               className: 'dgrid-autoheight',
+                                                                              pageSizeOptions: [10,20,30,40,50,100,1000,10000,100000],
                                                                               adjustLastColumn: true
                                                                           },
                                                                           this.queryResultGrid);
+                                                this._store.on("changeHeaders", lang.hitch(this, function(event) {
+                                                    this._store.useCachedResults = true;
+                                                    grid.set("columns", this._getColumns(event.headers));
+                                                    this._resultsGrid.resize();
+                                                }));
                                                 this._resultsGrid = grid;
                                                 this._resultsGrid.startup();
                                                 this._resultsGrid.on('.dgrid-row:dblclick', lang.hitch(this, this._onRowClick));
+                                                this._resultsGrid.on("dgrid-sort", lang.hitch(this, function(event) {
+                                                    for (var i = 0; i < this._sort.length; ++i) {
+                                                        if (this._sort[i].property == event.sort[0].property) {
+                                                            this._sort.splice(i, 1);
+                                                            break;
+                                                        }
+                                                    }
+                                                    this._sort.splice(0, 0, event.sort[0]);
+                                                    this._store.orderBy = this._buildOrderByExpression();
+                                                    event.preventDefault();
+                                                    event.stopPropagation();
+                                                    this.search();
+                                                }));
+                                                this._resultsGrid.on("dgrid-refresh-complete",
+                                                                     lang.hitch(this,
+                                                                                function()
+                                                                                {
+                                                                                  this._store.useCachedResults = false;
+                                                                                  this._resultsGrid.updateSortArrow(this._sort, true);
+                                                                                }));
                                              },
                                 _onRowClick: function (event)
                                              {
@@ -408,20 +397,16 @@ define(["dojo/_base/declare",
                                                               }
                                                             });
                                              },
-                                _getColumns: function(attributes)
+                                _getColumns: function(headers)
                                              {
+                                               this._lastHeaders = headers;
                                                var columns = [];
-                                               if (attributes)
+                                               if (headers)
                                                {
-                                                  for (var i in attributes)
+                                                  for (var i = 0; i < headers.length; ++i)
                                                   {
-                                                     if (i == 0)
-                                                     {
-                                                        // skip first id column as it was added by management
-                                                        continue;
-                                                     }
-                                                     var attribute = attributes[i];
-                                                     var column = {label: attribute, field: i};
+                                                     var attribute = headers[i];
+                                                     var column = {label: attribute, field: "" + (i + 1), sortable: true};
                                                      columns.push(column);
                                                      if (this._columns)
                                                      {
@@ -485,7 +470,7 @@ define(["dojo/_base/declare",
                                 _createScopeList: function()
                                              {
                                                var that = this;
-                                               var result = this._management.query({select: "$parent.name as parentName, name",
+                                               var result = this._management.query({select: "id, $parent.name as parentName, name",
                                                                                    category : "virtualhost"});
                                                var deferred = new dojo.Deferred();
                                                result.then(function(data)
@@ -563,94 +548,93 @@ define(["dojo/_base/declare",
                                             },
                                 _categoryChanged: function()
                                             {
-                                              var metadata = this._getCategoryMetadata(this._categorySelector.value);
-                                              var disableMetadataDependant = !metadata;
-                                              this.selectWhereButton.set("disabled", disableMetadataDependant);
-                                              this.selectColumnsButton.set("disabled", disableMetadataDependant);
-                                              this.searchButton.set("disabled", disableMetadataDependant);
-                                              if (disableMetadataDependant)
-                                              {
-                                                dijit.showTooltip(
-                                                  this._categorySelector.get("invalidMessage"),
-                                                  this._categorySelector.domNode,
-                                                  this._categorySelector.get("tooltipPosition"),
-                                                  !this._categorySelector.isLeftToRight()
-                                                );
-                                              }
-                                              else
-                                              {
-                                                if (this._lastCategory != this._categorySelector.value)
+                                                this._resetSearch();
+                                                var metadata = this._getCategoryMetadata(this._categorySelector.value);
+                                                var disableMetadataDependant = !metadata;
+                                                this.standardWhereChooser.set("disabled", disableMetadataDependant);
+                                                this.standardSelectChooser.set("disabled", disableMetadataDependant);
+                                                this.searchButton.set("disabled", disableMetadataDependant || !this._store.selectClause);
+                                                this.modeButton.set("disabled", disableMetadataDependant);
+                                                this.advancedSelect.set("disabled", disableMetadataDependant);
+                                                this.advancedWhere.set("disabled", disableMetadataDependant);
+                                                this.advancedOrderBy.set("disabled", disableMetadataDependant);
+
+                                                if (disableMetadataDependant)
                                                 {
-                                                  this._standardModeLastWhereExpression = "";
-                                                  this._lastCategory = this._categorySelector.value;
-                                                  this.selectExpression.set("value", "");
-                                                  this.whereExpression.set("value", "");
-                                                  this.whereExpressionBuilder.clearWhereCriteria();
-                                                  var data = this._combineTypeAttributesAndStatistics(metadata);
-                                                  this._columns = data.asObject;
-                                                  this.selectColumnsButton.set("data", {items: data.asArray,
-                                                                                       idProperty: "id",
-                                                                                       selected:[],
-                                                                                       nameProperty: "attributeName"});
-                                                  this.selectWhereButton.set("data", {items: data.asArray,
-                                                                                      selected:[],
-                                                                                      idProperty: "id",
-                                                                                      nameProperty: "attributeName"});
-                                                  this._showResults([], []);
+                                                    dijit.showTooltip(
+                                                        this._categorySelector.get("invalidMessage"),
+                                                        this._categorySelector.domNode,
+                                                        this._categorySelector.get("tooltipPosition"),
+                                                        !this._categorySelector.isLeftToRight()
+                                                    );
                                                 }
-                                              }
+                                                else
+                                                {
+                                                    var data = this._combineTypeAttributesAndStatistics(metadata);
+                                                    this._columns = data.asObject;
+                                                    this.standardSelectChooser.set("data", {items: data.asArray,
+                                                        idProperty: "id",
+                                                        selected:[],
+                                                        nameProperty: "attributeName"});
+                                                    this.standardWhereChooser.set("data", {items: data.asArray,
+                                                        selected:[],
+                                                        idProperty: "id",
+                                                        nameProperty: "attributeName"});
+                                                }
                                             },
                                 _advancedModeKeyPressed:function(evt)
                                             {
                                               var key = evt.keyCode;
-                                              if (key == dojo.keys.ENTER && this.selectExpression.value)
+                                              if (key == dojo.keys.ENTER)
                                               {
-                                                if (!this._showAdvanceModeWarningIfRequired())
-                                                {
+                                                  evt.preventDefault();
+                                                  evt.stopPropagation();
+                                                  this._store.selectClause = this.advancedSelect.value;
+                                                  this._store.where = this.advancedWhere.value;
+                                                  this._store.orderBy = this.advancedOrderBy.value;
                                                   this.search();
-                                                }
                                               }
                                             },
                                 _modeChanged: function()
                                             {
-                                              this._standardMode = !this._standardMode
+                                              this._standardMode = !this._standardMode;
                                               if (!this._standardMode)
                                               {
                                                 this.modeButton.set("label", "Standard");
                                                 this.modeButton.set("title", "Switch to 'Standard' search");
-                                                this.selectExpression.set("disabled", false);
-                                                this.whereExpression.set("disabled", false);
+                                                this.advancedSelect.set("disabled", false);
+                                                this.advancedWhere.set("disabled", false);
                                                 this.standardSearch.style.display = "none";
-                                                this.whereExpressionBuilder.domNode.style.display = "none";
+                                                this.standardWhereExpressionBuilder.domNode.style.display = "none";
                                                 this.advancedSearch.style.display = "";
-                                                if (this._lastSearchQuery &&
-                                                     (this._lastSearchQuery.select != this.selectExpression.value ||
-                                                      this._lastSearchQuery.where != this.whereExpression.value ||
-                                                      this._lastSearchQuery.category != this._categorySelector.value ||
-                                                      this._lastSearchQuery.scope != this._searchScopeSelector.value))
-                                                {
-                                                  this.search();
-                                                }
+                                                this.advancedSelect.set("value", this._store.selectClause);
+                                                this.advancedWhere.set("value", this._store.where);
+                                                this.advancedOrderBy.set("value", this._store.orderBy);
                                               }
                                               else
                                               {
                                                 this.modeButton.set("label", "Advanced");
                                                 this.modeButton.set("title", "Switch to 'Advanced' search using SQL-like expressions");
-                                                this.selectExpression.set("disabled", true);
-                                                this.whereExpression.set("disabled", true);
+                                                this.advancedSelect.set("disabled", true);
+                                                this.advancedWhere.set("disabled", true);
                                                 this.standardSearch.style.display = "";
-                                                this.whereExpressionBuilder.domNode.style.display = "";
+                                                this.standardWhereExpressionBuilder.domNode.style.display = "";
                                                 this.advancedSearch.style.display = "none";
-
-                                                if (this._lastSearchQuery &&
-                                                     (this._lastSearchQuery.select != this._standardModeLastSelectExpression ||
-                                                      this._lastSearchQuery.where != this._standardModeLastWhereExpression ||
-                                                      this._lastSearchQuery.category != this._categorySelector.value ||
-                                                      this._lastSearchQuery.scope != this._searchScopeSelector.value))
-                                                {
-                                                  this.search();
-                                                }
+                                                this._resetSearch();
                                               }
+                                            },
+                                _resetSearch: function()
+                                            {
+                                                this._store.where = "";
+                                                this._store.selectClause = "";
+                                                this._store.orderBy = "";
+                                                this.standardSelectChooser.set("data", {selected: []});
+                                                this.standardWhereExpressionBuilder.clearWhereCriteria();
+                                                this._sort = [];
+                                                this.advancedSelect.set("value", this._store.selectClause);
+                                                this.advancedWhere.set("value", this._store.where);
+                                                this.advancedOrderBy.set("value", this._store.orderBy);
+                                                this.search();
                                             },
                                 _getCategoryMetadata: function(value)
                                             {
@@ -718,4 +702,8 @@ define(["dojo/_base/declare",
                                               return {asArray: columnsArray, asObject: columnsObject};
                                             }
                             });
+
+            QueryBuilder.showWarningOnModeChange = true;
+
+            return QueryBuilder;
         });

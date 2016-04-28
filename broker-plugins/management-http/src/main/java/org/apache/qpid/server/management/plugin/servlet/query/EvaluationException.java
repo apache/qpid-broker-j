@@ -23,6 +23,11 @@ package org.apache.qpid.server.management.plugin.servlet.query;
 
 public class EvaluationException extends RuntimeException
 {
+    public EvaluationException(final String s)
+    {
+        super(s);
+    }
+
     public EvaluationException(final String s, final RuntimeException e)
     {
         super(s,e);

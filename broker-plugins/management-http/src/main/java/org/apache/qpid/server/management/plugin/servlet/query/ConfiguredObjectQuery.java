@@ -21,7 +21,10 @@
 package org.apache.qpid.server.management.plugin.servlet.query;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -30,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.filter.BooleanExpression;
 import org.apache.qpid.filter.Expression;
 import org.apache.qpid.filter.SelectorParsingException;
+import org.apache.qpid.filter.OrderByExpression;
 import org.apache.qpid.server.model.ConfiguredObject;
 
 public final class ConfiguredObjectQuery
@@ -42,6 +46,7 @@ public final class ConfiguredObjectQuery
 
     private final List<List<Object>> _results;
     private final List<String> _headers;
+    private final int _totalNumberOfRows;
 
     interface HeadersAndValueExpressions
     {
@@ -51,14 +56,38 @@ public final class ConfiguredObjectQuery
 
     public ConfiguredObjectQuery(List<ConfiguredObject<?>> objects, String selectClause, String whereClause)
     {
+        this(objects, selectClause, whereClause, null);
+    }
+
+    public ConfiguredObjectQuery(List<ConfiguredObject<?>> objects,
+                                 String selectClause,
+                                 String whereClause,
+                                 String orderByClause)
+    {
+        this(objects, selectClause, whereClause, orderByClause, null, null);
+    }
+
+    public ConfiguredObjectQuery(List<ConfiguredObject<?>> objects,
+                                 String selectClause,
+                                 String whereClause,
+                                 String orderByClause,
+                                 String limitClause,
+                                 String offsetClause)
+    {
+        int limit = toInt(limitClause, -1);
+        int offset = toInt(offsetClause, 0);
 
         HeadersAndValueExpressions headersAndValueExpressions = parseSelectClause(selectClause);
 
         List<ConfiguredObject<?>> filteredObjects = whereClause == null ? objects : filterObjects(objects, whereClause);
+        List<ConfiguredObject<?>> orderedObjects = orderByClause == null ? filteredObjects : orderObjects(filteredObjects,
+                                                                                                          orderByClause,
+                                                                                                          headersAndValueExpressions.getValueExpressions());
+        List<ConfiguredObject<?>> limitedOrderedObjects = applyLimitAndOffset(orderedObjects, limit, offset);
 
         _headers = headersAndValueExpressions.getHeaders();
-        _results = evaluateResults(filteredObjects, headersAndValueExpressions.getValueExpressions());
-
+        _results = evaluateResults(limitedOrderedObjects, headersAndValueExpressions.getValueExpressions());
+        _totalNumberOfRows = filteredObjects.size();
     }
 
     public List<List<Object>> getResults()
@@ -69,6 +98,27 @@ public final class ConfiguredObjectQuery
     public List<String> getHeaders()
     {
         return _headers;
+    }
+
+    public int getTotalNumberOfRows()
+    {
+        return _totalNumberOfRows;
+    }
+
+    private int toInt(String value, int defaultValue)
+    {
+        int returnValue = defaultValue;
+        if (value != null)
+        {
+            try
+            {
+                returnValue = Integer.parseInt(value);
+            }
+            catch (NumberFormatException e)
+            {
+            }
+        }
+        return returnValue;
     }
 
     private HeadersAndValueExpressions parseSelectClause(final String selectClause)
@@ -154,7 +204,6 @@ public final class ConfiguredObjectQuery
         return filteredObjects;
     }
 
-
     private List<List<Object>> evaluateResults(final List<ConfiguredObject<?>> filteredObjects, List<Expression> valueExpressions)
     {
         List<List<Object>> values = new ArrayList<>();
@@ -180,6 +229,114 @@ public final class ConfiguredObjectQuery
         return values;
     }
 
+    private List<ConfiguredObject<?>> applyLimitAndOffset(final List<ConfiguredObject<?>> orderedObjects, final int limit, int offset)
+    {
+        int size = orderedObjects.size();
+        int firstIndex = offset < 0 ? Math.max(0, size + offset) : Math.min(size, offset);
+        int lastIndex = limit < 0 ? size : Math.min(size, firstIndex + limit);
+
+        return orderedObjects.subList(firstIndex, lastIndex);
+    }
+
+
+    class OrderByComparator implements Comparator<Object>
+    {
+        private final List<OrderByExpression> _orderByExpressions;
+
+        public OrderByComparator(final List<OrderByExpression> orderByExpressions,
+                                 final List<Expression> valueExpressions)
+        {
+            _orderByExpressions = new ArrayList<>(orderByExpressions);
+            for (ListIterator<OrderByExpression> iterator = _orderByExpressions.listIterator(); iterator.hasNext(); )
+            {
+                OrderByExpression orderByExpression = iterator.next();
+                if (orderByExpression.isColumnIndex())
+                {
+                    // column indices are starting from 1 by SQL spec
+                    int index = orderByExpression.getColumnIndex();
+                    if (index <= 0 || index > valueExpressions.size())
+                    {
+                        throw new EvaluationException(String.format("Invalid column index '%d' in orderBy clause", index));
+                    }
+                    else
+                    {
+                        orderByExpression = new OrderByExpression(valueExpressions.get(index - 1), orderByExpression.getOrder());
+                        iterator.set(orderByExpression);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public int compare(final Object o1, final Object o2)
+        {
+            int index = 0;
+            int comparisonResult = 0;
+            for (OrderByExpression orderByExpression : _orderByExpressions)
+            {
+                try
+                {
+                    Comparable left = (Comparable) orderByExpression.evaluate(o1);
+                    Comparable right = (Comparable) orderByExpression.evaluate(o2);
+                    if (left == null && right != null)
+                    {
+                        comparisonResult = -1;
+                    }
+                    else if (left != null && right == null)
+                    {
+                        comparisonResult = 1;
+                    }
+                    else if (left != null && right != null)
+                    {
+                        comparisonResult = left.compareTo(right);
+                    }
+                    if (comparisonResult != 0)
+                    {
+                        int order = 1;
+                        if (orderByExpression.getOrder() == OrderByExpression.Order.DESC)
+                        {
+                            order = -1;
+                        }
+                        return order * comparisonResult;
+                    }
+                    index++;
+                }
+                catch (ClassCastException e)
+                {
+                    throw new EvaluationException(String.format("The orderBy expression at position '%d' is unsupported", index), e);
+                }
+            }
+            return comparisonResult;
+        }
+    }
+
+    private List<ConfiguredObject<?>> orderObjects(final List<ConfiguredObject<?>> unorderedResults,
+                                                   String orderByClause,
+                                                   final List<Expression> valueExpressions)
+    {
+        List<OrderByExpression> orderByExpressions = parseOrderByClause(orderByClause);
+        List<ConfiguredObject<?>> orderedObjects = new ArrayList<>(unorderedResults.size());
+        orderedObjects.addAll(unorderedResults);
+        Comparator<Object> comparator = new OrderByComparator(orderByExpressions, valueExpressions);
+        Collections.sort(orderedObjects, comparator);
+        return orderedObjects;
+    }
+
+    private List<OrderByExpression> parseOrderByClause(final String orderByClause)
+    {
+        final List<OrderByExpression> orderByExpressions;
+        ConfiguredObjectFilterParser parser = new ConfiguredObjectFilterParser();
+        parser.setConfiguredObjectExpressionFactory(_expressionFactory);
+        try
+        {
+            orderByExpressions = parser.parseOrderBy(orderByClause);
+        }
+        catch (ParseException | TokenMgrError e)
+        {
+            throw new SelectorParsingException("Unable to parse orderBy clause", e);
+        }
+        return orderByExpressions;
+    }
 
 
 }

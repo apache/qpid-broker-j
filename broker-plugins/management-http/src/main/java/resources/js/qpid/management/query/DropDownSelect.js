@@ -119,6 +119,7 @@ function(declare, lang, array, json, domConstruct, template, Grid, Keyboard, Sel
                         */
                        _optionsGrid: null,
                        _descending: false,
+                       _selectedItems: [],
 
                        postCreate:  function()
                                     {
@@ -162,11 +163,35 @@ function(declare, lang, array, json, domConstruct, template, Grid, Keyboard, Sel
                                                                  deselectOnRefresh: false
                                                                },
                                                                this.optionsGrid);
-                                      grid.on('dgrid-select', lang.hitch(this, this._selectionChanged));
-                                      grid.on('dgrid-deselect', lang.hitch(this, this._selectionChanged));
+                                      grid.on('dgrid-select', lang.hitch(this, this._gridSelected));
+                                      grid.on('dgrid-deselect', lang.hitch(this, this._gridDeselected));
                                       grid.on('dgrid-sort', lang.hitch(this, function(event){this._descending = event.sort[0].descending}));
                                       grid.setTotal(this.items ? this.items.length : 0);
                                       this._optionsGrid =  grid;
+                                   },
+                       _gridSelected: function(event)
+                                   {
+                                     for (var i = 0; i < event.rows.length; ++i)
+                                     {
+                                         this._selectedItems.push(event.rows[i].data);
+                                     }
+                                     this._selectionChanged();
+                                   },
+                       _gridDeselected: function(event)
+                                   {
+                                       for (var i = 0; i < event.rows.length; ++i)
+                                       {
+                                           var id = event.rows[i].id;
+                                           for (var j = 0; j < this._selectedItems.length; ++j)
+                                           {
+                                               if (this._selectedItems[j].id === id)
+                                               {
+                                                   this._selectedItems.splice(j, 1);
+                                                   break;
+                                               }
+                                           }
+                                       }
+                                       this._selectionChanged();
                                    },
                        _setDataAttr:function(data)
                                     {
@@ -181,11 +206,7 @@ function(declare, lang, array, json, domConstruct, template, Grid, Keyboard, Sel
                                       }
 
                                       var store;
-                                      if (data.store)
-                                      {
-                                        store = data.store;
-                                      }
-                                      else if (data.items)
+                                      if (data.items)
                                       {
                                         store = new Memory({data: data.items, idProperty: this.idProperty});
                                         this.items = data.items;
@@ -206,32 +227,56 @@ function(declare, lang, array, json, domConstruct, template, Grid, Keyboard, Sel
                                           this._selectGrid(data.selected);
                                       }
                                     },
+                       _findItemById: function(items, idValue)
+                                    {
+                                        for (var i = 0; i < items.length; ++i)
+                                        {
+                                            if (items[i][this.idProperty] === idValue)
+                                            {
+                                                return items[i];
+                                            }
+                                        }
+                                        return null;
+                                    },
                        _selectGrid: function(selected)
                                     {
-                                      var selectedRowIds = lang.clone(this._optionsGrid.selection || {});
-                                      if (selected && selected.length && this.store)
-                                      {
-                                        for(var i=0;i<selected.length;i++)
+                                        var items = [];
+                                        if (selected && selected.length && !selected[0].hasOwnProperty(this.idProperty))
                                         {
-                                          var id = selected[i] && selected[i].hasOwnProperty(this.idProperty) ? selected[i][this.idProperty] : selected[i];
-                                          if (id in selectedRowIds)
-                                          {
-                                            delete selectedRowIds[id];
-                                          }
-                                          else
-                                          {
-                                            this._optionsGrid.select(id, null, true);
-                                          }
+                                            for (var i = 0; i < selected.length; ++i)
+                                            {
+                                                var item = this._findItemById(this.items, selected[i]);
+                                                if (item)
+                                                {
+                                                    items.push(item);
+                                                }
+                                            }
                                         }
-                                      }
+                                        else
+                                        {
+                                            items = lang.clone(selected);
+                                        }
 
-                                      for (var id in selectedRowIds)
-                                      {
-                                        if (this._optionsGrid.selection[id])
+                                        var selectedItems = lang.clone(this._selectedItems);
+                                        for (var i = 0; i < selectedItems.length; ++i)
                                         {
-                                           this._optionsGrid.select(id, null, false);
+                                            var currentItem = selectedItems[i];
+                                            var item = this._findItemById(items, currentItem[this.idProperty]);
+                                            if (!item)
+                                            {
+                                                this._optionsGrid.deselect(currentItem);
+                                            }
                                         }
-                                      }
+                                        for (var i = 0; i < items.length; ++i)
+                                        {
+                                            var currentItem = items[i];
+                                            var item = this._findItemById(this._selectedItems, currentItem[this.idProperty]);
+                                            if (!item)
+                                            {
+                                                this._optionsGrid.select(currentItem);
+                                            }
+                                        }
+                                        this._selectedItems = items;
                                     },
                        _onClear:    function()
                                     {
@@ -262,7 +307,7 @@ function(declare, lang, array, json, domConstruct, template, Grid, Keyboard, Sel
                                     },
                        _selectionChanged: function(event)
                                     {
-                                      this.doneButton.set("disabled", !this._isSelected());
+                                      this.doneButton.set("disabled", this._selectedItems.length === 0);
                                     },
                        _getOptionColumns: function()
                                     {
@@ -270,42 +315,18 @@ function(declare, lang, array, json, domConstruct, template, Grid, Keyboard, Sel
                                       columns[this.nameProperty] = { label:"Name", sortable: true }
                                       return columns;
                                     },
-                       _isSelected: function()
-                                    {
-                                      var selectionFound = false;
-                                      for (var id in this._optionsGrid.selection)
-                                      {
-                                          if (this._optionsGrid.selection[id])
-                                          {
-                                             selectionFound = true;
-                                             break;
-                                          }
-                                      }
-                                      return selectionFound;
-                                    },
                        _getSelectedItemsAttr: function()
                                     {
-                                      var selected = [];
-                                      if (this.store && this._optionsGrid.selection)
-                                      {
-                                        for (var id in this._optionsGrid.selection)
-                                        {
-                                          if (this._optionsGrid.selection[id])
-                                          {
-                                            selected.push(id);
-                                          }
-                                        }
-                                      }
-                                      var filter = new this.store.Filter().in(this.idProperty, selected);
-                                      var promise = this.store.filter(filter).fetch();
-                                      return promise;
+                                      return lang.clone(this._selectedItems);
                                     },
                        _reset:      function(items)
                                     {
                                       this._onClear();
 
-                                      items = items || [];
-                                      this._selectGrid(items);
+                                      if (items)
+                                      {
+                                          this._selectGrid(items);
+                                      }
                                     }
                    });
 
@@ -344,13 +365,7 @@ function(declare, lang, array, json, domConstruct, template, Grid, Keyboard, Sel
                        _setDataAttr:function(data)
                                     {
                                       this._optionsPanel.set("data", data);
-                                      var promise = this._optionsPanel.get("selectedItems");
-                                      dojo.when(promise,
-                                                lang.hitch(this,
-                                                           function(selectedItems)
-                                                           {
-                                                             this._selectedItems = selectedItems;
-                                                           }));
+                                      this._selectedItems = this._optionsPanel.get("selectedItems");
                                     },
                        _getSelectedItemsAttr: function()
                                     {
@@ -358,13 +373,10 @@ function(declare, lang, array, json, domConstruct, template, Grid, Keyboard, Sel
                                     },
                        _onSelectionDone: function()
                                     {
-                                      var promise = this._optionsPanel.get("selectedItems");
-                                      dojo.when(promise, lang.hitch(this, function(selectedItems)
-                                                                          {
-                                                                            this._selectedItems = selectedItems;
-                                                                            this._hideAndResetSearch(selectedItems);
-                                                                            this.emit("change", selectedItems);
-                                                                          }));
+                                      this._selectedItems = this._optionsPanel.get("selectedItems");
+                                      popup.close(this._optionsDialog);
+                                      this._optionsPanel._reset();
+                                      this.emit("change", this._selectedItems);
                                     },
                        _hideAndResetSearch: function()
                                     {
@@ -375,11 +387,11 @@ function(declare, lang, array, json, domConstruct, template, Grid, Keyboard, Sel
                                     {
                                       this._optionsPanel._reset(this._selectedItems);
                                     },
-                       _setDisabled:function(value)
+                       _setDisabledAttr:function(value)
                                     {
                                       this._selectButton.set("disabled", value);
                                     },
-                       _getDisabled:function()
+                       _getDisabledAttr:function()
                                     {
                                       return  this._selectButton.get("disabled")
                                     },

@@ -26,7 +26,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
+import org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
@@ -145,7 +145,7 @@ public class ExchangeRestACLTest extends QpidRestTestCase
         attributes.put(Exchange.ALTERNATE_EXCHANGE, "my-alternate-exchange");
 
         responseCode = getRestTestHelper().submitRequest(_exchangeUrl, "PUT", attributes);
-        assertEquals("Exchange 'my-alternate-exchange' does not exist", RestServlet.SC_UNPROCESSABLE_ENTITY, responseCode);
+        assertEquals("Exchange 'my-alternate-exchange' does not exist", AbstractServlet.SC_UNPROCESSABLE_ENTITY, responseCode);
     }
 
     public void testSetExchangeAttributesDenied() throws Exception

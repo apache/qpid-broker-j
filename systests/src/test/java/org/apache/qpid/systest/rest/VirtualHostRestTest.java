@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.systest.rest;
 
-import static org.apache.qpid.server.management.plugin.servlet.rest.RestServlet.SC_UNPROCESSABLE_ENTITY;
+import static org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet.SC_UNPROCESSABLE_ENTITY;
 
 import java.io.IOException;
 import java.net.URLEncoder;

@@ -29,7 +29,7 @@ import java.util.UUID;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.BrokerOptions;
-import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
+import org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -140,7 +140,7 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
         attributes.put(AuthenticationProvider.ID, UUID.randomUUID());
 
         responseCode = getRestTestHelper().submitRequest("authenticationprovider/" + providerName, "PUT", attributes);
-        assertEquals("Update with new ID should fail", RestServlet.SC_UNPROCESSABLE_ENTITY, responseCode);
+        assertEquals("Update with new ID should fail", AbstractServlet.SC_UNPROCESSABLE_ENTITY, responseCode);
     }
 
     public void testDeleteOfUsedAuthenticationProviderFails() throws Exception

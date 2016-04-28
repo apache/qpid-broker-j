@@ -33,6 +33,7 @@ import org.apache.qpid.filter.BooleanExpression;
 import org.apache.qpid.filter.ComparisonExpression;
 import org.apache.qpid.filter.ConstantExpression;
 import org.apache.qpid.filter.Expression;
+import org.apache.qpid.filter.OrderByExpression;
 import org.apache.qpid.filter.LogicExpression;
 import org.apache.qpid.filter.UnaryExpression;
 
@@ -71,6 +72,13 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
 
         return selectClause();
 
+    }
+
+    public List<OrderByExpression> parseOrderBy(String sql) throws ParseException
+    {
+        this.ReInit(new StringReader(sql));
+
+        return orderByClause();
     }
 
     private BooleanExpression<ConfiguredObject<?>> asBooleanExpression(Expression<ConfiguredObject<?>> value) throws ParseException
@@ -146,21 +154,21 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case IS:
-      case 29:
-      case 30:
+      case 31:
+      case 32:
         ;
         break;
       default:
         break label_3;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-      case 29:
-        jj_consume_token(29);
+      case 31:
+        jj_consume_token(31);
         right = comparisonExpression();
                 left = ComparisonExpression.createEqual(left, right);
         break;
-      case 30:
-        jj_consume_token(30);
+      case 32:
+        jj_consume_token(32);
         right = comparisonExpression();
                 left = ComparisonExpression.createNotEqual(left, right);
         break;
@@ -204,33 +212,33 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
       case BETWEEN:
       case LIKE:
       case IN:
-      case 31:
-      case 32:
       case 33:
       case 34:
+      case 35:
+      case 36:
         ;
         break;
       default:
         break label_4;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-      case 31:
-        jj_consume_token(31);
-        right = addExpression();
-                    left = ComparisonExpression.createGreaterThan(left, right);
-        break;
-      case 32:
-        jj_consume_token(32);
-        right = addExpression();
-                    left = ComparisonExpression.createGreaterThanEqual(left, right);
-        break;
       case 33:
         jj_consume_token(33);
         right = addExpression();
-                    left = ComparisonExpression.createLessThan(left, right);
+                    left = ComparisonExpression.createGreaterThan(left, right);
         break;
       case 34:
         jj_consume_token(34);
+        right = addExpression();
+                    left = ComparisonExpression.createGreaterThanEqual(left, right);
+        break;
+      case 35:
+        jj_consume_token(35);
+        right = addExpression();
+                    left = ComparisonExpression.createLessThan(left, right);
+        break;
+      case 36:
+        jj_consume_token(36);
         right = addExpression();
                     left = ComparisonExpression.createLessThanEqual(left, right);
         break;
@@ -284,48 +292,48 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
               switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
               case IN:
                 jj_consume_token(IN);
-                jj_consume_token(35);
+                jj_consume_token(37);
                 right = primaryExpr();
                                     list = new ArrayList();
                                     list.add( right );
                 label_5:
                 while (true) {
                   switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-                  case 36:
+                  case 38:
                     ;
                     break;
                   default:
                     break label_5;
                   }
-                  jj_consume_token(36);
+                  jj_consume_token(38);
                   right = primaryExpr();
                                             list.add( right );
                 }
-                jj_consume_token(37);
+                jj_consume_token(39);
                            left = ComparisonExpression.createInFilter(left, list, true );
                 break;
               default:
                 if (jj_2_4(2)) {
                   jj_consume_token(NOT);
                   jj_consume_token(IN);
-                  jj_consume_token(35);
+                  jj_consume_token(37);
                   right = primaryExpr();
                                     list = new ArrayList();
                                     list.add( right );
                   label_6:
                   while (true) {
                     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-                    case 36:
+                    case 38:
                       ;
                       break;
                     default:
                       break label_6;
                     }
-                    jj_consume_token(36);
+                    jj_consume_token(38);
                     right = primaryExpr();
                                             list.add( right );
                   }
-                  jj_consume_token(37);
+                  jj_consume_token(39);
                            left = ComparisonExpression.createNotInFilter(left, list, true);
                 } else {
                   jj_consume_token(-1);
@@ -353,13 +361,13 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
         break label_7;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-      case 38:
-        jj_consume_token(38);
+      case 40:
+        jj_consume_token(40);
         right = multExpr();
                     left = ArithmeticExpression.createPlus(left, right);
         break;
-      case 39:
-        jj_consume_token(39);
+      case 41:
+        jj_consume_token(41);
         right = multExpr();
                     left = ArithmeticExpression.createMinus(left, right);
         break;
@@ -379,27 +387,27 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     label_8:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-      case 40:
-      case 41:
       case 42:
+      case 43:
+      case 44:
         ;
         break;
       default:
         break label_8;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-      case 40:
-        jj_consume_token(40);
+      case 42:
+        jj_consume_token(42);
         right = unaryExpr();
                 left = ArithmeticExpression.createMultiply(left, right);
         break;
-      case 41:
-        jj_consume_token(41);
+      case 43:
+        jj_consume_token(43);
         right = unaryExpr();
                 left = ArithmeticExpression.createDivide(left, right);
         break;
-      case 42:
-        jj_consume_token(42);
+      case 44:
+        jj_consume_token(44);
         right = unaryExpr();
                 left = ArithmeticExpression.createMod(left, right);
         break;
@@ -416,12 +424,12 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     String s=null;
     Expression left=null;
     if (jj_2_6(2147483647)) {
-      jj_consume_token(38);
+      jj_consume_token(40);
       left = unaryExpr();
     } else {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-      case 39:
-        jj_consume_token(39);
+      case 41:
+        jj_consume_token(41);
         left = unaryExpr();
                 left = UnaryExpression.createNegate(left);
         break;
@@ -441,7 +449,7 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
       case FUNCTIONNAME:
       case ID:
       case QUOTED_ID:
-      case 35:
+      case 37:
         left = primaryExpr();
         break;
       default:
@@ -473,10 +481,10 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     case QUOTED_ID:
       left = variable();
       break;
-    case 35:
-      jj_consume_token(35);
-      left = orExpression();
+    case 37:
       jj_consume_token(37);
+      left = orExpression();
+      jj_consume_token(39);
       break;
     default:
       jj_consume_token(-1);
@@ -556,14 +564,14 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     ConfiguredObjectExpression right;
     if (jj_2_7(2)) {
       s = identifier();
-      jj_consume_token(43);
+      jj_consume_token(45);
       right = variable();
         {if (true) return _factory.createConfiguredObjectExpression( s, right );}
     } else if (jj_2_8(2)) {
       s = identifier();
-      jj_consume_token(44);
+      jj_consume_token(46);
       t = jj_consume_token(DECIMAL_LITERAL);
-      jj_consume_token(45);
+      jj_consume_token(47);
         {if (true) return _factory.createConfiguredObjectExpression( s, Integer.valueOf( t.image ) );}
     } else {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -598,19 +606,19 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     case FUNCTIONNAME:
     case ID:
     case QUOTED_ID:
-    case 35:
+    case 37:
       expr = primaryExpr();
                                                     args.add(expr);
       label_9:
       while (true) {
         switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-        case 36:
+        case 38:
           ;
           break;
         default:
           break label_9;
         }
-        jj_consume_token(36);
+        jj_consume_token(38);
         expr = primaryExpr();
                                                                                                    args.add(expr);
       }
@@ -618,7 +626,7 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     default:
       ;
     }
-    jj_consume_token(37);
+    jj_consume_token(39);
         {if (true) return _factory.createFunctionExpression( t.image.substring(0, t.image.length() - 1), args );}
     throw new Error("Missing return statement in function");
   }
@@ -662,13 +670,13 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     label_10:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-      case 36:
+      case 38:
         ;
         break;
       default:
         break label_10;
       }
-      jj_consume_token(36);
+      jj_consume_token(38);
       element = selectClauseElement();
                                               returnVal.add( element );
     }
@@ -693,6 +701,56 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
               name = ( expr instanceof NamedExpression ) ?  ((NamedExpression) expr).getName() : "";
           }
           {if (true) return Collections.singletonMap( name, expr );}
+    throw new Error("Missing return statement in function");
+  }
+
+  final public List<OrderByExpression> orderByClause() throws ParseException {
+    List<OrderByExpression> returnVal = new ArrayList<OrderByExpression>();
+    OrderByExpression element;
+    element = orderByClauseElement();
+                                         returnVal.add( element );
+    label_11:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case 38:
+        ;
+        break;
+      default:
+        break label_11;
+      }
+      jj_consume_token(38);
+      element = orderByClauseElement();
+                                               returnVal.add( element );
+    }
+        {if (true) return returnVal;}
+    throw new Error("Missing return statement in function");
+  }
+
+  final public OrderByExpression orderByClauseElement() throws ParseException {
+    Expression expr;
+    OrderByExpression orderByExpr;
+    OrderByExpression.Order order = OrderByExpression.Order.ASC;
+    expr = primaryExpr();
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case ASC:
+    case DESC:
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case ASC:
+        jj_consume_token(ASC);
+        break;
+      case DESC:
+        jj_consume_token(DESC);
+                                              order = OrderByExpression.Order.DESC;
+        break;
+      default:
+        jj_consume_token(-1);
+        throw new ParseException();
+      }
+      break;
+    default:
+      ;
+    }
+          {if (true) return new OrderByExpression(expr, order);}
     throw new Error("Missing return statement in function");
   }
 
@@ -744,98 +802,38 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  private boolean jj_3R_54() {
-    if (jj_scan_token(30)) return true;
-    if (jj_3R_49()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_13() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_19()) {
-    jj_scanpos = xsp;
-    if (jj_3R_20()) return true;
-    }
-    return false;
-  }
-
-  private boolean jj_3_3() {
-    if (jj_scan_token(NOT)) return true;
-    if (jj_scan_token(BETWEEN)) return true;
-    if (jj_3R_51()) return true;
-    if (jj_scan_token(AND)) return true;
-    if (jj_3R_51()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_53() {
-    if (jj_scan_token(29)) return true;
-    if (jj_3R_49()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_50() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_53()) {
-    jj_scanpos = xsp;
-    if (jj_3R_54()) {
-    jj_scanpos = xsp;
-    if (jj_3_1()) {
-    jj_scanpos = xsp;
-    if (jj_3R_55()) return true;
-    }
-    }
-    }
+  private boolean jj_3R_67() {
+    if (jj_scan_token(ESCAPE)) return true;
+    if (jj_3R_47()) return true;
     return false;
   }
 
   private boolean jj_3R_39() {
-    if (jj_scan_token(TRUE)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_62() {
-    if (jj_scan_token(BETWEEN)) return true;
-    if (jj_3R_51()) return true;
-    if (jj_scan_token(AND)) return true;
-    if (jj_3R_51()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_66() {
-    if (jj_scan_token(ESCAPE)) return true;
-    if (jj_3R_46()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_38() {
     if (jj_scan_token(FLOATING_POINT_LITERAL)) return true;
     return false;
   }
 
-  private boolean jj_3R_23() {
-    if (jj_scan_token(42)) return true;
-    if (jj_3R_12()) return true;
+  private boolean jj_3R_24() {
+    if (jj_scan_token(44)) return true;
+    if (jj_3R_13()) return true;
     return false;
   }
 
-  private boolean jj_3R_29() {
+  private boolean jj_3R_30() {
     if (jj_scan_token(FUNCTIONNAME)) return true;
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3R_33()) jj_scanpos = xsp;
-    if (jj_scan_token(37)) return true;
+    if (jj_3R_34()) jj_scanpos = xsp;
+    if (jj_scan_token(39)) return true;
     return false;
   }
 
-  private boolean jj_3R_47() {
-    if (jj_3R_49()) return true;
+  private boolean jj_3R_48() {
+    if (jj_3R_50()) return true;
     Token xsp;
     while (true) {
       xsp = jj_scanpos;
-      if (jj_3R_50()) { jj_scanpos = xsp; break; }
+      if (jj_3R_51()) { jj_scanpos = xsp; break; }
     }
     return false;
   }
@@ -843,95 +841,95 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
   private boolean jj_3_2() {
     if (jj_scan_token(NOT)) return true;
     if (jj_scan_token(LIKE)) return true;
-    if (jj_3R_46()) return true;
+    if (jj_3R_47()) return true;
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_68()) jj_scanpos = xsp;
+    return false;
+  }
+
+  private boolean jj_3R_62() {
+    if (jj_scan_token(LIKE)) return true;
+    if (jj_3R_47()) return true;
     Token xsp;
     xsp = jj_scanpos;
     if (jj_3R_67()) jj_scanpos = xsp;
     return false;
   }
 
-  private boolean jj_3R_61() {
-    if (jj_scan_token(LIKE)) return true;
-    if (jj_3R_46()) return true;
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_66()) jj_scanpos = xsp;
-    return false;
-  }
-
-  private boolean jj_3R_37() {
+  private boolean jj_3R_38() {
     if (jj_scan_token(OCTAL_LITERAL)) return true;
     return false;
   }
 
+  private boolean jj_3R_23() {
+    if (jj_scan_token(43)) return true;
+    if (jj_3R_13()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_15() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_22()) {
+    jj_scanpos = xsp;
+    if (jj_3R_23()) {
+    jj_scanpos = xsp;
+    if (jj_3R_24()) return true;
+    }
+    }
+    return false;
+  }
+
   private boolean jj_3R_22() {
+    if (jj_scan_token(42)) return true;
+    if (jj_3R_13()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_49() {
+    if (jj_scan_token(AND)) return true;
+    if (jj_3R_48()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_37() {
+    if (jj_scan_token(HEX_LITERAL)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_12() {
+    if (jj_3R_13()) return true;
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3R_15()) { jj_scanpos = xsp; break; }
+    }
+    return false;
+  }
+
+  private boolean jj_3R_43() {
+    if (jj_3R_14()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_36() {
+    if (jj_scan_token(DECIMAL_LITERAL)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_66() {
     if (jj_scan_token(41)) return true;
     if (jj_3R_12()) return true;
     return false;
   }
 
-  private boolean jj_3R_14() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_21()) {
-    jj_scanpos = xsp;
-    if (jj_3R_22()) {
-    jj_scanpos = xsp;
-    if (jj_3R_23()) return true;
-    }
-    }
-    return false;
-  }
-
-  private boolean jj_3R_21() {
-    if (jj_scan_token(40)) return true;
-    if (jj_3R_12()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_48() {
-    if (jj_scan_token(AND)) return true;
-    if (jj_3R_47()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_36() {
-    if (jj_scan_token(HEX_LITERAL)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_11() {
-    if (jj_3R_12()) return true;
+  private boolean jj_3R_44() {
+    if (jj_3R_48()) return true;
     Token xsp;
     while (true) {
       xsp = jj_scanpos;
-      if (jj_3R_14()) { jj_scanpos = xsp; break; }
-    }
-    return false;
-  }
-
-  private boolean jj_3R_42() {
-    if (jj_3R_13()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_35() {
-    if (jj_scan_token(DECIMAL_LITERAL)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_65() {
-    if (jj_scan_token(39)) return true;
-    if (jj_3R_11()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_43() {
-    if (jj_3R_47()) return true;
-    Token xsp;
-    while (true) {
-      xsp = jj_scanpos;
-      if (jj_3R_48()) { jj_scanpos = xsp; break; }
+      if (jj_3R_49()) { jj_scanpos = xsp; break; }
     }
     return false;
   }
@@ -939,56 +937,54 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
   private boolean jj_3_5() {
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_scan_token(38)) {
+    if (jj_scan_token(40)) {
     jj_scanpos = xsp;
-    if (jj_scan_token(39)) return true;
+    if (jj_scan_token(41)) return true;
     }
-    if (jj_3R_11()) return true;
+    if (jj_3R_12()) return true;
     return false;
   }
 
-  private boolean jj_3R_60() {
-    if (jj_scan_token(34)) return true;
-    if (jj_3R_51()) return true;
+  private boolean jj_3R_61() {
+    if (jj_scan_token(36)) return true;
+    if (jj_3R_52()) return true;
     return false;
   }
 
-  private boolean jj_3R_34() {
-    if (jj_3R_46()) return true;
+  private boolean jj_3R_35() {
+    if (jj_3R_47()) return true;
     return false;
   }
 
   private boolean jj_3_8() {
-    if (jj_3R_13()) return true;
-    if (jj_scan_token(44)) return true;
+    if (jj_3R_14()) return true;
+    if (jj_scan_token(46)) return true;
     if (jj_scan_token(DECIMAL_LITERAL)) return true;
-    if (jj_scan_token(45)) return true;
+    if (jj_scan_token(47)) return true;
     return false;
   }
 
-  private boolean jj_3R_45() {
-    if (jj_scan_token(36)) return true;
-    if (jj_3R_24()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_64() {
+  private boolean jj_3R_46() {
     if (jj_scan_token(38)) return true;
-    if (jj_3R_11()) return true;
+    if (jj_3R_25()) return true;
     return false;
   }
 
-  private boolean jj_3R_59() {
-    if (jj_scan_token(33)) return true;
-    if (jj_3R_51()) return true;
+  private boolean jj_3R_65() {
+    if (jj_scan_token(40)) return true;
+    if (jj_3R_12()) return true;
     return false;
   }
 
-  private boolean jj_3R_30() {
+  private boolean jj_3R_60() {
+    if (jj_scan_token(35)) return true;
+    if (jj_3R_52()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_31() {
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3R_34()) {
-    jj_scanpos = xsp;
     if (jj_3R_35()) {
     jj_scanpos = xsp;
     if (jj_3R_36()) {
@@ -1001,7 +997,9 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     jj_scanpos = xsp;
     if (jj_3R_40()) {
     jj_scanpos = xsp;
-    if (jj_3R_41()) return true;
+    if (jj_3R_41()) {
+    jj_scanpos = xsp;
+    if (jj_3R_42()) return true;
     }
     }
     }
@@ -1012,65 +1010,63 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
-  private boolean jj_3R_69() {
-    if (jj_scan_token(36)) return true;
-    if (jj_3R_24()) return true;
+  private boolean jj_3R_70() {
+    if (jj_scan_token(38)) return true;
+    if (jj_3R_25()) return true;
     return false;
   }
 
-  private boolean jj_3R_56() {
+  private boolean jj_3R_57() {
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3R_64()) {
+    if (jj_3R_65()) {
     jj_scanpos = xsp;
-    if (jj_3R_65()) return true;
+    if (jj_3R_66()) return true;
     }
     return false;
   }
 
-  private boolean jj_3R_44() {
+  private boolean jj_3R_45() {
     if (jj_scan_token(OR)) return true;
-    if (jj_3R_43()) return true;
+    if (jj_3R_44()) return true;
     return false;
   }
 
   private boolean jj_3_7() {
-    if (jj_3R_13()) return true;
-    if (jj_scan_token(43)) return true;
-    if (jj_3R_31()) return true;
+    if (jj_3R_14()) return true;
+    if (jj_scan_token(45)) return true;
+    if (jj_3R_32()) return true;
     return false;
   }
 
-  private boolean jj_3R_31() {
+  private boolean jj_3R_32() {
     Token xsp;
     xsp = jj_scanpos;
     if (jj_3_7()) {
     jj_scanpos = xsp;
     if (jj_3_8()) {
     jj_scanpos = xsp;
-    if (jj_3R_42()) return true;
+    if (jj_3R_43()) return true;
     }
     }
+    return false;
+  }
+
+  private boolean jj_3R_59() {
+    if (jj_scan_token(34)) return true;
+    if (jj_3R_52()) return true;
     return false;
   }
 
   private boolean jj_3R_58() {
-    if (jj_scan_token(32)) return true;
-    if (jj_3R_51()) return true;
+    if (jj_scan_token(33)) return true;
+    if (jj_3R_52()) return true;
     return false;
   }
 
-  private boolean jj_3R_57() {
-    if (jj_scan_token(31)) return true;
-    if (jj_3R_51()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_52() {
+  private boolean jj_3R_53() {
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3R_57()) {
-    jj_scanpos = xsp;
     if (jj_3R_58()) {
     jj_scanpos = xsp;
     if (jj_3R_59()) {
@@ -1079,13 +1075,15 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     jj_scanpos = xsp;
     if (jj_3R_61()) {
     jj_scanpos = xsp;
+    if (jj_3R_62()) {
+    jj_scanpos = xsp;
     if (jj_3_2()) {
     jj_scanpos = xsp;
-    if (jj_3R_62()) {
+    if (jj_3R_63()) {
     jj_scanpos = xsp;
     if (jj_3_3()) {
     jj_scanpos = xsp;
-    if (jj_3R_63()) {
+    if (jj_3R_64()) {
     jj_scanpos = xsp;
     if (jj_3_4()) return true;
     }
@@ -1100,30 +1098,35 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
-  private boolean jj_3R_51() {
-    if (jj_3R_11()) return true;
+  private boolean jj_3R_52() {
+    if (jj_3R_12()) return true;
     Token xsp;
     while (true) {
       xsp = jj_scanpos;
-      if (jj_3R_56()) { jj_scanpos = xsp; break; }
+      if (jj_3R_57()) { jj_scanpos = xsp; break; }
+    }
+    return false;
+  }
+
+  private boolean jj_3R_29() {
+    if (jj_scan_token(37)) return true;
+    if (jj_3R_33()) return true;
+    if (jj_scan_token(39)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_33() {
+    if (jj_3R_44()) return true;
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3R_45()) { jj_scanpos = xsp; break; }
     }
     return false;
   }
 
   private boolean jj_3R_28() {
-    if (jj_scan_token(35)) return true;
     if (jj_3R_32()) return true;
-    if (jj_scan_token(37)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_32() {
-    if (jj_3R_43()) return true;
-    Token xsp;
-    while (true) {
-      xsp = jj_scanpos;
-      if (jj_3R_44()) { jj_scanpos = xsp; break; }
-    }
     return false;
   }
 
@@ -1137,44 +1140,39 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
+  private boolean jj_3R_69() {
+    if (jj_scan_token(38)) return true;
+    if (jj_3R_25()) return true;
+    return false;
+  }
+
   private boolean jj_3R_25() {
-    if (jj_3R_29()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_68() {
-    if (jj_scan_token(36)) return true;
-    if (jj_3R_24()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_24() {
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3R_25()) {
-    jj_scanpos = xsp;
     if (jj_3R_26()) {
     jj_scanpos = xsp;
     if (jj_3R_27()) {
     jj_scanpos = xsp;
-    if (jj_3R_28()) return true;
+    if (jj_3R_28()) {
+    jj_scanpos = xsp;
+    if (jj_3R_29()) return true;
     }
     }
     }
     return false;
   }
 
-  private boolean jj_3R_49() {
-    if (jj_3R_51()) return true;
+  private boolean jj_3R_50() {
+    if (jj_3R_52()) return true;
     Token xsp;
     while (true) {
       xsp = jj_scanpos;
-      if (jj_3R_52()) { jj_scanpos = xsp; break; }
+      if (jj_3R_53()) { jj_scanpos = xsp; break; }
     }
     return false;
   }
 
-  private boolean jj_3R_46() {
+  private boolean jj_3R_47() {
     if (jj_scan_token(STRING_LITERAL)) return true;
     return false;
   }
@@ -1182,88 +1180,88 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
   private boolean jj_3_4() {
     if (jj_scan_token(NOT)) return true;
     if (jj_scan_token(IN)) return true;
-    if (jj_scan_token(35)) return true;
-    if (jj_3R_24()) return true;
+    if (jj_scan_token(37)) return true;
+    if (jj_3R_25()) return true;
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3R_70()) { jj_scanpos = xsp; break; }
+    }
+    if (jj_scan_token(39)) return true;
+    return false;
+  }
+
+  private boolean jj_3_6() {
+    if (jj_scan_token(40)) return true;
+    if (jj_3R_13()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_68() {
+    if (jj_scan_token(ESCAPE)) return true;
+    if (jj_3R_47()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_19() {
+    if (jj_3R_25()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_18() {
+    if (jj_scan_token(NOT)) return true;
+    if (jj_3R_13()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_16() {
+    if (jj_scan_token(40)) return true;
+    if (jj_3R_13()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_64() {
+    if (jj_scan_token(IN)) return true;
+    if (jj_scan_token(37)) return true;
+    if (jj_3R_25()) return true;
     Token xsp;
     while (true) {
       xsp = jj_scanpos;
       if (jj_3R_69()) { jj_scanpos = xsp; break; }
     }
-    if (jj_scan_token(37)) return true;
+    if (jj_scan_token(39)) return true;
     return false;
   }
 
-  private boolean jj_3_6() {
-    if (jj_scan_token(38)) return true;
-    if (jj_3R_12()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_67() {
-    if (jj_scan_token(ESCAPE)) return true;
-    if (jj_3R_46()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_18() {
-    if (jj_3R_24()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_17() {
-    if (jj_scan_token(NOT)) return true;
-    if (jj_3R_12()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_15() {
-    if (jj_scan_token(38)) return true;
-    if (jj_3R_12()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_63() {
-    if (jj_scan_token(IN)) return true;
-    if (jj_scan_token(35)) return true;
-    if (jj_3R_24()) return true;
-    Token xsp;
-    while (true) {
-      xsp = jj_scanpos;
-      if (jj_3R_68()) { jj_scanpos = xsp; break; }
-    }
-    if (jj_scan_token(37)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_55() {
+  private boolean jj_3R_56() {
     if (jj_scan_token(IS)) return true;
     if (jj_scan_token(NOT)) return true;
     if (jj_scan_token(NULL)) return true;
     return false;
   }
 
-  private boolean jj_3R_16() {
-    if (jj_scan_token(39)) return true;
-    if (jj_3R_12()) return true;
+  private boolean jj_3R_17() {
+    if (jj_scan_token(41)) return true;
+    if (jj_3R_13()) return true;
     return false;
   }
 
-  private boolean jj_3R_33() {
-    if (jj_3R_24()) return true;
+  private boolean jj_3R_34() {
+    if (jj_3R_25()) return true;
     Token xsp;
     while (true) {
       xsp = jj_scanpos;
-      if (jj_3R_45()) { jj_scanpos = xsp; break; }
+      if (jj_3R_46()) { jj_scanpos = xsp; break; }
     }
     return false;
   }
 
-  private boolean jj_3R_20() {
+  private boolean jj_3R_21() {
     if (jj_scan_token(QUOTED_ID)) return true;
     return false;
   }
 
-  private boolean jj_3R_41() {
+  private boolean jj_3R_42() {
     if (jj_scan_token(NULL)) return true;
     return false;
   }
@@ -1274,21 +1272,73 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
-  private boolean jj_3R_19() {
+  private boolean jj_3R_20() {
     if (jj_scan_token(ID)) return true;
     return false;
   }
 
-  private boolean jj_3R_12() {
+  private boolean jj_3R_13() {
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3R_15()) {
-    jj_scanpos = xsp;
     if (jj_3R_16()) {
     jj_scanpos = xsp;
     if (jj_3R_17()) {
     jj_scanpos = xsp;
-    if (jj_3R_18()) return true;
+    if (jj_3R_18()) {
+    jj_scanpos = xsp;
+    if (jj_3R_19()) return true;
+    }
+    }
+    }
+    return false;
+  }
+
+  private boolean jj_3R_41() {
+    if (jj_scan_token(FALSE)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_55() {
+    if (jj_scan_token(32)) return true;
+    if (jj_3R_50()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_14() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_20()) {
+    jj_scanpos = xsp;
+    if (jj_3R_21()) return true;
+    }
+    return false;
+  }
+
+  private boolean jj_3_3() {
+    if (jj_scan_token(NOT)) return true;
+    if (jj_scan_token(BETWEEN)) return true;
+    if (jj_3R_52()) return true;
+    if (jj_scan_token(AND)) return true;
+    if (jj_3R_52()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_54() {
+    if (jj_scan_token(31)) return true;
+    if (jj_3R_50()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_51() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_54()) {
+    jj_scanpos = xsp;
+    if (jj_3R_55()) {
+    jj_scanpos = xsp;
+    if (jj_3_1()) {
+    jj_scanpos = xsp;
+    if (jj_3R_56()) return true;
     }
     }
     }
@@ -1296,7 +1346,15 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
   }
 
   private boolean jj_3R_40() {
-    if (jj_scan_token(FALSE)) return true;
+    if (jj_scan_token(TRUE)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_63() {
+    if (jj_scan_token(BETWEEN)) return true;
+    if (jj_3R_52()) return true;
+    if (jj_scan_token(AND)) return true;
+    if (jj_3R_52()) return true;
     return false;
   }
 

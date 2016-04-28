@@ -74,7 +74,6 @@ public class RestServlet extends AbstractServlet
     public static final String INCLUDE_SYS_CONTEXT_PARAM = "includeSysContext";
     public static final String INHERITED_ACTUALS_PARAM = "inheritedActuals";
     public static final String EXTRACT_INITIAL_CONFIG_PARAM = "extractInitialConfig";
-    public static final int SC_UNPROCESSABLE_ENTITY = 422;
 
     /**
      * Signifies that the agent wishes the servlet to set the Content-Disposition on the

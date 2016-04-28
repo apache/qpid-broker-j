@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -96,6 +97,7 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         {{
             put(ConfiguredObject.ID, object1Uuid);
             put(ConfiguredObject.NAME, object1Name);
+            put("foo", "bar");
         }});
 
         ConfiguredObject obj2 = createCO(new HashMap<String, Object>()
@@ -145,6 +147,21 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         final Iterator<List<Object>> iterator = results.iterator();
         List<Object> row = iterator.next();
         assertEquals("Unexpected row", Lists.newArrayList(objectUuid, 1234), row);
+    }
+
+    public void testSelectClause_NonExistingColumn() throws Exception
+    {
+       ConfiguredObject obj = createCO(new HashMap<String, Object>()
+        {{
+            put(ConfiguredObject.ID, UUID.randomUUID());
+        }});
+        _objects.add(obj);
+
+        _query = new ConfiguredObjectQuery(_objects, String.format("foo"), null);
+        List<List<Object>> results = _query.getResults();
+        assertEquals("Unexpected number of results", 1, results.size());
+        assertEquals("Unexpected headers", Collections.singletonList("foo"), _query.getHeaders());
+        assertEquals("Unexpected row", Collections.singletonList(null), results.get(0));
     }
 
     public void testSelectClause_ColumnAliases() throws Exception
@@ -456,6 +473,185 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
         catch (SelectorParsingException e)
         {
             // PASS
+        }
+    }
+
+    public void testSingleOrderByClause() throws Exception
+    {
+        final int NUMBER_OF_OBJECTS = 3;
+
+        for (int i = 0; i < NUMBER_OF_OBJECTS; ++i)
+        {
+            final int foo = (i + 1) % NUMBER_OF_OBJECTS;
+            ConfiguredObject object = createCO(new HashMap<String, Object>()
+            {{
+                put("foo", foo);
+            }});
+            _objects.add(object);
+        }
+
+        ConfiguredObject object = createCO(new HashMap<String, Object>()
+        {{
+            put("foo", null);
+        }});
+        _objects.add(object);
+
+        List<List<Object>> results;
+
+        _query = new ConfiguredObjectQuery(_objects, "foo", null, "foo ASC");
+        results = _query.getResults();
+        assertQueryResults(new Object[][]{{null}, {0}, {1}, {2}}, results);
+
+        _query = new ConfiguredObjectQuery(_objects, "foo", null, "foo DESC");
+        results = _query.getResults();
+        assertQueryResults(new Object[][]{{2}, {1}, {0}, {null}}, results);
+
+        // if not specified order should be ASC
+        _query = new ConfiguredObjectQuery(_objects, "foo", null, "foo");
+        results = _query.getResults();
+        assertQueryResults(new Object[][]{{null}, {0}, {1}, {2}}, results);
+    }
+
+    public void testTwoOrderByClauses() throws Exception
+    {
+        ConfiguredObject object;
+
+        object = createCO(new HashMap<String, Object>()
+        {{
+            put("foo", 1);
+            put("bar", 1);
+        }});
+        _objects.add(object);
+
+        object = createCO(new HashMap<String, Object>()
+        {{
+            put("foo", 1);
+            put("bar", 2);
+        }});
+        _objects.add(object);
+
+        object = createCO(new HashMap<String, Object>()
+        {{
+            put("foo", 2);
+            put("bar", 0);
+        }});
+        _objects.add(object);
+
+        _query = new ConfiguredObjectQuery(_objects, "foo,bar", null, "foo, bar");
+        assertQueryResults(new Object[][]{{1, 1}, {1, 2}, {2, 0}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "foo,bar", null, "foo DESC, bar");
+        assertQueryResults(new Object[][]{{2, 0}, {1, 1}, {1, 2}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "foo,bar", null, "foo DESC, bar DESC");
+        assertQueryResults(new Object[][]{{2, 0}, {1, 2}, {1, 1}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "foo,bar", null, "foo, bar DESC");
+        assertQueryResults(new Object[][]{{1, 2}, {1, 1}, {2, 0}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "foo,bar", null, "bar, foo");
+        assertQueryResults(new Object[][]{{2, 0}, {1, 1}, {1, 2}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "foo,bar", null, "bar DESC, foo");
+        assertQueryResults(new Object[][]{{1, 2}, {1, 1}, {2, 0}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "foo,bar", null, "bar, foo DESC");
+        assertQueryResults(new Object[][]{{2, 0}, {1, 1}, {1, 2}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "foo,bar", null, "bar DESC, foo DESC");
+        assertQueryResults(new Object[][]{{1, 2}, {1, 1}, {2, 0}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "foo,bar", null, "boo DESC, foo DESC, bar");
+        assertQueryResults(new Object[][]{{2, 0}, {1, 1}, {1, 2}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "foo, bar", null, "1, 2");
+        assertQueryResults(new Object[][]{{1, 1}, {1, 2}, {2, 0}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "foo, bar", null, "2, 1");
+        assertQueryResults(new Object[][]{{2, 0}, {1, 1}, {1, 2}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "foo, bar", null, "foo, 2 DESC");
+        assertQueryResults(new Object[][]{{1, 2}, {1, 1}, {2, 0}}, _query.getResults());
+    }
+
+    public void testOrderByWithInvalidColumnIndex()
+    {
+        try
+        {
+            new ConfiguredObjectQuery(_objects, "id", null, "2");
+            fail("Exception is expected for column index out of bounds");
+        }
+        catch (EvaluationException e)
+        {
+            // pass
+        }
+
+        try
+        {
+            new ConfiguredObjectQuery(_objects, "id", null, "0 DESC");
+            fail("Exception is expected for column index 0");
+        }
+        catch (EvaluationException e)
+        {
+            // pass
+        }
+    }
+
+
+    public void testLimitWithoutOffset() throws Exception
+    {
+        int numberOfTestObjects = 3;
+        for(int i=0;i<numberOfTestObjects;i++)
+        {
+            final String name = "test-" + i;
+            ConfiguredObject object = createCO(new HashMap<String, Object>()
+            {{
+                put("name", name);
+            }});
+            _objects.add(object);
+        }
+
+        _query = new ConfiguredObjectQuery(_objects, "name", null, "name", "1", "0");
+        assertQueryResults(new Object[][]{{"test-0"}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "name", null, "name", "1", "1");
+        assertQueryResults(new Object[][]{{"test-1"}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "name", null, "name", "1", "3");
+        assertQueryResults(new Object[0][1], _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "name", null, "name", "-1", "1");
+        assertQueryResults(new Object[][]{{"test-1"},{"test-2"}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "name", null, "name", "-1", "-4");
+        assertQueryResults(new Object[][]{{"test-0"},{"test-1"},{"test-2"}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "name", null, "name", "-1", "-2");
+        assertQueryResults(new Object[][]{{"test-1"},{"test-2"}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "name", null, "name", "invalidLimit", "invalidOffset");
+        assertQueryResults(new Object[][]{{"test-0"},{"test-1"},{"test-2"}}, _query.getResults());
+
+        _query = new ConfiguredObjectQuery(_objects, "name", null, "name", null, null);
+        assertQueryResults(new Object[][]{{"test-0"},{"test-1"},{"test-2"}}, _query.getResults());
+    }
+
+    private void assertQueryResults(final Object[][] expectedAttributes,
+                                    final List<List<Object>> results)
+    {
+        final int rows = expectedAttributes.length;
+        assertEquals("Unexpected number of result rows", rows, results.size());
+        if (rows > 0)
+        {
+            final int cols = expectedAttributes[0].length;
+            for (int row = 0; row < rows; ++row)
+            {
+                assertEquals("Unexpected number of result columns", cols, results.get(row).size());
+                for (int col = 0; col < cols; ++col)
+                {
+                    assertEquals("Unexpected row order", expectedAttributes[row][col], results.get(row).get(col));
+                }
+            }
         }
     }
 

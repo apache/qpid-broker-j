@@ -558,37 +558,15 @@ define(["dojo/_base/lang",
     //                     Virtual host query scope can be defined by setting parent
     //                     into corresponding object representing a virtual host hierarchy
     //
-    //   requestOptions: Object?
-    //               is optional request settings
-    //
     // returns: promise of type dojo.promise.Promise
     //      Promise returned by dojo.request.xhr with modified then method allowing to use default error handler if none is specified.
-    Management.prototype.query = function(query, requestOptions)
+    Management.prototype.query = function(query)
     {
         var url = "api/latest/"  + (query.parent &&  query.parent.type === "virtualhost" ?
                                     "queryvhost/" +  this.objectToPath({parent: query.parent}) :
                                     "querybroker") +  (query.category ? "/" + query.category  : "");
-        url =  this.getFullUrl(url);
-        var request = {url: url};
-
-        if (requestOptions)
-        {
-            lang.mixin(request,requestOptions);
-        }
-
-        // id should be always selected
-        // and present with index 0
-        var select = "id";
-        if (query.select)
-        {
-           select =  select + "," + query.select;
-        }
-        var parameters = {select: select};
-        if (query.where)
-        {
-          parameters.where=query.where
-        }
-        request.query = parameters;
+        var request = {url: this.getFullUrl(url), query: {}};
+        shallowCopy(query, request.query, ["parent", "category"]);
         return this.get(request);
     };
 
