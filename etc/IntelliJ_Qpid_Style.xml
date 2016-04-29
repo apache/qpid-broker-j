@@ -39,6 +39,9 @@
       <package name="org.apache.qpid" withSubpackages="true" static="false" />
     </value>
   </option>
+  <JSCodeStyleSettings>
+    <option name="OBJECT_LITERAL_WRAP" value="2" />
+  </JSCodeStyleSettings>
   <XML>
     <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
   </XML>
@@ -100,7 +103,7 @@
     <option name="TERNARY_OPERATION_WRAP" value="5" />
     <option name="TERNARY_OPERATION_SIGNS_ON_NEXT_LINE" value="true" />
     <option name="FOR_STATEMENT_WRAP" value="5" />
-    <option name="ARRAY_INITIALIZER_WRAP" value="1" />
+    <option name="ARRAY_INITIALIZER_WRAP" value="5" />
     <option name="ASSIGNMENT_WRAP" value="1" />
     <option name="IF_BRACE_FORCE" value="3" />
     <option name="DOWHILE_BRACE_FORCE" value="3" />
