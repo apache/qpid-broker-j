@@ -231,6 +231,7 @@ define(["dojo/_base/declare",
                                 _advancedModeOrderByChanged: function()
                                             {
                                                 this._store.orderBy = this.advancedOrderBy.value;
+                                                this._sort = [];
                                             },
                                 _toggleSearchButton: function(select)
                                              {
@@ -502,7 +503,7 @@ define(["dojo/_base/declare",
                                                  var name = data[i][2];
                                                  var parentName = data[i][1];
                                                  items.push({id: data[i][0],  name: "VH:" + parentName + "/" + name});
-                                                 this._scopeModelObjects[data[i].id] = {name: name,
+                                                 this._scopeModelObjects[data[i][0]] = {name: name,
                                                                                         type: "virtualhost",
                                                                                         parent: {name: parentName,
                                                                                                  type: "virtualhostnode",
@@ -515,7 +516,7 @@ define(["dojo/_base/declare",
                                                      this.parentModelObj.parent &&
                                                      this.parentModelObj.parent.name == parentName)
                                                  {
-                                                   defaultValue = data[i].id;
+                                                   defaultValue = data[i][0];
                                                  }
                                                }
 
@@ -592,6 +593,7 @@ define(["dojo/_base/declare",
                                                   this._store.selectClause = this.advancedSelect.value;
                                                   this._store.where = this.advancedWhere.value;
                                                   this._store.orderBy = this.advancedOrderBy.value;
+                                                  this._sort = [];
                                                   this.search();
                                               }
                                             },
