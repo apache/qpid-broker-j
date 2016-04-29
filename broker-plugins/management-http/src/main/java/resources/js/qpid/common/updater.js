@@ -18,51 +18,55 @@
  * under the License.
  *
  */
-define([], function () {
+define([], function ()
+{
     var updateList = new Array();
 
     function invokeUpdates()
     {
-      for(var i = 0; i < updateList.length; i++)
-      {
-        var obj = updateList[i];
-        obj.update();
-      }
+        for (var i = 0; i < updateList.length; i++)
+        {
+            var obj = updateList[i];
+            obj.update();
+        }
     }
 
-    var updatePeriod =  5;
+    var updatePeriod = 5;
 
     var timer = setInterval(invokeUpdates, updatePeriod * 1000);
 
     var updateIntervalListener = {
-        onPreferencesChange: function(preferences)
+        onPreferencesChange: function (preferences)
         {
-          if (preferences.updatePeriod && preferences.updatePeriod != updatePeriod)
-          {
-            updatePeriod = preferences.updatePeriod;
-            clearInterval(timer);
-            timer = setInterval(invokeUpdates, updatePeriod * 1000);
-          }
+            if (preferences.updatePeriod && preferences.updatePeriod != updatePeriod)
+            {
+                updatePeriod = preferences.updatePeriod;
+                clearInterval(timer);
+                timer = setInterval(invokeUpdates, updatePeriod * 1000);
+            }
         }
     };
 
-
     return {
-            registerUpdateIntervalListener: function(userPreferences)
-            {
-                userPreferences.addListener(updateIntervalListener);
-            },
-            add: function(obj) {
-                updateList.push(obj);
-            },
+        registerUpdateIntervalListener: function (userPreferences)
+        {
+            userPreferences.addListener(updateIntervalListener);
+        },
+        add: function (obj)
+        {
+            updateList.push(obj);
+        },
 
-            remove: function(obj) {
-                for(var i = 0; i < updateList.length; i++) {
-                    if(updateList[i] === obj) {
-                        updateList.splice(i,1);
-                        return;
-                    }
+        remove: function (obj)
+        {
+            for (var i = 0; i < updateList.length; i++)
+            {
+                if (updateList[i] === obj)
+                {
+                    updateList.splice(i, 1);
+                    return;
                 }
             }
-        };
+        }
+    };
 });

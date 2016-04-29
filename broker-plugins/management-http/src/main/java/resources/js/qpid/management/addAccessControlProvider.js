@@ -41,110 +41,140 @@ define(["dojo/_base/lang",
         "dijit/form/Form",
         "dijit/layout/ContentPane",
         "dojox/layout/TableContainer",
-        "dojo/domReady!"],
-    function (lang, dom, construct, registry, parser, array, event, json, util, template)
-    {
+        "dojo/domReady!"], function (lang, dom, construct, registry, parser, array, event, json, util, template)
+       {
 
-        var addAccessControlProvider =
-        {
-            init: function()
-            {
-                var that=this;
-                this.containerNode = construct.create("div", {innerHTML: template});
-                parser.parse(this.containerNode).then(function(instances){  that._postParse(); });
-            },
-            _postParse: function()
-            {
-                var that=this;
-                this.accessControlProviderName = registry.byId("addAccessControlProvider.name");
-                this.accessControlProviderName.set("regExpGen", util.nameOrContextVarRegexp);
+           var addAccessControlProvider = {
+               init: function ()
+               {
+                   var that = this;
+                   this.containerNode = construct.create("div", {innerHTML: template});
+                   parser.parse(this.containerNode).then(function (instances)
+                                                         {
+                                                             that._postParse();
+                                                         });
+               },
+               _postParse: function ()
+               {
+                   var that = this;
+                   this.accessControlProviderName = registry.byId("addAccessControlProvider.name");
+                   this.accessControlProviderName.set("regExpGen", util.nameOrContextVarRegexp);
 
-                this.dialog = registry.byId("addAccessControlProvider");
-                this.addButton = registry.byId("addAccessControlProvider.addButton");
-                this.cancelButton = registry.byId("addAccessControlProvider.cancelButton");
-                this.cancelButton.on("click", function(e){that._cancel(e);});
-                this.addButton.on("click", function(e){that._add(e);});
+                   this.dialog = registry.byId("addAccessControlProvider");
+                   this.addButton = registry.byId("addAccessControlProvider.addButton");
+                   this.cancelButton = registry.byId("addAccessControlProvider.cancelButton");
+                   this.cancelButton.on("click", function (e)
+                   {
+                       that._cancel(e);
+                   });
+                   this.addButton.on("click", function (e)
+                   {
+                       that._add(e);
+                   });
 
-                this.accessControlProviderTypeFieldsContainer = dom.byId("addAccessControlProvider.typeFields");
-                this.accessControlProviderForm = registry.byId("addAccessControlProvider.form");
-                this.accessControlProviderType = registry.byId("addAccessControlProvider.type");
-                this.accessControlProviderType.on("change", function(type){that._accessControlProviderTypeChanged(type);});
-            },
-            show: function(management, modelObj, effectiveData)
-            {
-                this.management = management;
-                this.modelObj = modelObj;
-                this.accessControlProviderForm.reset();
-                this.supportedAccessControlProviderTypes = management.metadata.getTypesForCategory("AccessControlProvider");
-                this.supportedAccessControlProviderTypes.sort();
-                var accessControlProviderTypeStore = util.makeTypeStore(this.supportedAccessControlProviderTypes);
-                this.accessControlProviderType.set("store", accessControlProviderTypeStore);
-                this.dialog.show();
-            },
-            _cancel: function(e)
-            {
-                event.stop(e);
-                this._destroyTypeFields(this.accessControlProviderTypeFieldsContainer);
-                this.dialog.hide();
-            },
-            _add: function(e)
-            {
-                event.stop(e);
-                this._submit();
-            },
-            _submit: function()
-            {
-                if (this.accessControlProviderForm.validate())
-                {
-                    var accessControlProviderData = util.getFormWidgetValues(this.accessControlProviderForm, this.initialData);
-                    var that = this;
-                    this.management.create("accesscontrolprovider", this.modelObj, accessControlProviderData).then(function(x){that.dialog.hide();});
-                }
-                else
-                {
-                    alert('Form contains invalid data. Please correct first');
-                }
-            },
-            _accessControlProviderTypeChanged: function(type)
-            {
-                this._typeChanged(type, this.accessControlProviderTypeFieldsContainer, "qpid/management/accesscontrolprovider/", "AccessControlProvider" );
-            },
-            _destroyTypeFields: function(typeFieldsContainer)
-            {
-              var widgets = registry.findWidgets(typeFieldsContainer);
-              array.forEach(widgets, function(item) { item.destroyRecursive();});
-              construct.empty(typeFieldsContainer);
-            },
-            _typeChanged: function(type, typeFieldsContainer, baseUrl, category )
-            {
-                 this._destroyTypeFields(typeFieldsContainer);
+                   this.accessControlProviderTypeFieldsContainer = dom.byId("addAccessControlProvider.typeFields");
+                   this.accessControlProviderForm = registry.byId("addAccessControlProvider.form");
+                   this.accessControlProviderType = registry.byId("addAccessControlProvider.type");
+                   this.accessControlProviderType.on("change", function (type)
+                   {
+                       that._accessControlProviderTypeChanged(type);
+                   });
+               },
+               show: function (management, modelObj, effectiveData)
+               {
+                   this.management = management;
+                   this.modelObj = modelObj;
+                   this.accessControlProviderForm.reset();
+                   this.supportedAccessControlProviderTypes =
+                       management.metadata.getTypesForCategory("AccessControlProvider");
+                   this.supportedAccessControlProviderTypes.sort();
+                   var accessControlProviderTypeStore = util.makeTypeStore(this.supportedAccessControlProviderTypes);
+                   this.accessControlProviderType.set("store", accessControlProviderTypeStore);
+                   this.dialog.show();
+               },
+               _cancel: function (e)
+               {
+                   event.stop(e);
+                   this._destroyTypeFields(this.accessControlProviderTypeFieldsContainer);
+                   this.dialog.hide();
+               },
+               _add: function (e)
+               {
+                   event.stop(e);
+                   this._submit();
+               },
+               _submit: function ()
+               {
+                   if (this.accessControlProviderForm.validate())
+                   {
+                       var accessControlProviderData = util.getFormWidgetValues(this.accessControlProviderForm,
+                                                                                this.initialData);
+                       var that = this;
+                       this.management.create("accesscontrolprovider", this.modelObj, accessControlProviderData)
+                           .then(function (x)
+                                 {
+                                     that.dialog.hide();
+                                 });
+                   }
+                   else
+                   {
+                       alert('Form contains invalid data. Please correct first');
+                   }
+               },
+               _accessControlProviderTypeChanged: function (type)
+               {
+                   this._typeChanged(type,
+                                     this.accessControlProviderTypeFieldsContainer,
+                                     "qpid/management/accesscontrolprovider/",
+                                     "AccessControlProvider");
+               },
+               _destroyTypeFields: function (typeFieldsContainer)
+               {
+                   var widgets = registry.findWidgets(typeFieldsContainer);
+                   array.forEach(widgets, function (item)
+                   {
+                       item.destroyRecursive();
+                   });
+                   construct.empty(typeFieldsContainer);
+               },
+               _typeChanged: function (type, typeFieldsContainer, baseUrl, category)
+               {
+                   this._destroyTypeFields(typeFieldsContainer);
 
-                 if (type)
-                 {
-                     var that = this;
-                     require([ baseUrl + type.toLowerCase() + "/add"], function(typeUI)
-                     {
-                         try
-                         {
-                             typeUI.show({containerNode:typeFieldsContainer, parent: that, data: that.initialData, effectiveData: that.effectiveData});
-                             util.applyMetadataToWidgets(typeFieldsContainer, category, type, that.management.metadata);
-                         }
-                         catch(e)
-                         {
-                             console.warn(e);
-                         }
-                     });
-                 }
-            }
-        };
+                   if (type)
+                   {
+                       var that = this;
+                       require([baseUrl + type.toLowerCase() + "/add"], function (typeUI)
+                       {
+                           try
+                           {
+                               typeUI.show({
+                                               containerNode: typeFieldsContainer,
+                                               parent: that,
+                                               data: that.initialData,
+                                               effectiveData: that.effectiveData
+                                           });
+                               util.applyMetadataToWidgets(typeFieldsContainer,
+                                                           category,
+                                                           type,
+                                                           that.management.metadata);
+                           }
+                           catch (e)
+                           {
+                               console.warn(e);
+                           }
+                       });
+                   }
+               }
+           };
 
-        try
-        {
-            addAccessControlProvider.init();
-        }
-        catch(e)
-        {
-            console.warn(e);
-        }
-        return addAccessControlProvider;
-    });
+           try
+           {
+               addAccessControlProvider.init();
+           }
+           catch (e)
+           {
+               console.warn(e);
+           }
+           return addAccessControlProvider;
+       });

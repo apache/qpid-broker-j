@@ -17,30 +17,35 @@
  * under the License.
  */
 
-define(["qpid/common/util", "dojox/html/entities", "dojo/domReady!"],
-  function (util, entities)
-  {
+define(["qpid/common/util", "dojox/html/entities", "dojo/domReady!"], function (util, entities)
+{
 
     function NonJavaKeyStore(data)
     {
         var that = this;
         this.fields = [];
         this.management = data.parent.management;
-        this.dateTimeFormatter = function(value){ return value ? that.management.userPreferences.formatDateTime(value, {addOffset: true, appendTimeZone: true}) : "";};
+        this.dateTimeFormatter = function (value)
+        {
+            return value ? that.management.userPreferences.formatDateTime(value,
+                                                                          {
+                                                                              addOffset: true,
+                                                                              appendTimeZone: true
+                                                                          }) : "";
+        };
 
         var attributes = this.management.metadata.getMetaData("KeyStore", "NonJavaKeyStore").attributes;
-        for(var name in attributes)
+        for (var name in attributes)
         {
-              this.fields.push(name);
+            this.fields.push(name);
         }
         util.buildUI(data.containerNode, data.parent, "store/nonjavakeystore/show.html", this.fields, this);
     }
 
-    NonJavaKeyStore.prototype.update = function(data)
+    NonJavaKeyStore.prototype.update = function (data)
     {
         util.updateUI(data, this.fields, this, {datetime: this.dateTimeFormatter});
     }
 
     return NonJavaKeyStore;
-  }
-);
+});

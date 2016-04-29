@@ -18,18 +18,16 @@
  * under the License.
  *
  */
-define([],
-  function ()
-  {
+define([], function ()
+{
 
     function ManagedGroupProvider(data)
     {
     }
 
-    ManagedGroupProvider.prototype.update = function(data)
+    ManagedGroupProvider.prototype.update = function (data)
     {
     }
 
     return ManagedGroupProvider;
-  }
-);
+});

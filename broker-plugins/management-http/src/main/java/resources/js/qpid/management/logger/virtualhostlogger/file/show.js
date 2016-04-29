@@ -19,29 +19,35 @@
  *
  */
 define(["qpid/common/util",
-    "dojo/text!logger/file/show.html",
-    "qpid/common/TypeTabExtension",
-    "qpid/management/logger/FileBrowser",
-    "dojo/domReady!"],
-  function (util, template, TypeTabExtension, FileBrowser)
-  {
-    function VirtualHostFileLogger(params)
-    {
-      this.fileBrowser = new FileBrowser({containerNode: params.typeSpecificDetailsNode,
-                                          management: params.management,
-                                          data: params.data,
-                                          modelObj: params.modelObj});
-      TypeTabExtension.call(this, params.containerNode, template, "VirtualHostLogger", "File", params.metadata, params.data);
-    }
+        "dojo/text!logger/file/show.html",
+        "qpid/common/TypeTabExtension",
+        "qpid/management/logger/FileBrowser",
+        "dojo/domReady!"], function (util, template, TypeTabExtension, FileBrowser)
+       {
+           function VirtualHostFileLogger(params)
+           {
+               this.fileBrowser = new FileBrowser({
+                   containerNode: params.typeSpecificDetailsNode,
+                   management: params.management,
+                   data: params.data,
+                   modelObj: params.modelObj
+               });
+               TypeTabExtension.call(this,
+                                     params.containerNode,
+                                     template,
+                                     "VirtualHostLogger",
+                                     "File",
+                                     params.metadata,
+                                     params.data);
+           }
 
-    util.extend(VirtualHostFileLogger, TypeTabExtension);
+           util.extend(VirtualHostFileLogger, TypeTabExtension);
 
-    VirtualHostFileLogger.prototype.update = function (restData)
-    {
-      TypeTabExtension.prototype.update.call(this, restData);
-      this.fileBrowser.update(restData);
-    }
+           VirtualHostFileLogger.prototype.update = function (restData)
+           {
+               TypeTabExtension.prototype.update.call(this, restData);
+               this.fileBrowser.update(restData);
+           }
 
-    return VirtualHostFileLogger;
-  }
-);
+           return VirtualHostFileLogger;
+       });

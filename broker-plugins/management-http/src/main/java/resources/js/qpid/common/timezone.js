@@ -19,56 +19,56 @@
  *
  */
 
-define([], function () {
+define([], function ()
+{
 
-
-    var timeZoneSortFunction = function(a, b)
+    var timeZoneSortFunction = function (a, b)
     {
-          if (a.region == b.region)
-          {
-              if (a.city == b.city)
-              {
+        if (a.region == b.region)
+        {
+            if (a.city == b.city)
+            {
                 return 0;
-              }
-              return a.city < b.city ? -1 : 1;
-          }
-          return a.region < b.region ? -1 : 1;
+            }
+            return a.city < b.city ? -1 : 1;
+        }
+        return a.region < b.region ? -1 : 1;
     }
 
-    var Timezone = function(timezones)
+    var Timezone = function (timezones)
     {
         this.timezones = timezones.sort(timeZoneSortFunction)
     };
 
-    Timezone.prototype.getAllTimeZones= function()
+    Timezone.prototype.getAllTimeZones = function ()
     {
-       return this.timezones;
+        return this.timezones;
     }
 
-    Timezone.prototype.getTimeZoneInfo = function(timeZone)
+    Timezone.prototype.getTimeZoneInfo = function (timeZone)
     {
         if (timeZone == "UTC")
         {
-          return {
-            "id" : "UTC",
-            "name" : "UTC",
-            "offset" : 0
-          }
+            return {
+                "id": "UTC",
+                "name": "UTC",
+                "offset": 0
+            }
         }
         var tzi = this[timeZone];
         if (!tzi)
         {
-          var data = this.timezones;
-          for(var i = 0; i < data.length; i++)
-          {
-            var zone = data[i];
-            if (zone.id == timeZone)
+            var data = this.timezones;
+            for (var i = 0; i < data.length; i++)
             {
-              tzi = zone;
-              this[timeZone] = zone;
-              break;
+                var zone = data[i];
+                if (zone.id == timeZone)
+                {
+                    tzi = zone;
+                    this[timeZone] = zone;
+                    break;
+                }
             }
-          }
         }
         return tzi;
     }

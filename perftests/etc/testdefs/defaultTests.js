@@ -30,90 +30,109 @@ var messageSize = 1024;
 var maximumDuration = 10000;
 var numberOfParticipantPairs = 10;
 
-
 function createProducerConnection(i, connectionFactory, destination, acknowledgeMode, deliveryMode)
 {
-  return {
-    "_name": "producingConnection_" + i,
-    "_factory": connectionFactory,
-    "_sessions": [
-      {
-        "_sessionName": "producingSession_" + i,
-        "_acknowledgeMode": acknowledgeMode,
-        "_producers": [
-          {
-            "_name": "Producer_" + i,
-            "_destinationName": destination,
-            "_messageSize": messageSize,
-            "_deliveryMode": deliveryMode,
-            "_maximumDuration": maximumDuration
-          }
-        ]
-      }
-    ]
-  };
+    return {
+        "_name": "producingConnection_" + i,
+        "_factory": connectionFactory,
+        "_sessions": [{
+            "_sessionName": "producingSession_" + i,
+            "_acknowledgeMode": acknowledgeMode,
+            "_producers": [{
+                "_name": "Producer_" + i,
+                "_destinationName": destination,
+                "_messageSize": messageSize,
+                "_deliveryMode": deliveryMode,
+                "_maximumDuration": maximumDuration
+            }]
+        }]
+    };
 }
 
 function createConsumerConnection(i, connectionFactory, destination, acknowledgeMode)
 {
-  return {
-    "_name": "consumingConnection_" + i,
-    "_factory": connectionFactory,
-    "_sessions": [
-      {
-        "_sessionName": "consumingSession_" + i,
-        "_acknowledgeMode": acknowledgeMode,
-        "_consumers": [
-          {
-            "_name": "Consumer_" + i,
-            "_destinationName": destination,
-            "_maximumDuration": maximumDuration
-          }
-        ]
-      }
-    ]
-  };
+    return {
+        "_name": "consumingConnection_" + i,
+        "_factory": connectionFactory,
+        "_sessions": [{
+            "_sessionName": "consumingSession_" + i,
+            "_acknowledgeMode": acknowledgeMode,
+            "_consumers": [{
+                "_name": "Consumer_" + i,
+                "_destinationName": destination,
+                "_maximumDuration": maximumDuration
+            }]
+        }]
+    };
 }
 
 function createTest(name, numberOfParticipantPairs, acknowledgeMode, deliveryMode, transport)
 {
-  var test = {
-    "_name": name,
-    "_queues": [],
-    "_clients": []
-  }
+    var test = {
+        "_name": name,
+        "_queues": [],
+        "_clients": []
+    }
 
-  var connectionFactory;
-  if (transport.toLowerCase() == "plain")
-  {
-    connectionFactory = "connectionfactory";
-  }
-  else if (transport.toLowerCase() == "ssl")
-  {
-    connectionFactory = "sslconnectionfactory";
-  }
+    var connectionFactory;
+    if (transport.toLowerCase() == "plain")
+    {
+        connectionFactory = "connectionfactory";
+    }
+    else if (transport.toLowerCase() == "ssl")
+    {
+        connectionFactory = "sslconnectionfactory";
+    }
 
-  for(var i=0; i < numberOfParticipantPairs; i++)
-  {
-    var queueName = "testQueue_" + i;
-    var destination = queueName;
-    test._queues.push({"_name": destination, "_durable": true});
+    for (var i = 0; i < numberOfParticipantPairs; i++)
+    {
+        var queueName = "testQueue_" + i;
+        var destination = queueName;
+        test._queues.push({
+                              "_name": destination,
+                              "_durable": true
+                          });
 
-    test._clients.push({"_name": "producingClient_" + i,
-                        "_connections": [ createProducerConnection(i, connectionFactory, destination, acknowledgeMode, deliveryMode) ]});
-    test._clients.push({"_name": "consumingClient_" + i,
-                        "_connections": [ createConsumerConnection(i, connectionFactory, destination, acknowledgeMode) ]});
-  }
+        test._clients.push({
+                               "_name": "producingClient_" + i,
+                               "_connections": [createProducerConnection(i,
+                                                                         connectionFactory,
+                                                                         destination,
+                                                                         acknowledgeMode,
+                                                                         deliveryMode)]
+                           });
+        test._clients.push({
+                               "_name": "consumingClient_" + i,
+                               "_connections": [createConsumerConnection(i,
+                                                                         connectionFactory,
+                                                                         destination,
+                                                                         acknowledgeMode)]
+                           });
+    }
 
-  return test;
+    return test;
 }
 
-
 var jsonObject = {
-  _tests: [createTest("persistent_transaction_plain", numberOfParticipantPairs, ACKNOWLEDGE_MODE_SESSION_TRANSACTED, DELIVERY_MODE_PERSISTENT, "PLAIN"),
-           createTest("transient_autoack_plain", numberOfParticipantPairs, ACKNOWLEDGE_MODE_AUTO_ACKNOWLEDGE, DELIVERY_MODE_TRANSIENT, "PLAIN"),
-           createTest("persistent_transaction_ssl", numberOfParticipantPairs, ACKNOWLEDGE_MODE_SESSION_TRANSACTED, DELIVERY_MODE_PERSISTENT, "SSL"),
-           createTest("transient_autoack_ssl", numberOfParticipantPairs, ACKNOWLEDGE_MODE_AUTO_ACKNOWLEDGE, DELIVERY_MODE_TRANSIENT, "SSL")
-  ]
+    _tests: [createTest("persistent_transaction_plain",
+                        numberOfParticipantPairs,
+                        ACKNOWLEDGE_MODE_SESSION_TRANSACTED,
+                        DELIVERY_MODE_PERSISTENT,
+                        "PLAIN"),
+             createTest("transient_autoack_plain",
+                        numberOfParticipantPairs,
+                        ACKNOWLEDGE_MODE_AUTO_ACKNOWLEDGE,
+                        DELIVERY_MODE_TRANSIENT,
+                        "PLAIN"),
+             createTest("persistent_transaction_ssl",
+                        numberOfParticipantPairs,
+                        ACKNOWLEDGE_MODE_SESSION_TRANSACTED,
+                        DELIVERY_MODE_PERSISTENT,
+                        "SSL"),
+             createTest("transient_autoack_ssl",
+                        numberOfParticipantPairs,
+                        ACKNOWLEDGE_MODE_AUTO_ACKNOWLEDGE,
+                        DELIVERY_MODE_TRANSIENT,
+                        "SSL")]
 };
 

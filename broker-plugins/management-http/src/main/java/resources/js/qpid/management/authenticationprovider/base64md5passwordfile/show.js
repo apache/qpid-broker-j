@@ -18,20 +18,18 @@
  * under the License.
  *
  */
-define(["qpid/common/util", "dojo/domReady!"],
-  function (util)
-  {
+define(["qpid/common/util", "dojo/domReady!"], function (util)
+{
 
     function Base64MD5PasswordFile(data)
     {
         util.buildUI(data.containerNode, data.parent, "authenticationprovider/filebased/show.html", ["path"], this);
     }
 
-    Base64MD5PasswordFile.prototype.update = function(data)
+    Base64MD5PasswordFile.prototype.update = function (data)
     {
         util.updateUI(data, ["path"], this);
     }
 
     return Base64MD5PasswordFile;
-  }
-);
+});

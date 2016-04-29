@@ -26,15 +26,13 @@ define(["dojo/_base/xhr",
         "dijit/registry",
         "dojo/text!virtualhostnode/memory/add.html",
         "dijit/form/ValidationTextBox",
-        "dojo/domReady!"],
-  function (xhr, parser, dom, domConstruct, json, registry, template)
-  {
-    return {
-        show: function (data)
-        {
-            this.containerNode = domConstruct.create("div", {innerHTML: template}, data.containerNode);
-            parser.parse(this.containerNode);
-        }
-    };
-  }
-);
+        "dojo/domReady!"], function (xhr, parser, dom, domConstruct, json, registry, template)
+       {
+           return {
+               show: function (data)
+               {
+                   this.containerNode = domConstruct.create("div", {innerHTML: template}, data.containerNode);
+                   parser.parse(this.containerNode);
+               }
+           };
+       });

@@ -24,62 +24,67 @@ define(["qpid/common/util",
         "dojo/dom",
         "dojo/dom-construct",
         "dijit/registry",
-        "dojo/domReady!"],
-   function (util, array, json, string, Memory, dom, domConstruct, registry)
-   {
+        "dojo/domReady!"], function (util, array, json, string, Memory, dom, domConstruct, registry)
+       {
 
-       return {
-           show: function(data)
-           {
-              var that = this;
-              util.parseHtmlIntoDiv(data.containerNode, "virtualhost/jdbc/edit.html",
-                function(){that._postParse(data)});
-           },
-           _postParse: function(data)
-           {
-              registry.byId("editVirtualHost.connectionUrl").set("regExpGen", util.jdbcUrlOrContextVarRegexp);
-              registry.byId("editVirtualHost.username").set("regExpGen", util.nameOrContextVarRegexp);
+           return {
+               show: function (data)
+               {
+                   var that = this;
+                   util.parseHtmlIntoDiv(data.containerNode, "virtualhost/jdbc/edit.html", function ()
+                   {
+                       that._postParse(data)
+                   });
+               },
+               _postParse: function (data)
+               {
+                   registry.byId("editVirtualHost.connectionUrl").set("regExpGen", util.jdbcUrlOrContextVarRegexp);
+                   registry.byId("editVirtualHost.username").set("regExpGen", util.nameOrContextVarRegexp);
 
-              var typeMetaData = data.metadata.getMetaData("VirtualHost", "JDBC");
-              var poolTypes = typeMetaData.attributes.connectionPoolType.validValues;
-              var poolTypesData = [];
-              array.forEach(poolTypes,
-                          function(item)
-                          {
-                              poolTypesData.push({id: item, name: item});
-                          }
-              );
+                   var typeMetaData = data.metadata.getMetaData("VirtualHost", "JDBC");
+                   var poolTypes = typeMetaData.attributes.connectionPoolType.validValues;
+                   var poolTypesData = [];
+                   array.forEach(poolTypes, function (item)
+                   {
+                       poolTypesData.push({
+                                              id: item,
+                                              name: item
+                                          });
+                   });
 
-              var poolTypesStore = new Memory({ data: poolTypesData });
-              var poolTypeControl = registry.byId("editVirtualHost.connectionPoolType");
-              poolTypeControl.set("store", poolTypesStore);
-              poolTypeControl.set("value", data.data.connectionPoolType);
+                   var poolTypesStore = new Memory({data: poolTypesData});
+                   var poolTypeControl = registry.byId("editVirtualHost.connectionPoolType");
+                   poolTypeControl.set("store", poolTypesStore);
+                   poolTypeControl.set("value", data.data.connectionPoolType);
 
-              var passwordControl = registry.byId("editVirtualHost.password");
-              if (data.data.password)
-              {
-                passwordControl.set("placeHolder", "*******");
-              }
+                   var passwordControl = registry.byId("editVirtualHost.password");
+                   if (data.data.password)
+                   {
+                       passwordControl.set("placeHolder", "*******");
+                   }
 
-               var poolTypeFieldsDiv = dom.byId("editVirtualHost.poolSpecificDiv");
-               poolTypeControl.on("change",
-                      function(type)
-                      {
-                        if(type && string.trim(type) != "")
-                        {
-                            var widgets = registry.findWidgets(poolTypeFieldsDiv);
-                            array.forEach(widgets, function(item) { item.destroyRecursive();});
-                            domConstruct.empty(poolTypeFieldsDiv);
+                   var poolTypeFieldsDiv = dom.byId("editVirtualHost.poolSpecificDiv");
+                   poolTypeControl.on("change", function (type)
+                   {
+                       if (type && string.trim(type) != "")
+                       {
+                           var widgets = registry.findWidgets(poolTypeFieldsDiv);
+                           array.forEach(widgets, function (item)
+                           {
+                               item.destroyRecursive();
+                           });
+                           domConstruct.empty(poolTypeFieldsDiv);
 
-                            require(["qpid/management/store/pool/"+type.toLowerCase()+"/edit"],
-                            function(poolType)
-                            {
-                                poolType.show({containerNode:poolTypeFieldsDiv, data: data.data, context: data.parent.context})
-                            });
-                        }
-                      }
-               );
-           }
-       };
-   }
-);
+                           require(["qpid/management/store/pool/" + type.toLowerCase() + "/edit"], function (poolType)
+                           {
+                               poolType.show({
+                                                 containerNode: poolTypeFieldsDiv,
+                                                 data: data.data,
+                                                 context: data.parent.context
+                                             })
+                           });
+                       }
+                   });
+               }
+           };
+       });

@@ -18,24 +18,26 @@
  * under the License.
  *
  */
-define(["dojo/dom","dojo/query", "dojo/_base/array", "dijit/registry","qpid/common/util",
-        "dojo/text!groupprovider/groupfile/add.html"],
-    function (dom, query, array, registry, util, template)
-    {
+define(["dojo/dom",
+        "dojo/query",
+        "dojo/_base/array",
+        "dijit/registry",
+        "qpid/common/util",
+        "dojo/text!groupprovider/groupfile/add.html"], function (dom, query, array, registry, util, template)
+       {
 
-        return {    show: function(data)
-                    {
-                        var that=this;
-                        util.parse(data.containerNode, template,
-                        function()
-                        {
-                            if (data.data)
-                            {
-                                var pathWidget = registry.byNode(query(".addGroupProviderPath", data.containerNode)[0]);
-                                pathWidget.set("value", data.data.path);
-                            }
-                        });
-                    }
-               };
-    }
-);
+           return {
+               show: function (data)
+               {
+                   var that = this;
+                   util.parse(data.containerNode, template, function ()
+                   {
+                       if (data.data)
+                       {
+                           var pathWidget = registry.byNode(query(".addGroupProviderPath", data.containerNode)[0]);
+                           pathWidget.set("value", data.data.path);
+                       }
+                   });
+               }
+           };
+       });

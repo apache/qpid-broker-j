@@ -17,26 +17,24 @@
  * under the License.
  */
 
-define(["qpid/common/util", "dojo/domReady!"],
-  function (util)
-  {
+define(["qpid/common/util", "dojo/domReady!"], function (util)
+{
 
     function FileTrustStoreProvider(data)
     {
         this.fields = [];
         var attributes = data.parent.management.metadata.getMetaData("TrustStore", "FileTrustStore").attributes;
-        for(var name in attributes)
+        for (var name in attributes)
         {
             this.fields.push(name);
         }
         util.buildUI(data.containerNode, data.parent, "store/filetruststore/show.html", this.fields, this);
     }
 
-    FileTrustStoreProvider.prototype.update = function(data)
+    FileTrustStoreProvider.prototype.update = function (data)
     {
         util.updateUI(data, this.fields, this);
     }
 
     return FileTrustStoreProvider;
-  }
-);
+});

@@ -18,20 +18,18 @@
  * under the License.
  *
  */
-define(["qpid/common/util", "dojo/domReady!"],
-  function (util)
-  {
+define(["qpid/common/util", "dojo/domReady!"], function (util)
+{
 
     function GroupFile(data)
     {
         util.buildUI(data.containerNode, data.parent, "groupprovider/groupfile/show.html", ["path"], this);
     }
 
-    GroupFile.prototype.update = function(data)
+    GroupFile.prototype.update = function (data)
     {
         util.updateUI(data, ["path"], this);
     }
 
     return GroupFile;
-  }
-);
+});

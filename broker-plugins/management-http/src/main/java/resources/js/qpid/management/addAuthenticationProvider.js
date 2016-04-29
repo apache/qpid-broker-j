@@ -33,229 +33,292 @@ define(["dojo/dom",
         "qpid/common/util",
         "dojo/text!addAuthenticationProvider.html",
         "qpid/management/preferencesprovider/PreferencesProviderForm",
-        /* dojox/ validate resources */
-        "dojox/validate/us", "dojox/validate/web",
-        /* basic dijit classes */
+           /* dojox/ validate resources */
+        "dojox/validate/us",
+        "dojox/validate/web",
+           /* basic dijit classes */
         "dijit/Dialog",
-        "dijit/form/CheckBox", "dijit/form/Textarea",
+        "dijit/form/CheckBox",
+        "dijit/form/Textarea",
         "dijit/form/TextBox",
         "dijit/form/ValidationTextBox",
         "dijit/form/Button",
         "dijit/form/Form",
-        /* basic dojox classes */
-        "dojox/form/BusyButton", "dojox/form/CheckedMultiSelect",
+           /* basic dojox classes */
+        "dojox/form/BusyButton",
+        "dojox/form/CheckedMultiSelect",
         "dojox/layout/TableContainer",
         "qpid/common/ContextVariablesEditor",
         "dojo/domReady!"],
-    function (dom, construct, win, registry, parser, array, event, json, Memory, FilteringSelect, connect, domStyle, util, template)
-    {
-        var addAuthenticationProvider =
-        {
-            init:function()
-            {
-                var that=this;
-                this.containerNode = construct.create("div", {innerHTML: template});
-                parser.parse(this.containerNode).then(function(instances) { that._postParse(); });
-            },
-            _postParse: function()
-            {
-                var that = this;
-                this.authenticationProviderName = registry.byId("addAuthenticationProvider.name");
-                this.authenticationProviderName.set("regExpGen", util.nameOrContextVarRegexp);
-                this.authenticationProviderName.on("change", function(newValue){
-                  that.preferencesProviderForm.setPreferencesProviderName(newValue);
-                });
+       function (dom, construct, win, registry, parser, array, event, json, Memory, FilteringSelect, connect, domStyle, util, template)
+       {
+           var addAuthenticationProvider = {
+               init: function ()
+               {
+                   var that = this;
+                   this.containerNode = construct.create("div", {innerHTML: template});
+                   parser.parse(this.containerNode).then(function (instances)
+                                                         {
+                                                             that._postParse();
+                                                         });
+               },
+               _postParse: function ()
+               {
+                   var that = this;
+                   this.authenticationProviderName = registry.byId("addAuthenticationProvider.name");
+                   this.authenticationProviderName.set("regExpGen", util.nameOrContextVarRegexp);
+                   this.authenticationProviderName.on("change", function (newValue)
+                   {
+                       that.preferencesProviderForm.setPreferencesProviderName(newValue);
+                   });
 
-                this.dialog = registry.byId("addAuthenticationProvider");
-                this.addButton = registry.byId("addAuthenticationProvider.addButton");
-                this.cancelButton = registry.byId("addAuthenticationProvider.cancelButton");
-                this.cancelButton.on("click", function(e){that._cancel(e);});
-                this.addButton.on("click", function(e){that._add(e);});
+                   this.dialog = registry.byId("addAuthenticationProvider");
+                   this.addButton = registry.byId("addAuthenticationProvider.addButton");
+                   this.cancelButton = registry.byId("addAuthenticationProvider.cancelButton");
+                   this.cancelButton.on("click", function (e)
+                   {
+                       that._cancel(e);
+                   });
+                   this.addButton.on("click", function (e)
+                   {
+                       that._add(e);
+                   });
 
-                this.authenticationProviderTypeFieldsContainer = dom.byId("addAuthenticationProvider.typeFields");
-                this.authenticationProviderForm = registry.byId("addAuthenticationProvider.form");
-                this.authenticationProviderType = registry.byId("addAuthenticationProvider.type");
-                this.authenticationProviderType.on("change", function(type){that._authenticationProviderTypeChanged(type);});
+                   this.authenticationProviderTypeFieldsContainer = dom.byId("addAuthenticationProvider.typeFields");
+                   this.authenticationProviderForm = registry.byId("addAuthenticationProvider.form");
+                   this.authenticationProviderType = registry.byId("addAuthenticationProvider.type");
+                   this.authenticationProviderType.on("change", function (type)
+                   {
+                       that._authenticationProviderTypeChanged(type);
+                   });
 
-                this.preferencesProviderForm = new qpid.preferencesprovider.PreferencesProviderForm({disabled: true});
-                this.preferencesProviderForm.placeAt(dom.byId("addPreferencesProvider.form"));
-                this.context = registry.byId("addAuthenticationProvider.context");
-            },
-            show:function(management, modelObj, effectiveData)
-            {
-                this.management = management;
-                this.modelObj = modelObj;
-                this.authenticationProviderForm.reset();
-                this.preferencesProviderForm.setMetadata(management.metadata);
+                   this.preferencesProviderForm =
+                       new qpid.preferencesprovider.PreferencesProviderForm({disabled: true});
+                   this.preferencesProviderForm.placeAt(dom.byId("addPreferencesProvider.form"));
+                   this.context = registry.byId("addAuthenticationProvider.context");
+               },
+               show: function (management, modelObj, effectiveData)
+               {
+                   this.management = management;
+                   this.modelObj = modelObj;
+                   this.authenticationProviderForm.reset();
+                   this.preferencesProviderForm.setMetadata(management.metadata);
 
-                this.supportedAuthenticationProviderTypes = management.metadata.getTypesForCategory("AuthenticationProvider");
-                this.supportedAuthenticationProviderTypes.sort();
-                var authenticationProviderTypeStore = util.makeTypeStore(this.supportedAuthenticationProviderTypes);
-                this.authenticationProviderType.set("store", authenticationProviderTypeStore);
+                   this.supportedAuthenticationProviderTypes =
+                       management.metadata.getTypesForCategory("AuthenticationProvider");
+                   this.supportedAuthenticationProviderTypes.sort();
+                   var authenticationProviderTypeStore = util.makeTypeStore(this.supportedAuthenticationProviderTypes);
+                   this.authenticationProviderType.set("store", authenticationProviderTypeStore);
 
-                var that = this;
-                if (effectiveData)
-                {
-                    // editing
-                    management.load(modelObj, { actuals: true }).then(
-                                  function(data)
-                                  {
-                                    var actualData = data[0];
-                                    that.initialData = actualData;
-                                    that.effectiveData = effectiveData;
-                                    that.authenticationProviderType.set("value", actualData.type);
+                   var that = this;
+                   if (effectiveData)
+                   {
+                       // editing
+                       management.load(modelObj, {actuals: true}).then(function (data)
+                                                                       {
+                                                                           var actualData = data[0];
+                                                                           that.initialData = actualData;
+                                                                           that.effectiveData = effectiveData;
+                                                                           that.authenticationProviderType.set("value",
+                                                                                                               actualData.type);
 
-                                    that.authenticationProviderType.set("disabled", true);
-                                    that.authenticationProviderName.set("disabled", true);
-                                    if (actualData.preferencesproviders && actualData.preferencesproviders[0])
-                                    {
-                                        that.preferencesProviderForm.setData(actualData.preferencesproviders[0]);
-                                    }
-                                    else
-                                    {
-                                        that.preferencesProviderForm.reset();
-                                        that.preferencesProviderForm.setPreferencesProviderName(actualData.name);
-                                    }
-                                    that.authenticationProviderName.set("value", actualData.name);
-                                    util.setContextData(that.context,
-                                                           management,
-                                                           modelObj,
-                                                           actualData,
-                                                           effectiveData,
-                                                           function(){that._show();});
-                                  });
-                }
-                else
-                {
-                    this.preferencesProviderForm.reset();
-                    this.authenticationProviderType.set("disabled", false);
-                    this.authenticationProviderName.set("disabled", false);
-                    this.initialData = {};
-                    this.effectiveData = {};
-                    util.setToBrokerEffectiveContext(this.context, management, function(){that._show();});
-                }
-            },
-            _show: function()
-            {
-                this.dialog.show();
-                if (!this.resizeEventRegistered)
-                {
-                    this.resizeEventRegistered = true;
-                    util.resizeContentAreaAndRepositionDialog(dom.byId("addAuthenticationProvider.contentPane"), this.dialog);
-                }
-            },
-            _cancel: function(e)
-            {
-                event.stop(e);
-                this.dialog.hide();
-            },
-            _add: function(e)
-            {
-                event.stop(e);
-                this._submit();
-            },
-            _submit: function()
-            {
-                if(this.authenticationProviderForm.validate() && this.preferencesProviderForm.validate())
-                {
-                    var authenticationProviderData = util.getFormWidgetValues(this.authenticationProviderForm, this.initialData);
-                    var context = this.context.get("value");
-                    if (context && (!this.initialData || !util.equals(context, this.initialData.context)))
-                    {
-                      authenticationProviderData["context"] = context;
-                    }
-                    var that = this;
+                                                                           that.authenticationProviderType.set(
+                                                                               "disabled",
+                                                                               true);
+                                                                           that.authenticationProviderName.set(
+                                                                               "disabled",
+                                                                               true);
+                                                                           if (actualData.preferencesproviders
+                                                                               && actualData.preferencesproviders[0])
+                                                                           {
+                                                                               that.preferencesProviderForm.setData(
+                                                                                   actualData.preferencesproviders[0]);
+                                                                           }
+                                                                           else
+                                                                           {
+                                                                               that.preferencesProviderForm.reset();
+                                                                               that.preferencesProviderForm.setPreferencesProviderName(
+                                                                                   actualData.name);
+                                                                           }
+                                                                           that.authenticationProviderName.set("value",
+                                                                                                               actualData.name);
+                                                                           util.setContextData(that.context,
+                                                                                               management,
+                                                                                               modelObj,
+                                                                                               actualData,
+                                                                                               effectiveData,
+                                                                                               function ()
+                                                                                               {
+                                                                                                   that._show();
+                                                                                               });
+                                                                       });
+                   }
+                   else
+                   {
+                       this.preferencesProviderForm.reset();
+                       this.authenticationProviderType.set("disabled", false);
+                       this.authenticationProviderName.set("disabled", false);
+                       this.initialData = {};
+                       this.effectiveData = {};
+                       util.setToBrokerEffectiveContext(this.context, management, function ()
+                       {
+                           that._show();
+                       });
+                   }
+               },
+               _show: function ()
+               {
+                   this.dialog.show();
+                   if (!this.resizeEventRegistered)
+                   {
+                       this.resizeEventRegistered = true;
+                       util.resizeContentAreaAndRepositionDialog(dom.byId("addAuthenticationProvider.contentPane"),
+                                                                 this.dialog);
+                   }
+               },
+               _cancel: function (e)
+               {
+                   event.stop(e);
+                   this.dialog.hide();
+               },
+               _add: function (e)
+               {
+                   event.stop(e);
+                   this._submit();
+               },
+               _submit: function ()
+               {
+                   if (this.authenticationProviderForm.validate() && this.preferencesProviderForm.validate())
+                   {
+                       var authenticationProviderData = util.getFormWidgetValues(this.authenticationProviderForm,
+                                                                                 this.initialData);
+                       var context = this.context.get("value");
+                       if (context && (!this.initialData || !util.equals(context, this.initialData.context)))
+                       {
+                           authenticationProviderData["context"] = context;
+                       }
+                       var that = this;
 
-                    var hideDialog = function(x)
-                    {
-                        that.dialog.hide();
-                    }
+                       var hideDialog = function (x)
+                       {
+                           that.dialog.hide();
+                       }
 
-                    var savePreferences = function(x)
-                    {
-                        that.preferencesProviderForm.submit(
-                            function(preferencesProviderData)
-                            {
-                                if (that.preferencesProviderForm.data)
-                                {
-                                    // update request
-                                    var name = that.preferencesProviderForm.getPreferencesProviderName();
+                       var savePreferences = function (x)
+                       {
+                           that.preferencesProviderForm.submit(function (preferencesProviderData)
+                                                               {
+                                                                   if (that.preferencesProviderForm.data)
+                                                                   {
+                                                                       // update request
+                                                                       var name = that.preferencesProviderForm.getPreferencesProviderName();
 
-                                    var modelObj = {name: name, type: "preferencesprovider",  parent: that.modelObj};
-                                    that.management.update(modelObj, preferencesProviderData).then(hideDialog);
-                                }
-                                else
-                                {
-                                    var authProviderModelObj = that.modelObj;
-                                    if (authProviderModelObj.type != "authenticationprovider")
-                                    {
-                                        authProviderModelObj = { name: authenticationProviderData.name, type: "authenticationprovider", parent: that.modelObj};
-                                    }
-                                    that.management.create("preferencesprovider", authProviderModelObj, preferencesProviderData).then(hideDialog);
-                                }
-                            },
-                            hideDialog
-                        );
-                    }
+                                                                       var modelObj = {
+                                                                           name: name,
+                                                                           type: "preferencesprovider",
+                                                                           parent: that.modelObj
+                                                                       };
+                                                                       that.management.update(modelObj,
+                                                                                              preferencesProviderData)
+                                                                           .then(hideDialog);
+                                                                   }
+                                                                   else
+                                                                   {
+                                                                       var authProviderModelObj = that.modelObj;
+                                                                       if (authProviderModelObj.type
+                                                                           != "authenticationprovider")
+                                                                       {
+                                                                           authProviderModelObj = {
+                                                                               name: authenticationProviderData.name,
+                                                                               type: "authenticationprovider",
+                                                                               parent: that.modelObj
+                                                                           };
+                                                                       }
+                                                                       that.management.create("preferencesprovider",
+                                                                                              authProviderModelObj,
+                                                                                              preferencesProviderData)
+                                                                           .then(hideDialog);
+                                                                   }
+                                                               }, hideDialog);
+                       }
 
-                    if (this.initialData && this.initialData.id)
-                    {
-                        // update request
-                        this.management.update(that.modelObj, authenticationProviderData).then(savePreferences);
-                    }
-                    else
-                    {
-                        this.management.create("authenticationprovider", that.modelObj, authenticationProviderData).then(savePreferences);
-                    }
-                }
-                else
-                {
-                    alert('Form contains invalid data. Please correct first');
-                }
-            },
-            _authenticationProviderTypeChanged: function(type)
-            {
-                this._typeChanged(type, this.authenticationProviderTypeFieldsContainer, "qpid/management/authenticationprovider/", "AuthenticationProvider" );
-            },
-            _typeChanged: function(type, typeFieldsContainer, baseUrl, category )
-            {
-                var widgets = registry.findWidgets(typeFieldsContainer);
-                array.forEach(widgets, function(item) { item.destroyRecursive();});
-                construct.empty(typeFieldsContainer);
-                var supportsPreferencesProvider = false;
-                if (type && this.management)
-                {
-                    supportsPreferencesProvider = this.management.metadata.implementsManagedInterface("AuthenticationProvider", type, "PreferencesSupportingAuthenticationProvider");
-                }
-                this.preferencesProviderForm.set("disabled", !type || !supportsPreferencesProvider);
-                if (type)
-                {
-                    var that = this;
-                    require([ baseUrl + type.toLowerCase() + "/add"], function(typeUI)
-                    {
-                        try
-                        {
-                            typeUI.show({containerNode:typeFieldsContainer, parent: that, category: category, type: type, data: that.initialData, effectiveData: that.effectiveData, metadata: that.management.metadata});
-                            util.applyMetadataToWidgets(typeFieldsContainer, category, type, that.management.metadata);
-                        }
-                        catch(e)
-                        {
-                            console.warn(e);
-                        }
-                    });
-                }
-            }
-        };
+                       if (this.initialData && this.initialData.id)
+                       {
+                           // update request
+                           this.management.update(that.modelObj, authenticationProviderData).then(savePreferences);
+                       }
+                       else
+                       {
+                           this.management.create("authenticationprovider", that.modelObj, authenticationProviderData)
+                               .then(savePreferences);
+                       }
+                   }
+                   else
+                   {
+                       alert('Form contains invalid data. Please correct first');
+                   }
+               },
+               _authenticationProviderTypeChanged: function (type)
+               {
+                   this._typeChanged(type,
+                                     this.authenticationProviderTypeFieldsContainer,
+                                     "qpid/management/authenticationprovider/",
+                                     "AuthenticationProvider");
+               },
+               _typeChanged: function (type, typeFieldsContainer, baseUrl, category)
+               {
+                   var widgets = registry.findWidgets(typeFieldsContainer);
+                   array.forEach(widgets, function (item)
+                   {
+                       item.destroyRecursive();
+                   });
+                   construct.empty(typeFieldsContainer);
+                   var supportsPreferencesProvider = false;
+                   if (type && this.management)
+                   {
+                       supportsPreferencesProvider = this.management.metadata.implementsManagedInterface(
+                           "AuthenticationProvider",
+                           type,
+                           "PreferencesSupportingAuthenticationProvider");
+                   }
+                   this.preferencesProviderForm.set("disabled", !type || !supportsPreferencesProvider);
+                   if (type)
+                   {
+                       var that = this;
+                       require([baseUrl + type.toLowerCase() + "/add"], function (typeUI)
+                       {
+                           try
+                           {
+                               typeUI.show({
+                                               containerNode: typeFieldsContainer,
+                                               parent: that,
+                                               category: category,
+                                               type: type,
+                                               data: that.initialData,
+                                               effectiveData: that.effectiveData,
+                                               metadata: that.management.metadata
+                                           });
+                               util.applyMetadataToWidgets(typeFieldsContainer,
+                                                           category,
+                                                           type,
+                                                           that.management.metadata);
+                           }
+                           catch (e)
+                           {
+                               console.warn(e);
+                           }
+                       });
+                   }
+               }
+           };
 
-        try
-        {
-            addAuthenticationProvider.init();
-        }
-        catch(e)
-        {
-            console.warn(e);
-        }
-        return addAuthenticationProvider;
-    }
-
-);
+           try
+           {
+               addAuthenticationProvider.init();
+           }
+           catch (e)
+           {
+               console.warn(e);
+           }
+           return addAuthenticationProvider;
+       });

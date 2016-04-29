@@ -43,43 +43,40 @@ define(["dojo/_base/lang", "dojo/Deferred", "dojo/json"], function (lang, Deferr
             var mechanism = mechanisms.shift();
             if (mechanism)
             {
-              var url = "qpid/sasl/" + encodeURIComponent(mechanism.toLowerCase()) + "/SaslClient";
-              management.get({url:"js/" + url + ".js",
-                              handleAs: "text",
-                              headers: { "Content-Type": "text/plain"}})
-                        .then(function(data)
-                              {
-                                  require([url],
-                                          function(SaslClient)
-                                          {
-                                              try
-                                              {
-                                                  var saslClient = new SaslClient();
-                                                  saslClients.push(saslClient);
-                                              }
-                                              catch(e)
-                                              {
-                                                  console.error("Unexpected error on loading of mechanism " +
-                                                                mechanism + ": " + json.stringify(e));
-                                              }
-                                              finally
-                                              {
-                                                handleMechanisms();
-                                              }
-                                          });
-                              },
-                              function(data)
-                              {
-                                  if (data.response.status != 404 )
-                                  {
-                                      console.error("Unexpected error on loading mechanism " +
-                                                   mechanism +
-                                                   ": " +
-                                                   json.stringify(data));
-                                  }
-                                  handleMechanisms();
-                              }
-                        );
+                var url = "qpid/sasl/" + encodeURIComponent(mechanism.toLowerCase()) + "/SaslClient";
+                management.get({
+                                   url: "js/" + url + ".js",
+                                   handleAs: "text",
+                                   headers: {"Content-Type": "text/plain"}
+                               })
+                          .then(function (data)
+                                {
+                                    require([url], function (SaslClient)
+                                    {
+                                        try
+                                        {
+                                            var saslClient = new SaslClient();
+                                            saslClients.push(saslClient);
+                                        }
+                                        catch (e)
+                                        {
+                                            console.error("Unexpected error on loading of mechanism " + mechanism + ": "
+                                                          + json.stringify(e));
+                                        }
+                                        finally
+                                        {
+                                            handleMechanisms();
+                                        }
+                                    });
+                                }, function (data)
+                                {
+                                    if (data.response.status != 404)
+                                    {
+                                        console.error("Unexpected error on loading mechanism " + mechanism + ": "
+                                                      + json.stringify(data));
+                                    }
+                                    handleMechanisms();
+                                });
             }
             else
             {
@@ -91,38 +88,35 @@ define(["dojo/_base/lang", "dojo/Deferred", "dojo/json"], function (lang, Deferr
     }
 
     return {
-              authenticate:   function(mechanisms, management)
-                              {
-                                   var deferred = new Deferred();
-                                   var successCallback = function(data)
-                                                         {
-                                                           deferred.resolve(data);
-                                                         };
-                                   var failureCallback = function(data)
-                                                         {
-                                                           deferred.reject(data);
-                                                         };
-                                   loadSaslClients(mechanisms,
-                                                   management,
-                                                   function (saslClients)
-                                                   {
-                                                      if (saslClients.length > 0)
-                                                      {
-                                                        saslClients.sort(function(c1, c2)
-                                                                         {
-                                                                           return c2.getPriority() - c1.getPriority();
-                                                                         });
-                                                        saslClients[0].authenticate(management).then(successCallback,
-                                                                                                     failureCallback);
-                                                      }
-                                                      else
-                                                      {
-                                                        failureCallback({message:"No SASL client available for " +
-                                                                                      data.mechanisms});
-                                                      }
-                                                   },
-                                                   failureCallback);
-                                   return deferred.promise;
-                              }
-           };
+        authenticate: function (mechanisms, management)
+        {
+            var deferred = new Deferred();
+            var successCallback = function (data)
+            {
+                deferred.resolve(data);
+            };
+            var failureCallback = function (data)
+            {
+                deferred.reject(data);
+            };
+            loadSaslClients(mechanisms, management, function (saslClients)
+            {
+                if (saslClients.length > 0)
+                {
+                    saslClients.sort(function (c1, c2)
+                                     {
+                                         return c2.getPriority() - c1.getPriority();
+                                     });
+                    saslClients[0].authenticate(management).then(successCallback, failureCallback);
+                }
+                else
+                {
+                    failureCallback({
+                                        message: "No SASL client available for " + data.mechanisms
+                                    });
+                }
+            }, failureCallback);
+            return deferred.promise;
+        }
+    };
 });

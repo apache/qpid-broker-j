@@ -38,15 +38,27 @@
         }
 
         var dojoConfig = {
-            tlmSiblingOfDojo:false,
-            parseOnLoad:true,
-            async:true,
+            tlmSiblingOfDojo: false,
+            parseOnLoad: true,
+            async: true,
             baseUrl: getContextPath(),
-            packages:[
-                { name:"dojo", location:"dojo/dojo" },
-                { name:"dijit", location:"dojo/dijit" },
-                { name:"dojox", location:"dojo/dojox" },
-                { name:"qpid", location:"js/qpid" }
+            packages: [
+                {
+                    name: "dojo",
+                    location: "dojo/dojo"
+                },
+                {
+                    name: "dijit",
+                    location: "dojo/dijit"
+                },
+                {
+                    name: "dojox",
+                    location: "dojo/dojox"
+                },
+                {
+                    name: "qpid",
+                    location: "js/qpid"
+                }
             ]
         };
 
@@ -56,11 +68,11 @@
 
     <script>
         require(["dijit/form/Button",
-            "dijit/layout/BorderContainer",
-            "dijit/layout/ContentPane",
-            "dijit/TitlePane",
-            "dojox/layout/TableContainer",
-            "qpid/common/footer"]);
+                 "dijit/layout/BorderContainer",
+                 "dijit/layout/ContentPane",
+                 "dijit/TitlePane",
+                 "dojox/layout/TableContainer",
+                 "qpid/common/footer"]);
     </script>
 
 </head>

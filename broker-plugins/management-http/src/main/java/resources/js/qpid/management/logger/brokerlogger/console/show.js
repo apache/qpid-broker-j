@@ -19,18 +19,22 @@
  *
  */
 define(["qpid/common/util",
-    "dojo/query",
-    "dojox/html/entities",
-    "dojo/text!logger/console/show.html",
-    "qpid/common/TypeTabExtension",
-    "dojo/domReady!"],
-  function (util, query, entities, template, TypeTabExtension)
-  {
-    function BrokerConsoleLogger(params)
-    {
-      TypeTabExtension.call(this, params.containerNode, template, "BrokerLogger", "Console", params.metadata, params.data);
-    }
+        "dojo/query",
+        "dojox/html/entities",
+        "dojo/text!logger/console/show.html",
+        "qpid/common/TypeTabExtension",
+        "dojo/domReady!"], function (util, query, entities, template, TypeTabExtension)
+       {
+           function BrokerConsoleLogger(params)
+           {
+               TypeTabExtension.call(this,
+                                     params.containerNode,
+                                     template,
+                                     "BrokerLogger",
+                                     "Console",
+                                     params.metadata,
+                                     params.data);
+           }
 
-    return util.extend(BrokerConsoleLogger, TypeTabExtension);
-  }
-);
+           return util.extend(BrokerConsoleLogger, TypeTabExtension);
+       });

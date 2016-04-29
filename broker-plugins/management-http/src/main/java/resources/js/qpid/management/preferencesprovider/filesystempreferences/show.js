@@ -18,31 +18,33 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/parser",
-        "dojo/string",
-        "dojox/html/entities",
-        "dojo/query",
-        "dojo/domReady!"],
-    function (xhr, parser, json, entities, query) {
+define(["dojo/_base/xhr", "dojo/parser", "dojo/string", "dojox/html/entities", "dojo/query", "dojo/domReady!"],
+       function (xhr, parser, json, entities, query)
+       {
 
-  function FileSystemPreferences(containerNode) {
-    var that = this;
-    xhr.get({url: "preferencesprovider/filesystempreferences/show.html",
-      sync: true,
-      load:  function(template) {
-        containerNode.innerHTML = template;
-        parser.parse(containerNode).then(function(instances)
-        {
-            that.preferencesProviderPath=query(".fileSystemPreferencesProviderPath", containerNode)[0];
-        });
-      }});
-  }
+           function FileSystemPreferences(containerNode)
+           {
+               var that = this;
+               xhr.get({
+                           url: "preferencesprovider/filesystempreferences/show.html",
+                           sync: true,
+                           load: function (template)
+                           {
+                               containerNode.innerHTML = template;
+                               parser.parse(containerNode).then(function (instances)
+                                                                {
+                                                                    that.preferencesProviderPath = query(
+                                                                        ".fileSystemPreferencesProviderPath",
+                                                                        containerNode)[0];
+                                                                });
+                           }
+                       });
+           }
 
-  FileSystemPreferences.prototype.update=function(data)
-  {
-    this.preferencesProviderPath.innerHTML = entities.encode(String(data["path"]));
-  };
+           FileSystemPreferences.prototype.update = function (data)
+           {
+               this.preferencesProviderPath.innerHTML = entities.encode(String(data["path"]));
+           };
 
-  return FileSystemPreferences;
-});
+           return FileSystemPreferences;
+       });

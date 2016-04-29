@@ -22,18 +22,25 @@ define(["dojo/_base/declare",
         "dojox/encoding/base64",
         "dojox/encoding/digests/_base",
         "dojox/encoding/digests/MD5",
-        "qpid/sasl/cram-md5/SaslClient" ],
-       function(declare, lang, base64, digestsBase, MD5, SaslClientCramMD5)
+        "qpid/sasl/cram-md5/SaslClient"], function (declare, lang, base64, digestsBase, MD5, SaslClientCramMD5)
        {
-            return declare("qpid.sasl.SaslClientCramMD5Hex", [SaslClientCramMD5],{
-                 getMechanismName:   function() {return "CRAM-MD5-HEX";},
-                 getPriority:        function() {return 2;},
-                 initialize:         function(username, password)
-                                     {
-                                        var hashedPassword = MD5(password, digestsBase.outputTypes.Hex);
-                                        this.inherited(arguments, [username, hashedPassword]);
-                                     },
-                 toString:           function() { return "[SaslClientCramMD5Hex]";}
-            });
-       }
-);
+           return declare("qpid.sasl.SaslClientCramMD5Hex", [SaslClientCramMD5], {
+               getMechanismName: function ()
+               {
+                   return "CRAM-MD5-HEX";
+               },
+               getPriority: function ()
+               {
+                   return 2;
+               },
+               initialize: function (username, password)
+               {
+                   var hashedPassword = MD5(password, digestsBase.outputTypes.Hex);
+                   this.inherited(arguments, [username, hashedPassword]);
+               },
+               toString: function ()
+               {
+                   return "[SaslClientCramMD5Hex]";
+               }
+           });
+       });

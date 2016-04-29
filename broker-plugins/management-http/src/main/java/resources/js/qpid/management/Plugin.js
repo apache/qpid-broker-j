@@ -29,31 +29,41 @@ define(["dojo/parser",
         "dojox/html/entities",
         "dojo/text!showPlugin.html",
         "dojo/domReady!"],
-       function (parser, query, connect, properties, updater, util, registry, event, entities, template) {
+       function (parser, query, connect, properties, updater, util, registry, event, entities, template)
+       {
 
-           function Plugin(name, parent, controller) {
+           function Plugin(name, parent, controller)
+           {
                this.name = name;
                this.controller = controller;
                this.management = controller.management;
-               this.modelObj = { type: "plugin", name: name, parent: parent };
+               this.modelObj = {
+                   type: "plugin",
+                   name: name,
+                   parent: parent
+               };
            }
 
-           Plugin.prototype.getTitle = function() {
-               return "Plugin: " + this.name ;
+           Plugin.prototype.getTitle = function ()
+           {
+               return "Plugin: " + this.name;
            };
 
-           Plugin.prototype.open = function(contentPane) {
+           Plugin.prototype.open = function (contentPane)
+           {
                var that = this;
                this.contentPane = contentPane;
-                contentPane.containerNode.innerHTML = template;
-                parser.parse(contentPane.containerNode).then(function(instances)
-                {
-                    that.pluginUpdater = new PluginUpdater(contentPane, that.modelObj, that.controller);
-                });
+               contentPane.containerNode.innerHTML = template;
+               parser.parse(contentPane.containerNode).then(function (instances)
+                                                            {
+                                                                that.pluginUpdater =
+                                                                    new PluginUpdater(contentPane, that.modelObj, that.controller);
+                                                            });
            };
 
-           Plugin.prototype.close = function() {
-               updater.remove( this.pluginUpdater );
+           Plugin.prototype.close = function ()
+           {
+               updater.remove(this.pluginUpdater);
            };
 
            function PluginUpdater(contentPane, pluginObject, controller)
@@ -68,25 +78,27 @@ define(["dojo/parser",
                var that = this;
 
                this.management.load(that.modelObj)
-                   .then(function(data)
+                   .then(function (data)
                          {
                              that.pluginData = data[0];
 
                              that.updateHeader();
 
-                             require(["qpid/management/plugin/"+ that.pluginData.type.toLowerCase().replace('-','')],
-                                 function(SpecificPlugin) {
-                                 that.details = new SpecificPlugin(query(".pluginDetails", node)[0], pluginObject, controller, contentPane);
-                             });
+                             require(["qpid/management/plugin/" + that.pluginData.type.toLowerCase().replace('-', '')],
+                                     function (SpecificPlugin)
+                                     {
+                                         that.details = new SpecificPlugin(query(".pluginDetails",
+                                                                                 node)[0], pluginObject, controller, contentPane);
+                                     });
 
                          }, util.xhrErrorHandler);
 
            }
 
-           PluginUpdater.prototype.updateHeader = function()
+           PluginUpdater.prototype.updateHeader = function ()
            {
-               this.name.innerHTML = entities.encode(String(this.pluginData[ "name" ]));
-               this.type.innerHTML = entities.encode(String(this.pluginData[ "type" ]));
+               this.name.innerHTML = entities.encode(String(this.pluginData["name"]));
+               this.type.innerHTML = entities.encode(String(this.pluginData["type"]));
            };
 
            return Plugin;

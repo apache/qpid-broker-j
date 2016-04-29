@@ -18,25 +18,24 @@
  * under the License.
  *
  */
-define(["dojo/_base/declare"], function(declare)
+define(["dojo/_base/declare"], function (declare)
 {
-    return declare("qpid.common.FormWidgetMixin", null,
-    {
+    return declare("qpid.common.FormWidgetMixin", null, {
         name: "",
         value: "",
         _onChangeActive: false,
 
-        compare: function(val1, val2)
+        compare: function (val1, val2)
         {
-            if(typeof val1 == "number" && typeof val2 == "number")
+            if (typeof val1 == "number" && typeof val2 == "number")
             {
                 return (isNaN(val1) && isNaN(val2)) ? 0 : val1 - val2;
             }
-            else if(val1 > val2)
+            else if (val1 > val2)
             {
                 return 1;
             }
-            else if(val1 < val2)
+            else if (val1 < val2)
             {
                 return -1;
             }
@@ -45,55 +44,61 @@ define(["dojo/_base/declare"], function(declare)
                 return 0;
             }
         },
-        onChange: function()
+        onChange: function ()
         {
         },
-        _setValueAttr: function(newValue, priorityChange)
+        _setValueAttr: function (newValue, priorityChange)
         {
             this._handleOnChange(newValue, priorityChange);
         },
-        _handleOnChange: function(newValue, priorityChange)
+        _handleOnChange: function (newValue, priorityChange)
         {
             this._set("value", newValue);
-            if(this._lastValueReported == undefined && (priorityChange === null || !this._onChangeActive))
+            if (this._lastValueReported == undefined && (priorityChange === null || !this._onChangeActive))
             {
                 this._resetValue = this._lastValueReported = newValue;
             }
-            this._pendingOnChange = this._pendingOnChange || (typeof newValue != typeof this._lastValueReported)
-             || (this.compare(newValue, this._lastValueReported) != 0);
-            if(( priorityChange || priorityChange === undefined) && this._pendingOnChange)
+            this._pendingOnChange =
+                this._pendingOnChange || (typeof newValue != typeof this._lastValueReported) || (this.compare(newValue,
+                                                                                                              this._lastValueReported)
+                                                                                                 != 0);
+            if (( priorityChange || priorityChange === undefined) && this._pendingOnChange)
             {
                 this._lastValueReported = newValue;
                 this._pendingOnChange = false;
-                if(this._onChangeActive)
+                if (this._onChangeActive)
                 {
-                    if(this._onChangeHandle)
+                    if (this._onChangeHandle)
                     {
                         this._onChangeHandle.remove();
                     }
-                    this._onChangeHandle = this.defer(function() { this._onChangeHandle = null; this.onChange(newValue); });
+                    this._onChangeHandle = this.defer(function ()
+                                                      {
+                                                          this._onChangeHandle = null;
+                                                          this.onChange(newValue);
+                                                      });
                 }
             }
         },
-        create: function()
+        create: function ()
         {
-         this.inherited(arguments);
-         this._onChangeActive = true;
+            this.inherited(arguments);
+            this._onChangeActive = true;
         },
-        destroy: function()
+        destroy: function ()
         {
-            if(this._onChangeHandle)
+            if (this._onChangeHandle)
             {
                 this._onChangeHandle.remove();
                 this.onChange(this._lastValueReported);
             }
             this.inherited(arguments);
         },
-        undo: function()
+        undo: function ()
         {
             this._setValueAttr(this._lastValueReported, false);
         },
-        reset: function()
+        reset: function ()
         {
             this._hasBeenBlurred = false;
             this._setValueAttr(this._resetValue, true);

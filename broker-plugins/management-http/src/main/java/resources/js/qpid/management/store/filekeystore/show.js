@@ -17,26 +17,24 @@
  * under the License.
  */
 
-define(["qpid/common/util", "dojo/domReady!"],
-  function (util)
-  {
+define(["qpid/common/util", "dojo/domReady!"], function (util)
+{
 
     function FileKeyStoreProvider(data)
     {
         this.fields = [];
         var attributes = data.parent.management.metadata.getMetaData("KeyStore", "FileKeyStore").attributes;
-        for(var name in attributes)
+        for (var name in attributes)
         {
             this.fields.push(name);
         }
         util.buildUI(data.containerNode, data.parent, "store/filekeystore/show.html", this.fields, this);
     }
 
-    FileKeyStoreProvider.prototype.update = function(data)
+    FileKeyStoreProvider.prototype.update = function (data)
     {
         util.updateUI(data, this.fields, this);
     }
 
     return FileKeyStoreProvider;
-  }
-);
+});

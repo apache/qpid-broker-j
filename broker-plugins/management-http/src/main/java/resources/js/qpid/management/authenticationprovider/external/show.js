@@ -18,20 +18,18 @@
  * under the License.
  *
  */
-define(["qpid/common/util", "dojo/domReady!"],
-  function (util)
-  {
+define(["qpid/common/util", "dojo/domReady!"], function (util)
+{
 
     function External(data)
     {
         util.buildUI(data.containerNode, data.parent, "authenticationprovider/external/show.html", ["useFullDN"], this);
     }
 
-    External.prototype.update = function(data)
+    External.prototype.update = function (data)
     {
         util.updateUI(data, ["useFullDN"], this);
     }
 
     return External;
-  }
-);
+});

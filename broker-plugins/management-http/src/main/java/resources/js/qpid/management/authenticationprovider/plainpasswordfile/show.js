@@ -18,20 +18,18 @@
  * under the License.
  *
  */
-define(["qpid/common/util", "dojo/domReady!"],
-  function (util)
-  {
+define(["qpid/common/util", "dojo/domReady!"], function (util)
+{
 
     function PlainPasswordFile(data)
     {
         util.buildUI(data.containerNode, data.parent, "authenticationprovider/filebased/show.html", ["path"], this);
     }
 
-    PlainPasswordFile.prototype.update = function(data)
+    PlainPasswordFile.prototype.update = function (data)
     {
         util.updateUI(data, ["path"], this);
     }
 
     return PlainPasswordFile;
-  }
-);
+});

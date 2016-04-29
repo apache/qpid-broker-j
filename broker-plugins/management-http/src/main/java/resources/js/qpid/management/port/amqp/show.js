@@ -25,85 +25,114 @@ define(["dojo/query",
         "qpid/common/util",
         "qpid/common/UpdatableStore",
         "qpid/management/addVirtualHostAlias",
-        "dojo/domReady!"],
-    function (query, template, EnhancedGrid, registry, util, UpdatableStore, addVirtualHostAlias) {
-        function AmqpPort(params) {
-            var that = this;
-            util.parse(params.typeSpecificDetailsNode, template, function () {
-                that.postParse(params);
-            });
-            this.modelObj = params.modelObj;
-            this.portUpdater = params.portUpdater;
-            this.management = params.management;
-        }
+        "dojo/domReady!"], function (query, template, EnhancedGrid, registry, util, UpdatableStore, addVirtualHostAlias)
+       {
+           function AmqpPort(params)
+           {
+               var that = this;
+               util.parse(params.typeSpecificDetailsNode, template, function ()
+               {
+                   that.postParse(params);
+               });
+               this.modelObj = params.modelObj;
+               this.portUpdater = params.portUpdater;
+               this.management = params.management;
+           }
 
-        AmqpPort.prototype.postParse = function (params) {
-            var that = this;
-            var gridProperties = {
-                height: 400,
-                sortInfo: 2,
-/*
-                canSort: function(column) { return false; },
-*/
-                plugins: {
-                    indirectSelection: true,  // KW TODO checkme
-                    pagination: {
-                        pageSizes: [10, 25, 50, 100],
-                        description: true,
-                        sizeSwitch: true,
-                        pageStepper: true,
-                        gotoButton: true,
-                        maxPageStep: 4,
-                        position: "bottom"
-                    }
-                }
-            };
+           AmqpPort.prototype.postParse = function (params)
+           {
+               var that = this;
+               var gridProperties = {
+                   height: 400,
+                   sortInfo: 2, /*
+                    canSort: function(column) { return false; },
+                    */
+                   plugins: {
+                       indirectSelection: true,  // KW TODO checkme
+                       pagination: {
+                           pageSizes: [10, 25, 50, 100],
+                           description: true,
+                           sizeSwitch: true,
+                           pageStepper: true,
+                           gotoButton: true,
+                           maxPageStep: 4,
+                           position: "bottom"
+                       }
+                   }
+               };
 
-            this.addButton = registry.byNode(query(".addButton", params.typeSpecificDetailsNode)[0]);
-            this.addButton.on("click", function (e) {
-                addVirtualHostAlias.show(that.management, that.modelObj);
-            });
-            this.deleteButton = registry.byNode(query(".deleteButton", params.typeSpecificDetailsNode)[0]);
-            this.deleteButton.on("click", function (e) {
-                util.deleteSelectedObjects(
-                    that.virtualHostAliasesGrid.grid,
-                    "Are you sure you want to delete virtual host alias",
-                    that.management,
-                    {type: "virtualhostalias", parent:that.modelObj},
-                    that.portUpdater);
-            });
+               this.addButton = registry.byNode(query(".addButton", params.typeSpecificDetailsNode)[0]);
+               this.addButton.on("click", function (e)
+               {
+                   addVirtualHostAlias.show(that.management, that.modelObj);
+               });
+               this.deleteButton = registry.byNode(query(".deleteButton", params.typeSpecificDetailsNode)[0]);
+               this.deleteButton.on("click", function (e)
+               {
+                   util.deleteSelectedObjects(that.virtualHostAliasesGrid.grid,
+                                              "Are you sure you want to delete virtual host alias",
+                                              that.management,
+                                              {
+                                                  type: "virtualhostalias",
+                                                  parent: that.modelObj
+                                              },
+                                              that.portUpdater);
+               });
 
-            this.virtualHostAliasesGrid = new UpdatableStore(params.data.virtualhostaliases, query(".virtualHostAliasesGrid", params.typeSpecificDetailsNode)[0],
-                [
-                    {name: "Priority", field: "priority", width: "20%"},
-                    {name: "Name", field: "name", width: "40%"},
-                    {name: "Type", field: "type", width: "40%"}
-                ], function (obj) {
-                    obj.grid.on("rowDblClick",
-                        function (evt) {
-                            var idx = evt.rowIndex;
-                            var theItem = this.getItem(idx);
-                            var aliasModelObj = {name: theItem.name, type: "virtualhostalias", parent: that.modelObj};
-                            that.management.load(aliasModelObj, {actuals: true, depth: 0}).then(
-                                function (data) {
-                                    addVirtualHostAlias.show(that.management, aliasModelObj, data[0]);
-                                }
-                            );
-                        });
-                }, gridProperties, EnhancedGrid);
-        }
+               this.virtualHostAliasesGrid = new UpdatableStore(params.data.virtualhostaliases, query(
+                   ".virtualHostAliasesGrid",
+                   params.typeSpecificDetailsNode)[0], [{
+                   name: "Priority",
+                   field: "priority",
+                   width: "20%"
+               },
+                   {
+                       name: "Name",
+                       field: "name",
+                       width: "40%"
+                   },
+                   {
+                       name: "Type",
+                       field: "type",
+                       width: "40%"
+                   }], function (obj)
+               {
+                   obj.grid.on("rowDblClick", function (evt)
+                   {
+                       var idx = evt.rowIndex;
+                       var theItem = this.getItem(idx);
+                       var aliasModelObj = {
+                           name: theItem.name,
+                           type: "virtualhostalias",
+                           parent: that.modelObj
+                       };
+                       that.management.load(aliasModelObj,
+                                            {
+                                                actuals: true,
+                                                depth: 0
+                                            }).then(function (data)
+                                                    {
+                                                        addVirtualHostAlias.show(that.management,
+                                                                                 aliasModelObj,
+                                                                                 data[0]);
+                                                    });
+                   });
+               }, gridProperties, EnhancedGrid);
+           }
 
-        AmqpPort.prototype.update = function (restData) {
-            if (this.virtualHostAliasesGrid) {
-                if (this.virtualHostAliasesGrid.update(restData.virtualhostaliases)) {
-/*
-                    this.virtualHostAliasesGrid.grid.sort();
-                    this.virtualHostAliasesGrid.grid.update();
-*/
-                }
-            }
-        }
+           AmqpPort.prototype.update = function (restData)
+           {
+               if (this.virtualHostAliasesGrid)
+               {
+                   if (this.virtualHostAliasesGrid.update(restData.virtualhostaliases))
+                   {
+                       /*
+                        this.virtualHostAliasesGrid.grid.sort();
+                        this.virtualHostAliasesGrid.grid.update();
+                        */
+                   }
+               }
+           }
 
-        return AmqpPort;
-    }
-);
+           return AmqpPort;
+       });

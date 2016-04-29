@@ -19,7 +19,6 @@
  *
  */
 
-
 var duration = 1000;
 var acknowledgeMode = 0;
 var deliveryMode = 2;
@@ -28,64 +27,47 @@ var queueName = "testQueueHillClimbing";
 var destination = "BURL:direct://amq.direct//".concat(queueName).concat("?durable='true'");
 
 var test = {
-  "_name": "HillClimbing",
-  "_queues":[
-    {
-      "_name": queueName,
-      "_durable": true
-    }
-  ],
-  "_clients":[
-    {
-      "_name": "producingClient",
-      "_connections":[
-        {
-          "_name": "connection1",
-          "_factory": "connectionfactory",
-          "_sessions": [
-            {
-              "_sessionName": "session1",
-              "_acknowledgeMode": acknowledgeMode,
-              "_producers": [
-                {
-                  "_name": "Producer1",
-                  "_destinationName": destination,
-                  "_deliveryMode": deliveryMode,
-                  "_maximumDuration": duration
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "_name": "consumingClient",
-      "_connections":[
-        {
-          "_name": "connection1",
-          "_factory": "connectionfactory",
-          "_sessions": [
-            {
-              "_sessionName": "session1",
-              "_acknowledgeMode": acknowledgeMode,
-              "_consumers": [
-                {
-                  "_name": "Consumer1",
-                  "_destinationName": destination,
-                  "_maximumDuration": duration
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
+    "_name": "HillClimbing",
+    "_queues": [{
+        "_name": queueName,
+        "_durable": true
+    }],
+    "_clients": [{
+        "_name": "producingClient",
+        "_connections": [{
+            "_name": "connection1",
+            "_factory": "connectionfactory",
+            "_sessions": [{
+                "_sessionName": "session1",
+                "_acknowledgeMode": acknowledgeMode,
+                "_producers": [{
+                    "_name": "Producer1",
+                    "_destinationName": destination,
+                    "_deliveryMode": deliveryMode,
+                    "_maximumDuration": duration
+                }]
+            }]
+        }]
+    }, {
+        "_name": "consumingClient",
+        "_connections": [{
+            "_name": "connection1",
+            "_factory": "connectionfactory",
+            "_sessions": [{
+                "_sessionName": "session1",
+                "_acknowledgeMode": acknowledgeMode,
+                "_consumers": [{
+                    "_name": "Consumer1",
+                    "_destinationName": destination,
+                    "_maximumDuration": duration
+                }]
+            }]
+        }]
+    }]
 };
 
 var jsonObject = {
-  _tests:[test]
+    _tests: [test]
 };
 
 

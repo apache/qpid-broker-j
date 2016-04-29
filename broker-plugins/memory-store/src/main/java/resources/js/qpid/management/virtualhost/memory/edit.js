@@ -16,13 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-define(["dojo/domReady!"],
-   function ()
-   {
-       return {
-           show: function(data)
-           {
-           }
-       };
-   }
-);
+define(["dojo/domReady!"], function ()
+{
+    return {
+        show: function (data)
+        {
+        }
+    };
+});

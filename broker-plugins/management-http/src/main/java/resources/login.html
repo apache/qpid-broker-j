@@ -38,15 +38,27 @@
         }
 
         var dojoConfig = {
-            tlmSiblingOfDojo:false,
-            parseOnLoad:true,
-            async:true,
+            tlmSiblingOfDojo: false,
+            parseOnLoad: true,
+            async: true,
             baseUrl: getContextPath(),
-            packages:[
-                { name:"dojo", location:"dojo/dojo" },
-                { name:"dijit", location:"dojo/dijit" },
-                { name:"dojox", location:"dojo/dojox" },
-                { name:"qpid", location:"js/qpid" }
+            packages: [
+                {
+                    name: "dojo",
+                    location: "dojo/dojo"
+                },
+                {
+                    name: "dijit",
+                    location: "dojo/dijit"
+                },
+                {
+                    name: "dojox",
+                    location: "dojo/dojox"
+                },
+                {
+                    name: "qpid",
+                    location: "js/qpid"
+                }
             ]
         };
 
@@ -55,17 +67,17 @@
     </script>
 
     <script>
-          require(["dijit/form/Form",
-                   "dijit/form/Button",
-                   "dijit/form/TextBox",
-                   "dijit/form/ValidationTextBox",
-                   "dijit/layout/BorderContainer",
-                   "dijit/layout/ContentPane",
-                   "dijit/TitlePane",
-                   "dojox/layout/TableContainer",
-                   "dojox/validate/us",
-                   "dojox/validate/web",
-                   "qpid/common/footer"]);
+        require(["dijit/form/Form",
+                 "dijit/form/Button",
+                 "dijit/form/TextBox",
+                 "dijit/form/ValidationTextBox",
+                 "dijit/layout/BorderContainer",
+                 "dijit/layout/ContentPane",
+                 "dijit/TitlePane",
+                 "dojox/layout/TableContainer",
+                 "dojox/validate/us",
+                 "dojox/validate/web",
+                 "qpid/common/footer"]);
     </script>
 
 </head>
@@ -81,14 +93,14 @@
             <div data-dojo-type="dijit.form.Form" method="POST" id="loginForm">
                 <script type="dojo/on" data-dojo-event="submit" data-dojo-args="e">
                     e.preventDefault()
-                    if(this.validate())
+                    if (this.validate())
                     {
                         require(["qpid/management/Management", "dojo/json"],
-                                function(Management, json)
+                                function (Management, json)
                                 {
                                     var redirectIfAuthenticated = function redirectIfAuthenticated(data)
                                     {
-                                        if(data.user)
+                                        if (data.user)
                                         {
 
                                             window.location = "index.html";
@@ -102,11 +114,11 @@
                                     {
                                         if (error.response)
                                         {
-                                            if(error.response.status == 401)
+                                            if (error.response.status == 401)
                                             {
                                                 alert("Authentication Failed");
                                             }
-                                            else if(error.response.status == 403)
+                                            else if (error.response.status == 403)
                                             {
                                                 alert("Authorization Failed");
                                             }
@@ -117,7 +129,8 @@
                                         }
                                         else
                                         {
-                                            alert(error.message ? error.message : "Authentication failed:" + json.stringify(error));
+                                            alert(error.message ? error.message : "Authentication failed:"
+                                                                                  + json.stringify(error));
                                         }
                                     };
                                     var management = new Management("", errorHandler);

@@ -25,23 +25,20 @@ define(["dojo/dom",
         "qpid/common/util",
         "dojo/parser",
         "dojo/text!virtualhostalias/namealias/add.html",
-        "dojo/domReady!"],
-    function (dom, query, array, registry, util, parser, template)
-    {
-        var addVirtualHostAlias =
-        {
-            show: function(data)
-            {
-                var that = this;
-                this.metadata = data.metadata;
-                this.containerNode = data.containerNode;
-                data.containerNode.innerHTML = template;
-                return parser.parse(this.containerNode).then(function(instances)
-                {
-                });
-            }
-        };
+        "dojo/domReady!"], function (dom, query, array, registry, util, parser, template)
+       {
+           var addVirtualHostAlias = {
+               show: function (data)
+               {
+                   var that = this;
+                   this.metadata = data.metadata;
+                   this.containerNode = data.containerNode;
+                   data.containerNode.innerHTML = template;
+                   return parser.parse(this.containerNode).then(function (instances)
+                                                                {
+                                                                });
+               }
+           };
 
-        return addVirtualHostAlias;
-    }
-);
+           return addVirtualHostAlias;
+       });

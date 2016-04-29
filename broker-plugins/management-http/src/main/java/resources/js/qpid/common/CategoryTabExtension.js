@@ -18,25 +18,22 @@
  * under the License.
  *
  */
-define(["qpid/common/util",
-    "dojo/query",
-    "dojo/domReady!"],
-  function (util, query)
-  {
+define(["qpid/common/util", "dojo/query", "dojo/domReady!"], function (util, query)
+{
     function CategoryTabExtension(params)
     {
-      var that = this;
-      this.base = params.baseUrl;
-      this.metadata = params.metadata;
-      this.management = params.management;
-      this.typeSpecificDetailsContainer = params.typeSpecificDetailsNode;
-      this.modelObj = params.modelObj;
-      util.parse(params.containerNode, params.template,
-        function()
+        var that = this;
+        this.base = params.baseUrl;
+        this.metadata = params.metadata;
+        this.management = params.management;
+        this.typeSpecificDetailsContainer = params.typeSpecificDetailsNode;
+        this.modelObj = params.modelObj;
+        util.parse(params.containerNode, params.template, function ()
         {
-          that.typeSpecificAttributesContainer = query("." + params.typeSpecificAttributesClassName, params.containerNode)[0];
-          that.postParse(params.containerNode);
-          that.update(params.data)
+            that.typeSpecificAttributesContainer =
+                query("." + params.typeSpecificAttributesClassName, params.containerNode)[0];
+            that.postParse(params.containerNode);
+            that.update(params.data)
         });
     }
 
@@ -47,34 +44,30 @@ define(["qpid/common/util",
 
     CategoryTabExtension.prototype.update = function (restData)
     {
-      var data = restData || {};
-      if (!this.details)
-      {
-        if (data.type)
+        var data = restData || {};
+        if (!this.details)
         {
-          var that = this;
-          require([this.base + data.type.toLowerCase() + "/show"],
-            function(Details)
+            if (data.type)
             {
-              that.details = new Details(
+                var that = this;
+                require([this.base + data.type.toLowerCase() + "/show"], function (Details)
                 {
-                  containerNode: that.typeSpecificAttributesContainer,
-                  typeSpecificDetailsNode: that.typeSpecificDetailsContainer,
-                  metadata: that.metadata,
-                  data:data,
-                  management: that.management,
-                  modelObj: that.modelObj
+                    that.details = new Details({
+                        containerNode: that.typeSpecificAttributesContainer,
+                        typeSpecificDetailsNode: that.typeSpecificDetailsContainer,
+                        metadata: that.metadata,
+                        data: data,
+                        management: that.management,
+                        modelObj: that.modelObj
+                    });
                 });
             }
-          );
         }
-      }
-      else
-      {
-        this.details.update(data);
-      }
+        else
+        {
+            this.details.update(data);
+        }
     }
 
     return CategoryTabExtension;
-  }
-);
+});

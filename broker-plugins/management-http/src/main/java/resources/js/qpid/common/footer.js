@@ -18,13 +18,18 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr", "dojo/query", "dojo/domReady!"], function (xhr, query) {
-   query('div[qpid-type="footer"]').forEach(function(node, index, arr) {
-       xhr.get({url: "footer.html",
-                sync: true,
-                load:  function(data) {
-                    node.innerHTML = data;
-                } });
-   });
+define(["dojo/_base/xhr", "dojo/query", "dojo/domReady!"], function (xhr, query)
+{
+    query('div[qpid-type="footer"]').forEach(function (node, index, arr)
+                                             {
+                                                 xhr.get({
+                                                             url: "footer.html",
+                                                             sync: true,
+                                                             load: function (data)
+                                                             {
+                                                                 node.innerHTML = data;
+                                                             }
+                                                         });
+                                             });
 });
 

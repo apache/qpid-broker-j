@@ -19,29 +19,30 @@
  *
  */
 define(["dojo/dom",
-    "dojo/query",
-    "dojo/_base/array",
-    "dijit/registry",
-    "qpid/common/util",
-    "dojo/parser",
-    "dojo/text!logger/console/add.html",
-    "dojo/domReady!"],
-  function (dom, query, array, registry, util, parser, template)
-  {
-    return {
-      show: function(data)
-      {
-        var that = this;
-        this.metadata = data.metadata;
-        data.containerNode.innerHTML = template;
-        return parser.parse(data.containerNode).then(function(instances)
-        {
-          var consoleStreamTargetWidget = registry.byId("addLogger.console.consoleStreamTarget");
-          var validValues = that.metadata.getMetaData(data.category, data.type).attributes.consoleStreamTarget.validValues;
-          var validValueStore = util.makeTypeStore(validValues);
-          consoleStreamTargetWidget.set("store", validValueStore);
-        });
-      }
-    };
-  }
-);
+        "dojo/query",
+        "dojo/_base/array",
+        "dijit/registry",
+        "qpid/common/util",
+        "dojo/parser",
+        "dojo/text!logger/console/add.html",
+        "dojo/domReady!"], function (dom, query, array, registry, util, parser, template)
+       {
+           return {
+               show: function (data)
+               {
+                   var that = this;
+                   this.metadata = data.metadata;
+                   data.containerNode.innerHTML = template;
+                   return parser.parse(data.containerNode).then(function (instances)
+                                                                {
+                                                                    var consoleStreamTargetWidget = registry.byId(
+                                                                        "addLogger.console.consoleStreamTarget");
+                                                                    var validValues = that.metadata.getMetaData(data.category,
+                                                                                                                data.type).attributes.consoleStreamTarget.validValues;
+                                                                    var validValueStore = util.makeTypeStore(validValues);
+                                                                    consoleStreamTargetWidget.set("store",
+                                                                                                  validValueStore);
+                                                                });
+               }
+           };
+       });

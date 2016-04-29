@@ -17,10 +17,8 @@
  * under the License.
  */
 
-define(["qpid/common/util",
-        "dojo/domReady!"],
-  function (util)
-  {
+define(["qpid/common/util", "dojo/domReady!"], function (util)
+{
     var fields = ["storePath", "storeUnderfullSize", "storeOverfullSize"];
 
     function Derby(data)
@@ -28,11 +26,10 @@ define(["qpid/common/util",
         util.buildUI(data.containerNode, data.parent, "virtualhost/sizemonitoring/show.html", fields, this);
     }
 
-    Derby.prototype.update = function(data)
+    Derby.prototype.update = function (data)
     {
         util.updateUI(data, fields, this);
     }
 
     return Derby;
-  }
-);
+});

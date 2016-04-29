@@ -18,63 +18,57 @@
  * under the License.
  *
  */
-define(["qpid/common/util",
-    "dojo/query",
-    "dojox/html/entities",
-    "dojo/domReady!"],
-  function (util, query, entities)
-  {
+define(["qpid/common/util", "dojo/query", "dojox/html/entities", "dojo/domReady!"], function (util, query, entities)
+{
 
-    function TypeTabExtension(containerNode, template, category, type, metadata, data )
+    function TypeTabExtension(containerNode, template, category, type, metadata, data)
     {
-      var that = this;
-      this.attributeContainers = {};
-      if (template)
-      {
-        util.parse(containerNode, template,
-          function ()
-          {
-            if (metadata && category && type)
+        var that = this;
+        this.attributeContainers = {};
+        if (template)
+        {
+            util.parse(containerNode, template, function ()
             {
-              var attributes = metadata.getMetaData(category, type).attributes;
-              for (var attrName in attributes)
-              {
-                var queryResult = query("." + attrName, containerNode);
-                if (queryResult && queryResult[0])
+                if (metadata && category && type)
                 {
-                  var attr = attributes[attrName];
-                  that.attributeContainers[attrName] = {
-                    containerNode: queryResult[0],
-                    attributeType: attr.type
-                  };
+                    var attributes = metadata.getMetaData(category, type).attributes;
+                    for (var attrName in attributes)
+                    {
+                        var queryResult = query("." + attrName, containerNode);
+                        if (queryResult && queryResult[0])
+                        {
+                            var attr = attributes[attrName];
+                            that.attributeContainers[attrName] = {
+                                containerNode: queryResult[0],
+                                attributeType: attr.type
+                            };
+                        }
+                    }
+                    that.update(data);
                 }
-              }
-              that.update(data);
-            }
-          });
-      }
+            });
+        }
     }
 
     TypeTabExtension.prototype.update = function (restData)
     {
-      for (var attrName in this.attributeContainers)
-      {
-        if (attrName in restData)
+        for (var attrName in this.attributeContainers)
         {
-          var content = "";
-          if (this.attributeContainers[attrName].attributeType == "Boolean")
-          {
-            content = util.buildCheckboxMarkup(restData[attrName]);
-          }
-          else
-          {
-            content = entities.encode(String(restData[attrName]));
-          }
-          this.attributeContainers[attrName].containerNode.innerHTML = content;
+            if (attrName in restData)
+            {
+                var content = "";
+                if (this.attributeContainers[attrName].attributeType == "Boolean")
+                {
+                    content = util.buildCheckboxMarkup(restData[attrName]);
+                }
+                else
+                {
+                    content = entities.encode(String(restData[attrName]));
+                }
+                this.attributeContainers[attrName].containerNode.innerHTML = content;
+            }
         }
-      }
     }
 
     return TypeTabExtension;
-  }
-);
+});

@@ -18,9 +18,11 @@
  * under the License.
  *
  */
-define([],
-    function ()
-    {
-        return { show: function(data) { /* nothing to do */ } };
-    }
-);
+define([], function ()
+{
+    return {
+        show: function (data)
+        { /* nothing to do */
+        }
+    };
+});

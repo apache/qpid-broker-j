@@ -17,9 +17,8 @@
  * under the License.
  */
 
-define(["qpid/common/util", "dojo/domReady!"],
-  function (util)
-  {
+define(["qpid/common/util", "dojo/domReady!"], function (util)
+{
     var fields = ["storeUnderfullSize", "storeOverfullSize"];
 
     function ProvidedStore(data)
@@ -27,11 +26,10 @@ define(["qpid/common/util", "dojo/domReady!"],
         util.buildUI(data.containerNode, data.parent, "virtualhost/providedstore/show.html", fields, this);
     }
 
-    ProvidedStore.prototype.update = function(data)
+    ProvidedStore.prototype.update = function (data)
     {
         util.updateUI(data, fields, this);
     }
 
     return ProvidedStore;
-  }
-);
+});

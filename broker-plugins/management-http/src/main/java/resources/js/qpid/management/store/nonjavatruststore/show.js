@@ -17,53 +17,75 @@
  * under the License.
  */
 
-define(["dojo/query",
-        "qpid/common/util",
-        "dojox/grid/DataGrid",
-        "qpid/common/UpdatableStore",
-        "dojo/domReady!"],
-  function (query, util, DataGrid, UpdatableStore)
-  {
+define(["dojo/query", "qpid/common/util", "dojox/grid/DataGrid", "qpid/common/UpdatableStore", "dojo/domReady!"],
+       function (query, util, DataGrid, UpdatableStore)
+       {
 
+           function NonJavaTrustStore(data)
+           {
+               this.fields = [];
+               this.management = data.parent.management;
+               var attributes = this.management.metadata.getMetaData("TrustStore", "NonJavaTrustStore").attributes;
+               for (var name in attributes)
+               {
+                   this.fields.push(name);
+               }
+               var that = this;
+               util.buildUI(data.containerNode,
+                            data.parent,
+                            "store/nonjavatruststore/show.html",
+                            this.fields,
+                            this,
+                            function ()
+                            {
+                                var gridNode = query(".details", data.containerNode)[0];
+                                var dateTimeFormatter = function (value)
+                                {
+                                    return value ? that.management.userPreferences.formatDateTime(value,
+                                                                                                  {
+                                                                                                      addOffset: true,
+                                                                                                      appendTimeZone: true
+                                                                                                  }) : "";
+                                };
+                                that.detailsGrid = new UpdatableStore([], gridNode, [{
+                                    name: 'Subject',
+                                    field: 'SUBJECT_NAME',
+                                    width: '25%'
+                                },
+                                    {
+                                        name: 'Issuer',
+                                        field: 'ISSUER_NAME',
+                                        width: '25%'
+                                    },
+                                    {
+                                        name: 'Valid from',
+                                        field: 'VALID_START',
+                                        width: '25%',
+                                        formatter: dateTimeFormatter
+                                    },
+                                    {
+                                        name: 'Valid to',
+                                        field: 'VALID_END',
+                                        width: '25%',
+                                        formatter: dateTimeFormatter
+                                    }]);
+                            });
+           }
 
-    function NonJavaTrustStore(data)
-    {
-        this.fields = [];
-        this.management = data.parent.management;
-        var attributes = this.management.metadata.getMetaData("TrustStore", "NonJavaTrustStore").attributes;
-        for(var name in attributes)
-        {
-            this.fields.push(name);
-        }
-        var that = this;
-        util.buildUI(data.containerNode, data.parent, "store/nonjavatruststore/show.html", this.fields, this, function()
-        {
-            var gridNode = query(".details", data.containerNode)[0];
-            var dateTimeFormatter = function(value){ return value ? that.management.userPreferences.formatDateTime(value, {addOffset: true, appendTimeZone: true}) : "";};
-            that.detailsGrid = new UpdatableStore([],
-                  gridNode,
-                  [
-                   { name: 'Subject', field: 'SUBJECT_NAME', width: '25%' },
-                   { name: 'Issuer', field: 'ISSUER_NAME', width: '25%' },
-                   { name: 'Valid from', field: 'VALID_START', width: '25%', formatter: dateTimeFormatter },
-                   { name: 'Valid to', field: 'VALID_END', width: '25%', formatter: dateTimeFormatter}
-                  ]);
-        });
-    }
+           NonJavaTrustStore.prototype.update = function (data)
+           {
+               util.updateUI(data, this.fields, this);
+               var details = data.certificateDetails;
+               for (var i = 0; i < details.length; i++)
+               {
+                   details[i].id =
+                       details[i].SUBJECT_NAME + "_" + details[i].ISSUER_NAME + "_" + details[i].VALID_START + "_"
+                       + details[i].VALID_END;
+               }
+               this.detailsGrid.grid.beginUpdate();
+               this.detailsGrid.update(details);
+               this.detailsGrid.grid.endUpdate();
+           }
 
-    NonJavaTrustStore.prototype.update = function(data)
-    {
-        util.updateUI(data, this.fields, this);
-        var details = data.certificateDetails;
-        for(var i=0; i < details.length; i++)
-        {
-            details[i].id = details[i].SUBJECT_NAME + "_" +  details[i].ISSUER_NAME + "_" + details[i].VALID_START + "_" + details[i].VALID_END;
-        }
-        this.detailsGrid.grid.beginUpdate();
-        this.detailsGrid.update(details);
-        this.detailsGrid.grid.endUpdate();
-    }
-
-    return NonJavaTrustStore;
-  }
-);
+           return NonJavaTrustStore;
+       });

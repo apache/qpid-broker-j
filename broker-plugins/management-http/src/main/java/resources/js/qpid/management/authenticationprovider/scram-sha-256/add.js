@@ -18,4 +18,11 @@
  * under the License.
  *
  */
-define([], function () { return { show: function(data){} }; });
+define([], function ()
+{
+    return {
+        show: function (data)
+        {
+        }
+    };
+});

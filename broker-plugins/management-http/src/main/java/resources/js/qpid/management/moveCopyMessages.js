@@ -30,102 +30,117 @@ define(["dojo/dom",
         "qpid/common/util",
         "dojo/text!moveCopyMessages.html",
         "dojo/domReady!"],
-    function (dom, construct, win, registry, parser, array, event, json, Memory, FilteringSelect, query, connect, util, template) {
+       function (dom, construct, win, registry, parser, array, event, json, Memory, FilteringSelect, query, connect, util, template)
+       {
 
-        var moveMessages = {};
+           var moveMessages = {};
 
-        var node = construct.create("div", null, win.body(), "last");
+           var node = construct.create("div", null, win.body(), "last");
 
+           var theForm;
+           node.innerHTML = template;
+           moveMessages.dialogNode = dom.byId("moveMessages");
+           parser.instantiate([moveMessages.dialogNode]);
+           moveMessages.dialog = registry.byId("moveMessages");
+           moveMessages.submitButton = registry.byId("moveMessageSubmit");
 
-                            var theForm;
-                            node.innerHTML = template;
-                            moveMessages.dialogNode = dom.byId("moveMessages");
-                            parser.instantiate([moveMessages.dialogNode]);
-                            moveMessages.dialog = registry.byId("moveMessages");
-                            moveMessages.submitButton = registry.byId("moveMessageSubmit");
+           theForm = registry.byId("formMoveMessages");
 
-                            theForm = registry.byId("formMoveMessages");
+           var cancelButton = registry.byId("moveMessageCancel");
 
-                            var cancelButton = registry.byId("moveMessageCancel");
+           connect.connect(cancelButton, "onClick", function (evt)
+           {
+               event.stop(evt);
+               moveMessages.dialog.hide();
+           });
 
-                            connect.connect(cancelButton, "onClick",
-                                            function(evt){
-                                                event.stop(evt);
-                                                moveMessages.dialog.hide();
-                                            });
+           theForm.on("submit", function (e)
+           {
 
+               event.stop(e);
+               if (theForm.validate())
+               {
+                   var destination = theForm.getValues()["queue"]
+                   var messageIds = moveMessages.data.messages
+                   var modelObj = {
+                       type: "queue",
+                       name: moveMessages.data.move ? "moveMessages" : "copyMessages",
+                       parent: moveMessages.modelObj
+                   };
+                   var parameters = {
+                       destination: destination,
+                       messageIds: messageIds
+                   };
+                   moveMessages.management.update(modelObj, parameters).then(function (result)
+                                                                             {
+                                                                                 moveMessages.dialog.hide();
+                                                                                 if (moveMessages.next)
+                                                                                 {
+                                                                                     moveMessages.next();
+                                                                                 }
+                                                                             });
+                   return false;
+               }
+               else
+               {
+                   alert('Form contains invalid data.  Please correct first');
+                   return false;
+               }
 
-                            theForm.on("submit", function(e) {
+           });
 
-                                event.stop(e);
-                                if(theForm.validate())
-                                {
-                                   var destination = theForm.getValues()["queue"]
-                                   var messageIds = moveMessages.data.messages
-                                   var modelObj = { type: "queue", name: moveMessages.data.move ? "moveMessages" : "copyMessages", parent: moveMessages.modelObj };
-                                   var parameters = {destination: destination, messageIds: messageIds};
-                                   moveMessages.management.update(modelObj, parameters).then(
-                                     function(result)
-                                     {
-                                       moveMessages.dialog.hide();
-                                       if(moveMessages.next)
-                                       {
-                                         moveMessages.next();
-                                       }
-                                     });
-                                   return false;
-                                }else{
-                                    alert('Form contains invalid data.  Please correct first');
-                                    return false;
-                                }
+           moveMessages.show = function (management, modelObj, data, next)
+           {
+               var that = this;
+               moveMessages.modelObj = modelObj;
+               moveMessages.management = management;
+               moveMessages.data = data;
+               moveMessages.next = next;
+               registry.byId("formMoveMessages").reset();
 
-                            });
+               var label = data.move ? "Move messages" : "Copy messages";
+               moveMessages.submitButton.set("label", label);
+               moveMessages.dialog.set("title", label);
 
-        moveMessages.show = function(management, modelObj, data, next) {
-            var that = this;
-            moveMessages.modelObj = modelObj;
-            moveMessages.management = management;
-            moveMessages.data = data;
-            moveMessages.next = next;
-            registry.byId("formMoveMessages").reset();
+               management.load({
+                                   type: "queue",
+                                   parent: modelObj.parent
+                               }, {depth: 0}).then(function (data)
+                                                   {
+                                                       var queues = [];
+                                                       for (var i = 0; i < data.length; i++)
+                                                       {
+                                                           if (data[i].name != modelObj.name)
+                                                           {
+                                                               queues.push({
+                                                                               id: data[i].name,
+                                                                               name: data[i].name
+                                                                           });
+                                                           }
+                                                       }
+                                                       var queueStore = new Memory({data: queues});
 
-            var label = data.move ? "Move messages" : "Copy messages";
-            moveMessages.submitButton.set("label", label);
-            moveMessages.dialog.set("title", label);
+                                                       if (that.queueChooser)
+                                                       {
+                                                           that.queueChooser.destroy(false);
+                                                       }
+                                                       var queueDiv = dom.byId("moveMessages.selectQueueDiv");
+                                                       var input = construct.create("input",
+                                                                                    {id: "moveMessagesSelectQueue"},
+                                                                                    queueDiv);
 
-            management.load({type: "queue", parent: modelObj.parent},  {depth:0}).then(
-                function(data) {
-                    var queues =  [];
-                    for(var i=0; i < data.length; i++)
-                    {
-                      if (data[i].name != modelObj.name)
-                      {
-                        queues.push({id: data[i].name, name: data[i].name});
-                      }
-                    }
-                    var queueStore = new Memory({ data: queues });
+                                                       that.queueChooser = new FilteringSelect({
+                                                           id: "moveMessagesSelectQueue",
+                                                           name: "queue",
+                                                           store: queueStore,
+                                                           searchAttr: "name"
+                                                       }, input);
 
+                                                       moveMessages.dialog.show();
 
-                    if(that.queueChooser) {
-                        that.queueChooser.destroy( false );
-                    }
-                    var queueDiv = dom.byId("moveMessages.selectQueueDiv");
-                    var input = construct.create("input", {id: "moveMessagesSelectQueue"}, queueDiv);
+                                                   }, util.xhrErrorHandler);
 
-                    that.queueChooser = new FilteringSelect({ id: "moveMessagesSelectQueue",
-                                                              name: "queue",
-                                                              store: queueStore,
-                                                              searchAttr: "name"}, input);
+           };
 
-
-
-                    moveMessages.dialog.show();
-
-
-                }, util.xhrErrorHandler);
-
-
-        };
-
-        return moveMessages;
-    });
+           return moveMessages;
+       });

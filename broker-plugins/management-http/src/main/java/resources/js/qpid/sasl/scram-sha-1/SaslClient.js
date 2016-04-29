@@ -17,21 +17,20 @@
  * under the License.
  */
 
-define(["dojo/_base/declare",
-        "qpid/sasl/ShaSaslClient" ],
-       function(declare, ShaSaslClient)
-       {
-            return declare("qpid.sasl.SaslClientScramSha1", [ShaSaslClient],
-            {
-                 constructor:        function()
-                                     {
-                                        this.inherited(arguments, ["SCRAM-SHA-1"]);
-                                     },
-                 getPriority:        function()
-                                     {
-                                        return 4;
-                                     },
-                 toString:           function() { return "[SaslClientScramSha1]";}
-            });
-       }
-);
+define(["dojo/_base/declare", "qpid/sasl/ShaSaslClient"], function (declare, ShaSaslClient)
+{
+    return declare("qpid.sasl.SaslClientScramSha1", [ShaSaslClient], {
+        constructor: function ()
+        {
+            this.inherited(arguments, ["SCRAM-SHA-1"]);
+        },
+        getPriority: function ()
+        {
+            return 4;
+        },
+        toString: function ()
+        {
+            return "[SaslClientScramSha1]";
+        }
+    });
+});

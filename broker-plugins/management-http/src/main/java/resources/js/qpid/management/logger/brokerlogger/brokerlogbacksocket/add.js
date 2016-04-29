@@ -18,24 +18,21 @@
  *
  */
 define(["dojo/dom",
-    "dojo/query",
-    "dojo/_base/array",
-    "dijit/registry",
-    "qpid/common/util",
-    "dojo/parser",
-    "dojo/text!logger/brokerlogbacksocket/add.html",
-    "dojo/domReady!"],
-  function (dom, query, array, registry, util, parser, template)
-  {
-    var addLogbackLogger =
-    {
-      show: function(data)
-      {
-        data.containerNode.innerHTML = template;
-        return parser.parse(data.containerNode);
-      }
-    };
+        "dojo/query",
+        "dojo/_base/array",
+        "dijit/registry",
+        "qpid/common/util",
+        "dojo/parser",
+        "dojo/text!logger/brokerlogbacksocket/add.html",
+        "dojo/domReady!"], function (dom, query, array, registry, util, parser, template)
+       {
+           var addLogbackLogger = {
+               show: function (data)
+               {
+                   data.containerNode.innerHTML = template;
+                   return parser.parse(data.containerNode);
+               }
+           };
 
-    return addLogbackLogger;
-  }
-);
+           return addLogbackLogger;
+       });

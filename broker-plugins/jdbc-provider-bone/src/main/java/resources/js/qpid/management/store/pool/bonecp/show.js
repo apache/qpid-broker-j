@@ -18,45 +18,45 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/parser",
-        "dojox/html/entities",
-        "dojo/query",
-        "dojo/domReady!"],
-  function (xhr, parser, entities, query)
-  {
-    var fieldNames = ["maxConnectionsPerPartition", "minConnectionsPerPartition", "partitionCount"];
+define(["dojo/_base/xhr", "dojo/parser", "dojox/html/entities", "dojo/query", "dojo/domReady!"],
+       function (xhr, parser, entities, query)
+       {
+           var fieldNames = ["maxConnectionsPerPartition", "minConnectionsPerPartition", "partitionCount"];
 
-    function BoneCP(data)
-    {
-      var containerNode = data.containerNode;
-      this.parent = data.parent;
-      var that = this;
-      xhr.get({url: "store/pool/bonecp/show.html",
-        sync: true,
-        load:  function(template) {
-          containerNode.innerHTML = template;
-          parser.parse(containerNode).then(function(instances)
-          {
-            for(var i=0; i<fieldNames.length;i++)
-            {
-                var fieldName = fieldNames[i];
-                that[fieldName]= query("." + fieldName, containerNode)[0];
-            }
-          });
-        }});
-    }
+           function BoneCP(data)
+           {
+               var containerNode = data.containerNode;
+               this.parent = data.parent;
+               var that = this;
+               xhr.get({
+                           url: "store/pool/bonecp/show.html",
+                           sync: true,
+                           load: function (template)
+                           {
+                               containerNode.innerHTML = template;
+                               parser.parse(containerNode).then(function (instances)
+                                                                {
+                                                                    for (var i = 0; i < fieldNames.length; i++)
+                                                                    {
+                                                                        var fieldName = fieldNames[i];
+                                                                        that[fieldName] =
+                                                                            query("." + fieldName, containerNode)[0];
+                                                                    }
+                                                                });
+                           }
+                       });
+           }
 
-    BoneCP.prototype.update=function(data)
-    {
+           BoneCP.prototype.update = function (data)
+           {
 
-      for(var i=0; i<fieldNames.length;i++)
-      {
-        var fieldName = fieldNames[i];
-        var value = data && data.context ? data.context["qpid.jdbcstore.bonecp."+fieldName] : "";
-        this[fieldName].innerHTML= value?entities.encode(String(value)):"";
-      }
-    };
+               for (var i = 0; i < fieldNames.length; i++)
+               {
+                   var fieldName = fieldNames[i];
+                   var value = data && data.context ? data.context["qpid.jdbcstore.bonecp." + fieldName] : "";
+                   this[fieldName].innerHTML = value ? entities.encode(String(value)) : "";
+               }
+           };
 
-    return BoneCP;
-});
+           return BoneCP;
+       });

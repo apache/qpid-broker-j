@@ -31,123 +31,145 @@ define(["dojo/dom",
         "dojo/text!addQueue.html",
         "qpid/common/ContextVariablesEditor",
         "dijit/form/NumberSpinner", // required by the form
-        /* dojox/ validate resources */
-        "dojox/validate/us", "dojox/validate/web",
-        /* basic dijit classes */
+           /* dojox/ validate resources */
+        "dojox/validate/us",
+        "dojox/validate/web",
+           /* basic dijit classes */
         "dijit/Dialog",
-        "dijit/form/CheckBox", "dijit/form/Textarea",
-        "dijit/form/FilteringSelect", "dijit/form/TextBox",
-        "dijit/form/ValidationTextBox", "dijit/form/DateTextBox",
-        "dijit/form/TimeTextBox", "dijit/form/Button",
-        "dijit/form/RadioButton", "dijit/form/Form",
+        "dijit/form/CheckBox",
+        "dijit/form/Textarea",
+        "dijit/form/FilteringSelect",
+        "dijit/form/TextBox",
+        "dijit/form/ValidationTextBox",
         "dijit/form/DateTextBox",
-        /* basic dojox classes */
-        "dojox/form/BusyButton", "dojox/form/CheckedMultiSelect",
-        "dojo/domReady!"],
-    function (dom, construct, win, registry, parser, array, event, json, query, util, template) {
+        "dijit/form/TimeTextBox",
+        "dijit/form/Button",
+        "dijit/form/RadioButton",
+        "dijit/form/Form",
+        "dijit/form/DateTextBox",
+           /* basic dojox classes */
+        "dojox/form/BusyButton",
+        "dojox/form/CheckedMultiSelect",
+        "dojo/domReady!"], function (dom, construct, win, registry, parser, array, event, json, query, util, template)
+       {
 
-        var addQueue = {};
+           var addQueue = {};
 
-        var node = construct.create("div", null, win.body(), "last");
+           var node = construct.create("div", null, win.body(), "last");
 
-        var requiredFields = { sorted: "sortKey"};
+           var requiredFields = {sorted: "sortKey"};
 
-        var numericFieldNames = ["maximumMessageTtl",
-        "minimumMessageTtl",
-        "queueFlowControlSizeBytes",
-        "queueFlowResumeSizeBytes",
-        "alertThresholdQueueDepthMessages",
-        "alertThresholdQueueDepthBytes",
-        "alertThresholdMessageAge",
-        "alertThresholdMessageSize",
-        "alertRepeatGap",
-        "maximumDeliveryAttempts"];
+           var numericFieldNames = ["maximumMessageTtl",
+                                    "minimumMessageTtl",
+                                    "queueFlowControlSizeBytes",
+                                    "queueFlowResumeSizeBytes",
+                                    "alertThresholdQueueDepthMessages",
+                                    "alertThresholdQueueDepthBytes",
+                                    "alertThresholdMessageAge",
+                                    "alertThresholdMessageSize",
+                                    "alertRepeatGap",
+                                    "maximumDeliveryAttempts"];
 
-        var theForm;
-        node.innerHTML = template;
-        addQueue.dialogNode = dom.byId("addQueue");
-        parser.instantiate([addQueue.dialogNode]);
+           var theForm;
+           node.innerHTML = template;
+           addQueue.dialogNode = dom.byId("addQueue");
+           parser.instantiate([addQueue.dialogNode]);
 
-        // for children which have name type, add a function to make all the associated atrributes
-        // visible / invisible as the select is changed
-        theForm = registry.byId("formAddQueue");
-        var typeSelector = registry.byId("formAddQueue.type");
-        typeSelector.on("change", function(value)
-        {
-            query(".typeSpecificDiv").forEach(function(node, index, arr)
-            {
-                if (node.id === "formAddQueueType:" + value)
-                {
-                    node.style.display = "block";
-                    if (addQueue.management)
-                    {
-                        util.applyMetadataToWidgets(node, "Queue", value, addQueue.management.metadata);
-                    }
-                }
-                else
-                {
-                    node.style.display = "none";
-                }
-            });
-            for(var requiredField in requiredFields)
-            {
-                dijit.byId('formAddQueue.' + requiredFields[requiredField]).required = (requiredField == value);
-            }
-        });
+           // for children which have name type, add a function to make all the associated atrributes
+           // visible / invisible as the select is changed
+           theForm = registry.byId("formAddQueue");
+           var typeSelector = registry.byId("formAddQueue.type");
+           typeSelector.on("change", function (value)
+           {
+               query(".typeSpecificDiv").forEach(function (node, index, arr)
+                                                 {
+                                                     if (node.id === "formAddQueueType:" + value)
+                                                     {
+                                                         node.style.display = "block";
+                                                         if (addQueue.management)
+                                                         {
+                                                             util.applyMetadataToWidgets(node,
+                                                                                         "Queue",
+                                                                                         value,
+                                                                                         addQueue.management.metadata);
+                                                         }
+                                                     }
+                                                     else
+                                                     {
+                                                         node.style.display = "none";
+                                                     }
+                                                 });
+               for (var requiredField in requiredFields)
+               {
+                   dijit.byId('formAddQueue.' + requiredFields[requiredField]).required = (requiredField == value);
+               }
+           });
 
-        theForm.on("submit", function(e) {
+           theForm.on("submit", function (e)
+           {
 
-            event.stop(e);
-            if(theForm.validate())
-            {
+               event.stop(e);
+               if (theForm.validate())
+               {
 
-                var newQueue = util.getFormWidgetValues(theForm);
-                var context = addQueue.context.get("value");
-                if (context)
-                {
-                  newQueue["context"] = context;
-                }
+                   var newQueue = util.getFormWidgetValues(theForm);
+                   var context = addQueue.context.get("value");
+                   if (context)
+                   {
+                       newQueue["context"] = context;
+                   }
 
-                addQueue.management.create("queue", addQueue.modelObj,
-                          newQueue).then(function(x){registry.byId("addQueue").hide();});
-                return false;
+                   addQueue.management.create("queue", addQueue.modelObj, newQueue).then(function (x)
+                                                                                         {
+                                                                                             registry.byId("addQueue")
+                                                                                                     .hide();
+                                                                                         });
+                   return false;
 
+               }
+               else
+               {
+                   alert('Form contains invalid data.  Please correct first');
+                   return false;
+               }
 
-            }else{
-                alert('Form contains invalid data.  Please correct first');
-                return false;
-            }
+           });
 
-        });
+           addQueue.show = function (management, modelObj)
+           {
+               addQueue.management = management;
+               addQueue.modelObj = modelObj;
 
-        addQueue.show = function(management, modelObj) {
-                            addQueue.management = management;
-                            addQueue.modelObj = modelObj;
+               var form = registry.byId("formAddQueue");
+               form.reset();
+               registry.byId("addQueue").show();
+               util.applyMetadataToWidgets(form.domNode, "Queue", "standard", addQueue.management.metadata);
 
-                            var form = registry.byId("formAddQueue");
-                            form.reset();
-                            registry.byId("addQueue").show();
-                            util.applyMetadataToWidgets(form.domNode, "Queue", "standard", addQueue.management.metadata);
+               // Add regexp to the numeric fields
+               for (var i = 0; i < numericFieldNames.length; i++)
+               {
+                   registry.byId("formAddQueue." + numericFieldNames[i])
+                           .set("regExpGen", util.numericOrContextVarRegexp);
+               }
 
-                            // Add regexp to the numeric fields
-                            for(var i = 0; i < numericFieldNames.length; i++)
-                            {
-                              registry.byId("formAddQueue." + numericFieldNames[i]).set("regExpGen", util.numericOrContextVarRegexp);
-                            }
+               if (!this.context)
+               {
+                   this.context = new qpid.common.ContextVariablesEditor({
+                       name: 'context',
+                       title: 'Context variables'
+                   });
+                   this.context.placeAt(dom.byId("formAddQueue.context"));
+               }
 
-                            if (!this.context)
-                            {
-                             this.context = new qpid.common.ContextVariablesEditor({name: 'context', title: 'Context variables'});
-                             this.context.placeAt(dom.byId("formAddQueue.context"));
-                            }
+               management.load(modelObj).then(function (effectiveData)
+                                              {
+                                                  util.setContextData(addQueue.context,
+                                                                      management,
+                                                                      modelObj,
+                                                                      {},
+                                                                      effectiveData[0]);
+                                              }, util.xhrErrorHandler);
+           };
 
-                            management.load(modelObj).then(
-                                          function(effectiveData)
-                                          {
-                                            util.setContextData(addQueue.context, management, modelObj, {}, effectiveData[0]);
-                                          },
-                                          util.xhrErrorHandler);
-        };
-
-        return addQueue;
-    });
+           return addQueue;
+       });

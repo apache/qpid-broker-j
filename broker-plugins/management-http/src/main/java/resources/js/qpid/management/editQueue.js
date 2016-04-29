@@ -41,141 +41,165 @@ define(["dojox/html/entities",
         "dojox/validate/us",
         "dojox/validate/web",
         "dojo/domReady!"],
-  function (entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, util, template)
-  {
+       function (entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, util, template)
+       {
 
-    var numericFieldNames = ["maximumMessageTtl",
-                  "minimumMessageTtl",
-                  "queueFlowControlSizeBytes",
-                  "queueFlowResumeSizeBytes",
-                  "alertThresholdQueueDepthMessages",
-                  "alertThresholdQueueDepthBytes",
-                  "alertThresholdMessageAge",
-                  "alertThresholdMessageSize",
-                  "alertRepeatGap",
-                  "maximumDeliveryAttempts"];
+           var numericFieldNames = ["maximumMessageTtl",
+                                    "minimumMessageTtl",
+                                    "queueFlowControlSizeBytes",
+                                    "queueFlowResumeSizeBytes",
+                                    "alertThresholdQueueDepthMessages",
+                                    "alertThresholdQueueDepthBytes",
+                                    "alertThresholdMessageAge",
+                                    "alertThresholdMessageSize",
+                                    "alertRepeatGap",
+                                    "maximumDeliveryAttempts"];
 
-    var queueEditor =
-    {
-      init: function()
-      {
-        var that=this;
-        this.containerNode = domConstruct.create("div", {innerHTML: template});
-        parser.parse(this.containerNode).then(function(instances){ that._postParse();});
-      },
-      _postParse: function()
-      {
-        var that=this;
-        this.allFieldsContainer = dom.byId("formEditQueue.allFields");
-        this.dialog = registry.byId("editQueue");
-        this.saveButton = registry.byId("formEditQueue.saveButton");
-        this.cancelButton = registry.byId("formEditQueue.cancelButton");
-        this.cancelButton.on("click", function(e){that._cancel(e);});
-        this.saveButton.on("click", function(e){that._save(e);});
-        this.form = registry.byId("formEditQueue");
-        this.form.on("submit", function(){return false;});
-        this.typeSelector = registry.byId("formEditQueue.type");
-      },
-      show: function(management,modelObj)
-      {
-        var that=this;
-        this.management = management;
-        this.modelObj = modelObj;
-        if (!this.context)
-        {
-         this.context = new qpid.common.ContextVariablesEditor({name: 'context', title: 'Context variables'});
-         this.context.placeAt(dom.byId("formEditQueue.context"));
-        }
-        this.dialog.set("title", "Edit Queue - " + entities.encode(String(modelObj.name)));
-        management.load(modelObj, { actuals: true }).then(
-              function(actualData)
-              {
-                management.load(modelObj).then(
-                               function(effectiveData)
-                               {
-                                 that._show(actualData[0], effectiveData[0]);
-                               },
-                               util.xhrErrorHandler);
-              });
-      },
-      destroy: function()
-      {
-        if (this.dialog)
-        {
-            this.dialog.destroyRecursive();
-            this.dialog = null;
-        }
+           var queueEditor = {
+               init: function ()
+               {
+                   var that = this;
+                   this.containerNode = domConstruct.create("div", {innerHTML: template});
+                   parser.parse(this.containerNode).then(function (instances)
+                                                         {
+                                                             that._postParse();
+                                                         });
+               },
+               _postParse: function ()
+               {
+                   var that = this;
+                   this.allFieldsContainer = dom.byId("formEditQueue.allFields");
+                   this.dialog = registry.byId("editQueue");
+                   this.saveButton = registry.byId("formEditQueue.saveButton");
+                   this.cancelButton = registry.byId("formEditQueue.cancelButton");
+                   this.cancelButton.on("click", function (e)
+                   {
+                       that._cancel(e);
+                   });
+                   this.saveButton.on("click", function (e)
+                   {
+                       that._save(e);
+                   });
+                   this.form = registry.byId("formEditQueue");
+                   this.form.on("submit", function ()
+                   {
+                       return false;
+                   });
+                   this.typeSelector = registry.byId("formEditQueue.type");
+               },
+               show: function (management, modelObj)
+               {
+                   var that = this;
+                   this.management = management;
+                   this.modelObj = modelObj;
+                   if (!this.context)
+                   {
+                       this.context = new qpid.common.ContextVariablesEditor({
+                           name: 'context',
+                           title: 'Context variables'
+                       });
+                       this.context.placeAt(dom.byId("formEditQueue.context"));
+                   }
+                   this.dialog.set("title", "Edit Queue - " + entities.encode(String(modelObj.name)));
+                   management.load(modelObj, {actuals: true}).then(function (actualData)
+                                                                   {
+                                                                       management.load(modelObj)
+                                                                                 .then(function (effectiveData)
+                                                                                       {
+                                                                                           that._show(actualData[0],
+                                                                                                      effectiveData[0]);
+                                                                                       }, util.xhrErrorHandler);
+                                                                   });
+               },
+               destroy: function ()
+               {
+                   if (this.dialog)
+                   {
+                       this.dialog.destroyRecursive();
+                       this.dialog = null;
+                   }
 
-        if (this.containerNode)
-        {
-            domConstruct.destroy(this.containerNode);
-            this.containerNode = null;
-        }
-      },
-      _cancel: function(e)
-      {
-          this.dialog.hide();
-      },
-      _save: function(e)
-      {
-          event.stop(e);
-          if(this.form.validate())
-          {
-              var data = util.getFormWidgetValues(this.form, this.initialData);
-              var context = this.context.get("value");
-              if (context && !util.equals(context, this.initialData.context))
-              {
-                data["context"] = context;
-              }
-              var that = this;
-              this.management.update(that.modelObj, data).then(function(x){that.dialog.hide()});
-          }
-          else
-          {
-              alert('Form contains invalid data.  Please correct first');
-          }
-      },
-      _show:function(actualData, effectiveData)
-      {
+                   if (this.containerNode)
+                   {
+                       domConstruct.destroy(this.containerNode);
+                       this.containerNode = null;
+                   }
+               },
+               _cancel: function (e)
+               {
+                   this.dialog.hide();
+               },
+               _save: function (e)
+               {
+                   event.stop(e);
+                   if (this.form.validate())
+                   {
+                       var data = util.getFormWidgetValues(this.form, this.initialData);
+                       var context = this.context.get("value");
+                       if (context && !util.equals(context, this.initialData.context))
+                       {
+                           data["context"] = context;
+                       }
+                       var that = this;
+                       this.management.update(that.modelObj, data).then(function (x)
+                                                                        {
+                                                                            that.dialog.hide()
+                                                                        });
+                   }
+                   else
+                   {
+                       alert('Form contains invalid data.  Please correct first');
+                   }
+               },
+               _show: function (actualData, effectiveData)
+               {
 
-          this.initialData = actualData;
-          this.form.reset();
+                   this.initialData = actualData;
+                   this.form.reset();
 
-          var that = this;
-          util.applyToWidgets(that.allFieldsContainer, "Queue", actualData.type, actualData, this.management.metadata);
+                   var that = this;
+                   util.applyToWidgets(that.allFieldsContainer,
+                                       "Queue",
+                                       actualData.type,
+                                       actualData,
+                                       this.management.metadata);
 
-          util.setContextData(this.context, this.management, this.modelObj, actualData, effectiveData);
+                   util.setContextData(this.context, this.management, this.modelObj, actualData, effectiveData);
 
-          // Add regexp to the numeric fields
-          for(var i = 0; i < numericFieldNames.length; i++)
-          {
-            registry.byId("formEditQueue." +numericFieldNames[i]).set("regExpGen", util.numericOrContextVarRegexp);
-          }
+                   // Add regexp to the numeric fields
+                   for (var i = 0; i < numericFieldNames.length; i++)
+                   {
+                       registry.byId("formEditQueue." + numericFieldNames[i])
+                               .set("regExpGen", util.numericOrContextVarRegexp);
+                   }
 
-          var queueType = this.typeSelector.get("value");
-          query(".typeSpecificDiv").forEach(function(node, index, arr){
-              if (node.id === "formEditQueueType:" + queueType)
-              {
-                  node.style.display = "block";
-                  util.applyMetadataToWidgets(node, "Queue", queueType, that.management.metadata);
-              }
-              else
-              {
-                  node.style.display = "none";
-              }
-          });
-          this.dialog.startup();
-          this.dialog.show();
-          if (!this.resizeEventRegistered)
-          {
-            this.resizeEventRegistered = true;
-            util.resizeContentAreaAndRepositionDialog(dom.byId("formEditQueue.contentPane"), this.dialog);
-          }
-      }
-    };
+                   var queueType = this.typeSelector.get("value");
+                   query(".typeSpecificDiv").forEach(function (node, index, arr)
+                                                     {
+                                                         if (node.id === "formEditQueueType:" + queueType)
+                                                         {
+                                                             node.style.display = "block";
+                                                             util.applyMetadataToWidgets(node,
+                                                                                         "Queue",
+                                                                                         queueType,
+                                                                                         that.management.metadata);
+                                                         }
+                                                         else
+                                                         {
+                                                             node.style.display = "none";
+                                                         }
+                                                     });
+                   this.dialog.startup();
+                   this.dialog.show();
+                   if (!this.resizeEventRegistered)
+                   {
+                       this.resizeEventRegistered = true;
+                       util.resizeContentAreaAndRepositionDialog(dom.byId("formEditQueue.contentPane"), this.dialog);
+                   }
+               }
+           };
 
-    queueEditor.init();
+           queueEditor.init();
 
-    return queueEditor;
-  }
-);
+           return queueEditor;
+       });

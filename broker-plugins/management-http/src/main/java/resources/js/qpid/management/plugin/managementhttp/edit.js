@@ -36,89 +36,105 @@ define(["dojo/_base/event",
         "dijit/form/NumberSpinner",
         "dojox/validate/us",
         "dojox/validate/web",
-        "dojo/domReady!"],
-  function (event, dom, domConstruct, json, query, parser,  registry, util, template, entities)
-  {
+        "dojo/domReady!"], function (event, dom, domConstruct, json, query, parser, registry, util, template, entities)
+       {
 
-    var httpManagementEditor =
-    {
-      init: function()
-      {
-        var that=this;
-        this.containerNode = domConstruct.create("div", {innerHTML: template});
-        parser.parse(this.containerNode).then(function(instances){ that._postParse();});
-      },
-      _postParse: function()
-      {
-        var that=this;
-        this.allFieldsContainer = dom.byId("editHttpManagement.contentPane");
-        this.dialog = registry.byId("editHttpManagementDialog");
-        this.saveButton = registry.byId("editHttpManagement.saveButton");
-        this.cancelButton = registry.byId("editHttpManagement.cancelButton");
-        this.cancelButton.on("click", function(e){that._cancel(e);});
-        this.saveButton.on("click", function(e){that._save(e);});
-        this.form = registry.byId("editHttpManagementForm");
-        this.form.on("submit", function(){return false;});
-      },
-      show: function(management, modelObj, data)
-      {
-        this.management = management;
-        this.modelObj = modelObj;
-        var that=this;
-        management.load(modelObj,  { actuals: true }).then(
-            function(actualData)
-            {
-                that._show(actualData[0]);
-            });
-      },
-      destroy: function()
-      {
-        if (this.dialog)
-        {
-            this.dialog.destroyRecursive();
-            this.dialog = null;
-        }
+           var httpManagementEditor = {
+               init: function ()
+               {
+                   var that = this;
+                   this.containerNode = domConstruct.create("div", {innerHTML: template});
+                   parser.parse(this.containerNode).then(function (instances)
+                                                         {
+                                                             that._postParse();
+                                                         });
+               },
+               _postParse: function ()
+               {
+                   var that = this;
+                   this.allFieldsContainer = dom.byId("editHttpManagement.contentPane");
+                   this.dialog = registry.byId("editHttpManagementDialog");
+                   this.saveButton = registry.byId("editHttpManagement.saveButton");
+                   this.cancelButton = registry.byId("editHttpManagement.cancelButton");
+                   this.cancelButton.on("click", function (e)
+                   {
+                       that._cancel(e);
+                   });
+                   this.saveButton.on("click", function (e)
+                   {
+                       that._save(e);
+                   });
+                   this.form = registry.byId("editHttpManagementForm");
+                   this.form.on("submit", function ()
+                   {
+                       return false;
+                   });
+               },
+               show: function (management, modelObj, data)
+               {
+                   this.management = management;
+                   this.modelObj = modelObj;
+                   var that = this;
+                   management.load(modelObj, {actuals: true}).then(function (actualData)
+                                                                   {
+                                                                       that._show(actualData[0]);
+                                                                   });
+               },
+               destroy: function ()
+               {
+                   if (this.dialog)
+                   {
+                       this.dialog.destroyRecursive();
+                       this.dialog = null;
+                   }
 
-        if (this.containerNode)
-        {
-            domConstruct.destroy(this.containerNode);
-            this.containerNode = null;
-        }
-      },
-      _cancel: function(e)
-      {
-          this.dialog.hide();
-      },
-      _save: function(e)
-      {
-          event.stop(e);
-          if(this.form.validate())
-          {
-              var data = util.getFormWidgetValues(this.form, this.initialData);
-              var that=this;
-              this.management.update(this.modelObj, data).then( function(x){ that.dialog.hide();} );
-          }
-          else
-          {
-              alert('Form contains invalid data.  Please correct first');
-          }
-      },
-      _show:function(actualData)
-      {
-          this.initialData = actualData;
-          util.applyToWidgets(this.allFieldsContainer,  "Plugin", "MANAGEMENT-HTTP", actualData, this.management.metadata);
-          this.dialog.startup();
-          this.dialog.show();
-          if (!this.resizeEventRegistered)
-          {
-            this.resizeEventRegistered = true;
-            util.resizeContentAreaAndRepositionDialog(dom.byId("editHttpManagement.contentPane"), this.dialog);
-          }
-      }
-    };
+                   if (this.containerNode)
+                   {
+                       domConstruct.destroy(this.containerNode);
+                       this.containerNode = null;
+                   }
+               },
+               _cancel: function (e)
+               {
+                   this.dialog.hide();
+               },
+               _save: function (e)
+               {
+                   event.stop(e);
+                   if (this.form.validate())
+                   {
+                       var data = util.getFormWidgetValues(this.form, this.initialData);
+                       var that = this;
+                       this.management.update(this.modelObj, data).then(function (x)
+                                                                        {
+                                                                            that.dialog.hide();
+                                                                        });
+                   }
+                   else
+                   {
+                       alert('Form contains invalid data.  Please correct first');
+                   }
+               },
+               _show: function (actualData)
+               {
+                   this.initialData = actualData;
+                   util.applyToWidgets(this.allFieldsContainer,
+                                       "Plugin",
+                                       "MANAGEMENT-HTTP",
+                                       actualData,
+                                       this.management.metadata);
+                   this.dialog.startup();
+                   this.dialog.show();
+                   if (!this.resizeEventRegistered)
+                   {
+                       this.resizeEventRegistered = true;
+                       util.resizeContentAreaAndRepositionDialog(dom.byId("editHttpManagement.contentPane"),
+                                                                 this.dialog);
+                   }
+               }
+           };
 
-    httpManagementEditor.init();
+           httpManagementEditor.init();
 
-    return httpManagementEditor;
-  }
-);
+           return httpManagementEditor;
+       });

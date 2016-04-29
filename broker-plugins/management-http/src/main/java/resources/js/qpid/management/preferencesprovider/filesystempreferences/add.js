@@ -17,14 +17,12 @@
  * under the License.
  */
 
-define(["dojo/query", "dijit/registry", "qpid/common/util"],
-  function (query, registry, util)
-  {
+define(["dojo/query", "dijit/registry", "qpid/common/util"], function (query, registry, util)
+{
     return {
         show: function (data)
         {
-            util.parseHtmlIntoDiv(data.containerNode, "preferencesprovider/filesystempreferences/add.html",
-            function()
+            util.parseHtmlIntoDiv(data.containerNode, "preferencesprovider/filesystempreferences/add.html", function ()
             {
                 if (data.data)
                 {
@@ -34,5 +32,4 @@ define(["dojo/query", "dijit/registry", "qpid/common/util"],
             });
         }
     };
-  }
-);
+});

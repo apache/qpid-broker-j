@@ -18,21 +18,20 @@
  * under the License.
  *
  */
-define(["qpid/common/util", "dojo/domReady!"],
-  function (util)
-  {
+define(["qpid/common/util", "dojo/domReady!"], function (util)
+{
     var fieldNames = ["storePath"];
 
     function BdbNode(data)
     {
-       this.parent = data.parent;
-       util.buildUI(data.containerNode, data.parent, "virtualhostnode/bdb/show.html", fieldNames, this);
+        this.parent = data.parent;
+        util.buildUI(data.containerNode, data.parent, "virtualhostnode/bdb/show.html", fieldNames, this);
     }
 
-    BdbNode.prototype.update=function(data)
+    BdbNode.prototype.update = function (data)
     {
-       util.updateUI(data, fieldNames, this);
-       this.parent.editNodeButton.set("disabled", !(data.state == "STOPPED" || data.state == "ERRORED"));
+        util.updateUI(data, fieldNames, this);
+        this.parent.editNodeButton.set("disabled", !(data.state == "STOPPED" || data.state == "ERRORED"));
     };
 
     return BdbNode;

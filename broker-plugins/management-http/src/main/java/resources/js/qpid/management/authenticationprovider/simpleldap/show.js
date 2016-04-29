@@ -17,26 +17,24 @@
  * under the License.
  */
 
-define(["qpid/common/util", "dojo/domReady!"],
-  function (util)
-  {
+define(["qpid/common/util", "dojo/domReady!"], function (util)
+{
 
     function SimpleLdapAuthenticationProvider(data)
     {
         this.fields = [];
         var attributes = data.parent.management.metadata.getMetaData("AuthenticationProvider", "SimpleLDAP").attributes;
-        for(var name in attributes)
+        for (var name in attributes)
         {
             this.fields.push(name);
         }
         util.buildUI(data.containerNode, data.parent, "authenticationprovider/simpleldap/show.html", this.fields, this);
     }
 
-    SimpleLdapAuthenticationProvider.prototype.update = function(data)
+    SimpleLdapAuthenticationProvider.prototype.update = function (data)
     {
         util.updateUI(data, this.fields, this);
     }
 
     return SimpleLdapAuthenticationProvider;
-  }
-);
+});

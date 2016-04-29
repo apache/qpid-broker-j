@@ -19,21 +19,19 @@
  *
  */
 define(["dojo/dom",
-    "dojo/query",
-    "dojo/_base/array",
-    "dijit/registry",
-    "qpid/common/util",
-    "dojo/parser",
-    "dojo/text!logger/memory/add.html",
-    "dojo/domReady!"],
-  function (dom, query, array, registry, util, parser, template)
-  {
-    return {
-      show: function(data)
-      {
-        data.containerNode.innerHTML = template;
-        return parser.parse(data.containerNode);
-      }
-    };
-  }
-);
+        "dojo/query",
+        "dojo/_base/array",
+        "dijit/registry",
+        "qpid/common/util",
+        "dojo/parser",
+        "dojo/text!logger/memory/add.html",
+        "dojo/domReady!"], function (dom, query, array, registry, util, parser, template)
+       {
+           return {
+               show: function (data)
+               {
+                   data.containerNode.innerHTML = template;
+                   return parser.parse(data.containerNode);
+               }
+           };
+       });

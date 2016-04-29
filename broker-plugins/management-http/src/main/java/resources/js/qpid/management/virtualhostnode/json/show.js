@@ -18,24 +18,21 @@
  * under the License.
  *
  */
- define(["qpid/common/util",
-         "dojo/domReady!"],
-   function (util)
-   {
-     var fields = ["storePath"];
+define(["qpid/common/util", "dojo/domReady!"], function (util)
+{
+    var fields = ["storePath"];
 
-     function JSON(data)
-     {
-         this.parent = data.parent;
-         util.buildUI(data.containerNode, data.parent, "virtualhostnode/json/show.html", fields, this);
-     }
+    function JSON(data)
+    {
+        this.parent = data.parent;
+        util.buildUI(data.containerNode, data.parent, "virtualhostnode/json/show.html", fields, this);
+    }
 
-     JSON.prototype.update = function(data)
-     {
-         this.parent.editNodeButton.set("disabled", !(data.state == "STOPPED" || data.state == "ERRORED"));
-         util.updateUI(data, fields, this);
-     }
+    JSON.prototype.update = function (data)
+    {
+        this.parent.editNodeButton.set("disabled", !(data.state == "STOPPED" || data.state == "ERRORED"));
+        util.updateUI(data, fields, this);
+    }
 
-     return JSON;
-   }
- );
+    return JSON;
+});

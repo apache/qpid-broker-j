@@ -19,24 +19,21 @@
  *
  */
 define(["dojo/dom",
-    "dojo/query",
-    "dojo/_base/array",
-    "dijit/registry",
-    "qpid/common/util",
-    "dojo/parser",
-    "dojo/text!logger/file/add.html",
-    "dojo/domReady!"],
-  function (dom, query, array, registry, util, parser, template)
-  {
-    var addFileLogger =
-    {
-      show: function(data)
-      {
-        data.containerNode.innerHTML = template;
-        return parser.parse(data.containerNode);
-      }
-    };
+        "dojo/query",
+        "dojo/_base/array",
+        "dijit/registry",
+        "qpid/common/util",
+        "dojo/parser",
+        "dojo/text!logger/file/add.html",
+        "dojo/domReady!"], function (dom, query, array, registry, util, parser, template)
+       {
+           var addFileLogger = {
+               show: function (data)
+               {
+                   data.containerNode.innerHTML = template;
+                   return parser.parse(data.containerNode);
+               }
+           };
 
-    return addFileLogger;
-  }
-);
+           return addFileLogger;
+       });

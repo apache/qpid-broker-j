@@ -25,34 +25,40 @@ define(["dojo/dom",
         "qpid/common/util",
         "dojo/parser",
         "dojo/text!authenticationprovider/oauth2/add.html",
-        "dojo/domReady!"],
-    function (dom, query, array, registry, util, parser, template)
-    {
-        var addAuthenticationProvier =
-        {
-            show: function (data) {
-                var that = this;
-                util.parse(data.containerNode, template, function(){that._postParse(data);});
-            },
-            _postParse: function(data)
-            {
-                var identityResolverType = registry.byId("addAuthenticationProvider.identityResolverType");
-                var validValues = data.metadata.getMetaData(data.category, data.type).attributes.identityResolverType.validValues;
-                var validValueStore = util.makeTypeStore(validValues);
-                identityResolverType.set("store", validValueStore);
+        "dojo/domReady!"], function (dom, query, array, registry, util, parser, template)
+       {
+           var addAuthenticationProvier = {
+               show: function (data)
+               {
+                   var that = this;
+                   util.parse(data.containerNode, template, function ()
+                   {
+                       that._postParse(data);
+                   });
+               },
+               _postParse: function (data)
+               {
+                   var identityResolverType = registry.byId("addAuthenticationProvider.identityResolverType");
+                   var validValues = data.metadata.getMetaData(data.category,
+                                                               data.type).attributes.identityResolverType.validValues;
+                   var validValueStore = util.makeTypeStore(validValues);
+                   identityResolverType.set("store", validValueStore);
 
-                util.makeInstanceStore(data.parent.management, "Broker", "TrustStore", function(trustStoresStore)
-                {
-                    var trustStore = registry.byNode(query(".trustStore", data.containerNode)[0]);
-                    trustStore.set("store", trustStoresStore);
-                    if (data.data)
-                    {
-                        util.initialiseFields(data.data, data.containerNode, data.metadata, "AuthenticationProvider", "OAuth2");
-                    }
-                });
-            }
-        };
+                   util.makeInstanceStore(data.parent.management, "Broker", "TrustStore", function (trustStoresStore)
+                   {
+                       var trustStore = registry.byNode(query(".trustStore", data.containerNode)[0]);
+                       trustStore.set("store", trustStoresStore);
+                       if (data.data)
+                       {
+                           util.initialiseFields(data.data,
+                                                 data.containerNode,
+                                                 data.metadata,
+                                                 "AuthenticationProvider",
+                                                 "OAuth2");
+                       }
+                   });
+               }
+           };
 
-        return addAuthenticationProvier;
-    }
-);
+           return addAuthenticationProvier;
+       });

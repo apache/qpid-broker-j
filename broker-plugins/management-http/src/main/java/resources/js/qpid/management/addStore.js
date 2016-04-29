@@ -44,206 +44,249 @@ define(["dojo/_base/lang",
         "dijit/layout/ContentPane",
         "dojox/layout/TableContainer",
         "dojo/domReady!"],
-    function (lang, dom, construct, registry, parser, memory, array, event, json, util, template, xhr)
-    {
-        var addStore =
-        {
-            categoryTemplates: {},
-            init: function()
-            {
-                var that=this;
-                this.containerNode = construct.create("div", {innerHTML: template});
-                parser.parse(this.containerNode).then(function(instances) { that._postParse(); });
-            },
-            _postParse: function()
-            {
-                var that=this;
-                this.storeName = registry.byId("addStore.name");
-                this.storeName.set("regExpGen", util.nameOrContextVarRegexp);
+       function (lang, dom, construct, registry, parser, memory, array, event, json, util, template, xhr)
+       {
+           var addStore = {
+               categoryTemplates: {},
+               init: function ()
+               {
+                   var that = this;
+                   this.containerNode = construct.create("div", {innerHTML: template});
+                   parser.parse(this.containerNode).then(function (instances)
+                                                         {
+                                                             that._postParse();
+                                                         });
+               },
+               _postParse: function ()
+               {
+                   var that = this;
+                   this.storeName = registry.byId("addStore.name");
+                   this.storeName.set("regExpGen", util.nameOrContextVarRegexp);
 
-                this.dialog = registry.byId("addStore");
-                this.addButton = registry.byId("addStore.addButton");
-                this.cancelButton = registry.byId("addStore.cancelButton");
-                this.cancelButton.on("click", function(e){that._cancel(e);});
-                this.addButton.on("click", function(e){that._add(e);});
+                   this.dialog = registry.byId("addStore");
+                   this.addButton = registry.byId("addStore.addButton");
+                   this.cancelButton = registry.byId("addStore.cancelButton");
+                   this.cancelButton.on("click", function (e)
+                   {
+                       that._cancel(e);
+                   });
+                   this.addButton.on("click", function (e)
+                   {
+                       that._add(e);
+                   });
 
-                this.storeTypeFieldsContainer = dom.byId("addStore.typeFields");
-                this.storeCategoryFieldsContainer = dom.byId("addStore.categoryFields");
-                this.storeForm = registry.byId("addStore.form");
+                   this.storeTypeFieldsContainer = dom.byId("addStore.typeFields");
+                   this.storeCategoryFieldsContainer = dom.byId("addStore.categoryFields");
+                   this.storeForm = registry.byId("addStore.form");
 
-                this.storeType = registry.byId("addStore.type");
-                this.storeType.on("change", function(type){that._storeTypeChanged(type);});
-            },
-            setupTypeStore: function(management, category, modelObj)
-            {
-                this.management = management;
-                this.modelObj = modelObj;
-                var metadata = management.metadata;
-                this.category = category;
-                var storeTypeSupportedTypes = metadata.getTypesForCategory(category);
-                storeTypeSupportedTypes.sort();
-                var storeTypeStore = util.makeTypeStore(storeTypeSupportedTypes);
-                this.storeType.set("store", storeTypeStore);
-            },
-            show: function(effectiveData)
-            {
-                this.effectiveData = effectiveData;
-                this._destroyTypeFields(this.storeTypeFieldsContainer);
-                this._destroyTypeFields(this.storeCategoryFieldsContainer);
-                this._loadCategoryUI = true;
-                this.storeForm.reset();
+                   this.storeType = registry.byId("addStore.type");
+                   this.storeType.on("change", function (type)
+                   {
+                       that._storeTypeChanged(type);
+                   });
+               },
+               setupTypeStore: function (management, category, modelObj)
+               {
+                   this.management = management;
+                   this.modelObj = modelObj;
+                   var metadata = management.metadata;
+                   this.category = category;
+                   var storeTypeSupportedTypes = metadata.getTypesForCategory(category);
+                   storeTypeSupportedTypes.sort();
+                   var storeTypeStore = util.makeTypeStore(storeTypeSupportedTypes);
+                   this.storeType.set("store", storeTypeStore);
+               },
+               show: function (effectiveData)
+               {
+                   this.effectiveData = effectiveData;
+                   this._destroyTypeFields(this.storeTypeFieldsContainer);
+                   this._destroyTypeFields(this.storeCategoryFieldsContainer);
+                   this._loadCategoryUI = true;
+                   this.storeForm.reset();
 
-                if (effectiveData)
-                {
-                    this._initFields(effectiveData);
-                }
-                this.storeName.set("disabled", effectiveData == null ? false : true);
-                this.storeType.set("disabled", effectiveData == null ? false : true);
-                if (effectiveData == null)
-                {
-                    this.dialog.set("title", "Add " + this.category);
-                }
-                else
-                {
-                    this.dialog.set("title", "Edit " + this.category + " - " + effectiveData.name);
-                }
-                this.dialog.show();
-            },
-            _initFields:function(data)
-            {
-                var type = data["type"];
-                var metadata = this.management.metadata;
-                var attributes = metadata.getMetaData(this.category, type).attributes;
-                for(var name in attributes)
-                {
-                    var widget = registry.byId("addStore."+name);
-                    if (widget)
-                    {
-                        widget.set("value", data[name]);
-                    }
-                }
-            },
-            _cancel: function(e)
-            {
-                event.stop(e);
-                this._destroyTypeFields(this.storeTypeFieldsContainer);
-                this._destroyTypeFields(this.storeCategoryFieldsContainer);
-                this.dialog.hide();
-            },
-            _add: function(e)
-            {
-                event.stop(e);
-                this._submit();
-            },
-            _submit: function()
-            {
-                if (this.storeForm.validate())
-                {
-                    var that = this;
+                   if (effectiveData)
+                   {
+                       this._initFields(effectiveData);
+                   }
+                   this.storeName.set("disabled", effectiveData == null ? false : true);
+                   this.storeType.set("disabled", effectiveData == null ? false : true);
+                   if (effectiveData == null)
+                   {
+                       this.dialog.set("title", "Add " + this.category);
+                   }
+                   else
+                   {
+                       this.dialog.set("title", "Edit " + this.category + " - " + effectiveData.name);
+                   }
+                   this.dialog.show();
+               },
+               _initFields: function (data)
+               {
+                   var type = data["type"];
+                   var metadata = this.management.metadata;
+                   var attributes = metadata.getMetaData(this.category, type).attributes;
+                   for (var name in attributes)
+                   {
+                       var widget = registry.byId("addStore." + name);
+                       if (widget)
+                       {
+                           widget.set("value", data[name]);
+                       }
+                   }
+               },
+               _cancel: function (e)
+               {
+                   event.stop(e);
+                   this._destroyTypeFields(this.storeTypeFieldsContainer);
+                   this._destroyTypeFields(this.storeCategoryFieldsContainer);
+                   this.dialog.hide();
+               },
+               _add: function (e)
+               {
+                   event.stop(e);
+                   this._submit();
+               },
+               _submit: function ()
+               {
+                   if (this.storeForm.validate())
+                   {
+                       var that = this;
 
-                    function disableButtons(disabled) {
-                        that.addButton.set("disabled", disabled);
-                        that.cancelButton.set("disabled", disabled);
-                    }
+                       function disableButtons(disabled)
+                       {
+                           that.addButton.set("disabled", disabled);
+                           that.cancelButton.set("disabled", disabled);
+                       }
 
-                    disableButtons(true);
+                       disableButtons(true);
 
-                    var storeData = util.getFormWidgetValues(this.storeForm, this.initialData);
+                       var storeData = util.getFormWidgetValues(this.storeForm, this.initialData);
 
-                    if (this.effectiveData)
-                    {
-                        // update request
-                        this.management.update(this.modelObj, storeData).then(function(x){ disableButtons(false); that.dialog.hide();}, function(err) { disableButtons(false); that.management.errorHandler(err); });
-                    }
-                    else
-                    {
-                        this.management.create(this.category, this.modelObj, storeData).then(function(x){ disableButtons(false); that.dialog.hide();}, function(err) { disableButtons(false); that.management.errorHandler(err); });
-                    }
-                }
-                else
-                {
-                    alert('Form contains invalid data. Please correct first');
-                }
-            },
-            _storeTypeChanged: function(type)
-            {
-                this._typeChanged(type, this.storeTypeFieldsContainer, "qpid/management/store/", this.category );
-            },
-            _destroyTypeFields: function(typeFieldsContainer)
-            {
-                var widgets = registry.findWidgets(typeFieldsContainer);
-                array.forEach(widgets, function(item) { item.destroyRecursive();});
-                construct.empty(typeFieldsContainer);
-            },
-            _typeChanged: function(type, typeFieldsContainer, baseUrl, category )
-            {
-                 this._destroyTypeFields(typeFieldsContainer);
-                 if (type)
-                 {
-                     this._addCategoryMarkupIfRequired(category, type, this.effectiveData);
-                     var that = this;
-                     require([ baseUrl + type.toLowerCase() + "/add"], function(typeUI)
-                     {
-                         try
-                         {
-                             var metadata = that.management.metadata;
-                             typeUI.show({containerNode:typeFieldsContainer, parent: that, data: that.initialData, effectiveData: that.effectiveData, metadata: metadata});
-                             util.applyMetadataToWidgets(typeFieldsContainer, category, type, metadata);
-                         }
-                         catch(e)
-                         {
-                             console.warn(e);
-                         }
-                     });
-                 }
-            },
-            _addCategoryMarkupIfRequired: function(category, type, data)
-            {
-                if (this._loadCategoryUI)
-                {
-                    this._loadCategoryUI = false;
-                    var containerNode = this.storeCategoryFieldsContainer;
-                    var metadata = this.management.metadata;
-                    this._destroyTypeFields(this.storeCategoryFieldsContainer);
+                       if (this.effectiveData)
+                       {
+                           // update request
+                           this.management.update(this.modelObj, storeData).then(function (x)
+                                                                                 {
+                                                                                     disableButtons(false);
+                                                                                     that.dialog.hide();
+                                                                                 }, function (err)
+                                                                                 {
+                                                                                     disableButtons(false);
+                                                                                     that.management.errorHandler(err);
+                                                                                 });
+                       }
+                       else
+                       {
+                           this.management.create(this.category, this.modelObj, storeData).then(function (x)
+                                                                                                {
+                                                                                                    disableButtons(false);
+                                                                                                    that.dialog.hide();
+                                                                                                }, function (err)
+                                                                                                {
+                                                                                                    disableButtons(false);
+                                                                                                    that.management.errorHandler(
+                                                                                                        err);
+                                                                                                });
+                       }
+                   }
+                   else
+                   {
+                       alert('Form contains invalid data. Please correct first');
+                   }
+               },
+               _storeTypeChanged: function (type)
+               {
+                   this._typeChanged(type, this.storeTypeFieldsContainer, "qpid/management/store/", this.category);
+               },
+               _destroyTypeFields: function (typeFieldsContainer)
+               {
+                   var widgets = registry.findWidgets(typeFieldsContainer);
+                   array.forEach(widgets, function (item)
+                   {
+                       item.destroyRecursive();
+                   });
+                   construct.empty(typeFieldsContainer);
+               },
+               _typeChanged: function (type, typeFieldsContainer, baseUrl, category)
+               {
+                   this._destroyTypeFields(typeFieldsContainer);
+                   if (type)
+                   {
+                       this._addCategoryMarkupIfRequired(category, type, this.effectiveData);
+                       var that = this;
+                       require([baseUrl + type.toLowerCase() + "/add"], function (typeUI)
+                       {
+                           try
+                           {
+                               var metadata = that.management.metadata;
+                               typeUI.show({
+                                               containerNode: typeFieldsContainer,
+                                               parent: that,
+                                               data: that.initialData,
+                                               effectiveData: that.effectiveData,
+                                               metadata: metadata
+                                           });
+                               util.applyMetadataToWidgets(typeFieldsContainer, category, type, metadata);
+                           }
+                           catch (e)
+                           {
+                               console.warn(e);
+                           }
+                       });
+                   }
+               },
+               _addCategoryMarkupIfRequired: function (category, type, data)
+               {
+                   if (this._loadCategoryUI)
+                   {
+                       this._loadCategoryUI = false;
+                       var containerNode = this.storeCategoryFieldsContainer;
+                       var metadata = this.management.metadata;
+                       this._destroyTypeFields(this.storeCategoryFieldsContainer);
 
-                    var templateHandler = function(template)
-                                          {
-                                            containerNode.innerHTML = template;
-                                            parser.parse(containerNode).then(function(instances)
-                                            {
-                                              if (type)
-                                              {
-                                                util.applyToWidgets(containerNode, category, type, data, metadata);
-                                              }
-                                            });
-                                          };
+                       var templateHandler = function (template)
+                       {
+                           containerNode.innerHTML = template;
+                           parser.parse(containerNode).then(function (instances)
+                                                            {
+                                                                if (type)
+                                                                {
+                                                                    util.applyToWidgets(containerNode,
+                                                                                        category,
+                                                                                        type,
+                                                                                        data,
+                                                                                        metadata);
+                                                                }
+                                                            });
+                       };
 
-                    if (this.categoryTemplates[category])
-                    {
-                        templateHandler(new String(this.categoryTemplates[category]));
-                    }
-                    else
-                    {
-                        var that = this;
-                        xhr.get({url: "store/" + category.toLowerCase() + ".html",
-                                 load: function(template)
+                       if (this.categoryTemplates[category])
+                       {
+                           templateHandler(new String(this.categoryTemplates[category]));
+                       }
+                       else
+                       {
+                           var that = this;
+                           xhr.get({
+                                       url: "store/" + category.toLowerCase() + ".html",
+                                       load: function (template)
                                        {
-                                         that.categoryTemplates[category]= template;
-                                         templateHandler(new String(template));
+                                           that.categoryTemplates[category] = template;
+                                           templateHandler(new String(template));
                                        }
-                                });
-                    }
-                }
-            }
-        };
+                                   });
+                       }
+                   }
+               }
+           };
 
-        try
-        {
-            addStore.init();
-        }
-        catch(e)
-        {
-            console.warn(e);
-        }
-        return addStore;
-    });
+           try
+           {
+               addStore.init();
+           }
+           catch (e)
+           {
+               console.warn(e);
+           }
+           return addStore;
+       });

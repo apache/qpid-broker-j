@@ -18,18 +18,16 @@
  * under the License.
  *
  */
-define([],
-  function ()
-  {
+define([], function ()
+{
 
     function NoFieldAuthenticationProvider(data)
     {
     }
 
-    NoFieldAuthenticationProvider.prototype.update = function(data)
+    NoFieldAuthenticationProvider.prototype.update = function (data)
     {
     }
 
     return NoFieldAuthenticationProvider;
-  }
-);
+});

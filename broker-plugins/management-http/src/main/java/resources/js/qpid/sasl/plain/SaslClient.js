@@ -21,59 +21,70 @@ define(["dojo/_base/declare",
         "dojo/_base/lang",
         "dojox/encoding/base64",
         "qpid/sasl/CredentialBasedSaslClient",
-        "qpid/sasl/UsernamePasswordProvider"],
-       function(declare, lang, base64, SaslClient, UsernamePasswordProvider)
+        "qpid/sasl/UsernamePasswordProvider"], function (declare, lang, base64, SaslClient, UsernamePasswordProvider)
        {
-            return declare("qpid.sasl.SaslClientPlain", [SaslClient], {
-                 _state:             "initial",
-                 getMechanismName:   function() {return "PLAIN";},
-                 isComplete:         function() {return this._state == "completed";},
-                 getPriority:        function() {return 1;},
-                 getResponse:        function(challenge)
-                                     {
-                                         if (this._state == "initial")
-                                         {
-                                             var responseArray = [0].concat(this._encodeUTF8(challenge.username))
-                                                                    .concat([0])
-                                                                    .concat(this._encodeUTF8(challenge.password));
-                                             var plainResponse = base64.encode(responseArray);
-                                             this._state = "completed"
-                                             return  {
-                                                         mechanism: this.getMechanismName(),
-                                                         response: plainResponse
-                                                     };
-                                         }
-                                         else
-                                         {
-                                             throw {message: "Unexpected state '" + this._state +
-                                                             ". Cannot handle challenge!"};
-                                         }
-                                     },
-                 toString:           function() { return "[SaslClientPlain]";},
-                 getCredentials:     function()
-                                     {
-                                         return UsernamePasswordProvider.get();
-                                     },
-                 _encodeUTF8:        function (str)
-                                     {
-                                         var byteArray = [];
-                                         for (var i = 0; i < str.length; i++)
-                                         {
-                                             if (str.charCodeAt(i) <= 0x7F)
-                                             {
-                                                 byteArray.push(str.charCodeAt(i));
-                                             }
-                                             else
-                                             {
-                                                 var h = encodeURIComponent(str.charAt(i)).substr(1).split('%');
-                                                 for (var j = 0; j < h.length; j++)
-                                                 {
-                                                      byteArray.push(parseInt(h[j], 16));
-                                                 }
-                                             }
-                                         }
-                                         return byteArray;
-                                     }
-            });
-       }
-);
+           return declare("qpid.sasl.SaslClientPlain", [SaslClient], {
+               _state: "initial",
+               getMechanismName: function ()
+               {
+                   return "PLAIN";
+               },
+               isComplete: function ()
+               {
+                   return this._state == "completed";
+               },
+               getPriority: function ()
+               {
+                   return 1;
+               },
+               getResponse: function (challenge)
+               {
+                   if (this._state == "initial")
+                   {
+                       var responseArray = [0].concat(this._encodeUTF8(challenge.username))
+                                              .concat([0])
+                                              .concat(this._encodeUTF8(challenge.password));
+                       var plainResponse = base64.encode(responseArray);
+                       this._state = "completed"
+                       return {
+                           mechanism: this.getMechanismName(),
+                           response: plainResponse
+                       };
+                   }
+                   else
+                   {
+                       throw {
+                           message: "Unexpected state '" + this._state + ". Cannot handle challenge!"
+                       };
+                   }
+               },
+               toString: function ()
+               {
+                   return "[SaslClientPlain]";
+               },
+               getCredentials: function ()
+               {
+                   return UsernamePasswordProvider.get();
+               },
+               _encodeUTF8: function (str)
+               {
+                   var byteArray = [];
+                   for (var i = 0; i < str.length; i++)
+                   {
+                       if (str.charCodeAt(i) <= 0x7F)
+                       {
+                           byteArray.push(str.charCodeAt(i));
+                       }
+                       else
+                       {
+                           var h = encodeURIComponent(str.charAt(i)).substr(1).split('%');
+                           for (var j = 0; j < h.length; j++)
+                           {
+                               byteArray.push(parseInt(h[j], 16));
+                           }
+                       }
+                   }
+                   return byteArray;
+               }
+           });
+       });

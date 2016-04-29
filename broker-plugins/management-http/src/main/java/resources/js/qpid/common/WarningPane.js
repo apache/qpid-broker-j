@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define([
-        "dojo/_base/declare",
+define(["dojo/_base/declare",
         "dojo/_base/array",
         "dojo/_base/lang",
         "dojo/_base/event",
@@ -30,44 +29,45 @@ define([
         "dojox/html/entities",
         "dijit/form/Button",
         "dojo/domReady!"],
-function (declare, array, lang, event, _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, template, entities)
-{
+       function (declare, array, lang, event, _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, template, entities)
+       {
 
-  return declare("qpid.common.WarningPane", [_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin],
-    {
-      templateString: template,
-      message: "Not Found",
+           return declare("qpid.common.WarningPane", [_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin], {
+               templateString: template,
+               message: "Not Found",
 
-      buildRendering: function()
-      {
-        //Strip out the apache comment header from the template html as comments unsupported.
-        this.templateString = this.templateString.replace(/<!--[\s\S]*?-->/g, "");
-        this.inherited(arguments);
-      },
-      postCreate: function()
-      {
-        this.inherited(arguments);
-        this._renderMessage();
-        var that = this;
-        this.closeButton.on("click", function(e){that._onButtonClick(e)});
-      },
-      _onButtonClick: function( /*Event*/ e)
-      {
-        this.onClick(e);
-      },
-      onClick: function( /*Event*/ e)
-      {
-        // extention point
-      },
-      _setMessageAttr: function(message)
-      {
-        this.message = message;
-        this._renderMessage();
-      },
-      _renderMessage : function()
-      {
-        this.warningMessage.innerHTML = entities.encode(String(this.message));
-      }
-    }
-  );
-});
+               buildRendering: function ()
+               {
+                   //Strip out the apache comment header from the template html as comments unsupported.
+                   this.templateString = this.templateString.replace(/<!--[\s\S]*?-->/g, "");
+                   this.inherited(arguments);
+               },
+               postCreate: function ()
+               {
+                   this.inherited(arguments);
+                   this._renderMessage();
+                   var that = this;
+                   this.closeButton.on("click", function (e)
+                   {
+                       that._onButtonClick(e)
+                   });
+               },
+               _onButtonClick: function (/*Event*/ e)
+               {
+                   this.onClick(e);
+               },
+               onClick: function (/*Event*/ e)
+               {
+                   // extention point
+               },
+               _setMessageAttr: function (message)
+               {
+                   this.message = message;
+                   this._renderMessage();
+               },
+               _renderMessage: function ()
+               {
+                   this.warningMessage.innerHTML = entities.encode(String(this.message));
+               }
+           });
+       });

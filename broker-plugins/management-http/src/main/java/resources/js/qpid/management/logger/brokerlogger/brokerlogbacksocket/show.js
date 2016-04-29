@@ -18,23 +18,27 @@
  *
  */
 define(["qpid/common/util",
-    "dojo/text!logger/brokerlogbacksocket/show.html",
-    "qpid/common/TypeTabExtension",
-    "dojo/domReady!"],
-  function (util, template, TypeTabExtension)
-  {
-    function BrokerLogbackLogger(params)
-    {
-      TypeTabExtension.call(this, params.containerNode, template, "BrokerLogger", "BrokerLogbackSocket", params.metadata, params.data);
-    }
+        "dojo/text!logger/brokerlogbacksocket/show.html",
+        "qpid/common/TypeTabExtension",
+        "dojo/domReady!"], function (util, template, TypeTabExtension)
+       {
+           function BrokerLogbackLogger(params)
+           {
+               TypeTabExtension.call(this,
+                                     params.containerNode,
+                                     template,
+                                     "BrokerLogger",
+                                     "BrokerLogbackSocket",
+                                     params.metadata,
+                                     params.data);
+           }
 
-    util.extend(BrokerLogbackLogger, TypeTabExtension);
+           util.extend(BrokerLogbackLogger, TypeTabExtension);
 
-    BrokerLogbackLogger.prototype.update = function (restData)
-    {
-      TypeTabExtension.prototype.update.call(this, restData);
-    }
+           BrokerLogbackLogger.prototype.update = function (restData)
+           {
+               TypeTabExtension.prototype.update.call(this, restData);
+           }
 
-    return BrokerLogbackLogger;
-  }
-);
+           return BrokerLogbackLogger;
+       });

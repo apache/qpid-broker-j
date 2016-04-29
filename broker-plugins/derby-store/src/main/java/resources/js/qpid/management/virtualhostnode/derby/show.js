@@ -18,21 +18,20 @@
  * under the License.
  *
  */
-define(["qpid/common/util", "dojo/domReady!"],
-  function (util)
-  {
+define(["qpid/common/util", "dojo/domReady!"], function (util)
+{
     var fields = ["storePath"];
 
     function DerbyNode(data)
     {
-      this.parent = data.parent;
-      util.buildUI(data.containerNode, data.parent, "virtualhostnode/derby/show.html", fields, this);
+        this.parent = data.parent;
+        util.buildUI(data.containerNode, data.parent, "virtualhostnode/derby/show.html", fields, this);
     }
 
-    DerbyNode.prototype.update=function(data)
+    DerbyNode.prototype.update = function (data)
     {
-      this.parent.editNodeButton.set("disabled", !(data.state == "STOPPED" || data.state == "ERRORED"));
-      util.updateUI(data, fields, this);
+        this.parent.editNodeButton.set("disabled", !(data.state == "STOPPED" || data.state == "ERRORED"));
+        util.updateUI(data, fields, this);
     };
 
     return DerbyNode;

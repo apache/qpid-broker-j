@@ -19,13 +19,16 @@
  *
  */
 var QPID;
-if (!QPID) {
+if (!QPID)
+{
     QPID = {};
 }
-(function () {
+(function ()
+{
     'use strict';
 
-    if (typeof QPID.times !== 'function') {
+    if (typeof QPID.times !== 'function')
+    {
         QPID.times = function (multiplicity, template, timeIndexName)
         {
             var retVal = new Array();
@@ -40,7 +43,7 @@ if (!QPID) {
                 var expandedObject = JSON.parse(teamplateAsString);
                 if (!(timeIndexName))
                 {
-                  expandedObject._name = templateName + "_" + i;
+                    expandedObject._name = templateName + "_" + i;
                 }
                 retVal[i] = expandedObject;
             }
@@ -48,7 +51,8 @@ if (!QPID) {
         }
     }
 
-    if (typeof QPID.iterations !== 'function') {
+    if (typeof QPID.iterations !== 'function')
+    {
         QPID.iterations = function (values, template)
         {
             var retVal = new Array()
@@ -74,19 +78,20 @@ if (!QPID) {
         }
     }
 
-    if (typeof QPID.transform !== 'function') {
+    if (typeof QPID.transform !== 'function')
+    {
 
         /**
-        * Function to transform JSON using specified transformation function.
-        * Any number of transformation function could be passed after the template argument.
-        * Each function should return a transformed JSON object.
-        * Example
-        * var json = transform({"name": "Test1"}, function(json){json.name="Test"; return json;});
-        */
+         * Function to transform JSON using specified transformation function.
+         * Any number of transformation function could be passed after the template argument.
+         * Each function should return a transformed JSON object.
+         * Example
+         * var json = transform({"name": "Test1"}, function(json){json.name="Test"; return json;});
+         */
         QPID.transform = function (template)
         {
             var json = template;
-            for (var i=1, len=arguments.length; i<len; i++)
+            for (var i = 1, len = arguments.length; i < len; i++)
             {
                 json = arguments[i](json);
             }
@@ -94,10 +99,11 @@ if (!QPID) {
         }
     }
 
-    if (typeof QPID.cloneJSON !== 'function') {
+    if (typeof QPID.cloneJSON !== 'function')
+    {
         QPID.cloneJSON = function (json)
         {
-            return JSON.parse( JSON.stringify( json ));
+            return JSON.parse(JSON.stringify(json));
         }
     }
 

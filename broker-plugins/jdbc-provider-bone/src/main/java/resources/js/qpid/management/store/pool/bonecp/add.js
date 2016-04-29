@@ -31,14 +31,16 @@ define(["dojo/_base/xhr",
         "dojo/store/Memory",
         "dijit/form/FilteringSelect",
         "dojo/domReady!"],
-    function (xhr, dom, construct, win, registry, parser, array, event, json, string, Memory, FilteringSelect) {
-        return {
-            show: function(data) {
-                data.context.addInheritedContext({
-                    "qpid.jdbcstore.bonecp.partitionCount": "4",
-                    "qpid.jdbcstore.bonecp.minConnectionsPerPartition": "5",
-                    "qpid.jdbcstore.bonecp.maxConnectionsPerPartition": "10"
-                    });
-            }
-        };
-    });
+       function (xhr, dom, construct, win, registry, parser, array, event, json, string, Memory, FilteringSelect)
+       {
+           return {
+               show: function (data)
+               {
+                   data.context.addInheritedContext({
+                                                        "qpid.jdbcstore.bonecp.partitionCount": "4",
+                                                        "qpid.jdbcstore.bonecp.minConnectionsPerPartition": "5",
+                                                        "qpid.jdbcstore.bonecp.maxConnectionsPerPartition": "10"
+                                                    });
+               }
+           };
+       });

@@ -19,38 +19,38 @@
  *
  */
 
-define([
-  "dojo/_base/declare",
-  "dojox/grid/EnhancedGrid",
-  "dojo/domReady!"], function(declare, EnhancedGrid){
+define(["dojo/_base/declare", "dojox/grid/EnhancedGrid", "dojo/domReady!"], function (declare, EnhancedGrid)
+{
 
-  return declare("qpid.common.grid.UpdatableGrid", [EnhancedGrid], {
+    return declare("qpid.common.grid.UpdatableGrid", [EnhancedGrid], {
 
-    updater: null,
+        updater: null,
 
-    postCreate: function(){
-        this.inherited(arguments);
-        if (this.updater)
+        postCreate: function ()
         {
-            this.updater.start(this);
-        }
-    },
+            this.inherited(arguments);
+            if (this.updater)
+            {
+                this.updater.start(this);
+            }
+        },
 
-    destroy: function(){
-      if (this.updater)
-      {
-          try
-          {
-              this.updater.destroy();
-          }
-          catch(e)
-          {
-              console.error(e)
-          }
-          this.updater = null;
-      }
-      this.inherited(arguments);
-    }
-  });
+        destroy: function ()
+        {
+            if (this.updater)
+            {
+                try
+                {
+                    this.updater.destroy();
+                }
+                catch (e)
+                {
+                    console.error(e)
+                }
+                this.updater = null;
+            }
+            this.inherited(arguments);
+        }
+    });
 
 });

@@ -37,81 +37,98 @@ define(["dojo/dom",
         "dijit/form/CheckBox",
         "dijit/form/NumberSpinner",
         "dojo/domReady!"],
-    function (dom, parser, query, construct, connect, win, event, json, registry, util, properties, updater, template, editor) {
+       function (dom, parser, query, construct, connect, win, event, json, registry, util, properties, updater, template, editor)
+       {
 
-        function ManagementHttp(containerNode, pluginObject, controller, contentPane) {
-            var node = construct.create("div", null, containerNode, "last");
-            var that = this;
-            this.name = pluginObject.name;
-            this.modelObj = pluginObject;
-            this.management = controller.management;
-            node.innerHTML = template;
-            parser.parse(node).then(function(instances)
-            {
-                          that.managementHttpUpdater= new ManagementHttpUpdater(node, pluginObject, controller, contentPane);
-                          that.managementHttpUpdater.update(function(){updater.add( that.managementHttpUpdater)});
+           function ManagementHttp(containerNode, pluginObject, controller, contentPane)
+           {
+               var node = construct.create("div", null, containerNode, "last");
+               var that = this;
+               this.name = pluginObject.name;
+               this.modelObj = pluginObject;
+               this.management = controller.management;
+               node.innerHTML = template;
+               parser.parse(node).then(function (instances)
+                                       {
+                                           that.managementHttpUpdater =
+                                               new ManagementHttpUpdater(node, pluginObject, controller, contentPane);
+                                           that.managementHttpUpdater.update(function ()
+                                                                             {
+                                                                                 updater.add(that.managementHttpUpdater)
+                                                                             });
 
-                          var editButton = query(".editPluginButton", node)[0];
-                          connect.connect(registry.byNode(editButton), "onClick", function(evt){ that.edit(); });
-            });
-        }
+                                           var editButton = query(".editPluginButton", node)[0];
+                                           connect.connect(registry.byNode(editButton), "onClick", function (evt)
+                                           {
+                                               that.edit();
+                                           });
+                                       });
+           }
 
-        ManagementHttp.prototype.close = function() {
-            updater.remove( this.managementHttpUpdater );
-        };
+           ManagementHttp.prototype.close = function ()
+           {
+               updater.remove(this.managementHttpUpdater);
+           };
 
-        ManagementHttp.prototype.edit = function() {
-              editor.show(this.management, this.modelObj, this.managementHttpUpdater.pluginData);
-        };
+           ManagementHttp.prototype.edit = function ()
+           {
+               editor.show(this.management, this.modelObj, this.managementHttpUpdater.pluginData);
+           };
 
-        function ManagementHttpUpdater(node, pluginObject, controller, contentPane)
-        {
-            this.contentPane = contentPane;
-            this.controller = controller;
-            this.modelObj = pluginObject;
-            this.name = pluginObject.name;
-            this.httpBasicAuthenticationEnabled = query(".httpBasicAuthenticationEnabled", node)[0];
-            this.httpsBasicAuthenticationEnabled = query(".httpsBasicAuthenticationEnabled", node)[0];
-            this.sessionTimeout = query(".sessionTimeout", node)[0];
-            this.httpsSaslAuthenticationEnabled = query(".httpsSaslAuthenticationEnabled", node)[0];
-            this.httpSaslAuthenticationEnabled = query(".httpSaslAuthenticationEnabled", node)[0];
-            this.compressResponses = query(".compressResponses", node)[0];
-            this.management = controller.management;
-        }
+           function ManagementHttpUpdater(node, pluginObject, controller, contentPane)
+           {
+               this.contentPane = contentPane;
+               this.controller = controller;
+               this.modelObj = pluginObject;
+               this.name = pluginObject.name;
+               this.httpBasicAuthenticationEnabled = query(".httpBasicAuthenticationEnabled", node)[0];
+               this.httpsBasicAuthenticationEnabled = query(".httpsBasicAuthenticationEnabled", node)[0];
+               this.sessionTimeout = query(".sessionTimeout", node)[0];
+               this.httpsSaslAuthenticationEnabled = query(".httpsSaslAuthenticationEnabled", node)[0];
+               this.httpSaslAuthenticationEnabled = query(".httpSaslAuthenticationEnabled", node)[0];
+               this.compressResponses = query(".compressResponses", node)[0];
+               this.management = controller.management;
+           }
 
-        ManagementHttpUpdater.prototype.update = function(callback)
-        {
-            var that = this;
+           ManagementHttpUpdater.prototype.update = function (callback)
+           {
+               var that = this;
 
-            function showBoolean(val)
-            {
-              return "<input type='checkbox' disabled='disabled' "+(val ? "checked='checked'": "")+" />" ;
-            }
+               function showBoolean(val)
+               {
+                   return "<input type='checkbox' disabled='disabled' " + (val ? "checked='checked'" : "") + " />";
+               }
 
-            this.management.load(this.modelObj)
-                .then(function(data) {
-                    that.pluginData = data[0];
-                    that.httpBasicAuthenticationEnabled.innerHTML = showBoolean(that.pluginData.httpBasicAuthenticationEnabled);
-                    that.httpsBasicAuthenticationEnabled.innerHTML = showBoolean(that.pluginData.httpsBasicAuthenticationEnabled);
-                    that.httpsSaslAuthenticationEnabled.innerHTML = showBoolean(that.pluginData.httpsSaslAuthenticationEnabled);
-                    that.httpSaslAuthenticationEnabled.innerHTML = showBoolean(that.pluginData.httpSaslAuthenticationEnabled);
-                    that.compressResponses.innerHTML = showBoolean(that.pluginData.compressResponses);
-                    that.sessionTimeout.innerHTML = that.pluginData.sessionTimeout;
-                    if (callback)
-                    {
-                        callback();
-                    }
-                },
-                function(error)
-                {
-                   util.tabErrorHandler(error, {updater:that,
-                                                contentPane: that.contentPane,
-                                                tabContainer: that.controller.tabContainer,
-                                                name: that.modelObj.name,
-                                                category: "Plugin HTTP Management"});
-                });
+               this.management.load(this.modelObj)
+                   .then(function (data)
+                         {
+                             that.pluginData = data[0];
+                             that.httpBasicAuthenticationEnabled.innerHTML =
+                                 showBoolean(that.pluginData.httpBasicAuthenticationEnabled);
+                             that.httpsBasicAuthenticationEnabled.innerHTML =
+                                 showBoolean(that.pluginData.httpsBasicAuthenticationEnabled);
+                             that.httpsSaslAuthenticationEnabled.innerHTML =
+                                 showBoolean(that.pluginData.httpsSaslAuthenticationEnabled);
+                             that.httpSaslAuthenticationEnabled.innerHTML =
+                                 showBoolean(that.pluginData.httpSaslAuthenticationEnabled);
+                             that.compressResponses.innerHTML = showBoolean(that.pluginData.compressResponses);
+                             that.sessionTimeout.innerHTML = that.pluginData.sessionTimeout;
+                             if (callback)
+                             {
+                                 callback();
+                             }
+                         }, function (error)
+                         {
+                             util.tabErrorHandler(error, {
+                                 updater: that,
+                                 contentPane: that.contentPane,
+                                 tabContainer: that.controller.tabContainer,
+                                 name: that.modelObj.name,
+                                 category: "Plugin HTTP Management"
+                             });
+                         });
 
-        };
+           };
 
-        return ManagementHttp;
-    });
+           return ManagementHttp;
+       });

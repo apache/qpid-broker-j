@@ -17,19 +17,16 @@
  * under the License.
  */
 
-define(["dijit/registry", "qpid/common/util", "dojo/domReady!"],
-   function (registry, util)
-   {
-       return {
-           show: function(data)
-           {
-              util.parseHtmlIntoDiv(data.containerNode, "virtualhost/providedstore/edit.html",
-              function()
-              {
-                  registry.byId("editVirtualHost.storeUnderfullSize").set("regExpGen", util.numericOrContextVarRegexp);
-                  registry.byId("editVirtualHost.storeOverfullSize").set("regExpGen", util.numericOrContextVarRegexp);
-              });
-           }
-       };
-   }
-);
+define(["dijit/registry", "qpid/common/util", "dojo/domReady!"], function (registry, util)
+{
+    return {
+        show: function (data)
+        {
+            util.parseHtmlIntoDiv(data.containerNode, "virtualhost/providedstore/edit.html", function ()
+            {
+                registry.byId("editVirtualHost.storeUnderfullSize").set("regExpGen", util.numericOrContextVarRegexp);
+                registry.byId("editVirtualHost.storeOverfullSize").set("regExpGen", util.numericOrContextVarRegexp);
+            });
+        }
+    };
+});

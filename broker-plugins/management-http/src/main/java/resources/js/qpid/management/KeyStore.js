@@ -31,56 +31,71 @@ define(["dojo/dom",
         "qpid/management/addStore",
         "dojo/text!showStore.html",
         "dojo/domReady!"],
-       function (dom, parser, query, connect, registry, entities, properties, updater, util, formatter, addStore, template) {
+       function (dom, parser, query, connect, registry, entities, properties, updater, util, formatter, addStore, template)
+       {
 
-           function KeyStore(name, parent, controller) {
+           function KeyStore(name, parent, controller)
+           {
                this.keyStoreName = name;
                this.controller = controller;
                this.management = controller.management;
-               this.modelObj = { type: "keystore", name: name, parent: parent};
+               this.modelObj = {
+                   type: "keystore",
+                   name: name,
+                   parent: parent
+               };
            }
 
-           KeyStore.prototype.getTitle = function() {
+           KeyStore.prototype.getTitle = function ()
+           {
                return "KeyStore: " + this.keyStoreName;
            };
 
-           KeyStore.prototype.open = function(contentPane) {
+           KeyStore.prototype.open = function (contentPane)
+           {
                var that = this;
                this.contentPane = contentPane;
-                contentPane.containerNode.innerHTML = template;
-                parser.parse(contentPane.containerNode).then(function(instances)
-                {
-                            that.keyStoreUpdater = new KeyStoreUpdater(that);
-                            that.keyStoreUpdater.update(function(){updater.add( that.keyStoreUpdater );});
+               contentPane.containerNode.innerHTML = template;
+               parser.parse(contentPane.containerNode).then(function (instances)
+                                                            {
+                                                                that.keyStoreUpdater = new KeyStoreUpdater(that);
+                                                                that.keyStoreUpdater.update(function ()
+                                                                                            {
+                                                                                                updater.add(that.keyStoreUpdater);
+                                                                                            });
 
+                                                                var deleteKeyStoreButton = query(".deleteStoreButton",
+                                                                                                 contentPane.containerNode)[0];
+                                                                var node = registry.byNode(deleteKeyStoreButton);
+                                                                connect.connect(node, "onClick", function (evt)
+                                                                {
+                                                                    that.deleteKeyStore();
+                                                                });
 
-                            var deleteKeyStoreButton = query(".deleteStoreButton", contentPane.containerNode)[0];
-                            var node = registry.byNode(deleteKeyStoreButton);
-                            connect.connect(node, "onClick",
-                                function(evt){
-                                    that.deleteKeyStore();
-                                });
-
-                            var editKeyStoreButton = query(".editStoreButton", contentPane.containerNode)[0];
-                            var node = registry.byNode(editKeyStoreButton);
-                            connect.connect(node, "onClick",
-                                function(evt){
-                                  management.load(that.modelObj, { actuals: true })
-                                    .then(function(data)
-                                    {
-                                      addStore.setupTypeStore(that.management, "KeyStore", that.modelObj);
-                                      addStore.show(data[0]);
-                                    }, util.xhrErrorHandler);
-                                });
-                });
+                                                                var editKeyStoreButton = query(".editStoreButton",
+                                                                                               contentPane.containerNode)[0];
+                                                                var node = registry.byNode(editKeyStoreButton);
+                                                                connect.connect(node, "onClick", function (evt)
+                                                                {
+                                                                    management.load(that.modelObj, {actuals: true})
+                                                                              .then(function (data)
+                                                                                    {
+                                                                                        addStore.setupTypeStore(that.management,
+                                                                                                                "KeyStore",
+                                                                                                                that.modelObj);
+                                                                                        addStore.show(data[0]);
+                                                                                    }, util.xhrErrorHandler);
+                                                                });
+                                                            });
 
            };
 
-           KeyStore.prototype.close = function() {
-               updater.remove( this.keyStoreUpdater );
+           KeyStore.prototype.close = function ()
+           {
+               updater.remove(this.keyStoreUpdater);
            };
 
-           function KeyStoreUpdater( tabObject)
+           function KeyStoreUpdater(tabObject)
            {
                var containerNode = tabObject.contentPane.containerNode;
                var that = this;
@@ -88,81 +103,85 @@ define(["dojo/dom",
                this.management = tabObject.controller.management;
                this.modelObj = tabObject.modelObj;
                this.tabObject = tabObject
-               function findNode(name) {
+               function findNode(name)
+               {
                    return query("." + name, containerNode)[0];
                }
 
                function storeNodes(names)
                {
-                  for(var i = 0; i < names.length; i++) {
-                      that[names[i]] = findNode(names[i]);
-                  }
+                   for (var i = 0; i < names.length; i++)
+                   {
+                       that[names[i]] = findNode(names[i]);
+                   }
                }
 
-               storeNodes(["name",
-                           "type",
-                           "state"
-                           ]);
+               storeNodes(["name", "type", "state"]);
            }
 
-           KeyStoreUpdater.prototype.updateHeader = function()
+           KeyStoreUpdater.prototype.updateHeader = function ()
            {
-              this.name.innerHTML = entities.encode(String(this.keyStoreData[ "name" ]));
-              this.type.innerHTML = entities.encode(String(this.keyStoreData[ "type" ]));
-              this.state.innerHTML = entities.encode(String(this.keyStoreData[ "state" ]));
+               this.name.innerHTML = entities.encode(String(this.keyStoreData["name"]));
+               this.type.innerHTML = entities.encode(String(this.keyStoreData["type"]));
+               this.state.innerHTML = entities.encode(String(this.keyStoreData["state"]));
            };
 
-           KeyStoreUpdater.prototype.update = function(callback)
+           KeyStoreUpdater.prototype.update = function (callback)
            {
 
-              var that = this;
+               var that = this;
 
-              this.management.load(that.modelObj).then(function(data)
-                   {
-                      that.keyStoreData = data[0];
-                      that.updateHeader();
+               this.management.load(that.modelObj).then(function (data)
+                                                        {
+                                                            that.keyStoreData = data[0];
+                                                            that.updateHeader();
 
-                      if (callback)
-                      {
-                        callback();
-                      }
+                                                            if (callback)
+                                                            {
+                                                                callback();
+                                                            }
 
-                      if (that.details)
-                      {
-                        that.details.update(that.keyStoreData);
-                      }
-                      else
-                      {
-                        require(["qpid/management/store/" + encodeURIComponent(that.keyStoreData.type.toLowerCase()) + "/show"],
-                           function(DetailsUI)
-                           {
-                             that.details = new DetailsUI({containerNode:that.keyStoreDetailsContainer, parent: that});
-                             that.details.update(that.keyStoreData);
-                           }
-                         );
-                      }
-                   },
-                   function(error)
-                   {
-                      util.tabErrorHandler(error, {updater:that,
-                                                   contentPane: that.tabObject.contentPane,
-                                                   tabContainer: that.tabObject.controller.tabContainer,
-                                                   name: that.modelObj.name,
-                                                   category: "Key Store"});
-                   });
+                                                            if (that.details)
+                                                            {
+                                                                that.details.update(that.keyStoreData);
+                                                            }
+                                                            else
+                                                            {
+                                                                require(["qpid/management/store/" + encodeURIComponent(
+                                                                    that.keyStoreData.type.toLowerCase()) + "/show"],
+                                                                        function (DetailsUI)
+                                                                        {
+                                                                            that.details = new DetailsUI({
+                                                                                containerNode: that.keyStoreDetailsContainer,
+                                                                                parent: that
+                                                                            });
+                                                                            that.details.update(that.keyStoreData);
+                                                                        });
+                                                            }
+                                                        }, function (error)
+                                                        {
+                                                            util.tabErrorHandler(error, {
+                                                                updater: that,
+                                                                contentPane: that.tabObject.contentPane,
+                                                                tabContainer: that.tabObject.controller.tabContainer,
+                                                                name: that.modelObj.name,
+                                                                category: "Key Store"
+                                                            });
+                                                        });
            };
 
-           KeyStore.prototype.deleteKeyStore = function() {
-               if(confirm("Are you sure you want to delete key store '" +this.keyStoreName+"'?")) {
+           KeyStore.prototype.deleteKeyStore = function ()
+           {
+               if (confirm("Are you sure you want to delete key store '" + this.keyStoreName + "'?"))
+               {
                    var that = this;
-                   this.management.remove(this.modelObj).then(
-                       function(data) {
-                           that.contentPane.onClose()
-                           that.controller.tabContainer.removeChild(that.contentPane);
-                           that.contentPane.destroyRecursive();
-                           that.close();
-                       },
-                       util.xhrErrorHandler);
+                   this.management.remove(this.modelObj).then(function (data)
+                                                              {
+                                                                  that.contentPane.onClose()
+                                                                  that.controller.tabContainer.removeChild(that.contentPane);
+                                                                  that.contentPane.destroyRecursive();
+                                                                  that.close();
+                                                              }, util.xhrErrorHandler);
                }
            }
 

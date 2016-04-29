@@ -27,11 +27,11 @@ define(["dojo/_base/lang",
         "dojo/_base/event",
         'dojo/json',
         "dojo/text!addVirtualHostAlias.html",
-/*
-        "dojox/validate/us",
-        "dojox/validate/web",
-        "dojox/layout/TableContainer",
- */
+           /*
+            "dojox/validate/us",
+            "dojox/validate/web",
+            "dojox/layout/TableContainer",
+            */
         "qpid/common/util",
         "dijit/registry",
         "dijit/Dialog",
@@ -43,158 +43,196 @@ define(["dojo/_base/lang",
         "dijit/form/Button",
         "dijit/form/Form",
         "dijit/layout/ContentPane",
-        "dojo/domReady!"],
-    function (lang, dom, construct, parser, memory, array, event, json, template, util, registry)
-    {
-        var addVirtualHostAlias =
-        {
-            init: function()
-            {
-                var that=this;
-                this.category = "VirtualHostAlias";
-                this.containerNode = construct.create("div", {innerHTML: template});
-                parser.parse(this.containerNode).then(function(instances) { that._postParse(); });
-            },
-            _postParse: function()
-            {
-                var that=this;
-                this.name = registry.byId("addVirtualHostAlias.name");
-                this.name.set("regExpGen", util.nameOrContextVarRegexp);
+        "dojo/domReady!"], function (lang, dom, construct, parser, memory, array, event, json, template, util, registry)
+       {
+           var addVirtualHostAlias = {
+               init: function ()
+               {
+                   var that = this;
+                   this.category = "VirtualHostAlias";
+                   this.containerNode = construct.create("div", {innerHTML: template});
+                   parser.parse(this.containerNode).then(function (instances)
+                                                         {
+                                                             that._postParse();
+                                                         });
+               },
+               _postParse: function ()
+               {
+                   var that = this;
+                   this.name = registry.byId("addVirtualHostAlias.name");
+                   this.name.set("regExpGen", util.nameOrContextVarRegexp);
 
-                this.dialog = registry.byId("addVirtualHostAlias");
-                this.addButton = registry.byId("addVirtualHostAlias.addButton");
-                this.cancelButton = registry.byId("addVirtualHostAlias.cancelButton");
-                this.cancelButton.on("click", function(e){that._cancel(e);});
-                this.addButton.on("click", function(e){that._add(e);});
+                   this.dialog = registry.byId("addVirtualHostAlias");
+                   this.addButton = registry.byId("addVirtualHostAlias.addButton");
+                   this.cancelButton = registry.byId("addVirtualHostAlias.cancelButton");
+                   this.cancelButton.on("click", function (e)
+                   {
+                       that._cancel(e);
+                   });
+                   this.addButton.on("click", function (e)
+                   {
+                       that._add(e);
+                   });
 
-                this.typeFieldsContainer = dom.byId("addVirtualHostAlias.typeFields");
-                this.form = registry.byId("addVirtualHostAlias.form");
-                this.form.on("submit", function(){return false;});
+                   this.typeFieldsContainer = dom.byId("addVirtualHostAlias.typeFields");
+                   this.form = registry.byId("addVirtualHostAlias.form");
+                   this.form.on("submit", function ()
+                   {
+                       return false;
+                   });
 
-                this.virtualHostAliasType = registry.byId("addVirtualHostAlias.type");
-                this.virtualHostAliasType.on("change", function(type){that._typeChanged(type);});
+                   this.virtualHostAliasType = registry.byId("addVirtualHostAlias.type");
+                   this.virtualHostAliasType.on("change", function (type)
+                   {
+                       that._typeChanged(type);
+                   });
 
-                this.durable = registry.byId("addVirtualHostAlias.durable");
-                this.priority = registry.byId("addVirtualHostAlias.priority");
-                this.priority.set("regExpGen", util.numericOrContextVarRegexp);
+                   this.durable = registry.byId("addVirtualHostAlias.durable");
+                   this.priority = registry.byId("addVirtualHostAlias.priority");
+                   this.priority.set("regExpGen", util.numericOrContextVarRegexp);
 
-                this.allFieldsContainer = dom.byId("addVirtualHostAlias.contentPane");
-            },
-            show: function(management, modelObj, actualData)
-            {
-                this.management = management;
-                this.modelObj = modelObj;
-                var metadata = management.metadata;
-                this.configured = false;
-                this._destroyTypeFields(this.typeFieldsContainer);
-                this.virtualHostAliasType.set("store", util.makeTypeStoreFromMetadataByCategory(management.metadata, this.category));
-                this.form.reset();
+                   this.allFieldsContainer = dom.byId("addVirtualHostAlias.contentPane");
+               },
+               show: function (management, modelObj, actualData)
+               {
+                   this.management = management;
+                   this.modelObj = modelObj;
+                   var metadata = management.metadata;
+                   this.configured = false;
+                   this._destroyTypeFields(this.typeFieldsContainer);
+                   this.virtualHostAliasType.set("store",
+                                                 util.makeTypeStoreFromMetadataByCategory(management.metadata,
+                                                                                          this.category));
+                   this.form.reset();
 
-                this.initialData = actualData;
-                this.isNew = !actualData;
+                   this.initialData = actualData;
+                   this.isNew = !actualData;
 
-                this.name.set("disabled", !this.isNew);
-                this.virtualHostAliasType.set("disabled", !this.isNew);
-                this.durable.set("disabled", !this.isNew);
-                this.dialog.set("title", this.isNew ? "Add Virtual Host Alias" : "Edit Virtual Host Alias - " + actualData.name);
+                   this.name.set("disabled", !this.isNew);
+                   this.virtualHostAliasType.set("disabled", !this.isNew);
+                   this.durable.set("disabled", !this.isNew);
+                   this.dialog.set("title",
+                                   this.isNew ? "Add Virtual Host Alias" : "Edit Virtual Host Alias - "
+                                                                           + actualData.name);
 
-                if (actualData)
-                {
-                    this._configure(actualData.type);
-                }
+                   if (actualData)
+                   {
+                       this._configure(actualData.type);
+                   }
 
-                this.dialog.show();
-            },
-            _cancel: function(e)
-            {
-                event.stop(e);
-                this._destroyTypeFields(this.typeFieldsContainer);
-                this.dialog.hide();
-            },
-            _add: function(e)
-            {
-                event.stop(e);
-                this._submit();
-            },
-            _submit: function()
-            {
-                if (this.form.validate())
-                {
-                    var that = this;
-                    var formData = util.getFormWidgetValues(this.form, this.initialData);
+                   this.dialog.show();
+               },
+               _cancel: function (e)
+               {
+                   event.stop(e);
+                   this._destroyTypeFields(this.typeFieldsContainer);
+                   this.dialog.hide();
+               },
+               _add: function (e)
+               {
+                   event.stop(e);
+                   this._submit();
+               },
+               _submit: function ()
+               {
+                   if (this.form.validate())
+                   {
+                       var that = this;
+                       var formData = util.getFormWidgetValues(this.form, this.initialData);
 
-                    if (this.isNew)
-                    {
-                        this.management.create(this.category, this.modelObj, formData).then(function(x){that.dialog.hide();});
-                    }
-                    else
-                    {
-                        this.management.update(this.modelObj, formData).then(function(x){that.dialog.hide();});
-                    }
-                }
-                else
-                {
-                    alert('Form contains invalid data. Please correct first');
-                }
-            },
-            _destroyTypeFields: function(typeFieldsContainer)
-            {
-                var widgets = registry.findWidgets(typeFieldsContainer);
-                array.forEach(widgets, function(item) { item.destroyRecursive();});
-                construct.empty(typeFieldsContainer);
-            },
-            _typeChanged: function(type)
-            {
-                this._destroyTypeFields(this.typeFieldsContainer);
+                       if (this.isNew)
+                       {
+                           this.management.create(this.category, this.modelObj, formData).then(function (x)
+                                                                                               {
+                                                                                                   that.dialog.hide();
+                                                                                               });
+                       }
+                       else
+                       {
+                           this.management.update(this.modelObj, formData).then(function (x)
+                                                                                {
+                                                                                    that.dialog.hide();
+                                                                                });
+                       }
+                   }
+                   else
+                   {
+                       alert('Form contains invalid data. Please correct first');
+                   }
+               },
+               _destroyTypeFields: function (typeFieldsContainer)
+               {
+                   var widgets = registry.findWidgets(typeFieldsContainer);
+                   array.forEach(widgets, function (item)
+                   {
+                       item.destroyRecursive();
+                   });
+                   construct.empty(typeFieldsContainer);
+               },
+               _typeChanged: function (type)
+               {
+                   this._destroyTypeFields(this.typeFieldsContainer);
 
-                if (type)
-                {
-                    this._configure(type);
-                    var that = this;
-                    require(["qpid/management/virtualhostalias/" + type.toLowerCase() + "/add"], function(typeUI)
-                    {
-                        try
-                        {
-                            var metadata = that.management.metadata;
-                            var promise = typeUI.show({containerNode:that.typeFieldsContainer, data: that.initialData, metadata: metadata, category: that.category, type: type});
-                            if (promise)
-                            {
-                                promise.then(
-                                    function(instances)
-                                    {
-                                        util.applyToWidgets(that.typeFieldsContainer, that.category, type, that.initialData, metadata);
-                                        if (!that.isNew)
-                                        {
-                                            util.disableWidgetsForImmutableFields(that.allFieldsContainer, that.category, type, metadata);
-                                        }
-                                    });
-                            }
-                        }
-                        catch(e)
-                        {
-                            console.warn(e);
-                        }
-                    });
-                }
-            },
-            _configure: function(type)
-            {
-                if (!this.configured)
-                {
-                    var metadata = this.management.metadata;
-                    util.applyToWidgets(this.allFieldsContainer, this.category, type, this.initialData, metadata);
-                    this.configured = true;
-                }
-            }
-        };
+                   if (type)
+                   {
+                       this._configure(type);
+                       var that = this;
+                       require(["qpid/management/virtualhostalias/" + type.toLowerCase() + "/add"], function (typeUI)
+                       {
+                           try
+                           {
+                               var metadata = that.management.metadata;
+                               var promise = typeUI.show({
+                                                             containerNode: that.typeFieldsContainer,
+                                                             data: that.initialData,
+                                                             metadata: metadata,
+                                                             category: that.category,
+                                                             type: type
+                                                         });
+                               if (promise)
+                               {
+                                   promise.then(function (instances)
+                                                {
+                                                    util.applyToWidgets(that.typeFieldsContainer,
+                                                                        that.category,
+                                                                        type,
+                                                                        that.initialData,
+                                                                        metadata);
+                                                    if (!that.isNew)
+                                                    {
+                                                        util.disableWidgetsForImmutableFields(that.allFieldsContainer,
+                                                                                              that.category,
+                                                                                              type,
+                                                                                              metadata);
+                                                    }
+                                                });
+                               }
+                           }
+                           catch (e)
+                           {
+                               console.warn(e);
+                           }
+                       });
+                   }
+               },
+               _configure: function (type)
+               {
+                   if (!this.configured)
+                   {
+                       var metadata = this.management.metadata;
+                       util.applyToWidgets(this.allFieldsContainer, this.category, type, this.initialData, metadata);
+                       this.configured = true;
+                   }
+               }
+           };
 
-        try
-        {
-            addVirtualHostAlias.init();
-        }
-        catch(e)
-        {
-            console.warn(e);
-        }
-        return addVirtualHostAlias;
-    });
+           try
+           {
+               addVirtualHostAlias.init();
+           }
+           catch (e)
+           {
+               console.warn(e);
+           }
+           return addVirtualHostAlias;
+       });

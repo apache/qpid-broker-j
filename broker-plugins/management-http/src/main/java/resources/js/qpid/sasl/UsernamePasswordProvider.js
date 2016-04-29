@@ -18,26 +18,24 @@
  * under the License.
  *
  */
-define(["dijit/registry",
-        "dojo/domReady!"],
-       function (registry)
-       {
+define(["dijit/registry", "dojo/domReady!"], function (registry)
+{
+    return {
+        get: function ()
+        {
+            if (registry.byId("username") == null)
+            {
+                // it is not a login page
+                // redirecting to login.html
+                window.location = "login.html";
+                return;
+            }
+
             return {
-                        get: function()
-                             {
-                                 if (registry.byId("username") == null)
-                                 {
-                                    // it is not a login page
-                                    // redirecting to login.html
-                                    window.location = "login.html";
-                                    return;
-                                 }
+                username: registry.byId("username").value,
+                password: registry.byId("password").value
+            };
+        }
+    };
 
-                                 return {
-                                            username: registry.byId("username").value,
-                                            password: registry.byId("password").value
-                                        };
-                             }
-                   };
-
-       });
+});

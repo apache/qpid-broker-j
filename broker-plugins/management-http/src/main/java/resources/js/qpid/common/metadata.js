@@ -16,99 +16,98 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-define(["dojo/_base/array", "dojox/lang/functional/object" ],
-  function (array, fobject)
-  {
-       function Metadata(data)
-       {
-           this.metadata = data;
-       }
+define(["dojo/_base/array", "dojox/lang/functional/object"], function (array, fobject)
+{
+    function Metadata(data)
+    {
+        this.metadata = data;
+    }
 
-       Metadata.prototype.getMetaData = function (category, type)
-       {
-           if (this.metadata)
-           {
-               return this.metadata[category][type];
-           }
-           return null;
-       };
+    Metadata.prototype.getMetaData = function (category, type)
+    {
+        if (this.metadata)
+        {
+            return this.metadata[category][type];
+        }
+        return null;
+    };
 
-       Metadata.prototype.getDefaultValueForAttribute = function (category, type, attributeName)
-       {
-         var metaDataForInstance = this.getMetaData(category, type);
-         var attributesForType =  metaDataForInstance["attributes"];
-         var attributesForName = attributesForType[attributeName];
-         return attributesForName ? attributesForName["defaultValue"] : undefined;
-       };
-
-      Metadata.prototype.isImmutable = function (category, type, attributeName)
-      {
-          var metaDataForInstance = this.getMetaData(category, type);
-          var attributesForType =  metaDataForInstance["attributes"];
-          var attributesForName = attributesForType[attributeName];
-          return attributesForName ? attributesForName["immutable"] : undefined;
-      };
-
-      Metadata.prototype.getDefaultValueForType = function (category, type)
-      {
+    Metadata.prototype.getDefaultValueForAttribute = function (category, type, attributeName)
+    {
         var metaDataForInstance = this.getMetaData(category, type);
-        var attributesForType =  metaDataForInstance["attributes"];
+        var attributesForType = metaDataForInstance["attributes"];
+        var attributesForName = attributesForType[attributeName];
+        return attributesForName ? attributesForName["defaultValue"] : undefined;
+    };
+
+    Metadata.prototype.isImmutable = function (category, type, attributeName)
+    {
+        var metaDataForInstance = this.getMetaData(category, type);
+        var attributesForType = metaDataForInstance["attributes"];
+        var attributesForName = attributesForType[attributeName];
+        return attributesForName ? attributesForName["immutable"] : undefined;
+    };
+
+    Metadata.prototype.getDefaultValueForType = function (category, type)
+    {
+        var metaDataForInstance = this.getMetaData(category, type);
+        var attributesForType = metaDataForInstance["attributes"];
         var defaultValues = {};
         for (var attributeName in attributesForType)
         {
-          var attribute = attributesForType[attributeName];
-          if (attribute.defaultValue)
-          {
-            if (attribute.type == "Boolean")
+            var attribute = attributesForType[attributeName];
+            if (attribute.defaultValue)
             {
-              defaultValues[attributeName] = (attribute.defaultValue === "true");
+                if (attribute.type == "Boolean")
+                {
+                    defaultValues[attributeName] = (attribute.defaultValue === "true");
+                }
+                else
+                {
+                    defaultValues[attributeName] = attribute.defaultValue;
+                }
             }
-            else
-            {
-              defaultValues[attributeName] = attribute.defaultValue;
-            }
-          }
         }
         return defaultValues;
-       };
+    };
 
-      Metadata.prototype.getTypesForCategory = function (category)
-       {
-          return fobject.keys(this.metadata[category]);
-       };
+    Metadata.prototype.getTypesForCategory = function (category)
+    {
+        return fobject.keys(this.metadata[category]);
+    };
 
-       Metadata.prototype.extractUniqueListOfValues = function(data)
-       {
-          var values = [];
-          for (i = 0; i < data.length; i++)
-          {
-             for (j = 0; j < data[i].length; j++)
-             {
-                 var current = data[i][j];
-                 if (array.indexOf(values, current) == -1)
-                 {
-                     values.push(current);
-                 }
-             }
-          }
-          return values;
-       };
+    Metadata.prototype.extractUniqueListOfValues = function (data)
+    {
+        var values = [];
+        for (i = 0; i < data.length; i++)
+        {
+            for (j = 0; j < data[i].length; j++)
+            {
+                var current = data[i][j];
+                if (array.indexOf(values, current) == -1)
+                {
+                    values.push(current);
+                }
+            }
+        }
+        return values;
+    };
 
-       Metadata.prototype.implementsManagedInterface = function (category, type, managedInterfaceName)
-       {
-          var md = this.getMetaData(category, type);
-          if (md && md.managedInterfaces)
-          {
-              return array.indexOf(md.managedInterfaces, managedInterfaceName) >= 0 ;
-          }
-          return false;
-       };
+    Metadata.prototype.implementsManagedInterface = function (category, type, managedInterfaceName)
+    {
+        var md = this.getMetaData(category, type);
+        if (md && md.managedInterfaces)
+        {
+            return array.indexOf(md.managedInterfaces, managedInterfaceName) >= 0;
+        }
+        return false;
+    };
 
-       Metadata.prototype.validChildTypes= function (category, type, childCategory)
-       {
-         var metaData = this.getMetaData(category, type);
-         return metaData ? metaData.validChildTypes[childCategory] : [];
-       }
+    Metadata.prototype.validChildTypes = function (category, type, childCategory)
+    {
+        var metaData = this.getMetaData(category, type);
+        return metaData ? metaData.validChildTypes[childCategory] : [];
+    }
 
-       return Metadata;
-  });
+    return Metadata;
+});

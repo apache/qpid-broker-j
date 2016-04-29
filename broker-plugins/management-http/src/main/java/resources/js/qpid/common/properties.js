@@ -18,9 +18,9 @@
  * under the License.
  *
  */
-define(["dojo/has", "dojo/_base/sniff", "dojo/domReady!"],
-       function (has) {
-           var properties = {};
-           properties.useSyncGet = (has("ie") <= 8);
-           return properties;
-       });
+define(["dojo/has", "dojo/_base/sniff", "dojo/domReady!"], function (has)
+{
+    var properties = {};
+    properties.useSyncGet = (has("ie") <= 8);
+    return properties;
+});

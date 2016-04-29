@@ -26,27 +26,28 @@ define(["dojo/_base/xhr",
         "dojo/text!virtualhost/providedstore/add.html",
         "qpid/common/util",
         "dijit/form/ValidationTextBox",
-        "dojo/domReady!"],
-  function (xhr, parser, dom, domConstruct, json, registry, template, util)
-  {
-    return {
-        show: function (data)
-        {
-            var that= this;
-            this.containerNode = domConstruct.create("div", {innerHTML: template}, data.containerNode);
-            parser.parse(this.containerNode).then(function(instances) {that._postParse(data);});
-        },
-        _postParse: function(data)
-        {
-            registry.byId("addVirtualHost.storeUnderfullSize").set("regExpGen", util.numericOrContextVarRegexp);
-            registry.byId("addVirtualHost.storeOverfullSize").set("regExpGen", util.numericOrContextVarRegexp);
+        "dojo/domReady!"], function (xhr, parser, dom, domConstruct, json, registry, template, util)
+       {
+           return {
+               show: function (data)
+               {
+                   var that = this;
+                   this.containerNode = domConstruct.create("div", {innerHTML: template}, data.containerNode);
+                   parser.parse(this.containerNode).then(function (instances)
+                                                         {
+                                                             that._postParse(data);
+                                                         });
+               },
+               _postParse: function (data)
+               {
+                   registry.byId("addVirtualHost.storeUnderfullSize").set("regExpGen", util.numericOrContextVarRegexp);
+                   registry.byId("addVirtualHost.storeOverfullSize").set("regExpGen", util.numericOrContextVarRegexp);
 
-            if (data.parent.virtualHostNodeType.value == "JDBC")
-            {
-                dom.byId("addVirtualHost.diskFlowControls").style.display = "none";
-            }
+                   if (data.parent.virtualHostNodeType.value == "JDBC")
+                   {
+                       dom.byId("addVirtualHost.diskFlowControls").style.display = "none";
+                   }
 
-        }
-    };
-  }
-);
+               }
+           };
+       });

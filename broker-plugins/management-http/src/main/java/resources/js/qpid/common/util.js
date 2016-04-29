@@ -49,515 +49,549 @@ define(["dojo/_base/xhr",
         "dijit/layout/ContentPane",
         "dojox/validate/us",
         "dojox/validate/web",
-        "dojo/domReady!"
-        ],
-       function (xhr, array, event, lang, json, dom, geometry, domStyle, win, query, parser, Memory, w, on, entities, widgetconfigurer, registry, WarningPane, updater) {
+        "dojo/domReady!"],
+       function (xhr, array, event, lang, json, dom, geometry, domStyle, win, query, parser, Memory, w, on, entities, widgetconfigurer, registry, WarningPane, updater)
+       {
            var util = {};
-           if (Array.isArray) {
-               util.isArray = function (object) {
+           if (Array.isArray)
+           {
+               util.isArray = function (object)
+               {
                    return Array.isArray(object);
                };
-           } else {
-               util.isArray = function (object) {
+           }
+           else
+           {
+               util.isArray = function (object)
+               {
                    return object instanceof Array;
                };
            }
 
-           util.flattenStatistics = function (data) {
+           util.flattenStatistics = function (data)
+           {
                var attrName, stats, propName, theList;
-               for(attrName in data) {
-                   if(data.hasOwnProperty(attrName)) {
-                       if(attrName == "statistics") {
+               for (attrName in data)
+               {
+                   if (data.hasOwnProperty(attrName))
+                   {
+                       if (attrName == "statistics")
+                       {
                            stats = data.statistics;
-                           for(propName in stats) {
-                               if(stats.hasOwnProperty( propName )) {
-                                   data[ propName ] = stats[ propName ];
+                           for (propName in stats)
+                           {
+                               if (stats.hasOwnProperty(propName))
+                               {
+                                   data[propName] = stats[propName];
                                }
                            }
-                       } else if(data[ attrName ] instanceof Array) {
-                           theList = data[ attrName ];
+                       }
+                       else if (data[attrName] instanceof Array)
+                       {
+                           theList = data[attrName];
 
-                           for(var i=0; i < theList.length; i++) {
-                               util.flattenStatistics( theList[i] );
+                           for (var i = 0; i < theList.length; i++)
+                           {
+                               util.flattenStatistics(theList[i]);
                            }
                        }
                    }
                }
            };
 
-           util.isReservedExchangeName = function(exchangeName)
+           util.isReservedExchangeName = function (exchangeName)
            {
-               return exchangeName == null || exchangeName == "" || "<<default>>" == exchangeName || exchangeName.indexOf("amq.") == 0 || exchangeName.indexOf("qpid.") == 0;
+               return exchangeName == null || exchangeName == "" || "<<default>>" == exchangeName
+                      || exchangeName.indexOf("amq.") == 0 || exchangeName.indexOf("qpid.") == 0;
            };
 
-           util.confirmAndDeleteGridSelection = function(grid, confirmationMessageStart, deleteFunction )
+           util.confirmAndDeleteGridSelection = function (grid, confirmationMessageStart, deleteFunction)
            {
-                var data = grid.selection.getSelected();
-                var confirmed = false;
-                if(data.length)
-                {
-                    var confirmationMessage = null;
-                    if (data.length == 1)
-                    {
-                        confirmationMessage = confirmationMessageStart + " '" + data[0].name + "'?";
-                    }
-                    else
-                    {
-                        var names = '';
-                        for(var i = 0; i<data.length; i++)
-                        {
-                            if (names)
-                            {
-                                names += ', ';
-                            }
-                            names += "\""+ data[i].name + "\"";
-                        }
-                        confirmationMessage = confirmationMessageStart + "s " + names + "?";
-                    }
-
-                    if(confirm(confirmationMessage))
-                    {
-                      confirmed = true;
-                      deleteFunction(data);
-                    }
-                }
-                return confirmed;
-           }
-
-           util.buildDeleteQuery = function(data, url, idParam)
-           {
-              var queryParam;
-              for(var i = 0; i<data.length; i++)
-              {
-                  if(queryParam)
-                  {
-                      queryParam += "&";
-                  }
-                  else
-                  {
-                      queryParam = "?";
-                  }
-                  queryParam += ( idParam || "id" ) + "=" + encodeURIComponent(data[i].id);
-              }
-              return url + queryParam;
-           }
-
-           util.deleteSelectedObjects = function(grid, confirmationMessageStart, management, modelObj, updater, idParam, callback)
-           {
-               return util.confirmAndDeleteGridSelection(grid, confirmationMessageStart,
-                                                           function(data)
-                                                           {
-                                                               util.deleteObjects(management, data, modelObj, idParam, grid, updater, callback);
-                                                           });
-           }
-
-           util.deleteObjects = function(management, data, modelObj, idParam, grid, updater, callback)
-           {
-                var name = idParam || "id";
-                var parameters = {};
-                parameters[name] = [];
-                for(var i = 0; i<data.length; i++)
-                {
-                  parameters[name].push(data[i].id);
-
-                }
-                management.remove(modelObj, parameters).then(
-                   function(result)
+               var data = grid.selection.getSelected();
+               var confirmed = false;
+               if (data.length)
+               {
+                   var confirmationMessage = null;
+                   if (data.length == 1)
                    {
-                      grid.selection.deselectAll();
-                      if (updater)
-                      {
-                        updater.update();
-                      }
-                      if (callback)
-                      {
-                        callback(data);
-                      }
-                   },
-                   util.xhrErrorHandler);
+                       confirmationMessage = confirmationMessageStart + " '" + data[0].name + "'?";
+                   }
+                   else
+                   {
+                       var names = '';
+                       for (var i = 0; i < data.length; i++)
+                       {
+                           if (names)
+                           {
+                               names += ', ';
+                           }
+                           names += "\"" + data[i].name + "\"";
+                       }
+                       confirmationMessage = confirmationMessageStart + "s " + names + "?";
+                   }
+
+                   if (confirm(confirmationMessage))
+                   {
+                       confirmed = true;
+                       deleteFunction(data);
+                   }
+               }
+               return confirmed;
            }
 
-           util.deleteSelectedRows = function(grid, confirmationMessageStart, management, url, updater, idParam, callback)
+           util.buildDeleteQuery = function (data, url, idParam)
            {
-                return util.confirmAndDeleteGridSelection(grid, confirmationMessageStart,
-                                                            function(data)
+               var queryParam;
+               for (var i = 0; i < data.length; i++)
+               {
+                   if (queryParam)
+                   {
+                       queryParam += "&";
+                   }
+                   else
+                   {
+                       queryParam = "?";
+                   }
+                   queryParam += ( idParam || "id" ) + "=" + encodeURIComponent(data[i].id);
+               }
+               return url + queryParam;
+           }
+
+           util.deleteSelectedObjects =
+               function (grid, confirmationMessageStart, management, modelObj, updater, idParam, callback)
+               {
+                   return util.confirmAndDeleteGridSelection(grid, confirmationMessageStart, function (data)
+                   {
+                       util.deleteObjects(management, data, modelObj, idParam, grid, updater, callback);
+                   });
+               }
+
+           util.deleteObjects = function (management, data, modelObj, idParam, grid, updater, callback)
+           {
+               var name = idParam || "id";
+               var parameters = {};
+               parameters[name] = [];
+               for (var i = 0; i < data.length; i++)
+               {
+                   parameters[name].push(data[i].id);
+
+               }
+               management.remove(modelObj, parameters).then(function (result)
                                                             {
-                                                                util.deleteData(management, data, url, idParam, grid, updater, callback);
-                                                            });
+                                                                grid.selection.deselectAll();
+                                                                if (updater)
+                                                                {
+                                                                    updater.update();
+                                                                }
+                                                                if (callback)
+                                                                {
+                                                                    callback(data);
+                                                                }
+                                                            }, util.xhrErrorHandler);
            }
 
-           util.deleteData = function(management, data, url, idParam, grid, updater, callback)
-           {
-                var query = util.buildDeleteQuery(data, url, idParam);
-                management.del({url: query}).then(
-                   function(result)
+           util.deleteSelectedRows =
+               function (grid, confirmationMessageStart, management, url, updater, idParam, callback)
+               {
+                   return util.confirmAndDeleteGridSelection(grid, confirmationMessageStart, function (data)
                    {
-                      grid.selection.deselectAll();
-                      if (updater)
-                      {
-                        updater.update();
-                      }
-                      if (callback)
-                      {
-                        callback(data);
-                      }
-                   },
-                   util.xhrErrorHandler);
+                       util.deleteData(management, data, url, idParam, grid, updater, callback);
+                   });
+               }
+
+           util.deleteData = function (management, data, url, idParam, grid, updater, callback)
+           {
+               var query = util.buildDeleteQuery(data, url, idParam);
+               management.del({url: query}).then(function (result)
+                                                 {
+                                                     grid.selection.deselectAll();
+                                                     if (updater)
+                                                     {
+                                                         updater.update();
+                                                     }
+                                                     if (callback)
+                                                     {
+                                                         callback(data);
+                                                     }
+                                                 }, util.xhrErrorHandler);
            }
 
-           util.findAllWidgets = function(root)
+           util.findAllWidgets = function (root)
            {
-               return query("[widgetid]", root).map(registry.byNode).filter(function(w){ return w;});
+               return query("[widgetid]", root).map(registry.byNode).filter(function (w)
+                                                                            {
+                                                                                return w;
+                                                                            });
            };
 
-           util.tabErrorHandler = function(error, tabData)
+           util.tabErrorHandler = function (error, tabData)
            {
-                var category = tabData.category;
-                var name = tabData.name;
-                var message = category.charAt(0).toUpperCase() + category.slice(1) + " '" + name + "' is unavailable or deleted. Tab auto-refresh is stopped.";
+               var category = tabData.category;
+               var name = tabData.name;
+               var message = category.charAt(0).toUpperCase() + category.slice(1) + " '" + name
+                             + "' is unavailable or deleted. Tab auto-refresh is stopped.";
 
-                var cleanUpTab = function()
-                {
-                    // stop updating the tab
-                    updater.remove(tabData.updater);
+               var cleanUpTab = function ()
+               {
+                   // stop updating the tab
+                   updater.remove(tabData.updater);
 
-                    // delete tab widgets
-                    var widgets = registry.findWidgets(tabData.contentPane.containerNode);
-                    array.forEach(widgets, function(item) { item.destroyRecursive();});
-                    dom.empty(tabData.contentPane.containerNode);
-                }
+                   // delete tab widgets
+                   var widgets = registry.findWidgets(tabData.contentPane.containerNode);
+                   array.forEach(widgets, function (item)
+                   {
+                       item.destroyRecursive();
+                   });
+                   dom.empty(tabData.contentPane.containerNode);
+               }
 
-                var closeTab = function(e)
-                {
-                    tabData.contentPane.onClose()
-                    tabData.tabContainer.removeChild(tabData.contentPane);
-                    tabData.contentPane.destroyRecursive();
-                };
+               var closeTab = function (e)
+               {
+                   tabData.contentPane.onClose()
+                   tabData.tabContainer.removeChild(tabData.contentPane);
+                   tabData.contentPane.destroyRecursive();
+               };
 
-                util.responseErrorHandler(error, {"404": util.warnOn404ErrorHandler(message, tabData.contentPane.containerNode, cleanUpTab, closeTab)});
+               util.responseErrorHandler(error,
+                                         {
+                                             "404": util.warnOn404ErrorHandler(message,
+                                                                               tabData.contentPane.containerNode,
+                                                                               cleanUpTab,
+                                                                               closeTab)
+                                         });
            }
 
-           util.warnOn404ErrorHandler = function(message, containerNode, cleanUpCallback, onClickHandler)
+           util.warnOn404ErrorHandler = function (message, containerNode, cleanUpCallback, onClickHandler)
            {
-                return function()
-                {
-                    try
-                    {
-                        if (cleanUpCallback)
-                        {
-                            cleanUpCallback();
-                        }
+               return function ()
+               {
+                   try
+                   {
+                       if (cleanUpCallback)
+                       {
+                           cleanUpCallback();
+                       }
 
-                        var node = dom.create("div", {innerHTML: message }, containerNode);
-                        var warningPane = new WarningPane({message: message}, node);
-                        if (onClickHandler)
-                        {
-                            warningPane.on("click", onClickHandler);
-                        }
-                        else
-                        {
-                            warningPane.closeButton.set("disabled", true);
-                        }
-                    }
-                    catch(e)
-                    {
-                        console.error(e);
-                    }
-                };
+                       var node = dom.create("div", {innerHTML: message}, containerNode);
+                       var warningPane = new WarningPane({message: message}, node);
+                       if (onClickHandler)
+                       {
+                           warningPane.on("click", onClickHandler);
+                       }
+                       else
+                       {
+                           warningPane.closeButton.set("disabled", true);
+                       }
+                   }
+                   catch (e)
+                   {
+                       console.error(e);
+                   }
+               };
            };
 
-           util.responseErrorHandler = function(error, responseCodeHandlerMap, defaultCallback)
+           util.responseErrorHandler = function (error, responseCodeHandlerMap, defaultCallback)
            {
-                var handler;
-                if (error)
-                {
-                    var status = error.status || (error.response ? error.response.status : null);
-                    if (status != undefined && status != null)
-                    {
-                        handler = responseCodeHandlerMap[String(status)];
-                    }
-                }
+               var handler;
+               if (error)
+               {
+                   var status = error.status || (error.response ? error.response.status : null);
+                   if (status != undefined && status != null)
+                   {
+                       handler = responseCodeHandlerMap[String(status)];
+                   }
+               }
 
-                if (!handler)
-                {
-                    handler =  defaultCallback || util.consoleLoggingErrorHandler;
-                }
+               if (!handler)
+               {
+                   handler = defaultCallback || util.consoleLoggingErrorHandler;
+               }
 
-                handler(error);
+               handler(error);
            };
 
-           util.consoleLoggingErrorHandler = function(error)
+           util.consoleLoggingErrorHandler = function (error)
            {
-                var message = util.getErrorMessage(error, "Unexpected error is reported by the broker");
-                console.error(message);
+               var message = util.getErrorMessage(error, "Unexpected error is reported by the broker");
+               console.error(message);
            };
 
-           util.xhrErrorHandler = function(error)
+           util.xhrErrorHandler = function (error)
            {
-             var fallback = "Unexpected error - see server logs";
-             var statusCodeNode = dojo.byId("errorDialog.statusCode");
-             var errorMessageNode = dojo.byId("errorDialog.errorMessage");
-             var userMustReauth = false;
+               var fallback = "Unexpected error - see server logs";
+               var statusCodeNode = dojo.byId("errorDialog.statusCode");
+               var errorMessageNode = dojo.byId("errorDialog.errorMessage");
+               var userMustReauth = false;
 
-             if (error)
-             {
-               var status = error.status || (error.response ? error.response.status : null);
-               if (status != undefined && status != null)
+               if (error)
                {
-                 var message;
+                   var status = error.status || (error.response ? error.response.status : null);
+                   if (status != undefined && status != null)
+                   {
+                       var message;
 
-                 if (status == 0)
-                 {
-                   message = "Unable to contact the Broker";
-                 }
-                 else if (status == 401)
-                 {
-                   message = "Authentication required";
-                   userMustReauth = true;
-                 }
-                 else if (status == 403)
-                 {
-                   message =  "Access Forbidden";
-                 }
-                 else
-                 {
-                   message = util.getErrorMessage(error, fallback);
-                 }
+                       if (status == 0)
+                       {
+                           message = "Unable to contact the Broker";
+                       }
+                       else if (status == 401)
+                       {
+                           message = "Authentication required";
+                           userMustReauth = true;
+                       }
+                       else if (status == 403)
+                       {
+                           message = "Access Forbidden";
+                       }
+                       else
+                       {
+                           message = util.getErrorMessage(error, fallback);
+                       }
 
-                 errorMessageNode.innerHTML = entities.encode(message ? message : fallback);
-                 statusCodeNode.innerHTML =  entities.encode(String(status));
+                       errorMessageNode.innerHTML = entities.encode(message ? message : fallback);
+                       statusCodeNode.innerHTML = entities.encode(String(status));
 
-                 dojo.byId("errorDialog.advice.retry").style.display = userMustReauth ? "none" : "block";
-                 dojo.byId("errorDialog.advice.reconnect").style.display = userMustReauth ? "block" : "none";
+                       dojo.byId("errorDialog.advice.retry").style.display = userMustReauth ? "none" : "block";
+                       dojo.byId("errorDialog.advice.reconnect").style.display = userMustReauth ? "block" : "none";
 
-                 domStyle.set(registry.byId("errorDialog.button.cancel").domNode, 'display', userMustReauth ? "none" : "block");
-                 domStyle.set(registry.byId("errorDialog.button.relogin").domNode, 'display', userMustReauth ? "block" : "none");
+                       domStyle.set(registry.byId("errorDialog.button.cancel").domNode,
+                                    'display',
+                                    userMustReauth ? "none" : "block");
+                       domStyle.set(registry.byId("errorDialog.button.relogin").domNode,
+                                    'display',
+                                    userMustReauth ? "block" : "none");
 
+                   }
+                   else
+                   {
+                       statusCodeNode.innerHTML = "";
+                       errorMessageNode.innerHTML = fallback;
+                   }
+
+                   var dialog = dijit.byId("errorDialog");
+                   if (!dialog.open)
+                   {
+                       dialog.show();
+                   }
                }
-               else
-               {
-                 statusCodeNode.innerHTML = "";
-                 errorMessageNode.innerHTML = fallback;
-               }
-
-               var dialog = dijit.byId("errorDialog");
-               if (!dialog.open)
-               {
-                 dialog.show();
-               }
-             }
            };
 
            util.getErrorMessage = function (error, fallback)
            {
-                var message = error.message ? error.message : fallback;
+               var message = error.message ? error.message : fallback;
 
-                var responseText = error.responseText? error.responseText : (error.response ? error.response.text : null);
+               var responseText = error.responseText ? error.responseText : (error.response
+                   ? error.response.text
+                   : null);
 
-                // Try for a more detail error sent by the Broker as json
-                if (responseText)
-                {
-                    try
-                    {
-                      var errorObj = json.parse(responseText);
-                      message = errorObj.hasOwnProperty("errorMessage") ? errorObj.errorMessage : message;
-                    }
-                    catch (e)
-                    {
-                      // Ignore
-                    }
-                }
-                return message || fallback;
+               // Try for a more detail error sent by the Broker as json
+               if (responseText)
+               {
+                   try
+                   {
+                       var errorObj = json.parse(responseText);
+                       message = errorObj.hasOwnProperty("errorMessage") ? errorObj.errorMessage : message;
+                   }
+                   catch (e)
+                   {
+                       // Ignore
+                   }
+               }
+               return message || fallback;
            };
 
-           util.equals = function(object1, object2)
+           util.equals = function (object1, object2)
            {
-             if (object1 && object2)
-             {
-               if (typeof object1 != typeof object2)
+               if (object1 && object2)
                {
-                 return false;
+                   if (typeof object1 != typeof object2)
+                   {
+                       return false;
+                   }
+                   else
+                   {
+                       if (object1 instanceof Array || typeof object1 == "array")
+                       {
+                           if (object1.length != object2.length)
+                           {
+                               return false;
+                           }
+
+                           for (var i = 0, l = object1.length; i < l; i++)
+                           {
+                               var item = object1[i];
+                               if (item && (item instanceof Array || typeof item == "array" || item instanceof Object))
+                               {
+                                   if (!this.equals(item, object2[i]))
+                                   {
+                                       return false;
+                                   }
+                               }
+                               else if (item != object2[i])
+                               {
+                                   return false;
+                               }
+                           }
+
+                           return true;
+                       }
+                       else if (object1 instanceof Object)
+                       {
+                           for (propName in object1)
+                           {
+                               if (object1.hasOwnProperty(propName) != object2.hasOwnProperty(propName))
+                               {
+                                   return false;
+                               }
+                               else if (typeof object1[propName] != typeof object2[propName])
+                               {
+                                   return false;
+                               }
+                           }
+
+                           for (propName in object2)
+                           {
+                               var object1Prop = object1[propName];
+                               var object2Prop = object2[propName];
+
+                               if (object2.hasOwnProperty(propName) != object1.hasOwnProperty(propName))
+                               {
+                                   return false;
+                               }
+                               else if (typeof object1Prop != typeof object2Prop)
+                               {
+                                   return false;
+                               }
+
+                               if (!object2.hasOwnProperty(propName))
+                               {
+                                   // skip functions
+                                   continue;
+                               }
+
+                               if (object1Prop && (object1Prop instanceof Array || typeof object1Prop == "array"
+                                                   || object1Prop instanceof Object))
+                               {
+                                   if (!this.equals(object1Prop, object2Prop))
+                                   {
+                                       return false;
+                                   }
+                               }
+                               else if (object1Prop != object2Prop)
+                               {
+                                   return false;
+                               }
+                           }
+                           return true;
+                       }
+                   }
                }
-               else
+               return object1 === object2;
+           }
+
+           util.parseHtmlIntoDiv = function (containerNode, htmlTemplateLocation, postParseCallback)
+           {
+               xhr.get({
+                           url: htmlTemplateLocation,
+                           sync: true,
+                           load: function (template)
+                           {
+                               util.parse(containerNode, template, postParseCallback);
+                           }
+                       });
+           }
+
+           util.parse = function (containerNode, template, postParseCallback)
+           {
+               containerNode.innerHTML = template;
+               parser.parse(containerNode).then(function (instances)
+                                                {
+                                                    if (postParseCallback && typeof postParseCallback == "function")
+                                                    {
+                                                        postParseCallback();
+                                                    }
+                                                }, function (e)
+                                                {
+                                                    console.error("Parse error:" + e);
+                                                });
+           }
+           util.buildUI = function (containerNode, parent, htmlTemplateLocation, fieldNames, obj, postParseCallback)
+           {
+               this.parseHtmlIntoDiv(containerNode, htmlTemplateLocation, function ()
                {
-                 if (object1 instanceof Array || typeof object1 == "array")
-                 {
-                   if (object1.length != object2.length)
+                   if (fieldNames && obj)
                    {
-                     return false;
-                   }
-
-                   for (var i = 0, l=object1.length; i < l; i++)
-                   {
-                     var item = object1[i];
-                     if (item && (item instanceof Array  || typeof item == "array" || item instanceof Object))
-                     {
-                       if (!this.equals(item, object2[i]))
+                       for (var i = 0; i < fieldNames.length; i++)
                        {
-                         return false;
-                       }
-                     }
-                     else if (item != object2[i])
-                     {
-                         return false;
-                     }
-                   }
-
-                   return true;
-                 }
-                 else if (object1 instanceof Object)
-                 {
-                   for (propName in object1)
-                   {
-                       if (object1.hasOwnProperty(propName) != object2.hasOwnProperty(propName))
-                       {
-                           return false;
-                       }
-                       else if (typeof object1[propName] != typeof object2[propName])
-                       {
-                           return false;
+                           var fieldName = fieldNames[i];
+                           obj[fieldName] = query("." + fieldName, containerNode)[0];
                        }
                    }
 
-                   for(propName in object2)
+                   if (postParseCallback && typeof postParseCallback == "function")
                    {
-                       var object1Prop = object1[propName];
-                       var object2Prop = object2[propName];
-
-                       if (object2.hasOwnProperty(propName) != object1.hasOwnProperty(propName))
-                       {
-                           return false;
-                       }
-                       else if (typeof object1Prop != typeof object2Prop)
-                       {
-                           return false;
-                       }
-
-                       if(!object2.hasOwnProperty(propName))
-                       {
-                         // skip functions
-                         continue;
-                       }
-
-                       if (object1Prop && (object1Prop instanceof Array || typeof object1Prop == "array" || object1Prop instanceof Object))
-                       {
-                         if (!this.equals(object1Prop, object2Prop))
-                         {
-                           return false;
-                         }
-                       }
-                       else if(object1Prop != object2Prop)
-                       {
-                          return false;
-                       }
+                       postParseCallback();
                    }
-                   return true;
-                 }
+               });
+
+           }
+
+           util.updateUI = function (data, fieldNames, obj, formatters)
+           {
+               for (var i = 0; i < fieldNames.length; i++)
+               {
+                   var fieldName = fieldNames[i];
+                   var value = data[fieldName];
+                   var fieldNode = obj[fieldName];
+                   if (fieldNode)
+                   {
+                       if (formatters && fieldNode.className)
+                       {
+                           var clazzes = fieldNode.className.split(" ");
+                           for (var idx in clazzes)
+                           {
+                               var clazz = clazzes[idx];
+                               var fmt = formatters[clazz];
+                               if (fmt && value)
+                               {
+                                   value = fmt(value);
+                               }
+                           }
+                       }
+                       fieldNode.innerHTML =
+                           (value == undefined || value == null) ? "" : entities.encode(String(value));
+                   }
                }
-             }
-             return object1 === object2;
            }
 
-           util.parseHtmlIntoDiv = function(containerNode, htmlTemplateLocation, postParseCallback)
+           util.applyMetadataToWidgets = function (domRoot, category, type, meta)
            {
-                xhr.get({url: htmlTemplateLocation,
-                                  sync: true,
-                                  load:  function(template) {
-                                    util.parse(containerNode, template, postParseCallback);
-                                  }});
+               this.applyToWidgets(domRoot, category, type, null, meta);
            }
 
-           util.parse = function(containerNode, template, postParseCallback)
+           util.applyToWidgets = function (domRoot, category, type, data, meta)
            {
-                containerNode.innerHTML = template;
-                parser.parse(containerNode).then(function(instances)
-                             {
-                                if (postParseCallback && typeof postParseCallback == "function")
-                                {
-                                    postParseCallback();
-                                }
-                             },
-                             function(e){console.error("Parse error:" + e);});
-           }
-           util.buildUI = function(containerNode, parent, htmlTemplateLocation, fieldNames, obj, postParseCallback)
-           {
-                this.parseHtmlIntoDiv(containerNode, htmlTemplateLocation,
-                 function()
-                 {
-                    if (fieldNames && obj)
-                    {
-                       for(var i=0; i<fieldNames.length;i++)
-                       {
-                          var fieldName = fieldNames[i];
-                          obj[fieldName]= query("." + fieldName, containerNode)[0];
-                       }
-                    }
-
-                    if (postParseCallback && typeof postParseCallback == "function")
-                    {
-                        postParseCallback();
-                    }
-                 });
-
-           }
-
-           util.updateUI = function(data, fieldNames, obj, formatters)
-           {
-             for(var i=0; i<fieldNames.length;i++)
-             {
-               var fieldName = fieldNames[i];
-               var value = data[fieldName];
-               var fieldNode = obj[fieldName];
-               if (fieldNode)
+               var widgets = util.findAllWidgets(domRoot);
+               array.forEach(widgets, function (widget)
                {
-                   if (formatters && fieldNode.className)
-                   {
-                     var clazzes = fieldNode.className.split(" ");
-                     for (var idx in clazzes)
-                     {
-                       var clazz = clazzes[idx];
-                       var fmt = formatters[clazz];
-                       if (fmt && value)
-                       {
-                         value = fmt(value);
-                       }
-                     }
-                   }
-                   fieldNode.innerHTML = (value == undefined || value == null) ? "" : entities.encode(String(value));
-               }
-             }
-           }
-
-           util.applyMetadataToWidgets = function(domRoot, category, type, meta)
-           {
-             this.applyToWidgets(domRoot, category, type, null, meta);
-           }
-
-           util.applyToWidgets = function(domRoot, category, type, data, meta)
-           {
-             var widgets = util.findAllWidgets(domRoot);
-             array.forEach(widgets,
-               function (widget)
-               {
-                 widgetconfigurer.config(widget, category, type, data, meta);
+                   widgetconfigurer.config(widget, category, type, data, meta);
                });
            }
 
-           util.disableWidgetsForImmutableFields = function(domRoot, category, type, meta)
+           util.disableWidgetsForImmutableFields = function (domRoot, category, type, meta)
            {
                var widgets = util.findAllWidgets(domRoot);
-               array.forEach(widgets,
-                   function (widget)
-                   {
-                       widgetconfigurer.disableIfImmutable(widget, category, type, meta);
-                   });
+               array.forEach(widgets, function (widget)
+               {
+                   widgetconfigurer.disableIfImmutable(widget, category, type, meta);
+               });
            }
 
            util.getFormWidgetValues = function (form, initialData)
            {
                var values = {};
                var formWidgets = form.getChildren();
-               for(var i in formWidgets)
+               for (var i in formWidgets)
                {
                    var widget = formWidgets[i];
                    var value = widget.get("value") != "undefined" ? widget.get("value") : undefined;
@@ -581,49 +615,49 @@ define(["dojo/_base/xhr",
                                    }
                                    else
                                    {
-                                       values[ propName ] = [currentValue, value];
+                                       values[propName] = [currentValue, value];
                                    }
                                }
                                else
                                {
-                                   values[ propName ] = value;
+                                   values[propName] = value;
                                }
                            }
                        }
                        else if (widget instanceof dijit.form.CheckBox)
                        {
-                           values[ propName ] = checked;
+                           values[propName] = checked;
                        }
                        else
                        {
                            if (type == "password")
                            {
-                                if (value)
-                                {
-                                    values[ propName ] = value;
-                                }
+                               if (value)
+                               {
+                                   values[propName] = value;
+                               }
                            }
                            else
                            {
-                              values[ propName ] = value ? value: null;
+                               values[propName] = value ? value : null;
                            }
                        }
                    }
                }
                if (initialData)
                {
-                for(var propName in values)
-                {
-                     if (values[propName] == initialData[propName])
-                     {
-                        delete values[propName];
-                     }
-                }
+                   for (var propName in values)
+                   {
+                       if (values[propName] == initialData[propName])
+                       {
+                           delete values[propName];
+                       }
+                   }
                }
                return values;
            }
 
-           util.updateUpdatableStore = function(updatableStore, data)
+           util.updateUpdatableStore = function (updatableStore, data)
            {
                var currentRowCount = updatableStore.grid.rowCount;
                updatableStore.grid.domNode.style.display = data ? "block" : "none";
@@ -642,40 +676,50 @@ define(["dojo/_base/xhr",
            util.makeTypeStore = function (types)
            {
                var typeData = [];
-               for (var i = 0; i < types.length; i++) {
+               for (var i = 0; i < types.length; i++)
+               {
                    var type = types[i];
-                   typeData.push({id: type, name: type});
+                   typeData.push({
+                                     id: type,
+                                     name: type
+                                 });
                }
-               return new Memory({ data: typeData });
+               return new Memory({data: typeData});
            }
 
-           util.makeInstanceStore = function(management, parentCategory, category, callback)
+           util.makeInstanceStore = function (management, parentCategory, category, callback)
            {
-               var obj = {type:category.toLowerCase(), parent: {type: parentCategory.toLowerCase()}};
-               management.load(obj).then(function(data)
-               {
-                   var items = [];
-                   for (var i=0; i< data.length; i++)
-                   {
-                       items.push( {id: data[i].name, name: data[i].name} );
-                   }
-                   var store = new Memory({ data: items });
-                   callback(store);
-               });
+               var obj = {
+                   type: category.toLowerCase(),
+                   parent: {type: parentCategory.toLowerCase()}
+               };
+               management.load(obj).then(function (data)
+                                         {
+                                             var items = [];
+                                             for (var i = 0; i < data.length; i++)
+                                             {
+                                                 items.push({
+                                                                id: data[i].name,
+                                                                name: data[i].name
+                                                            });
+                                             }
+                                             var store = new Memory({data: items});
+                                             callback(store);
+                                         });
            };
 
-           util.setMultiSelectOptions = function(multiSelectWidget, options)
+           util.setMultiSelectOptions = function (multiSelectWidget, options)
            {
                util.addMultiSelectOptions(multiSelectWidget, options, true);
            }
 
-           util.addMultiSelectOptions = function(multiSelectWidget, options, clearExistingOptions)
+           util.addMultiSelectOptions = function (multiSelectWidget, options, clearExistingOptions)
            {
                if (clearExistingOptions)
                {
                    var children = multiSelectWidget.children;
                    var initialLength = children.length;
-                   for (var i = initialLength - 1; i >= 0 ; i--)
+                   for (var i = initialLength - 1; i >= 0; i--)
                    {
                        var child = children.item(i);
                        multiSelectWidget.removeChild(child);
@@ -696,104 +740,119 @@ define(["dojo/_base/xhr",
 
            var singleContextVarRegexp = "(\\${[\\w+\\.\\-:]+})";
 
-           util.numericOrContextVarRegexp = function(constraints)
+           util.numericOrContextVarRegexp = function (constraints)
            {
-             return "^(\\d+)|" + singleContextVarRegexp + "$";
+               return "^(\\d+)|" + singleContextVarRegexp + "$";
            }
 
-           util.signedOrContextVarRegexp = function(constraints)
+           util.signedOrContextVarRegexp = function (constraints)
            {
-             return "^(-?\\d+)|" + singleContextVarRegexp + "$";
+               return "^(-?\\d+)|" + singleContextVarRegexp + "$";
            }
 
-           util.nameOrContextVarRegexp = function(constraints)
+           util.nameOrContextVarRegexp = function (constraints)
            {
-             return "^(\\w+)|" + singleContextVarRegexp + "$";
+               return "^(\\w+)|" + singleContextVarRegexp + "$";
            }
 
-           util.jdbcUrlOrContextVarRegexp = function(constraints)
+           util.jdbcUrlOrContextVarRegexp = function (constraints)
            {
-             return "^(jdbc:.*:.*)|" + singleContextVarRegexp + "$";
+               return "^(jdbc:.*:.*)|" + singleContextVarRegexp + "$";
            }
 
-           util.nodeAddressOrContextVarRegexp = function(constraints)
+           util.nodeAddressOrContextVarRegexp = function (constraints)
            {
-             return "^(([0-9a-zA-Z.\\-_]|::)+:[0-9]{1,5})|" + singleContextVarRegexp + "$";
+               return "^(([0-9a-zA-Z.\\-_]|::)+:[0-9]{1,5})|" + singleContextVarRegexp + "$";
            }
 
-           util.resizeContentAreaAndRepositionDialog = function(contentNode, dialog)
+           util.resizeContentAreaAndRepositionDialog = function (contentNode, dialog)
            {
-                var viewport = w.getBox();
-                var contentDimension =dojo.position(contentNode);
-                var dialogDimension = dojo.position(dialog.domNode);
-                var dialogTitleAndFooterHeight = dialogDimension.h - contentDimension.h;
-                var dialogLeftRightSpaces = dialogDimension.w - contentDimension.w;
+               var viewport = w.getBox();
+               var contentDimension = dojo.position(contentNode);
+               var dialogDimension = dojo.position(dialog.domNode);
+               var dialogTitleAndFooterHeight = dialogDimension.h - contentDimension.h;
+               var dialogLeftRightSpaces = dialogDimension.w - contentDimension.w;
 
-                var resize = function()
-                {
-                    var viewport = w.getBox();
-                    var width = viewport.w * dialog.maxRatio;
-                    var height  = viewport.h * dialog.maxRatio;
-                    var dialogDimension = dojo.position(dialog.domNode);
+               var resize = function ()
+               {
+                   var viewport = w.getBox();
+                   var width = viewport.w * dialog.maxRatio;
+                   var height = viewport.h * dialog.maxRatio;
+                   var dialogDimension = dojo.position(dialog.domNode);
 
-                    var maxContentHeight = height - dialogTitleAndFooterHeight;
+                   var maxContentHeight = height - dialogTitleAndFooterHeight;
 
-                    // if width style is set on a dialog node, use dialog width
-                    if (dialog.domNode.style && dialog.domNode.style.width)
-                    {
-                        width = dialogDimension.w;
-                    }
-                    var maxContentWidth = width - dialogLeftRightSpaces;
-                    domStyle.set(contentNode, {"overflow": "auto", maxHeight: maxContentHeight  + "px",  maxWidth: maxContentWidth + "px"});
+                   // if width style is set on a dialog node, use dialog width
+                   if (dialog.domNode.style && dialog.domNode.style.width)
+                   {
+                       width = dialogDimension.w;
+                   }
+                   var maxContentWidth = width - dialogLeftRightSpaces;
+                   domStyle.set(contentNode,
+                                {
+                                    "overflow": "auto",
+                                    maxHeight: maxContentHeight + "px",
+                                    maxWidth: maxContentWidth + "px"
+                                });
 
-                    var dialogX = viewport.w/2 - dialogDimension.w/2;
-                    var dialogY = viewport.h/2 - dialogDimension.h/2;
-                    domStyle.set(dialog.domNode, {top: dialogY + "px", left: dialogX + "px"});
-                    dialog.resize();
-                };
-                resize();
-                on(window, "resize", resize);
+                   var dialogX = viewport.w / 2 - dialogDimension.w / 2;
+                   var dialogY = viewport.h / 2 - dialogDimension.h / 2;
+                   domStyle.set(dialog.domNode,
+                                {
+                                    top: dialogY + "px",
+                                    left: dialogX + "px"
+                                });
+                   dialog.resize();
+               };
+               resize();
+               on(window, "resize", resize);
            }
 
-           util.setContextData = function(contextUI, management, modelObj, actualData, effectiveData, callback )
+           util.setContextData = function (contextUI, management, modelObj, actualData, effectiveData, callback)
            {
-                management.load(modelObj, { actuals: true, inheritedActuals: true} ).then(
-                                     function(inheritedActuals){
-                                        contextUI.setData(actualData.context, effectiveData.context, inheritedActuals[0].context);
-                                        if (callback)
-                                        {
-                                            callback();
-                                        }
-                                     },
-                                     util.xhrErrorHandler);
+               management.load(modelObj,
+                               {
+                                   actuals: true,
+                                   inheritedActuals: true
+                               }).then(function (inheritedActuals)
+                                       {
+                                           contextUI.setData(actualData.context,
+                                                             effectiveData.context,
+                                                             inheritedActuals[0].context);
+                                           if (callback)
+                                           {
+                                               callback();
+                                           }
+                                       }, util.xhrErrorHandler);
            }
 
-           util.setToBrokerEffectiveContext = function(contextUI, management, callback )
+           util.setToBrokerEffectiveContext = function (contextUI, management, callback)
            {
                var brokerModelObj = {type: "broker"};
-               management.load(brokerModelObj,
-                               {depth: 0}).then(function(effectiveData)
-                                                {
-                                                  util.setContextData(contextUI,
-                                                                      management,
-                                                                      brokerModelObj,
-                                                                      {},
-                                                                      effectiveData[0],
-                                                                      function()
-                                                                      {
-                                                                         if (callback)
-                                                                         {
-                                                                             callback();
-                                                                         }
-                                                                      });
-                                                });
+               management.load(brokerModelObj, {depth: 0}).then(function (effectiveData)
+                                                                {
+                                                                    util.setContextData(contextUI,
+                                                                                        management,
+                                                                                        brokerModelObj,
+                                                                                        {},
+                                                                                        effectiveData[0],
+                                                                                        function ()
+                                                                                        {
+                                                                                            if (callback)
+                                                                                            {
+                                                                                                callback();
+                                                                                            }
+                                                                                        });
+                                                                });
            }
 
-           util.initialiseFields = function(data, containerNode, metadata, category, type) {
+           util.initialiseFields = function (data, containerNode, metadata, category, type)
+           {
                var attributes = metadata.getMetaData(category, type).attributes;
 
                var widgets = registry.findWidgets(containerNode);
-               array.forEach(widgets, function(item) {
+               array.forEach(widgets, function (item)
+               {
                    var widgetName = item.name;
                    if (widgetName in attributes)
                    {
@@ -801,7 +860,8 @@ define(["dojo/_base/xhr",
                        var value = data[widgetName];
                        if (value)
                        {
-                           if (item instanceof dijit.form.CheckBox) {
+                           if (item instanceof dijit.form.CheckBox)
+                           {
                                item.set("checked", value);
                            }
                            else
@@ -822,40 +882,40 @@ define(["dojo/_base/xhr",
                });
            }
 
-           util.abortReaderSafely = function(reader)
+           util.abortReaderSafely = function (reader)
            {
-             if (reader && reader.readyState > 0)
-             {
-               try
+               if (reader && reader.readyState > 0)
                {
-                 this.reader.abort();
+                   try
+                   {
+                       this.reader.abort();
+                   }
+                   catch (ex)
+                   {
+                       // Ignore - read no longer in progress
+                   }
                }
-               catch(ex)
-               {
-                 // Ignore - read no longer in progress
-               }
-             }
            }
 
            util.buildCheckboxMarkup = function (val)
            {
-              return "<input type='checkbox' disabled='disabled' "+(val ? "checked='checked'": "")+" />" ;
+               return "<input type='checkbox' disabled='disabled' " + (val ? "checked='checked'" : "") + " />";
            }
 
-           util.makeTypeStoreFromMetadataByCategory = function(metadata, category)
+           util.makeTypeStoreFromMetadataByCategory = function (metadata, category)
            {
-              var supportedTypes = metadata.getTypesForCategory(category);
-              supportedTypes.sort();
-              return this.makeTypeStore(supportedTypes);
+               var supportedTypes = metadata.getTypesForCategory(category);
+               supportedTypes.sort();
+               return this.makeTypeStore(supportedTypes);
            }
 
-            util.extend = function(childConstructor, parentConstructor)
-            {
-                var childPrototype = Object.create(parentConstructor.prototype);
-                childPrototype.constructor = childConstructor;
-                childConstructor.prototype = childPrototype;
-                return childConstructor;
-            }
+           util.extend = function (childConstructor, parentConstructor)
+           {
+               var childPrototype = Object.create(parentConstructor.prototype);
+               childPrototype.constructor = childConstructor;
+               childConstructor.prototype = childPrototype;
+               return childConstructor;
+           }
 
-         return util;
+           return util;
        });

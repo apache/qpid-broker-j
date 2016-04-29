@@ -18,20 +18,16 @@
  * under the License.
  *
  */
-define(["dojo/Deferred",
-    "dojo/domReady!"],
-  function (Deferred)
-  {
-    var addVirtualHostLogger =
-    {
-      show: function(data)
-      {
-        var deferred = new Deferred();
-        deferred.resolve("noop");
-        return deferred;
-      }
+define(["dojo/Deferred", "dojo/domReady!"], function (Deferred)
+{
+    var addVirtualHostLogger = {
+        show: function (data)
+        {
+            var deferred = new Deferred();
+            deferred.resolve("noop");
+            return deferred;
+        }
     };
 
     return addVirtualHostLogger;
-  }
-);
+});

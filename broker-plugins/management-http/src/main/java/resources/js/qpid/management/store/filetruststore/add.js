@@ -25,72 +25,77 @@ define(["dojo/dom",
         "qpid/common/util",
         "dojo/parser",
         "dojo/text!store/filetruststore/add.html",
-        "dojo/domReady!"],
-    function (dom, query, array, registry, util, parser, template)
-    {
-        var addTrustStore =
-        {
-            show: function(data)
-            {
-                var that=this;
-                this.metadata = data.metadata;
-                this.containerNode = data.containerNode;
-                data.containerNode.innerHTML = template;
-                parser.parse(this.containerNode).then(function(instances)
-                {
-                    that.keyStoreOldBrowserWarning = dom.byId("addStore.oldBrowserWarning");
+        "dojo/domReady!"], function (dom, query, array, registry, util, parser, template)
+       {
+           var addTrustStore = {
+               show: function (data)
+               {
+                   var that = this;
+                   this.metadata = data.metadata;
+                   this.containerNode = data.containerNode;
+                   data.containerNode.innerHTML = template;
+                   parser.parse(this.containerNode).then(function (instances)
+                                                         {
+                                                             that.keyStoreOldBrowserWarning =
+                                                                 dom.byId("addStore.oldBrowserWarning");
 
-                    if (!window.FileReader)
-                    {
-                      // Fall back for IE8/9 which do not support FileReader
-                      that.keyStoreOldBrowserWarning.innerHTML = "File upload requires a more recent browser with HTML5 support";
-                      that.keyStoreOldBrowserWarning.className = that.keyStoreOldBrowserWarning.className.replace("hidden", "");
-                    }
+                                                             if (!window.FileReader)
+                                                             {
+                                                                 // Fall back for IE8/9 which do not support FileReader
+                                                                 that.keyStoreOldBrowserWarning.innerHTML =
+                                                                     "File upload requires a more recent browser with HTML5 support";
+                                                                 that.keyStoreOldBrowserWarning.className =
+                                                                     that.keyStoreOldBrowserWarning.className.replace(
+                                                                         "hidden",
+                                                                         "");
+                                                             }
 
-                    if (data.effectiveData)
-                    {
-                        that.update(data.effectiveData);
-                    }
+                                                             if (data.effectiveData)
+                                                             {
+                                                                 that.update(data.effectiveData);
+                                                             }
 
-                    util.applyMetadataToWidgets(data.containerNode, "TrustStore", "FileTrustStore", data.metadata);
-                });
-            },
-            update: function(effectiveData)
-            {
-                var attributes = this.metadata.getMetaData("TrustStore", "FileTrustStore").attributes;
-                var widgets = registry.findWidgets(this.containerNode);
-                array.forEach(widgets, function(item)
-                    {
-                        var name = item.id.replace("addStore.","");
-                        if (name in attributes )
-                        {
-                            var attribute = attributes[name];
-                            var value = effectiveData[name];
-                            if (value)
-                            {
-                                if (attribute.secure)
-                                {
-                                     if (!/^\*+/.test(value) )
-                                     {
-                                        item.set("value", value);
-                                     }
-                                     else
-                                     {
-                                        item.set("placeHolder", value);
-                                        item.set("required", false);
-                                     }
-                                }
-                                else
-                                {
-                                    item.set("value", value);
-                                }
-                            }
-                        }
-                    });
+                                                             util.applyMetadataToWidgets(data.containerNode,
+                                                                                         "TrustStore",
+                                                                                         "FileTrustStore",
+                                                                                         data.metadata);
+                                                         });
+               },
+               update: function (effectiveData)
+               {
+                   var attributes = this.metadata.getMetaData("TrustStore", "FileTrustStore").attributes;
+                   var widgets = registry.findWidgets(this.containerNode);
+                   array.forEach(widgets, function (item)
+                   {
+                       var name = item.id.replace("addStore.", "");
+                       if (name in attributes)
+                       {
+                           var attribute = attributes[name];
+                           var value = effectiveData[name];
+                           if (value)
+                           {
+                               if (attribute.secure)
+                               {
+                                   if (!/^\*+/.test(value))
+                                   {
+                                       item.set("value", value);
+                                   }
+                                   else
+                                   {
+                                       item.set("placeHolder", value);
+                                       item.set("required", false);
+                                   }
+                               }
+                               else
+                               {
+                                   item.set("value", value);
+                               }
+                           }
+                       }
+                   });
 
-            }
-        };
+               }
+           };
 
-        return addTrustStore;
-    }
-);
+           return addTrustStore;
+       });

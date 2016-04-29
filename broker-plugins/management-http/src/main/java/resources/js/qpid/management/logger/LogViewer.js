@@ -26,168 +26,224 @@ define(["dojo/_base/xhr",
         "qpid/common/grid/GridUpdater",
         "qpid/common/grid/UpdatableGrid",
         "dojo/text!logger/memory/showLogViewer.html",
-        "dojo/domReady!"],
-       function (xhr, parser, query, locale, registry, GridUpdater, UpdatableGrid, template) {
+        "dojo/domReady!"], function (xhr, parser, query, locale, registry, GridUpdater, UpdatableGrid, template)
+       {
 
            var defaulGridRowLimit = 4096;
            var currentTimeZone;
 
            function dataTransformer(data, userPreferences)
            {
-             for(var i=0; i < data.length; i++)
-             {
-               data[i].time = userPreferences.addTimeZoneOffsetToUTC(data[i].timestamp);
-             }
-             return data;
+               for (var i = 0; i < data.length; i++)
+               {
+                   data[i].time = userPreferences.addTimeZoneOffsetToUTC(data[i].timestamp);
+               }
+               return data;
            }
 
-           function LogViewer(loggerModelObj, management, containerNode) {
+           function LogViewer(loggerModelObj, management, containerNode)
+           {
                var that = this;
                this.management = management;
-               this.modelObj = {type: loggerModelObj.type, name: "getLogEntries", parent: loggerModelObj};
+               this.modelObj = {
+                   type: loggerModelObj.type,
+                   name: "getLogEntries",
+                   parent: loggerModelObj
+               };
                this.lastLogId = 0;
                this.containerNode = containerNode;
                containerNode.innerHTML = template;
-               parser.parse(containerNode).then(function(instances){that._buildGrid();});
+               parser.parse(containerNode).then(function (instances)
+                                                {
+                                                    that._buildGrid();
+                                                });
            }
 
-
-           LogViewer.prototype._buildGrid = function() {
+           LogViewer.prototype._buildGrid = function ()
+           {
                var that = this;
                var userPreferences = this.management.userPreferences;
                currentTimeZone = userPreferences.getTimeZoneDescription();
-               var gridStructure = [
-                    {
-                      hidden: false,
-                      name: "ID",
-                      field: "id",
-                      width: "50px",
-                      datatype: "number",
-                      filterable: true
-                    },
-                    {
-                      name: "Date", field: "time", width: "100px", datatype: "date",
-                        formatter: function(val) {
-                        return userPreferences.formatDateTime(val, {selector:"date"});
-                      }
-                    },
-                    { name: "Time ", field: "time", width: "100px", datatype: "time",
-                     formatter: function(val) {
-                       return userPreferences.formatDateTime(val, {selector:"time"});
-                     }
+               var gridStructure = [{
+                   hidden: false,
+                   name: "ID",
+                   field: "id",
+                   width: "50px",
+                   datatype: "number",
+                   filterable: true
+               },
+                   {
+                       name: "Date",
+                       field: "time",
+                       width: "100px",
+                       datatype: "date",
+                       formatter: function (val)
+                       {
+                           return userPreferences.formatDateTime(val, {selector: "date"});
+                       }
                    },
                    {
-                     name: "Time zone",
-                     field: "time",
-                     width: "80px",
-                     datatype: "string",
-                     hidden: true,
-                     filterable: false,
-                     formatter: function(val) {
-                       return currentTimeZone;
-                     }
+                       name: "Time ",
+                       field: "time",
+                       width: "100px",
+                       datatype: "time",
+                       formatter: function (val)
+                       {
+                           return userPreferences.formatDateTime(val, {selector: "time"});
+                       }
                    },
-                   { name: "Level", field: "level", width: "50px", datatype: "string", autoComplete: true, hidden: true},
-                   { name: "Logger", field: "logger", width: "150px", datatype: "string", autoComplete: false, hidden: true},
-                   { name: "Thread", field: "threadName", width: "100px", datatype: "string", hidden: true},
-                   { name: "Log Message", field: "message", width: "auto", datatype: "string"}
-               ];
+                   {
+                       name: "Time zone",
+                       field: "time",
+                       width: "80px",
+                       datatype: "string",
+                       hidden: true,
+                       filterable: false,
+                       formatter: function (val)
+                       {
+                           return currentTimeZone;
+                       }
+                   },
+                   {
+                       name: "Level",
+                       field: "level",
+                       width: "50px",
+                       datatype: "string",
+                       autoComplete: true,
+                       hidden: true
+                   },
+                   {
+                       name: "Logger",
+                       field: "logger",
+                       width: "150px",
+                       datatype: "string",
+                       autoComplete: false,
+                       hidden: true
+                   },
+                   {
+                       name: "Thread",
+                       field: "threadName",
+                       width: "100px",
+                       datatype: "string",
+                       hidden: true
+                   },
+                   {
+                       name: "Log Message",
+                       field: "message",
+                       width: "auto",
+                       datatype: "string"
+                   }];
 
                var gridNode = query(".logEntries", this.containerNode)[0];
                try
                {
-                 var updater = new GridUpdater({
-                     userPreferences: userPreferences,
-                     updatable: false,
-                     serviceUrl: function()
-                     {
-                       return that.management.buildObjectURL(that.modelObj, {lastLogId: that.lastLogId});
-                     },
-                     onUpdate: function(items)
-                     {
-                       if (items)
+                   var updater = new GridUpdater({
+                       userPreferences: userPreferences,
+                       updatable: false,
+                       serviceUrl: function ()
                        {
-                         var maxId = -1;
-                         for(var i in items)
-                         {
-                           var item = items[i];
-                           if (item.id > maxId)
+                           return that.management.buildObjectURL(that.modelObj, {lastLogId: that.lastLogId});
+                       },
+                       onUpdate: function (items)
+                       {
+                           if (items)
                            {
-                             maxId = item.id
+                               var maxId = -1;
+                               for (var i in items)
+                               {
+                                   var item = items[i];
+                                   if (item.id > maxId)
+                                   {
+                                       maxId = item.id
+                                   }
+                               }
+                               if (maxId != -1)
+                               {
+                                   that.lastLogId = maxId
+                               }
                            }
-                         }
-                         if (maxId != -1)
-                         {
-                           that.lastLogId = maxId
-                         }
+                       },
+                       append: true,
+                       appendLimit: defaulGridRowLimit,
+                       dataTransformer: function (data)
+                       {
+                           return dataTransformer(data, userPreferences);
                        }
-                     },
-                     append: true,
-                     appendLimit: defaulGridRowLimit,
-                     dataTransformer: function(data){ return dataTransformer(data, userPreferences);}
-                 });
-                 this.grid = new UpdatableGrid(updater.buildUpdatableGridArguments({
-                     structure: gridStructure,
-                     selectable: true,
-                     selectionMode: "none",
-                     sortInfo: -1,
-                     sortFields: [{attribute: 'id', descending: true}],
-                     plugins:{
-                       nestedSorting:true,
-                       enhancedFilter:{defaulGridRowLimit: defaulGridRowLimit,displayLastUpdateTime:true},
-                       indirectSelection: false,
-                       pagination: {defaultPageSize: 10}
-                     }
-                  }), gridNode);
-                 var onStyleRow = function(row)
-                 {
-                   var item = that.grid.getItem(row.index);
-                   if(item){
-                      var level = that.grid.store.getValue(item, "level", null);
-                      var changed = false;
-                      if(level == "ERROR"){
-                          row.customClasses += " redBackground";
-                          changed = true;
-                      } else if(level == "WARN"){
-                          row.customClasses += " yellowBackground";
-                          changed = true;
-                      } else if(level == "DEBUG"){
-                          row.customClasses += " grayBackground";
-                          changed = true;
-                      }
-                      if (changed)
-                      {
-                          that.grid.focus.styleRow(row);
-                      }
-                   }
-                 };
-                 this.grid.on("styleRow", onStyleRow);
-                 this.grid.startup();
-                 userPreferences.addListener(this);
+                   });
+                   this.grid = new UpdatableGrid(updater.buildUpdatableGridArguments({
+                                                                                         structure: gridStructure,
+                                                                                         selectable: true,
+                                                                                         selectionMode: "none",
+                                                                                         sortInfo: -1,
+                                                                                         sortFields: [{
+                                                                                             attribute: 'id',
+                                                                                             descending: true
+                                                                                         }],
+                                                                                         plugins: {
+                                                                                             nestedSorting: true,
+                                                                                             enhancedFilter: {
+                                                                                                 defaulGridRowLimit: defaulGridRowLimit,
+                                                                                                 displayLastUpdateTime: true
+                                                                                             },
+                                                                                             indirectSelection: false,
+                                                                                             pagination: {defaultPageSize: 10}
+                                                                                         }
+                                                                                     }), gridNode);
+                   var onStyleRow = function (row)
+                   {
+                       var item = that.grid.getItem(row.index);
+                       if (item)
+                       {
+                           var level = that.grid.store.getValue(item, "level", null);
+                           var changed = false;
+                           if (level == "ERROR")
+                           {
+                               row.customClasses += " redBackground";
+                               changed = true;
+                           }
+                           else if (level == "WARN")
+                           {
+                               row.customClasses += " yellowBackground";
+                               changed = true;
+                           }
+                           else if (level == "DEBUG")
+                           {
+                               row.customClasses += " grayBackground";
+                               changed = true;
+                           }
+                           if (changed)
+                           {
+                               that.grid.focus.styleRow(row);
+                           }
+                       }
+                   };
+                   this.grid.on("styleRow", onStyleRow);
+                   this.grid.startup();
+                   userPreferences.addListener(this);
                }
-               catch(err)
+               catch (err)
                {
-                 if (console && console.error)
-                 {
-                   console.error(err);
-                 }
+                   if (console && console.error)
+                   {
+                       console.error(err);
+                   }
                }
            };
 
-           LogViewer.prototype.onPreferencesChange = function(data)
+           LogViewer.prototype.onPreferencesChange = function (data)
            {
-             var userPreferences = this.management.userPreferences;
-             currentTimeZone = userPreferences.getTimeZoneDescription();
-             if (this.grid.updater.memoryStore)
-             {
-                dataTransformer(this.grid.updater.memoryStore.data, userPreferences);
-                this.grid._refresh();
-             }
+               var userPreferences = this.management.userPreferences;
+               currentTimeZone = userPreferences.getTimeZoneDescription();
+               if (this.grid.updater.memoryStore)
+               {
+                   dataTransformer(this.grid.updater.memoryStore.data, userPreferences);
+                   this.grid._refresh();
+               }
            };
 
-           LogViewer.prototype.close = function(data)
+           LogViewer.prototype.close = function (data)
            {
-             this.management.userPreferences.removeListener(this);
+               this.management.userPreferences.removeListener(this);
            }
 
            return LogViewer;

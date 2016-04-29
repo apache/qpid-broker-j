@@ -18,14 +18,13 @@
  * under the License.
  *
  */
-define([],
-  function ()
-  {
+define([], function ()
+{
     function NonePool(data)
     {
     }
 
-    NonePool.prototype.update=function(data)
+    NonePool.prototype.update = function (data)
     {
     };
 

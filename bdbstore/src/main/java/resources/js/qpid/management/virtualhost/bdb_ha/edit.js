@@ -16,19 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-define(["qpid/common/util",  "dijit/registry", "dojo/domReady!"],
-   function (util, registry, win)
-   {
-       return {
-           show: function(data)
-           {
-              util.parseHtmlIntoDiv(data.containerNode, "virtualhost/bdb_ha/edit.html",
-              function()
-              {
-                  registry.byId("editVirtualHost.storeUnderfullSize").set("regExpGen", util.numericOrContextVarRegexp);
-                  registry.byId("editVirtualHost.storeOverfullSize").set("regExpGen", util.numericOrContextVarRegexp);
-              });
-           }
-       };
-   }
-);
+define(["qpid/common/util", "dijit/registry", "dojo/domReady!"], function (util, registry, win)
+{
+    return {
+        show: function (data)
+        {
+            util.parseHtmlIntoDiv(data.containerNode, "virtualhost/bdb_ha/edit.html", function ()
+            {
+                registry.byId("editVirtualHost.storeUnderfullSize").set("regExpGen", util.numericOrContextVarRegexp);
+                registry.byId("editVirtualHost.storeOverfullSize").set("regExpGen", util.numericOrContextVarRegexp);
+            });
+        }
+    };
+});

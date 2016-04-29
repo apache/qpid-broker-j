@@ -17,17 +17,15 @@
  * under the License.
  */
 
-define([],
-  function ()
-  {
+define([], function ()
+{
     function Memory(data)
     {
     }
 
-    Memory.prototype.update = function(data)
+    Memory.prototype.update = function (data)
     {
     }
 
     return Memory;
-  }
-);
+});

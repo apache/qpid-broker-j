@@ -17,33 +17,37 @@
  * under the License.
  */
 
-define(["qpid/common/util", "dojo/query", "dojo/domReady!"],
-  function (util, query)
-  {
+define(["qpid/common/util", "dojo/query", "dojo/domReady!"], function (util, query)
+{
     var localTransactionSynchronizationPolicy = "localTransactionSynchronizationPolicy";
     var remoteTransactionSynchronizationPolicy = "remoteTransactionSynchronizationPolicy";
 
-    var fields = [ "storeUnderfullSize", "storeOverfullSize"];
+    var fields = ["storeUnderfullSize", "storeOverfullSize"];
 
     function BDB(data)
     {
         var that = this;
-        util.buildUI(data.containerNode, data.parent, "virtualhost/bdb_ha/show.html", fields, this,
-        function()
+        util.buildUI(data.containerNode, data.parent, "virtualhost/bdb_ha/show.html", fields, this, function ()
         {
-            that[localTransactionSynchronizationPolicy]= query("." + localTransactionSynchronizationPolicy, data.containerNode)[0];
-            that[remoteTransactionSynchronizationPolicy]= query("."+ remoteTransactionSynchronizationPolicy, data.containerNode)[0];
+            that[localTransactionSynchronizationPolicy] =
+                query("." + localTransactionSynchronizationPolicy, data.containerNode)[0];
+            that[remoteTransactionSynchronizationPolicy] =
+                query("." + remoteTransactionSynchronizationPolicy, data.containerNode)[0];
         });
     }
 
-    BDB.prototype.update = function(data)
+    BDB.prototype.update = function (data)
     {
         util.updateUI(data, fields, this);
 
-        var localSyncPolicy =  data[localTransactionSynchronizationPolicy] ? data[localTransactionSynchronizationPolicy].toLowerCase() : "";
-        var remoteSyncPolicy =  data[remoteTransactionSynchronizationPolicy] ? data[remoteTransactionSynchronizationPolicy].toLowerCase() : "";
+        var localSyncPolicy = data[localTransactionSynchronizationPolicy]
+            ? data[localTransactionSynchronizationPolicy].toLowerCase()
+            : "";
+        var remoteSyncPolicy = data[remoteTransactionSynchronizationPolicy]
+            ? data[remoteTransactionSynchronizationPolicy].toLowerCase()
+            : "";
 
-        for(var i=0; i<this[localTransactionSynchronizationPolicy].children.length;i++)
+        for (var i = 0; i < this[localTransactionSynchronizationPolicy].children.length; i++)
         {
             var child = this[localTransactionSynchronizationPolicy].children[i];
             if (child.className == localTransactionSynchronizationPolicy + "-" + localSyncPolicy)
@@ -56,7 +60,7 @@ define(["qpid/common/util", "dojo/query", "dojo/domReady!"],
             }
         }
 
-        for(var j=0; j<this[remoteTransactionSynchronizationPolicy].children.length;j++)
+        for (var j = 0; j < this[remoteTransactionSynchronizationPolicy].children.length; j++)
         {
             var child = this[remoteTransactionSynchronizationPolicy].children[j];
             if (child.className == remoteTransactionSynchronizationPolicy + "-" + remoteSyncPolicy)
@@ -71,5 +75,4 @@ define(["qpid/common/util", "dojo/query", "dojo/domReady!"],
     }
 
     return BDB;
-  }
-);
+});
