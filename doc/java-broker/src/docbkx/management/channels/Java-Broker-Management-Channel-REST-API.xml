@@ -219,9 +219,9 @@
       parameters. Pass parameters using a JSON request body containing a map with a map entry for
       each parameter. </para>
     <example>
-      <title>Example of REST call to invoke the Queue clear queue operation</title>
+      <title>Example REST call invoking the operation clear queue</title>
       <para>To clear the queue with name "my-queue" on a virtual host with name "vh".</para>
-      <screen>POST api/latest/queue/default/vhn/vh/my-queue/clearQueue HTTP/1.1</screen>
+      <screen>POST api/latest/queue/vhn/vh/my-queue/clearQueue HTTP/1.1</screen>
     </example>
   </section>
   <section xml:id="Java-Broker-Management-Channel-REST-API-Status-Codes">
