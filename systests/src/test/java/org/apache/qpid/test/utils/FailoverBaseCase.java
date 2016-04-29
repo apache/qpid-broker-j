@@ -34,7 +34,7 @@ public class FailoverBaseCase extends QpidBrokerTestCase implements ConnectionLi
 {
     protected static final Logger _logger = LoggerFactory.getLogger(FailoverBaseCase.class);
 
-    public static final long DEFAULT_FAILOVER_TIME = 10000L;
+    public static final long DEFAULT_FAILOVER_TIME = Long.getLong("FailoverBaseCase.defaultFailoverTime", 10000L);
 
     protected CountDownLatch _failoverStarted;
     protected CountDownLatch _failoverComplete;

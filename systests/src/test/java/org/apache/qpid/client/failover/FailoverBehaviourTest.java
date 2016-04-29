@@ -1413,7 +1413,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Exception
 
     private void awaitForFailoverCompletion(long delay)
     {
-        _logger.info("Awaiting Failover completion..");
+        _logger.info("Awaiting {} ms for failover completion..", delay);
         try
         {
             if (!_failoverComplete.await(delay, TimeUnit.MILLISECONDS))
