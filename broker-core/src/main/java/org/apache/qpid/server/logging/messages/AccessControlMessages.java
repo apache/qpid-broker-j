@@ -22,7 +22,6 @@ package org.apache.qpid.server.logging.messages;
 
 import static org.apache.qpid.server.logging.AbstractMessageLogger.DEFAULT_LOG_HIERARCHY_PREFIX;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.logging.LogMessage;
@@ -51,6 +50,8 @@ public class AccessControlMessages
     public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.close";
     public static final String DENIED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.denied";
     public static final String ALLOWED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.allowed";
+    public static final String LOADED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.loaded";
+
 
     static
     {
@@ -61,6 +62,7 @@ public class AccessControlMessages
         LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
         LoggerFactory.getLogger(DENIED_LOG_HIERARCHY);
         LoggerFactory.getLogger(ALLOWED_LOG_HIERARCHY);
+        LoggerFactory.getLogger(LOADED_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.AccessControl_logmessages", _currentLocale);
     }
@@ -373,6 +375,64 @@ public class AccessControlMessages
             public String getLogHierarchy()
             {
                 return ALLOWED_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a AccessControl message of the Format:
+     * <pre>ACL-1015 : Rules loaded "{0}"</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage LOADED(String param1)
+    {
+        String rawMessage = _messages.getString("LOADED");
+
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return LOADED_LOG_HIERARCHY;
             }
 
             @Override

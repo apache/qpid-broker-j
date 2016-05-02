@@ -23,10 +23,14 @@ package org.apache.qpid.server.security.access.plugins;
 import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.ManagedOperation;
 
 @ManagedObject( category = false, type="AclFile" )
 public interface ACLFileAccessControlProvider<X extends ACLFileAccessControlProvider<X>> extends AccessControlProvider<X>
 {
     @ManagedAttribute( mandatory = true, description = "File location", oversize = true, oversizedAltText = OVER_SIZED_ATTRIBUTE_ALTERNATIVE_TEXT)
     String getPath();
+
+    @ManagedOperation( description = "Causes the ACL rules to be reloaded.  Changes are applied immediately.")
+    void reload();
 }

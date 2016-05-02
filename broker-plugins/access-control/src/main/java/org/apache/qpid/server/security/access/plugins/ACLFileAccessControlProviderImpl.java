@@ -20,14 +20,10 @@
  */
 package org.apache.qpid.server.security.access.plugins;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.AccessControlMessages;
 import org.slf4j.Logger;
@@ -36,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
@@ -55,8 +50,8 @@ public class ACLFileAccessControlProviderImpl
         Handler.register();
     }
 
-    protected DefaultAccessControl _accessControl;
-    protected final Broker _broker;
+    private volatile DefaultAccessControl _accessControl;
+    private final Broker _broker;
     private final EventLogger _eventLogger;
 
     @ManagedAttributeField( afterSet = "reloadAclFile")
@@ -113,13 +108,20 @@ public class ACLFileAccessControlProviderImpl
         _accessControl = new DefaultAccessControl(getPath(), _broker);
     }
 
-    @SuppressWarnings("unused")
+    @Override
+    public void reload()
+    {
+        getSecurityManager().authoriseUpdate(this);
+        reloadAclFile();
+    }
+
     private void reloadAclFile()
     {
         try
         {
             DefaultAccessControl accessControl = new DefaultAccessControl(getPath(), _broker);
             accessControl.open();
+            _eventLogger.message(AccessControlMessages.LOADED(String.valueOf(getPath()).startsWith("data:") ? "data:..." : getPath()));
             DefaultAccessControl oldAccessControl = _accessControl;
             _accessControl = accessControl;
             if(oldAccessControl != null)
@@ -139,14 +141,8 @@ public class ACLFileAccessControlProviderImpl
         return _path;
     }
 
-    @Override
-    public <C extends ConfiguredObject> Collection<C> getChildren(Class<C> clazz)
-    {
-        return Collections.emptySet();
-    }
-
-
     @StateTransition(currentState = {State.UNINITIALIZED, State.QUIESCED, State.ERRORED}, desiredState = State.ACTIVE)
+    @SuppressWarnings("unused")
     private ListenableFuture<Void> activate()
     {
 
@@ -189,6 +185,7 @@ public class ACLFileAccessControlProviderImpl
     }
 
     @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)
+    @SuppressWarnings("unused")
     private ListenableFuture<Void> startQuiesced()
     {
         setState(State.QUIESCED);
@@ -196,6 +193,7 @@ public class ACLFileAccessControlProviderImpl
     }
 
     @StateTransition(currentState = {State.ACTIVE, State.QUIESCED, State.ERRORED}, desiredState = State.DELETED)
+    @SuppressWarnings("unused")
     private ListenableFuture<Void> doDelete()
     {
         return doAfterAlways(closeAsync(),

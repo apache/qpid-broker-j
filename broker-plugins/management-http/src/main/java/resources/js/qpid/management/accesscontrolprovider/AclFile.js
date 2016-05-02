@@ -84,11 +84,18 @@ define(["dojo/_base/xhr",
                this.tabObject = tabObject;
                var aclProviderObj = tabObject.modelObj;
                var controller = tabObject.controller;
+               var that = this;
                this.controller = controller;
                this.modelObj = aclProviderObj;
                this.management = controller.management;
                this.name = aclProviderObj.name;
                this.path = query(".path", node)[0];
+               this.reloadButton = registry.byNode(query(".reload", node)[0]);
+               this.reloadButton.on("click", function (e)
+                                             {
+                                                 that.reload();
+                                             });
+
            }
 
            AclFileUpdater.prototype.update = function ()
@@ -115,6 +122,18 @@ define(["dojo/_base/xhr",
                          });
 
            };
+
+           AclFileUpdater.prototype.reload = function ()
+           {
+               var parentModelObj = this.modelObj;
+               var modelObj = {
+                   type: parentModelObj.type,
+                   name: "reload",
+                   parent: parentModelObj
+               };
+               var url = this.management.buildObjectURL(modelObj);
+               this.management.post({url: url}, {});
+           }
 
            return AclFile;
        });
