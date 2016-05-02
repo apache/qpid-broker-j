@@ -27,6 +27,7 @@ define(["dojo/_base/xhr",
         "dojo/_base/window",
         "dojo/_base/event",
         "dojo/_base/json",
+        "dojo/_base/lang",
         "dijit/registry",
         "dojox/html/entities",
         "qpid/common/util",
@@ -55,6 +56,7 @@ define(["dojo/_base/xhr",
               win,
               event,
               json,
+              lang,
               registry,
               entities,
               util,
@@ -143,7 +145,7 @@ define(["dojo/_base/xhr",
             };
             var url = this.management.buildObjectURL(modelObj);
             this.management.post({url: url}, {});
-        }
+        };
 
         return AclFile;
     });
