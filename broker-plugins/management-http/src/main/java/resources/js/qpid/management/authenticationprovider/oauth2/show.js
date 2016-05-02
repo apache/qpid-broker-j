@@ -23,31 +23,27 @@ define(["qpid/common/util",
         "dojo/_base/lang",
         "dojo/text!authenticationprovider/oauth2/show.html",
         "dojo/domReady!"], function (util, query, lang, template)
-       {
-           var fieldNames = ["authorizationEndpointURI",
-                             "tokenEndpointURI",
-                             "tokenEndpointNeedsAuth",
-                             "identityResolverEndpointURI",
-                             "identityResolverType",
-                             "clientId",
-                             "scope",
-                             "trustStore",
-                             "postLogoutURI"];
+{
+    var fieldNames = ["authorizationEndpointURI",
+                      "tokenEndpointURI",
+                      "tokenEndpointNeedsAuth",
+                      "identityResolverEndpointURI",
+                      "identityResolverType",
+                      "clientId",
+                      "scope",
+                      "trustStore",
+                      "postLogoutURI"];
 
-           function AuthenticationProvider(params)
-           {
-               util.buildUI(params.containerNode,
-                            params.parent,
-                            "authenticationprovider/oauth2/show.html",
-                            fieldNames,
-                            this);
-           }
+    function AuthenticationProvider(params)
+    {
+        util.buildUI(params.containerNode, params.parent, "authenticationprovider/oauth2/show.html", fieldNames, this);
+    }
 
-           AuthenticationProvider.prototype.update = function (restData)
-           {
-               var data = restData || {};
-               util.updateUI(data, fieldNames, this);
-           }
+    AuthenticationProvider.prototype.update = function (restData)
+    {
+        var data = restData || {};
+        util.updateUI(data, fieldNames, this);
+    }
 
-           return AuthenticationProvider;
-       });
+    return AuthenticationProvider;
+});

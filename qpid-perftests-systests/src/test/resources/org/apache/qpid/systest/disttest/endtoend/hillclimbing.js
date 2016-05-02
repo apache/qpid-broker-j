@@ -24,7 +24,8 @@ var acknowledgeMode = 0;
 var deliveryMode = 2;
 
 var queueName = "testQueueHillClimbing";
-var destination = "BURL:direct://amq.direct//".concat(queueName).concat("?durable='true'");
+var destination = "BURL:direct://amq.direct//".concat(queueName)
+    .concat("?durable='true'");
 
 var test = {
     "_name": "HillClimbing",

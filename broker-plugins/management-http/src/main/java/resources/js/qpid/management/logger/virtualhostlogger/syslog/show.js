@@ -19,25 +19,25 @@
  *
  */
 define(["qpid/common/util", "dojo/text!logger/syslog/show.html", "qpid/common/TypeTabExtension", "dojo/domReady!"],
-       function (util, template, TypeTabExtension)
-       {
-           function VirtualHostSyslogLogger(params)
-           {
-               TypeTabExtension.call(this,
-                                     params.containerNode,
-                                     template,
-                                     "VirtualHostLogger",
-                                     "Syslog",
-                                     params.metadata,
-                                     params.data);
-           }
+    function (util, template, TypeTabExtension)
+    {
+        function VirtualHostSyslogLogger(params)
+        {
+            TypeTabExtension.call(this,
+                params.containerNode,
+                template,
+                "VirtualHostLogger",
+                "Syslog",
+                params.metadata,
+                params.data);
+        }
 
-           util.extend(VirtualHostSyslogLogger, TypeTabExtension);
+        util.extend(VirtualHostSyslogLogger, TypeTabExtension);
 
-           VirtualHostSyslogLogger.prototype.update = function (restData)
-           {
-               TypeTabExtension.prototype.update.call(this, restData);
-           }
+        VirtualHostSyslogLogger.prototype.update = function (restData)
+        {
+            TypeTabExtension.prototype.update.call(this, restData);
+        }
 
-           return VirtualHostSyslogLogger;
-       });
+        return VirtualHostSyslogLogger;
+    });

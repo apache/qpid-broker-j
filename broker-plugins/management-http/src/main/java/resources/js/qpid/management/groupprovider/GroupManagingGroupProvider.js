@@ -47,165 +47,186 @@ define(["dojo/dom",
         "dijit/form/Form",
         "dijit/form/DateTextBox",
         "dojo/domReady!"],
-       function (dom, parser, query, construct, connect, win, event, json, registry, entities, util, properties, updater, UpdatableStore, EnhancedGrid, template, addGroupTemplate)
-       {
-           function GroupManagingGroupProvider(containerNode, groupProviderObj, controller)
-           {
-               var node = construct.create("div", null, containerNode, "last");
-               var that = this;
-               this.name = groupProviderObj.name;
-               node.innerHTML = template;
-               this.controller = controller;
-               this.modelObj = groupProviderObj;
-               parser.parse(node).then(function (instances)
-                                       {
-                                           var groupDiv = query(".groups", node)[0];
+    function (dom,
+              parser,
+              query,
+              construct,
+              connect,
+              win,
+              event,
+              json,
+              registry,
+              entities,
+              util,
+              properties,
+              updater,
+              UpdatableStore,
+              EnhancedGrid,
+              template,
+              addGroupTemplate)
+    {
+        function GroupManagingGroupProvider(containerNode, groupProviderObj, controller)
+        {
+            var node = construct.create("div", null, containerNode, "last");
+            var that = this;
+            this.name = groupProviderObj.name;
+            node.innerHTML = template;
+            this.controller = controller;
+            this.modelObj = groupProviderObj;
+            parser.parse(node)
+                .then(function (instances)
+                {
+                    var groupDiv = query(".groups", node)[0];
 
-                                           var gridProperties = {
-                                               height: 400,
-                                               keepSelection: true,
-                                               plugins: {
-                                                   pagination: {
-                                                       pageSizes: [10, 25, 50, 100],
-                                                       description: true,
-                                                       sizeSwitch: true,
-                                                       pageStepper: true,
-                                                       gotoButton: true,
-                                                       maxPageStep: 4,
-                                                       position: "bottom"
-                                                   },
-                                                   indirectSelection: true
+                    var gridProperties = {
+                        height: 400,
+                        keepSelection: true,
+                        plugins: {
+                            pagination: {
+                                pageSizes: [10, 25, 50, 100],
+                                description: true,
+                                sizeSwitch: true,
+                                pageStepper: true,
+                                gotoButton: true,
+                                maxPageStep: 4,
+                                position: "bottom"
+                            },
+                            indirectSelection: true
 
-                                               }
-                                           };
-                                           that.groupsGrid = new UpdatableStore([], groupDiv, [{
-                                               name: "Group Name",
-                                               field: "name",
-                                               width: "100%"
-                                           }], function (obj)
-                                           {
-                                               connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
-                                               {
-                                                   var idx = evt.rowIndex, theItem = this.getItem(idx);
-                                                   var name = obj.dataStore.getValue(theItem, "name");
-                                                   that.controller.show("group", name, groupProviderObj, theItem.id);
-                                               });
-                                           }, gridProperties, EnhancedGrid);
-                                           var addGroupButton = query(".addGroupButton", node)[0];
-                                           registry.byNode(addGroupButton).on("click", function (evt)
-                                           {
-                                               addGroup.show(groupProviderObj, controller.management)
-                                           });
-                                           var deleteWidget = registry.byNode(query(".deleteGroupButton", node)[0]);
-                                           deleteWidget.on("click", function (evt)
-                                           {
-                                               event.stop(evt);
-                                               that.deleteGroups();
-                                           });
-                                       });
-           }
+                        }
+                    };
+                    that.groupsGrid = new UpdatableStore([], groupDiv, [{
+                        name: "Group Name",
+                        field: "name",
+                        width: "100%"
+                    }], function (obj)
+                    {
+                        connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
+                        {
+                            var idx = evt.rowIndex, theItem = this.getItem(idx);
+                            var name = obj.dataStore.getValue(theItem, "name");
+                            that.controller.show("group", name, groupProviderObj, theItem.id);
+                        });
+                    }, gridProperties, EnhancedGrid);
+                    var addGroupButton = query(".addGroupButton", node)[0];
+                    registry.byNode(addGroupButton)
+                        .on("click", function (evt)
+                        {
+                            addGroup.show(groupProviderObj, controller.management)
+                        });
+                    var deleteWidget = registry.byNode(query(".deleteGroupButton", node)[0]);
+                    deleteWidget.on("click", function (evt)
+                    {
+                        event.stop(evt);
+                        that.deleteGroups();
+                    });
+                });
+        }
 
-           GroupManagingGroupProvider.prototype.deleteGroups = function ()
-           {
-               var grid = this.groupsGrid.grid;
-               var data = grid.selection.getSelected();
-               if (data.length)
-               {
-                   var that = this;
-                   if (confirm("Delete " + data.length + " groups?"))
-                   {
-                       var i;
-                       var parameters = {id: []};
-                       for (i = 0; i < data.length; i++)
-                       {
-                           parameters.id.push(data[i].id);
-                       }
+        GroupManagingGroupProvider.prototype.deleteGroups = function ()
+        {
+            var grid = this.groupsGrid.grid;
+            var data = grid.selection.getSelected();
+            if (data.length)
+            {
+                var that = this;
+                if (confirm("Delete " + data.length + " groups?"))
+                {
+                    var i;
+                    var parameters = {id: []};
+                    for (i = 0; i < data.length; i++)
+                    {
+                        parameters.id.push(data[i].id);
+                    }
 
-                       this.controller.management.remove({
-                                                             type: "group",
-                                                             parent: this.modelObj
-                                                         }, parameters).then(function (data)
-                                                                             {
-                                                                                 grid.setQuery({id: "*"});
-                                                                                 grid.selection.deselectAll();
-                                                                                 that.update();
-                                                                             }, util.xhrErrorHandler);
-                   }
-               }
-           };
+                    this.controller.management.remove({
+                            type: "group",
+                            parent: this.modelObj
+                        }, parameters)
+                        .then(function (data)
+                        {
+                            grid.setQuery({id: "*"});
+                            grid.selection.deselectAll();
+                            that.update();
+                        }, util.xhrErrorHandler);
+                }
+            }
+        };
 
-           GroupManagingGroupProvider.prototype.update = function (data)
-           {
-               if (data)
-               {
-                   this.groupsGrid.update(data.groups);
-               }
-           };
+        GroupManagingGroupProvider.prototype.update = function (data)
+        {
+            if (data)
+            {
+                this.groupsGrid.update(data.groups);
+            }
+        };
 
-           var addGroup = {};
+        var addGroup = {};
 
-           var node = construct.create("div", null, win.body(), "last");
+        var node = construct.create("div", null, win.body(), "last");
 
-           var convertToGroup = function convertToGroup(formValues)
-           {
-               var newGroup = {};
-               newGroup.name = formValues.name;
-               for (var propName in formValues)
-               {
-                   if (formValues.hasOwnProperty(propName))
-                   {
-                       if (formValues[propName] !== "")
-                       {
-                           newGroup[propName] = formValues[propName];
-                       }
-                   }
-               }
+        var convertToGroup = function convertToGroup(formValues)
+        {
+            var newGroup = {};
+            newGroup.name = formValues.name;
+            for (var propName in formValues)
+            {
+                if (formValues.hasOwnProperty(propName))
+                {
+                    if (formValues[propName] !== "")
+                    {
+                        newGroup[propName] = formValues[propName];
+                    }
+                }
+            }
 
-               return newGroup;
-           };
+            return newGroup;
+        };
 
-           {
-               var theForm;
-               node.innerHTML = addGroupTemplate;
-               addGroup.dialogNode = dom.byId("addGroup");
-               parser.instantiate([addGroup.dialogNode]);
+        {
+            var theForm;
+            node.innerHTML = addGroupTemplate;
+            addGroup.dialogNode = dom.byId("addGroup");
+            parser.instantiate([addGroup.dialogNode]);
 
-               var that = this;
+            var that = this;
 
-               theForm = registry.byId("formAddGroup");
-               theForm.on("submit", function (e)
-               {
+            theForm = registry.byId("formAddGroup");
+            theForm.on("submit", function (e)
+            {
 
-                   event.stop(e);
-                   if (theForm.validate())
-                   {
+                event.stop(e);
+                if (theForm.validate())
+                {
 
-                       var newGroup = convertToGroup(theForm.getValues());
-                       addGroup.management.create("group", addGroup.groupProvider, newGroup).then(function (x)
-                                                                                                  {
-                                                                                                      registry.byId(
-                                                                                                          "addGroup")
-                                                                                                              .hide();
-                                                                                                  });
-                       return false;
+                    var newGroup = convertToGroup(theForm.getValues());
+                    addGroup.management.create("group", addGroup.groupProvider, newGroup)
+                        .then(function (x)
+                        {
+                            registry.byId("addGroup")
+                                .hide();
+                        });
+                    return false;
 
-                   }
-                   else
-                   {
-                       alert('Form contains invalid data.  Please correct first');
-                       return false;
-                   }
+                }
+                else
+                {
+                    alert('Form contains invalid data.  Please correct first');
+                    return false;
+                }
 
-               });
-           }
+            });
+        }
 
-           addGroup.show = function (groupProvider, management)
-           {
-               addGroup.management = management;
-               addGroup.groupProvider = groupProvider;
-               registry.byId("formAddGroup").reset();
-               registry.byId("addGroup").show();
-           };
+        addGroup.show = function (groupProvider, management)
+        {
+            addGroup.management = management;
+            addGroup.groupProvider = groupProvider;
+            registry.byId("formAddGroup")
+                .reset();
+            registry.byId("addGroup")
+                .show();
+        };
 
-           return GroupManagingGroupProvider;
-       });
+        return GroupManagingGroupProvider;
+    });

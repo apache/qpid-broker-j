@@ -19,25 +19,25 @@
  *
  */
 define(["qpid/common/util", "dojo/text!port/http/show.html", "qpid/common/TypeTabExtension", "dojo/domReady!"],
-       function (util, template, TypeTabExtension)
-       {
-           function HttpPort(params)
-           {
-               TypeTabExtension.call(this,
-                                     params.containerNode,
-                                     template,
-                                     "Port",
-                                     params.data.type,
-                                     params.metadata,
-                                     params.data);
-           }
+    function (util, template, TypeTabExtension)
+    {
+        function HttpPort(params)
+        {
+            TypeTabExtension.call(this,
+                params.containerNode,
+                template,
+                "Port",
+                params.data.type,
+                params.metadata,
+                params.data);
+        }
 
-           util.extend(HttpPort, TypeTabExtension);
+        util.extend(HttpPort, TypeTabExtension);
 
-           HttpPort.prototype.update = function (restData)
-           {
-               TypeTabExtension.prototype.update.call(this, restData);
-           }
+        HttpPort.prototype.update = function (restData)
+        {
+            TypeTabExtension.prototype.update.call(this, restData);
+        }
 
-           return HttpPort;
-       });
+        return HttpPort;
+    });

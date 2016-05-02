@@ -26,14 +26,14 @@ define(["dojo/dom",
         "dojo/parser",
         "dojo/text!logger/syslog/add.html",
         "dojo/domReady!"], function (dom, query, array, registry, util, parser, template)
-       {
-           var addSyslogLogger = {
-               show: function (data)
-               {
-                   data.containerNode.innerHTML = template;
-                   return parser.parse(data.containerNode);
-               }
-           };
+{
+    var addSyslogLogger = {
+        show: function (data)
+        {
+            data.containerNode.innerHTML = template;
+            return parser.parse(data.containerNode);
+        }
+    };
 
-           return addSyslogLogger;
-       });
+    return addSyslogLogger;
+});

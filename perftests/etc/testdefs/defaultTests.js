@@ -89,25 +89,18 @@ function createTest(name, numberOfParticipantPairs, acknowledgeMode, deliveryMod
         var queueName = "testQueue_" + i;
         var destination = queueName;
         test._queues.push({
-                              "_name": destination,
-                              "_durable": true
-                          });
+            "_name": destination,
+            "_durable": true
+        });
 
         test._clients.push({
-                               "_name": "producingClient_" + i,
-                               "_connections": [createProducerConnection(i,
-                                                                         connectionFactory,
-                                                                         destination,
-                                                                         acknowledgeMode,
-                                                                         deliveryMode)]
-                           });
+            "_name": "producingClient_" + i,
+            "_connections": [createProducerConnection(i, connectionFactory, destination, acknowledgeMode, deliveryMode)]
+        });
         test._clients.push({
-                               "_name": "consumingClient_" + i,
-                               "_connections": [createConsumerConnection(i,
-                                                                         connectionFactory,
-                                                                         destination,
-                                                                         acknowledgeMode)]
-                           });
+            "_name": "consumingClient_" + i,
+            "_connections": [createConsumerConnection(i, connectionFactory, destination, acknowledgeMode)]
+        });
     }
 
     return test;
@@ -115,24 +108,24 @@ function createTest(name, numberOfParticipantPairs, acknowledgeMode, deliveryMod
 
 var jsonObject = {
     _tests: [createTest("persistent_transaction_plain",
-                        numberOfParticipantPairs,
-                        ACKNOWLEDGE_MODE_SESSION_TRANSACTED,
-                        DELIVERY_MODE_PERSISTENT,
-                        "PLAIN"),
+        numberOfParticipantPairs,
+        ACKNOWLEDGE_MODE_SESSION_TRANSACTED,
+        DELIVERY_MODE_PERSISTENT,
+        "PLAIN"),
              createTest("transient_autoack_plain",
-                        numberOfParticipantPairs,
-                        ACKNOWLEDGE_MODE_AUTO_ACKNOWLEDGE,
-                        DELIVERY_MODE_TRANSIENT,
-                        "PLAIN"),
+                 numberOfParticipantPairs,
+                 ACKNOWLEDGE_MODE_AUTO_ACKNOWLEDGE,
+                 DELIVERY_MODE_TRANSIENT,
+                 "PLAIN"),
              createTest("persistent_transaction_ssl",
-                        numberOfParticipantPairs,
-                        ACKNOWLEDGE_MODE_SESSION_TRANSACTED,
-                        DELIVERY_MODE_PERSISTENT,
-                        "SSL"),
+                 numberOfParticipantPairs,
+                 ACKNOWLEDGE_MODE_SESSION_TRANSACTED,
+                 DELIVERY_MODE_PERSISTENT,
+                 "SSL"),
              createTest("transient_autoack_ssl",
-                        numberOfParticipantPairs,
-                        ACKNOWLEDGE_MODE_AUTO_ACKNOWLEDGE,
-                        DELIVERY_MODE_TRANSIENT,
-                        "SSL")]
+                 numberOfParticipantPairs,
+                 ACKNOWLEDGE_MODE_AUTO_ACKNOWLEDGE,
+                 DELIVERY_MODE_TRANSIENT,
+                 "SSL")]
 };
 

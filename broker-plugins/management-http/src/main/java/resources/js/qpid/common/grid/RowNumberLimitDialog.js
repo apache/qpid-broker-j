@@ -32,76 +32,77 @@ define(["dojo/_base/declare",
         "dojox/grid/enhanced/plugins/Dialog",
         "dojo/text!../../../grid/showRowNumberLimitDialog.html",
         "dojo/domReady!"],
-       function (declare, event, array, lang, parser, dom, query, registry, Button, CheckBox, Dialog, template)
-       {
+    function (declare, event, array, lang, parser, dom, query, registry, Button, CheckBox, Dialog, template)
+    {
 
-           return declare("qpid.management.logs.RowNumberLimitDialog", null, {
+        return declare("qpid.management.logs.RowNumberLimitDialog", null, {
 
-               grid: null,
-               dialog: null,
+            grid: null,
+            dialog: null,
 
-               constructor: function (domNode, limitChangedCallback)
-               {
-                   var that = this;
-                   this.containerNode = dom.create("div", {innerHTML: template});
-                   parser.parse(this.containerNode).then(function (instances)
-                                                         {
-                                                             that._postParse(domNode, limitChangedCallback);
-                                                         });
-               },
-               _postParse: function (domNode, limitChangedCallback)
-               {
-                   this.rowNumberLimit = registry.byNode(query(".rowNumberLimit", this.containerNode)[0])
-                   this.submitButton = registry.byNode(query(".submitButton", this.containerNode)[0]);
-                   this.closeButton = registry.byNode(query(".cancelButton", this.containerNode)[0]);
+            constructor: function (domNode, limitChangedCallback)
+            {
+                var that = this;
+                this.containerNode = dom.create("div", {innerHTML: template});
+                parser.parse(this.containerNode)
+                    .then(function (instances)
+                    {
+                        that._postParse(domNode, limitChangedCallback);
+                    });
+            },
+            _postParse: function (domNode, limitChangedCallback)
+            {
+                this.rowNumberLimit = registry.byNode(query(".rowNumberLimit", this.containerNode)[0])
+                this.submitButton = registry.byNode(query(".submitButton", this.containerNode)[0]);
+                this.closeButton = registry.byNode(query(".cancelButton", this.containerNode)[0]);
 
-                   this.dialog = new Dialog({
-                       "refNode": domNode,
-                       "title": "Grid Rows Number",
-                       "content": this.containerNode
-                   });
+                this.dialog = new Dialog({
+                    "refNode": domNode,
+                    "title": "Grid Rows Number",
+                    "content": this.containerNode
+                });
 
-                   var self = this;
-                   this.submitButton.on("click", function (e)
-                   {
-                       if (self.rowNumberLimit.value > 0)
-                       {
-                           try
-                           {
-                               limitChangedCallback(self.rowNumberLimit.value);
-                           }
-                           catch (e)
-                           {
-                               console.error(e);
-                           }
-                           finally
-                           {
-                               self.dialog.hide();
-                           }
-                       }
-                   });
+                var self = this;
+                this.submitButton.on("click", function (e)
+                {
+                    if (self.rowNumberLimit.value > 0)
+                    {
+                        try
+                        {
+                            limitChangedCallback(self.rowNumberLimit.value);
+                        }
+                        catch (e)
+                        {
+                            console.error(e);
+                        }
+                        finally
+                        {
+                            self.dialog.hide();
+                        }
+                    }
+                });
 
-                   this.closeButton.on("click", function (e)
-                   {
-                       self.dialog.hide();
-                   });
-                   this.dialog.startup();
-               },
+                this.closeButton.on("click", function (e)
+                {
+                    self.dialog.hide();
+                });
+                this.dialog.startup();
+            },
 
-               destroy: function ()
-               {
-                   this.submitButton.destroy();
-                   this.closeButton.destroy();
-                   this.dialog.destroy();
-                   this.dialog = null;
-               },
+            destroy: function ()
+            {
+                this.submitButton.destroy();
+                this.closeButton.destroy();
+                this.dialog.destroy();
+                this.dialog = null;
+            },
 
-               showDialog: function (currentLimit)
-               {
-                   this.rowNumberLimit.set("value", currentLimit);
-                   this.dialog.show();
-               }
+            showDialog: function (currentLimit)
+            {
+                this.rowNumberLimit.set("value", currentLimit);
+                this.dialog.show();
+            }
 
-           });
+        });
 
-       });
+    });

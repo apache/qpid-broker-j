@@ -33,120 +33,129 @@ define(["dojo/parser",
         "dojox/grid/enhanced/plugins/Pagination",
         "dojox/grid/enhanced/plugins/IndirectSelection",
         "dojo/domReady!"],
-       function (parser, query, connect, properties, updater, util, UpdatableStore, EnhancedGrid, registry, event, entities, template)
-       {
+    function (parser,
+              query,
+              connect,
+              properties,
+              updater,
+              util,
+              UpdatableStore,
+              EnhancedGrid,
+              registry,
+              event,
+              entities,
+              template)
+    {
 
-           function AccessControlProvider(name, parent, controller)
-           {
-               this.name = name;
-               this.controller = controller;
-               this.modelObj = {
-                   type: "accesscontrolprovider",
-                   name: name,
-                   parent: parent
-               };
-           }
+        function AccessControlProvider(name, parent, controller)
+        {
+            this.name = name;
+            this.controller = controller;
+            this.modelObj = {
+                type: "accesscontrolprovider",
+                name: name,
+                parent: parent
+            };
+        }
 
-           AccessControlProvider.prototype.getTitle = function ()
-           {
-               return "AccessControlProvider: " + this.name;
-           };
+        AccessControlProvider.prototype.getTitle = function ()
+        {
+            return "AccessControlProvider: " + this.name;
+        };
 
-           AccessControlProvider.prototype.open = function (contentPane)
-           {
-               var that = this;
-               this.contentPane = contentPane;
+        AccessControlProvider.prototype.open = function (contentPane)
+        {
+            var that = this;
+            this.contentPane = contentPane;
 
-               contentPane.containerNode.innerHTML = template;
-               parser.parse(contentPane.containerNode).then(function (instances)
-                                                            {
-                                                                that.accessControlProviderUpdater =
-                                                                    new AccessControlProviderUpdater(that);
-                                                                var deleteButton = query(
-                                                                    ".deleteAccessControlProviderButton",
-                                                                    contentPane.containerNode)[0];
-                                                                var deleteWidget = registry.byNode(deleteButton);
-                                                                connect.connect(deleteWidget, "onClick", function (evt)
-                                                                {
-                                                                    event.stop(evt);
-                                                                    that.deleteAccessControlProvider();
-                                                                });
-                                                            });
-           };
+            contentPane.containerNode.innerHTML = template;
+            parser.parse(contentPane.containerNode)
+                .then(function (instances)
+                {
+                    that.accessControlProviderUpdater = new AccessControlProviderUpdater(that);
+                    var deleteButton = query(".deleteAccessControlProviderButton", contentPane.containerNode)[0];
+                    var deleteWidget = registry.byNode(deleteButton);
+                    connect.connect(deleteWidget, "onClick", function (evt)
+                    {
+                        event.stop(evt);
+                        that.deleteAccessControlProvider();
+                    });
+                });
+        };
 
-           AccessControlProvider.prototype.close = function ()
-           {
-               if (this.accessControlProviderUpdater.details)
-               {
-                   this.accessControlProviderUpdater.details.close();
-               }
-           };
+        AccessControlProvider.prototype.close = function ()
+        {
+            if (this.accessControlProviderUpdater.details)
+            {
+                this.accessControlProviderUpdater.details.close();
+            }
+        };
 
-           AccessControlProvider.prototype.deleteAccessControlProvider = function ()
-           {
-               if (confirm("Are you sure you want to delete access control provider '" + this.name + "'?"))
-               {
-                   var that = this;
-                   this.controller.management.remove(this.modelObj).then(function (data)
-                                                                         {
-                                                                             that.close();
-                                                                             that.contentPane.onClose()
-                                                                             that.controller.tabContainer.removeChild(
-                                                                                 that.contentPane);
-                                                                             that.contentPane.destroyRecursive();
-                                                                         }, util.xhrErrorHandler);
-               }
-           };
+        AccessControlProvider.prototype.deleteAccessControlProvider = function ()
+        {
+            if (confirm("Are you sure you want to delete access control provider '" + this.name + "'?"))
+            {
+                var that = this;
+                this.controller.management.remove(this.modelObj)
+                    .then(function (data)
+                    {
+                        that.close();
+                        that.contentPane.onClose()
+                        that.controller.tabContainer.removeChild(that.contentPane);
+                        that.contentPane.destroyRecursive();
+                    }, util.xhrErrorHandler);
+            }
+        };
 
-           function AccessControlProviderUpdater(aclTab)
-           {
-               this.tabObject = aclTab;
-               var node = aclTab.contentPane.containerNode;
-               var groupProviderObj = aclTab.modelObj;
-               var controller = aclTab.controller;
+        function AccessControlProviderUpdater(aclTab)
+        {
+            this.tabObject = aclTab;
+            var node = aclTab.contentPane.containerNode;
+            var groupProviderObj = aclTab.modelObj;
+            var controller = aclTab.controller;
 
-               this.controller = controller;
-               this.management = controller.management;
-               this.modelObj = groupProviderObj;
-               this.name = query(".name", node)[0];
-               this.type = query(".type", node)[0];
-               this.state = query(".state", node)[0];
+            this.controller = controller;
+            this.management = controller.management;
+            this.modelObj = groupProviderObj;
+            this.name = query(".name", node)[0];
+            this.type = query(".type", node)[0];
+            this.state = query(".state", node)[0];
 
-               var that = this;
+            var that = this;
 
-               this.management.load(this.modelObj)
-                   .then(function (data)
-                         {
-                             that.accessControlProviderData = data[0];
+            this.management.load(this.modelObj)
+                .then(function (data)
+                {
+                    that.accessControlProviderData = data[0];
 
-                             util.flattenStatistics(that.accessControlProviderData);
+                    util.flattenStatistics(that.accessControlProviderData);
 
-                             that.updateHeader();
+                    that.updateHeader();
 
-                             var ui = that.accessControlProviderData.type;
-                             require(["qpid/management/accesscontrolprovider/" + ui], function (SpecificProvider)
-                             {
-                                 that.details = new SpecificProvider(query(".providerDetails",
-                                                                           node)[0], groupProviderObj, controller, aclTab);
-                             });
-                         }, function (error)
-                         {
-                             util.tabErrorHandler(error, {
-                                 updater: that,
-                                 contentPane: that.tabObject.contentPane,
-                                 tabContainer: that.tabObject.controller.tabContainer,
-                                 name: that.modelObj.name,
-                                 category: "Access Control Provider"
-                             });
-                         });
-           }
+                    var ui = that.accessControlProviderData.type;
+                    require(["qpid/management/accesscontrolprovider/" + ui], function (SpecificProvider)
+                    {
+                        that.details = new SpecificProvider(query(".providerDetails",
+                            node)[0], groupProviderObj, controller, aclTab);
+                    });
+                }, function (error)
+                {
+                    util.tabErrorHandler(error, {
+                        updater: that,
+                        contentPane: that.tabObject.contentPane,
+                        tabContainer: that.tabObject.controller.tabContainer,
+                        name: that.modelObj.name,
+                        category: "Access Control Provider"
+                    });
+                });
+        }
 
-           AccessControlProviderUpdater.prototype.updateHeader = function ()
-           {
-               this.name.innerHTML = entities.encode(String(this.accessControlProviderData["name"]));
-               this.type.innerHTML = entities.encode(String(this.accessControlProviderData["type"]));
-               this.state.innerHTML = entities.encode(String(this.accessControlProviderData["state"]));
-           };
+        AccessControlProviderUpdater.prototype.updateHeader = function ()
+        {
+            this.name.innerHTML = entities.encode(String(this.accessControlProviderData["name"]));
+            this.type.innerHTML = entities.encode(String(this.accessControlProviderData["type"]));
+            this.state.innerHTML = entities.encode(String(this.accessControlProviderData["state"]));
+        };
 
-           return AccessControlProvider;
-       });
+        return AccessControlProvider;
+    });

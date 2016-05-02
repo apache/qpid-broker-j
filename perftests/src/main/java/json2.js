@@ -214,7 +214,8 @@ if (!JSON)
         return escapable.test(string) ? '"' + string.replace(escapable, function (a)
         {
             var c = meta[a];
-            return typeof c === 'string' ? c : '\\u' + ('0000' + a.charCodeAt(0).toString(16)).slice(-4);
+            return typeof c === 'string' ? c : '\\u' + ('0000' + a.charCodeAt(0)
+                .toString(16)).slice(-4);
         }) + '"' : '"' + string + '"';
     }
 
@@ -460,7 +461,8 @@ if (!JSON)
             {
                 text = text.replace(cx, function (a)
                 {
-                    return '\\u' + ('0000' + a.charCodeAt(0).toString(16)).slice(-4);
+                    return '\\u' + ('0000' + a.charCodeAt(0)
+                            .toString(16)).slice(-4);
                 });
             }
 
@@ -479,8 +481,8 @@ if (!JSON)
 
             if (/^[\],:{}\s]*$/
                     .test(text.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, '@')
-                              .replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']')
-                              .replace(/(?:^|:|,)(?:\s*\[)+/g, '')))
+                        .replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']')
+                        .replace(/(?:^|:|,)(?:\s*\[)+/g, '')))
             {
 
 // In the third stage we use the eval function to compile the text into a

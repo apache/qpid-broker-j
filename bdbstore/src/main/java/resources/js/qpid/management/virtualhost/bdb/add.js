@@ -28,18 +28,19 @@ define(["dojo/_base/xhr",
         "dijit/form/ValidationTextBox",
         "dijit/form/NumberTextBox",
         "dojo/domReady!"], function (xhr, parser, dom, domConstruct, json, registry, template, util)
-       {
-           return {
-               show: function (data)
-               {
-                   this.containerNode = domConstruct.create("div", {innerHTML: template}, data.containerNode);
-                   parser.parse(this.containerNode).then(function (instances)
-                                                         {
-                                                             registry.byId("addVirtualHost.storeUnderfullSize")
-                                                                     .set("regExpGen", util.numericOrContextVarRegexp);
-                                                             registry.byId("addVirtualHost.storeOverfullSize")
-                                                                     .set("regExpGen", util.numericOrContextVarRegexp);
-                                                         });
-               }
-           };
-       });
+{
+    return {
+        show: function (data)
+        {
+            this.containerNode = domConstruct.create("div", {innerHTML: template}, data.containerNode);
+            parser.parse(this.containerNode)
+                .then(function (instances)
+                {
+                    registry.byId("addVirtualHost.storeUnderfullSize")
+                        .set("regExpGen", util.numericOrContextVarRegexp);
+                    registry.byId("addVirtualHost.storeOverfullSize")
+                        .set("regExpGen", util.numericOrContextVarRegexp);
+                });
+        }
+    };
+});

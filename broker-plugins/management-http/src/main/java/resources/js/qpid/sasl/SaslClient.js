@@ -20,49 +20,49 @@
 define(["dojo/_base/lang"], function (lang)
 {
     return lang.extend(function SaslClient()
-                       {
-                           // summary:
-                           //        The public interface to a SaslClient.
-                           // description:
-                           //        The public interface to a SaslClient. All SaslClient in Qpid are
-                           //        instances of this class.
-                       }, {
-                           getMechanismName: function ()
-                           {
-                               // summary:
-                               //        Returns mechanism name.
-                               // description:
-                               //        Returns mechanism name for the implementation.
-                               // returns: string
-                               throw new TypeError("abstract");
-                           },
-                           authenticate: function (management)
-                           {
-                               // summary:
-                               //        Authenticates and invokes callback function
-                               //                                  on successful authentication
-                               // description:
-                               //        Performs SASL authentication as required by algorithm
-                               //        and returns promise
-                               // returns: promise
-                               throw new TypeError("abstract");
-                           },
-                           getPriority: function ()
-                           {
-                               // summary:
-                               //        Returns SaslClient priority as integer
-                               // description:
-                               //        Returns SaslClient priority as integer.
-                               //        SaslClients with highest priority is
-                               //        chosen from multiple supported.
-                               // returns: integer
-                               throw new TypeError("abstract");
-                           },
-                           toString: function ()
-                           {
-                               // returns: string
-                               //        Returns `[object SaslClient]`.
-                               return "[object SaslClient]";
-                           }
-                       });
+    {
+        // summary:
+        //        The public interface to a SaslClient.
+        // description:
+        //        The public interface to a SaslClient. All SaslClient in Qpid are
+        //        instances of this class.
+    }, {
+        getMechanismName: function ()
+        {
+            // summary:
+            //        Returns mechanism name.
+            // description:
+            //        Returns mechanism name for the implementation.
+            // returns: string
+            throw new TypeError("abstract");
+        },
+        authenticate: function (management)
+        {
+            // summary:
+            //        Authenticates and invokes callback function
+            //                                  on successful authentication
+            // description:
+            //        Performs SASL authentication as required by algorithm
+            //        and returns promise
+            // returns: promise
+            throw new TypeError("abstract");
+        },
+        getPriority: function ()
+        {
+            // summary:
+            //        Returns SaslClient priority as integer
+            // description:
+            //        Returns SaslClient priority as integer.
+            //        SaslClients with highest priority is
+            //        chosen from multiple supported.
+            // returns: integer
+            throw new TypeError("abstract");
+        },
+        toString: function ()
+        {
+            // returns: string
+            //        Returns `[object SaslClient]`.
+            return "[object SaslClient]";
+        }
+    });
 });

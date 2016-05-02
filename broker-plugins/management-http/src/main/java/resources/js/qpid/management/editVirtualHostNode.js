@@ -43,158 +43,174 @@ define(["dojox/html/entities",
         "dojox/validate/us",
         "dojox/validate/web",
         "dojo/domReady!"],
-       function (entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, Memory, ObjectStore, util, template)
-       {
-           var virtualHostNodeEditor = {
-               init: function ()
-               {
-                   var that = this;
-                   this.containerNode = domConstruct.create("div", {innerHTML: template});
-                   parser.parse(this.containerNode).then(function (instances)
-                                                         {
-                                                             that._postParse();
-                                                         });
-               },
-               _postParse: function ()
-               {
-                   var that = this;
-                   this.allFieldsContainer = dom.byId("editVirtualHostNode.allFields");
-                   this.typeFieldsContainer = dom.byId("editVirtualHostNode.typeFields");
-                   this.dialog = registry.byId("editVirtualHostNodeDialog");
-                   this.saveButton = registry.byId("editVirtualHostNode.saveButton");
-                   this.cancelButton = registry.byId("editVirtualHostNode.cancelButton");
-                   this.cancelButton.on("click", function (e)
-                   {
-                       that._cancel(e);
-                   });
-                   this.saveButton.on("click", function (e)
-                   {
-                       that._save(e);
-                   });
-                   this.name = registry.byId("editVirtualHostNode.name");
-                   this.form = registry.byId("editVirtualHostNodeForm");
-                   this.form.on("submit", function ()
-                   {
-                       return false;
-                   });
-               },
-               show: function (management, modelObj, effectiveData)
-               {
-                   this.management = management;
-                   this.modelObj = modelObj;
-                   var that = this;
-                   if (!this.context)
-                   {
-                       this.context = new qpid.common.ContextVariablesEditor({
-                           name: 'context',
-                           title: 'Context variables'
-                       });
-                       this.context.placeAt(dom.byId("editVirtualHostNode.context"));
-                   }
-                   this.dialog.set("title", "Edit Virtual Host Node - " + entities.encode(String(effectiveData.name)));
-                   management.load(modelObj, {actuals: true}).then(function (data)
-                                                                   {
-                                                                       that._show(data[0], effectiveData);
-                                                                   });
-               },
-               destroy: function ()
-               {
-                   if (this.dialog)
-                   {
-                       this.dialog.destroyRecursive();
-                       this.dialog = null;
-                   }
+    function (entities,
+              array,
+              event,
+              lang,
+              win,
+              dom,
+              domConstruct,
+              registry,
+              parser,
+              json,
+              query,
+              Memory,
+              ObjectStore,
+              util,
+              template)
+    {
+        var virtualHostNodeEditor = {
+            init: function ()
+            {
+                var that = this;
+                this.containerNode = domConstruct.create("div", {innerHTML: template});
+                parser.parse(this.containerNode)
+                    .then(function (instances)
+                    {
+                        that._postParse();
+                    });
+            },
+            _postParse: function ()
+            {
+                var that = this;
+                this.allFieldsContainer = dom.byId("editVirtualHostNode.allFields");
+                this.typeFieldsContainer = dom.byId("editVirtualHostNode.typeFields");
+                this.dialog = registry.byId("editVirtualHostNodeDialog");
+                this.saveButton = registry.byId("editVirtualHostNode.saveButton");
+                this.cancelButton = registry.byId("editVirtualHostNode.cancelButton");
+                this.cancelButton.on("click", function (e)
+                {
+                    that._cancel(e);
+                });
+                this.saveButton.on("click", function (e)
+                {
+                    that._save(e);
+                });
+                this.name = registry.byId("editVirtualHostNode.name");
+                this.form = registry.byId("editVirtualHostNodeForm");
+                this.form.on("submit", function ()
+                {
+                    return false;
+                });
+            },
+            show: function (management, modelObj, effectiveData)
+            {
+                this.management = management;
+                this.modelObj = modelObj;
+                var that = this;
+                if (!this.context)
+                {
+                    this.context = new qpid.common.ContextVariablesEditor({
+                        name: 'context',
+                        title: 'Context variables'
+                    });
+                    this.context.placeAt(dom.byId("editVirtualHostNode.context"));
+                }
+                this.dialog.set("title", "Edit Virtual Host Node - " + entities.encode(String(effectiveData.name)));
+                management.load(modelObj, {actuals: true})
+                    .then(function (data)
+                    {
+                        that._show(data[0], effectiveData);
+                    });
+            },
+            destroy: function ()
+            {
+                if (this.dialog)
+                {
+                    this.dialog.destroyRecursive();
+                    this.dialog = null;
+                }
 
-                   if (this.containerNode)
-                   {
-                       domConstruct.destroy(this.containerNode);
-                       this.containerNode = null;
-                   }
-               },
-               _cancel: function (e)
-               {
-                   this.dialog.hide();
-               },
-               _save: function (e)
-               {
-                   event.stop(e);
-                   if (this.form.validate())
-                   {
-                       var data = util.getFormWidgetValues(this.form, this.initialData);
-                       var context = this.context.get("value");
-                       if (context && !util.equals(context, this.initialData.context))
-                       {
-                           data["context"] = context;
-                       }
-                       var that = this;
-                       this.management.update(that.modelObj, data).then(function (x)
-                                                                        {
-                                                                            that.dialog.hide();
-                                                                        });
-                   }
-                   else
-                   {
-                       alert('Form contains invalid data.  Please correct first');
-                   }
-               },
-               _show: function (actualData, effectiveData)
-               {
-                   this.initialData = actualData;
-                   this.name.set("value", actualData.name);
+                if (this.containerNode)
+                {
+                    domConstruct.destroy(this.containerNode);
+                    this.containerNode = null;
+                }
+            },
+            _cancel: function (e)
+            {
+                this.dialog.hide();
+            },
+            _save: function (e)
+            {
+                event.stop(e);
+                if (this.form.validate())
+                {
+                    var data = util.getFormWidgetValues(this.form, this.initialData);
+                    var context = this.context.get("value");
+                    if (context && !util.equals(context, this.initialData.context))
+                    {
+                        data["context"] = context;
+                    }
+                    var that = this;
+                    this.management.update(that.modelObj, data)
+                        .then(function (x)
+                        {
+                            that.dialog.hide();
+                        });
+                }
+                else
+                {
+                    alert('Form contains invalid data.  Please correct first');
+                }
+            },
+            _show: function (actualData, effectiveData)
+            {
+                this.initialData = actualData;
+                this.name.set("value", actualData.name);
 
-                   var that = this;
+                var that = this;
 
-                   util.setContextData(this.context, this.management, this.modelObj, actualData, effectiveData);
+                util.setContextData(this.context, this.management, this.modelObj, actualData, effectiveData);
 
-                   var widgets = registry.findWidgets(this.typeFieldsContainer);
-                   array.forEach(widgets, function (item)
-                   {
-                       item.destroyRecursive();
-                   });
-                   domConstruct.empty(this.typeFieldsContainer);
+                var widgets = registry.findWidgets(this.typeFieldsContainer);
+                array.forEach(widgets, function (item)
+                {
+                    item.destroyRecursive();
+                });
+                domConstruct.empty(this.typeFieldsContainer);
 
-                   require(["qpid/management/virtualhostnode/" + actualData.type.toLowerCase() + "/edit"],
-                           function (TypeUI)
-                           {
-                               try
-                               {
-                                   var metadata = that.management.metadata;
-                                   TypeUI.show({
-                                                   containerNode: that.typeFieldsContainer,
-                                                   parent: that,
-                                                   data: actualData,
-                                                   effectiveData: effectiveData,
-                                                   metadata: metadata
-                                               });
-                                   that.form.connectChildren();
+                require(["qpid/management/virtualhostnode/" + actualData.type.toLowerCase() + "/edit"],
+                    function (TypeUI)
+                    {
+                        try
+                        {
+                            var metadata = that.management.metadata;
+                            TypeUI.show({
+                                containerNode: that.typeFieldsContainer,
+                                parent: that,
+                                data: actualData,
+                                effectiveData: effectiveData,
+                                metadata: metadata
+                            });
+                            that.form.connectChildren();
 
-                                   util.applyToWidgets(that.allFieldsContainer,
-                                                       "VirtualHostNode",
-                                                       actualData.type,
-                                                       actualData,
-                                                       metadata);
-                               }
-                               catch (e)
-                               {
-                                   if (console && console.warn)
-                                   {
-                                       console.warn(e);
-                                   }
-                               }
-                           });
+                            util.applyToWidgets(that.allFieldsContainer,
+                                "VirtualHostNode",
+                                actualData.type,
+                                actualData,
+                                metadata);
+                        }
+                        catch (e)
+                        {
+                            if (console && console.warn)
+                            {
+                                console.warn(e);
+                            }
+                        }
+                    });
 
-                   this.dialog.startup();
-                   this.dialog.show();
-                   if (!this.resizeEventRegistered)
-                   {
-                       this.resizeEventRegistered = true;
-                       util.resizeContentAreaAndRepositionDialog(dom.byId("editVirtualHostNode.contentPane"),
-                                                                 this.dialog);
-                   }
-               }
-           };
+                this.dialog.startup();
+                this.dialog.show();
+                if (!this.resizeEventRegistered)
+                {
+                    this.resizeEventRegistered = true;
+                    util.resizeContentAreaAndRepositionDialog(dom.byId("editVirtualHostNode.contentPane"), this.dialog);
+                }
+            }
+        };
 
-           virtualHostNodeEditor.init();
+        virtualHostNodeEditor.init();
 
-           return virtualHostNodeEditor;
-       });
+        return virtualHostNodeEditor;
+    });

@@ -34,80 +34,77 @@ define(["dojo/_base/declare",
         "dijit/_TemplatedMixin",
         "dijit/_WidgetsInTemplateMixin",
         "dojo/domReady!"], function (declare, lang, array, json, domConstruct, template, Evented, entities)
-       {
+{
 
-           var MessageDialogForm = declare("qpid.management.query.MessageDialogForm",
-                                           [dijit._WidgetBase,
-                                            dijit._TemplatedMixin,
-                                            dijit._WidgetsInTemplateMixin,
-                                            Evented],
-                                           {
-                                               /**
-                                                * dijit._TemplatedMixin enforced fields
-                                                */
-                                               //Strip out the apache comment header from the template html as comments unsupported.
-                                               templateString: template.replace(/<!--[\s\S]*?-->/g, ""),
+    var MessageDialogForm = declare("qpid.management.query.MessageDialogForm",
+        [dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
+        {
+            /**
+             * dijit._TemplatedMixin enforced fields
+             */
+            //Strip out the apache comment header from the template html as comments unsupported.
+            templateString: template.replace(/<!--[\s\S]*?-->/g, ""),
 
-                                               /**
-                                                * template attach points
-                                                */
-                                               messageNode: null,
-                                               messagePanel: null,
-                                               stopDisplaying: null,
-                                               okButton: null,
-                                               cancelButton: null,
+            /**
+             * template attach points
+             */
+            messageNode: null,
+            messagePanel: null,
+            stopDisplaying: null,
+            okButton: null,
+            cancelButton: null,
 
-                                               postCreate: function ()
-                                               {
-                                                   this.inherited(arguments);
-                                                   this._postCreate();
-                                               },
-                                               _postCreate: function ()
-                                               {
-                                                   if (this.message)
-                                                   {
-                                                       this.messageNode.innerHTML = this.message;
-                                                   }
-                                                   this.okButton.on("click", lang.hitch(this, this._onOk));
-                                                   this.cancelButton.on("click", lang.hitch(this, this._onCancel));
-                                               },
-                                               _onOk: function ()
-                                               {
-                                                   this.emit("execute", this.stopDisplaying.checked);
-                                               },
-                                               _onCancel: function (data)
-                                               {
-                                                   this.emit("cancel");
-                                               }
-                                           });
+            postCreate: function ()
+            {
+                this.inherited(arguments);
+                this._postCreate();
+            },
+            _postCreate: function ()
+            {
+                if (this.message)
+                {
+                    this.messageNode.innerHTML = this.message;
+                }
+                this.okButton.on("click", lang.hitch(this, this._onOk));
+                this.cancelButton.on("click", lang.hitch(this, this._onCancel));
+            },
+            _onOk: function ()
+            {
+                this.emit("execute", this.stopDisplaying.checked);
+            },
+            _onCancel: function (data)
+            {
+                this.emit("cancel");
+            }
+        });
 
-           return declare("qpid.management.query.MessageDialog", [dijit.Dialog, Evented], {
-               postCreate: function ()
-               {
-                   this.inherited(arguments);
-                   this._postCreate();
-               },
-               _postCreate: function ()
-               {
-                   var options = {};
-                   if (this.message)
-                   {
-                       options.message = this.message;
-                   }
-                   var contentForm = new MessageDialogForm(options);
-                   this.set("content", contentForm);
-                   contentForm.on("execute", lang.hitch(this, this._onExecute));
-                   contentForm.on("cancel", lang.hitch(this, this._onCancel))
-               },
-               _onExecute: function (stopDisplaying)
-               {
-                   this.hide();
-                   this.emit("execute", stopDisplaying);
-               },
-               _onCancel: function (data)
-               {
-                   this.hide();
-                   this.emit("cancel");
-               }
-           });
-       });
+    return declare("qpid.management.query.MessageDialog", [dijit.Dialog, Evented], {
+        postCreate: function ()
+        {
+            this.inherited(arguments);
+            this._postCreate();
+        },
+        _postCreate: function ()
+        {
+            var options = {};
+            if (this.message)
+            {
+                options.message = this.message;
+            }
+            var contentForm = new MessageDialogForm(options);
+            this.set("content", contentForm);
+            contentForm.on("execute", lang.hitch(this, this._onExecute));
+            contentForm.on("cancel", lang.hitch(this, this._onCancel))
+        },
+        _onExecute: function (stopDisplaying)
+        {
+            this.hide();
+            this.emit("execute", stopDisplaying);
+        },
+        _onCancel: function (data)
+        {
+            this.hide();
+            this.emit("cancel");
+        }
+    });
+});

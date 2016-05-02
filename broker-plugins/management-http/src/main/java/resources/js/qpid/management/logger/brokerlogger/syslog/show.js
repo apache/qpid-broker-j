@@ -19,25 +19,25 @@
  *
  */
 define(["qpid/common/util", "dojo/text!logger/syslog/show.html", "qpid/common/TypeTabExtension", "dojo/domReady!"],
-       function (util, template, TypeTabExtension)
-       {
-           function BrokerSyslogLogger(params)
-           {
-               TypeTabExtension.call(this,
-                                     params.containerNode,
-                                     template,
-                                     "BrokerLogger",
-                                     "Syslog",
-                                     params.metadata,
-                                     params.data);
-           }
+    function (util, template, TypeTabExtension)
+    {
+        function BrokerSyslogLogger(params)
+        {
+            TypeTabExtension.call(this,
+                params.containerNode,
+                template,
+                "BrokerLogger",
+                "Syslog",
+                params.metadata,
+                params.data);
+        }
 
-           util.extend(BrokerSyslogLogger, TypeTabExtension);
+        util.extend(BrokerSyslogLogger, TypeTabExtension);
 
-           BrokerSyslogLogger.prototype.update = function (restData)
-           {
-               TypeTabExtension.prototype.update.call(this, restData);
-           }
+        BrokerSyslogLogger.prototype.update = function (restData)
+        {
+            TypeTabExtension.prototype.update.call(this, restData);
+        }
 
-           return BrokerSyslogLogger;
-       });
+        return BrokerSyslogLogger;
+    });

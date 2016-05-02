@@ -18,38 +18,33 @@
  */
 
 define(["dojo/query", "qpid/common/util", "dojox/grid/DataGrid", "qpid/common/UpdatableStore", "dojo/domReady!"],
-       function (query, util, DataGrid, UpdatableStore)
-       {
+    function (query, util, DataGrid, UpdatableStore)
+    {
 
-           function SiteSpecificTrustStore(data)
-           {
-               var that = this;
-               this.fields = [];
-               this.management = data.parent.management;
-               this.dateTimeFormatter = function (value)
-               {
-                   return value ? that.management.userPreferences.formatDateTime(value,
-                                                                                 {
-                                                                                     addOffset: true,
-                                                                                     appendTimeZone: true
-                                                                                 }) : "";
-               };
-               var attributes = this.management.metadata.getMetaData("TrustStore", "SiteSpecificTrustStore").attributes;
-               for (var name in attributes)
-               {
-                   this.fields.push(name);
-               }
-               util.buildUI(data.containerNode,
-                            data.parent,
-                            "store/sitespecifictruststore/show.html",
-                            this.fields,
-                            this);
-           }
+        function SiteSpecificTrustStore(data)
+        {
+            var that = this;
+            this.fields = [];
+            this.management = data.parent.management;
+            this.dateTimeFormatter = function (value)
+            {
+                return value ? that.management.userPreferences.formatDateTime(value, {
+                    addOffset: true,
+                    appendTimeZone: true
+                }) : "";
+            };
+            var attributes = this.management.metadata.getMetaData("TrustStore", "SiteSpecificTrustStore").attributes;
+            for (var name in attributes)
+            {
+                this.fields.push(name);
+            }
+            util.buildUI(data.containerNode, data.parent, "store/sitespecifictruststore/show.html", this.fields, this);
+        }
 
-           SiteSpecificTrustStore.prototype.update = function (data)
-           {
-               util.updateUI(data, this.fields, this, {datetime: this.dateTimeFormatter});
-           }
+        SiteSpecificTrustStore.prototype.update = function (data)
+        {
+            util.updateUI(data, this.fields, this, {datetime: this.dateTimeFormatter});
+        }
 
-           return SiteSpecificTrustStore;
-       });
+        return SiteSpecificTrustStore;
+    });

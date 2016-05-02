@@ -25,14 +25,14 @@ define(["dojo/dom",
         "dojo/parser",
         "dojo/text!logger/brokerlogbacksocket/add.html",
         "dojo/domReady!"], function (dom, query, array, registry, util, parser, template)
-       {
-           var addLogbackLogger = {
-               show: function (data)
-               {
-                   data.containerNode.innerHTML = template;
-                   return parser.parse(data.containerNode);
-               }
-           };
+{
+    var addLogbackLogger = {
+        show: function (data)
+        {
+            data.containerNode.innerHTML = template;
+            return parser.parse(data.containerNode);
+        }
+    };
 
-           return addLogbackLogger;
-       });
+    return addLogbackLogger;
+});

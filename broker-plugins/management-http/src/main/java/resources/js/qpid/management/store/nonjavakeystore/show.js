@@ -27,11 +27,10 @@ define(["qpid/common/util", "dojox/html/entities", "dojo/domReady!"], function (
         this.management = data.parent.management;
         this.dateTimeFormatter = function (value)
         {
-            return value ? that.management.userPreferences.formatDateTime(value,
-                                                                          {
-                                                                              addOffset: true,
-                                                                              appendTimeZone: true
-                                                                          }) : "";
+            return value ? that.management.userPreferences.formatDateTime(value, {
+                addOffset: true,
+                appendTimeZone: true
+            }) : "";
         };
 
         var attributes = this.management.metadata.getMetaData("KeyStore", "NonJavaKeyStore").attributes;

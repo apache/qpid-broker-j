@@ -19,15 +19,15 @@
  *
  */
 define(["dojo/dom", "qpid/common/util", "dojo/parser", "dojo/text!logger/brokerlogger/add.html", "dojo/domReady!"],
-       function (dom, util, parser, template)
-       {
-           var addBrokerLogger = {
-               show: function (data)
-               {
-                   data.containerNode.innerHTML = template;
-                   return parser.parse(data.containerNode);
-               }
-           };
+    function (dom, util, parser, template)
+    {
+        var addBrokerLogger = {
+            show: function (data)
+            {
+                data.containerNode.innerHTML = template;
+                return parser.parse(data.containerNode);
+            }
+        };
 
-           return addBrokerLogger;
-       });
+        return addBrokerLogger;
+    });

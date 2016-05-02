@@ -38,200 +38,205 @@ define(["dojo/parser",
         "dojox/grid/enhanced/plugins/Pagination",
         "dojox/grid/enhanced/plugins/IndirectSelection",
         "dojo/domReady!"],
-       function (parser, query, registry, connect, event, json, properties, updater, util, formatter, UpdatableStore, JsonRest, EnhancedGrid, ObjectStore, addGroupMember, entities, showGroup)
-       {
+    function (parser,
+              query,
+              registry,
+              connect,
+              event,
+              json,
+              properties,
+              updater,
+              util,
+              formatter,
+              UpdatableStore,
+              JsonRest,
+              EnhancedGrid,
+              ObjectStore,
+              addGroupMember,
+              entities,
+              showGroup)
+    {
 
-           function Group(name, parent, controller)
-           {
-               this.name = name;
-               this.controller = controller;
-               this.management = management;
-               this.modelObj = {
-                   type: "group",
-                   name: name,
-                   parent: parent
-               };
-           }
+        function Group(name, parent, controller)
+        {
+            this.name = name;
+            this.controller = controller;
+            this.management = management;
+            this.modelObj = {
+                type: "group",
+                name: name,
+                parent: parent
+            };
+        }
 
-           Group.prototype.getGroupName = function ()
-           {
-               return this.name;
-           };
+        Group.prototype.getGroupName = function ()
+        {
+            return this.name;
+        };
 
-           Group.prototype.getGroupProviderName = function ()
-           {
-               return this.modelObj.parent.name;
-           };
+        Group.prototype.getGroupProviderName = function ()
+        {
+            return this.modelObj.parent.name;
+        };
 
-           Group.prototype.getTitle = function ()
-           {
-               return "Group: " + this.name;
-           };
+        Group.prototype.getTitle = function ()
+        {
+            return "Group: " + this.name;
+        };
 
-           Group.prototype.open = function (contentPane)
-           {
-               var that = this;
-               this.contentPane = contentPane;
+        Group.prototype.open = function (contentPane)
+        {
+            var that = this;
+            this.contentPane = contentPane;
 
-               {
-                   contentPane.containerNode.innerHTML = showGroup;
-                   parser.parse(contentPane.containerNode).then(function (instances)
-                                                                {
-                                                                    that.groupUpdater = new GroupUpdater(that);
-                                                                    that.groupUpdater.update(function ()
-                                                                                             {
-                                                                                                 var addGroupMemberButton = query(
-                                                                                                     ".addGroupMemberButton",
-                                                                                                     contentPane.containerNode)[0];
-                                                                                                 connect.connect(
-                                                                                                     registry.byNode(
-                                                                                                         addGroupMemberButton),
-                                                                                                     "onClick",
-                                                                                                     function (evt)
-                                                                                                     {
-                                                                                                         addGroupMember.show(
-                                                                                                             that.getGroupProviderName(),
-                                                                                                             that.modelObj,
-                                                                                                             that.controller.management);
-                                                                                                     });
+            {
+                contentPane.containerNode.innerHTML = showGroup;
+                parser.parse(contentPane.containerNode)
+                    .then(function (instances)
+                    {
+                        that.groupUpdater = new GroupUpdater(that);
+                        that.groupUpdater.update(function ()
+                        {
+                            var addGroupMemberButton = query(".addGroupMemberButton", contentPane.containerNode)[0];
+                            connect.connect(registry.byNode(addGroupMemberButton), "onClick", function (evt)
+                            {
+                                addGroupMember.show(that.getGroupProviderName(),
+                                    that.modelObj,
+                                    that.controller.management);
+                            });
 
-                                                                                                 var removeGroupMemberButton = query(
-                                                                                                     ".removeGroupMemberButton",
-                                                                                                     contentPane.containerNode)[0];
-                                                                                                 connect.connect(
-                                                                                                     registry.byNode(
-                                                                                                         removeGroupMemberButton),
-                                                                                                     "onClick",
-                                                                                                     function (evt)
-                                                                                                     {
-                                                                                                         util.deleteSelectedObjects(
-                                                                                                             that.groupUpdater.groupMembersUpdatableStore.grid,
-                                                                                                             "Are you sure you want to remove group member",
-                                                                                                             that.management,
-                                                                                                             {
-                                                                                                                 type: "groupmember",
-                                                                                                                 parent: that.modelObj
-                                                                                                             },
-                                                                                                             that.groupUpdater);
-                                                                                                     });
-                                                                                                 updater.add(that.groupUpdater);
-                                                                                             });
-                                                                });
-               }
-               ;
-           };
+                            var removeGroupMemberButton = query(".removeGroupMemberButton",
+                                contentPane.containerNode)[0];
+                            connect.connect(registry.byNode(removeGroupMemberButton), "onClick", function (evt)
+                            {
+                                util.deleteSelectedObjects(that.groupUpdater.groupMembersUpdatableStore.grid,
+                                    "Are you sure you want to remove group member",
+                                    that.management,
+                                    {
+                                        type: "groupmember",
+                                        parent: that.modelObj
+                                    },
+                                    that.groupUpdater);
+                            });
+                            updater.add(that.groupUpdater);
+                        });
+                    });
+            }
+            ;
+        };
 
-           Group.prototype.close = function ()
-           {
-               updater.remove(this.groupUpdater);
-           };
+        Group.prototype.close = function ()
+        {
+            updater.remove(this.groupUpdater);
+        };
 
-           function GroupUpdater(tabObject)
-           {
-               this.tabObject = tabObject;
-               this.management = tabObject.controller.management;
-               this.modelObj = {
-                   type: "groupmember",
-                   parent: tabObject.modelObj
-               };
-               var that = this;
-               var containerNode = tabObject.contentPane.containerNode;
+        function GroupUpdater(tabObject)
+        {
+            this.tabObject = tabObject;
+            this.management = tabObject.controller.management;
+            this.modelObj = {
+                type: "groupmember",
+                parent: tabObject.modelObj
+            };
+            var that = this;
+            var containerNode = tabObject.contentPane.containerNode;
 
-               function findNode(name)
-               {
-                   return query("." + name, containerNode)[0];
-               }
+            function findNode(name)
+            {
+                return query("." + name, containerNode)[0];
+            }
 
-               function storeNodes(names)
-               {
-                   for (var i = 0; i < names.length; i++)
-                   {
-                       that[names[i]] = findNode(names[i]);
-                   }
-               }
+            function storeNodes(names)
+            {
+                for (var i = 0; i < names.length; i++)
+                {
+                    that[names[i]] = findNode(names[i]);
+                }
+            }
 
-               storeNodes(["name", "state", "durable", "lifetimePolicy", "type"]);
-               this.name.innerHTML = entities.encode(String(tabObject.modelObj.name));
+            storeNodes(["name", "state", "durable", "lifetimePolicy", "type"]);
+            this.name.innerHTML = entities.encode(String(tabObject.modelObj.name));
 
-               this.groupMemberData = [];
+            this.groupMemberData = [];
 
-               var gridProperties = {
-                   keepSelection: true,
-                   plugins: {
-                       pagination: {
-                           pageSizes: ["10", "25", "50", "100"],
-                           description: true,
-                           sizeSwitch: true,
-                           pageStepper: true,
-                           gotoButton: true,
-                           maxPageStep: 4,
-                           position: "bottom"
-                       },
-                       indirectSelection: true
+            var gridProperties = {
+                keepSelection: true,
+                plugins: {
+                    pagination: {
+                        pageSizes: ["10", "25", "50", "100"],
+                        description: true,
+                        sizeSwitch: true,
+                        pageStepper: true,
+                        gotoButton: true,
+                        maxPageStep: 4,
+                        position: "bottom"
+                    },
+                    indirectSelection: true
 
-                   }
-               };
+                }
+            };
 
-               this.groupMembersUpdatableStore = new UpdatableStore([], findNode("groupMembers"), [{
-                   name: "Group Member Name",
-                   field: "name",
-                   width: "100%"
-               }], function (obj)
-               {
-                   connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
-                   {
+            this.groupMembersUpdatableStore = new UpdatableStore([], findNode("groupMembers"), [{
+                name: "Group Member Name",
+                field: "name",
+                width: "100%"
+            }], function (obj)
+            {
+                connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
+                {
 
-                   });
-               }, gridProperties, EnhancedGrid);
+                });
+            }, gridProperties, EnhancedGrid);
 
-           };
+        };
 
-           GroupUpdater.prototype.update = function (callback)
-           {
+        GroupUpdater.prototype.update = function (callback)
+        {
 
-               var that = this;
+            var that = this;
 
-               this.management.load(this.modelObj)
-                   .then(function (data)
-                         {
-                             that.groupMemberData = data;
+            this.management.load(this.modelObj)
+                .then(function (data)
+                {
+                    that.groupMemberData = data;
 
-                             util.flattenStatistics(that.groupMemberData);
+                    util.flattenStatistics(that.groupMemberData);
 
-                             if (callback)
-                             {
-                                 callback();
-                             }
-                             that.groupMembersUpdatableStore.update(that.groupMemberData);
-                         }, function (error)
-                         {
-                             util.tabErrorHandler(error, {
-                                 updater: that,
-                                 contentPane: that.tabObject.contentPane,
-                                 tabContainer: that.tabObject.controller.tabContainer,
-                                 name: that.modelObj.name,
-                                 category: "Group"
-                             });
-                         });
-           };
+                    if (callback)
+                    {
+                        callback();
+                    }
+                    that.groupMembersUpdatableStore.update(that.groupMemberData);
+                }, function (error)
+                {
+                    util.tabErrorHandler(error, {
+                        updater: that,
+                        contentPane: that.tabObject.contentPane,
+                        tabContainer: that.tabObject.controller.tabContainer,
+                        name: that.modelObj.name,
+                        category: "Group"
+                    });
+                });
+        };
 
-           Group.prototype.deleteGroupMember = function ()
-           {
-               if (confirm("Are you sure you want to delete group members of group '" + this.name + "'?"))
-               {
-                   this.success = true
-                   var that = this;
-                   this.management.remove({
-                                              type: "groupmember",
-                                              parent: this.modelObj
-                                          }).then(function (data)
-                                                  {
-                                                      that.contentPane.onClose()
-                                                      that.controller.tabContainer.removeChild(that.contentPane);
-                                                      that.contentPane.destroyRecursive();
-                                                  }, util.xhrErrorHandler);
-               }
-           }
+        Group.prototype.deleteGroupMember = function ()
+        {
+            if (confirm("Are you sure you want to delete group members of group '" + this.name + "'?"))
+            {
+                this.success = true
+                var that = this;
+                this.management.remove({
+                        type: "groupmember",
+                        parent: this.modelObj
+                    })
+                    .then(function (data)
+                    {
+                        that.contentPane.onClose()
+                        that.controller.tabContainer.removeChild(that.contentPane);
+                        that.contentPane.destroyRecursive();
+                    }, util.xhrErrorHandler);
+            }
+        }
 
-           return Group;
-       });
+        return Group;
+    });

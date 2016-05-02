@@ -46,94 +46,104 @@ define(["dojo/_base/xhr",
         "dijit/form/Form",
         "dijit/form/DateTextBox",
         "dojo/domReady!"],
-       function (xhr, dom, parser, query, construct, connect, win, event, json, registry, entities, util, properties, updater, UpdatableStore, EnhancedGrid)
-       {
-           function AclFile(containerNode, aclProviderObj, controller, tabObject)
-           {
-               var node = construct.create("div", null, containerNode, "last");
-               this.modelObj = aclProviderObj;
-               var that = this;
-               this.name = aclProviderObj.name;
-               xhr.get({
-                           url: "accesscontrolprovider/showAclFile.html",
-                           sync: true,
-                           load: function (data)
-                           {
-                               node.innerHTML = data;
-                               parser.parse(node).then(function (instances)
-                                                       {
-                                                           that.groupDatabaseUpdater =
-                                                               new AclFileUpdater(node, tabObject);
+    function (xhr,
+              dom,
+              parser,
+              query,
+              construct,
+              connect,
+              win,
+              event,
+              json,
+              registry,
+              entities,
+              util,
+              properties,
+              updater,
+              UpdatableStore,
+              EnhancedGrid)
+    {
+        function AclFile(containerNode, aclProviderObj, controller, tabObject)
+        {
+            var node = construct.create("div", null, containerNode, "last");
+            this.modelObj = aclProviderObj;
+            var that = this;
+            this.name = aclProviderObj.name;
+            xhr.get({
+                url: "accesscontrolprovider/showAclFile.html",
+                sync: true,
+                load: function (data)
+                {
+                    node.innerHTML = data;
+                    parser.parse(node)
+                        .then(function (instances)
+                        {
+                            that.groupDatabaseUpdater = new AclFileUpdater(node, tabObject);
 
-                                                           updater.add(that.groupDatabaseUpdater);
+                            updater.add(that.groupDatabaseUpdater);
 
-                                                           that.groupDatabaseUpdater.update();
-                                                       });
+                            that.groupDatabaseUpdater.update();
+                        });
 
-                           }
-                       });
-           }
+                }
+            });
+        }
 
-           AclFile.prototype.close = function ()
-           {
-               updater.remove(this.groupDatabaseUpdater);
-           };
+        AclFile.prototype.close = function ()
+        {
+            updater.remove(this.groupDatabaseUpdater);
+        };
 
-           function AclFileUpdater(node, tabObject)
-           {
-               this.tabObject = tabObject;
-               var aclProviderObj = tabObject.modelObj;
-               var controller = tabObject.controller;
-               var that = this;
-               this.controller = controller;
-               this.modelObj = aclProviderObj;
-               this.management = controller.management;
-               this.name = aclProviderObj.name;
-               this.path = query(".path", node)[0];
-               this.reloadButton = registry.byNode(query(".reload", node)[0]);
-               this.reloadButton.on("click", function (e)
-                                             {
-                                                 that.reload();
-                                             });
+        function AclFileUpdater(node, tabObject)
+        {
+            this.tabObject = tabObject;
+            var aclProviderObj = tabObject.modelObj;
+            var controller = tabObject.controller;
+            this.controller = controller;
+            this.modelObj = aclProviderObj;
+            this.management = controller.management;
+            this.name = aclProviderObj.name;
+            this.path = query(".path", node)[0];
+            this.reloadButton = registry.byNode(query(".reload", node)[0]);
+            this.reloadButton.on("click", lang.hitch(this, this.reload));
+        }
 
-           }
+        AclFileUpdater.prototype.update = function ()
+        {
+            var that = this;
 
-           AclFileUpdater.prototype.update = function ()
-           {
-               var that = this;
+            this.management.load(this.modelObj)
+                .then(function (data)
+                {
+                    if (data[0])
+                    {
+                        that.aclProviderData = data[0];
+                        that.path.innerHTML = entities.encode(String(that.aclProviderData.path));
+                    }
+                }, function (error)
+                {
+                    util.tabErrorHandler(error, {
+                        updater: that,
+                        contentPane: that.tabObject.contentPane,
+                        tabContainer: that.tabObject.controller.tabContainer,
+                        name: that.modelObj.name,
+                        category: "Access Control Provider"
+                    });
+                });
 
-               this.management.load(this.modelObj)
-                   .then(function (data)
-                         {
-                             if (data[0])
-                             {
-                                 that.aclProviderData = data[0];
-                                 that.path.innerHTML = entities.encode(String(that.aclProviderData.path));
-                             }
-                         }, function (error)
-                         {
-                             util.tabErrorHandler(error, {
-                                 updater: that,
-                                 contentPane: that.tabObject.contentPane,
-                                 tabContainer: that.tabObject.controller.tabContainer,
-                                 name: that.modelObj.name,
-                                 category: "Access Control Provider"
-                             });
-                         });
+        };
 
-           };
+        AclFileUpdater.prototype.reload = function ()
+        {
+            var parentModelObj = this.modelObj;
+            var modelObj = {
+                type: parentModelObj.type,
+                name: "reload",
+                parent: parentModelObj
+            };
+            var url = this.management.buildObjectURL(modelObj);
+            this.management.post({url: url}, {});
+        }
 
-           AclFileUpdater.prototype.reload = function ()
-           {
-               var parentModelObj = this.modelObj;
-               var modelObj = {
-                   type: parentModelObj.type,
-                   name: "reload",
-                   parent: parentModelObj
-               };
-               var url = this.management.buildObjectURL(modelObj);
-               this.management.post({url: url}, {});
-           }
-
-           return AclFile;
-       });
+        return AclFile;
+    });

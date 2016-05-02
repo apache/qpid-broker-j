@@ -31,98 +31,95 @@ define(["dojo/_base/event",
         "dijit/Dialog",
         "dijit/form/Button",
         "dojo/domReady!"],
-       function (event, construct, parser, registry, PreferencesProviderForm, util, template, entities)
-       {
+    function (event, construct, parser, registry, PreferencesProviderForm, util, template, entities)
+    {
 
-           var addPreferencesProvider = {
-               init: function ()
-               {
-                   var that = this;
-                   this.containerNode = construct.create("div", {innerHTML: template});
-                   parser.parse(this.containerNode).then(function (instances)
-                                                         {
-                                                             that._postParse();
-                                                         });
-               },
-               _postParse: function ()
-               {
-                   var that = this;
-                   this.preferencesProviderForm = registry.byId("addPreferencesProvider.preferencesProvider");
-                   this.dialog = registry.byId("addPreferencesProvider");
+        var addPreferencesProvider = {
+            init: function ()
+            {
+                var that = this;
+                this.containerNode = construct.create("div", {innerHTML: template});
+                parser.parse(this.containerNode)
+                    .then(function (instances)
+                    {
+                        that._postParse();
+                    });
+            },
+            _postParse: function ()
+            {
+                var that = this;
+                this.preferencesProviderForm = registry.byId("addPreferencesProvider.preferencesProvider");
+                this.dialog = registry.byId("addPreferencesProvider");
 
-                   var cancelButton = registry.byId("addPreferencesProvider.cancelButton");
-                   cancelButton.on("click", function ()
-                   {
-                       that.dialog.hide();
-                   });
+                var cancelButton = registry.byId("addPreferencesProvider.cancelButton");
+                cancelButton.on("click", function ()
+                {
+                    that.dialog.hide();
+                });
 
-                   var saveButton = registry.byId("addPreferencesProvider.saveButton");
-                   saveButton.on("click", function ()
-                   {
-                       var result = that.preferencesProviderForm.submit(function (preferencesProviderData)
-                                                                        {
-                                                                            if (that.preferencesProviderForm.data)
-                                                                            {
-                                                                                // update request
-                                                                                that.management.update(that.modelObj,
-                                                                                                       preferencesProviderData)
-                                                                                    .then(function ()
-                                                                                          {
-                                                                                              that.dialog.hide();
-                                                                                          });
-                                                                            }
-                                                                            else
-                                                                            {
-                                                                                that.management.create(
-                                                                                    "preferencesprovider",
-                                                                                    that.modelObj,
-                                                                                    preferencesProviderData)
-                                                                                    .then(function ()
-                                                                                          {
-                                                                                              that.dialog.hide();
-                                                                                          });
-                                                                            }
-                                                                        });
-                   });
-               },
-               show: function (management, modelObj)
-               {
-                   this.management = management;
-                   this.modelObj = modelObj;
-                   this.preferencesProviderForm.setMetadata(management.metadata)
-                   this.authenticationProviderName =
-                       modelObj.type == "authenticationprovider" ? modelObj.name : modelObj.parent.name;
-                   this.dialog.set("title",
-                                   modelObj.type == "preferencesprovider" ? "Edit preferences provider '"
-                                                                            + entities.encode(String(modelObj.name))
-                                                                            + "' for '" + entities.encode(String(
-                                       modelObj.parent.name)) + "'" : "Add preferences provider " + " for '"
-                                                                      + entities.encode(String(modelObj.name)));
-                   if (modelObj.type == "preferencesprovider")
-                   {
-                       var that = this;
-                       management.load(modelObj, {actuals: true}).then(function (data)
-                                                                       {
-                                                                           that.preferencesProviderForm.setData(data[0]);
-                                                                           that.dialog.show();
-                                                                       }, util.xhrErrorHandler);
-                   }
-                   else
-                   {
-                       this.preferencesProviderForm.reset();
-                       this.dialog.show();
-                   }
-               }
-           };
+                var saveButton = registry.byId("addPreferencesProvider.saveButton");
+                saveButton.on("click", function ()
+                {
+                    var result = that.preferencesProviderForm.submit(function (preferencesProviderData)
+                    {
+                        if (that.preferencesProviderForm.data)
+                        {
+                            // update request
+                            that.management.update(that.modelObj, preferencesProviderData)
+                                .then(function ()
+                                {
+                                    that.dialog.hide();
+                                });
+                        }
+                        else
+                        {
+                            that.management.create("preferencesprovider", that.modelObj, preferencesProviderData)
+                                .then(function ()
+                                {
+                                    that.dialog.hide();
+                                });
+                        }
+                    });
+                });
+            },
+            show: function (management, modelObj)
+            {
+                this.management = management;
+                this.modelObj = modelObj;
+                this.preferencesProviderForm.setMetadata(management.metadata)
+                this.authenticationProviderName =
+                    modelObj.type == "authenticationprovider" ? modelObj.name : modelObj.parent.name;
+                this.dialog.set("title",
+                    modelObj.type == "preferencesprovider"
+                        ? "Edit preferences provider '" + entities.encode(String(modelObj.name)) + "' for '"
+                          + entities.encode(String(modelObj.parent.name)) + "'"
+                        : "Add preferences provider " + " for '" + entities.encode(String(modelObj.name)));
+                if (modelObj.type == "preferencesprovider")
+                {
+                    var that = this;
+                    management.load(modelObj, {actuals: true})
+                        .then(function (data)
+                        {
+                            that.preferencesProviderForm.setData(data[0]);
+                            that.dialog.show();
+                        }, util.xhrErrorHandler);
+                }
+                else
+                {
+                    this.preferencesProviderForm.reset();
+                    this.dialog.show();
+                }
+            }
+        };
 
-           try
-           {
-               addPreferencesProvider.init();
-           }
-           catch (e)
-           {
-               console.warn("Initialisation of add preferences dialog failed", e);
-           }
+        try
+        {
+            addPreferencesProvider.init();
+        }
+        catch (e)
+        {
+            console.warn("Initialisation of add preferences dialog failed", e);
+        }
 
-           return addPreferencesProvider;
-       });
+        return addPreferencesProvider;
+    });

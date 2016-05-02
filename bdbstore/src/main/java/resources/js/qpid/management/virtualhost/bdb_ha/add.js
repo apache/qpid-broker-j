@@ -26,12 +26,12 @@ define(["dojo/_base/xhr",
         "dijit/form/ValidationTextBox",
         "dijit/form/CheckBox",
         "dojo/domReady!"], function (xhr, parser, dom, domConstruct, json, registry, template)
-       {
-           return {
-               show: function (data)
-               {
-                   this.containerNode = domConstruct.create("div", {innerHTML: template}, data.containerNode);
-                   parser.parse(this.containerNode);
-               }
-           };
-       });
+{
+    return {
+        show: function (data)
+        {
+            this.containerNode = domConstruct.create("div", {innerHTML: template}, data.containerNode);
+            parser.parse(this.containerNode);
+        }
+    };
+});

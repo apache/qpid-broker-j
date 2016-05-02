@@ -20,69 +20,68 @@
  */
 
 define(["dojo/_base/lang", "dojo/json", "dojo/_base/declare", "dojo/store/util/QueryResults"],
-       function (lang, json, declare, QueryResults)
-       {
-           return declare("qpid.common.JsonRest", null, {
-               headers: {},
-               idProperty: "id",
-               firstProperty: "first",
-               lastProperty: "last",
-               accepts: "application/javascript, application/json",
-               queryOperation: null,
-               modelObject: null,
-               management: null,
+    function (lang, json, declare, QueryResults)
+    {
+        return declare("qpid.common.JsonRest", null, {
+            headers: {},
+            idProperty: "id",
+            firstProperty: "first",
+            lastProperty: "last",
+            accepts: "application/javascript, application/json",
+            queryOperation: null,
+            modelObject: null,
+            management: null,
 
-               constructor: function (options)
-               {
-                   this.headers = {};
-                   this.management = options.management;
-                   this.modelObject = options.modelObject;
-                   this.queryOperation = options.queryOperation;
-                   declare.safeMixin(this, options);
-               },
+            constructor: function (options)
+            {
+                this.headers = {};
+                this.management = options.management;
+                this.modelObject = options.modelObject;
+                this.queryOperation = options.queryOperation;
+                declare.safeMixin(this, options);
+            },
 
-               getIdentity: function (object)
-               {
-                   return object[this.idProperty];
-               },
+            getIdentity: function (object)
+            {
+                return object[this.idProperty];
+            },
 
-               query: function (query, options)
-               {
-                   query = query || {};
-                   options = options || {};
-                   var headers = lang.mixin({Accept: this.accepts}, this.headers, options.headers);
+            query: function (query, options)
+            {
+                query = query || {};
+                options = options || {};
+                var headers = lang.mixin({Accept: this.accepts}, this.headers, options.headers);
 
-                   query[this.firstProperty] = options.start >= 0 ? options.start : -1;
-                   query[this.lastProperty] = options.count >= 0 && query.first >= 0 ? options.count + query.first : -1;
+                query[this.firstProperty] = options.start >= 0 ? options.start : -1;
+                query[this.lastProperty] = options.count >= 0 && query.first >= 0 ? options.count + query.first : -1;
 
-                   if (options.start >= 0 || options.count >= 0)
-                   {
-                       headers["X-Range"] =
-                           "items=" + (options.start || '0') + '-' + (("count" in options && options.count != Infinity)
-                               ? (options.count + (options.start || 0) - 1)
-                               : '');
-                       headers.Range = headers["X-Range"];
-                   }
+                if (options.start >= 0 || options.count >= 0)
+                {
+                    headers["X-Range"] =
+                        "items=" + (options.start || '0') + '-' + (("count" in options && options.count != Infinity)
+                            ? (options.count + (options.start || 0) - 1)
+                            : '');
+                    headers.Range = headers["X-Range"];
+                }
 
-                   var modelObj = {
-                       name: this.queryOperation,
-                       parent: this.modelObject,
-                       type: this.modelObject.type
-                   };
-                   var results = management.load(modelObj, query, {headers: headers});
+                var modelObj = {
+                    name: this.queryOperation,
+                    parent: this.modelObject,
+                    type: this.modelObject.type
+                };
+                var results = management.load(modelObj, query, {headers: headers});
 
-                   results.total = results.response.then(function (response)
-                                                         {
-                                                             var range = response.getHeader("Content-Range");
-                                                             if (!range)
-                                                             {
-                                                                 range = response.getHeader("X-Content-Range");
-                                                             }
-                                                             return range && (range = range.match(/\/(.*)/))
-                                                                    && +range[1];
-                                                         });
-                   return QueryResults(results);
-               }
-           });
+                results.total = results.response.then(function (response)
+                {
+                    var range = response.getHeader("Content-Range");
+                    if (!range)
+                    {
+                        range = response.getHeader("X-Content-Range");
+                    }
+                    return range && (range = range.match(/\/(.*)/)) && +range[1];
+                });
+                return QueryResults(results);
+            }
+        });
 
-       });
+    });

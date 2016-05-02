@@ -30,10 +30,10 @@ define(["dojo/_base/connect",
         "qpid/common/util",
         "dojo/text!addBinding.html",
         "dijit/form/NumberSpinner", // required by the form
-           /* dojox/ validate resources */
+        /* dojox/ validate resources */
         "dojox/validate/us",
         "dojox/validate/web",
-           /* basic dijit classes */
+        /* basic dijit classes */
         "dijit/Dialog",
         "dijit/form/CheckBox",
         "dijit/form/Textarea",
@@ -46,474 +46,473 @@ define(["dojo/_base/connect",
         "dijit/form/RadioButton",
         "dijit/form/Form",
         "dijit/form/DateTextBox",
-           /* basic dojox classes */
+        /* basic dojox classes */
         "dojox/form/BusyButton",
         "dojox/form/CheckedMultiSelect",
         "dojox/grid/EnhancedGrid",
         "dojo/data/ObjectStore",
         "dojo/domReady!"],
-       function (connect, dom, construct, win, registry, parser, array, event, json, lang, declare, Memory, FilteringSelect, util, template)
-       {
+    function (connect,
+              dom,
+              construct,
+              win,
+              registry,
+              parser,
+              array,
+              event,
+              json,
+              lang,
+              declare,
+              Memory,
+              FilteringSelect,
+              util,
+              template)
+    {
 
-           var noLocalValues = new Memory({
-               data: [{
-                   name: "true",
-                   id: true
-               },
-                   {
-                       name: "false",
-                       id: false
-                   }]
-           });
+        var noLocalValues = new Memory({
+            data: [{
+                name: "true",
+                id: true
+            }, {
+                name: "false",
+                id: false
+            }]
+        });
 
-           var xMatchValues = new Memory({
-               data: [{
-                   name: "all",
-                   id: "all"
-               },
-                   {
-                       name: "any",
-                       id: "any"
-                   }]
-           });
+        var xMatchValues = new Memory({
+            data: [{
+                name: "all",
+                id: "all"
+            }, {
+                name: "any",
+                id: "any"
+            }]
+        });
 
-           var defaultBindingArguments = [{
-               id: 0,
-               name: "x-filter-jms-selector",
-               value: null
-           },
-               {
-                   id: 1,
-                   name: "x-qpid-no-local",
-                   value: null
-               }];
+        var defaultBindingArguments = [{
+            id: 0,
+            name: "x-filter-jms-selector",
+            value: null
+        }, {
+            id: 1,
+            name: "x-qpid-no-local",
+            value: null
+        }];
 
-           var GridWidgetProxy = declare("qpid.dojox.grid.cells.GridWidgetProxy", dojox.grid.cells._Widget, {
-               createWidget: function (inNode, inDatum, inRowIndex)
-               {
-                   var WidgetClass = this.widgetClass;
-                   var widgetProperties = this.getWidgetProps(inDatum);
-                   var getWidgetProperties = widgetProperties.getWidgetProperties;
-                   if (typeof getWidgetProperties == "function")
-                   {
-                       var item = this.grid.getItem(inRowIndex);
-                       if (item)
-                       {
-                           var additionalWidgetProperties = getWidgetProperties(inDatum, inRowIndex, item);
-                           if (additionalWidgetProperties)
-                           {
-                               WidgetClass = additionalWidgetProperties.widgetClass;
-                               for (var prop in additionalWidgetProperties)
-                               {
-                                   if (additionalWidgetProperties.hasOwnProperty(prop) && !widgetProperties[prop])
-                                   {
-                                       widgetProperties[prop] = additionalWidgetProperties[prop];
-                                   }
-                               }
-                           }
-                       }
-                   }
-                   var widget = new WidgetClass(widgetProperties, inNode);
-                   return widget;
-               },
-               getValue: function (inRowIndex)
-               {
-                   if (this.widget)
-                   {
-                       return this.widget.get('value');
-                   }
-                   return null;
-               },
-               _finish: function (inRowIndex)
-               {
-                   if (this.widget)
-                   {
-                       this.inherited(arguments);
-                       this.widget.destroyRecursive();
-                       this.widget = null;
-                   }
-               }
-           });
+        var GridWidgetProxy = declare("qpid.dojox.grid.cells.GridWidgetProxy", dojox.grid.cells._Widget, {
+            createWidget: function (inNode, inDatum, inRowIndex)
+            {
+                var WidgetClass = this.widgetClass;
+                var widgetProperties = this.getWidgetProps(inDatum);
+                var getWidgetProperties = widgetProperties.getWidgetProperties;
+                if (typeof getWidgetProperties == "function")
+                {
+                    var item = this.grid.getItem(inRowIndex);
+                    if (item)
+                    {
+                        var additionalWidgetProperties = getWidgetProperties(inDatum, inRowIndex, item);
+                        if (additionalWidgetProperties)
+                        {
+                            WidgetClass = additionalWidgetProperties.widgetClass;
+                            for (var prop in additionalWidgetProperties)
+                            {
+                                if (additionalWidgetProperties.hasOwnProperty(prop) && !widgetProperties[prop])
+                                {
+                                    widgetProperties[prop] = additionalWidgetProperties[prop];
+                                }
+                            }
+                        }
+                    }
+                }
+                var widget = new WidgetClass(widgetProperties, inNode);
+                return widget;
+            },
+            getValue: function (inRowIndex)
+            {
+                if (this.widget)
+                {
+                    return this.widget.get('value');
+                }
+                return null;
+            },
+            _finish: function (inRowIndex)
+            {
+                if (this.widget)
+                {
+                    this.inherited(arguments);
+                    this.widget.destroyRecursive();
+                    this.widget = null;
+                }
+            }
+        });
 
-           var addBinding = {};
+        var addBinding = {};
 
-           var node = construct.create("div", null, win.body(), "last");
+        var node = construct.create("div", null, win.body(), "last");
 
-           var convertToBinding = function convertToBinding(formValues)
-           {
-               var newBinding = {};
+        var convertToBinding = function convertToBinding(formValues)
+        {
+            var newBinding = {};
 
-               newBinding.name = formValues.name;
-               for (var propName in formValues)
-               {
-                   if (formValues.hasOwnProperty(propName))
-                   {
-                       if (propName === "durable")
-                       {
-                           if (formValues.durable[0] && formValues.durable[0] == "durable")
-                           {
-                               newBinding.durable = true;
-                           }
-                       }
-                       else
-                       {
-                           if (formValues[propName] !== "")
-                           {
-                               newBinding[propName] = formValues[propName];
-                           }
-                       }
+            newBinding.name = formValues.name;
+            for (var propName in formValues)
+            {
+                if (formValues.hasOwnProperty(propName))
+                {
+                    if (propName === "durable")
+                    {
+                        if (formValues.durable[0] && formValues.durable[0] == "durable")
+                        {
+                            newBinding.durable = true;
+                        }
+                    }
+                    else
+                    {
+                        if (formValues[propName] !== "")
+                        {
+                            newBinding[propName] = formValues[propName];
+                        }
+                    }
 
-                   }
-               }
-               if (addBinding.queue)
-               {
-                   newBinding.queue = addBinding.queue;
-               }
-               if (addBinding.exchange)
-               {
-                   newBinding.exchange = addBinding.exchange;
-               }
+                }
+            }
+            if (addBinding.queue)
+            {
+                newBinding.queue = addBinding.queue;
+            }
+            if (addBinding.exchange)
+            {
+                newBinding.exchange = addBinding.exchange;
+            }
 
-               addBinding.bindingArgumentsGrid.store.fetch({
-                                                               onComplete: function (items, request)
-                                                               {
-                                                                   if (items.length)
-                                                                   {
-                                                                       array.forEach(items, function (item)
-                                                                       {
-                                                                           if (item && item.name && item.value)
-                                                                           {
-                                                                               var bindingArguments = newBinding.arguments;
-                                                                               if (!bindingArguments)
-                                                                               {
-                                                                                   bindingArguments = {};
-                                                                                   newBinding.arguments =
-                                                                                       bindingArguments;
-                                                                               }
-                                                                               bindingArguments[item.name] = item.value;
-                                                                           }
-                                                                       });
-                                                                   }
-                                                               }
-                                                           });
-               return newBinding;
-           };
+            addBinding.bindingArgumentsGrid.store.fetch({
+                onComplete: function (items, request)
+                {
+                    if (items.length)
+                    {
+                        array.forEach(items, function (item)
+                        {
+                            if (item && item.name && item.value)
+                            {
+                                var bindingArguments = newBinding.arguments;
+                                if (!bindingArguments)
+                                {
+                                    bindingArguments = {};
+                                    newBinding.arguments = bindingArguments;
+                                }
+                                bindingArguments[item.name] = item.value;
+                            }
+                        });
+                    }
+                }
+            });
+            return newBinding;
+        };
 
-           var theForm;
-           node.innerHTML = template;
-           addBinding.dialogNode = dom.byId("addBinding");
-           parser.instantiate([addBinding.dialogNode]);
+        var theForm;
+        node.innerHTML = template;
+        addBinding.dialogNode = dom.byId("addBinding");
+        parser.instantiate([addBinding.dialogNode]);
 
-           theForm = registry.byId("formAddBinding");
-           array.forEach(theForm.getDescendants(), function (widget)
-           {
-               if (widget.name === "type")
-               {
-                   widget.on("change", function (isChecked)
-                   {
+        theForm = registry.byId("formAddBinding");
+        array.forEach(theForm.getDescendants(), function (widget)
+        {
+            if (widget.name === "type")
+            {
+                widget.on("change", function (isChecked)
+                {
 
-                       var obj = registry.byId(widget.id + ":fields");
-                       if (obj)
-                       {
-                           if (isChecked)
-                           {
-                               obj.domNode.style.display = "block";
-                               obj.resize();
-                           }
-                           else
-                           {
-                               obj.domNode.style.display = "none";
-                               obj.resize();
-                           }
-                       }
-                   })
-               }
+                    var obj = registry.byId(widget.id + ":fields");
+                    if (obj)
+                    {
+                        if (isChecked)
+                        {
+                            obj.domNode.style.display = "block";
+                            obj.resize();
+                        }
+                        else
+                        {
+                            obj.domNode.style.display = "none";
+                            obj.resize();
+                        }
+                    }
+                })
+            }
 
-           });
+        });
 
-           var argumentsGridNode = dom.byId("formAddbinding.bindingArguments");
-           var objectStore = new dojo.data.ObjectStore({
-               objectStore: new Memory({
-                   data: lang.clone(defaultBindingArguments),
-                   idProperty: "id"
-               })
-           });
+        var argumentsGridNode = dom.byId("formAddbinding.bindingArguments");
+        var objectStore = new dojo.data.ObjectStore({
+            objectStore: new Memory({
+                data: lang.clone(defaultBindingArguments),
+                idProperty: "id"
+            })
+        });
 
-           var layout = [[{
-               name: "Argument Name",
-               field: "name",
-               width: "50%",
-               editable: true
-           }, {
-               name: 'Argument Value',
-               field: 'value',
-               width: '50%',
-               editable: true,
-               type: GridWidgetProxy,
-               widgetProps: {
-                   getWidgetProperties: function (inDatum, inRowIndex, item)
-                   {
-                       if (item.name == "x-qpid-no-local")
-                       {
-                           return {
-                               labelAttr: "name",
-                               searchAttr: "id",
-                               selectOnClick: false,
-                               query: {id: "*"},
-                               required: false,
-                               store: noLocalValues,
-                               widgetClass: dijit.form.FilteringSelect
-                           };
-                       }
-                       else if (item.name && item.name.toLowerCase() == "x-match")
-                       {
-                           return {
-                               labelAttr: "name",
-                               searchAttr: "id",
-                               selectOnClick: false,
-                               query: {id: "*"},
-                               required: false,
-                               store: xMatchValues,
-                               widgetClass: dijit.form.FilteringSelect
-                           };
-                       }
-                       return {widgetClass: dijit.form.TextBox};
-                   }
-               }
-           }]];
+        var layout = [[{
+            name: "Argument Name",
+            field: "name",
+            width: "50%",
+            editable: true
+        }, {
+            name: 'Argument Value',
+            field: 'value',
+            width: '50%',
+            editable: true,
+            type: GridWidgetProxy,
+            widgetProps: {
+                getWidgetProperties: function (inDatum, inRowIndex, item)
+                {
+                    if (item.name == "x-qpid-no-local")
+                    {
+                        return {
+                            labelAttr: "name",
+                            searchAttr: "id",
+                            selectOnClick: false,
+                            query: {id: "*"},
+                            required: false,
+                            store: noLocalValues,
+                            widgetClass: dijit.form.FilteringSelect
+                        };
+                    }
+                    else if (item.name && item.name.toLowerCase() == "x-match")
+                    {
+                        return {
+                            labelAttr: "name",
+                            searchAttr: "id",
+                            selectOnClick: false,
+                            query: {id: "*"},
+                            required: false,
+                            store: xMatchValues,
+                            widgetClass: dijit.form.FilteringSelect
+                        };
+                    }
+                    return {widgetClass: dijit.form.TextBox};
+                }
+            }
+        }]];
 
-           var grid = new dojox.grid.EnhancedGrid({
-               selectionMode: "multiple",
-               store: objectStore,
-               singleClickEdit: true,
-               structure: layout,
-               autoHeight: true,
-               plugins: {indirectSelection: true}
-           }, argumentsGridNode);
-           grid.startup();
+        var grid = new dojox.grid.EnhancedGrid({
+            selectionMode: "multiple",
+            store: objectStore,
+            singleClickEdit: true,
+            structure: layout,
+            autoHeight: true,
+            plugins: {indirectSelection: true}
+        }, argumentsGridNode);
+        grid.startup();
 
-           addBinding.bindingArgumentsGrid = grid;
-           addBinding.idGenerator = 1;
-           var addArgumentButton = registry.byId("formAddbinding.addArgumentButton");
-           var deleteArgumentButton = registry.byId("formAddbinding.deleteArgumentButton");
+        addBinding.bindingArgumentsGrid = grid;
+        addBinding.idGenerator = 1;
+        var addArgumentButton = registry.byId("formAddbinding.addArgumentButton");
+        var deleteArgumentButton = registry.byId("formAddbinding.deleteArgumentButton");
 
-           var toggleGridButtons = function (index)
-           {
-               var data = grid.selection.getSelected();
-               deleteArgumentButton.set("disabled", !data || data.length == 0);
-           };
-           connect.connect(grid.selection, 'onSelected', toggleGridButtons);
-           connect.connect(grid.selection, 'onDeselected', toggleGridButtons);
-           deleteArgumentButton.set("disabled", true);
+        var toggleGridButtons = function (index)
+        {
+            var data = grid.selection.getSelected();
+            deleteArgumentButton.set("disabled", !data || data.length == 0);
+        };
+        connect.connect(grid.selection, 'onSelected', toggleGridButtons);
+        connect.connect(grid.selection, 'onDeselected', toggleGridButtons);
+        deleteArgumentButton.set("disabled", true);
 
-           addArgumentButton.on("click", function (event)
-           {
-               addBinding.idGenerator = addBinding.idGenerator + 1;
-               var newItem = {
-                   id: addBinding.idGenerator,
-                   name: "",
-                   value: ""
-               };
-               grid.store.newItem(newItem);
-               grid.store.save();
-               grid.store.fetch({
-                                    onComplete: function (items, request)
-                                    {
-                                        var rowIndex = items.length - 1;
-                                        window.setTimeout(function ()
-                                                          {
-                                                              grid.focus.setFocusIndex(rowIndex, 1);
-                                                          }, 10);
-                                    }
-                                });
-           });
+        addArgumentButton.on("click", function (event)
+        {
+            addBinding.idGenerator = addBinding.idGenerator + 1;
+            var newItem = {
+                id: addBinding.idGenerator,
+                name: "",
+                value: ""
+            };
+            grid.store.newItem(newItem);
+            grid.store.save();
+            grid.store.fetch({
+                onComplete: function (items, request)
+                {
+                    var rowIndex = items.length - 1;
+                    window.setTimeout(function ()
+                    {
+                        grid.focus.setFocusIndex(rowIndex, 1);
+                    }, 10);
+                }
+            });
+        });
 
-           deleteArgumentButton.on("click", function (event)
-           {
-               var data = grid.selection.getSelected();
-               if (data.length)
-               {
-                   array.forEach(data, function (selectedItem)
-                   {
-                       if (selectedItem !== null)
-                       {
-                           grid.store.deleteItem(selectedItem);
-                       }
-                   });
-                   grid.store.save();
-               }
-           });
+        deleteArgumentButton.on("click", function (event)
+        {
+            var data = grid.selection.getSelected();
+            if (data.length)
+            {
+                array.forEach(data, function (selectedItem)
+                {
+                    if (selectedItem !== null)
+                    {
+                        grid.store.deleteItem(selectedItem);
+                    }
+                });
+                grid.store.save();
+            }
+        });
 
-           theForm.on("submit", function (e)
-           {
+        theForm.on("submit", function (e)
+        {
 
-               event.stop(e);
-               if (theForm.validate())
-               {
+            event.stop(e);
+            if (theForm.validate())
+            {
 
-                   var newBinding = convertToBinding(util.getFormWidgetValues(registry.byId("formAddBinding")));
-                   var that = this;
-                   var model = null;
-                   if (addBinding.modelObj.type == "exchange")
-                   {
-                       model = {
-                           name: newBinding.queue,
-                           type: "queue",
-                           parent: addBinding.modelObj
-                       };
-                   }
-                   else
-                   {
-                       model = {
-                           name: newBinding.queue,
-                           type: "queue",
-                           parent: {
-                               name: newBinding.exchange,
-                               type: "exchange",
-                               parent: addBinding.modelObj.parent
-                           }
-                       };
-                   }
-                   addBinding.management.create("binding", model, newBinding).then(function (x)
-                                                                                   {
-                                                                                       registry.byId("addBinding")
-                                                                                               .hide();
-                                                                                   });
-                   return false;
-               }
-               else
-               {
-                   alert('Form contains invalid data.  Please correct first');
-                   return false;
-               }
+                var newBinding = convertToBinding(util.getFormWidgetValues(registry.byId("formAddBinding")));
+                var that = this;
+                var model = null;
+                if (addBinding.modelObj.type == "exchange")
+                {
+                    model = {
+                        name: newBinding.queue,
+                        type: "queue",
+                        parent: addBinding.modelObj
+                    };
+                }
+                else
+                {
+                    model = {
+                        name: newBinding.queue,
+                        type: "queue",
+                        parent: {
+                            name: newBinding.exchange,
+                            type: "exchange",
+                            parent: addBinding.modelObj.parent
+                        }
+                    };
+                }
+                addBinding.management.create("binding", model, newBinding)
+                    .then(function (x)
+                    {
+                        registry.byId("addBinding")
+                            .hide();
+                    });
+                return false;
+            }
+            else
+            {
+                alert('Form contains invalid data.  Please correct first');
+                return false;
+            }
 
-           });
+        });
 
-           addBinding.show = function (management, obj)
-           {
-               var that = this;
-               addBinding.management = management;
-               addBinding.modelObj = obj;
-               registry.byId("formAddBinding").reset();
+        addBinding.show = function (management, obj)
+        {
+            var that = this;
+            addBinding.management = management;
+            addBinding.modelObj = obj;
+            registry.byId("formAddBinding")
+                .reset();
 
-               var grid = addBinding.bindingArgumentsGrid;
-               grid.store.fetch({
-                                    onComplete: function (items, request)
-                                    {
-                                        if (items.length)
-                                        {
-                                            array.forEach(items, function (item)
-                                            {
-                                                if (item !== null)
-                                                {
-                                                    grid.store.deleteItem(item);
-                                                }
-                                            });
-                                        }
-                                    }
-                                });
-               array.forEach(lang.clone(defaultBindingArguments), function (item)
-               {
-                   grid.store.newItem(item);
-               });
-               grid.store.save();
+            var grid = addBinding.bindingArgumentsGrid;
+            grid.store.fetch({
+                onComplete: function (items, request)
+                {
+                    if (items.length)
+                    {
+                        array.forEach(items, function (item)
+                        {
+                            if (item !== null)
+                            {
+                                grid.store.deleteItem(item);
+                            }
+                        });
+                    }
+                }
+            });
+            array.forEach(lang.clone(defaultBindingArguments), function (item)
+            {
+                grid.store.newItem(item);
+            });
+            grid.store.save();
 
-               management.load({
-                                   type: "queue",
-                                   parent: obj.parent
-                               }, {depth: 0}).then(function (data)
-                                                   {
-                                                       var queues = [];
-                                                       for (var i = 0; i < data.length; i++)
-                                                       {
-                                                           queues[i] = {
-                                                               id: data[i].name,
-                                                               name: data[i].name
-                                                           };
-                                                       }
-                                                       var queueStore = new Memory({data: queues});
+            management.load({
+                    type: "queue",
+                    parent: obj.parent
+                }, {depth: 0})
+                .then(function (data)
+                {
+                    var queues = [];
+                    for (var i = 0; i < data.length; i++)
+                    {
+                        queues[i] = {
+                            id: data[i].name,
+                            name: data[i].name
+                        };
+                    }
+                    var queueStore = new Memory({data: queues});
 
-                                                       if (that.queueChooser)
-                                                       {
-                                                           that.queueChooser.destroy(false);
-                                                       }
-                                                       var queueDiv = dom.byId("addBinding.selectQueueDiv");
-                                                       var input = construct.create("input",
-                                                                                    {id: "addBindingSelectQueue"},
-                                                                                    queueDiv);
+                    if (that.queueChooser)
+                    {
+                        that.queueChooser.destroy(false);
+                    }
+                    var queueDiv = dom.byId("addBinding.selectQueueDiv");
+                    var input = construct.create("input", {id: "addBindingSelectQueue"}, queueDiv);
 
-                                                       that.queueChooser = new FilteringSelect({
-                                                           id: "addBindingSelectQueue",
-                                                           name: "queue",
-                                                           store: queueStore,
-                                                           searchAttr: "name",
-                                                           promptMessage: "Name of the queue",
-                                                           title: "Select the name of the queue"
-                                                       }, input);
+                    that.queueChooser = new FilteringSelect({
+                        id: "addBindingSelectQueue",
+                        name: "queue",
+                        store: queueStore,
+                        searchAttr: "name",
+                        promptMessage: "Name of the queue",
+                        title: "Select the name of the queue"
+                    }, input);
 
-                                                       if (obj.type == "queue")
-                                                       {
-                                                           that.queueChooser.set("value", obj.name);
-                                                           that.queueChooser.set("disabled", true);
-                                                       }
-                                                       management.load({
-                                                                           type: "exchange",
-                                                                           parent: obj.parent
-                                                                       }, {depth: 0}).then(function (data)
-                                                                                           {
+                    if (obj.type == "queue")
+                    {
+                        that.queueChooser.set("value", obj.name);
+                        that.queueChooser.set("disabled", true);
+                    }
+                    management.load({
+                            type: "exchange",
+                            parent: obj.parent
+                        }, {depth: 0})
+                        .then(function (data)
+                        {
 
-                                                                                               var exchanges = [];
-                                                                                               for (var i = 0;
-                                                                                                    i < data.length;
-                                                                                                    i++)
-                                                                                               {
-                                                                                                   exchanges[i] = {
-                                                                                                       id: data[i].name,
-                                                                                                       name: data[i].name
-                                                                                                   };
-                                                                                               }
-                                                                                               var exchangeStore = new Memory({data: exchanges});
+                            var exchanges = [];
+                            for (var i = 0; i < data.length; i++)
+                            {
+                                exchanges[i] = {
+                                    id: data[i].name,
+                                    name: data[i].name
+                                };
+                            }
+                            var exchangeStore = new Memory({data: exchanges});
 
-                                                                                               if (that.exchangeChooser)
-                                                                                               {
-                                                                                                   that.exchangeChooser.destroy(
-                                                                                                       false);
-                                                                                               }
-                                                                                               var exchangeDiv = dom.byId(
-                                                                                                   "addBinding.selectExchangeDiv");
-                                                                                               var input = construct.create(
-                                                                                                   "input",
-                                                                                                   {id: "addBindingSelectExchange"},
-                                                                                                   exchangeDiv);
+                            if (that.exchangeChooser)
+                            {
+                                that.exchangeChooser.destroy(false);
+                            }
+                            var exchangeDiv = dom.byId("addBinding.selectExchangeDiv");
+                            var input = construct.create("input", {id: "addBindingSelectExchange"}, exchangeDiv);
 
-                                                                                               that.exchangeChooser =
-                                                                                                   new FilteringSelect({
-                                                                                                       id: "addBindingSelectExchange",
-                                                                                                       name: "exchange",
-                                                                                                       store: exchangeStore,
-                                                                                                       searchAttr: "name",
-                                                                                                       promptMessage: "Name of the exchange",
-                                                                                                       title: "Select the name of the exchange"
-                                                                                                   }, input);
+                            that.exchangeChooser = new FilteringSelect({
+                                id: "addBindingSelectExchange",
+                                name: "exchange",
+                                store: exchangeStore,
+                                searchAttr: "name",
+                                promptMessage: "Name of the exchange",
+                                title: "Select the name of the exchange"
+                            }, input);
 
-                                                                                               if (obj.type
-                                                                                                   == "exchange")
-                                                                                               {
-                                                                                                   that.exchangeChooser.set(
-                                                                                                       "value",
-                                                                                                       obj.name);
-                                                                                                   that.exchangeChooser.set(
-                                                                                                       "disabled",
-                                                                                                       true);
-                                                                                               }
+                            if (obj.type == "exchange")
+                            {
+                                that.exchangeChooser.set("value", obj.name);
+                                that.exchangeChooser.set("disabled", true);
+                            }
 
-                                                                                               registry.byId(
-                                                                                                   "addBinding").show();
-                                                                                           }, util.xhrErrorHandler);
+                            registry.byId("addBinding")
+                                .show();
+                        }, util.xhrErrorHandler);
 
-                                                   }, util.xhrErrorHandler);
+                }, util.xhrErrorHandler);
 
-           };
+        };
 
-           return addBinding;
-       });
+        return addBinding;
+    });

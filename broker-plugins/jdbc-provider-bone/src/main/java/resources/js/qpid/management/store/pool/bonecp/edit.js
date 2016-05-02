@@ -26,10 +26,10 @@ define(["dojo/_base/xhr",
         "dojo/parser",
         "qpid/common/util",
         "dojo/domReady!"], function (xhr, dom, construct, win, registry, parser, util)
-       {
-           return {
-               show: function (data)
-               {
-               }
-           };
-       });
+{
+    return {
+        show: function (data)
+        {
+        }
+    };
+});

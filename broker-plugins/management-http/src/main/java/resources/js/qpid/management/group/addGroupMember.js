@@ -29,10 +29,10 @@ define(["dojo/dom",
         "qpid/common/util",
         "dojo/text!group/addGroupMember.html",
         "dijit/form/NumberSpinner", // required by the form
-           /* dojox/ validate resources */
+    /* dojox/ validate resources */
         "dojox/validate/us",
         "dojox/validate/web",
-           /* basic dijit classes */
+    /* basic dijit classes */
         "dijit/Dialog",
         "dijit/form/CheckBox",
         "dijit/form/Textarea",
@@ -45,65 +45,68 @@ define(["dojo/dom",
         "dijit/form/RadioButton",
         "dijit/form/Form",
         "dijit/form/DateTextBox",
-           /* basic dojox classes */
+    /* basic dojox classes */
         "dojox/form/BusyButton",
         "dojox/form/CheckedMultiSelect",
         "dojo/domReady!"], function (dom, construct, win, registry, parser, array, event, json, util, template)
-       {
+{
 
-           var addGroupMember = {};
+    var addGroupMember = {};
 
-           var node = construct.create("div", null, win.body(), "last");
+    var node = construct.create("div", null, win.body(), "last");
 
-           var convertToGroupMember = function convertToGroupMember(formValues)
-           {
-               var newGroupMember = {};
-               newGroupMember.name = formValues.name;
-               return newGroupMember;
-           };
+    var convertToGroupMember = function convertToGroupMember(formValues)
+    {
+        var newGroupMember = {};
+        newGroupMember.name = formValues.name;
+        return newGroupMember;
+    };
 
-           {
-               var theForm;
-               node.innerHTML = template;
-               addGroupMember.dialogNode = dom.byId("addGroupMember");
-               parser.instantiate([addGroupMember.dialogNode]);
+    {
+        var theForm;
+        node.innerHTML = template;
+        addGroupMember.dialogNode = dom.byId("addGroupMember");
+        parser.instantiate([addGroupMember.dialogNode]);
 
-               theForm = registry.byId("formAddGroupMember");
-               theForm.on("submit", function (e)
-               {
+        theForm = registry.byId("formAddGroupMember");
+        theForm.on("submit", function (e)
+        {
 
-                   event.stop(e);
-                   if (theForm.validate())
-                   {
+            event.stop(e);
+            if (theForm.validate())
+            {
 
-                       var newGroupMember = convertToGroupMember(theForm.getValues());
-                       var that = this;
-                       addGroupMember.management.create("groupmember", addGroupMember.group, newGroupMember)
-                                     .then(function (x)
-                                           {
-                                               registry.byId("addGroupMember").hide();
-                                           });
-                       return false;
+                var newGroupMember = convertToGroupMember(theForm.getValues());
+                var that = this;
+                addGroupMember.management.create("groupmember", addGroupMember.group, newGroupMember)
+                    .then(function (x)
+                    {
+                        registry.byId("addGroupMember")
+                            .hide();
+                    });
+                return false;
 
-                   }
-                   else
-                   {
-                       alert('Form contains invalid data.  Please correct first');
-                       return false;
-                   }
+            }
+            else
+            {
+                alert('Form contains invalid data.  Please correct first');
+                return false;
+            }
 
-               });
-           }
-           ;
+        });
+    }
+    ;
 
-           addGroupMember.show = function (groupProvider, groupModel, management)
-           {
-               addGroupMember.management = management;
-               addGroupMember.groupProvider = groupProvider;
-               addGroupMember.group = groupModel;
-               registry.byId("formAddGroupMember").reset();
-               registry.byId("addGroupMember").show();
-           };
+    addGroupMember.show = function (groupProvider, groupModel, management)
+    {
+        addGroupMember.management = management;
+        addGroupMember.groupProvider = groupProvider;
+        addGroupMember.group = groupModel;
+        registry.byId("formAddGroupMember")
+            .reset();
+        registry.byId("addGroupMember")
+            .show();
+    };
 
-           return addGroupMember;
-       });
+    return addGroupMember;
+});

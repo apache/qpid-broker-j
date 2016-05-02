@@ -26,12 +26,12 @@ define(["dojo/dom",
         "dojo/parser",
         "dojo/text!logger/memory/add.html",
         "dojo/domReady!"], function (dom, query, array, registry, util, parser, template)
-       {
-           return {
-               show: function (data)
-               {
-                   data.containerNode.innerHTML = template;
-                   return parser.parse(data.containerNode);
-               }
-           };
-       });
+{
+    return {
+        show: function (data)
+        {
+            data.containerNode.innerHTML = template;
+            return parser.parse(data.containerNode);
+        }
+    };
+});

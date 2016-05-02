@@ -31,12 +31,12 @@ define(["dojo/_base/xhr",
         "dojo/store/Memory",
         "dijit/form/FilteringSelect",
         "dojo/domReady!"],
-       function (xhr, dom, construct, win, registry, parser, array, event, json, string, Memory, FilteringSelect)
-       {
-           return {
-               show: function (data)
-               {
-                   data.context.removeDynamicallyAddedInheritedContext();
-               }
-           };
-       });
+    function (xhr, dom, construct, win, registry, parser, array, event, json, string, Memory, FilteringSelect)
+    {
+        return {
+            show: function (data)
+            {
+                data.context.removeDynamicallyAddedInheritedContext();
+            }
+        };
+    });

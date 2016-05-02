@@ -43,128 +43,150 @@ define(["dojo/dom",
         "dojo/ready",
         "dojox/uuid/generateRandomUuid",
         "dojo/domReady!"],
-       function (dom, registry, ContentPane, CheckBox, entities, Broker, VirtualHost, Exchange, Queue, Connection, AuthProvider, GroupProvider, Group, KeyStore, TrustStore, AccessControlProvider, Port, Plugin, PreferencesProvider, VirtualHostNode, Logger, QueryTab, ready)
-       {
-           var controller = {};
+    function (dom,
+              registry,
+              ContentPane,
+              CheckBox,
+              entities,
+              Broker,
+              VirtualHost,
+              Exchange,
+              Queue,
+              Connection,
+              AuthProvider,
+              GroupProvider,
+              Group,
+              KeyStore,
+              TrustStore,
+              AccessControlProvider,
+              Port,
+              Plugin,
+              PreferencesProvider,
+              VirtualHostNode,
+              Logger,
+              QueryTab,
+              ready)
+    {
+        var controller = {};
 
-           var constructors = {
-               broker: Broker,
-               virtualhost: VirtualHost,
-               exchange: Exchange,
-               queue: Queue,
-               connection: Connection,
-               authenticationprovider: AuthProvider,
-               groupprovider: GroupProvider,
-               group: Group,
-               keystore: KeyStore,
-               truststore: TrustStore,
-               accesscontrolprovider: AccessControlProvider,
-               port: Port,
-               plugin: Plugin,
-               preferencesprovider: PreferencesProvider,
-               virtualhostnode: VirtualHostNode,
-               brokerlogger: Logger,
-               virtualhostlogger: Logger,
-               queryTab: QueryTab
-           };
+        var constructors = {
+            broker: Broker,
+            virtualhost: VirtualHost,
+            exchange: Exchange,
+            queue: Queue,
+            connection: Connection,
+            authenticationprovider: AuthProvider,
+            groupprovider: GroupProvider,
+            group: Group,
+            keystore: KeyStore,
+            truststore: TrustStore,
+            accesscontrolprovider: AccessControlProvider,
+            port: Port,
+            plugin: Plugin,
+            preferencesprovider: PreferencesProvider,
+            virtualhostnode: VirtualHostNode,
+            brokerlogger: Logger,
+            virtualhostlogger: Logger,
+            queryTab: QueryTab
+        };
 
-           var tabDiv = dom.byId("managedViews");
+        var tabDiv = dom.byId("managedViews");
 
-           ready(function ()
-                 {
-                     controller.tabContainer = registry.byId("managedViews");
-                 });
+        ready(function ()
+        {
+            controller.tabContainer = registry.byId("managedViews");
+        });
 
-           controller.viewedObjects = {};
+        controller.viewedObjects = {};
 
-           controller.show = function (objType, name, parent, objectId)
-           {
+        controller.show = function (objType, name, parent, objectId)
+        {
 
-               function generateName(obj)
-               {
-                   if (obj)
-                   {
-                       var name = obj.type + (obj.type == "broker" ? "" : ":" + obj.name);
-                       if (obj.parent)
-                       {
-                           name = generateName(obj.parent) + "/" + name;
-                       }
-                       return name;
-                   }
-                   return "";
-               }
+            function generateName(obj)
+            {
+                if (obj)
+                {
+                    var name = obj.type + (obj.type == "broker" ? "" : ":" + obj.name);
+                    if (obj.parent)
+                    {
+                        name = generateName(obj.parent) + "/" + name;
+                    }
+                    return name;
+                }
+                return "";
+            }
 
-               var that = this;
-               var objId = (parent ? generateName(parent) + "/" : "") + objType + ":" + (name ? name : "-"
-                           + dojox.uuid.generateRandomUuid());
+            var that = this;
+            var objId = (parent ? generateName(parent) + "/" : "") + objType + ":" + (name ? name : "-"
+                        + dojox.uuid.generateRandomUuid());
 
-               var obj = this.viewedObjects[objId];
-               if (obj)
-               {
-                   this.tabContainer.selectChild(obj.contentPane);
-               }
-               else
-               {
-                   var Constructor = constructors[objType];
-                   if (Constructor)
-                   {
-                       obj = new Constructor(name, parent, this);
-                       obj.tabData = {
-                           objectId: objectId,
-                           objectType: objType
-                       };
-                       this.viewedObjects[objId] = obj;
+            var obj = this.viewedObjects[objId];
+            if (obj)
+            {
+                this.tabContainer.selectChild(obj.contentPane);
+            }
+            else
+            {
+                var Constructor = constructors[objType];
+                if (Constructor)
+                {
+                    obj = new Constructor(name, parent, this);
+                    obj.tabData = {
+                        objectId: objectId,
+                        objectType: objType
+                    };
+                    this.viewedObjects[objId] = obj;
 
-                       var contentPane = new ContentPane({
-                           region: "center",
-                           title: entities.encode(obj.getTitle()),
-                           closable: true,
-                           onClose: function ()
-                           {
-                               obj.close();
-                               delete that.viewedObjects[objId];
-                               return true;
-                           }
-                       });
-                       this.tabContainer.addChild(contentPane);
-                       var userPreferences = this.management.userPreferences;
-                       if (objType != "broker" && name)
-                       {
-                           var preferencesCheckBox = new dijit.form.CheckBox({
-                               checked: userPreferences.isTabStored(obj.tabData),
-                               title: "If checked the tab is saved in user preferences and restored on next login"
-                           });
-                           var tabs = this.tabContainer.tablist.getChildren();
-                           preferencesCheckBox.placeAt(tabs[tabs.length - 1].titleNode, "first");
-                           preferencesCheckBox.on("change", function (value)
-                           {
-                               if (value)
-                               {
-                                   userPreferences.appendTab(obj.tabData);
-                               }
-                               else
-                               {
-                                   userPreferences.removeTab(obj.tabData);
-                               }
-                           });
-                       }
-                       obj.open(contentPane);
-                       contentPane.startup();
-                       if (obj.startup)
-                       {
-                           obj.startup();
-                       }
-                       this.tabContainer.selectChild(contentPane);
-                   }
+                    var contentPane = new ContentPane({
+                        region: "center",
+                        title: entities.encode(obj.getTitle()),
+                        closable: true,
+                        onClose: function ()
+                        {
+                            obj.close();
+                            delete that.viewedObjects[objId];
+                            return true;
+                        }
+                    });
+                    this.tabContainer.addChild(contentPane);
+                    var userPreferences = this.management.userPreferences;
+                    if (objType != "broker" && name)
+                    {
+                        var preferencesCheckBox = new dijit.form.CheckBox({
+                            checked: userPreferences.isTabStored(obj.tabData),
+                            title: "If checked the tab is saved in user preferences and restored on next login"
+                        });
+                        var tabs = this.tabContainer.tablist.getChildren();
+                        preferencesCheckBox.placeAt(tabs[tabs.length - 1].titleNode, "first");
+                        preferencesCheckBox.on("change", function (value)
+                        {
+                            if (value)
+                            {
+                                userPreferences.appendTab(obj.tabData);
+                            }
+                            else
+                            {
+                                userPreferences.removeTab(obj.tabData);
+                            }
+                        });
+                    }
+                    obj.open(contentPane);
+                    contentPane.startup();
+                    if (obj.startup)
+                    {
+                        obj.startup();
+                    }
+                    this.tabContainer.selectChild(contentPane);
+                }
 
-               }
+            }
 
-           };
+        };
 
-           controller.init = function (management)
-           {
-               controller.management = management;
-           }
+        controller.init = function (management)
+        {
+            controller.management = management;
+        }
 
-           return controller;
-       });
+        return controller;
+    });

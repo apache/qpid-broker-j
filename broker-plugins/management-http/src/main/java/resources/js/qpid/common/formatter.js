@@ -20,85 +20,85 @@
  */
 
 define(function ()
-       {
-           return {
+{
+    return {
 
-               formatBytes: function formatBytes(amount)
-               {
-                   var returnVal = {
-                       units: "B",
-                       value: "0"
-                   };
+        formatBytes: function formatBytes(amount)
+        {
+            var returnVal = {
+                units: "B",
+                value: "0"
+            };
 
-                   if (amount < 1000)
-                   {
-                       returnVal.value = amount.toPrecision(3);
-                       ;
-                   }
-                   else if (amount < 1000 * 1024)
-                   {
-                       returnVal.units = "KB";
-                       returnVal.value = (amount / 1024).toPrecision(3);
-                   }
-                   else if (amount < 1000 * 1024 * 1024)
-                   {
-                       returnVal.units = "MB";
-                       returnVal.value = (amount / (1024 * 1024)).toPrecision(3);
-                   }
-                   else if (amount < 1000 * 1024 * 1024 * 1024)
-                   {
-                       returnVal.units = "GB";
-                       returnVal.value = (amount / (1024 * 1024 * 1024)).toPrecision(3);
-                   }
+            if (amount < 1000)
+            {
+                returnVal.value = amount.toPrecision(3);
+                ;
+            }
+            else if (amount < 1000 * 1024)
+            {
+                returnVal.units = "KB";
+                returnVal.value = (amount / 1024).toPrecision(3);
+            }
+            else if (amount < 1000 * 1024 * 1024)
+            {
+                returnVal.units = "MB";
+                returnVal.value = (amount / (1024 * 1024)).toPrecision(3);
+            }
+            else if (amount < 1000 * 1024 * 1024 * 1024)
+            {
+                returnVal.units = "GB";
+                returnVal.value = (amount / (1024 * 1024 * 1024)).toPrecision(3);
+            }
 
-                   return returnVal;
+            return returnVal;
 
-               },
+        },
 
-               formatTime: function formatTime(amount)
-               {
-                   var returnVal = {
-                       units: "ms",
-                       value: "0"
-                   };
+        formatTime: function formatTime(amount)
+        {
+            var returnVal = {
+                units: "ms",
+                value: "0"
+            };
 
-                   if (amount < 1000)
-                   {
-                       returnVal.units = "ms";
-                       returnVal.value = amount.toString();
-                   }
-                   else if (amount < 1000 * 60)
-                   {
-                       returnVal.units = "s";
-                       returnVal.value = (amount / 1000).toPrecision(3);
-                   }
-                   else if (amount < 1000 * 60 * 60)
-                   {
-                       returnVal.units = "min";
-                       returnVal.value = (amount / (1000 * 60)).toPrecision(3);
-                   }
-                   else if (amount < 1000 * 60 * 60 * 24)
-                   {
-                       returnVal.units = "hr";
-                       returnVal.value = (amount / (1000 * 60 * 60)).toPrecision(3);
-                   }
-                   else if (amount < 1000 * 60 * 60 * 24 * 7)
-                   {
-                       returnVal.units = "d";
-                       returnVal.value = (amount / (1000 * 60 * 60 * 24)).toPrecision(3);
-                   }
-                   else if (amount < 1000 * 60 * 60 * 24 * 365)
-                   {
-                       returnVal.units = "wk";
-                       returnVal.value = (amount / (1000 * 60 * 60 * 24 * 7)).toPrecision(3);
-                   }
-                   else
-                   {
-                       returnVal.units = "yr";
-                       returnVal.value = (amount / (1000 * 60 * 60 * 24 * 365)).toPrecision(3);
-                   }
+            if (amount < 1000)
+            {
+                returnVal.units = "ms";
+                returnVal.value = amount.toString();
+            }
+            else if (amount < 1000 * 60)
+            {
+                returnVal.units = "s";
+                returnVal.value = (amount / 1000).toPrecision(3);
+            }
+            else if (amount < 1000 * 60 * 60)
+            {
+                returnVal.units = "min";
+                returnVal.value = (amount / (1000 * 60)).toPrecision(3);
+            }
+            else if (amount < 1000 * 60 * 60 * 24)
+            {
+                returnVal.units = "hr";
+                returnVal.value = (amount / (1000 * 60 * 60)).toPrecision(3);
+            }
+            else if (amount < 1000 * 60 * 60 * 24 * 7)
+            {
+                returnVal.units = "d";
+                returnVal.value = (amount / (1000 * 60 * 60 * 24)).toPrecision(3);
+            }
+            else if (amount < 1000 * 60 * 60 * 24 * 365)
+            {
+                returnVal.units = "wk";
+                returnVal.value = (amount / (1000 * 60 * 60 * 24 * 7)).toPrecision(3);
+            }
+            else
+            {
+                returnVal.units = "yr";
+                returnVal.value = (amount / (1000 * 60 * 60 * 24 * 365)).toPrecision(3);
+            }
 
-                   return returnVal;
-               }
-           };
-       });
+            return returnVal;
+        }
+    };
+});

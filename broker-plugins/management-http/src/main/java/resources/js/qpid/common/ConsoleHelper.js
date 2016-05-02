@@ -32,10 +32,10 @@ define(["dojo/domReady!"], function ()
                 require(["qpid/management/Preferences", "dojo/ready"], function (PreferencesDialog, ready)
                 {
                     ready(function ()
-                          {
-                              preferencesDialog = new PreferencesDialog(this.management);
-                              preferencesDialog.showDialog();
-                          });
+                    {
+                        preferencesDialog = new PreferencesDialog(this.management);
+                        preferencesDialog.showDialog();
+                    });
                 });
             }
             else
@@ -45,32 +45,32 @@ define(["dojo/domReady!"], function ()
         },
         getHelpUrl: function (callback)
         {
-            this.management.load({type: "broker"}, {depth: 1}).then(function (data)
-                                                                    {
-                                                                        var broker = data[0];
-                                                                        if ("context" in broker && "qpid.helpURL"
-                                                                                                   in broker["context"])
-                                                                        {
-                                                                            helpURL = broker["context"]["qpid.helpURL"];
-                                                                        }
-                                                                        else
-                                                                        {
-                                                                            helpURL = "http://qpid.apache.org/";
-                                                                        }
-                                                                        if (callback)
-                                                                        {
-                                                                            callback(helpURL);
-                                                                        }
-                                                                    });
+            this.management.load({type: "broker"}, {depth: 1})
+                .then(function (data)
+                {
+                    var broker = data[0];
+                    if ("context" in broker && "qpid.helpURL" in broker["context"])
+                    {
+                        helpURL = broker["context"]["qpid.helpURL"];
+                    }
+                    else
+                    {
+                        helpURL = "http://qpid.apache.org/";
+                    }
+                    if (callback)
+                    {
+                        callback(helpURL);
+                    }
+                });
         },
         showHelp: function ()
         {
             var openWindow = function (url)
             {
                 var newWindow = window.open(url,
-                                            'QpidHelp',
-                                            'height=600,width=600,scrollbars=1,location=1,resizable=1,status=0,toolbar=0,titlebar=1,menubar=0',
-                                            true);
+                    'QpidHelp',
+                    'height=600,width=600,scrollbars=1,location=1,resizable=1,status=0,toolbar=0,titlebar=1,menubar=0',
+                    true);
                 newWindow.focus();
             }
 
@@ -88,9 +88,9 @@ define(["dojo/domReady!"], function ()
             var openWindow = function (url)
             {
                 var newWindow = window.open(url,
-                                            'Qpid REST API',
-                                            'height=800,width=800,scrollbars=1,location=1,resizable=1,status=0,toolbar=1,titlebar=1,menubar=1',
-                                            true);
+                    'Qpid REST API',
+                    'height=800,width=800,scrollbars=1,location=1,resizable=1,status=0,toolbar=1,titlebar=1,menubar=1',
+                    true);
                 newWindow.focus();
             }
 

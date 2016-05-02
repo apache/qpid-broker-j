@@ -24,32 +24,31 @@ define(["qpid/common/util",
         "dojo/text!logger/brokerlogger/show.html",
         "qpid/common/CategoryTabExtension",
         "dojo/domReady!"], function (util, query, lang, template, CategoryTabExtension)
-       {
-           function BrokerLogger(params)
-           {
-               var categoryExtensionParams = lang.mixin(params, {
-                   template: template,
-                   typeSpecificAttributesClassName: "typeSpecificAttributes",
-                   baseUrl: "qpid/management/logger/brokerlogger/"
-               });
-               CategoryTabExtension.call(this, categoryExtensionParams);
-           }
+{
+    function BrokerLogger(params)
+    {
+        var categoryExtensionParams = lang.mixin(params, {
+            template: template,
+            typeSpecificAttributesClassName: "typeSpecificAttributes",
+            baseUrl: "qpid/management/logger/brokerlogger/"
+        });
+        CategoryTabExtension.call(this, categoryExtensionParams);
+    }
 
-           util.extend(BrokerLogger, CategoryTabExtension);
+    util.extend(BrokerLogger, CategoryTabExtension);
 
-           BrokerLogger.prototype.postParse = function (containerNode)
-           {
-               this.virtualHostLogEventExcludedCheckboxContainer =
-                   query(".virtualHostLogEventExcluded", containerNode)[0];
-           }
+    BrokerLogger.prototype.postParse = function (containerNode)
+    {
+        this.virtualHostLogEventExcludedCheckboxContainer = query(".virtualHostLogEventExcluded", containerNode)[0];
+    }
 
-           BrokerLogger.prototype.update = function (restData)
-           {
-               var data = restData || {};
-               this.virtualHostLogEventExcludedCheckboxContainer.innerHTML =
-                   util.buildCheckboxMarkup(data.virtualHostLogEventExcluded);
-               CategoryTabExtension.prototype.update.call(this, restData);
-           }
+    BrokerLogger.prototype.update = function (restData)
+    {
+        var data = restData || {};
+        this.virtualHostLogEventExcludedCheckboxContainer.innerHTML =
+            util.buildCheckboxMarkup(data.virtualHostLogEventExcluded);
+        CategoryTabExtension.prototype.update.call(this, restData);
+    }
 
-           return BrokerLogger;
-       });
+    return BrokerLogger;
+});

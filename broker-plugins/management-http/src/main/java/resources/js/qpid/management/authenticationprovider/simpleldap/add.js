@@ -25,72 +25,71 @@ define(["dojo/query",
         "dijit/form/FilteringSelect",
         "dijit/form/ValidationTextBox",
         "dijit/form/CheckBox"], function (query, registry, util, Memory)
-       {
-           return {
-               show: function (data)
-               {
-                   var that = this;
-                   util.parseHtmlIntoDiv(data.containerNode, "authenticationprovider/simpleldap/add.html", function ()
-                   {
-                       that._postParse(data);
-                   });
-               },
-               _postParse: function (data)
-               {
-                   var that = this;
-                   var obj = {
-                       type: "truststore",
-                       parent: {type: "broker"}
-                   };
-                   data.parent.management.load(obj).then(function (trustStores)
-                                                         {
-                                                             that._initTrustStores(trustStores, data.containerNode);
-                                                             if (data.data)
-                                                             {
-                                                                 that._initFields(data.data,
-                                                                                  data.containerNode,
-                                                                                  data.parent.management.metadata);
-                                                             }
-                                                         }, util.xhrErrorHandler);
+{
+    return {
+        show: function (data)
+        {
+            var that = this;
+            util.parseHtmlIntoDiv(data.containerNode, "authenticationprovider/simpleldap/add.html", function ()
+            {
+                that._postParse(data);
+            });
+        },
+        _postParse: function (data)
+        {
+            var that = this;
+            var obj = {
+                type: "truststore",
+                parent: {type: "broker"}
+            };
+            data.parent.management.load(obj)
+                .then(function (trustStores)
+                {
+                    that._initTrustStores(trustStores, data.containerNode);
+                    if (data.data)
+                    {
+                        that._initFields(data.data, data.containerNode, data.parent.management.metadata);
+                    }
+                }, util.xhrErrorHandler);
 
-               },
-               _initTrustStores: function (trustStores, containerNode)
-               {
-                   var data = [];
-                   for (var i = 0; i < trustStores.length; i++)
-                   {
-                       data.push({
-                                     id: trustStores[i].name,
-                                     name: trustStores[i].name
-                                 });
-                   }
-                   var trustStoresStore = new Memory({data: data});
+        },
+        _initTrustStores: function (trustStores, containerNode)
+        {
+            var data = [];
+            for (var i = 0; i < trustStores.length; i++)
+            {
+                data.push({
+                    id: trustStores[i].name,
+                    name: trustStores[i].name
+                });
+            }
+            var trustStoresStore = new Memory({data: data});
 
-                   var trustStore = registry.byNode(query(".trustStore", containerNode)[0]);
-                   trustStore.set("store", trustStoresStore);
-               },
-               _initFields: function (data, containerNode, metadata)
-               {
-                   var attributes = metadata.getMetaData("AuthenticationProvider", "SimpleLDAP").attributes;
-                   for (var name in attributes)
-                   {
-                       var domNode = query("." + name, containerNode)[0];
-                       if (domNode)
-                       {
-                           var widget = registry.byNode(domNode);
-                           if (widget)
-                           {
-                               if (widget instanceof dijit.form.CheckBox)
-                               {
-                                   widget.set("checked", data[name]);
-                               }
-                               else
-                               {
-                                   widget.set("value", data[name]);
-                               }
-                           }
-                       }
-                   }
-               }
-           };
-       });
+            var trustStore = registry.byNode(query(".trustStore", containerNode)[0]);
+            trustStore.set("store", trustStoresStore);
+        },
+        _initFields: function (data, containerNode, metadata)
+        {
+            var attributes = metadata.getMetaData("AuthenticationProvider", "SimpleLDAP").attributes;
+            for (var name in attributes)
+            {
+                var domNode = query("." + name, containerNode)[0];
+                if (domNode)
+                {
+                    var widget = registry.byNode(domNode);
+                    if (widget)
+                    {
+                        if (widget instanceof dijit.form.CheckBox)
+                        {
+                            widget.set("checked", data[name]);
+                        }
+                        else
+                        {
+                            widget.set("value", data[name]);
+                        }
+                    }
+                }
+            }
+        }
+    };
+});

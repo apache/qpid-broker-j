@@ -29,57 +29,56 @@ define(["dojo/_base/xhr",
         "dijit/form/ValidationTextBox",
         "dijit/form/RadioButton",
         "dojo/domReady!"], function (xhr, parser, array, dom, domConstruct, json, registry, template)
-       {
-           return {
-               show: function (data)
-               {
-                   var that = this;
+{
+    return {
+        show: function (data)
+        {
+            var that = this;
 
-                   this.containerNode = domConstruct.create("div", {innerHTML: template}, data.containerNode);
-                   parser.parse(this.containerNode).then(function (instances)
-                                                         {
-                                                             // lookup field
-                                                             that.groupChoice =
-                                                                 registry.byId("addVirtualHostNode.group");
-                                                             that.virtualHostNodeBdbhaTypeFieldsContainer =
-                                                                 dom.byId("addVirtualHostNode.bdbha.typeFields");
+            this.containerNode = domConstruct.create("div", {innerHTML: template}, data.containerNode);
+            parser.parse(this.containerNode)
+                .then(function (instances)
+                {
+                    // lookup field
+                    that.groupChoice = registry.byId("addVirtualHostNode.group");
+                    that.virtualHostNodeBdbhaTypeFieldsContainer = dom.byId("addVirtualHostNode.bdbha.typeFields");
 
-                                                             // add callback
-                                                             that.groupChoice.on("change", function (type)
-                                                             {
-                                                                 that._groupChoiceChanged(type,
-                                                                                          that.virtualHostNodeBdbhaTypeFieldsContainer,
-                                                                                          "qpid/management/virtualhostnode/bdb_ha/add/");
-                                                             });
-                                                         });
-               },
-               _groupChoiceChanged: function (type, typeFieldsContainer, urlStem)
-               {
-                   var widgets = registry.findWidgets(typeFieldsContainer);
-                   array.forEach(widgets, function (item)
-                   {
-                       item.destroyRecursive();
-                   });
-                   domConstruct.empty(typeFieldsContainer);
+                    // add callback
+                    that.groupChoice.on("change", function (type)
+                    {
+                        that._groupChoiceChanged(type,
+                            that.virtualHostNodeBdbhaTypeFieldsContainer,
+                            "qpid/management/virtualhostnode/bdb_ha/add/");
+                    });
+                });
+        },
+        _groupChoiceChanged: function (type, typeFieldsContainer, urlStem)
+        {
+            var widgets = registry.findWidgets(typeFieldsContainer);
+            array.forEach(widgets, function (item)
+            {
+                item.destroyRecursive();
+            });
+            domConstruct.empty(typeFieldsContainer);
 
-                   if (type)
-                   {
-                       var that = this;
-                       require([urlStem + type.toLowerCase() + "/add"], function (TypeUI)
-                       {
-                           try
-                           {
-                               TypeUI.show({
-                                               containerNode: typeFieldsContainer,
-                                               parent: that
-                                           });
-                           }
-                           catch (e)
-                           {
-                               console.warn(e);
-                           }
-                       });
-                   }
-               }
-           };
-       });
+            if (type)
+            {
+                var that = this;
+                require([urlStem + type.toLowerCase() + "/add"], function (TypeUI)
+                {
+                    try
+                    {
+                        TypeUI.show({
+                            containerNode: typeFieldsContainer,
+                            parent: that
+                        });
+                    }
+                    catch (e)
+                    {
+                        console.warn(e);
+                    }
+                });
+            }
+        }
+    };
+});

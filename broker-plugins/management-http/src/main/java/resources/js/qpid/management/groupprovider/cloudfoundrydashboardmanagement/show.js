@@ -19,37 +19,36 @@
  *
  */
 define(["qpid/common/util", "dojo/query", "dojo/_base/lang", "dojox/html/entities", "dojo/domReady!"],
-       function (util, query, lang, entities)
-       {
-           var fieldNames = ["cloudFoundryEndpointURI", "trustStore", "serviceToManagementGroupMapping"];
+    function (util, query, lang, entities)
+    {
+        var fieldNames = ["cloudFoundryEndpointURI", "trustStore", "serviceToManagementGroupMapping"];
 
-           function GroupProvider(params)
-           {
-               this.containerNode = params.containerNode;
-               util.buildUI(params.containerNode,
-                            params.parent,
-                            "groupprovider/cloudfoundrydashboardmanagement/show.html",
-                            fieldNames,
-                            this);
-           }
+        function GroupProvider(params)
+        {
+            this.containerNode = params.containerNode;
+            util.buildUI(params.containerNode,
+                params.parent,
+                "groupprovider/cloudfoundrydashboardmanagement/show.html",
+                fieldNames,
+                this);
+        }
 
-           GroupProvider.prototype.update = function (restData)
-           {
-               var data = restData || {};
-               if (data.serviceToManagementGroupMapping)
-               {
-                   var tableContent = "";
-                   for (var serviceInstanceId in data.serviceToManagementGroupMapping)
-                   {
-                       tableContent += "<tr><td>" + entities.encode(serviceInstanceId) + "</td><td>: "
-                                       + entities.encode(data.serviceToManagementGroupMapping[serviceInstanceId])
-                                       + "</td></tr>\n";
-                   }
-                   var table = query(".serviceToManagementGroupMappingTable", this.containerNode)[0];
-                   table.innerHTML = tableContent;
-               }
-               util.updateUI(data, fieldNames, this);
-           }
+        GroupProvider.prototype.update = function (restData)
+        {
+            var data = restData || {};
+            if (data.serviceToManagementGroupMapping)
+            {
+                var tableContent = "";
+                for (var serviceInstanceId in data.serviceToManagementGroupMapping)
+                {
+                    tableContent += "<tr><td>" + entities.encode(serviceInstanceId) + "</td><td>: " + entities.encode(
+                            data.serviceToManagementGroupMapping[serviceInstanceId]) + "</td></tr>\n";
+                }
+                var table = query(".serviceToManagementGroupMappingTable", this.containerNode)[0];
+                table.innerHTML = tableContent;
+            }
+            util.updateUI(data, fieldNames, this);
+        }
 
-           return GroupProvider;
-       });
+        return GroupProvider;
+    });

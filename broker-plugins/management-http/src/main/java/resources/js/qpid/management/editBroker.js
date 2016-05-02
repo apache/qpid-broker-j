@@ -43,142 +43,159 @@ define(["dojox/html/entities",
         "dojox/validate/us",
         "dojox/validate/web",
         "dojo/domReady!"],
-       function (entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, Memory, ObjectStore, util, template)
-       {
-           var numericFieldNames = ["statisticsReportingPeriod",
-                                    "connection.sessionCountLimit",
-                                    "connection.heartBeatDelay"];
+    function (entities,
+              array,
+              event,
+              lang,
+              win,
+              dom,
+              domConstruct,
+              registry,
+              parser,
+              json,
+              query,
+              Memory,
+              ObjectStore,
+              util,
+              template)
+    {
+        var numericFieldNames = ["statisticsReportingPeriod",
+                                 "connection.sessionCountLimit",
+                                 "connection.heartBeatDelay"];
 
-           var brokerEditor = {
-               init: function ()
-               {
-                   var that = this;
-                   this.containerNode = domConstruct.create("div", {innerHTML: template});
-                   parser.parse(this.containerNode).then(function (instances)
-                                                         {
-                                                             that._postParse();
-                                                         });
-               },
-               _postParse: function ()
-               {
-                   var that = this;
-                   this.dialog = registry.byId("editBrokerDialog");
-                   this.saveButton = registry.byId("editBroker.saveButton");
-                   this.cancelButton = registry.byId("editBroker.cancelButton");
-                   this.cancelButton.on("click", function (e)
-                   {
-                       that._cancel(e);
-                   });
-                   this.saveButton.on("click", function (e)
-                   {
-                       that._save(e);
-                   });
-                   this.form = registry.byId("editBrokerForm");
-                   this.form.on("submit", function ()
-                   {
-                       return false;
-                   });
-                   this.context = registry.byId("editBroker.context");
-               },
-               show: function (management, brokerData)
-               {
-                   this.management = management;
-                   var that = this;
-                   this.dialog.set("title", "Edit Broker - " + entities.encode(String(brokerData.name)));
-                   var typeMetaData = management.metadata.getMetaData("Broker", "Broker");
-                   var encrypters = typeMetaData.attributes.confidentialConfigurationEncryptionProvider.validValues;
-                   var encrypterTypesData = [];
-                   encrypterTypesData.push({
-                                               id: undefined,
-                                               name: "None"
-                                           });
-                   array.forEach(encrypters, function (item)
-                   {
-                       encrypterTypesData.push({
-                                                   id: item,
-                                                   name: item
-                                               });
-                   });
+        var brokerEditor = {
+            init: function ()
+            {
+                var that = this;
+                this.containerNode = domConstruct.create("div", {innerHTML: template});
+                parser.parse(this.containerNode)
+                    .then(function (instances)
+                    {
+                        that._postParse();
+                    });
+            },
+            _postParse: function ()
+            {
+                var that = this;
+                this.dialog = registry.byId("editBrokerDialog");
+                this.saveButton = registry.byId("editBroker.saveButton");
+                this.cancelButton = registry.byId("editBroker.cancelButton");
+                this.cancelButton.on("click", function (e)
+                {
+                    that._cancel(e);
+                });
+                this.saveButton.on("click", function (e)
+                {
+                    that._save(e);
+                });
+                this.form = registry.byId("editBrokerForm");
+                this.form.on("submit", function ()
+                {
+                    return false;
+                });
+                this.context = registry.byId("editBroker.context");
+            },
+            show: function (management, brokerData)
+            {
+                this.management = management;
+                var that = this;
+                this.dialog.set("title", "Edit Broker - " + entities.encode(String(brokerData.name)));
+                var typeMetaData = management.metadata.getMetaData("Broker", "Broker");
+                var encrypters = typeMetaData.attributes.confidentialConfigurationEncryptionProvider.validValues;
+                var encrypterTypesData = [];
+                encrypterTypesData.push({
+                    id: undefined,
+                    name: "None"
+                });
+                array.forEach(encrypters, function (item)
+                {
+                    encrypterTypesData.push({
+                        id: item,
+                        name: item
+                    });
+                });
 
-                   var encrytperTypesStore = new Memory({data: encrypterTypesData});
-                   var encrypterControl = registry.byId("editBroker.confidentialConfigurationEncryptionProvider");
-                   encrypterControl.set("store", encrytperTypesStore);
-                   encrypterControl.set("value", undefined);
+                var encrytperTypesStore = new Memory({data: encrypterTypesData});
+                var encrypterControl = registry.byId("editBroker.confidentialConfigurationEncryptionProvider");
+                encrypterControl.set("store", encrytperTypesStore);
+                encrypterControl.set("value", undefined);
 
-                   management.load({type: "broker"}, {actuals: true}).then(function (data)
-                                                                           {
-                                                                               that._show(data[0], brokerData);
-                                                                           });
-               },
-               destroy: function ()
-               {
-                   if (this.dialog)
-                   {
-                       this.dialog.destroyRecursive();
-                       this.dialog = null;
-                   }
+                management.load({type: "broker"}, {actuals: true})
+                    .then(function (data)
+                    {
+                        that._show(data[0], brokerData);
+                    });
+            },
+            destroy: function ()
+            {
+                if (this.dialog)
+                {
+                    this.dialog.destroyRecursive();
+                    this.dialog = null;
+                }
 
-                   if (this.containerNode)
-                   {
-                       domConstruct.destroy(this.containerNode);
-                       this.containerNode = null;
-                   }
-               },
-               _cancel: function (e)
-               {
-                   this.dialog.hide();
-               },
-               _save: function (e)
-               {
-                   event.stop(e);
-                   if (this.form.validate())
-                   {
-                       var data = util.getFormWidgetValues(this.form, this.initialData);
-                       var context = this.context.get("value");
-                       if (context && !util.equals(context, this.initialData.context))
-                       {
-                           data["context"] = context;
-                       }
+                if (this.containerNode)
+                {
+                    domConstruct.destroy(this.containerNode);
+                    this.containerNode = null;
+                }
+            },
+            _cancel: function (e)
+            {
+                this.dialog.hide();
+            },
+            _save: function (e)
+            {
+                event.stop(e);
+                if (this.form.validate())
+                {
+                    var data = util.getFormWidgetValues(this.form, this.initialData);
+                    var context = this.context.get("value");
+                    if (context && !util.equals(context, this.initialData.context))
+                    {
+                        data["context"] = context;
+                    }
 
-                       var that = this;
-                       this.management.update({type: "broker"}, data).then(function (x)
-                                                                           {
-                                                                               that.dialog.hide();
-                                                                           });
-                   }
-                   else
-                   {
-                       alert('Form contains invalid data.  Please correct first');
-                   }
-               },
-               _show: function (actualData, effectiveData)
-               {
-                   this.initialData = actualData;
-                   util.applyToWidgets(dom.byId("editBroker.allFields"),
-                                       "Broker",
-                                       "Broker",
-                                       actualData,
-                                       this.management.metadata);
-                   util.setContextData(this.context, management, {type: "broker"}, actualData, effectiveData);
+                    var that = this;
+                    this.management.update({type: "broker"}, data)
+                        .then(function (x)
+                        {
+                            that.dialog.hide();
+                        });
+                }
+                else
+                {
+                    alert('Form contains invalid data.  Please correct first');
+                }
+            },
+            _show: function (actualData, effectiveData)
+            {
+                this.initialData = actualData;
+                util.applyToWidgets(dom.byId("editBroker.allFields"),
+                    "Broker",
+                    "Broker",
+                    actualData,
+                    this.management.metadata);
+                util.setContextData(this.context, management, {type: "broker"}, actualData, effectiveData);
 
-                   // Add regexp to the numeric fields
-                   for (var i = 0; i < numericFieldNames.length; i++)
-                   {
-                       registry.byId("editBroker." + numericFieldNames[i])
-                               .set("regExpGen", util.numericOrContextVarRegexp);
-                   }
+                // Add regexp to the numeric fields
+                for (var i = 0; i < numericFieldNames.length; i++)
+                {
+                    registry.byId("editBroker." + numericFieldNames[i])
+                        .set("regExpGen", util.numericOrContextVarRegexp);
+                }
 
-                   this.dialog.startup();
-                   this.dialog.show();
-                   if (!this.resizeEventRegistered)
-                   {
-                       this.resizeEventRegistered = true;
-                       util.resizeContentAreaAndRepositionDialog(dom.byId("editBroker.contentPane"), this.dialog);
-                   }
-               }
-           };
+                this.dialog.startup();
+                this.dialog.show();
+                if (!this.resizeEventRegistered)
+                {
+                    this.resizeEventRegistered = true;
+                    util.resizeContentAreaAndRepositionDialog(dom.byId("editBroker.contentPane"), this.dialog);
+                }
+            }
+        };
 
-           brokerEditor.init();
+        brokerEditor.init();
 
-           return brokerEditor;
-       });
+        return brokerEditor;
+    });

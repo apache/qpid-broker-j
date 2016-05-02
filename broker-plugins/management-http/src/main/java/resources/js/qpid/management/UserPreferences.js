@@ -34,46 +34,48 @@ define(["dojo/date", "dojo/date/locale", "dojo/number"], function (date, locale,
     UserPreferences.prototype.load = function (successCallback, failureCallback)
     {
         var that = this;
-        this.management.get({url: "service/preferences"}).then(function (preferences)
-                                                               {
-                                                                   that.preferences = preferences;
-                                                                   for (var name in preferences)
-                                                                   {
-                                                                       that[name] = preferences[name];
-                                                                   }
-                                                                   if (successCallback)
-                                                                   {
-                                                                       successCallback();
-                                                                   }
-                                                               }, function (error)
-                                                               {
-                                                                   that.preferencesError = error;
-                                                                   if (failureCallback)
-                                                                   {
-                                                                       failureCallback();
-                                                                   }
-                                                               });
+        this.management.get({url: "service/preferences"})
+            .then(function (preferences)
+            {
+                that.preferences = preferences;
+                for (var name in preferences)
+                {
+                    that[name] = preferences[name];
+                }
+                if (successCallback)
+                {
+                    successCallback();
+                }
+            }, function (error)
+            {
+                that.preferencesError = error;
+                if (failureCallback)
+                {
+                    failureCallback();
+                }
+            });
     }
 
     UserPreferences.prototype.save = function (preferences, successCallback, failureCallback)
     {
         var that = this;
-        this.management.post({url: "service/preferences"}, preferences).then(function (x)
-                                                                             {
-                                                                                 that.preferences = preferences;
-                                                                                 for (var name in preferences)
-                                                                                 {
-                                                                                     if (preferences.hasOwnProperty(name))
-                                                                                     {
-                                                                                         that[name] = preferences[name];
-                                                                                     }
-                                                                                 }
-                                                                                 that._notifyListeners(preferences);
-                                                                                 if (successCallback)
-                                                                                 {
-                                                                                     successCallback(preferences);
-                                                                                 }
-                                                                             }, failureCallback);
+        this.management.post({url: "service/preferences"}, preferences)
+            .then(function (x)
+            {
+                that.preferences = preferences;
+                for (var name in preferences)
+                {
+                    if (preferences.hasOwnProperty(name))
+                    {
+                        that[name] = preferences[name];
+                    }
+                }
+                that._notifyListeners(preferences);
+                if (successCallback)
+                {
+                    successCallback(preferences);
+                }
+            }, failureCallback);
     };
 
     var fields = ["preferencesError", "management", "listeners"];

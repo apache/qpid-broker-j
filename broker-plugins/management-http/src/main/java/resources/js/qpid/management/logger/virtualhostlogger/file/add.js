@@ -26,14 +26,14 @@ define(["dojo/dom",
         "dojo/parser",
         "dojo/text!logger/file/add.html",
         "dojo/domReady!"], function (dom, query, array, registry, util, parser, template)
-       {
-           var addFileLogger = {
-               show: function (data)
-               {
-                   data.containerNode.innerHTML = template;
-                   return parser.parse(data.containerNode);
-               }
-           };
+{
+    var addFileLogger = {
+        show: function (data)
+        {
+            data.containerNode.innerHTML = template;
+            return parser.parse(data.containerNode);
+        }
+    };
 
-           return addFileLogger;
-       });
+    return addFileLogger;
+});

@@ -60,8 +60,7 @@ define(["dojo/_base/declare"], function (declare)
             }
             this._pendingOnChange =
                 this._pendingOnChange || (typeof newValue != typeof this._lastValueReported) || (this.compare(newValue,
-                                                                                                              this._lastValueReported)
-                                                                                                 != 0);
+                    this._lastValueReported) != 0);
             if (( priorityChange || priorityChange === undefined) && this._pendingOnChange)
             {
                 this._lastValueReported = newValue;
@@ -73,10 +72,10 @@ define(["dojo/_base/declare"], function (declare)
                         this._onChangeHandle.remove();
                     }
                     this._onChangeHandle = this.defer(function ()
-                                                      {
-                                                          this._onChangeHandle = null;
-                                                          this.onChange(newValue);
-                                                      });
+                    {
+                        this._onChangeHandle = null;
+                        this.onChange(newValue);
+                    });
                 }
             }
         },

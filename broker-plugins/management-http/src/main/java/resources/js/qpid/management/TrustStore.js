@@ -31,162 +31,160 @@ define(["dojo/dom",
         "qpid/management/addStore",
         "dojo/text!showTrustStore.html",
         "dojo/domReady!"],
-       function (dom, parser, query, connect, registry, entities, properties, updater, util, formatter, addStore, template)
-       {
+    function (dom, parser, query, connect, registry, entities, properties, updater, util, formatter, addStore, template)
+    {
 
-           function TrustStore(name, parent, controller)
-           {
-               this.keyStoreName = name;
-               this.controller = controller;
-               this.modelObj = {
-                   type: "truststore",
-                   name: name,
-                   parent: parent
-               };
-               this.management = controller.management;
-           }
+        function TrustStore(name, parent, controller)
+        {
+            this.keyStoreName = name;
+            this.controller = controller;
+            this.modelObj = {
+                type: "truststore",
+                name: name,
+                parent: parent
+            };
+            this.management = controller.management;
+        }
 
-           TrustStore.prototype.getTitle = function ()
-           {
-               return "TrustStore: " + this.keyStoreName;
-           };
+        TrustStore.prototype.getTitle = function ()
+        {
+            return "TrustStore: " + this.keyStoreName;
+        };
 
-           TrustStore.prototype.open = function (contentPane)
-           {
-               var that = this;
-               this.contentPane = contentPane;
+        TrustStore.prototype.open = function (contentPane)
+        {
+            var that = this;
+            this.contentPane = contentPane;
 
-               contentPane.containerNode.innerHTML = template;
-               parser.parse(contentPane.containerNode).then(function (instances)
-                                                            {
+            contentPane.containerNode.innerHTML = template;
+            parser.parse(contentPane.containerNode)
+                .then(function (instances)
+                {
 
-                                                                that.keyStoreUpdater = new KeyStoreUpdater(that);
-                                                                that.keyStoreUpdater.update(function ()
-                                                                                            {
-                                                                                                updater.add(that.keyStoreUpdater);
-                                                                                            });
+                    that.keyStoreUpdater = new KeyStoreUpdater(that);
+                    that.keyStoreUpdater.update(function ()
+                    {
+                        updater.add(that.keyStoreUpdater);
+                    });
 
-                                                                var deleteTrustStoreButton = query(".deleteStoreButton",
-                                                                                                   contentPane.containerNode)[0];
-                                                                var node = registry.byNode(deleteTrustStoreButton);
-                                                                connect.connect(node, "onClick", function (evt)
-                                                                {
-                                                                    that.deleteKeyStore();
-                                                                });
+                    var deleteTrustStoreButton = query(".deleteStoreButton", contentPane.containerNode)[0];
+                    var node = registry.byNode(deleteTrustStoreButton);
+                    connect.connect(node, "onClick", function (evt)
+                    {
+                        that.deleteKeyStore();
+                    });
 
-                                                                var editTrustStoreButton = query(".editStoreButton",
-                                                                                                 contentPane.containerNode)[0];
-                                                                var node = registry.byNode(editTrustStoreButton);
-                                                                connect.connect(node, "onClick", function (evt)
-                                                                {
-                                                                    that.management.load(that.modelObj, {actuals: true})
-                                                                        .then(function (data)
-                                                                              {
-                                                                                  addStore.setupTypeStore(that.management,
-                                                                                                          "TrustStore",
-                                                                                                          that.modelObj);
-                                                                                  addStore.show(data[0], that.url);
-                                                                              }, util.xhrErrorHandler);
-                                                                });
-                                                            });
-           };
+                    var editTrustStoreButton = query(".editStoreButton", contentPane.containerNode)[0];
+                    var node = registry.byNode(editTrustStoreButton);
+                    connect.connect(node, "onClick", function (evt)
+                    {
+                        that.management.load(that.modelObj, {actuals: true})
+                            .then(function (data)
+                            {
+                                addStore.setupTypeStore(that.management, "TrustStore", that.modelObj);
+                                addStore.show(data[0], that.url);
+                            }, util.xhrErrorHandler);
+                    });
+                });
+        };
 
-           TrustStore.prototype.close = function ()
-           {
-               updater.remove(this.keyStoreUpdater);
-           };
+        TrustStore.prototype.close = function ()
+        {
+            updater.remove(this.keyStoreUpdater);
+        };
 
-           function KeyStoreUpdater(tabObject)
-           {
-               var that = this;
-               var containerNode = tabObject.contentPane.containerNode;
-               this.keyStoreDetailsContainer = query(".typeFieldsContainer", containerNode)[0];
-               this.management = tabObject.management;
-               this.modelObj = tabObject.modelObj;
-               this.tabObject = tabObject;
+        function KeyStoreUpdater(tabObject)
+        {
+            var that = this;
+            var containerNode = tabObject.contentPane.containerNode;
+            this.keyStoreDetailsContainer = query(".typeFieldsContainer", containerNode)[0];
+            this.management = tabObject.management;
+            this.modelObj = tabObject.modelObj;
+            this.tabObject = tabObject;
 
-               function findNode(name)
-               {
-                   return query("." + name, containerNode)[0];
-               }
+            function findNode(name)
+            {
+                return query("." + name, containerNode)[0];
+            }
 
-               function storeNodes(names)
-               {
-                   for (var i = 0; i < names.length; i++)
-                   {
-                       that[names[i]] = findNode(names[i]);
-                   }
-               }
+            function storeNodes(names)
+            {
+                for (var i = 0; i < names.length; i++)
+                {
+                    that[names[i]] = findNode(names[i]);
+                }
+            }
 
-               storeNodes(["name", "type", "state", "exposedAsMessageSource"]);
+            storeNodes(["name", "type", "state", "exposedAsMessageSource"]);
 
-           }
+        }
 
-           KeyStoreUpdater.prototype.updateHeader = function ()
-           {
-               this.name.innerHTML = entities.encode(String(this.trustStoreData["name"]));
-               this.type.innerHTML = entities.encode(String(this.trustStoreData["type"]));
-               this.state.innerHTML = entities.encode(String(this.trustStoreData["state"]));
-               this.exposedAsMessageSource.innerHTML =
-                   entities.encode(String(this.trustStoreData["exposedAsMessageSource"]));
-           };
+        KeyStoreUpdater.prototype.updateHeader = function ()
+        {
+            this.name.innerHTML = entities.encode(String(this.trustStoreData["name"]));
+            this.type.innerHTML = entities.encode(String(this.trustStoreData["type"]));
+            this.state.innerHTML = entities.encode(String(this.trustStoreData["state"]));
+            this.exposedAsMessageSource.innerHTML =
+                entities.encode(String(this.trustStoreData["exposedAsMessageSource"]));
+        };
 
-           KeyStoreUpdater.prototype.update = function (callback)
-           {
-               var that = this;
-               this.management.load(this.modelObj).then(function (data)
-                                                        {
-                                                            that.trustStoreData = data[0];
-                                                            that.updateHeader();
+        KeyStoreUpdater.prototype.update = function (callback)
+        {
+            var that = this;
+            this.management.load(this.modelObj)
+                .then(function (data)
+                {
+                    that.trustStoreData = data[0];
+                    that.updateHeader();
 
-                                                            if (callback)
-                                                            {
-                                                                callback();
-                                                            }
+                    if (callback)
+                    {
+                        callback();
+                    }
 
-                                                            if (that.details)
-                                                            {
-                                                                that.details.update(that.trustStoreData);
-                                                            }
-                                                            else
-                                                            {
-                                                                require(["qpid/management/store/" + encodeURIComponent(
-                                                                    that.trustStoreData.type.toLowerCase()) + "/show"],
-                                                                        function (DetailsUI)
-                                                                        {
-                                                                            that.details = new DetailsUI({
-                                                                                containerNode: that.keyStoreDetailsContainer,
-                                                                                parent: that
-                                                                            });
-                                                                            that.details.update(that.trustStoreData);
-                                                                        });
-                                                            }
-                                                        }, function (error)
-                                                        {
-                                                            util.tabErrorHandler(error, {
-                                                                updater: that,
-                                                                contentPane: that.tabObject.contentPane,
-                                                                tabContainer: that.tabObject.controller.tabContainer,
-                                                                name: that.modelObj.name,
-                                                                category: "Trust Store"
-                                                            });
-                                                        });
-           };
+                    if (that.details)
+                    {
+                        that.details.update(that.trustStoreData);
+                    }
+                    else
+                    {
+                        require(["qpid/management/store/" + encodeURIComponent(that.trustStoreData.type.toLowerCase())
+                                 + "/show"], function (DetailsUI)
+                        {
+                            that.details = new DetailsUI({
+                                containerNode: that.keyStoreDetailsContainer,
+                                parent: that
+                            });
+                            that.details.update(that.trustStoreData);
+                        });
+                    }
+                }, function (error)
+                {
+                    util.tabErrorHandler(error, {
+                        updater: that,
+                        contentPane: that.tabObject.contentPane,
+                        tabContainer: that.tabObject.controller.tabContainer,
+                        name: that.modelObj.name,
+                        category: "Trust Store"
+                    });
+                });
+        };
 
-           TrustStore.prototype.deleteKeyStore = function ()
-           {
-               if (confirm("Are you sure you want to delete trust store '" + this.keyStoreName + "'?"))
-               {
-                   var that = this;
-                   this.management.remove(this.modelObj).then(function (data)
-                                                              {
-                                                                  that.contentPane.onClose()
-                                                                  that.controller.tabContainer.removeChild(that.contentPane);
-                                                                  that.contentPane.destroyRecursive();
-                                                                  that.close();
-                                                              }, util.xhrErrorHandler);
-               }
-           }
+        TrustStore.prototype.deleteKeyStore = function ()
+        {
+            if (confirm("Are you sure you want to delete trust store '" + this.keyStoreName + "'?"))
+            {
+                var that = this;
+                this.management.remove(this.modelObj)
+                    .then(function (data)
+                    {
+                        that.contentPane.onClose()
+                        that.controller.tabContainer.removeChild(that.contentPane);
+                        that.contentPane.destroyRecursive();
+                        that.close();
+                    }, util.xhrErrorHandler);
+            }
+        }
 
-           return TrustStore;
-       });
+        return TrustStore;
+    });

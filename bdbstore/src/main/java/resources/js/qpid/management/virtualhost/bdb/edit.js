@@ -23,8 +23,10 @@ define(["dijit/registry", "qpid/common/util", "dojo/domReady!"], function (regis
         {
             util.parseHtmlIntoDiv(data.containerNode, "virtualhost/sizemonitoring/edit.html", function ()
             {
-                registry.byId("editVirtualHost.storeUnderfullSize").set("regExpGen", util.numericOrContextVarRegexp);
-                registry.byId("editVirtualHost.storeOverfullSize").set("regExpGen", util.numericOrContextVarRegexp);
+                registry.byId("editVirtualHost.storeUnderfullSize")
+                    .set("regExpGen", util.numericOrContextVarRegexp);
+                registry.byId("editVirtualHost.storeOverfullSize")
+                    .set("regExpGen", util.numericOrContextVarRegexp);
             });
         }
     };
