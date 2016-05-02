@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.client.failover;
 
-import java.io.File;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -40,8 +39,8 @@ import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.jms.ConnectionListener;
 import org.apache.qpid.test.utils.BrokerHolder;
+import org.apache.qpid.test.utils.FailoverBaseCase;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.util.FileUtils;
 
 /*
  * we need to create 4 brokers:
@@ -59,7 +58,7 @@ public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements C
     private static final String BROKER_PORTION_FORMAT = "tcp://localhost:%d?connectdelay='%d',retries='%d'";
     private static final int FAILOVER_RETRIES = 0;
     private static final int FAILOVER_CONNECTDELAY = 0;
-    private static final int FAILOVER_AWAIT_TIME = 10000;
+    private static final long FAILOVER_AWAIT_TIME = FailoverBaseCase.DEFAULT_FAILOVER_TIME;
     private static final int NUMBER_OF_BROKERS = 4;
 
     private BrokerHolder[] _brokerHolders;
@@ -166,7 +165,7 @@ public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements C
         _brokerHolders[1].kill();
 
         awaitForFailoverCompletion(FAILOVER_AWAIT_TIME);
-        assertEquals("Failover is not started as expected", 0, _failoverStarted.getCount());
+        assertEquals("Failover did not start within " + FAILOVER_AWAIT_TIME + "ms.", 0, _failoverStarted.getCount());
 
         assertSendReceive(2);
         assertConnectionPort(_brokerHolders[NUMBER_OF_BROKERS - 1].getAmqpPort());
@@ -182,7 +181,7 @@ public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements C
         _brokerHolders[1].shutdown();
 
         awaitForFailoverCompletion(FAILOVER_AWAIT_TIME);
-        assertEquals("Failover is not started as expected", 0, _failoverStarted.getCount());
+        assertEquals("Failover did not start within " + FAILOVER_AWAIT_TIME + "ms.", 0, _failoverStarted.getCount());
 
         assertSendReceive(1);
         assertConnectionPort(_brokerHolders[NUMBER_OF_BROKERS - 1].getAmqpPort());
