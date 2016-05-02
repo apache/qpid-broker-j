@@ -121,9 +121,9 @@ public class ACLFileAccessControlProviderImpl
         {
             DefaultAccessControl accessControl = new DefaultAccessControl(getPath(), _broker);
             accessControl.open();
-            _eventLogger.message(AccessControlMessages.LOADED(String.valueOf(getPath()).startsWith("data:") ? "data:..." : getPath()));
             DefaultAccessControl oldAccessControl = _accessControl;
             _accessControl = accessControl;
+            _eventLogger.message(AccessControlMessages.LOADED(String.valueOf(getPath()).startsWith("data:") ? "data:..." : getPath()));
             if(oldAccessControl != null)
             {
                 oldAccessControl.close();
