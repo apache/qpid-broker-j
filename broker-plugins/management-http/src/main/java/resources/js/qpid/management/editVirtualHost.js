@@ -118,7 +118,6 @@ define(["dojox/html/entities",
             {
                 this.management = management;
                 this.modelObj = modelObj;
-                var that = this;
                 if (!this.context)
                 {
                     this.context = new qpid.common.ContextVariablesEditor({
@@ -129,16 +128,7 @@ define(["dojox/html/entities",
                 }
                 this.dialog.set("title", "Edit Virtual Host - " + entities.encode(String(modelObj.name)));
 
-                management.load(modelObj, {actuals: true})
-                    .then(function (actualData)
-                    {
-                        management.load(modelObj)
-                            .then(function (effectiveData)
-                            {
-                                that._show(actualData[0], effectiveData[0]);
-                            }, util.xhrErrorHandler);
-                    });
-
+                util.loadData(management, modelObj, lang.hitch(this, this._show));
             },
             destroy: function ()
             {
@@ -181,10 +171,9 @@ define(["dojox/html/entities",
                     alert('Form contains invalid data.  Please correct first');
                 }
             },
-            _show: function (actualData, effectiveData)
+            _show: function (data)
             {
-
-                this.initialData = actualData;
+                this.initialData = data.actual;
                 for (var i = 0; i < fields.length; i++)
                 {
                     var fieldName = fields[i];
@@ -193,15 +182,15 @@ define(["dojox/html/entities",
 
                     if (widget instanceof dijit.form.CheckBox)
                     {
-                        widget.set("checked", actualData[fieldName]);
+                        widget.set("checked", data.actual[fieldName]);
                     }
                     else
                     {
-                        widget.set("value", actualData[fieldName]);
+                        widget.set("value", data.actual[fieldName]);
                     }
                 }
 
-                util.setContextData(this.context, this.management, this.modelObj, actualData, effectiveData);
+                this.context.setData(data.actual.context, data.effective.context, data.inheritedActual.context);
 
                 // Add regexp to the numeric fields
                 for (var i = 0; i < numericFieldNames.length; i++)
@@ -218,7 +207,7 @@ define(["dojox/html/entities",
                 });
                 domConstruct.empty(this.typeFieldsContainer);
 
-                require(["qpid/management/virtualhost/" + actualData.type.toLowerCase() + "/edit"], function (TypeUI)
+                require(["qpid/management/virtualhost/" + data.actual.type.toLowerCase() + "/edit"], function (TypeUI)
                 {
                     try
                     {
@@ -226,15 +215,15 @@ define(["dojox/html/entities",
                         TypeUI.show({
                             containerNode: that.typeFieldsContainer,
                             parent: that,
-                            data: actualData,
+                            data: data.actual,
                             metadata: metadata
                         });
                         that.form.connectChildren();
 
                         util.applyToWidgets(that.allFieldsContainer,
                             "VirtualHost",
-                            actualData.type,
-                            actualData,
+                            data.actual.type,
+                            data.actual,
                             metadata);
                     }
                     catch (e)

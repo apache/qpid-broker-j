@@ -45,7 +45,7 @@ define(["dojo/domReady!"], function ()
         },
         getHelpUrl: function (callback)
         {
-            this.management.load({type: "broker"}, {depth: 1})
+            this.management.load({type: "broker"}, {depth: 0})
                 .then(function (data)
                 {
                     var broker = data[0];

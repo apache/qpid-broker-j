@@ -454,10 +454,10 @@ define(["dojo/dom",
             {
                 editWarning.style.display = "block";
 
-                management.load(modelObj, {actuals: true})
-                    .then(function (data)
+                util.loadData(management, modelObj,
+                    function (data)
                     {
-                        var port = data[0];
+                        var port = data.actual;
                         nameWidget.set("value", port.name);
                         nameWidget.set("disabled", true);
 
@@ -573,7 +573,7 @@ define(["dojo/dom",
                             portType,
                             management.metadata);
 
-                        addPort._initContextEditorAndShowDialog(port);
+                        addPort._initContextEditorAndShowDialog(data);
 
                     }, util.xhrErrorHandler);
             }
@@ -599,35 +599,17 @@ define(["dojo/dom",
                 managedCertificateStoreWidget.set("value", undefined);
                 managedCertificateStoreWidget.initialValue = undefined;
 
-                this._initContextEditorAndShowDialog();
+                util.loadEffectiveAndInheritedActualData(management, modelObj, function (data)
+                {
+                    addPort._initContextEditorAndShowDialog(data)
+                });
             }
         };
 
-        addPort._initContextEditorAndShowDialog = function (actualData)
+        addPort._initContextEditorAndShowDialog = function (data)
         {
-            this.initialData = actualData;
-            if (actualData)
-            {
-                var modelObj = this.modelObj;
-                this.management.load(modelObj)
-                    .then(function (effectiveData)
-                    {
-                        util.setContextData(addPort.context,
-                            addPort.management,
-                            modelObj,
-                            actualData,
-                            effectiveData[0],
-                            addPort._showDialog);
-                    });
-            }
-            else
-            {
-                util.setToBrokerEffectiveContext(addPort.context, addPort.management, addPort._showDialog);
-            }
-        };
-
-        addPort._showDialog = function ()
-        {
+            this.initialData = data.actual;
+            this.context.setData(data.actual.context, data.effective.context, data.inheritedActual.context);
             var dialog = registry.byId("addPort");
             dialog.show();
         };

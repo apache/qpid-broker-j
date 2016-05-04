@@ -161,11 +161,10 @@ define(["dojo/dom",
             this.context.placeAt(dom.byId("formAddQueue.context"));
         }
 
-        management.load(modelObj)
-            .then(function (effectiveData)
-            {
-                util.setContextData(addQueue.context, management, modelObj, {}, effectiveData[0]);
-            }, util.xhrErrorHandler);
+        util.loadEffectiveAndInheritedActualData(management, modelObj, function (data)
+        {
+            addQueue.context.setData(data.actual.context, data.effective.context, data.inheritedActual.context);
+        });
     };
 
     return addQueue;

@@ -32,6 +32,7 @@ define(["dojox/html/entities",
         "dojo/store/Memory",
         "dojo/data/ObjectStore",
         "qpid/common/util",
+        "dojo/promise/all",
         "dojo/text!editBroker.html",
         "qpid/common/ContextVariablesEditor",
         "dijit/Dialog",
@@ -57,6 +58,7 @@ define(["dojox/html/entities",
               Memory,
               ObjectStore,
               util,
+              all,
               template)
     {
         var numericFieldNames = ["statisticsReportingPeriod",
@@ -98,7 +100,6 @@ define(["dojox/html/entities",
             show: function (management, brokerData)
             {
                 this.management = management;
-                var that = this;
                 this.dialog.set("title", "Edit Broker - " + entities.encode(String(brokerData.name)));
                 var typeMetaData = management.metadata.getMetaData("Broker", "Broker");
                 var encrypters = typeMetaData.attributes.confidentialConfigurationEncryptionProvider.validValues;
@@ -119,12 +120,8 @@ define(["dojox/html/entities",
                 var encrypterControl = registry.byId("editBroker.confidentialConfigurationEncryptionProvider");
                 encrypterControl.set("store", encrytperTypesStore);
                 encrypterControl.set("value", undefined);
-
-                management.load({type: "broker"}, {actuals: true})
-                    .then(function (data)
-                    {
-                        that._show(data[0], brokerData);
-                    });
+                var brokerModelObj = {type: "broker"};
+                util.loadData(management, brokerModelObj, lang.hitch(this, this._show));
             },
             destroy: function ()
             {
@@ -168,15 +165,15 @@ define(["dojox/html/entities",
                     alert('Form contains invalid data.  Please correct first');
                 }
             },
-            _show: function (actualData, effectiveData)
+            _show: function (data)
             {
-                this.initialData = actualData;
+                this.initialData = data.actual;
                 util.applyToWidgets(dom.byId("editBroker.allFields"),
                     "Broker",
                     "Broker",
-                    actualData,
+                    data.actual,
                     this.management.metadata);
-                util.setContextData(this.context, management, {type: "broker"}, actualData, effectiveData);
+                this.context.setData(data.actual.context, data.effective.context, data.inheritedActual.context);
 
                 // Add regexp to the numeric fields
                 for (var i = 0; i < numericFieldNames.length; i++)

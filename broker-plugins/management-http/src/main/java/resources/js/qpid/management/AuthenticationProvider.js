@@ -221,7 +221,11 @@ define(["dojo/parser",
         AuthProviderUpdater.prototype.update = function (callback)
         {
             var that = this;
-            this.management.load(this.modelObj)
+            this.management.load(this.modelObj,
+                {
+                    excludeInheritedContext: true,
+                    depth: 1
+                })
                 .then(function (data)
                 {
                     that._update(data[0]);

@@ -458,7 +458,11 @@ define(["dojo/parser",
         {
             var thisObj = this;
 
-            this.management.load(this.modelObj)
+            this.management.load(this.modelObj,
+                {
+                    excludeInheritedContext: true,
+                    depth: 1
+                })
                 .then(function (data)
                 {
                     thisObj.vhostData = data[0] || {

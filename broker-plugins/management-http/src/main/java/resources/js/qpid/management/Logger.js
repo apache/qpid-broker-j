@@ -103,6 +103,7 @@ define(["dojo/parser",
             {
                 that.management.load(that.modelObj, {
                         actuals: true,
+                        excludeInheritedContext: true,
                         depth: 0
                     })
                     .then(function (data)
@@ -185,7 +186,11 @@ define(["dojo/parser",
                 parent: this.modelObj
             };
             var that = this;
-            this.management.load(ruleModelObj, {actuals: true})
+            this.management.load(ruleModelObj,
+                {
+                    actuals: true,
+                    excludeInheritedContext: true
+                })
                 .then(function (data)
                 {
                     addLogInclusionRule.show(that.management, ruleModelObj, that.logInclusionRuleCategory, data[0]);
@@ -239,7 +244,11 @@ define(["dojo/parser",
         Updater.prototype.update = function (callback)
         {
             var that = this;
-            that.tabObject.management.load(this.modelObj)
+            that.tabObject.management.load(this.modelObj,
+                {
+                    excludeInheritedContext: true,
+                    depth: 1
+                })
                 .then(function (data)
                 {
                     that.loggerData = data[0] || {};

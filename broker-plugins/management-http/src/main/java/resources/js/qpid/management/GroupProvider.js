@@ -204,7 +204,7 @@ define(["dojo/parser",
         {
             var that = this;
             var management = this.controller.management;
-            management.load(this.modelObj)
+            management.load(this.modelObj, {excludeInheritedContext: true})
                 .then(function (data)
                 {
                     that._update(data[0]);

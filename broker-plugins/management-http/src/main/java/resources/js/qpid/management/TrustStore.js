@@ -78,7 +78,11 @@ define(["dojo/dom",
                     var node = registry.byNode(editTrustStoreButton);
                     connect.connect(node, "onClick", function (evt)
                     {
-                        that.management.load(that.modelObj, {actuals: true})
+                        that.management.load(that.modelObj,
+                            {
+                                actuals: true,
+                                excludeInheritedContext: true
+                            })
                             .then(function (data)
                             {
                                 addStore.setupTypeStore(that.management, "TrustStore", that.modelObj);
@@ -131,7 +135,7 @@ define(["dojo/dom",
         KeyStoreUpdater.prototype.update = function (callback)
         {
             var that = this;
-            this.management.load(this.modelObj)
+            this.management.load(this.modelObj, {excludeInheritedContext: true})
                 .then(function (data)
                 {
                     that.trustStoreData = data[0];

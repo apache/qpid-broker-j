@@ -190,9 +190,9 @@ define(["dojo/_base/event",
                         var actuals = that.virtualHostContext.value;
                         for (var key in value)
                         {
-                            var val = value[key];
-                            if (!(key in actuals))
+                            if (!actuals || !(key in actuals))
                             {
+                                var val = value[key];
                                 inherited[key] = val;
                                 if (!(key in effective))
                                 {
@@ -214,21 +214,15 @@ define(["dojo/_base/event",
                 }
 
                 var that = this;
-                management.load({type: "broker"})
-                    .then(function (effectiveData)
-                    {
-                        util.setContextData(that.virtualHostNodeContext,
-                            management,
-                            {type: "broker"},
-                            {},
-                            effectiveData[0],
-                            function ()
-                            {
-                                that.virtualHostContext.setData({},
-                                    that.virtualHostNodeContext.effectiveValues,
-                                    that.virtualHostNodeContext.inheritedActualValues);
-                            });
-                    }, util.xhrErrorHandler);
+                util.loadEffectiveAndInheritedActualData(management, {type: "broker"}, function(data)
+                {
+                    that.virtualHostNodeContext.setData({},
+                        data.effective.context,
+                        data.inheritedActual.context);
+                    that.virtualHostContext.setData({},
+                        data.effective.context,
+                        data.inheritedActual.context);
+                });
 
                 this.dialog.show();
                 if (!this.resizeEventRegistered)

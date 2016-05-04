@@ -504,7 +504,10 @@ define(["dojo/_base/declare",
 
             var thisObj = this;
 
-            this.management.load(this.modelObj)
+            this.management.load(this.modelObj, {
+                    excludeInheritedContext: true,
+                    depth: 1
+                })
                 .then(function (data)
                 {
                     var i, j;

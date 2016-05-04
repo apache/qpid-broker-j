@@ -198,7 +198,7 @@ define(["dojo/parser",
         PreferencesProvider.prototype.reload = function ()
         {
             var that = this;
-            that.management.load(that.modelObj)
+            that.management.load(that.modelObj, {excludeInheritedContext: true})
                 .then(function (data)
                 {
                     var preferencesProviderData = data[0];

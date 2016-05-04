@@ -233,7 +233,7 @@ define(["dojo/_base/xhr",
 
             var thisObj = this;
 
-            this.management.load(this.modelObj)
+            this.management.load(this.modelObj, {excludeInheritedContext: true})
                 .then(function (data)
                 {
                     thisObj.exchangeData = data[0];

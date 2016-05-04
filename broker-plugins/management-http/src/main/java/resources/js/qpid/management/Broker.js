@@ -317,7 +317,11 @@ define(["dojo/parser",
             this.brokerObj = brokerObj;
             var that = this;
 
-            this.management.load(brokerObj, {depth: 2})
+            this.management.load(brokerObj,
+                {
+                    depth: 2,
+                    excludeInheritedContext: true
+                })
                 .then(function (data)
                 {
                     that.brokerData = data[0];
@@ -901,7 +905,11 @@ define(["dojo/parser",
 
             var that = this;
 
-            this.management.load(this.brokerObj, {depth: 2})
+            this.management.load(this.brokerObj,
+                {
+                    depth: 2,
+                    excludeInheritedContext: true
+                })
                 .then(function (data)
                 {
                     that.brokerData = data[0];

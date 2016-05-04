@@ -106,6 +106,7 @@ define(["dojo/query",
                     };
                     that.management.load(aliasModelObj, {
                             actuals: true,
+                            excludeInheritedContext: true,
                             depth: 0
                         })
                         .then(function (data)

@@ -42,7 +42,7 @@ define(["dojo/query",
                 type: "truststore",
                 parent: {type: "broker"}
             };
-            data.parent.management.load(obj)
+            data.parent.management.load(obj, {excludeInheritedContext: true})
                 .then(function (trustStores)
                 {
                     that._initTrustStores(trustStores, data.containerNode);

@@ -98,25 +98,20 @@ define(["dojo/dom",
             {
                 this._destroyTypeFields(this.containerNode);
                 var that = this;
-                management.load(modelObj, {
-                        actuals: true,
-                        depth: 0
-                    })
-                    .then(function (data)
-                    {
-                        var actualData = data[0];
-                        that.initialData = lang.clone(actualData);
-                        that._initFields(actualData);
+                util.loadData(management, modelObj, function (data)
+                {
+                    var actualData = data.actual;
+                    var effectiveData = data.effective;
+                    var inheritedActualData = data.inheritedActual;
+                    that.initialData = lang.clone(actualData);
+                    that._initFields(actualData);
 
-                        that.groupProviderName.set("disabled", true);
-                        that.groupProviderType.set("disabled", true);
-                        that.dialog.set("title", "Edit Group Provider - " + effectiveData.name);
-
-                        util.setContextData(that.context, management, modelObj, actualData, effectiveData, function ()
-                        {
-                            that.dialog.show();
-                        });
-                    });
+                    that.groupProviderName.set("disabled", true);
+                    that.groupProviderType.set("disabled", true);
+                    that.dialog.set("title", "Edit Group Provider - " + effectiveData.name);
+                    that.context.setData(actualData.context, effectiveData.context, inheritedActualData.context);
+                    that.dialog.show();
+                });
             }
             else
             {
@@ -124,7 +119,13 @@ define(["dojo/dom",
                 this.groupProviderName.set("disabled", false);
                 this.groupProviderType.set("disabled", false);
                 this.dialog.set("title", "Add Group Provider");
-                util.setToBrokerEffectiveContext(this.context, management, lang.hitch(this.dialog, this.dialog.show));
+                util.loadEffectiveAndInheritedActualData(management,
+                    modelObj,
+                    lang.hitch(this, function (data)
+                    {
+                        this.context.setData(data.actual.context, data.effective.context, data.inheritedActual.context);
+                        this.dialog.show();
+                    }));
             }
 
         },

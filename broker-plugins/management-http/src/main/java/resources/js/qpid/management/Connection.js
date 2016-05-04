@@ -47,7 +47,7 @@ define(["dojo/parser",
         {
             this.name = name;
             this.controller = controller;
-            this.management = controller.management
+            this.management = controller.management;
             this.modelObj = {
                 type: "connection",
                 name: name,
@@ -101,7 +101,7 @@ define(["dojo/parser",
             this.contentPane.onClose();
             this.controller.tabContainer.removeChild(this.contentPane);
             this.contentPane.destroyRecursive();
-        }
+        };
 
         function ConnectionUpdater(connectionTab)
         {
@@ -225,7 +225,11 @@ define(["dojo/parser",
 
             var that = this;
 
-            that.management.load(this.modelObj)
+            that.management.load(this.modelObj,
+                {
+                    excludeInheritedContext: true,
+                    depth: 1
+                })
                 .then(function (data)
                 {
                     that.connectionData = data[0];

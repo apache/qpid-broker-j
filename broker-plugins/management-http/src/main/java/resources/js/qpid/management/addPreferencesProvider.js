@@ -97,7 +97,11 @@ define(["dojo/_base/event",
                 if (modelObj.type == "preferencesprovider")
                 {
                     var that = this;
-                    management.load(modelObj, {actuals: true})
+                    management.load(modelObj,
+                        {
+                            actuals: true,
+                            excludeInheritedContext: true
+                        })
                         .then(function (data)
                         {
                             that.preferencesProviderForm.setData(data[0]);

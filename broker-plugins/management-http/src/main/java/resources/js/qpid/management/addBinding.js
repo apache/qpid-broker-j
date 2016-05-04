@@ -433,7 +433,11 @@ define(["dojo/_base/connect",
             management.load({
                     type: "queue",
                     parent: obj.parent
-                }, {depth: 0})
+                },
+                {
+                    depth: 0,
+                    excludeInheritedContext: true
+                })
                 .then(function (data)
                 {
                     var queues = [];
@@ -470,7 +474,11 @@ define(["dojo/_base/connect",
                     management.load({
                             type: "exchange",
                             parent: obj.parent
-                        }, {depth: 0})
+                        },
+                        {
+                            depth: 0,
+                            excludeInheritedContext: true
+                        })
                         .then(function (data)
                         {
 

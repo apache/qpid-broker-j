@@ -126,37 +126,30 @@ define(["dojo/dom",
                 var that = this;
                 if (effectiveData)
                 {
-                    // editing
-                    management.load(modelObj, {actuals: true})
-                        .then(function (data)
-                        {
-                            var actualData = data[0];
-                            that.initialData = actualData;
-                            that.effectiveData = effectiveData;
-                            that.authenticationProviderType.set("value", actualData.type);
+                    var contextCallback = function (data)
+                    {
+                        var actualData = data.actual;
+                        var effectiveData = data.effective;
+                        that.initialData = actualData;
+                        that.effectiveData = effectiveData;
+                        that.authenticationProviderType.set("value", actualData.type);
 
-                            that.authenticationProviderType.set("disabled", true);
-                            that.authenticationProviderName.set("disabled", true);
-                            if (actualData.preferencesproviders && actualData.preferencesproviders[0])
-                            {
-                                that.preferencesProviderForm.setData(actualData.preferencesproviders[0]);
-                            }
-                            else
-                            {
-                                that.preferencesProviderForm.reset();
-                                that.preferencesProviderForm.setPreferencesProviderName(actualData.name);
-                            }
-                            that.authenticationProviderName.set("value", actualData.name);
-                            util.setContextData(that.context,
-                                management,
-                                modelObj,
-                                actualData,
-                                effectiveData,
-                                function ()
-                                {
-                                    that._show();
-                                });
-                        });
+                        that.authenticationProviderType.set("disabled", true);
+                        that.authenticationProviderName.set("disabled", true);
+                        if (actualData.preferencesproviders && actualData.preferencesproviders[0])
+                        {
+                            that.preferencesProviderForm.setData(actualData.preferencesproviders[0]);
+                        }
+                        else
+                        {
+                            that.preferencesProviderForm.reset();
+                            that.preferencesProviderForm.setPreferencesProviderName(actualData.name);
+                        }
+                        that.authenticationProviderName.set("value", actualData.name);
+                        that.context.setData(actualData.context, effectiveData.context, data.inheritedActual.context);
+                        that._show();
+                    };
+                    util.loadData(management, modelObj, contextCallback, {depth: 1});
                 }
                 else
                 {
@@ -165,10 +158,11 @@ define(["dojo/dom",
                     this.authenticationProviderName.set("disabled", false);
                     this.initialData = {};
                     this.effectiveData = {};
-                    util.setToBrokerEffectiveContext(this.context, management, function ()
+                    util.loadEffectiveAndInheritedActualData(management, modelObj, function (data)
                     {
+                        that.context.setData(data.actual.context, data.effective.context, data.inheritedActual.context);
                         that._show();
-                    });
+                    }, {depth: 1});
                 }
             },
             _show: function ()

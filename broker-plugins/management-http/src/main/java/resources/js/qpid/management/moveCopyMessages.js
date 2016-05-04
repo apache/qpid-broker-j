@@ -120,7 +120,11 @@ define(["dojo/dom",
             management.load({
                     type: "queue",
                     parent: modelObj.parent
-                }, {depth: 0})
+                },
+                {
+                    depth: 0,
+                    excludeInheritedContext: true
+                })
                 .then(function (data)
                 {
                     var queues = [];

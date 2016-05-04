@@ -26,9 +26,11 @@ define(["dojo/_base/xhr",
         "dojo/dom-construct",
         "dojo/dom-geometry",
         "dojo/dom-style",
+        "dojo/Deferred",
         "dojo/_base/window",
         "dojo/query",
         "dojo/parser",
+        "dojo/promise/all",
         "dojo/store/Memory",
         "dojo/window",
         "dojo/on",
@@ -58,9 +60,11 @@ define(["dojo/_base/xhr",
               dom,
               geometry,
               domStyle,
+              Deferred,
               win,
               query,
               parser,
+              all,
               Memory,
               w,
               on,
@@ -709,7 +713,7 @@ define(["dojo/_base/xhr",
                 type: category.toLowerCase(),
                 parent: {type: parentCategory.toLowerCase()}
             };
-            management.load(obj)
+            management.load(obj, {excludeInheritedContext: true})
                 .then(function (data)
                 {
                     var items = [];
@@ -821,39 +825,56 @@ define(["dojo/_base/xhr",
             };
             resize();
             on(window, "resize", resize);
-        }
+        };
 
-        util.setContextData = function (contextUI, management, modelObj, actualData, effectiveData, callback)
+        var _loadData = function (promisesObject, callback)
         {
-            management.load(modelObj, {
-                    actuals: true,
-                    inheritedActuals: true
-                })
-                .then(function (inheritedActuals)
+            all(promisesObject)
+                .then(function (data)
                 {
-                    contextUI.setData(actualData.context, effectiveData.context, inheritedActuals[0].context);
-                    if (callback)
-                    {
-                        callback();
-                    }
-                }, util.xhrErrorHandler);
-        }
-
-        util.setToBrokerEffectiveContext = function (contextUI, management, callback)
-        {
-            var brokerModelObj = {type: "broker"};
-            management.load(brokerModelObj, {depth: 0})
-                .then(function (effectiveData)
-                {
-                    util.setContextData(contextUI, management, brokerModelObj, {}, effectiveData[0], function ()
-                    {
-                        if (callback)
-                        {
-                            callback();
-                        }
+                    callback({
+                        actual: data.actual[0],
+                        inheritedActual: data.inheritedActual[0],
+                        effective: data.effective[0]
                     });
                 });
-        }
+        };
+
+        util.loadData = function (management, modelObj, callback, requestOptions)
+        {
+            var request = lang.mixin({depth: 0}, requestOptions);
+
+            var effectiveResponsePromise = management.load(modelObj, request);
+            var actualResponsePromise = management.load(modelObj, lang.mixin(lang.clone(request), {actuals: true}));
+            var inheritedActualResponsePromise = management.load(modelObj, lang.mixin(lang.clone(request), {
+                actuals: true,
+                excludeInheritedContext: false
+            }));
+            _loadData({
+                actual: actualResponsePromise,
+                inheritedActual: inheritedActualResponsePromise,
+                effective: effectiveResponsePromise
+            }, callback);
+        };
+
+        util.loadEffectiveAndInheritedActualData = function (management, modelObj, callback, requestOptions)
+        {
+            var request = lang.mixin({depth: 0}, requestOptions);
+
+            var effectiveResponsePromise = management.load(modelObj, request);
+            var inheritedActualResponsePromise = management.load(modelObj, lang.mixin(lang.clone(request), {
+                actuals: true,
+                excludeInheritedContext: false
+            }));
+            var deferred = new Deferred();
+            deferred.resolve([{}]);
+            var actualResponsePromise = deferred.promise;
+            _loadData({
+                actual: actualResponsePromise,
+                inheritedActual: inheritedActualResponsePromise,
+                effective: effectiveResponsePromise
+            }, callback);
+        };
 
         util.initialiseFields = function (data, containerNode, metadata, category, type)
         {
