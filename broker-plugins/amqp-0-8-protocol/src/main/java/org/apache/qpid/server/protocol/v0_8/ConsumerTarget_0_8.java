@@ -515,9 +515,23 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         entry.addStateChangeListener(_unacknowledgedMessageListener);
     }
 
+    private void removeUnacknowledgedMessage(MessageInstance entry)
+    {
+
+        final long _size = entry.getMessage().getSize();
+        _unacknowledgedBytes.addAndGet(-_size);
+        _unacknowledgedCount.decrementAndGet();
+
+        _creditManager.restoreCredit(1, _size);
+    }
+
     @Override
     public void acquisitionRemoved(final MessageInstance node)
     {
+        if (node.removeStateChangeListener(_unacknowledgedMessageListener))
+        {
+            removeUnacknowledgedMessage(node);
+        }
     }
 
     public long getUnacknowledgedBytes()
@@ -537,12 +551,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         {
             if(oldState == MessageInstance.State.ACQUIRED && newState != MessageInstance.State.ACQUIRED)
             {
-                final long _size = entry.getMessage().getSize();
-                _unacknowledgedBytes.addAndGet(-_size);
-                _unacknowledgedCount.decrementAndGet();
-
-                _creditManager.restoreCredit(1, _size);
-
+                removeUnacknowledgedMessage(entry);
                 entry.removeStateChangeListener(this);
             }
 

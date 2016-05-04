@@ -65,7 +65,7 @@ class ImplicitAcceptDispositionChangeListener implements ServerSession.MessageDi
         boolean acquired = _entry.acquire(_consumer);
         if(acquired)
         {
-            _target.recordUnacknowledged(_entry);
+            _target.addUnacknowledgedMessage(_entry);
         }
         return acquired;
 

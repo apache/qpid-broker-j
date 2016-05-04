@@ -44,12 +44,12 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
-import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.transport.DeliveryProperties;
 import org.apache.qpid.transport.Header;
 import org.apache.qpid.transport.MessageAcceptMode;
@@ -89,6 +89,18 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     private long _deferredSizeCredit;
     private final List<ConsumerImpl> _consumers = new CopyOnWriteArrayList<>();
 
+    private final StateChangeListener<MessageInstance, MessageInstance.State> _unacknowledgedMessageListener = new StateChangeListener<MessageInstance, MessageInstance.State>()
+    {
+
+        public void stateChanged(MessageInstance entry, MessageInstance.State oldState, MessageInstance.State newState)
+        {
+            if(oldState == MessageInstance.State.ACQUIRED && newState != MessageInstance.State.ACQUIRED)
+            {
+                removeUnacknowledgedMessage(entry);
+                entry.removeStateChangeListener(this);
+            }
+        }
+    };
 
     public ConsumerTarget_0_10(ServerSession session,
                                String name,
@@ -351,14 +363,30 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         }
         else if(_acquireMode == MessageAcquireMode.PRE_ACQUIRED)
         {
-            recordUnacknowledged(entry);
+            addUnacknowledgedMessage(entry);
         }
     }
 
-    void recordUnacknowledged(MessageInstance entry)
+    void addUnacknowledgedMessage(MessageInstance entry)
     {
         _unacknowledgedCount.incrementAndGet();
         _unacknowledgedBytes.addAndGet(entry.getMessage().getSize());
+        entry.addStateChangeListener(_unacknowledgedMessageListener);
+    }
+
+    private void removeUnacknowledgedMessage(MessageInstance entry)
+    {
+        _unacknowledgedBytes.addAndGet(-entry.getMessage().getSize());
+        _unacknowledgedCount.decrementAndGet();
+    }
+
+    @Override
+    public void acquisitionRemoved(final MessageInstance entry)
+    {
+        if (entry.removeStateChangeListener(_unacknowledgedMessageListener))
+        {
+            removeUnacknowledgedMessage(entry);
+        }
     }
 
     private void deferredAddCredit(final int deferredMessageCredit, final long deferredSizeCredit)
@@ -409,17 +437,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         {
             entry.routeToAlternate(null, null);
         }
-    }
-
-    private boolean isAcquiredByConsumer(final MessageInstance entry)
-    {
-        ConsumerImpl acquiringConsumer = entry.getAcquiringConsumer();
-        if(acquiringConsumer instanceof QueueConsumer)
-        {
-            return ((QueueConsumer)acquiringConsumer).getTarget() == this;
-        }
-
-        return false;
     }
 
     void release(final ConsumerImpl consumer,
@@ -518,7 +535,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         return _creditManager;
     }
 
-
     public void stop()
     {
         try
@@ -588,13 +604,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     public boolean isStopped()
     {
         return _stopped.get();
-    }
-
-    @Override
-    public void acquisitionRemoved(final MessageInstance entry)
-    {
-        _unacknowledgedBytes.addAndGet(-entry.getMessage().getSize());
-        _unacknowledgedCount.decrementAndGet();
     }
 
     public void flush()
