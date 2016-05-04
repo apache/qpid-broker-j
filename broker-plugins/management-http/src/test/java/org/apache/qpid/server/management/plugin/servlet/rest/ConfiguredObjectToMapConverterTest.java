@@ -41,6 +41,9 @@ import org.apache.qpid.server.model.ConfiguredObjectAttribute;
 import org.apache.qpid.server.model.ConfiguredObjectMethodAttribute;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.testmodels.hierarchy.TestCar;
+import org.apache.qpid.server.model.testmodels.hierarchy.TestElecEngineImpl;
+import org.apache.qpid.server.model.testmodels.hierarchy.TestEngine;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class ConfiguredObjectToMapConverterTest extends QpidTestCase
@@ -63,13 +66,13 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
 
         Map<String, Object> resultMap = _converter.convertObjectToMap(_configuredObject,
                                                                       ConfiguredObject.class,
-                                                                      0,
-                                                                      false,
-                                                                      false,
-                                                                      false,
-                                                                      false,
-                                                                      120,
-                                                                      false);
+                                                                      new ConfiguredObjectToMapConverter.ConverterOptions(
+                                                                              0,
+                                                                              false,
+                                                                              false,
+                                                                              120,
+                                                                              false,
+                                                                              false));
         Map<String, Object> statsAsMap = (Map<String, Object>) resultMap.get(STATISTICS_MAP_KEY);
         assertNotNull("Statistics should be part of map", statsAsMap);
         assertEquals("Unexpected number of statistics", 1, statsAsMap.size());
@@ -86,13 +89,13 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
 
         Map<String, Object> resultMap = _converter.convertObjectToMap(_configuredObject,
                                                                       ConfiguredObject.class,
-                                                                      0,
-                                                                      false,
-                                                                      false,
-                                                                      false,
-                                                                      false,
-                                                                      120,
-                                                                      false);
+                                                                      new ConfiguredObjectToMapConverter.ConverterOptions(
+                                                                              0,
+                                                                              false,
+                                                                              false,
+                                                                              120,
+                                                                              false,
+                                                                              false));
         assertEquals("Unexpected number of attributes", 1, resultMap.size());
         assertEquals("Unexpected attribute value", attributeValue, resultMap.get(attributeName));
     }
@@ -111,13 +114,13 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
 
         Map<String, Object> resultMap = _converter.convertObjectToMap(_configuredObject,
                                                                       ConfiguredObject.class,
-                                                                      0,
-                                                                      false,
-                                                                      false,
-                                                                      false,
-                                                                      false,
-                                                                      120,
-                                                                      false);
+                                                                      new ConfiguredObjectToMapConverter.ConverterOptions(
+                                                                              0,
+                                                                              false,
+                                                                              false,
+                                                                              120,
+                                                                              false,
+                                                                              false));
         assertEquals("Unexpected number of attributes", 1, resultMap.size());
         assertEquals("Unexpected attribute value", "attributeConfiguredObjectName", resultMap.get(attributeName));
     }
@@ -137,13 +140,13 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
 
         Map<String, Object> resultMap = _converter.convertObjectToMap(_configuredObject,
                                                                       ConfiguredObject.class,
-                                                                      1,
-                                                                      false,
-                                                                      false,
-                                                                      false,
-                                                                      false,
-                                                                      120,
-                                                                      false);
+                                                                      new ConfiguredObjectToMapConverter.ConverterOptions(
+                                                                              1,
+                                                                              false,
+                                                                              false,
+                                                                              120,
+                                                                              false,
+                                                                              false));
         assertEquals("Unexpected parent map size", 1, resultMap.size());
 
         final List<Map<String, Object>> childList = (List<Map<String, Object>>) resultMap.get("testchilds");
@@ -182,13 +185,13 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
 
         Map<String, Object> resultMap = _converter.convertObjectToMap(_configuredObject,
                                                                       ConfiguredObject.class,
-                                                                      1,
-                                                                      true,
-                                                                      false,
-                                                                      false,
-                                                                      false,
-                                                                      120,
-                                                                      false);
+                                                                      new ConfiguredObjectToMapConverter.ConverterOptions(
+                                                                              1,
+                                                                              true,
+                                                                              false,
+                                                                              120,
+                                                                              false,
+                                                                              true));
         assertEquals("Unexpected parent map size", 2, resultMap.size());
         assertEquals("Incorrect context", resultMap.get(ConfiguredObject.CONTEXT), actualContext);
         List<Map<String, Object>> childList = (List<Map<String, Object>>) resultMap.get("testchilds");
@@ -201,18 +204,16 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
 
         resultMap = _converter.convertObjectToMap(_configuredObject,
                                                   ConfiguredObject.class,
-                                                  1,
-                                                  false,
-                                                  false,
-                                                  false,
-                                                  false,
-                                                  120,
-                                                  false);
+                                                  new ConfiguredObjectToMapConverter.ConverterOptions(1,
+                                                                                                      false,
+                                                                                                      false,
+                                                                                                      120,
+                                                                                                      false,
+                                                                                                      true));
         assertEquals("Unexpected parent map size", 2, resultMap.size());
-        Map<String, Object> inheritedContext = new HashMap<>();
-        inheritedContext.put("key","value");
-        inheritedContext.put("inheritedkey","foo");
-        assertEquals("Incorrect context", inheritedContext, resultMap.get(ConfiguredObject.CONTEXT));
+        Map<String, Object> effectiveContext = new HashMap<>();
+        effectiveContext.put("key","value");
+        assertEquals("Incorrect context", effectiveContext, resultMap.get(ConfiguredObject.CONTEXT));
         childList = (List<Map<String, Object>>) resultMap.get("testchilds");
         assertEquals("Unexpected number of children", 1, childList.size());
         childMap = childList.get(0);
@@ -243,14 +244,14 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
 
 
          Map<String, Object> resultMap = _converter.convertObjectToMap(_configuredObject,
-                                                                            ConfiguredObject.class,
-                                                                            1,
-                                                                            false,
-                                                                            false,
-                                                                            false,
-                                                                            false,
-                                                                            20,
-                                                                            false);
+                                                                       ConfiguredObject.class,
+                                                                       new ConfiguredObjectToMapConverter.ConverterOptions(
+                                                                               1,
+                                                                               false,
+                                                                               false,
+                                                                               20,
+                                                                               false,
+                                                                               false));
         Object children = resultMap.get("testchilds");
         assertNotNull(children);
         assertTrue(children instanceof Collection);
@@ -263,13 +264,12 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
 
         resultMap = _converter.convertObjectToMap(_configuredObject,
                                                   ConfiguredObject.class,
-                                                  1,
-                                                  false,
-                                                  false,
-                                                  false,
-                                                  false,
-                                                  8,
-                                                  false);
+                                                  new ConfiguredObjectToMapConverter.ConverterOptions(1,
+                                                                                                      false,
+                                                                                                      false,
+                                                                                                      8,
+                                                                                                      false,
+                                                                                                      false));
 
         children = resultMap.get("testchilds");
         assertNotNull(children);
@@ -286,13 +286,12 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
 
         resultMap = _converter.convertObjectToMap(_configuredObject,
                                                   ConfiguredObject.class,
-                                                  1,
-                                                  false,
-                                                  false,
-                                                  false,
-                                                  false,
-                                                  8,
-                                                  false);
+                                                  new ConfiguredObjectToMapConverter.ConverterOptions(1,
+                                                                                                      false,
+                                                                                                      false,
+                                                                                                      8,
+                                                                                                      false,
+                                                                                                      false));
 
         children = resultMap.get("testchilds");
         assertNotNull(children);
@@ -331,14 +330,14 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         when(mockChild.isDurable()).thenReturn(true);
 
         Map<String, Object> resultMap = _converter.convertObjectToMap(_configuredObject,
-                ConfiguredObject.class,
-                1,
-                false,
-                false,
-                false,
-                false,
-                20,
-                false);
+                                                                      ConfiguredObject.class,
+                                                                      new ConfiguredObjectToMapConverter.ConverterOptions(
+                                                                              1,
+                                                                              false,
+                                                                              false,
+                                                                              20,
+                                                                              false,
+                                                                              false));
         Object children = resultMap.get("testchilds");
         assertNotNull(children);
         assertTrue(children instanceof Collection);
@@ -348,14 +347,13 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         assertEquals("*****", ((Map) attrs).get("secureAttribute"));
 
         resultMap = _converter.convertObjectToMap(_configuredObject,
-                ConfiguredObject.class,
-                1,
-                true,
-                true,
-                false,
-                true,
-                20,
-                true);
+                                                  ConfiguredObject.class,
+                                                  new ConfiguredObjectToMapConverter.ConverterOptions(1,
+                                                                                                      true,
+                                                                                                      true,
+                                                                                                      20,
+                                                                                                      true,
+                                                                                                      false));
 
         children = resultMap.get("testchilds");
         assertNotNull(children);
@@ -366,14 +364,13 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         assertEquals("secret", ((Map) attrs).get("secureAttribute"));
 
         resultMap = _converter.convertObjectToMap(_configuredObject,
-                ConfiguredObject.class,
-                1,
-                true,
-                true,
-                false,
-                false,
-                20,
-                true);
+                                                  ConfiguredObject.class,
+                                                  new ConfiguredObjectToMapConverter.ConverterOptions(1,
+                                                                                                      true,
+                                                                                                      false,
+                                                                                                      20,
+                                                                                                      true,
+                                                                                                      false));
 
         children = resultMap.get("testchilds");
         assertNotNull(children);
@@ -382,6 +379,114 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         attrs = ((Collection)children).iterator().next();
         assertTrue(attrs instanceof Map);
         assertEquals("*****", ((Map) attrs).get("secureAttribute"));
+    }
+
+    public void testExcludeInheritedContext()
+    {
+        Model model = org.apache.qpid.server.model.testmodels.hierarchy.TestModel.getInstance();
+        final Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, "myCar");
+        carAttributes.put(ConfiguredObject.CONTEXT, Collections.singletonMap("parentTest", "parentTestValue"));
+        TestCar car = model.getObjectFactory().create(TestCar.class,
+                                                      carAttributes);
+        final Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, "myEngine");
+        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+        engineAttributes.put(ConfiguredObject.CONTEXT, Collections.singletonMap("test", "testValue"));
+        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
+
+        Map<String, Object> resultMap = _converter.convertObjectToMap(engine,
+                                                                      ConfiguredObject.class,
+                                                                      new ConfiguredObjectToMapConverter.ConverterOptions(
+                                                                              1,
+                                                                              false,
+                                                                              false,
+                                                                              0,
+                                                                              false,
+                                                                              false));
+        Object contextValue = resultMap.get("context");
+        assertTrue("Unexpected type of context", contextValue instanceof Map);
+        assertTrue("Unexpected size of context", ((Map)contextValue).size() > 1);
+        assertEquals("Unexpected context content", "testValue", ((Map)contextValue).get("test"));
+        assertEquals("Unexpected context content", "parentTestValue", ((Map)contextValue).get("parentTest"));
+
+        resultMap = _converter.convertObjectToMap(engine,
+                                                  ConfiguredObject.class,
+                                                  new ConfiguredObjectToMapConverter.ConverterOptions(1,
+                                                                                                      false,
+                                                                                                      false,
+                                                                                                      0,
+                                                                                                      false,
+                                                                                                      true));
+        contextValue = resultMap.get("context");
+        assertTrue("Unexpected type of context", contextValue instanceof Map);
+        assertEquals("Unexpected size of context", 1, ((Map)contextValue).size());
+        assertEquals("Unexpected context content","testValue", ((Map)contextValue).get("test"));
+
+
+
+
+
+        /*
+
+
+
+//        Model model = createTestModel();
+        ConfiguredObjectTypeRegistry typeRegistry = model.getTypeRegistry();
+        Map<String, ConfiguredObjectAttribute<?, ?>> attributeTypes = typeRegistry.getAttributeTypes(TestChild.class);
+        ConfiguredObjectAttribute contextAttribute = mock(ConfiguredObjectMethodAttribute.class);
+        when(attributeTypes.get(eq("context"))).thenReturn(contextAttribute);
+
+        TestChild mockChild = mock(TestChild.class);
+        when(mockChild.getModel()).thenReturn(model);
+        when(mockChild.getCategoryClass()).thenReturn(TestChild.class);
+        when(mockChild.getParent(Matchers.<Class>any())).thenReturn(_configuredObject);
+        when(_configuredObject.getModel()).thenReturn(model);
+        when(_configuredObject.getChildren(TestChild.class)).thenReturn(Arrays.asList(mockChild));
+        when(model.getParentTypes(TestChild.class)).thenReturn(Collections.<Class<? extends ConfiguredObject>>singleton(TestChild.class));
+        when(_configuredObject.getCategoryClass()).thenReturn(TestChild.class);
+
+
+        // set encoded value
+        final Map<String,String> context = new HashMap<>();
+        context.put("test", "testValue");
+        configureMockToReturnOneAttribute(mockChild, "context", context);
+        when(mockChild.getContextKeys(anyBoolean())).thenReturn(context.keySet());
+        when(mockChild.getContextValue(String.class, "test")).thenReturn(context.get("test"));
+
+        final Map<String, String> parentContext = new HashMap<>();
+        parentContext.put("parentTest", "parentTestValue");
+        configureMockToReturnOneAttribute(_configuredObject, "context", parentContext);
+        when(_configuredObject.getContextKeys(anyBoolean())).thenReturn(parentContext.keySet());
+        when(_configuredObject.getContextValue(String.class, "parentTest")).thenReturn(parentContext.get("parentTest"));
+
+        Map<String, Object> resultMap = _converter.convertObjectToMap(mockChild,
+                                                                      ConfiguredObject.class,
+                                                                      new ConfiguredObjectToMapConverter.ConverterOptions(
+                                                                              1,
+                                                                              false,
+                                                                              false,
+                                                                              0,
+                                                                              false,
+                                                                              false));
+        Object contextValue = resultMap.get("context");
+        assertTrue("Unexpected type of context", contextValue instanceof Map);
+        assertEquals("Unexpected size of context", 2, ((Map)contextValue).size());
+        assertEquals("Unexpected context content", "testValue", ((Map)contextValue).get("test"));
+        assertEquals("Unexpected context content", "parentTestValue", ((Map)contextValue).get("parentTest"));
+
+        resultMap = _converter.convertObjectToMap(mockChild,
+                                                  ConfiguredObject.class,
+                                                  new ConfiguredObjectToMapConverter.ConverterOptions(1,
+                                                                                                      false,
+                                                                                                      false,
+                                                                                                      0,
+                                                                                                      false,
+                                                                                                      true));
+        contextValue = resultMap.get("context");
+        assertTrue("Unexpected type of context", contextValue instanceof Map);
+        assertEquals("Unexpected size of context", 1, ((Map)contextValue).size());
+        assertEquals("Unexpected context content","testValue", ((Map)contextValue).get("test"));*/
     }
 
     private Model createTestModel()
