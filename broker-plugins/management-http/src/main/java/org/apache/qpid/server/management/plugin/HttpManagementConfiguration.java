@@ -51,7 +51,7 @@ public interface HttpManagementConfiguration<X extends HttpManagementConfigurati
 
     String HTTP_MANAGEMENT_COMPRESS_RESPONSES = "httpManagement.compressResponses";
     @ManagedContextDefault(name = HTTP_MANAGEMENT_COMPRESS_RESPONSES)
-    boolean DEFAULT_COMPRESS_RESPONSES = false;
+    boolean DEFAULT_COMPRESS_RESPONSES = true;
 
     @ManagedAttribute( defaultValue = "${"+HTTP_MANAGEMENT_COMPRESS_RESPONSES+"}" )
     public boolean isCompressResponses();
