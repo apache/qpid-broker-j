@@ -23,6 +23,7 @@ define(["dojo/parser",
         "dojo/json",
         "dojo/_base/connect",
         "dojo/store/Memory",
+        "dojo/promise/all",
         "qpid/common/properties",
         "qpid/common/updater",
         "qpid/common/util",
@@ -57,6 +58,7 @@ define(["dojo/parser",
               json,
               connect,
               memory,
+              all,
               properties,
               updater,
               util,
@@ -319,7 +321,7 @@ define(["dojo/parser",
 
             this.management.load(brokerObj,
                 {
-                    depth: 2,
+                    depth: 1,
                     excludeInheritedContext: true
                 })
                 .then(function (data)
@@ -348,11 +350,11 @@ define(["dojo/parser",
 
                     function isActiveVH(item)
                     {
-                        return item && item.virtualhosts && item.virtualhosts[0].state == "ACTIVE";
+                        return item && item.vhId && item.vhState == "ACTIVE";
                     }
 
                     that.vhostsGrid =
-                        new UpdatableStore(that.brokerData.virtualhostnodes, query(".broker-virtualhosts")[0], [{
+                        new UpdatableStore([], query(".broker-virtualhosts")[0], [{
                             name: "Node Name",
                             field: "name",
                             width: "8%"
@@ -366,7 +368,7 @@ define(["dojo/parser",
                             width: "8%"
                         }, {
                             name: "Default",
-                            field: "defaultVirtualHostNode",
+                            field: "default",
                             width: "8%",
                             formatter: function (item)
                             {
@@ -375,35 +377,23 @@ define(["dojo/parser",
                             }
                         }, {
                             name: "Host Name",
-                            field: "_item",
-                            width: "8%",
-                            formatter: function (item)
-                            {
-                                return item && item.virtualhosts ? item.virtualhosts[0].name : "N/A";
-                            }
+                            field: "vhName",
+                            width: "8%"
                         }, {
                             name: "Host State",
-                            field: "_item",
-                            width: "15%",
-                            formatter: function (item)
-                            {
-                                return item && item.virtualhosts ? item.virtualhosts[0].state : "N/A";
-                            }
+                            field: "vhState",
+                            width: "15%"
                         }, {
                             name: "Host Type",
-                            field: "_item",
-                            width: "15%",
-                            formatter: function (item)
-                            {
-                                return item && item.virtualhosts ? item.virtualhosts[0].type : "N/A";
-                            }
+                            field: "vhType",
+                            width: "15%"
                         }, {
                             name: "Connections",
                             field: "_item",
                             width: "8%",
                             formatter: function (item)
                             {
-                                return isActiveVH(item) ? item.virtualhosts[0].statistics.connectionCount : "N/A";
+                                return isActiveVH(item) ? item.connectionCount : "N/A";
                             }
                         }, {
                             name: "Queues",
@@ -411,7 +401,7 @@ define(["dojo/parser",
                             width: "8%",
                             formatter: function (item)
                             {
-                                return isActiveVH(item) ? item.virtualhosts[0].statistics.queueCount : "N/A";
+                                return isActiveVH(item) ? item.queueCount : "N/A";
                             }
                         }, {
                             name: "Exchanges",
@@ -419,14 +409,14 @@ define(["dojo/parser",
                             width: "8%",
                             formatter: function (item)
                             {
-                                return isActiveVH(item) ? item.virtualhosts[0].statistics.exchangeCount : "N/A";
+                                return isActiveVH(item) ? item.exchangeCount : "N/A";
                             }
                         }], function (obj)
                         {
                             connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
                             {
                                 var idx = evt.rowIndex, theItem = this.getItem(idx);
-                                if (theItem.virtualhosts)
+                                if (theItem.vhId)
                                 {
                                     that.showVirtualHost(theItem, brokerObj);
                                 }
@@ -531,16 +521,15 @@ define(["dojo/parser",
                     startVirtualHostItem.on("click", function (event)
                     {
                         var data = that.vhostsGrid.grid.selection.getSelected();
-                        if (data.length == 1 && data[0].virtualhosts)
+                        if (data.length == 1 && data[0].vhId)
                         {
                             var item = data[0];
-                            var host = item.virtualhosts[0];
                             that.management.update({
                                     type: "virtualhost",
-                                    name: item.name,
+                                    name: item.vhName,
                                     parent: {
                                         type: "virtualhostnode",
-                                        name: host.name,
+                                        name: item.name,
                                         parent: that.modelObj
                                     }
                                 }, {desiredState: "ACTIVE"})
@@ -554,19 +543,18 @@ define(["dojo/parser",
                     stopVirtualHostItem.on("click", function (event)
                     {
                         var data = that.vhostsGrid.grid.selection.getSelected();
-                        if (data.length == 1 && data[0].virtualhosts)
+                        if (data.length == 1 && data[0].vhId)
                         {
                             var item = data[0];
-                            var host = item.virtualhosts[0];
                             if (confirm("Are you sure you want to stop virtual host '"
-                                        + entities.encode(String(host.name)) + "'?"))
+                                        + entities.encode(String(item.vhName)) + "'?"))
                             {
                                 that.management.update({
                                         type: "virtualhost",
-                                        name: item.name,
+                                        name: item.vhName,
                                         parent: {
                                             type: "virtualhostnode",
-                                            name: host.name,
+                                            name: item.name,
                                             parent: that.modelObj
                                         }
                                     }, {desiredState: "STOPPED"})
@@ -825,14 +813,12 @@ define(["dojo/parser",
 
         BrokerUpdater.prototype.showVirtualHost = function (item, brokerObj)
         {
-            var nodeName = item.name;
-            var host = item.virtualhosts ? item.virtualhosts[0] : null;
             var nodeObject = {
                 type: "virtualhostnode",
-                name: nodeName,
+                name: item.name,
                 parent: brokerObj
             };
-            this.controller.show("virtualhost", host ? host.name : nodeName, nodeObject, host ? host.id : null);
+            this.controller.show("virtualhost", item.vhId ? item.vhName : item.name, nodeObject, item.vhId);
         }
 
         BrokerUpdater.prototype.updateHeader = function ()
@@ -905,19 +891,67 @@ define(["dojo/parser",
 
             var that = this;
 
-            this.management.load(this.brokerObj,
+            var brokerResponsePromise = this.management.load(this.brokerObj,
                 {
-                    depth: 2,
+                    depth: 1,
                     excludeInheritedContext: true
-                })
+                });
+            var virtualHostsResponsePromise = this.management.query({
+                category: "VirtualHost",
+                select: "$parent.id AS id, $parent.name AS name, $parent.state AS state,"
+                        + " $parent.defaultVirtualHostNode AS default, $parent.type AS type,"
+                        + " id AS vhId, name AS vhName, type AS vhType, state AS vhState,"
+                        + " connectionCount, queueCount, exchangeCount",
+                orderBy: "name"
+            });
+            all({
+                broker: brokerResponsePromise,
+                virtualHosts: virtualHostsResponsePromise
+            })
                 .then(function (data)
                 {
-                    that.brokerData = data[0];
+                    that.brokerData = data.broker[0];
+                    var virtualHostData = [];
+                    var headers =  data.virtualHosts.headers;
+                    var results =  data.virtualHosts.results;
+                    var queryVirtualHostNodes = {};
+                    for (var i = 0; i < results.length; i++)
+                    {
+                        var result = {};
+                        for (var j = 0; j < headers.length; j++)
+                        {
+                            result[headers[j]] = results[i][j];
+                        }
+                        virtualHostData.push(result);
+                        queryVirtualHostNodes[result.id] = null;
+                    }
+                    for (var i = 0; i < that.brokerData.virtualhostnodes.length; i++)
+                    {
+                        var node = that.brokerData.virtualhostnodes[i];
+                        var nodeId = node.id;
+                        if (!(nodeId in queryVirtualHostNodes))
+                        {
+                            virtualHostData.push({
+                                id: nodeId,
+                                name: node.name,
+                                type: node.type,
+                                state: node.state,
+                                "default": node.defaultVirtualHostNode,
+                                vhId: null,
+                                vhName: "N/A",
+                                vhType: "N/A",
+                                vhState: "N/A",
+                                connectionCount: "N/A",
+                                queueCount: "N/A",
+                                exchangeCount: "N/A"
+                            });
+                        }
+                    }
                     util.flattenStatistics(that.brokerData);
 
                     that.updateHeader();
 
-                    if (that.vhostsGrid.update(that.brokerData.virtualhostnodes))
+                    if (that.vhostsGrid.update(virtualHostData))
                     {
                         that.vhostsGrid.grid._refresh();
                         that.toggleVirtualHostNodeNodeMenus();
@@ -957,7 +991,7 @@ define(["dojo/parser",
             var data = this.vhostsGrid.grid.selection.getSelected();
             var selected = data.length == 1;
             this.virtualHostNodeMenuButton.set("disabled", !selected);
-            this.virtualHostMenuButton.set("disabled", !selected || !data[0].virtualhosts);
+            this.virtualHostMenuButton.set("disabled", !selected || !data[0].vhId);
             if (selected)
             {
                 var nodeMenuItems = this.virtualHostNodeMenuButton.dropDown.getChildren();
@@ -970,17 +1004,16 @@ define(["dojo/parser",
                 var startVirtualHostItem = hostMenuItems[1];
                 var stopVirtualHostItem = hostMenuItems[2];
 
-                var node = data[0];
-                startNodeItem.set("disabled", node.state != "STOPPED");
-                stopNodeItem.set("disabled", node.state != "ACTIVE");
+                var item = data[0];
+                startNodeItem.set("disabled", item.state != "STOPPED");
+                stopNodeItem.set("disabled", item.state != "ACTIVE");
 
-                if (node.virtualhosts)
+                if (item.vhId)
                 {
                     viewVirtualHostItem.set("disabled", false);
 
-                    var host = node.virtualhosts[0];
-                    startVirtualHostItem.set("disabled", host.state != "STOPPED");
-                    stopVirtualHostItem.set("disabled", host.state != "ACTIVE");
+                    startVirtualHostItem.set("disabled", item.vhState != "STOPPED");
+                    stopVirtualHostItem.set("disabled", item.vhState != "ACTIVE");
                 }
                 else
                 {
