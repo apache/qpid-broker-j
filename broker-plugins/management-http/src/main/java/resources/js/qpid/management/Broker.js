@@ -319,496 +319,480 @@ define(["dojo/parser",
             this.brokerObj = brokerObj;
             var that = this;
 
-            this.management.load(brokerObj,
-                {
-                    depth: 1,
-                    excludeInheritedContext: true
-                })
-                .then(function (data)
-                {
-                    that.brokerData = data[0];
-
-                    util.flattenStatistics(that.brokerData);
-
-                    that.updateHeader();
-
-                    var gridProperties = {
-                        height: 400,
-                        selectionMode: "single",
-                        plugins: {
-                            pagination: {
-                                pageSizes: [10, 25, 50, 100],
-                                description: true,
-                                sizeSwitch: true,
-                                pageStepper: true,
-                                gotoButton: true,
-                                maxPageStep: 4,
-                                position: "bottom"
-                            }
-                        }
-                    };
-
-                    function isActiveVH(item)
-                    {
-                        return item && item.vhId && item.vhState == "ACTIVE";
+            var gridProperties = {
+                height: 400,
+                selectionMode: "single",
+                plugins: {
+                    pagination: {
+                        pageSizes: [10, 25, 50, 100],
+                        description: true,
+                        sizeSwitch: true,
+                        pageStepper: true,
+                        gotoButton: true,
+                        maxPageStep: 4,
+                        position: "bottom"
                     }
+                }
+            };
 
-                    that.vhostsGrid =
-                        new UpdatableStore([], query(".broker-virtualhosts")[0], [{
-                            name: "Node Name",
-                            field: "name",
-                            width: "8%"
-                        }, {
-                            name: "Node State",
-                            field: "state",
-                            width: "8%"
-                        }, {
-                            name: "Node Type",
-                            field: "type",
-                            width: "8%"
-                        }, {
-                            name: "Default",
-                            field: "default",
-                            width: "8%",
-                            formatter: function (item)
-                            {
-                                return "<input type='checkbox' disabled='disabled' " + (item ? "checked='checked'" : "")
-                                       + " />";
-                            }
-                        }, {
-                            name: "Host Name",
-                            field: "vhName",
-                            width: "8%"
-                        }, {
-                            name: "Host State",
-                            field: "vhState",
-                            width: "15%"
-                        }, {
-                            name: "Host Type",
-                            field: "vhType",
-                            width: "15%"
-                        }, {
-                            name: "Connections",
-                            field: "_item",
-                            width: "8%",
-                            formatter: function (item)
-                            {
-                                return isActiveVH(item) ? item.connectionCount : "N/A";
-                            }
-                        }, {
-                            name: "Queues",
-                            field: "_item",
-                            width: "8%",
-                            formatter: function (item)
-                            {
-                                return isActiveVH(item) ? item.queueCount : "N/A";
-                            }
-                        }, {
-                            name: "Exchanges",
-                            field: "_item",
-                            width: "8%",
-                            formatter: function (item)
-                            {
-                                return isActiveVH(item) ? item.exchangeCount : "N/A";
-                            }
-                        }], function (obj)
-                        {
-                            connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
-                            {
-                                var idx = evt.rowIndex, theItem = this.getItem(idx);
-                                if (theItem.vhId)
-                                {
-                                    that.showVirtualHost(theItem, brokerObj);
-                                }
-                            });
-                        }, gridProperties, EnhancedGrid, true);
+            function isActiveVH(item)
+            {
+                return item && item.vhId && item.vhState == "ACTIVE";
+            }
 
-                    that.virtualHostNodeMenuButton = registry.byNode(query(".virtualHostNodeMenuButton", node)[0]);
-                    that.virtualHostMenuButton = registry.byNode(query(".virtualHostMenuButton", node)[0]);
-
-                    var hostMenuItems = that.virtualHostMenuButton.dropDown.getChildren();
-                    var viewVirtualHostItem = hostMenuItems[0];
-                    var startVirtualHostItem = hostMenuItems[1];
-                    var stopVirtualHostItem = hostMenuItems[2];
-
-                    var nodeMenuItems = that.virtualHostNodeMenuButton.dropDown.getChildren();
-                    var viewNodeItem = nodeMenuItems[0];
-                    var deleteNodeItem = nodeMenuItems[1];
-                    var startNodeItem = nodeMenuItems[2];
-                    var stopNodeItem = nodeMenuItems[3];
-
-                    var toggler = function (index)
+            this.vhostsGrid =
+                new UpdatableStore([], query(".broker-virtualhosts")[0], [{
+                    name: "Node Name",
+                    field: "name",
+                    width: "8%"
+                }, {
+                    name: "Node State",
+                    field: "state",
+                    width: "8%"
+                }, {
+                    name: "Node Type",
+                    field: "type",
+                    width: "8%"
+                }, {
+                    name: "Default",
+                    field: "default",
+                    width: "8%",
+                    formatter: function (item)
                     {
-                        that.toggleVirtualHostNodeNodeMenus(index);
+                        return "<input type='checkbox' disabled='disabled' " + (item ? "checked='checked'" : "")
+                               + " />";
                     }
-                    connect.connect(that.vhostsGrid.grid.selection, 'onSelected', toggler);
-                    connect.connect(that.vhostsGrid.grid.selection, 'onDeselected', toggler);
-
-                    viewVirtualHostItem.on("click", function ()
+                }, {
+                    name: "Host Name",
+                    field: "vhName",
+                    width: "8%"
+                }, {
+                    name: "Host State",
+                    field: "vhState",
+                    width: "15%"
+                }, {
+                    name: "Host Type",
+                    field: "vhType",
+                    width: "15%"
+                }, {
+                    name: "Connections",
+                    field: "_item",
+                    width: "8%",
+                    formatter: function (item)
                     {
-                        var data = that.vhostsGrid.grid.selection.getSelected();
-                        if (data.length == 1)
+                        return isActiveVH(item) ? item.connectionCount : "N/A";
+                    }
+                }, {
+                    name: "Queues",
+                    field: "_item",
+                    width: "8%",
+                    formatter: function (item)
+                    {
+                        return isActiveVH(item) ? item.queueCount : "N/A";
+                    }
+                }, {
+                    name: "Exchanges",
+                    field: "_item",
+                    width: "8%",
+                    formatter: function (item)
+                    {
+                        return isActiveVH(item) ? item.exchangeCount : "N/A";
+                    }
+                }], function (obj)
+                {
+                    connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
+                    {
+                        var idx = evt.rowIndex, theItem = this.getItem(idx);
+                        if (theItem.vhId)
                         {
-                            that.showVirtualHost(data[0], brokerObj);
-                            that.vhostsGrid.grid.selection.clear();
+                            that.showVirtualHost(theItem, brokerObj);
                         }
                     });
+                }, gridProperties, EnhancedGrid, true);
 
-                    viewNodeItem.on("click", function (evt)
+            this.virtualHostNodeMenuButton = registry.byNode(query(".virtualHostNodeMenuButton", node)[0]);
+            this.virtualHostMenuButton = registry.byNode(query(".virtualHostMenuButton", node)[0]);
+
+            var hostMenuItems = this.virtualHostMenuButton.dropDown.getChildren();
+            var viewVirtualHostItem = hostMenuItems[0];
+            var startVirtualHostItem = hostMenuItems[1];
+            var stopVirtualHostItem = hostMenuItems[2];
+
+            var nodeMenuItems = this.virtualHostNodeMenuButton.dropDown.getChildren();
+            var viewNodeItem = nodeMenuItems[0];
+            var deleteNodeItem = nodeMenuItems[1];
+            var startNodeItem = nodeMenuItems[2];
+            var stopNodeItem = nodeMenuItems[3];
+
+            var toggler = function (index)
+            {
+                that.toggleVirtualHostNodeNodeMenus(index);
+            }
+            connect.connect(this.vhostsGrid.grid.selection, 'onSelected', toggler);
+            connect.connect(this.vhostsGrid.grid.selection, 'onDeselected', toggler);
+
+            viewVirtualHostItem.on("click", function ()
+            {
+                var data = that.vhostsGrid.grid.selection.getSelected();
+                if (data.length == 1)
+                {
+                    that.showVirtualHost(data[0], brokerObj);
+                    that.vhostsGrid.grid.selection.clear();
+                }
+            });
+
+            viewNodeItem.on("click", function (evt)
+            {
+                var data = that.vhostsGrid.grid.selection.getSelected();
+                if (data.length == 1)
+                {
+                    var item = data[0];
+                    that.controller.show("virtualhostnode", item.name, brokerObj, item.id);
+                    that.vhostsGrid.grid.selection.clear();
+                }
+            });
+
+            deleteNodeItem.on("click", function (evt)
+            {
+                util.deleteSelectedObjects(that.vhostsGrid.grid,
+                    "Deletion of virtual host node will delete both configuration and message data.\n\n Are you sure you want to delete virtual host node",
+                    that.management,
                     {
-                        var data = that.vhostsGrid.grid.selection.getSelected();
-                        if (data.length == 1)
+                        type: "virtualhostnode",
+                        parent: that.modelObj
+                    },
+                    that.brokerUpdater);
+            });
+
+            startNodeItem.on("click", function (event)
+            {
+                var data = that.vhostsGrid.grid.selection.getSelected();
+                if (data.length == 1)
+                {
+                    var item = data[0];
+                    that.management.update({
+                            type: "virtualhostnode",
+                            name: item.name,
+                            parent: that.modelObj
+                        }, {desiredState: "ACTIVE"})
+                        .then(function (data)
                         {
-                            var item = data[0];
-                            that.controller.show("virtualhostnode", item.name, brokerObj, item.id);
                             that.vhostsGrid.grid.selection.clear();
-                        }
-                    });
+                        });
+                }
+            });
 
-                    deleteNodeItem.on("click", function (evt)
+            stopNodeItem.on("click", function (event)
+            {
+                var data = that.vhostsGrid.grid.selection.getSelected();
+                if (data.length == 1)
+                {
+                    var item = data[0];
+                    if (confirm("Stopping the node will also shutdown the virtual host. "
+                                + "Are you sure you want to stop virtual host node '" + entities.encode(String(
+                                item.name)) + "'?"))
                     {
-                        util.deleteSelectedObjects(that.vhostsGrid.grid,
-                            "Deletion of virtual host node will delete both configuration and message data.\n\n Are you sure you want to delete virtual host node",
-                            that.management,
-                            {
+                        that.management.update({
                                 type: "virtualhostnode",
+                                name: item.name,
                                 parent: that.modelObj
-                            },
-                            that.brokerUpdater);
-                    });
+                            }, {desiredState: "STOPPED"})
+                            .then(function (data)
+                            {
+                                that.vhostsGrid.grid.selection.clear();
+                            });
+                    }
+                }
+            });
 
-                    startNodeItem.on("click", function (event)
-                    {
-                        var data = that.vhostsGrid.grid.selection.getSelected();
-                        if (data.length == 1)
+            startVirtualHostItem.on("click", function (event)
+            {
+                var data = that.vhostsGrid.grid.selection.getSelected();
+                if (data.length == 1 && data[0].vhId)
+                {
+                    var item = data[0];
+                    that.management.update({
+                            type: "virtualhost",
+                            name: item.vhName,
+                            parent: {
+                                type: "virtualhostnode",
+                                name: item.name,
+                                parent: that.modelObj
+                            }
+                        }, {desiredState: "ACTIVE"})
+                        .then(function (data)
                         {
-                            var item = data[0];
-                            that.management.update({
+                            that.vhostsGrid.grid.selection.clear();
+                        });
+                }
+            });
+
+            stopVirtualHostItem.on("click", function (event)
+            {
+                var data = that.vhostsGrid.grid.selection.getSelected();
+                if (data.length == 1 && data[0].vhId)
+                {
+                    var item = data[0];
+                    if (confirm("Are you sure you want to stop virtual host '"
+                                + entities.encode(String(item.vhName)) + "'?"))
+                    {
+                        that.management.update({
+                                type: "virtualhost",
+                                name: item.vhName,
+                                parent: {
                                     type: "virtualhostnode",
                                     name: item.name,
                                     parent: that.modelObj
-                                }, {desiredState: "ACTIVE"})
-                                .then(function (data)
-                                {
-                                    that.vhostsGrid.grid.selection.clear();
-                                });
-                        }
-                    });
-
-                    stopNodeItem.on("click", function (event)
-                    {
-                        var data = that.vhostsGrid.grid.selection.getSelected();
-                        if (data.length == 1)
-                        {
-                            var item = data[0];
-                            if (confirm("Stopping the node will also shutdown the virtual host. "
-                                        + "Are you sure you want to stop virtual host node '" + entities.encode(String(
-                                        item.name)) + "'?"))
-                            {
-                                that.management.update({
-                                        type: "virtualhostnode",
-                                        name: item.name,
-                                        parent: that.modelObj
-                                    }, {desiredState: "STOPPED"})
-                                    .then(function (data)
-                                    {
-                                        that.vhostsGrid.grid.selection.clear();
-                                    });
-                            }
-                        }
-                    });
-
-                    startVirtualHostItem.on("click", function (event)
-                    {
-                        var data = that.vhostsGrid.grid.selection.getSelected();
-                        if (data.length == 1 && data[0].vhId)
-                        {
-                            var item = data[0];
-                            that.management.update({
-                                    type: "virtualhost",
-                                    name: item.vhName,
-                                    parent: {
-                                        type: "virtualhostnode",
-                                        name: item.name,
-                                        parent: that.modelObj
-                                    }
-                                }, {desiredState: "ACTIVE"})
-                                .then(function (data)
-                                {
-                                    that.vhostsGrid.grid.selection.clear();
-                                });
-                        }
-                    });
-
-                    stopVirtualHostItem.on("click", function (event)
-                    {
-                        var data = that.vhostsGrid.grid.selection.getSelected();
-                        if (data.length == 1 && data[0].vhId)
-                        {
-                            var item = data[0];
-                            if (confirm("Are you sure you want to stop virtual host '"
-                                        + entities.encode(String(item.vhName)) + "'?"))
-                            {
-                                that.management.update({
-                                        type: "virtualhost",
-                                        name: item.vhName,
-                                        parent: {
-                                            type: "virtualhostnode",
-                                            name: item.name,
-                                            parent: that.modelObj
-                                        }
-                                    }, {desiredState: "STOPPED"})
-                                    .then(function (data)
-                                    {
-                                        that.vhostsGrid.grid.selection.clear();
-                                    });
-                            }
-                        }
-                    });
-                    gridProperties.selectionMode = "extended";
-                    gridProperties.plugins.indirectSelection = true;
-
-                    that.portsGrid = new UpdatableStore(that.brokerData.ports, query(".broker-ports")[0], [{
-                        name: "Name",
-                        field: "name",
-                        width: "15%"
-                    }, {
-                        name: "State",
-                        field: "state",
-                        width: "15%"
-                    }, {
-                        name: "Auth Provider",
-                        field: "authenticationProvider",
-                        width: "15%"
-                    }, {
-                        name: "Address",
-                        field: "bindingAddress",
-                        width: "15%"
-                    }, {
-                        name: "Port",
-                        field: "port",
-                        width: "10%"
-                    }, {
-                        name: "Transports",
-                        field: "transports",
-                        width: "15%"
-                    }, {
-                        name: "Protocols",
-                        field: "protocols",
-                        width: "15%"
-                    }], function (obj)
-                    {
-                        connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
-                        {
-                            var idx = evt.rowIndex, theItem = this.getItem(idx);
-                            var name = obj.dataStore.getValue(theItem, "name");
-                            that.controller.show("port", name, brokerObj, theItem.id);
-                        });
-                    }, gridProperties, EnhancedGrid);
-
-                    gridProperties = {
-                        keepSelection: true,
-                        plugins: {
-                            indirectSelection: true
-                        }
-                    };
-
-                    that.authenticationProvidersGrid =
-                        new UpdatableStore(that.brokerData.authenticationproviders, query(
-                            ".broker-authentication-providers")[0], [{
-                            name: "Name",
-                            field: "name",
-                            width: "40%"
-                        }, {
-                            name: "State",
-                            field: "state",
-                            width: "20%"
-                        }, {
-                            name: "Type",
-                            field: "type",
-                            width: "20%"
-                        }, {
-                            name: "User Management",
-                            field: "type",
-                            width: "20%",
-                            formatter: function (val)
-                            {
-                                var isProviderManagingUsers = false;
-                                try
-                                {
-                                    isProviderManagingUsers = that.management.metadata.implementsManagedInterface(
-                                        "AuthenticationProvider",
-                                        val,
-                                        "PasswordCredentialManagingAuthenticationProvider");
                                 }
-                                catch (e)
-                                {
-                                    console.error(e);
-                                }
-                                return "<input type='radio' disabled='disabled' " + (isProviderManagingUsers
-                                        ? "checked='checked'"
-                                        : "") + " />";
-                            }
-                        }], function (obj)
-                        {
-                            connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
+                            }, {desiredState: "STOPPED"})
+                            .then(function (data)
                             {
-                                var idx = evt.rowIndex, theItem = this.getItem(idx);
-                                var name = obj.dataStore.getValue(theItem, "name");
-                                that.controller.show("authenticationprovider", name, brokerObj, theItem.id);
+                                that.vhostsGrid.grid.selection.clear();
                             });
-                        }, gridProperties, EnhancedGrid);
+                    }
+                }
+            });
+            gridProperties.selectionMode = "extended";
+            gridProperties.plugins.indirectSelection = true;
 
-                    that.keyStoresGrid =
-                        new UpdatableStore(that.brokerData.keystores, query(".broker-key-stores")[0], [{
-                            name: "Name",
-                            field: "name",
-                            width: "20%"
-                        }, {
-                            name: "State",
-                            field: "state",
-                            width: "10%"
-                        }, {
-                            name: "Type",
-                            field: "type",
-                            width: "10%"
-                        }, {
-                            name: "Path",
-                            field: "path",
-                            width: "60%"
-                        }], function (obj)
-                        {
-                            connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
-                            {
-                                var idx = evt.rowIndex, theItem = this.getItem(idx);
-                                var name = obj.dataStore.getValue(theItem, "name");
-                                that.controller.show("keystore", name, brokerObj, theItem.id);
-                            });
-                        }, gridProperties, EnhancedGrid);
-
-                    that.trustStoresGrid =
-                        new UpdatableStore(that.brokerData.truststores, query(".broker-trust-stores")[0], [{
-                            name: "Name",
-                            field: "name",
-                            width: "20%"
-                        }, {
-                            name: "State",
-                            field: "state",
-                            width: "10%"
-                        }, {
-                            name: "Type",
-                            field: "type",
-                            width: "10%"
-                        }, {
-                            name: "Path",
-                            field: "path",
-                            width: "50%"
-                        }, {
-                            name: "Peers only",
-                            field: "peersOnly",
-                            width: "10%",
-                            formatter: function (val)
-                            {
-                                return "<input type='radio' disabled='disabled' " + (val ? "checked='checked'" : "")
-                                       + " />";
-                            }
-                        }], function (obj)
-                        {
-                            connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
-                            {
-                                var idx = evt.rowIndex, theItem = this.getItem(idx);
-                                var name = obj.dataStore.getValue(theItem, "name");
-                                that.controller.show("truststore", name, brokerObj, theItem.id);
-                            });
-                        }, gridProperties, EnhancedGrid);
-                    that.groupProvidersGrid =
-                        new UpdatableStore(that.brokerData.groupproviders, query(".broker-group-providers")[0], [{
-                            name: "Name",
-                            field: "name",
-                            width: "40%"
-                        }, {
-                            name: "State",
-                            field: "state",
-                            width: "30%"
-                        }, {
-                            name: "Type",
-                            field: "type",
-                            width: "30%"
-                        }], function (obj)
-                        {
-                            connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
-                            {
-                                var idx = evt.rowIndex, theItem = this.getItem(idx);
-                                var name = obj.dataStore.getValue(theItem, "name");
-                                that.controller.show("groupprovider", name, brokerObj, theItem.id);
-                            });
-                        }, gridProperties, EnhancedGrid);
-                    var aclData = that.brokerData.accesscontrolproviders ? that.brokerData.accesscontrolproviders : [];
-                    that.accessControlProvidersGrid =
-                        new UpdatableStore(aclData, query(".broker-access-control-providers")[0], [{
-                            name: "Name",
-                            field: "name",
-                            width: "40%"
-                        }, {
-                            name: "State",
-                            field: "state",
-                            width: "30%"
-                        }, {
-                            name: "Type",
-                            field: "type",
-                            width: "30%"
-                        }], function (obj)
-                        {
-                            connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
-                            {
-                                var idx = evt.rowIndex, theItem = this.getItem(idx);
-                                var name = obj.dataStore.getValue(theItem, "name");
-                                that.controller.show("accesscontrolprovider", name, brokerObj, theItem.id);
-                            });
-                        }, gridProperties, EnhancedGrid);
-                    that.displayACLWarnMessage(aclData);
-
-                    var brokerLoggerData = that.brokerData.brokerloggers || [];
-                    that.brokerLoggersGrid = new UpdatableStore(brokerLoggerData, query(".broker-loggers")[0], [{
-                        name: "Name",
-                        field: "name",
-                        width: "40%"
-                    }, {
-                        name: "State",
-                        field: "state",
-                        width: "15%"
-                    }, {
-                        name: "Type",
-                        field: "type",
-                        width: "15%"
-                    }, {
-                        name: "Exclude Virtual Host Logs",
-                        field: "virtualHostLogEventExcluded",
-                        width: "20%",
-                        formatter: function (val)
-                        {
-                            return util.buildCheckboxMarkup(val);
-                        }
-                    }, {
-                        name: "Errors",
-                        field: "errorCount",
-                        width: "5%"
-                    }, {
-                        name: "Warnings",
-                        field: "warnCount",
-                        width: "5%"
-                    }], function (obj)
-                    {
-                        connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
-                        {
-                            var idx = evt.rowIndex, theItem = this.getItem(idx);
-                            var name = obj.dataStore.getValue(theItem, "name");
-                            that.controller.show("brokerlogger", name, brokerObj, theItem.id);
-                        });
-                    }, gridProperties, EnhancedGrid);
-                    updater.add(that);
-
+            this.portsGrid = new UpdatableStore([], query(".broker-ports")[0], [{
+                name: "Name",
+                field: "name",
+                width: "15%"
+            }, {
+                name: "State",
+                field: "state",
+                width: "15%"
+            }, {
+                name: "Auth Provider",
+                field: "authenticationProvider",
+                width: "15%"
+            }, {
+                name: "Address",
+                field: "bindingAddress",
+                width: "15%"
+            }, {
+                name: "Port",
+                field: "port",
+                width: "10%"
+            }, {
+                name: "Transports",
+                field: "transports",
+                width: "15%"
+            }, {
+                name: "Protocols",
+                field: "protocols",
+                width: "15%"
+            }], function (obj)
+            {
+                connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
+                {
+                    var idx = evt.rowIndex, theItem = this.getItem(idx);
+                    var name = obj.dataStore.getValue(theItem, "name");
+                    that.controller.show("port", name, brokerObj, theItem.id);
                 });
+            }, gridProperties, EnhancedGrid);
+
+            gridProperties = {
+                keepSelection: true,
+                plugins: {
+                    indirectSelection: true
+                }
+            };
+
+            this.authenticationProvidersGrid =
+                new UpdatableStore([], query(
+                    ".broker-authentication-providers")[0], [{
+                    name: "Name",
+                    field: "name",
+                    width: "40%"
+                }, {
+                    name: "State",
+                    field: "state",
+                    width: "20%"
+                }, {
+                    name: "Type",
+                    field: "type",
+                    width: "20%"
+                }, {
+                    name: "User Management",
+                    field: "type",
+                    width: "20%",
+                    formatter: function (val)
+                    {
+                        var isProviderManagingUsers = false;
+                        try
+                        {
+                            isProviderManagingUsers = that.management.metadata.implementsManagedInterface(
+                                "AuthenticationProvider",
+                                val,
+                                "PasswordCredentialManagingAuthenticationProvider");
+                        }
+                        catch (e)
+                        {
+                            console.error(e);
+                        }
+                        return "<input type='radio' disabled='disabled' " + (isProviderManagingUsers
+                                ? "checked='checked'"
+                                : "") + " />";
+                    }
+                }], function (obj)
+                {
+                    connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
+                    {
+                        var idx = evt.rowIndex, theItem = this.getItem(idx);
+                        var name = obj.dataStore.getValue(theItem, "name");
+                        that.controller.show("authenticationprovider", name, brokerObj, theItem.id);
+                    });
+                }, gridProperties, EnhancedGrid);
+
+            this.keyStoresGrid =
+                new UpdatableStore([], query(".broker-key-stores")[0], [{
+                    name: "Name",
+                    field: "name",
+                    width: "20%"
+                }, {
+                    name: "State",
+                    field: "state",
+                    width: "10%"
+                }, {
+                    name: "Type",
+                    field: "type",
+                    width: "10%"
+                }, {
+                    name: "Path",
+                    field: "path",
+                    width: "60%"
+                }], function (obj)
+                {
+                    connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
+                    {
+                        var idx = evt.rowIndex, theItem = this.getItem(idx);
+                        var name = obj.dataStore.getValue(theItem, "name");
+                        that.controller.show("keystore", name, brokerObj, theItem.id);
+                    });
+                }, gridProperties, EnhancedGrid);
+
+            this.trustStoresGrid =
+                new UpdatableStore([], query(".broker-trust-stores")[0], [{
+                    name: "Name",
+                    field: "name",
+                    width: "20%"
+                }, {
+                    name: "State",
+                    field: "state",
+                    width: "10%"
+                }, {
+                    name: "Type",
+                    field: "type",
+                    width: "10%"
+                }, {
+                    name: "Path",
+                    field: "path",
+                    width: "50%"
+                }, {
+                    name: "Peers only",
+                    field: "peersOnly",
+                    width: "10%",
+                    formatter: function (val)
+                    {
+                        return "<input type='radio' disabled='disabled' " + (val ? "checked='checked'" : "") + " />";
+                    }
+                }], function (obj)
+                {
+                    connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
+                    {
+                        var idx = evt.rowIndex, theItem = this.getItem(idx);
+                        var name = obj.dataStore.getValue(theItem, "name");
+                        that.controller.show("truststore", name, brokerObj, theItem.id);
+                    });
+                }, gridProperties, EnhancedGrid);
+            this.groupProvidersGrid =
+                new UpdatableStore([], query(".broker-group-providers")[0], [{
+                    name: "Name",
+                    field: "name",
+                    width: "40%"
+                }, {
+                    name: "State",
+                    field: "state",
+                    width: "30%"
+                }, {
+                    name: "Type",
+                    field: "type",
+                    width: "30%"
+                }], function (obj)
+                {
+                    connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
+                    {
+                        var idx = evt.rowIndex, theItem = this.getItem(idx);
+                        var name = obj.dataStore.getValue(theItem, "name");
+                        that.controller.show("groupprovider", name, brokerObj, theItem.id);
+                    });
+                }, gridProperties, EnhancedGrid);
+            this.accessControlProvidersGrid =
+                new UpdatableStore([], query(".broker-access-control-providers")[0], [{
+                    name: "Name",
+                    field: "name",
+                    width: "40%"
+                }, {
+                    name: "State",
+                    field: "state",
+                    width: "30%"
+                }, {
+                    name: "Type",
+                    field: "type",
+                    width: "30%"
+                }], function (obj)
+                {
+                    connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
+                    {
+                        var idx = evt.rowIndex, theItem = this.getItem(idx);
+                        var name = obj.dataStore.getValue(theItem, "name");
+                        that.controller.show("accesscontrolprovider", name, brokerObj, theItem.id);
+                    });
+                }, gridProperties, EnhancedGrid);
+
+            this.brokerLoggersGrid = new UpdatableStore([], query(".broker-loggers")[0], [{
+                name: "Name",
+                field: "name",
+                width: "40%"
+            }, {
+                name: "State",
+                field: "state",
+                width: "15%"
+            }, {
+                name: "Type",
+                field: "type",
+                width: "15%"
+            }, {
+                name: "Exclude Virtual Host Logs",
+                field: "virtualHostLogEventExcluded",
+                width: "20%",
+                formatter: function (val)
+                {
+                    return util.buildCheckboxMarkup(val);
+                }
+            }, {
+                name: "Errors",
+                field: "errorCount",
+                width: "5%"
+            }, {
+                name: "Warnings",
+                field: "warnCount",
+                width: "5%"
+            }], function (obj)
+            {
+                connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
+                {
+                    var idx = evt.rowIndex, theItem = this.getItem(idx);
+                    var name = obj.dataStore.getValue(theItem, "name");
+                    that.controller.show("brokerlogger", name, brokerObj, theItem.id);
+                });
+            }, gridProperties, EnhancedGrid);
+            this.update(function ()
+            {
+                updater.add(that);
+            });
         }
 
         BrokerUpdater.prototype.showVirtualHost = function (item, brokerObj)
@@ -886,7 +870,7 @@ define(["dojo/parser",
             this.accessControlProvidersWarn.innerHTML = message;
         }
 
-        BrokerUpdater.prototype.update = function ()
+        BrokerUpdater.prototype.update = function (callback)
         {
 
             var that = this;
@@ -982,6 +966,10 @@ define(["dojo/parser",
                     if (that.brokerLoggersGrid)
                     {
                         that.brokerLoggersGrid.update(that.brokerData.brokerloggers);
+                    }
+                    if (callback)
+                    {
+                        callback();
                     }
                 });
         };
