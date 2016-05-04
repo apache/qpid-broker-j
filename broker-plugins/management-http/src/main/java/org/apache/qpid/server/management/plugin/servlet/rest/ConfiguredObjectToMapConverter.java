@@ -52,28 +52,20 @@ public class ConfiguredObjectToMapConverter
 
     public Map<String, Object> convertObjectToMap(final ConfiguredObject<?> confObject,
                                                   Class<? extends ConfiguredObject> clazz,
-                                                  int depth,
-                                                  final boolean useActualValues,
-                                                  final boolean inheritedActuals,
-                                                  final boolean includeSystemContext,
-                                                  final boolean extractAsConfig,
-                                                  final int oversizeThreshold,
-                                                  final boolean isSecureTransport
+                                                  ConverterOptions converterOptions
                                                  )
     {
         Map<String, Object> object = new LinkedHashMap<>();
 
-        incorporateAttributesIntoMap(confObject, object, useActualValues, inheritedActuals, includeSystemContext,
-                                     extractAsConfig, oversizeThreshold, isSecureTransport);
-        if(!extractAsConfig)
+        incorporateAttributesIntoMap(confObject, object, converterOptions);
+        if(!converterOptions.isExtractAsConfig())
         {
             incorporateStatisticsIntoMap(confObject, object);
         }
 
-        if(depth > 0)
+        if(converterOptions.getDepth() > 0)
         {
-            incorporateChildrenIntoMap(confObject, clazz, depth, object, useActualValues, inheritedActuals,
-                                       includeSystemContext, extractAsConfig, oversizeThreshold, isSecureTransport);
+            incorporateChildrenIntoMap(confObject, clazz, object, converterOptions);
         }
         return object;
     }
@@ -82,15 +74,10 @@ public class ConfiguredObjectToMapConverter
     private void incorporateAttributesIntoMap(
             final ConfiguredObject<?> confObject,
             Map<String, Object> object,
-            final boolean useActualValues,
-            final boolean inheritedActuals,
-            final boolean includeSystemContext,
-            final boolean extractAsConfig,
-            final int oversizeThreshold,
-            final boolean isSecureTransport)
+            ConverterOptions converterOptions)
     {
         // if extracting as config add a fake attribute for each secondary parent
-        if(extractAsConfig && confObject.getModel().getParentTypes(confObject.getCategoryClass()).size()>1)
+        if(converterOptions.isExtractAsConfig() && confObject.getModel().getParentTypes(confObject.getCategoryClass()).size()>1)
         {
             Iterator<Class<? extends ConfiguredObject>> parentClasses =
                     confObject.getModel().getParentTypes(confObject.getCategoryClass()).iterator();
@@ -112,10 +99,10 @@ public class ConfiguredObjectToMapConverter
 
         for(String name : confObject.getAttributeNames())
         {
-            if (!(extractAsConfig && CONFIG_EXCLUDED_ATTRIBUTES.contains(name)))
+            if (!(converterOptions.isExtractAsConfig() && CONFIG_EXCLUDED_ATTRIBUTES.contains(name)))
             {
                 Object value =
-                        useActualValues ? confObject.getActualAttributes().get(name) : confObject.getAttribute(name);
+                        converterOptions.isUseActualValues() ? confObject.getActualAttributes().get(name) : confObject.getAttribute(name);
                 if (value instanceof ConfiguredObject)
                 {
                     object.put(name, ((ConfiguredObject) value).getName());
@@ -123,17 +110,14 @@ public class ConfiguredObjectToMapConverter
                 else if (ConfiguredObject.CONTEXT.equals(name))
                 {
                     Map<String, Object> contextValues = new HashMap<>();
-                    if (useActualValues)
+                    if (!converterOptions.isExcludeInheritedContext())
                     {
-                        collectContext(contextValues, confObject.getModel(), confObject, inheritedActuals);
+                        contextValues.putAll(confObject.getModel().getTypeRegistry().getDefaultContext());
+                        contextValues.putAll(System.getenv());
+                        contextValues.putAll((Map) System.getProperties());
                     }
-                    else
-                    {
-                        for (String contextName : confObject.getContextKeys(!includeSystemContext))
-                        {
-                            contextValues.put(contextName, confObject.getContextValue(String.class, contextName));
-                        }
-                    }
+                    collectContext(contextValues, confObject, converterOptions);
+
                     if (!contextValues.isEmpty())
                     {
                         object.put(ConfiguredObject.CONTEXT, contextValues);
@@ -162,21 +146,21 @@ public class ConfiguredObjectToMapConverter
                             .getAttributeTypes(confObject.getClass())
                             .get(name);
 
-                    if (attribute.isSecureValue(value) && !(isSecureTransport && extractAsConfig))
+                    if (attribute.isSecureValue(value) && !(converterOptions.isSecureTransport() && converterOptions.isExtractAsConfig()))
                     {
                         // do not expose actual secure attribute value
                         // getAttribute() returns encoded value
                         value =  confObject.getAttribute(name);
                     }
 
-                    if(attribute.isOversized() && !extractAsConfig && !useActualValues)
+                    if(attribute.isOversized() && !converterOptions.isExtractAsConfig() && !converterOptions.isUseActualValues())
                     {
                         String valueString = String.valueOf(value);
-                        if(valueString.length() > oversizeThreshold)
+                        if(valueString.length() > converterOptions.getOversizeThreshold())
                         {
 
                             String replacementValue = "".equals(attribute.getOversizedAltText())
-                                    ? String.valueOf(value).substring(0, oversizeThreshold - 4) + "..."
+                                    ? String.valueOf(value).substring(0, converterOptions.getOversizeThreshold() - 4) + "..."
                                     : attribute.getOversizedAltText();
 
                             object.put(name, replacementValue);
@@ -191,7 +175,7 @@ public class ConfiguredObjectToMapConverter
                         object.put(name, value);
                     }
                 }
-                else if (extractAsConfig)
+                else if (converterOptions.isExtractAsConfig())
                 {
                     ConfiguredObjectAttribute<?, ?> attribute = confObject.getModel()
                             .getTypeRegistry()
@@ -207,10 +191,11 @@ public class ConfiguredObjectToMapConverter
         }
     }
 
-    private void collectContext(Map<String, Object> contextValues, Model model, ConfiguredObject<?> confObject, boolean inheritedContext)
+    private void collectContext(Map<String, Object> contextValues, ConfiguredObject<?> confObject, ConverterOptions options)
     {
+        Model model = confObject.getModel();
         Object value = confObject.getActualAttributes().get(ConfiguredObject.CONTEXT);
-        if (inheritedContext)
+        if (!options.isExcludeInheritedContext())
         {
             Collection<Class<? extends ConfiguredObject>> parents = model.getParentTypes(confObject.getCategoryClass());
             if(parents != null && !parents.isEmpty())
@@ -218,13 +203,23 @@ public class ConfiguredObjectToMapConverter
                 ConfiguredObject parent = confObject.getParent(parents.iterator().next());
                 if(parent != null)
                 {
-                    collectContext(contextValues, model, parent, inheritedContext);
+                    collectContext(contextValues, parent, options);
                 }
             }
         }
         if (value instanceof Map)
         {
-            contextValues.putAll((Map<String,String>)value);
+            if (options.isUseActualValues())
+            {
+                contextValues.putAll((Map<String,String>)value);
+            }
+            else
+            {
+                for (String contextKey : ((Map<String,String>)value).keySet())
+                {
+                    contextValues.put(contextKey, confObject.getContextValue(String.class, contextKey));
+                }
+            }
         }
     }
 
@@ -244,14 +239,8 @@ public class ConfiguredObjectToMapConverter
     private void incorporateChildrenIntoMap(
             final ConfiguredObject confObject,
             Class<? extends ConfiguredObject> clazz,
-            int depth,
             Map<String, Object> object,
-            final boolean useActualValues,
-            final boolean inheritedActuals,
-            final boolean includeSystemContext,
-            final boolean extractAsConfig,
-            final int oversizeThreshold,
-            final boolean isSecure)
+            ConverterOptions converterOptions)
     {
         List<Class<? extends ConfiguredObject>> childTypes = new ArrayList<>(confObject.getModel().getChildTypes(clazz));
 
@@ -263,9 +252,11 @@ public class ConfiguredObjectToMapConverter
                 return o1.getSimpleName().compareTo(o2.getSimpleName());
             }
         });
+
+        ConverterOptions childConverterOptions = new ConverterOptions(converterOptions, converterOptions.getDepth() - 1);
         for(Class<? extends ConfiguredObject> childClass : childTypes)
         {
-            if(!(extractAsConfig && confObject.getModel().getParentTypes(childClass).iterator().next() != confObject.getCategoryClass()))
+            if(!(converterOptions.isExtractAsConfig() && confObject.getModel().getParentTypes(childClass).iterator().next() != confObject.getCategoryClass()))
             {
 
                 Collection children = confObject.getChildren(childClass);
@@ -283,19 +274,14 @@ public class ConfiguredObjectToMapConverter
 
                     List<Map<String, Object>> childObjects = new ArrayList<>();
 
+
                     for (ConfiguredObject child : sortedChildren)
                     {
-                        if (!(extractAsConfig && !child.isDurable()))
+                        if (!(converterOptions.isExtractAsConfig() && !child.isDurable()))
                         {
                             childObjects.add(convertObjectToMap(child,
                                                                 childClass,
-                                                                depth - 1,
-                                                                useActualValues,
-                                                                inheritedActuals,
-                                                                includeSystemContext,
-                                                                extractAsConfig,
-                                                                oversizeThreshold,
-                                                                isSecure));
+                                                                childConverterOptions));
                         }
                     }
 
@@ -310,5 +296,68 @@ public class ConfiguredObjectToMapConverter
     }
 
 
+    public static final class ConverterOptions
+    {
+        private final int _depth;
+        private final boolean _useActualValues;
+        private final boolean _extractAsConfig;
+        private final int _oversizeThreshold;
+        private final boolean _secureTransport;
+        private final boolean _excludeInheritedContext;
 
+        public ConverterOptions(ConverterOptions options, int depth)
+        {
+            this(depth,
+                 options.isUseActualValues(),
+                 options.isExtractAsConfig(),
+                 options.getOversizeThreshold(),
+                 options.isSecureTransport(),
+                 options.isExcludeInheritedContext());
+        }
+
+        public ConverterOptions(final int depth,
+                                final boolean useActualValues,
+                                final boolean extractAsConfig,
+                                final int oversizeThreshold,
+                                final boolean secureTransport,
+                                final boolean excludeInheritedContext)
+        {
+            _depth = depth;
+            _useActualValues = useActualValues;
+            _extractAsConfig = extractAsConfig;
+            _oversizeThreshold = oversizeThreshold;
+            _secureTransport = secureTransport;
+            _excludeInheritedContext = excludeInheritedContext;
+        }
+
+        public int getDepth()
+        {
+            return _depth;
+        }
+
+        public boolean isUseActualValues()
+        {
+            return _useActualValues;
+        }
+
+        public boolean isExtractAsConfig()
+        {
+            return _extractAsConfig;
+        }
+
+        public int getOversizeThreshold()
+        {
+            return _oversizeThreshold;
+        }
+
+        public boolean isSecureTransport()
+        {
+            return _secureTransport;
+        }
+
+        public boolean isExcludeInheritedContext()
+        {
+            return _excludeInheritedContext;
+        }
+    }
 }

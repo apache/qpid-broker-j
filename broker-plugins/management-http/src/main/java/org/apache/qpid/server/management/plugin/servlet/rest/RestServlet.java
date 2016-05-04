@@ -51,12 +51,12 @@ import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
+import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
-import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.Model;
-import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 import org.apache.qpid.util.DataUrlUtils;
 
 public class RestServlet extends AbstractServlet
@@ -74,13 +74,13 @@ public class RestServlet extends AbstractServlet
     public static final String INCLUDE_SYS_CONTEXT_PARAM = "includeSysContext";
     public static final String INHERITED_ACTUALS_PARAM = "inheritedActuals";
     public static final String EXTRACT_INITIAL_CONFIG_PARAM = "extractInitialConfig";
+    public static final String EXCLUDE_INHERITED_CONTEXT_PARAM = "excludeInheritedContext";
 
     /**
      * Signifies that the agent wishes the servlet to set the Content-Disposition on the
      * response with the value attachment.  This filename will be derived from the parameter value.
      */
     public static final String CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM = "contentDispositionAttachmentFilename";
-
     public static final Set<String> RESERVED_PARAMS =
             new HashSet<>(Arrays.asList(DEPTH_PARAM,
                                         SORT_PARAM,
@@ -89,7 +89,8 @@ public class RestServlet extends AbstractServlet
                                         INCLUDE_SYS_CONTEXT_PARAM,
                                         EXTRACT_INITIAL_CONFIG_PARAM,
                                         INHERITED_ACTUALS_PARAM,
-                                        CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM));
+                                        CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM,
+                                        EXCLUDE_INHERITED_CONTEXT_PARAM));
     public static final int DEFAULT_DEPTH = 1;
     public static final int DEFAULT_OVERSIZE = 120;
 
@@ -378,25 +379,82 @@ public class RestServlet extends AbstractServlet
 
                 int depth;
                 boolean actuals;
-                boolean includeSystemContext;
-                boolean inheritedActuals;
                 int oversizeThreshold;
+                boolean excludeInheritedContext;
 
                 if (extractInitialConfig)
                 {
                     depth = Integer.MAX_VALUE;
                     oversizeThreshold = Integer.MAX_VALUE;
                     actuals = true;
-                    includeSystemContext = false;
-                    inheritedActuals = false;
+                    excludeInheritedContext = true;
                 }
                 else
                 {
                     depth = getIntParameterFromRequest(request, DEPTH_PARAM, DEFAULT_DEPTH);
                     oversizeThreshold = getIntParameterFromRequest(request, OVERSIZE_PARAM, DEFAULT_OVERSIZE);
                     actuals = getBooleanParameterFromRequest(request, ACTUALS_PARAM);
-                    includeSystemContext = getBooleanParameterFromRequest(request, INCLUDE_SYS_CONTEXT_PARAM);
-                    inheritedActuals = getBooleanParameterFromRequest(request, INHERITED_ACTUALS_PARAM);
+                    String includeSystemContextParameter = request.getParameter(INCLUDE_SYS_CONTEXT_PARAM);
+                    String inheritedActualsParameter = request.getParameter(INHERITED_ACTUALS_PARAM);
+                    String excludeInheritedContextParameter = request.getParameter(EXCLUDE_INHERITED_CONTEXT_PARAM);
+
+                    if (excludeInheritedContextParameter == null)
+                    {
+                        /* backward (pre v6.1) compatible behaviour */
+                        if (inheritedActualsParameter == null && includeSystemContextParameter == null)
+                        {
+                            excludeInheritedContext = actuals;
+                        }
+                        else if (inheritedActualsParameter != null && includeSystemContextParameter != null)
+                        {
+                            if (actuals)
+                            {
+                                excludeInheritedContext = !Boolean.parseBoolean(inheritedActualsParameter);
+                            }
+                            else
+                            {
+                                excludeInheritedContext = !Boolean.parseBoolean(includeSystemContextParameter);
+                            }
+                        }
+                        else if (inheritedActualsParameter != null)
+                        {
+                            if (actuals)
+                            {
+                                excludeInheritedContext = !Boolean.parseBoolean(inheritedActualsParameter);
+                            }
+                            else
+                            {
+                                excludeInheritedContext = false;
+                            }
+                        }
+                        else
+                        {
+                            if (actuals)
+                            {
+                                excludeInheritedContext = true;
+                            }
+                            else
+                            {
+                                excludeInheritedContext = !Boolean.parseBoolean(includeSystemContextParameter);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (inheritedActualsParameter != null || includeSystemContextParameter != null)
+                        {
+                            sendJsonErrorResponse(request,
+                                                  response,
+                                                  SC_UNPROCESSABLE_ENTITY,
+                                                  String.format(
+                                                          "Parameter '%s' cannot be specified together with '%s' or '%s'",
+                                                          EXCLUDE_INHERITED_CONTEXT_PARAM,
+                                                          INHERITED_ACTUALS_PARAM,
+                                                          INCLUDE_SYS_CONTEXT_PARAM));
+                            return;
+                        }
+                        excludeInheritedContext = Boolean.parseBoolean(excludeInheritedContextParameter);
+                    }
                 }
 
                 List<Map<String, Object>> output = new ArrayList<>();
@@ -404,7 +462,13 @@ public class RestServlet extends AbstractServlet
                 {
 
                     output.add(_objectConverter.convertObjectToMap(configuredObject, getConfiguredClass(),
-                            depth, actuals, inheritedActuals, includeSystemContext, extractInitialConfig, oversizeThreshold, request.isSecure()));
+                                                                   new ConfiguredObjectToMapConverter.ConverterOptions(
+                                                                           depth,
+                                                                           actuals,
+                                                                           extractInitialConfig,
+                                                                           oversizeThreshold,
+                                                                           request.isSecure(),
+                                                                           excludeInheritedContext)));
                 }
 
 
@@ -647,10 +711,18 @@ public class RestServlet extends AbstractServlet
         }
         else
         {
+            final ConfiguredObjectToMapConverter.ConverterOptions converterOptions =
+                    new ConfiguredObjectToMapConverter.ConverterOptions(DEFAULT_DEPTH,
+                                                                        false,
+                                                                        false,
+                                                                        DEFAULT_OVERSIZE,
+                                                                        request.isSecure(),
+                                                                        true);
             if (ConfiguredObject.class.isAssignableFrom(operation.getReturnType()))
             {
-                returnVal = _objectConverter.convertObjectToMap((ConfiguredObject<?>) returnVal, operation.getReturnType(), DEFAULT_DEPTH,
-                                                                false, false, false, false, DEFAULT_OVERSIZE, request.isSecure());
+                returnVal = _objectConverter.convertObjectToMap((ConfiguredObject<?>) returnVal,
+                                                                operation.getReturnType(),
+                                                                converterOptions);
             }
             else if (returnsCollectionOfConfiguredObjects(operation))
             {
@@ -658,8 +730,8 @@ public class RestServlet extends AbstractServlet
                 for (Object configuredObject : (Collection)returnVal)
                 {
                     output.add(_objectConverter.convertObjectToMap((ConfiguredObject<?>) configuredObject,
-                               getCollectionMemberType((ParameterizedType) operation.getGenericReturnType()),
-                               DEFAULT_DEPTH, false, false, false, false, DEFAULT_OVERSIZE, request.isSecure()));
+                                                                   getCollectionMemberType((ParameterizedType) operation.getGenericReturnType()),
+                                                                   converterOptions));
                 }
                 returnVal = output;
             }
@@ -1020,7 +1092,16 @@ public class RestServlet extends AbstractServlet
 
     private boolean getBooleanParameterFromRequest(HttpServletRequest request, final String paramName)
     {
-        return Boolean.parseBoolean(request.getParameter(paramName));
+        return getBooleanParameterFromRequest(request, paramName, false);
     }
 
+    private boolean getBooleanParameterFromRequest(HttpServletRequest request, final String paramName, final boolean defaultValue)
+    {
+        String value = request.getParameter(paramName);
+        if (value == null)
+        {
+            return defaultValue;
+        }
+        return Boolean.parseBoolean(value);
+    }
 }
