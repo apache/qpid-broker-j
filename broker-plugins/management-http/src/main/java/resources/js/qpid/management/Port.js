@@ -92,7 +92,7 @@ define(["dojo/dom",
 
            Port.prototype.showEditDialog = function() {
                var that = this;
-               this.management.load(that.modelObj.parent)
+               this.management.load(that.modelObj.parent, {excludeInheritedContext: true})
                .then(function(data)
                      {
                          var brokerData= data[0];
@@ -209,7 +209,7 @@ define(["dojo/dom",
 
               var thisObj = this;
 
-              this.management.load(this.modelObj).then(function(data)
+              this.management.load(this.modelObj, {excludeInheritedContext: true}).then(function(data)
                    {
                       thisObj.portData = data[0];
                       util.flattenStatistics( thisObj.portData );

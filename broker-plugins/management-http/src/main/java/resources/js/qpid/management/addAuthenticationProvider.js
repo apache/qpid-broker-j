@@ -95,7 +95,7 @@ define(["dojo/dom",
                 {
                     // editing
                     var that = this;
-                    management.load(modelObj, { actuals: true }).then(
+                    management.load(modelObj, { actuals: true, excludeInheritedContext: true }).then(
                                   function(data)
                                   {
                                     var actualData = data[0];

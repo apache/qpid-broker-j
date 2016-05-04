@@ -78,7 +78,6 @@ define(["dojox/html/entities",
       },
       show: function(management,modelObj)
       {
-        var that=this;
         this.management = management;
         this.modelObj = modelObj;
         if (!this.context)
@@ -87,16 +86,7 @@ define(["dojox/html/entities",
          this.context.placeAt(dom.byId("formEditQueue.context"));
         }
         this.dialog.set("title", "Edit Queue - " + entities.encode(String(modelObj.name)));
-        management.load(modelObj, { actuals: true }).then(
-              function(actualData)
-              {
-                management.load(modelObj).then(
-                               function(effectiveData)
-                               {
-                                 that._show(actualData[0], effectiveData[0]);
-                               },
-                               util.xhrErrorHandler);
-              });
+        util.loadData(management, modelObj, lang.hitch(this, this._show));
       },
       destroy: function()
       {
@@ -135,16 +125,16 @@ define(["dojox/html/entities",
               alert('Form contains invalid data.  Please correct first');
           }
       },
-      _show:function(actualData, effectiveData)
+      _show:function(data)
       {
 
-          this.initialData = actualData;
+          this.initialData = data.actual;
           this.form.reset();
 
           var that = this;
-          util.applyToWidgets(that.allFieldsContainer, "Queue", actualData.type, actualData, this.management.metadata);
+          util.applyToWidgets(that.allFieldsContainer, "Queue", data.actual.type, data.actual, this.management.metadata);
 
-          util.setContextData(this.context, this.management, this.modelObj, actualData, effectiveData);
+          this.context.setData(data.actual.context, data.effective.context, data.inheritedActual.context);
 
           // Add regexp to the numeric fields
           for(var i = 0; i < numericFieldNames.length; i++)

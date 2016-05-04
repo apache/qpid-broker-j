@@ -86,7 +86,7 @@ define(["dojo/parser",
       this.editLoggerButton.on("click",
         function (event)
         {
-          that.management.load(that.modelObj, {actuals: true, depth: 0}).then(
+          that.management.load(that.modelObj, {actuals: true, depth: 0, excludeInheritedContext: true}).then(
             function(data)
             {
               addLogger.show(that.management, that.modelObj, that.category, data[0]);
@@ -153,7 +153,7 @@ define(["dojo/parser",
     {
       var ruleModelObj = {name: item.name, type: this.logInclusionRuleCategory.toLowerCase(), parent: this.modelObj};
       var that = this;
-      this.management.load(ruleModelObj, {actuals: true}).then(
+      this.management.load(ruleModelObj, {actuals: true, excludeInheritedContext: true}).then(
                               function(data)
                               {
                                 addLogInclusionRule.show(that.management, ruleModelObj, that.logInclusionRuleCategory, data[0]);
@@ -199,7 +199,7 @@ define(["dojo/parser",
     Updater.prototype.update = function (callback)
     {
       var that = this;
-      that.tabObject.management.load(this.modelObj).then(
+      that.tabObject.management.load(this.modelObj, {excludeInheritedContext: true}).then(
         function (data)
         {
           that.loggerData = data[0] || {};

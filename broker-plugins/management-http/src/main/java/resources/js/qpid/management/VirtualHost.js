@@ -369,7 +369,7 @@ define(["dojo/parser",
            {
                var thisObj = this;
 
-               var vhostLoadedPromise = this.management.load(this.modelObj);
+               var vhostLoadedPromise = this.management.load(this.modelObj, {excludeInheritedContext: true});
                var connectionsPromise = this.management.get({url: this.management.objectToURL(this.modelObj) + "/getConnections"});
                all({vhostLoadedPromise: vhostLoadedPromise, connectionsPromise: connectionsPromise}).then(function(results) {
                    thisObj.vhostData = results.vhostLoadedPromise[0] || {name: thisObj.modelObj.name,statistics:{messagesIn:0,bytesIn:0,messagesOut:0,bytesOut:0}};

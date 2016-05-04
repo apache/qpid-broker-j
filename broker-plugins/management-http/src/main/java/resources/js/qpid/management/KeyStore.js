@@ -65,7 +65,7 @@ define(["dojo/dom",
                             var node = registry.byNode(editKeyStoreButton);
                             connect.connect(node, "onClick",
                                 function(evt){
-                                  management.load(that.modelObj, { actuals: true })
+                                  management.load(that.modelObj, { actuals: true, depth: 0, excludeInheritedContext: true })
                                     .then(function(data)
                                     {
                                       addStore.setupTypeStore(that.management, "KeyStore", that.modelObj);
@@ -117,7 +117,7 @@ define(["dojo/dom",
 
               var that = this;
 
-              this.management.load(that.modelObj).then(function(data)
+              this.management.load(that.modelObj, {depth: 0, excludeInheritedContext: true}).then(function(data)
                    {
                       that.keyStoreData = data[0];
                       that.updateHeader();

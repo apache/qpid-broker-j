@@ -421,7 +421,7 @@ define(["dojo/_base/declare",
 
                var thisObj = this;
 
-               this.management.load(this.modelObj).then(function(data) {
+               this.management.load(this.modelObj, {excludeInheritedContext: true}).then(function(data) {
                        var i,j;
                        thisObj.queueData = data[0];
                        util.flattenStatistics( thisObj.queueData );

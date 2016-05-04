@@ -31,7 +31,7 @@ define(["dojo/query","dijit/registry","qpid/common/util","dojo/store/Memory","di
             {
                 var that = this;
                 var obj = {type:"truststore", parent: {type: "broker"}};
-                data.parent.management.load(obj).then(
+                data.parent.management.load(obj, {excludeInheritedContext: true}).then(
                     function(trustStores)
                     {
                         that._initTrustStores(trustStores, data.containerNode);

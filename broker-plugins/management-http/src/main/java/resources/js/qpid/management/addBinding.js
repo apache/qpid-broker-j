@@ -354,7 +354,7 @@ define(["dojo/_base/connect",
             array.forEach(lang.clone(defaultBindingArguments), function(item) {grid.store.newItem(item); });
             grid.store.save();
 
-            management.load({type: "queue", parent: obj.parent }, {depth: 0}).then(
+            management.load({type: "queue", parent: obj.parent }, {depth: 0, excludeInheritedContext: true}).then(
                 function(data) {
                     var queues =  [];
                     for(var i=0; i < data.length; i++) {
@@ -381,7 +381,7 @@ define(["dojo/_base/connect",
                         that.queueChooser.set("value", obj.name);
                         that.queueChooser.set("disabled", true);
                     }
-                    management.load({type: "exchange", parent: obj.parent }, {depth: 0}).then(
+                    management.load({type: "exchange", parent: obj.parent }, {depth: 0, excludeInheritedContext: true}).then(
                         function(data) {
 
                             var exchanges =  [];

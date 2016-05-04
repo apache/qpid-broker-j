@@ -169,7 +169,7 @@ define(["dojo/parser",
            Updater.prototype.update = function(callback)
            {
                var that = this;
-               that.tabObject.management.load(this.modelObj).then(
+               that.tabObject.management.load(this.modelObj, {excludeInheritedContext: true}).then(
                    function(data)
                    {
                      that.nodeData = data[0] || {};

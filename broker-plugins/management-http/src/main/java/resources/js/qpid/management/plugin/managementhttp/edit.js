@@ -65,7 +65,7 @@ define(["dojo/_base/event",
         this.management = management;
         this.modelObj = modelObj;
         var that=this;
-        management.load(modelObj,  { actuals: true }).then(
+        management.load(modelObj,  { actuals: true, excludeInheritedContext: true }).then(
             function(actualData)
             {
                 that._show(actualData[0]);

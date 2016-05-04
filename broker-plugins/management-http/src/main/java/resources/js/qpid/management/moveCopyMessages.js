@@ -93,7 +93,7 @@ define(["dojo/dom",
             moveMessages.submitButton.set("label", label);
             moveMessages.dialog.set("title", label);
 
-            management.load({type: "queue", parent: modelObj.parent},  {depth:0}).then(
+            management.load({type: "queue", parent: modelObj.parent},  {depth:0, excludeInheritedContext: true}).then(
                 function(data) {
                     var queues =  [];
                     for(var i=0; i < data.length; i++)

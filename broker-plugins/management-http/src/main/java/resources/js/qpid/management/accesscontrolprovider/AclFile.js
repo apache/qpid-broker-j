@@ -86,7 +86,7 @@ define(["dojo/_base/xhr",
         {
             var that = this;
 
-            this.management.load(this.modelObj)
+            this.management.load(this.modelObj, {excludeInheritedContext: true})
                 .then(function(data) {
                   if (data[0])
                   {

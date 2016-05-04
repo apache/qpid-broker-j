@@ -167,7 +167,7 @@ define(["dojo/parser",
 
                var that = this;
 
-               this.management.load(this.modelObj)
+               this.management.load(this.modelObj, {excludeInheritedContext: true})
                   .then(function(data) {
                       that.groupMemberData = data;
 

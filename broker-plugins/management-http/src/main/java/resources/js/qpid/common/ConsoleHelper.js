@@ -41,7 +41,7 @@ define(["dojo/domReady!"], function () {
         },
         getHelpUrl: function(callback)
         {
-            this.management.load({type: "broker"}, {depth: 1}).then(
+            this.management.load({type: "broker"}, {depth: 0}).then(
              function(data) {
               var broker = data[0];
               if ("context" in broker && "qpid.helpURL" in broker["context"] )

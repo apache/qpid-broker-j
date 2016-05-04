@@ -365,7 +365,7 @@ define(["dojo/dom",
             {
                 editWarning.style.display = "block";
 
-                management.load(modelObj, { actuals: true }).then(
+                management.load(modelObj, { actuals: true, excludeInheritedContext: true }).then(
                    function(data){
                        var port = data[0];
                        nameWidget.set("value", port.name);

@@ -80,7 +80,7 @@ define(["dojo/dom",
               return "<input type='checkbox' disabled='disabled' "+(val ? "checked='checked'": "")+" />" ;
             }
 
-            this.management.load(this.modelObj)
+            this.management.load(this.modelObj, {excludeInheritedContext: true})
                 .then(function(data) {
                     that.pluginData = data[0];
                     that.usePlatformMBeanServer.innerHTML = showBoolean(that.pluginData.usePlatformMBeanServer);

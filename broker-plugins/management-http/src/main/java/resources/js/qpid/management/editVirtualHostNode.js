@@ -71,14 +71,13 @@ define(["dojox/html/entities",
       {
         this.management = management;
         this.modelObj = modelObj;
-        var that=this;
         if (!this.context)
         {
          this.context = new qpid.common.ContextVariablesEditor({name: 'context', title: 'Context variables'});
          this.context.placeAt(dom.byId("editVirtualHostNode.context"));
         }
         this.dialog.set("title", "Edit Virtual Host Node - " + entities.encode(String(effectiveData.name)));
-        management.load( modelObj, { actuals: true }).then( function(data){that._show(data[0], effectiveData);});
+        util.loadData(management, modelObj, lang.hitch(this, this._show));
       },
       destroy: function()
       {
@@ -117,29 +116,29 @@ define(["dojox/html/entities",
               alert('Form contains invalid data.  Please correct first');
           }
       },
-      _show:function(actualData, effectiveData)
+      _show:function(data)
       {
-          this.initialData = actualData;
-          this.name.set("value", actualData.name);
+          this.initialData = data.actual;
+          this.name.set("value", data.actual.name);
 
           var that = this;
 
-          util.setContextData(this.context, this.management, this.modelObj, actualData, effectiveData );
+          this.context.setData(data.actual.context, data.effective.context, data.inheritedActual.context);
 
           var widgets = registry.findWidgets(this.typeFieldsContainer);
           array.forEach(widgets, function(item) { item.destroyRecursive();});
           domConstruct.empty(this.typeFieldsContainer);
 
-          require(["qpid/management/virtualhostnode/" + actualData.type.toLowerCase() + "/edit"],
+          require(["qpid/management/virtualhostnode/" + data.actual.type.toLowerCase() + "/edit"],
              function(TypeUI)
              {
                 try
                 {
                     var metadata = that.management.metadata;
-                    TypeUI.show({containerNode:that.typeFieldsContainer, parent: that, data: actualData, effectiveData: effectiveData, metadata: metadata});
+                    TypeUI.show({containerNode:that.typeFieldsContainer, parent: that, data: data.actual, effectiveData: data.effective, metadata: metadata});
                     that.form.connectChildren();
 
-                    util.applyToWidgets(that.allFieldsContainer, "VirtualHostNode", actualData.type, actualData, metadata);
+                    util.applyToWidgets(that.allFieldsContainer, "VirtualHostNode", data.actual.type, data.actual, metadata);
                 }
                 catch(e)
                 {
