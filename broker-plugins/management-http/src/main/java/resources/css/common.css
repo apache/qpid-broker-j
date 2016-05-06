@@ -468,3 +468,14 @@ div .messages {
     background-color: inherit !important;
     background-repeat: inherit !important;
 }
+
+.claro.qpid .dgrid-header .dgrid-cell { font-weight: normal; }
+.virtualHostConnections .field-name { width: 20%; }
+.virtualHostConnections .field-principal { width: 10% }
+.virtualHostConnections .field-port { width: 10% }
+.virtualHostConnections .field-transport { width: 10% }
+.virtualHostConnections .field-sessionCount { width: 10% }
+.virtualHostConnections .field-msgInRate { width: 10% }
+.virtualHostConnections .field-bytesInRate { width: 10% }
+.virtualHostConnections .field-msgOutRate { width: 10% }
+.virtualHostConnections .field-bytesOutRate { width: 10% }

@@ -729,6 +729,23 @@ define(["dojo/_base/xhr",
                 });
         };
 
+        util.queryResultToObjects = function (queryResult)
+        {
+            var objects = [];
+            var headers = queryResult.headers;
+            var results = queryResult.results;
+            for (var i = 0, l1 = results.length; i < l1; ++i)
+            {
+                var result = {};
+                for (var j = 0, l2 = headers.length; j < l2; ++j)
+                {
+                    result[headers[j]] = results[i][j];
+                }
+                objects.push(result);
+            }
+            return objects;
+        };
+
         util.setMultiSelectOptions = function (multiSelectWidget, options)
         {
             util.addMultiSelectOptions(multiSelectWidget, options, true);

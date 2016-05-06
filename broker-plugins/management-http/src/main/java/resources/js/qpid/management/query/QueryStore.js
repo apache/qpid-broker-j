@@ -30,14 +30,13 @@ define(['dojo/_base/lang',
 
     return declare("qpid.management.query.QueryStore", [Store, Evented], {
 
+        transformer: null,
         management: null,
         selectClause: null,
         where: null,
         category: null,
-        parent: null,
+        parentObject: null,
         useCachedResults: false,
-        zeroBased: true,
-        _lastHeaders: [],
         _lastResponsePromise: null,
 
         fetch: function (kwArgs)
@@ -52,135 +51,105 @@ define(['dojo/_base/lang',
 
         _request: function (kwArgs)
         {
-
-            if (!this.selectClause)
-            {
-                this._emitChangeHeadersIfNecessary([]);
-                var deferred = new Deferred();
-                deferred.resolve([]);
-                return new QueryResults(deferred.promise);
-            }
-
-            var queryRequest = {
-                category: this.category,
-                select: this.selectClause ? this.selectClause + ",id" : "id"
-            };
-
-            if (this.parent)
-            {
-                queryRequest.parent = this.parent;
-            }
-
-            if (this.where)
-            {
-                queryRequest.where = this.where;
-            }
-
-            if ("start" in kwArgs)
-            {
-                queryRequest.offset = kwArgs.start;
-            }
-
-            if ("end" in kwArgs)
-            {
-                queryRequest.limit = kwArgs.end - (queryRequest.offset ? queryRequest.offset : 0);
-            }
-
-            if (this.orderBy)
-            {
-                queryRequest.orderBy = this.orderBy;
-            }
-
-            if (this.useCachedResults)
+            if (this.useCachedResults && this._lastResponsePromise)
             {
                 return this._createQueryResults(this._lastResponsePromise);
             }
 
-            var responsePromise = this.management.query(queryRequest);
-            responsePromise.then(lang.hitch(this, function (data)
+            if (!this.selectClause)
             {
-                var headers = lang.clone(data.headers);
-                headers.pop();
-                this._emitChangeHeadersIfNecessary(headers);
+                var responseDeferred = new Deferred();
+                responseDeferred.resolve({
+                    headers: [],
+                    results: [],
+                    total: 0
+                });
+                this._lastResponsePromise = responseDeferred.promise;
+            }
+            else
+            {
+                var queryRequest = {
+                    category: this.category,
+                    select: this.selectClause
+                };
+
+                if (this.parentObject)
+                {
+                    queryRequest.parent = this.parentObject;
+                }
+
+                if (this.where)
+                {
+                    queryRequest.where = this.where;
+                }
+
+                if ("start" in kwArgs)
+                {
+                    queryRequest.offset = kwArgs.start;
+                }
+
+                if ("end" in kwArgs)
+                {
+                    queryRequest.limit = kwArgs.end - (queryRequest.offset ? queryRequest.offset : 0);
+                }
+
+                if (this.orderBy)
+                {
+                    queryRequest.orderBy = this.orderBy;
+                }
+
+                this._lastResponsePromise = this.management.query(queryRequest);
+            }
+            this._lastResponsePromise.then(lang.hitch(this, function (data)
+            {
+                this.emit("queryCompleted", data);
             }), lang.hitch(this, function (error)
             {
-                this._emitChangeHeadersIfNecessary([]);
+                this.emit("queryCompleted",
+                    {
+                        headers: [],
+                        results: [],
+                        total: 0
+                    });
             }));
-
-            this._lastResponsePromise = responsePromise;
             return this._createQueryResults(this._lastResponsePromise);
         },
 
         _createQueryResults: function (responsePromise)
         {
             var that = this;
-            var queryResultData = {
-                data: responsePromise.then(function (data)
+            return new QueryResults(responsePromise.then(function (data)
+            {
+                if (that.transformer)
                 {
-                    var dataResults = data.results;
-                    var results = [];
-                    for (var i = 0, l = dataResults.length; i < l; ++i)
-                    {
-                        var result = dataResults[i];
-                        var item = {id: result[result.length - 1]};
-
-                        // excluding id, as we already added id field
-                        for (var j = 0, rl = result.length - 1; j < rl; ++j)
-                        {
-                            // sql uses 1-based index in ORDER BY
-                            var field = this.zeroBased ? j : j + 1;
-                            item[new String(field)] = result[j];
-                        }
-                        results.push(item);
-                    }
-                    return results;
-                }, function (error)
+                    return that.transformer(data);
+                }
+                else
+                {
+                    return data.results;
+                }
+            }, function (error)
+            {
+                if (error.status)
                 {
                     this.management.errorHandler(error);
-                    return [];
-                }),
-                total: responsePromise.then(function (data)
+                }
+                return [];
+            }), {
+                totalLength: responsePromise.then(function (data)
                 {
                     return data.total;
                 }, function (error)
                 {
                     return 0;
                 })
-            };
-            return new QueryResults(queryResultData.data, {
-                totalLength: queryResultData.total
             });
-        },
-
-        _emitChangeHeadersIfNecessary: function (headers)
-        {
-            if (!this._equalStringArrays(headers, this._lastHeaders))
-            {
-                this._lastHeaders = headers;
-                this.emit("changeHeaders", {headers: headers});
-            }
         },
 
         // override from dstore.Store to not copy collection
         _createSubCollection: function ()
         {
             return this;
-        },
-
-        _equalStringArrays: function (a, b)
-        {
-            if (a.length != b.length)
-            {
-                return false;
-            }
-            for (var i = 0; i < a.length; ++i)
-            {
-                if (a[i] != b[i])
-                {
-                    return false;
-                }
-            }
-            return true;
         }
     });
 });

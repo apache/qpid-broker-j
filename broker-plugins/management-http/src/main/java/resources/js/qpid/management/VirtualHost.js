@@ -21,6 +21,7 @@
 define(["dojo/parser",
         "dojo/query",
         "dojo/_base/connect",
+        "dojo/_base/lang",
         "dijit/registry",
         "dojox/html/entities",
         "qpid/common/properties",
@@ -31,6 +32,7 @@ define(["dojo/parser",
         "qpid/management/addQueue",
         "qpid/management/addExchange",
         "qpid/management/addLogger",
+        "qpid/management/query/QueryGrid",
         "dojox/grid/EnhancedGrid",
         "qpid/management/editVirtualHost",
         "dojo/text!showVirtualHost.html",
@@ -38,6 +40,7 @@ define(["dojo/parser",
     function (parser,
               query,
               connect,
+              lang,
               registry,
               entities,
               properties,
@@ -48,6 +51,7 @@ define(["dojo/parser",
               addQueue,
               addExchange,
               addLogger,
+              QueryGrid,
               EnhancedGrid,
               editVirtualHost,
               template)
@@ -265,8 +269,6 @@ define(["dojo/parser",
                         "virtualHostConnections",
                         "virtualHostChildren"]);
 
-            var that = this;
-
             that.vhostData = {};
 
             var gridProperties = {
@@ -349,58 +351,45 @@ define(["dojo/parser",
                 });
             }, gridProperties, EnhancedGrid);
 
-            that.connectionsGrid = new UpdatableStore([], findNode("connections"), [{
-                name: "Name",
-                field: "name",
-                width: "20%"
-            }, {
-                name: "User",
-                field: "principal",
-                width: "10%"
-            }, {
-                name: "Port",
-                field: "port",
-                width: "10%"
-            }, {
-                name: "Transport",
-                field: "transport",
-                width: "10%"
-            }, {
-                name: "Sessions",
-                field: "sessionCount",
-                width: "10%"
-            }, {
-                name: "Msgs In",
-                field: "msgInRate",
-                width: "10%"
-            }, {
-                name: "Bytes In",
-                field: "bytesInRate",
-                width: "10%"
-            }, {
-                name: "Msgs Out",
-                field: "msgOutRate",
-                width: "10%"
-            }, {
-                name: "Bytes Out",
-                field: "bytesOutRate",
-                width: "10%"
-            }], function (obj)
-            {
-                connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
-                {
-                    var idx = evt.rowIndex, theItem = this.getItem(idx);
-                    var connectionName = obj.dataStore.getValue(theItem, "name");
-                    // mock the connection's parent port because we don't have access to it from here
-                    var port = {
-                        name: obj.dataStore.getValue(theItem, "port"),
-                        type: "port",
-                        parent: vhost.parent.parent
-                    };
-
-                    controller.show("connection", connectionName, port, theItem.id);
-                });
-            });
+            this.connectionsGrid = new QueryGrid({
+                transformer: lang.hitch(this, this._transformConnectionData),
+                management: this.management,
+                controller: controller,
+                parentObject: this.modelObj,
+                category: "Connection",
+                selectClause: "id, name, principal, port.name AS port, transport, sessionCount, messagesIn, bytesIn, messagesOut, bytesOut",
+                orderBy: "name",
+                columns: [{
+                    label: "Name",
+                    field: "name"
+                }, {
+                    label: "User",
+                    field: "principal"
+                }, {
+                    label: "Port",
+                    field: "port"
+                }, {
+                    label: "Transport",
+                    field: "transport"
+                }, {
+                    label: "Sessions",
+                    field: "sessionCount"
+                }, {
+                    label: "Msgs In",
+                    field: "msgInRate"
+                }, {
+                    label: "Bytes In",
+                    field: "bytesInRate"
+                }, {
+                    label: "Msgs Out",
+                    field: "msgOutRate"
+                }, {
+                    label: "Bytes Out",
+                    field: "bytesOutRate"
+                }
+                ]
+            }, findNode("connections"));
+            that.connectionsGrid.startup();
 
             that.virtualHostLoggersGrid = new UpdatableStore([], findNode("loggers"), [{
                 name: "Name",
@@ -458,6 +447,9 @@ define(["dojo/parser",
         {
             var thisObj = this;
 
+            thisObj.connectionsGrid.refresh();
+            thisObj.connectionsGrid.resize();
+
             this.management.load(this.modelObj,
                 {
                     excludeInheritedContext: true,
@@ -474,40 +466,23 @@ define(["dojo/parser",
                                 bytesOut: 0
                             }
                         };
-                    thisObj.management.get({
-                            url: thisObj.management.objectToURL(thisObj.modelObj) + "/getConnections"
-                        })
-                        .then(function (data)
+
+                    if (callback)
+                    {
+                        callback();
+                    }
+
+                    try
+                    {
+                        thisObj._update();
+                    }
+                    catch (e)
+                    {
+                        if (console && console.error)
                         {
-                            thisObj.vhostData["connections"] = data;
-
-                            if (callback)
-                            {
-                                callback();
-                            }
-
-                            try
-                            {
-                                thisObj._update();
-                            }
-                            catch (e)
-                            {
-                                if (console && console.error)
-                                {
-                                    console.error(e);
-                                }
-                            }
-
-                        }, function (error)
-                        {
-                            util.tabErrorHandler(error, {
-                                updater: thisObj,
-                                contentPane: thisObj.tabObject.contentPane,
-                                tabContainer: thisObj.tabObject.controller.tabContainer,
-                                name: thisObj.modelObj.name,
-                                category: "Virtual Host"
-                            });
-                        });
+                            console.error(e);
+                        }
+                    }
                 }, function (error)
                 {
                     util.tabErrorHandler(error, {
@@ -530,7 +505,6 @@ define(["dojo/parser",
             this.tabObject.deleteButton.set("disabled", !this.vhostData.state);
 
             util.flattenStatistics(thisObj.vhostData);
-            var connections = thisObj.vhostData["connections"];
             var queues = thisObj.vhostData["queues"];
             var exchanges = thisObj.vhostData["exchanges"];
 
@@ -562,37 +536,6 @@ define(["dojo/parser",
                 var bytesOutFormat = formatter.formatBytes(bytesOutRate);
                 thisObj.bytesOutRate.innerHTML = "(" + bytesOutFormat.value;
                 thisObj.bytesOutRateUnits.innerHTML = bytesOutFormat.units + "/s)";
-
-                if (connections && thisObj.connections)
-                {
-                    for (var i = 0; i < connections.length; i++)
-                    {
-                        var connection = connections[i];
-                        for (var j = 0; j < thisObj.connections.length; j++)
-                        {
-                            var oldConnection = thisObj.connections[j];
-                            if (oldConnection.id == connection.id)
-                            {
-                                msgOutRate =
-                                    (1000 * (connection.messagesOut - oldConnection.messagesOut)) / samplePeriod;
-                                connection.msgOutRate = msgOutRate.toFixed(0) + "msg/s";
-
-                                bytesOutRate = (1000 * (connection.bytesOut - oldConnection.bytesOut)) / samplePeriod;
-                                var bytesOutRateFormat = formatter.formatBytes(bytesOutRate);
-                                connection.bytesOutRate = bytesOutRateFormat.value + bytesOutRateFormat.units + "/s";
-
-                                msgInRate = (1000 * (connection.messagesIn - oldConnection.messagesIn)) / samplePeriod;
-                                connection.msgInRate = msgInRate.toFixed(0) + "msg/s";
-
-                                bytesInRate = (1000 * (connection.bytesIn - oldConnection.bytesIn)) / samplePeriod;
-                                var bytesInRateFormat = formatter.formatBytes(bytesInRate);
-                                connection.bytesInRate = bytesInRateFormat.value + bytesInRateFormat.units + "/s";
-                            }
-
-                        }
-
-                    }
-                }
             }
 
             thisObj.sampleTime = sampleTime;
@@ -600,7 +543,6 @@ define(["dojo/parser",
             thisObj.bytesIn = bytesIn;
             thisObj.messageOut = messageOut;
             thisObj.bytesOut = bytesOut;
-            thisObj.connections = connections;
 
             this._updateGrids(thisObj.vhostData)
 
@@ -623,6 +565,45 @@ define(["dojo/parser",
 
         };
 
+        Updater.prototype._transformConnectionData = function (data)
+        {
+
+            var sampleTime = new Date();
+            var connections = util.queryResultToObjects(data);
+            if (this._previousConnectionSampleTime)
+            {
+                var samplePeriod = sampleTime.getTime() - this._previousConnectionSampleTime.getTime();
+                for (var i = 0; i < connections.length; i++)
+                {
+                    var connection = connections[i];
+                    for (var j = 0; j < this._previousConnections.length; j++)
+                    {
+                        var oldConnection = this._previousConnections[j];
+                        if (oldConnection.id == connection.id)
+                        {
+                            var msgOutRate = (1000 * (connection.messagesOut - oldConnection.messagesOut))
+                                             / samplePeriod;
+                            connection.msgOutRate = msgOutRate.toFixed(0) + "msg/s";
+
+                            var bytesOutRate = (1000 * (connection.bytesOut - oldConnection.bytesOut)) / samplePeriod;
+                            var bytesOutRateFormat = formatter.formatBytes(bytesOutRate);
+                            connection.bytesOutRate = bytesOutRateFormat.value + bytesOutRateFormat.units + "/s";
+
+                            var msgInRate = (1000 * (connection.messagesIn - oldConnection.messagesIn)) / samplePeriod;
+                            connection.msgInRate = msgInRate.toFixed(0) + "msg/s";
+
+                            var bytesInRate = (1000 * (connection.bytesIn - oldConnection.bytesIn)) / samplePeriod;
+                            var bytesInRateFormat = formatter.formatBytes(bytesInRate);
+                            connection.bytesInRate = bytesInRateFormat.value + bytesInRateFormat.units + "/s";
+                        }
+                    }
+                }
+            }
+            this._previousConnectionSampleTime = sampleTime;
+            this._previousConnections = connections;
+            return connections;
+        };
+
         Updater.prototype._updateGrids = function (data)
         {
             this.virtualHostChildren.style.display = data.state == "ACTIVE" ? "block" : "none";
@@ -639,8 +620,6 @@ define(["dojo/parser",
                     var isStandard = item && item.name && util.isReservedExchangeName(item.name);
                     exchangesGrid.rowSelectCell.setDisabled(i, isStandard);
                 }
-                this.virtualHostConnections.style.display = data.connections ? "block" : "none";
-                util.updateUpdatableStore(this.connectionsGrid, data.connections);
             }
         };
 

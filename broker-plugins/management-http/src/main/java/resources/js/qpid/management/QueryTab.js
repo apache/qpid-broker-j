@@ -65,7 +65,7 @@ define(["dojo/parser",
             this.queryEditorNode = query(".queryEditorNode", containerNode)[0];
             this.queryBuilder = new QueryBuilder({
                 management: this.management,
-                parentModelObj: this.parent,
+                parentObject: this.parent,
                 controller: this.controller
             }, this.queryEditorNode);
         };

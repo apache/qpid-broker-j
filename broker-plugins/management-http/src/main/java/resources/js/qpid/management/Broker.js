@@ -895,19 +895,11 @@ define(["dojo/parser",
                 .then(function (data)
                 {
                     that.brokerData = data.broker[0];
-                    var virtualHostData = [];
-                    var headers =  data.virtualHosts.headers;
-                    var results =  data.virtualHosts.results;
+                    var virtualHostData = util.queryResultToObjects(data.virtualHosts);
                     var queryVirtualHostNodes = {};
-                    for (var i = 0; i < results.length; i++)
+                    for (var i = 0; i < virtualHostData.length; ++i)
                     {
-                        var result = {};
-                        for (var j = 0; j < headers.length; j++)
-                        {
-                            result[headers[j]] = results[i][j];
-                        }
-                        virtualHostData.push(result);
-                        queryVirtualHostNodes[result.id] = null;
+                        queryVirtualHostNodes[virtualHostData[i].id] = null;
                     }
                     for (var i = 0; i < that.brokerData.virtualhostnodes.length; i++)
                     {

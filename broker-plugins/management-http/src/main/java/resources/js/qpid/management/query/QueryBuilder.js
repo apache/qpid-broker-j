@@ -33,7 +33,7 @@ define(["dojo/_base/declare",
         "dgrid/extensions/ColumnResizer",
         "dstore/Memory",
         'dstore/legacy/DstoreAdapter',
-        "qpid/management/query/QueryStore",
+        "qpid/management/query/QueryGrid",
         "qpid/management/query/DropDownSelect",
         "qpid/management/query/WhereExpression",
         "dojo/Evented",
@@ -72,7 +72,7 @@ define(["dojo/_base/declare",
               ColumnResizer,
               Memory,
               DstoreAdapter,
-              QueryStore)
+              QueryGrid)
     {
         var predefinedCategories = [{
             id: "queue",
@@ -108,7 +108,9 @@ define(["dojo/_base/declare",
                 /**
                  * constructor parameter
                  */
-                _management: null,
+                management: null,
+                controller: null,
+                parentObject: null,
 
                 /**
                  * Inner fields
@@ -118,14 +120,8 @@ define(["dojo/_base/declare",
                 _categorySelector: null,
                 _searchScopeSelector: null,
                 _lastStandardModeSelect: [],
-                _sort: [],
                 _lastHeaders: [],
 
-                constructor: function (args)
-                {
-                    this._management = args.management;
-                    this.inherited(arguments);
-                },
                 postCreate: function ()
                 {
                     this.inherited(arguments);
@@ -154,7 +150,7 @@ define(["dojo/_base/declare",
                     this.standardSelectChooser.startup();
                     this.standardWhereChooser.startup();
                     this.standardWhereExpressionBuilder.set("whereFieldsSelector", this.standardWhereChooser);
-                    this.standardWhereExpressionBuilder.set("userPreferences", this._management.userPreferences);
+                    this.standardWhereExpressionBuilder.set("userPreferences", this.management.userPreferences);
                     this.standardWhereExpressionBuilder.startup();
                     this.standardWhereExpressionBuilder.on("change", lang.hitch(this, this._standardModeWhereChanged));
 
@@ -163,24 +159,18 @@ define(["dojo/_base/declare",
                     this.modeButton.on("click", lang.hitch(this, this._showModeSwitchWarningIfRequired));
 
                     this._buildGrid();
-                    this._categoryChanged();
+                    this._categoryChanged(this._categorySelector.value);
                     this._toggleSearchButton();
                 },
                 search: function ()
                 {
-                    var category = this._categorySelector.value.toLowerCase();
                     var scope = this._searchScopeSelector.value;
-                    var modelObj = this._scopeModelObjects[scope];
-                    this._store.selectClause = this._store.selectClause;
-                    this._store.where = this._store.where;
-                    this._store.category = category;
-                    this._store.parent = modelObj;
-                    this._store.orderBy = this._store.orderBy;
+                    this._resultsGrid.setParentObject(this._scopeModelObjects[scope]);
                     this._resultsGrid.refresh();
                 },
                 _showModeSwitchWarningIfRequired: function ()
                 {
-                    var userPreferences = this._management.userPreferences;
+                    var userPreferences = this.management.userPreferences;
                     var displayWarning = (!userPreferences || !userPreferences.query
                                           || (userPreferences.query.displaySwitchModeWarning == undefined
                                           || userPreferences.query.displaySwitchModeWarning));
@@ -223,18 +213,22 @@ define(["dojo/_base/declare",
                         this._modeChanged();
                     }
                 },
+                _setSelectClause: function (select)
+                {
+                    this._resultsGrid.setSelect(select ? select + ",id" : "");
+                },
                 _advancedModeSelectChanged: function ()
                 {
-                    this._store.selectClause = this.advancedSelect.value;
+                    this._setSelectClause(this.advancedSelect.value);
                 },
                 _advancedModeWhereChanged: function ()
                 {
-                    this._store.where = this.advancedWhere.value;
+                    this._resultsGrid.setWhere(this.advancedWhere.value);
                 },
                 _advancedModeOrderByChanged: function ()
                 {
-                    this._store.orderBy = this.advancedOrderBy.value;
-                    this._sort = [];
+                    this._resultsGrid.setOrderBy(this.advancedOrderBy.value);
+                    this._resultsGrid.setSort([]);
                 },
                 _toggleSearchButton: function (select)
                 {
@@ -242,21 +236,6 @@ define(["dojo/_base/declare",
                     this.searchButton.set("disabled", criteriaNotSet);
                     this.searchButton.set("title",
                         criteriaNotSet ? "Please, choose fields to display in order to enable search" : "Search");
-                },
-                _buildOrderByExpression: function ()
-                {
-                    var orderByExpression = "";
-                    if (this._sort && this._sort.length)
-                    {
-                        var orders = []
-                        for (var i = 0; i < this._sort.length; ++i)
-                        {
-                            orders.push(parseInt(this._sort[i].property) + (this._sort[i].descending ? " desc" : ""));
-                        }
-                        orderByExpression = orders.join(",");
-                    }
-                    this.advancedOrderBy.set("value", orderByExpression);
-                    return orderByExpression;
                 },
                 _buildSelectExpression: function (value)
                 {
@@ -276,10 +255,11 @@ define(["dojo/_base/declare",
                 _normalizeSorting: function (selectedColumns)
                 {
                     var newSort = [];
-                    for (var i = 0; i < this._sort.length; ++i)
+                    var sort = this._resultsGrid.getSort();
+                    for (var i = 0; i < sort.length; ++i)
                     {
-                        var sortColumnIndex = parseInt(this._sort[i].property) - 1;
-                        var sortDescending = this._sort[i].descending;
+                        var sortColumnIndex = parseInt(sort[i].property) - 1;
+                        var sortDescending = sort[i].descending;
                         if (sortColumnIndex < this._lastStandardModeSelect.length)
                         {
                             var oldSortedColumnName = this._lastStandardModeSelect[sortColumnIndex].attributeName;
@@ -296,125 +276,96 @@ define(["dojo/_base/declare",
                             }
                         }
                     }
-                    this._sort = newSort;
+                    this._resultsGrid.setSort(newSort);
                 },
                 _standardModeSelectChanged: function (selectedColumns)
                 {
                     this._normalizeSorting(selectedColumns);
-                    this._store.orderBy = this._buildOrderByExpression();
-                    this._store.selectClause = this._buildSelectExpression(selectedColumns);
+                    var selectClause = this._buildSelectExpression(selectedColumns);
+                    this._setSelectClause(selectClause);
                     this._lastStandardModeSelect = lang.clone(selectedColumns);
-                    this._toggleSearchButton(this._store.selectClause);
+                    this._toggleSearchButton(selectClause);
                     this.search();
                 },
                 _standardModeWhereChanged: function (result)
                 {
-                    this._store.where = result;
+                    this._resultsGrid.setWhere(result);
                     this.search();
                 },
                 _buildGrid: function ()
                 {
-                    this._store = new QueryStore({
+                    var grid = new QueryGrid({
+                        controller: this.controller,
                         management: this.management,
                         category: this._categorySelector.value.toLowerCase(),
-                        parent: this._scopeModelObjects[this._searchScopeSelector.value],
-                        zeroBased: false
-                    });
+                        parentObject: this._scopeModelObjects[this._searchScopeSelector.value],
+                        zeroBased: false,
+                        transformer: function (data)
+                        {
+                            var dataResults = data.results;
 
-                    var CustomGrid = declare([Grid, Keyboard, Selection, Pagination, ColumnResizer]);
+                            var results = [];
+                            for (var i = 0, l = dataResults.length; i < l; ++i)
+                            {
+                                var result = dataResults[i];
+                                var item = {id: result[result.length - 1]};
 
-                    var grid = new CustomGrid({
-                        collection: this._store,
-                        rowsPerPage: 100,
-                        selectionMode: 'single',
-                        cellNavigation: false,
-                        className: 'dgrid-autoheight',
-                        pageSizeOptions: [10, 20, 30, 40, 50, 100, 1000, 10000, 100000],
-                        adjustLastColumn: true
+                                // excluding id, as we already added id field
+                                for (var j = 0, rl = result.length - 1; j < rl; ++j)
+                                {
+                                    // sql uses 1-based index in ORDER BY
+                                    var field = j + 1;
+                                    item[new String(field)] = result[j];
+                                }
+                                results.push(item);
+                            }
+                            return results;
+                        }
                     }, this.queryResultGrid);
-                    this._store.on("changeHeaders", lang.hitch(this, function (event)
+                    grid.on('dgrid-refresh-complete', lang.hitch(this, function ()
                     {
-                        this._store.useCachedResults = true;
-                        grid.set("columns", this._getColumns(event.headers));
-                        this._resultsGrid.resize();
+                        this._resultsGrid.setUseCachedResults(false);
+                    }));
+                    grid.on('queryCompleted', lang.hitch(this, this._buildColumnsIfHeadersChanged));
+                    grid.on('orderByChanged', lang.hitch(this, function (event)
+                    {
+                        this.advancedOrderBy.set("value", event.orderBy);
                     }));
                     this._resultsGrid = grid;
                     this._resultsGrid.startup();
-                    this._resultsGrid.on('.dgrid-row:dblclick', lang.hitch(this, this._onRowClick));
-                    this._resultsGrid.on("dgrid-sort", lang.hitch(this, function (event)
-                    {
-                        for (var i = 0; i < this._sort.length; ++i)
-                        {
-                            if (this._sort[i].property == event.sort[0].property)
-                            {
-                                this._sort.splice(i, 1);
-                                break;
-                            }
-                        }
-                        this._sort.splice(0, 0, event.sort[0]);
-                        this._store.orderBy = this._buildOrderByExpression();
-                        event.preventDefault();
-                        event.stopPropagation();
-                        this.search();
-                    }));
-                    this._resultsGrid.on("dgrid-refresh-complete", lang.hitch(this, function ()
-                    {
-                        this._store.useCachedResults = false;
-                        this._resultsGrid.updateSortArrow(this._sort, true);
-                    }));
                 },
-                _onRowClick: function (event)
+                _buildColumnsIfHeadersChanged: function (event)
                 {
-                    var row = this._resultsGrid.row(event);
-                    var promise = this._management.get({url: "service/structure"});
-                    var that = this;
-                    promise.then(function (data)
+                    var headers = lang.clone(event.headers);
+                    if (headers.length > 0)
                     {
-                        var findObject = function findObject(structure, parent, type)
+                        headers.pop();
+                    }
+                    if (!this._equalStringArrays(headers, this._lastHeaders))
+                    {
+                        this._lastHeaders = headers;
+                        this._resultsGrid.setUseCachedResults(true);
+                        this._resultsGrid.set("columns", this._getColumns(headers));
+                        this._resultsGrid.resize();
+                    }
+                },
+                _equalStringArrays: function (a, b)
+                {
+                    if (a.length != b.length)
+                    {
+                        return false;
+                    }
+                    for (var i = 0; i < a.length; ++i)
+                    {
+                        if (a[i] != b[i])
                         {
-                            var item = {
-                                id: structure.id,
-                                name: structure.name,
-                                type: type,
-                                parent: parent
-                            };
-                            if (item.id == row.id)
-                            {
-                                return item;
-                            }
-                            else
-                            {
-                                for (var fieldName in structure)
-                                {
-                                    var fieldValue = structure[fieldName];
-                                    if (lang.isArray(fieldValue))
-                                    {
-                                        var fieldType = fieldName.substring(0, fieldName.length - 1);
-                                        for (var i = 0; i < fieldValue.length; i++)
-                                        {
-                                            var object = fieldValue[i];
-                                            var result = findObject(object, item, fieldType);
-                                            if (result != null)
-                                            {
-                                                return result;
-                                            }
-                                        }
-                                    }
-                                }
-                                return null;
-                            }
-                        };
-
-                        var item = findObject(data, null, "broker");
-                        if (item != null)
-                        {
-                            that.controller.show(item.type, item.name, item.parent, item.id);
+                            return false;
                         }
-                    });
+                    }
+                    return true;
                 },
                 _getColumns: function (headers)
                 {
-                    this._lastHeaders = headers;
                     var columns = [];
                     if (headers)
                     {
@@ -441,7 +392,7 @@ define(["dojo/_base/declare",
                                                     value,
                                                     10)))
                                             {
-                                                return that._management.userPreferences.formatDateTime(value, {
+                                                return that.management.userPreferences.formatDateTime(value, {
                                                     addOffset: true,
                                                     appendTimeZone: true
                                                 });
@@ -495,7 +446,7 @@ define(["dojo/_base/declare",
                 _createScopeList: function ()
                 {
                     var that = this;
-                    var result = this._management.query({
+                    var result = this.management.query({
                         select: "id, $parent.name as parentName, name",
                         category: "virtualhost"
                     });
@@ -543,9 +494,9 @@ define(["dojo/_base/declare",
                                 parent: {type: "broker"}
                             }
                         };
-                        if (this.parentModelObj && this.parentModelObj.type == "virtualhost" && this.parentModelObj.name
-                                                                                                == name
-                            && this.parentModelObj.parent && this.parentModelObj.parent.name == parentName)
+                        if (this.parentObject && this.parentObject.type == "virtualhost" && this.parentObject.name
+                                                                                            == name
+                            && this.parentObject.parent && this.parentObject.parent.name == parentName)
                         {
                             defaultValue = data[i][0];
                         }
@@ -582,18 +533,19 @@ define(["dojo/_base/declare",
                     categoryList.on("change", lang.hitch(this, this._categoryChanged));
                     this._categorySelector = categoryList;
                 },
-                _categoryChanged: function ()
+                _categoryChanged: function (value)
                 {
                     this._resetSearch();
-                    var metadata = this._getCategoryMetadata(this._categorySelector.value);
+                    var metadata = this._getCategoryMetadata(value);
                     var disableMetadataDependant = !metadata;
                     this.standardWhereChooser.set("disabled", disableMetadataDependant);
                     this.standardSelectChooser.set("disabled", disableMetadataDependant);
-                    this.searchButton.set("disabled", disableMetadataDependant || !this._store.selectClause);
+                    this.searchButton.set("disabled", true);
                     this.modeButton.set("disabled", disableMetadataDependant);
                     this.advancedSelect.set("disabled", disableMetadataDependant);
                     this.advancedWhere.set("disabled", disableMetadataDependant);
                     this.advancedOrderBy.set("disabled", disableMetadataDependant);
+                    this._resultsGrid.setCategory(value);
 
                     if (disableMetadataDependant)
                     {
@@ -627,10 +579,10 @@ define(["dojo/_base/declare",
                     {
                         evt.preventDefault();
                         evt.stopPropagation();
-                        this._store.selectClause = this.advancedSelect.value;
-                        this._store.where = this.advancedWhere.value;
-                        this._store.orderBy = this.advancedOrderBy.value;
-                        this._sort = [];
+                        this._setSelectClause(this.advancedSelect.value);
+                        this._resultsGrid.setWhere(this.advancedWhere.value);
+                        this._resultsGrid.setOrderBy(this.advancedOrderBy.value);
+                        this._resultsGrid.setSort([]);
                         this.search();
                     }
                 },
@@ -646,9 +598,10 @@ define(["dojo/_base/declare",
                         this.standardSearch.style.display = "none";
                         this.standardWhereExpressionBuilder.domNode.style.display = "none";
                         this.advancedSearch.style.display = "";
-                        this.advancedSelect.set("value", this._store.selectClause);
-                        this.advancedWhere.set("value", this._store.where);
-                        this.advancedOrderBy.set("value", this._store.orderBy);
+                        this.advancedSelect.set("value",
+                            this._buildSelectExpression(this.standardSelectChooser.get("selectedItems")));
+                        this.advancedWhere.set("value", this._resultsGrid.getWhere());
+                        this.advancedOrderBy.set("value", this._resultsGrid.getOrderBy());
                     }
                     else
                     {
@@ -664,15 +617,12 @@ define(["dojo/_base/declare",
                 },
                 _resetSearch: function ()
                 {
-                    this._store.where = "";
-                    this._store.selectClause = "";
-                    this._store.orderBy = "";
+                    this._resultsGrid.resetQuery();
                     this.standardSelectChooser.set("data", {selected: []});
                     this.standardWhereExpressionBuilder.clearWhereCriteria();
-                    this._sort = [];
-                    this.advancedSelect.set("value", this._store.selectClause);
-                    this.advancedWhere.set("value", this._store.where);
-                    this.advancedOrderBy.set("value", this._store.orderBy);
+                    this.advancedSelect.set("value", "");
+                    this.advancedWhere.set("value", "");
+                    this.advancedOrderBy.set("value", "");
                     this.search();
                 },
                 _getCategoryMetadata: function (value)
@@ -681,7 +631,7 @@ define(["dojo/_base/declare",
                     {
                         var category = value.charAt(0)
                                            .toUpperCase() + value.substring(1);
-                        return this._management.metadata.metadata[category];
+                        return this.management.metadata.metadata[category];
                     }
                     else
                     {
