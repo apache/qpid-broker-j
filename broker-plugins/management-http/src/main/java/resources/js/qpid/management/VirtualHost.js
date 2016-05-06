@@ -371,9 +371,9 @@ define(["dojo/parser",
 
                var vhostLoadedPromise = this.management.load(this.modelObj, {excludeInheritedContext: true});
                var connectionsPromise = this.management.get({url: this.management.objectToURL(this.modelObj) + "/getConnections"});
-               all({vhostLoadedPromise: vhostLoadedPromise, connectionsPromise: connectionsPromise}).then(function(results) {
-                   thisObj.vhostData = results.vhostLoadedPromise[0] || {name: thisObj.modelObj.name,statistics:{messagesIn:0,bytesIn:0,messagesOut:0,bytesOut:0}};
-                   thisObj.vhostData.connections = results.connectionsPromise;
+               all({vhostData: vhostLoadedPromise, connections: connectionsPromise}).then(function(results) {
+                   thisObj.vhostData = results.vhostData[0] || {name: thisObj.modelObj.name,statistics:{messagesIn:0,bytesIn:0,messagesOut:0,bytesOut:0}};
+                   thisObj.vhostData.connections = results.connections;
                    if (callback)
                    {
                        callback();
