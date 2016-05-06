@@ -40,6 +40,7 @@ import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.failover.FailoverProtectedOperation;
+import org.apache.qpid.client.failover.FailoverRetrySupport;
 import org.apache.qpid.client.transport.ClientConnectionDelegate;
 import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.common.ServerPropertyNames;
@@ -100,7 +101,7 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
         return createSession(transacted,acknowledgeMode,prefetchHigh,prefetchLow,null);
     }
 
-    public Session createSession(boolean transacted, int acknowledgeMode, int prefetchHigh, int prefetchLow, String name)
+    private Session createSession(final boolean transacted, final int acknowledgeMode, final int prefetchHigh, final int prefetchLow, final String name)
             throws JMSException
     {
         _conn.checkNotClosed();
@@ -110,24 +111,36 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
             throw new ChannelLimitReachedException(_conn.getMaximumChannelCount());
         }
 
-        int channelId = _conn.getNextChannelID();
-        AMQSession session;
-        try
+        return new FailoverRetrySupport<>(new FailoverProtectedOperation<Session, JMSException>()
         {
-            session = new AMQSession_0_10(_qpidConnection, _conn, channelId, transacted, acknowledgeMode, prefetchHigh,
-                    prefetchLow,name);
-            _conn.registerSession(channelId, session);
-            if (_conn.started())
+            @Override
+            public Session execute() throws JMSException, FailoverException
             {
-                session.start();
+                int channelId = _conn.getNextChannelID();
+                try
+                {
+                    AMQSession session = new AMQSession_0_10(_qpidConnection,
+                                                             _conn,
+                                                             channelId,
+                                                             transacted,
+                                                             acknowledgeMode,
+                                                             prefetchHigh,
+                                                             prefetchLow,
+                                                             name);
+                    _conn.registerSession(channelId, session);
+                    if (_conn.started())
+                    {
+                        session.start();
+                    }
+                    return session;
+                }
+                catch (Exception e)
+                {
+                    _logger.error("exception creating session:", e);
+                    throw JMSExceptionHelper.chainJMSException(new JMSException("cannot create session"), e);
+                }
             }
-        }
-        catch (Exception e)
-        {
-            _logger.error("exception creating session:", e);
-            throw JMSExceptionHelper.chainJMSException(new JMSException("cannot create session"), e);
-        }
-        return session;
+        }, _conn).execute();
     }
 
     /**
@@ -271,10 +284,10 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
 
     public void resubscribeSessions() throws JMSException, QpidException, FailoverException
     {
-        _logger.info("Resuming connection");
+        _logger.debug("Resuming connection");
         getQpidConnection().resume();
-        List<AMQSession> sessions = new ArrayList<AMQSession>(_conn.getSessions().values());
-        _logger.info(String.format("Resubscribing sessions = %s sessions.size=%d", sessions, sessions.size()));
+        List<AMQSession> sessions = _conn.getSessions().values();
+        _logger.debug("Resubscribing sessions = {} sessions.size = {}", sessions, sessions.size());
         for (AMQSession s : sessions)
         {
             s.resubscribe();
