@@ -481,17 +481,22 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
             }
             catch (InterruptedException e)
             {
-                //ignore
+                Thread.currentThread().interrupt();
+                return null;
             }
         }
 
-        try
+        synchronized (_conn.getFailoverMutex())
         {
-            return operation.execute();
-        }
-        catch (FailoverException e)
-        {
-            throw new RuntimeException(e);
+            try
+            {
+                return operation.execute();
+            }
+            catch (FailoverException e)
+            {
+                // FailoverException never thrown on 0-10 path
+                throw new RuntimeException(e);
+            }
         }
     }
 

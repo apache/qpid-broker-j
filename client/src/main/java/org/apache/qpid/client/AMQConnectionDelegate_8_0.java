@@ -66,7 +66,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
 {
     private static final Logger _logger = LoggerFactory.getLogger(AMQConnectionDelegate_8_0.class);
 
-    // deprectaed legacy name for the option
+    // deprecated legacy name for the option
     private static final String AMQJ_DEFAULT_SYNCWRITE_TIMEOUT = "amqj.default_syncwrite_timeout";
 
     private final AMQConnection _conn;
@@ -406,7 +406,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
             catch (InterruptedException e)
             {
                 _logger.debug("Interrupted: " + e, e);
-
+                Thread.currentThread().interrupt();
                 return null;
             }
 
