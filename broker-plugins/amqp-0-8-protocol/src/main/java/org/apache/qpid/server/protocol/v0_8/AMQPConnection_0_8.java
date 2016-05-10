@@ -918,8 +918,9 @@ public class AMQPConnection_0_8
     {
         if(_state != requiredState)
         {
-            sendConnectionClose(AMQConstant.COMMAND_INVALID, "Command Invalid", 0);
-
+            String replyText = "Command Invalid, expected " + requiredState + " but was " + _state;
+            sendConnectionClose(AMQConstant.COMMAND_INVALID, replyText, 0);
+            throw new ConnectionScopedRuntimeException(replyText);
         }
     }
 
@@ -932,6 +933,8 @@ public class AMQPConnection_0_8
         {
             _logger.debug("RECV ConnectionOpen[" +" virtualHost: " + virtualHostName + " capabilities: " + capabilities + " insist: " + insist + " ]");
         }
+
+        assertState(ConnectionState.AWAIT_OPEN);
 
         String virtualHostStr = AMQShortString.toString(virtualHostName);
         if ((virtualHostStr != null) && virtualHostStr.charAt(0) == '/')
