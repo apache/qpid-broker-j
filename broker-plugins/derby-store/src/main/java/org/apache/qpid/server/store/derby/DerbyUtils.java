@@ -50,14 +50,19 @@ public class DerbyUtils
     public static final DerbyLogWriter DERBY_LOG_WRITER = new DerbyLogWriter();
     public static final String DERBY_STREAM_ERROR_METHOD = "derby.stream.error.method";
 
+    public static void configureDerbyLogging()
+    {
+        if (!System.getProperties().containsKey(DERBY_STREAM_ERROR_METHOD))
+        {
+            // direct derby logging to a Qpid specific handler
+            System.setProperty(DERBY_STREAM_ERROR_METHOD, "org.apache.qpid.server.store.derby.DerbyUtils.getDerbyLogWriter");
+        }
+    }
+
     public static void loadDerbyDriver()
     {
         try
         {
-            // set the error log output
-            System.setProperty(DERBY_STREAM_ERROR_METHOD,
-                               "org.apache.qpid.server.store.derby.DerbyUtils.getDerbyLogWriter");
-
             Class<Driver> driverClass = (Class<Driver>) Class.forName(SQL_DRIVER_NAME);
         }
         catch (ClassNotFoundException e)
@@ -66,6 +71,7 @@ public class DerbyUtils
         }
     }
 
+    @SuppressWarnings("unused")
     public static Writer getDerbyLogWriter()
     {
         return DERBY_LOG_WRITER;

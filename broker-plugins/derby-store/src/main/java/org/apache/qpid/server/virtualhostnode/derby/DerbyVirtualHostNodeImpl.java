@@ -34,6 +34,7 @@ import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.derby.DerbyConfigurationStore;
+import org.apache.qpid.server.store.derby.DerbyUtils;
 import org.apache.qpid.server.util.FileHelper;
 import org.apache.qpid.server.virtualhostnode.AbstractStandardVirtualHostNode;
 
@@ -43,6 +44,11 @@ import org.apache.qpid.server.virtualhostnode.AbstractStandardVirtualHostNode;
 public class DerbyVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<DerbyVirtualHostNodeImpl> implements DerbyVirtualHostNode<DerbyVirtualHostNodeImpl>
 {
     public static final String VIRTUAL_HOST_NODE_TYPE = "DERBY";
+
+    static
+    {
+        DerbyUtils.configureDerbyLogging();
+    }
 
     @ManagedAttributeField
     private String _storePath;
