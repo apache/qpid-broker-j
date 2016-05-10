@@ -1291,7 +1291,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
                         return null;
                     }
                 }, getAMQConnection()).execute();
-                dest.setAddressResolved(0);
+                setUnresolved(dest);
             }
         }
         else
@@ -1306,7 +1306,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
                         return null;
                     }
                 }, getAMQConnection()).execute();
-                dest.setAddressResolved(0);
+                setUnresolved(dest);
             }
         }
     }

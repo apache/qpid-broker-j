@@ -86,7 +86,7 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
         }
         else
         {
-            if (getSession().isDeclareExchanges())
+            if (getSession().isDeclareExchanges() && !getSession().isResolved(destination))
             {
                 final MethodRegistry methodRegistry = getSession().getMethodRegistry();
                 ExchangeDeclareBody body =
@@ -103,6 +103,7 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
                 AMQFrame declare = body.generateFrame(getChannelId());
 
                 getConnection().getProtocolHandler().writeFrame(declare);
+                getSession().setResolved(destination);
             }
         }
     }

@@ -77,7 +77,7 @@ public class BasicMessageConsumer_0_8 extends BasicMessageConsumer<UnprocessedMe
 
 
         // This is due to the Destination carrying the temporary subscription name which is incorrect.
-        if (destination.isAddressResolved() && AMQDestination.TOPIC_TYPE == destination.getAddressType())
+        if (session.isResolved(destination) && AMQDestination.TOPIC_TYPE == destination.getAddressType())
         {
             boolean namedQueue = destination.getLink() != null && destination.getLink().getName() != null ;
 

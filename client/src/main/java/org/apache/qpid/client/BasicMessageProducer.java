@@ -473,7 +473,7 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
         }
 
         AMQDestination amqDestination = (AMQDestination) destination;
-        if(!amqDestination.isExchangeExistsChecked())
+        if (!_session.isResolved(amqDestination))
         {
             try
             {
@@ -484,7 +484,6 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
                 throw JMSExceptionHelper.chainJMSException(new InvalidDestinationException(
                         "Error validating destination"), e);
             }
-            amqDestination.setExchangeExistsChecked(true);
         }
     }
 
