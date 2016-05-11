@@ -57,6 +57,7 @@ import org.apache.qpid.client.message.QpidMessageProperties;
 import org.apache.qpid.jndi.PropertiesFileInitialContextFactory;
 import org.apache.qpid.messaging.Address;
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.test.utils.BrokerHolder;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.transport.ExecutionErrorCode;
 
@@ -299,6 +300,52 @@ public class AddressBasedDestinationTest extends QpidBrokerTestCase
     public void testCreateExchangeWithNonsenseArgs() throws Exception
     {
         createExchangeImpl(true, true, false);
+    }
+
+
+    /**
+     * QPID-5816 ensure that a Destination used on a second connection is resolved again
+     * (creating the queue/exchange if necessary).
+     */
+    public void testResolvedDestinationReresolvedBySecondConnection() throws Exception
+    {
+        Session session = _connection.createSession(true, Session.SESSION_TRANSACTED);
+
+        String addr = String.format("ADDR:%s; {create: always, node: {durable: false}}", getTestQueueName());
+
+        Destination dest = session.createQueue(addr);
+
+        MessageConsumer consumer = session.createConsumer(dest);
+        sendMessage(session, dest, 1);
+        Message m = consumer.receive(1000);
+        assertNotNull("Should receive message sent to queue",m);
+
+        _connection.close();
+
+        stopBroker();
+        startBroker(getFailingPort());
+
+        AMQConnection connection = null;
+        try
+        {
+            connection = getConnectionFactory("failover").createConnection(GUEST_USERNAME, GUEST_PASSWORD);
+            connection.start();
+            session = connection.createSession(true, Session.SESSION_TRANSACTED);
+
+            // Queue should be recreated by re-resolution of the address
+            consumer = session.createConsumer(dest);
+            sendMessage(session, dest, 1);
+            m = consumer.receive(1000);
+            assertNotNull("Should receive message sent to queue", m);
+        }
+        finally
+        {
+            if (connection != null)
+            {
+                connection.close();
+            }
+            stopBroker(getFailingPort());
+        }
     }
 
     private void createExchangeImpl(final boolean withExchangeArgs,

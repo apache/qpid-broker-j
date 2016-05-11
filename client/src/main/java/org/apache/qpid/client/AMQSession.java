@@ -141,6 +141,9 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      */
     protected final boolean DAEMON_DISPATCHER_THREAD = Boolean.getBoolean(ClientProperties.DAEMON_DISPATCHER);
 
+    private final Set<AMQDestination>
+            _resolvedDestinations = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<AMQDestination, Boolean>()));
+
     private final long _dispatcherShutdownTimeoutMs;
 
     /** The connection to which this session belongs. */
@@ -591,7 +594,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                                               boolean isConsumer,
                                               boolean noLocal) throws QpidException
     {
-        if (dest.isAddressResolved() && dest.isResolvedAfter(getAMQConnection().getLastFailoverTime()))
+        if (isResolved(dest))
         {
             return;
         }
@@ -643,8 +646,28 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                             "The name '" + dest.getAddressName() +
                             "' supplied in the address doesn't resolve to an exchange or a queue");
             }
-            dest.setAddressResolved(System.currentTimeMillis());
+            setResolved(dest);
         }
+    }
+
+    void setResolved(final AMQDestination dest)
+    {
+        _resolvedDestinations.add(dest);
+    }
+
+    void setUnresolved(final AMQDestination dest)
+    {
+        _resolvedDestinations.remove(dest);
+    }
+
+    private void clearResolvedDestinations()
+    {
+        _resolvedDestinations.clear();
+    }
+
+    boolean isResolved(final AMQDestination dest)
+    {
+        return _resolvedDestinations.contains(dest);
     }
 
     public abstract int resolveAddressType(AMQDestination dest) throws QpidException;
@@ -1060,8 +1083,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         Topic origTopic = checkValidTopic(topic, true);
 
         AMQTopic dest = AMQTopic.createDurableTopic(origTopic, name, _connection);
-        if (dest.getDestSyntax() == DestSyntax.ADDR &&
-            !dest.isAddressResolved())
+        if (dest.getDestSyntax() == DestSyntax.ADDR && !isResolved(dest))
         {
             try
             {
@@ -2363,6 +2385,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         _prefetchedMessageTags.clear();
 
         _rollbackMark.set(-1);
+        clearResolvedDestinations();
         resubscribeProducers();
         resubscribeConsumers();
     }

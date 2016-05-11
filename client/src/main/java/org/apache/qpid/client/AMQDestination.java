@@ -26,7 +26,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.net.URISyntaxException;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 import javax.jms.Destination;
 import javax.naming.NamingException;
@@ -80,8 +79,6 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
 
     private boolean _browseOnly;
 
-    private AtomicLong _addressResolved = new AtomicLong(0);
-
     private String _queueName;
 
     private String _routingKey;
@@ -92,8 +89,6 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
     private AMQShortString _urlAsShortString;
 
     private boolean _checkedForQueueBinding;
-
-    private boolean _exchangeExistsChecked;
 
     private RejectBehaviour _rejectBehaviour;
 
@@ -548,17 +543,6 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         _checkedForQueueBinding = checkedForQueueBinding;
     }
 
-
-    public boolean isExchangeExistsChecked()
-    {
-        return _exchangeExistsChecked;
-    }
-
-    public void setExchangeExistsChecked(final boolean exchangeExistsChecked)
-    {
-        _exchangeExistsChecked = exchangeExistsChecked;
-    }
-
     public String toURL()
     {
         String url = _url;
@@ -947,16 +931,6 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         this._routingKey = rk;
     }
 
-    public boolean isAddressResolved()
-    {
-        return _addressResolved.get() > 0;
-    }
-
-    public void setAddressResolved(long addressResolved)
-    {
-        _addressResolved.set(addressResolved);
-    }
-
     private static Address createAddressFromString(String str)
     {
         return Address.parse(str);
@@ -1024,7 +998,6 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         dest.setAddressType(_addressType);
         dest.setNode(_node);
         dest.setLink(_link);
-        dest.setAddressResolved(_addressResolved.get());
         return dest;
     }
 
@@ -1036,11 +1009,6 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
     protected void setDurable(boolean b)
     {
         _isDurable = b;
-    }
-
-    public boolean isResolvedAfter(long time)
-    {
-        return _addressResolved.get() > time;
     }
 
     /**

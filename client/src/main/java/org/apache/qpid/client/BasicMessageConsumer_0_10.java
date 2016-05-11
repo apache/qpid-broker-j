@@ -98,7 +98,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
         _capacity = evaluateCapacity(destination);
 
         // This is due to the Destination carrying the temporary subscription name which is incorrect.
-        if (destination.isAddressResolved() && AMQDestination.TOPIC_TYPE == destination.getAddressType()) 
+        if (_0_10session.isResolved(destination) && AMQDestination.TOPIC_TYPE == destination.getAddressType())
         {            
             boolean namedQueue = destination.getLink() != null && destination.getLink().getName() != null ; 
             

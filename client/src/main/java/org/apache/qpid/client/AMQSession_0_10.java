@@ -1449,7 +1449,7 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
             if (isExchangeExist(dest,false))
             {
                 getQpidSession().exchangeDelete(dest.getAddressName());
-                dest.setAddressResolved(0);
+                setUnresolved(dest);
             }
         }
         else
@@ -1457,7 +1457,7 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
             if (isQueueExist(dest,false))
             {
                 getQpidSession().queueDelete(dest.getAddressName());
-                dest.setAddressResolved(0);
+                setUnresolved(dest);
             }
         }
     }
