@@ -185,10 +185,10 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
 
     Collection<String> getExchangeTypeNames();
 
-    @ManagedOperation(nonModifying = true)
+    @ManagedOperation(nonModifying = true, description = "Returns collection of all connections")
     Collection<? extends Connection<?>> getConnections();
 
-    @ManagedOperation(nonModifying = true)
+    @ManagedOperation(nonModifying = true, description = "Returns collection of attributes and statistics for existing connections")
     Collection<Map<String, Object>> listConnections();
 
     @ManagedOperation(nonModifying = true)
