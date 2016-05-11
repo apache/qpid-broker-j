@@ -36,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.ExecutionException;
@@ -485,6 +486,61 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     {
         return _connections;
     }
+
+    @Override
+    public Collection<Map<String, Object>> listConnections()
+    {
+        Collection<Map<String, Object>> connections = new ArrayList<>();
+        for (AMQPConnection<?> connection : _connections)
+        {
+            Map<String, Object> connectionData = new HashMap<>();
+            connections.add(connectionData);
+            for (String name : connection.getAttributeNames())
+            {
+                Object value = connection.getAttribute(name);
+                if (value instanceof ConfiguredObject)
+                {
+                    connectionData.put(name, ((ConfiguredObject) value).getName());
+                }
+                else if (ConfiguredObject.CONTEXT.equals(name))
+                {
+                    Map<String, String> context =
+                            (Map<String, String>) connection.getActualAttributes().get(ConfiguredObject.CONTEXT);
+                    if (context != null && !context.isEmpty())
+                    {
+                        connectionData.put(name, context);
+                    }
+                }
+                else if (value instanceof Collection)
+                {
+                    List<Object> converted = new ArrayList<>();
+                    for (Object member : (Collection) value)
+                    {
+                        if (member instanceof ConfiguredObject)
+                        {
+                            converted.add(((ConfiguredObject) member).getName());
+                        }
+                        else
+                        {
+                            converted.add(member);
+                        }
+                    }
+                    connectionData.put(name, converted);
+                }
+                else if (value != null)
+                {
+                    connectionData.put(name, value);
+                }
+            }
+            Map<String, Number> statMap = connection.getStatistics();
+            if(!statMap.isEmpty())
+            {
+                connectionData.put("statistics", new TreeMap(statMap));
+            }
+        }
+        return connections;
+    }
+
 
     @Override
     public Connection<?> getConnection(String name)

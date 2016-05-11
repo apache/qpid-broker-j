@@ -306,6 +306,12 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
+    public Collection<Map<String, Object>> listConnections()
+    {
+        return Collections.emptyList();
+    }
+
+    @Override
     public Connection<?> getConnection(String name)
     {
         return null;

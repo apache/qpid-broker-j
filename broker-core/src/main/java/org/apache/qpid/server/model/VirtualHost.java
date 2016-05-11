@@ -27,14 +27,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostConnectionListener;
-
-import javax.security.auth.Subject;
 
 @ManagedObject( defaultType = "ProvidedStore", description = VirtualHost.CLASS_DESCRIPTION)
 public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>, E extends Exchange<?> > extends ConfiguredObject<X>
@@ -190,6 +187,9 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
 
     @ManagedOperation(nonModifying = true)
     Collection<? extends Connection<?>> getConnections();
+
+    @ManagedOperation(nonModifying = true)
+    Collection<Map<String, Object>> listConnections();
 
     @ManagedOperation(nonModifying = true)
     Connection<?> getConnection(@Param(name="name") String name);
