@@ -23,7 +23,6 @@ package org.apache.qpid.client;
 import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.nio.channels.UnresolvedAddressException;
-import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -67,7 +66,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
 {
     private static final Logger _logger = LoggerFactory.getLogger(AMQConnectionDelegate_8_0.class);
 
-    // deprectaed legacy name for the option
+    // deprecated legacy name for the option
     private static final String AMQJ_DEFAULT_SYNCWRITE_TIMEOUT = "amqj.default_syncwrite_timeout";
 
     private final AMQConnection _conn;
@@ -363,8 +362,8 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
      */
     public void resubscribeSessions() throws JMSException, QpidException, FailoverException
     {
-        ArrayList sessions = new ArrayList(_conn.getSessions().values());
-        _logger.info(MessageFormat.format("Resubscribing sessions = {0} sessions.size={1}", sessions, sessions.size())); // FIXME: removeKey?
+        List<AMQSession> sessions = _conn.getSessions().values();
+        _logger.debug("Resubscribing sessions = {} sessions.size = {}", sessions, sessions.size());
         for (Iterator it = sessions.iterator(); it.hasNext();)
         {
             AMQSession_0_8 s = (AMQSession_0_8) it.next();
@@ -405,7 +404,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
             catch (InterruptedException e)
             {
                 _logger.debug("Interrupted: " + e, e);
-
+                Thread.currentThread().interrupt();
                 return null;
             }
 
