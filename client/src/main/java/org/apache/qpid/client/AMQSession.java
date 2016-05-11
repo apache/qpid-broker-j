@@ -29,9 +29,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -161,10 +161,10 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     private int _ticket;
 
     /** Holds the high mark for prefetched message, at which the session is suspended. */
-    private int _prefetchHighMark;
+    private final int _prefetchHighMark;
 
     /** Holds the low mark for prefetched messages, below which the session is resumed. */
-    private int _prefetchLowMark;
+    private final int _prefetchLowMark;
 
     /** Holds the message listener, if any, which is attached to this session. */
     private MessageListener _messageListener = null;
@@ -364,12 +364,20 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         _messageEncryptionHelper = new MessageEncryptionHelper(this);
         _channelId = channelId;
         _messageFactoryRegistry = MessageFactoryRegistry.newDefaultRegistry(this);
-        _prefetchHighMark = defaultPrefetchHighMark;
-        _prefetchLowMark = defaultPrefetchLowMark;
 
         if (_acknowledgeMode == NO_ACKNOWLEDGE)
         {
-            _flowControlNoAckTaskPool = Executors.newSingleThreadExecutor(new ThreadFactory()
+            _prefetchHighMark = defaultPrefetchHighMark;
+            _prefetchLowMark = defaultPrefetchLowMark == defaultPrefetchHighMark && defaultPrefetchHighMark > 0
+                   ? Math.max(defaultPrefetchHighMark / 2, 1)
+                    : defaultPrefetchLowMark;
+
+            // we coalesce suspend jobs using single threaded pool executor with queue length of one
+            // and discarding policy
+            _flowControlNoAckTaskPool = new ThreadPoolExecutor(1, 1,
+                                                               0L, TimeUnit.MILLISECONDS,
+                                                               new LinkedBlockingQueue<Runnable>(1),
+                                                               new ThreadFactory()
             {
                 @Override
                 public Thread newThread(final Runnable r)
@@ -382,7 +390,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 
                     return thread;
                 }
-            });
+            }, new ThreadPoolExecutor.DiscardPolicy());
 
             final FlowControllingBlockingQueue.ThresholdListener listener =
                     new FlowControllingBlockingQueue.ThresholdListener()
@@ -424,20 +432,15 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 
                         private void doSuspend()
                         {
-                            try
-                            {
-                                _flowControlNoAckTaskPool.execute(new SuspenderRunner(_suspendState));
-                            }
-                            catch (RejectedExecutionException e)
-                            {
-                                // Ignore - session must be closing/closed.
-                            }
+                            _flowControlNoAckTaskPool.execute(new SuspenderRunner(_suspendState));
                         }
                     };
             _queue = new FlowControllingBlockingQueue<>(_prefetchHighMark, _prefetchLowMark, listener);
         }
         else
         {
+            _prefetchHighMark = defaultPrefetchHighMark;
+            _prefetchLowMark = defaultPrefetchLowMark;
             _flowControlNoAckTaskPool = null;
             _queue = new FlowControllingBlockingQueue<>(_prefetchHighMark, null);
         }
