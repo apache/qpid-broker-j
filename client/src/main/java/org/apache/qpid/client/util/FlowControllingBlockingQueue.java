@@ -88,9 +88,21 @@ public class FlowControllingBlockingQueue<T>
         _flowControlHighThreshold = highThreshold;
         _flowControlLowThreshold = lowThreshold;
         _listener = listener;
-        if (highThreshold == 0)
+        if (highThreshold <= 0)
         {
-        	disableFlowControl = true;
+            disableFlowControl = true;
+        }
+        else if (lowThreshold > highThreshold)
+        {
+            throw new IllegalArgumentException(String.format(
+                    "Invalid low threshold %d : it should be less or equal high threshold %d",
+                    lowThreshold,
+                    highThreshold));
+        }
+        else if (lowThreshold < 1)
+        {
+            throw new IllegalArgumentException(String.format("Invalid low threshold %d: it should be greater than 0",
+                                                             lowThreshold));
         }
     }
 

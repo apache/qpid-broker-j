@@ -28,6 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -154,10 +158,10 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     private int _ticket;
 
     /** Holds the high mark for prefetched message, at which the session is suspended. */
-    private int _prefetchHighMark;
+    private final int _prefetchHighMark;
 
     /** Holds the low mark for prefetched messages, below which the session is resumed. */
-    private int _prefetchLowMark;
+    private final int _prefetchLowMark;
 
     /** Holds the message listener, if any, which is attached to this session. */
     private MessageListener _messageListener = null;
@@ -293,6 +297,8 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         return _messageFactoryRegistry;
     }
 
+    private final ExecutorService _flowControlNoAckTaskPool;
+
     /**
      * Consumers associated with this session
      */
@@ -355,78 +361,85 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         _messageEncryptionHelper = new MessageEncryptionHelper(this);
         _channelId = channelId;
         _messageFactoryRegistry = MessageFactoryRegistry.newDefaultRegistry(this);
-        _prefetchHighMark = defaultPrefetchHighMark;
-        _prefetchLowMark = defaultPrefetchLowMark;
 
         if (_acknowledgeMode == NO_ACKNOWLEDGE)
         {
-            _queue =
-                    new FlowControllingBlockingQueue<Dispatchable>(_prefetchHighMark, _prefetchLowMark,
-                                                     new FlowControllingBlockingQueue.ThresholdListener()
-                                                     {
-                                                         private final AtomicBoolean _suspendState = new AtomicBoolean();
+            _prefetchHighMark = defaultPrefetchHighMark;
+            _prefetchLowMark = defaultPrefetchLowMark == defaultPrefetchHighMark && defaultPrefetchHighMark > 0
+                   ? Math.max(defaultPrefetchHighMark / 2, 1)
+                    : defaultPrefetchLowMark;
 
-                                                         public void aboveThreshold(int currentValue)
-                                                         {
-                                                             // If the session has been closed don't waste time creating a thread to do
-                                                             // flow control
-                                                             if (!(AMQSession.this.isClosed() || AMQSession.this.isClosing()))
-                                                             {
-                                                                 // Only execute change if previous state
-                                                                 // was False
-                                                                 if (!_suspendState.getAndSet(true))
-                                                                 {
-                                                                     if (_logger.isDebugEnabled())
-                                                                     {
-                                                                         _logger.debug(
-                                                                                 "Above threshold(" + _prefetchHighMark
-                                                                                 + ") so suspending channel. Current value is " + currentValue);
-                                                                     }
-                                                                     try
-                                                                     {
-                                                                         Threading.getThreadFactory().createThread(new SuspenderRunner(_suspendState)).start();
-                                                                     }
-                                                                     catch (Exception e)
-                                                                     {
-                                                                         throw new RuntimeException("Failed to create thread", e);
-                                                                     }
-                                                                 }
-                                                             }
-                                                         }
+            // we coalesce suspend jobs using single threaded pool executor with queue length of one
+            // and discarding policy
+            _flowControlNoAckTaskPool = new ThreadPoolExecutor(1, 1,
+                                                               0L, TimeUnit.MILLISECONDS,
+                                                               new LinkedBlockingQueue<Runnable>(1),
+                                                               new ThreadFactory()
+            {
+                @Override
+                public Thread newThread(final Runnable r)
+                {
+                    Thread thread = new Thread(r, "Connection_" + _connection.getConnectionNumber() + "_session_" + _channelId);
+                    if (!thread.isDaemon())
+                    {
+                        thread.setDaemon(true);
+                    }
 
-                                                         public void underThreshold(int currentValue)
-                                                         {
-                                                             // If the session has been closed don't waste time creating a thread to do
-                                                             // flow control
-                                                             if (!(AMQSession.this.isClosed() || AMQSession.this.isClosing()))
-                                                             {
-                                                                 // Only execute change if previous state
-                                                                 // was true
-                                                                 if (_suspendState.getAndSet(false))
-                                                                 {
-                                                                     if (_logger.isDebugEnabled())
-                                                                     {
+                    return thread;
+                }
+            }, new ThreadPoolExecutor.DiscardPolicy());
 
-                                                                         _logger.debug(
-                                                                                 "Below threshold(" + _prefetchLowMark
-                                                                                 + ") so unsuspending channel. Current value is " + currentValue);
-                                                                     }
-                                                                     try
-                                                                     {
-                                                                         Threading.getThreadFactory().createThread(new SuspenderRunner(_suspendState)).start();
-                                                                     }
-                                                                     catch (Exception e)
-                                                                     {
-                                                                         throw new RuntimeException("Failed to create thread", e);
-                                                                     }
-                                                                 }
-                                                             }
-                                                         }
-                                                     });
+            final FlowControllingBlockingQueue.ThresholdListener listener =
+                    new FlowControllingBlockingQueue.ThresholdListener()
+                    {
+                        private final AtomicBoolean _suspendState = new AtomicBoolean();
+
+                        public void aboveThreshold(int currentValue)
+                        {
+                            if (!(AMQSession.this.isClosed() || AMQSession.this.isClosing()))
+                            {
+                                // Only execute change if previous state was false
+                                if (!_suspendState.getAndSet(true))
+                                {
+                                    _logger.debug(
+                                            "Above threshold ({}) so suspending channel. Current value is {}",
+                                            _prefetchHighMark,
+                                            currentValue);
+
+                                    doSuspend();
+                                }
+                            }
+                        }
+
+                        public void underThreshold(int currentValue)
+                        {
+                            if (!(AMQSession.this.isClosed() || AMQSession.this.isClosing()))
+                            {
+                                // Only execute change if previous state was true
+                                if (_suspendState.getAndSet(false))
+                                {
+                                    _logger.debug(
+                                            "Below threshold ({}) so unsuspending channel. Current value is {}",
+                                            _prefetchLowMark,
+                                            currentValue);
+                                    doSuspend();
+                                }
+                            }
+                        }
+
+                        private void doSuspend()
+                        {
+                            _flowControlNoAckTaskPool.execute(new SuspenderRunner(_suspendState));
+                        }
+                    };
+            _queue = new FlowControllingBlockingQueue<>(_prefetchHighMark, _prefetchLowMark, listener);
         }
         else
         {
-            _queue = new FlowControllingBlockingQueue<Dispatchable>(_prefetchHighMark, null);
+            _prefetchHighMark = defaultPrefetchHighMark;
+            _prefetchLowMark = defaultPrefetchLowMark;
+            _flowControlNoAckTaskPool = null;
+            _queue = new FlowControllingBlockingQueue<>(_prefetchHighMark, null);
         }
 
         // Add creation logging to tie in with the existing close logging
@@ -775,6 +788,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
             }
             finally
             {
+                shutdownFlowControlNoAckTaskPool();
                 _connection.deregisterSession(_channelId);
             }
         }
@@ -794,7 +808,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         // with a null cause
         // When we are closing the Session due to a protocol session error we simply create a new AMQException
         // with the correct error code and text this is cleary WRONG as the instanceof check below will fail.
-        // We need to determin here if the connection should be
+        // We need to determine here if the connection should be
 
         if (e instanceof AMQDisconnectedException)
         {
@@ -822,6 +836,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 
             _connection.deregisterSession(_channelId);
             closeProducersAndConsumers(amqe);
+            shutdownFlowControlNoAckTaskPool();
         }
 
     }
@@ -3179,7 +3194,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      * @throws QpidException If the session cannot be suspended for any reason.
      * TODO  Be aware of possible changes to parameter order as versions change.
      */
-    protected void suspendChannel(boolean suspend) throws QpidException // , FailoverException
+    protected void suspendChannel(boolean suspend) throws QpidException
     {
         synchronized (_suspensionLock)
         {
@@ -3636,7 +3651,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                 synchronized (_suspensionLock)
                 {
                     // If the session has closed by the time we get here
-                    // then we should not attempt to write to the sesion/channel.
+                    // then we should not attempt to write to the session/channel.
                     if (!(AMQSession.this.isClosed() || AMQSession.this.isClosing()))
                     {
                         suspendChannel(_suspend.get());
@@ -3785,5 +3800,14 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     {
         _queue.clear();
     }
+
+    private void shutdownFlowControlNoAckTaskPool()
+    {
+        if (_flowControlNoAckTaskPool != null)
+        {
+            _flowControlNoAckTaskPool.shutdown();
+        }
+    }
+
 }
 
