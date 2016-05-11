@@ -50,6 +50,7 @@ import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationS
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.transport.*;
 import org.apache.qpid.transport.network.NetworkConnection;
@@ -111,8 +112,10 @@ public class ServerConnectionDelegate extends ServerDelegate
     {
         if(_state != requiredState)
         {
-            conn.sendConnectionClose(ConnectionCloseCode.FRAMING_ERROR, "Command Invalid expected "+requiredState+" but was "+_state);
+            String replyText = "Command Invalid, expected " + requiredState + " but was " + _state;
+            conn.sendConnectionClose(ConnectionCloseCode.FRAMING_ERROR, replyText);
             conn.closeAndIgnoreFutureInput();
+            throw new ConnectionScopedRuntimeException(replyText);
         }
     }
 
