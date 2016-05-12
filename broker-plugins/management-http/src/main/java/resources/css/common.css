@@ -21,14 +21,36 @@
 
 html, body {
     height: 100%;
+    width: 100%;
     margin: 0;
-    margin-right: 40px;
     padding: 0;
-    overflow: hidden;
     font-family: Lucida Sans,Lucida Grande,Arial !important;
     font-size: 13px !important;
     background: white;
     color: #333;
+}
+
+body {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+#pageLayout, #main {
+    height: 100%;
+    padding: 0;
+    margin: 0px;
+    overflow: visible;
+}
+
+#main {
+    width:80%;
+    padding:5px;
+    overflow: visible;
+}
+
+#tree {
+    width:20%;
+    overflow: visible;
 }
 
 .clear {
@@ -39,9 +61,6 @@ html, body {
     display: none;
 }
 
-#pageLayout {
-    height: 100%;
-}
 button {
 	-webkit-transition: background-color 0.2s linear;
 	border-radius:4px;
@@ -64,9 +83,11 @@ h1 {
 	font-size:1.5em;
 }
 
-.header {
+#header {
     height:100px;
-    background:url("../images/qpid-logo.png") left center no-repeat
+    background:url("../images/qpid-logo.png") left center no-repeat;
+    float: left;
+    width: 300px;
 }
 
 .logo {
