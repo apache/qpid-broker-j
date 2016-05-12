@@ -50,6 +50,9 @@ body {
 
 #tree {
     width:20%;
+}
+
+#tree, #tree .dijitTree {
     overflow: visible;
 }
 
