@@ -901,26 +901,29 @@ define(["dojo/parser",
                     {
                         queryVirtualHostNodes[virtualHostData[i].id] = null;
                     }
-                    for (var i = 0; i < that.brokerData.virtualhostnodes.length; i++)
+                    if (that.brokerData.virtualhostnodes && that.brokerData.virtualhostnodes.length)
                     {
-                        var node = that.brokerData.virtualhostnodes[i];
-                        var nodeId = node.id;
-                        if (!(nodeId in queryVirtualHostNodes))
+                        for (var i = 0;i < that.brokerData.virtualhostnodes.length; i++)
                         {
-                            virtualHostData.push({
-                                id: nodeId,
-                                name: node.name,
-                                type: node.type,
-                                state: node.state,
-                                "default": node.defaultVirtualHostNode,
-                                vhId: null,
-                                vhName: "N/A",
-                                vhType: "N/A",
-                                vhState: "N/A",
-                                connectionCount: "N/A",
-                                queueCount: "N/A",
-                                exchangeCount: "N/A"
-                            });
+                            var node = that.brokerData.virtualhostnodes[i];
+                            var nodeId = node.id;
+                            if (!(nodeId in queryVirtualHostNodes))
+                            {
+                                virtualHostData.push({
+                                    id: nodeId,
+                                    name: node.name,
+                                    type: node.type,
+                                    state: node.state,
+                                    "default": node.defaultVirtualHostNode,
+                                    vhId: null,
+                                    vhName: "N/A",
+                                    vhType: "N/A",
+                                    vhState: "N/A",
+                                    connectionCount: "N/A",
+                                    queueCount: "N/A",
+                                    exchangeCount: "N/A"
+                                });
+                            }
                         }
                     }
                     util.flattenStatistics(that.brokerData);
@@ -969,7 +972,7 @@ define(["dojo/parser",
         BrokerUpdater.prototype.toggleVirtualHostNodeNodeMenus = function (rowIndex)
         {
             var data = this.vhostsGrid.grid.selection.getSelected();
-            var selected = data.length == 1;
+            var selected = data && data[0];
             this.virtualHostNodeMenuButton.set("disabled", !selected);
             this.virtualHostMenuButton.set("disabled", !selected || !data[0].vhId);
             if (selected)
