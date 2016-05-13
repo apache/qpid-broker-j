@@ -1,28 +1,26 @@
-<?xml version='1.0' encoding='utf-8' ?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-
+<?xml version="1.0"?>
 <!--
 
-Licensed to the Apache Software Foundation (ASF) under one
-or more contributor license agreements.  See the NOTICE file
-distributed with this work for additional information
-regarding copyright ownership.  The ASF licenses this file
-to you under the Apache License, Version 2.0 (the
-"License"); you may not use this file except in compliance
-with the License.  You may obtain a copy of the License at
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
 
-http://www.apache.org/licenses/LICENSE-2.0
+   http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing,
-software distributed under the License is distributed on an
-"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-KIND, either express or implied.  See the License for the
-specific language governing permissions and limitations
-under the License.
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
 
 -->
 
-<book id="client-api-tutorial">
+<book xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="client-api-tutorial">
   <title>Programming in Apache Qpid</title>
   <subtitle>Cross-Platform AMQP Messaging in Java JMS, .NET, C++, and Python</subtitle>
 
@@ -38,8 +36,8 @@ under the License.
       <listitem>
 	<para>
 	  On the Java platform, Qpid uses the
-	  established <ulink url="http://java.sun.com/products/jms/">Java JMS
-	  API</ulink>.
+	  established <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://java.sun.com/products/jms/">Java JMS
+	  API</link>.
 	</para>
       </listitem>
       <listitem>
@@ -131,67 +129,67 @@ under the License.
 
       <example>
 	<title>"Hello world!" in C++</title>
-	<programlisting lang="c++"><![CDATA[
-	#include <qpid/messaging/Connection.h>
-	#include <qpid/messaging/Message.h>
-	#include <qpid/messaging/Receiver.h>
-	#include <qpid/messaging/Sender.h>
-	#include <qpid/messaging/Session.h>
+	<programlisting xml:lang="c++">
+	#include &lt;qpid/messaging/Connection.h&gt;
+	#include &lt;qpid/messaging/Message.h&gt;
+	#include &lt;qpid/messaging/Receiver.h&gt;
+	#include &lt;qpid/messaging/Sender.h&gt;
+	#include &lt;qpid/messaging/Session.h&gt;
 
-	#include <iostream>]]>
+	#include &lt;iostream&gt;
 
 	using namespace qpid::messaging;
 
 	int main(int argc, char** argv) {
-	std::string broker = argc > 1 ? argv[1] : "localhost:5672";
-	std::string address = argc > 2 ? argv[2] : "amq.topic";
-	std::string connectionOptions = argc > 3 ? argv[3] : "";
+	std::string broker = argc &gt; 1 ? argv[1] : "localhost:5672";
+	std::string address = argc &gt; 2 ? argv[2] : "amq.topic";
+	std::string connectionOptions = argc &gt; 3 ? argv[3] : "";
 
 	Connection connection(broker, connectionOptions);
 	try {
-        connection.open();  <co id="hello-cpp-open" linkends="callout-cpp-open"/>
-        Session session = connection.createSession(); <co id="hello-cpp-session" linkends="callout-cpp-session"/>
+        connection.open();  <co xml:id="hello-cpp-open" linkends="callout-cpp-open"/>
+        Session session = connection.createSession(); <co xml:id="hello-cpp-session" linkends="callout-cpp-session"/>
 
-        Receiver receiver = session.createReceiver(address); <co id="hello-cpp-receiver" linkends="callout-cpp-receiver"/>
-        Sender sender = session.createSender(address); <co id="hello-cpp-sender" linkends="callout-cpp-sender"/>
+        Receiver receiver = session.createReceiver(address); <co xml:id="hello-cpp-receiver" linkends="callout-cpp-receiver"/>
+        Sender sender = session.createSender(address); <co xml:id="hello-cpp-sender" linkends="callout-cpp-sender"/>
 
         sender.send(Message("Hello world!"));
 
-        Message message = receiver.fetch(Duration::SECOND * 1); <co id="hello-cpp-fetch" linkends="callout-cpp-fetch"/>
-        <![CDATA[std::cout << message.getContent() << std::endl;]]>
-        session.acknowledge(); <co id="hello-cpp-acknowledge" linkends="callout-cpp-acknowledge"/>
+        Message message = receiver.fetch(Duration::SECOND * 1); <co xml:id="hello-cpp-fetch" linkends="callout-cpp-fetch"/>
+        std::cout &lt;&lt; message.getContent() &lt;&lt; std::endl;
+        session.acknowledge(); <co xml:id="hello-cpp-acknowledge" linkends="callout-cpp-acknowledge"/>
 
-        connection.close(); <co id="hello-cpp-close" linkends="callout-cpp-close"/>
+        connection.close(); <co xml:id="hello-cpp-close" linkends="callout-cpp-close"/>
         return 0;
 	} catch(const std::exception&amp; error) {
-        <![CDATA[std::cerr << error.what() << std::endl;]]>
+        std::cerr &lt;&lt; error.what() &lt;&lt; std::endl;
         connection.close();
         return 1;
 	}
 	}</programlisting>
 
 	<calloutlist>
-	  <callout id="callout-cpp-open" arearefs="hello-cpp-open">
+	  <callout xml:id="callout-cpp-open" arearefs="hello-cpp-open">
 	    <para>Establishes the connection with the messaging broker.</para>
 	  </callout>
-	  <callout id="callout-cpp-session" arearefs="hello-cpp-session">
+	  <callout xml:id="callout-cpp-session" arearefs="hello-cpp-session">
 	    <para>Creates a session object on which messages will be sent and received.</para>
 	  </callout>
-	  <callout id="callout-cpp-receiver" arearefs="hello-cpp-receiver">
+	  <callout xml:id="callout-cpp-receiver" arearefs="hello-cpp-receiver">
 	    <para>Creates a receiver that receives messages from the given address.</para>
 	  </callout>
-	  <callout id="callout-cpp-sender" arearefs="hello-cpp-sender">
+	  <callout xml:id="callout-cpp-sender" arearefs="hello-cpp-sender">
 	    <para>Creates a sender that sends to the given address.</para>
 	  </callout>
-	  <callout id="callout-cpp-fetch" arearefs="hello-cpp-fetch">
+	  <callout xml:id="callout-cpp-fetch" arearefs="hello-cpp-fetch">
 	    <para>Receives the next message. The duration is optional, if omitted, will wait indefinitely for the next message.</para>
 	  </callout>
-	  <callout id="callout-cpp-acknowledge" arearefs="hello-cpp-acknowledge">
+	  <callout xml:id="callout-cpp-acknowledge" arearefs="hello-cpp-acknowledge">
 	    <para>Acknowledges receipt of all fetched messages on the
 	    session. This informs the broker that the messages were
 	    transferred and processed by the client successfully.</para>
 	  </callout>
-	  <callout id="callout-cpp-close" arearefs="hello-cpp-close">
+	  <callout xml:id="callout-cpp-close" arearefs="hello-cpp-close">
 	    <para>Closes the connection, all sessions managed by the connection, and all senders and receivers managed by each session.</para>
 	  </callout>
 	</calloutlist>
@@ -209,56 +207,56 @@ under the License.
 
       <example>
 	<title>"Hello world!" in Python</title>
-	<programlisting lang="python"><![CDATA[
+	<programlisting xml:lang="python">
 	import sys
 	from qpid.messaging import *
 
-	broker =  "localhost:5672" if len(sys.argv)<2 else sys.argv[1]
-	address = "amq.topic" if len(sys.argv)<3 else sys.argv[2]]]>
+	broker =  "localhost:5672" if len(sys.argv)&lt;2 else sys.argv[1]
+	address = "amq.topic" if len(sys.argv)&lt;3 else sys.argv[2]
 
 	connection = Connection(broker)
 
 	try:
-	connection.open()  <co id="hello-python-open" linkends="callout-python-open"/>
-	session = connection.session()   <co id="hello-python-session" linkends="callout-python-session"/>
+	connection.open()  <co xml:id="hello-python-open" linkends="callout-python-open"/>
+	session = connection.session()   <co xml:id="hello-python-session" linkends="callout-python-session"/>
 
-	sender = session.sender(address)  <co id="hello-python-sender" linkends="callout-python-sender"/>
-	receiver = session.receiver(address)  <co id="hello-python-receiver" linkends="callout-python-receiver"/>
+	sender = session.sender(address)  <co xml:id="hello-python-sender" linkends="callout-python-sender"/>
+	receiver = session.receiver(address)  <co xml:id="hello-python-receiver" linkends="callout-python-receiver"/>
 
 	sender.send(Message("Hello world!"));
 
-	message = receiver.fetch(timeout=1)  <co id="hello-python-fetch" linkends="callout-python-fetch"/>
+	message = receiver.fetch(timeout=1)  <co xml:id="hello-python-fetch" linkends="callout-python-fetch"/>
 	print message.content
-	session.acknowledge() <co id="hello-python-acknowledge" linkends="callout-python-acknowledge"/>
+	session.acknowledge() <co xml:id="hello-python-acknowledge" linkends="callout-python-acknowledge"/>
 
 	except MessagingError,m:
 	print m
 	finally:
-	connection.close()  <co id="hello-python-close" linkends="callout-python-close"/>
+	connection.close()  <co xml:id="hello-python-close" linkends="callout-python-close"/>
 	</programlisting>
 
 	<calloutlist>
-	  <callout id="callout-python-open" arearefs="hello-python-open">
+	  <callout xml:id="callout-python-open" arearefs="hello-python-open">
 	    <para>Establishes the connection with the messaging broker.</para>
 	  </callout>
-	  <callout id="callout-python-session" arearefs="hello-python-session">
+	  <callout xml:id="callout-python-session" arearefs="hello-python-session">
 	    <para>Creates a session object on which messages will be sent and received.</para>
 	  </callout>
-	  <callout id="callout-python-receiver" arearefs="hello-python-receiver">
+	  <callout xml:id="callout-python-receiver" arearefs="hello-python-receiver">
 	    <para>Creates a receiver that receives messages from the given address.</para>
 	  </callout>
-	  <callout id="callout-python-sender" arearefs="hello-python-sender">
+	  <callout xml:id="callout-python-sender" arearefs="hello-python-sender">
 	    <para>Creates a sender that sends to the given address.</para>
 	  </callout>
-	  <callout id="callout-python-fetch" arearefs="hello-python-fetch">
+	  <callout xml:id="callout-python-fetch" arearefs="hello-python-fetch">
 	    <para>Receives the next message. The duration is optional, if omitted, will wait indefinitely for the next message.</para>
 	  </callout>
-	  <callout id="callout-python-acknowledge" arearefs="hello-python-acknowledge">
+	  <callout xml:id="callout-python-acknowledge" arearefs="hello-python-acknowledge">
 	    <para>Acknowledges receipt of all fetched messages on
 	    the session. This informs the broker that the messages were
 	    transfered and processed by the client successfully.</para>
 	  </callout>
-	  <callout id="callout-python-close" arearefs="hello-python-close">
+	  <callout xml:id="callout-python-close" arearefs="hello-python-close">
 	    <para>Closes the connection, all sessions managed by the connection, and all senders and receivers managed by each session.</para>
 	  </callout>
 	</calloutlist>
@@ -288,33 +286,33 @@ under the License.
 
       <example>
 	<title>"Hello world!" in .NET C#</title>
-	<programlisting lang="c++">
+	<programlisting xml:lang="c++">
 	  using System;
-	  using Org.Apache.Qpid.Messaging;  <co id="hello-csharp-using" linkends="callout-csharp-using"/>
+	  using Org.Apache.Qpid.Messaging;  <co xml:id="hello-csharp-using" linkends="callout-csharp-using"/>
 
 	  namespace Org.Apache.Qpid.Messaging {
 	  class Program {
 	  static void Main(string[] args) {
-	  String broker = args.Length > 0 ? args[0] : "localhost:5672";
-	  String address = args.Length > 1 ? args[1] : "amq.topic";
+	  String broker = args.Length &gt; 0 ? args[0] : "localhost:5672";
+	  String address = args.Length &gt; 1 ? args[1] : "amq.topic";
 
 	  Connection connection = null;
 	  try {
 	  connection = new Connection(broker);
-	  connection.Open();   <co id="hello-csharp-open" linkends="callout-csharp-open"/>
-	  Session session = connection.CreateSession();   <co id="hello-csharp-session" linkends="callout-csharp-session"/>
+	  connection.Open();   <co xml:id="hello-csharp-open" linkends="callout-csharp-open"/>
+	  Session session = connection.CreateSession();   <co xml:id="hello-csharp-session" linkends="callout-csharp-session"/>
 
-	  Receiver receiver = session.CreateReceiver(address);   <co id="hello-csharp-receiver" linkends="callout-csharp-receiver"/>
-	  Sender sender = session.CreateSender(address);   <co id="hello-csharp-sender" linkends="callout-csharp-sender"/>
+	  Receiver receiver = session.CreateReceiver(address);   <co xml:id="hello-csharp-receiver" linkends="callout-csharp-receiver"/>
+	  Sender sender = session.CreateSender(address);   <co xml:id="hello-csharp-sender" linkends="callout-csharp-sender"/>
 
 	  sender.Send(new Message("Hello world!"));
 
 	  Message message = new Message();
-	  message = receiver.Fetch(DurationConstants.SECOND * 1);   <co id="hello-csharp-fetch" linkends="callout-csharp-fetch"/>
+	  message = receiver.Fetch(DurationConstants.SECOND * 1);   <co xml:id="hello-csharp-fetch" linkends="callout-csharp-fetch"/>
 	  Console.WriteLine("{0}", message.GetContent());
-	  session.Acknowledge();   <co id="hello-csharp-acknowledge" linkends="callout-csharp-acknowledge"/>
+	  session.Acknowledge();   <co xml:id="hello-csharp-acknowledge" linkends="callout-csharp-acknowledge"/>
 
-	  connection.Close();   <co id="hello-csharp-close" linkends="callout-csharp-close"/>
+	  connection.Close();   <co xml:id="hello-csharp-close" linkends="callout-csharp-close"/>
 	  } catch (Exception e) {
 	  Console.WriteLine("Exception {0}.", e);
 	  if (null != connection)
@@ -327,30 +325,30 @@ under the License.
 	</programlisting>
 
 	<calloutlist>
-	  <callout id="callout-csharp-using" arearefs="hello-csharp-using">
+	  <callout xml:id="callout-csharp-using" arearefs="hello-csharp-using">
 	    <para> Permits use of Org.Apache.Qpid.Messaging types and methods without explicit namespace qualification. Any .NET project must have a project reference to the assembly file <literal>Org.Apache.Qpid.Messaging.dll</literal> in order to obtain the definitions of the .NET Binding for Qpid Messaging namespace.</para>
 	  </callout>
-	  <callout id="callout-csharp-open" arearefs="hello-csharp-open">
+	  <callout xml:id="callout-csharp-open" arearefs="hello-csharp-open">
 	    <para>Establishes the connection with the messaging broker.</para>
 	  </callout>
-	  <callout id="callout-csharp-session" arearefs="hello-csharp-session">
+	  <callout xml:id="callout-csharp-session" arearefs="hello-csharp-session">
 	    <para>Creates a session object on which messages will be sent and received.</para>
 	  </callout>
-	  <callout id="callout-csharp-receiver" arearefs="hello-csharp-receiver">
+	  <callout xml:id="callout-csharp-receiver" arearefs="hello-csharp-receiver">
 	    <para>Creates a receiver that receives messages from the given address.</para>
 	  </callout>
-	  <callout id="callout-csharp-sender" arearefs="hello-csharp-sender">
+	  <callout xml:id="callout-csharp-sender" arearefs="hello-csharp-sender">
 	    <para>Creates a sender that sends to the given address.</para>
 	  </callout>
-	  <callout id="callout-csharp-fetch" arearefs="hello-csharp-fetch">
+	  <callout xml:id="callout-csharp-fetch" arearefs="hello-csharp-fetch">
 	    <para>Receives the next message. The duration is optional, if omitted, will wait indefinitely for the next message.</para>
 	  </callout>
-	  <callout id="callout-csharp-acknowledge" arearefs="hello-csharp-acknowledge">
+	  <callout xml:id="callout-csharp-acknowledge" arearefs="hello-csharp-acknowledge">
 	    <para>Acknowledges receipt of all fetched messages on the
 	    session. This informs the broker that the messages were
 	    transfered and processed by the client successfully.</para>
 	  </callout>
-	  <callout id="callout-csharp-close" arearefs="hello-csharp-close">
+	  <callout xml:id="callout-csharp-close" arearefs="hello-csharp-close">
 	    <para>Closes the connection, all sessions managed by the connection, and all senders and receivers managed by each session.</para>
 	  </callout>
 	</calloutlist>
@@ -364,7 +362,7 @@ under the License.
 
 
 
-    <section id="section-addresses">
+    <section xml:id="section-addresses">
       <title>Addresses</title>
 
       <para>An <firstterm>address</firstterm> is the name of a message
@@ -433,7 +431,7 @@ under the License.
       .NET C# and can be found in the examples directory for each
       language. These programs can use any address string as a source
       or a destination, and have many command line options to
-      configure behavior&mdash;use the <command>-h</command> option
+      configure behavior&#8212;use the <command>-h</command> option
       for documentation on these options.
 
       <footnote><para>Currently, the C++, Python, and .NET C#
@@ -550,10 +548,10 @@ under the License.
 
 	<para>The syntax for an address string is:</para>
 
-	<programlisting><![CDATA[
-	address_string ::=  <address> [ / <subject> ] [ ; <options> ]
-	options ::=  { <key> : <value>, ... }
-	]]></programlisting>
+	<programlisting>
+	address_string ::=  &lt;address&gt; [ / &lt;subject&gt; ] [ ; &lt;options&gt; ]
+	options ::=  { &lt;key&gt; : &lt;value&gt;, ... }
+	</programlisting>
 
 	<para>Addresses, subjects, and keys are strings.  Values can
 	be numbers, strings (with optional single or double quotes),
@@ -580,7 +578,7 @@ under the License.
 	it sends.
 
 	If a receiver's address contains a subject, it is used to
-	select only messages that match the subject&mdash;the matching
+	select only messages that match the subject&#8212;the matching
 	algorithm depends on the message source.
 	</para>
 
@@ -651,7 +649,7 @@ under the License.
 	<literal>europe.news</literal>, or
 	<literal>europe.weather</literal>.
 
-	The receiver's subject can include wildcard characters&mdash;
+	The receiver's subject can include wildcard characters&#8212;
 	<quote>#</quote> matches one or more words in the message's
 	subject, <quote>*</quote> matches a single word.
 
@@ -957,13 +955,13 @@ under the License.
 	  element is named <literal>weather</literal>. Here is an
 	  address string that contains this query:</para>
 
-	  <programlisting><![CDATA[
+	  <programlisting>
 	  xml; {
 	  link: {
 	  x-bindings: [{exchange:xml, key:weather, arguments:{xquery:"./weather"} }]
 	  }
 	  }
-	  ]]></programlisting>
+	  </programlisting>
 
 	  <para>When using longer queries with <command>drain</command>,
 	  it is often useful to place the query in a file, and use
@@ -976,13 +974,13 @@ under the License.
 	    <para>This example uses an x-binding that contains queries, which filter based on the content of XML messages. Here is an XQuery that we will use in this example:</para>
 
 	    <programlisting>
-	      <![CDATA[
+	      
 		       let $w := ./weather
 		       return $w/station = 'Raleigh-Durham International Airport (KRDU)'
-		       and $w/temperature_f > 50
-		       and $w/temperature_f - $w/dewpoint > 5
-		       and $w/wind_speed_mph > 7
-		       and $w/wind_speed_mph < 20 ]]>
+		       and $w/temperature_f &gt; 50
+		       and $w/temperature_f - $w/dewpoint &gt; 5
+		       and $w/wind_speed_mph &gt; 7
+		       and $w/wind_speed_mph &lt; 20 
 	    </programlisting>
 
 	    <para>We can specify this query in an x-binding to listen to messages that meet the criteria specified by the query:</para>
@@ -997,14 +995,14 @@ under the License.
 	    <para>In another window, let's create an XML message that meets the criteria in the query, and place it in the file <filename>rdu.xml</filename>:</para>
 
 	    <programlisting>
-	      <![CDATA[
-		       <weather>
-		       <station>Raleigh-Durham International Airport (KRDU)</station>
-		       <wind_speed_mph>16</wind_speed_mph>
-		       <temperature_f>70</temperature_f>
-		       <dewpoint>35</dewpoint>
-		       </weather>
-	      ]]></programlisting>
+	      
+		       &lt;weather&gt;
+		       &lt;station&gt;Raleigh-Durham International Airport (KRDU)&lt;/station&gt;
+		       &lt;wind_speed_mph&gt;16&lt;/wind_speed_mph&gt;
+		       &lt;temperature_f&gt;70&lt;/temperature_f&gt;
+		       &lt;dewpoint&gt;35&lt;/dewpoint&gt;
+		       &lt;/weather&gt;
+	      </programlisting>
 
 	      <para>Now let's use <command>spout</command> to send this message to the XML exchange:</para>
 
@@ -1015,14 +1013,14 @@ under the License.
 
 	      <para>Returning to the first window, we see that the message has been received:</para>
 
-	      <screen><![CDATA[$ ./drain -f "xml; {link:{x-bindings:[{exchange:'xml', key:'weather', arguments:{xquery:\"$(cat rdu.xquery )\"}}]}}"
+	      <screen>$ ./drain -f "xml; {link:{x-bindings:[{exchange:'xml', key:'weather', arguments:{xquery:\"$(cat rdu.xquery )\"}}]}}"
 	      Message(properties={qpid.subject:weather, spout-id:31c431de-593f-4bec-a3dd-29717bd945d3:0},
-	      content='<weather>
-	      <station>Raleigh-Durham International Airport (KRDU)</station>
-	      <wind_speed_mph>16</wind_speed_mph>
-	      <temperature_f>40</temperature_f>
-	      <dewpoint>35</dewpoint>
-	      </weather>') ]]>
+	      content='&lt;weather&gt;
+	      &lt;station&gt;Raleigh-Durham International Airport (KRDU)&lt;/station&gt;
+	      &lt;wind_speed_mph&gt;16&lt;/wind_speed_mph&gt;
+	      &lt;temperature_f&gt;40&lt;/temperature_f&gt;
+	      &lt;dewpoint&gt;35&lt;/dewpoint&gt;
+	      &lt;/weather&gt;') 
 	      </screen>
 	  </example>
 	</section>
@@ -1143,7 +1141,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	  </table>
 
 
-	  <table id="table-node-properties" pgwide="1">
+	  <table xml:id="table-node-properties" pgwide="1">
 	    <title>Node Properties</title>
 	    <tgroup cols="3">
 	      <thead>
@@ -1205,20 +1203,20 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 		    the fields that describe an AMQP 0-10 binding. Here is
 		    the format for x-bindings:
 
-		    <programlisting><![CDATA[
+		    <programlisting>
 		    [
 		    {
-		    exchange: <exchange>,
-		    queue: <queue>,
-		    key: <key>,
+		    exchange: &lt;exchange&gt;,
+		    queue: &lt;queue&gt;,
+		    key: &lt;key&gt;,
 		    arguments: {
-		    <key_1>: <value_1>,
+		    &lt;key_1&gt;: &lt;value_1&gt;,
 		    ...,
-		    <key_n>: <value_n> }
+		    &lt;key_n&gt;: &lt;value_n&gt; }
 		    },
 		    ...
 		    ]
-		    ]]></programlisting>
+		    </programlisting>
 		  </entry>
 		  <entry>
 		    In conjunction with the create option, each of these
@@ -1232,7 +1230,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	    </tgroup>
 	  </table>
 
-	  <table id="table-link-properties" pgwide="1">
+	  <table xml:id="table-link-properties" pgwide="1">
 	    <title>Link Properties</title>
 	    <tgroup cols="3">
 	      <thead>
@@ -1334,7 +1332,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	</section>
       </section>
 
-      <section id="section-address-string-bnf">
+      <section xml:id="section-address-string-bnf">
 	<title>Address String Grammar</title>
 
 	<para>This section provides a formal grammar for address strings.</para>
@@ -1343,7 +1341,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	  <title>Tokens</title>
 	  <para>The following regular expressions define the tokens used
 	to parse address strings:</para></formalpara>
-	<programlisting><![CDATA[
+	<programlisting>
 	LBRACE: \\{
 	RBRACE: \\}
 	LBRACK: \\[
@@ -1358,14 +1356,14 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	ESC:    \\\\[^ux]|\\\\x[0-9a-fA-F][0-9a-fA-F]|\\\\u[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]
 	SYM:    [.#*%@$^!+-]
 	WSPACE: [ \\n\\r\\t]+
-	]]></programlisting>
+	</programlisting>
 
 	<formalpara>
 	  <title>Grammar</title>
 	  <para>The formal grammar for addresses is given below:</para>
 	</formalpara>
 
-	<programlisting><![CDATA[
+	<programlisting>
 	address := name [ SLASH subject ] [ ";" options ]
 	name := ( part | quoted )+
 	subject := ( part | quoted | SLASH )*
@@ -1376,7 +1374,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	keyval "= ID ":" value
 	value := NUMBER / STRING / ID / map / list
 	list := "[" ( value ( "," value )* )? "]"
-	]]></programlisting>
+	</programlisting>
 
 
 	<formalpara>
@@ -1384,8 +1382,8 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	  <para>The address string options map supports the following parameters:</para>
 	</formalpara>
 
-	<programlisting><![CDATA[
-	<name> [ / <subject> ] ; {
+	<programlisting>
+	&lt;name&gt; [ / &lt;subject&gt; ] ; {
 	create: always | sender | receiver | never,
 	delete: always | sender | receiver | never,
 	assert: always | sender | receiver | never,
@@ -1393,19 +1391,19 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	node: {
 	type: queue | topic,
 	durable: True | False,
-	x-declare: { ... <declare-overrides> ... },
-	x-bindings: [<binding_1>, ... <binding_n>]
+	x-declare: { ... &lt;declare-overrides&gt; ... },
+	x-bindings: [&lt;binding_1&gt;, ... &lt;binding_n&gt;]
 	},
 	link: {
-	name: <link-name>,
+	name: &lt;link-name&gt;,
 	durable: True | False,
 	reliability: unreliable | at-most-once | at-least-once | exactly-once,
-	x-declare: { ... <declare-overrides> ... },
-	x-bindings: [<binding_1>, ... <binding_n>],
-	x-subscribe: { ... <subscribe-overrides> ... }
+	x-declare: { ... &lt;declare-overrides&gt; ... },
+	x-bindings: [&lt;binding_1&gt;, ... &lt;binding_n&gt;],
+	x-subscribe: { ... &lt;subscribe-overrides&gt; ... }
 	}
 	}
-	]]></programlisting>
+	</programlisting>
 
 
 	<itemizedlist>
@@ -1431,7 +1429,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
     </section>
 
-    <section id="replay">
+    <section xml:id="replay">
       <title>Sender Capacity and Replay</title>
 
       <para>The send method of a sender has an optional second parameter
@@ -1467,7 +1465,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       at-least-once guarantees are offered. </para>
     </section>
 
-    <section id="prefetch">
+    <section xml:id="prefetch">
       <title>Receiver Capacity (Prefetch)</title>
 
       <para>By default, a receiver requests the next message from the
@@ -1482,7 +1480,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
     </section>
 
-    <section id="acknowledgements">
+    <section xml:id="acknowledgements">
       <title>Acknowledging Received Messages</title>
 
       <para>Applications that receive messages should acknowledge their
@@ -1535,19 +1533,19 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
 	<para>C++:</para>
 
-	<programlisting><![CDATA[
+	<programlisting>
 	Receiver receiver1 = session.createReceiver(address1);
 	receiver1.setCapacity(10);
 	Receiver receiver2 = session.createReceiver(address2);
 	receiver2.setCapacity(10);
 
 	Message message =  session.nextReceiver().fetch();
-	std::cout << message.getContent() << std::endl;
+	std::cout &lt;&lt; message.getContent() &lt;&lt; std::endl;
 	session.acknowledge(); // acknowledge message receipt
-	]]>	  </programlisting>
+		  </programlisting>
 
 	<para>Python:</para>
-	<programlisting><![CDATA[
+	<programlisting>
 	receiver1 = session.receiver(address1)
 	receiver1.capacity = 10
 	receiver2 = session.receiver(address)
@@ -1555,10 +1553,10 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	message = session.next_receiver().fetch()
 	print message.content
 	session.acknowledge()
-	]]>	  </programlisting>
+		  </programlisting>
 
 	<para>.NET C#:</para>
-	<programlisting><![CDATA[
+	<programlisting>
 	Receiver receiver1 = session.CreateReceiver(address1);
 	receiver1.Capacity = 10;
 	Receiver receiver2 = session.CreateReceiver(address2);
@@ -1568,7 +1566,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	message =  session.NextReceiver().Fetch();
 	Console.WriteLine("{0}", message.GetContent());
 	session.Acknowledge();
-	]]>	  </programlisting>
+		  </programlisting>
 
       </example>
     </section>
@@ -1595,7 +1593,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       <example>
 	<title>Transactions</title>
 	<para>C++:</para>
-	<programlisting><![CDATA[
+	<programlisting>
 	Connection connection(broker);
 	Session session =  connection.createTransactionalSession();
 	...
@@ -1603,7 +1601,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	session.commit();
 	else
 	session.rollback();
-	]]></programlisting>
+	</programlisting>
 	<para>
 	  .NET C#:
 	</para>
@@ -1627,7 +1625,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
     </section>
 
-    <section id="connections">
+    <section xml:id="connections">
       <title>Connections</title>
       
       <para>
@@ -1636,12 +1634,12 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	are:
       </para>
 
-      <programlisting><![CDATA[
+      <programlisting>
       Connection connection();
       Connection connection(const string url);
-      Connection connection(const string url, const string& options);
-      Connection connection(const string url, const Variant::Map& options);
-      ]]></programlisting>
+      Connection connection(const string url, const string&amp; options);
+      Connection connection(const string url, const Variant::Map&amp; options);
+      </programlisting>
 
       <para>
 	Messaging connection URLs specify only the network host address(es). Connection 
@@ -1650,7 +1648,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	in a single string.
       </para>
 
-      <section id="connection-url">
+      <section xml:id="connection-url">
 	<title>Connection URLs</title>
 	<para>	
 	  Connection URLs describe the broker or set of brokers to which the connection
@@ -1658,7 +1656,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	  Domain:connection.amqp-host-url.
 	</para>
 
-	<programlisting><![CDATA[
+	<programlisting>
 	amqp_url = "amqp:" prot_addr_list
 	prot_addr_list = [prot_addr ","]* prot_addr
 	prot_addr = tcp_prot_addr | tls_prot_addr
@@ -1666,14 +1664,14 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	tcp_prot_addr = tcp_id tcp_addr
 	tcp_id = "tcp:" | ""
 	tcp_addr = [host [":" port] ]
-	host = <as per http://www.ietf.org/rfc/rfc3986.txt>
-	port = number	]]></programlisting>
+	host = &lt;as per http://www.ietf.org/rfc/rfc3986.txt&gt;
+	port = number	</programlisting>
 
 	<para>
 	  Examples of Messaging Connection URLs
 	</para>
 
-	<programlisting><![CDATA[
+	<programlisting>
 	localhost
 	localhost:5672
 	localhost:9999
@@ -1681,11 +1679,11 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	mybroker.example.com:5672
 	amqp:tcp:localhost:5672
 	tcp:locahost:5672,localhost:5800
-	]]></programlisting>
+	</programlisting>
 
       </section>
 
-      <section id="connection-options">
+      <section xml:id="connection-options">
 	<title>Connection Options</title>
 	
 	<para>
@@ -1703,39 +1701,39 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	  
 	  <para>or</para>
 	  
-	  <programlisting><![CDATA[
+	  <programlisting>
 	  Connection connection("localhost:5672");
 	  connection.setOption("reconnect", true);
 	  try {
 	  connection.open();
 	  !!! SNIP !!!
-	  ]]></programlisting>
+	  </programlisting>
 	  
 	  <para>In Python, these options can be set as attributes of the connection or using named arguments in
 	  the <function>Connection</function> constructor:</para>
 	  
-	  <programlisting><![CDATA[
+	  <programlisting>
 	  connection = Connection("localhost:5672", reconnect=True)
 	  try:
 	  connection.open()
 	  !!! SNIP !!!
-	  ]]></programlisting>
+	  </programlisting>
 	  
 	  <para>or</para>
 	  
-	  <programlisting><![CDATA[
+	  <programlisting>
 	  connection = Connection("localhost:5672")
 	  connection.reconnect = True
 	  try:
 	  connection.open()
 	  !!! SNIP !!!
-	  ]]></programlisting>
+	  </programlisting>
 	  <para>
 	    In .NET, these options can be set using <function>Connection.SetOption()</function> or by passing in a set of options to the constructor. The options can be passed in as a map or in string form:
 	  </para>
 	  
 	  <programlisting>
-	    Connection connection= new Connection(&#34;localhost:5672&#34;, &#34;{reconnect: true}&#34;);
+	    Connection connection= new Connection("localhost:5672", "{reconnect: true}");
 	    try {
 	    connection.Open();
 	    !!! SNIP !!!
@@ -1745,8 +1743,8 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	  </para>
 	  
 	  <programlisting>
-	    Connection connection = new Connection(&#34;localhost:5672&#34;);
-	    connection.SetOption(&#34;reconnect&#34;, true);
+	    Connection connection = new Connection("localhost:5672");
+	    connection.SetOption("reconnect", true);
 	    try {
 	    connection.Open();
 	    !!! SNIP !!!
@@ -1929,7 +1927,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       </section>
     </section>
 
-    <section id="section-Maps">
+    <section xml:id="section-Maps">
       <title>Maps and Lists in Message Content</title>
 
       <para>Many messaging applications need to exchange data across
@@ -1948,7 +1946,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       </footnote>
       Specific language support for <classname>map</classname> and <classname>list</classname> objects are shown in the following table.
       </para>
-      <table id="tabl-Programming_in_Apache_Qpid-Qpid_Maps_in_Message_Content">
+      <table xml:id="tabl-Programming_in_Apache_Qpid-Qpid_Maps_in_Message_Content">
 	<title>Map and List Representation in Supported Languages</title>
 	<tgroup cols="3">
 	  <thead>
@@ -1972,18 +1970,18 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	    <row>
 	      <entry>Java</entry>
 	      <entry><classname>MapMessage</classname></entry>
-	      <entry><classname>&nbsp;</classname></entry>
+	      <entry><classname> </classname></entry>
 	    </row>
 	    <row>
 	      <entry>.NET</entry>
-	      <entry><classname>Dictionary&#60;string, object&#62;</classname></entry>
-	      <entry><classname>Collection&#60;object&#62;</classname></entry>
+	      <entry><classname>Dictionary&lt;string, object&gt;</classname></entry>
+	      <entry><classname>Collection&lt;object&gt;</classname></entry>
 	    </row>
 	  </tbody>
 	</tgroup>
       </table>
       <para>
-	In all languages, messages are encoded using AMQP&#39;s portable datatypes.
+	In all languages, messages are encoded using AMQP's portable datatypes.
       </para>
 
       <tip>
@@ -1994,14 +1992,14 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	and platforms.</para>
       </tip>
 
-      <section id="section-Python-Maps">
+      <section xml:id="section-Python-Maps">
 	<title>Qpid Maps and Lists in Python</title>
 
 	<para>In Python, Qpid supports the <classname>dict</classname> and <classname>list</classname> types directly in message content. The following code shows how to send these structures in a message:</para>
 
 	<example>
 	  <title>Sending Qpid Maps and Lists in Python</title>
-	  <programlisting><![CDATA[
+	  <programlisting>
 	  from qpid.messaging import *
 	  # !!! SNIP !!!
 
@@ -2014,7 +2012,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	  'parts' : content['parts'] }
 	  message = Message(content=content)
 	  sender.send(message)
-	  ]]>   </programlisting>
+	     </programlisting>
 	</example>
 
 
@@ -2022,14 +2020,14 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	and the corresponding datatypes that will be received by clients in Java or C++.</para>
 
 
-	<table id="table-Python-Maps" >
+	<table xml:id="table-Python-Maps">
 	  <title>Python Datatypes in Maps</title>
 	  <tgroup cols="3">
 	    <thead>
 	      <row>
 		<entry>Python Datatype</entry>
-		<entry>&rarr; C++</entry>
-		<entry>&rarr; Java</entry>
+		<entry> C++</entry>
+		<entry>Java</entry>
 	      </row>
 	    </thead>
 	    <tbody>
@@ -2050,7 +2048,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
 
 
-      <section id="section-cpp-Maps">
+      <section xml:id="section-cpp-Maps">
 	<title>Qpid Maps and Lists in C++</title>
 
 
@@ -2062,7 +2060,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
 	<example>
 	  <title>Sending Qpid Maps and Lists in C++</title>
-	  <programlisting><![CDATA[
+	  <programlisting>
 	  using namespace qpid::types;
 
 	  // !!! SNIP !!!
@@ -2107,21 +2105,21 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
 	  encode(content, message);
 	  sender.send(message, true);
-	  ]]>     </programlisting>
+	       </programlisting>
 	</example>
 
 	<para>The following table shows the datatypes that can be sent
 	in a C++ map message, and the corresponding datatypes that
 	will be received by clients in Java and Python.</para>
 
-	<table  id="table-cpp-Maps">
+	<table xml:id="table-cpp-Maps">
 	  <title>C++ Datatypes in Maps</title>
 	  <tgroup cols="3">
 	    <thead>
 	      <row>
 		<entry>C++ Datatype</entry>
-		<entry>&rarr; Python</entry>
-		<entry>&rarr; Java</entry>
+		<entry> Python</entry>
+		<entry>Java</entry>
 	      </row>
 	    </thead>
 	    <tbody>
@@ -2143,7 +2141,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	</table>
       </section>
 
-      <section id="section-dotnet-Maps">
+      <section xml:id="section-dotnet-Maps">
 	<title>Qpid Maps and Lists in .NET</title>
 
 
@@ -2156,15 +2154,15 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	<example>
 	  <?dbfo keep-together="auto" ?>
 	  <title>Sending Qpid Maps and Lists in .NET C#</title>
-	  <programlisting><![CDATA[
+	  <programlisting>
 	  using System;
 	  using Org.Apache.Qpid.Messaging;
 
 	  // !!! SNIP !!!
 
-	  Dictionary<string, object> content = new Dictionary<string, object>();
-	  Dictionary<string, object> subMap = new Dictionary<string, object>();
-	  Collection<object> colors = new Collection<object>();
+	  Dictionary&lt;string, object&gt; content = new Dictionary&lt;string, object&gt;();
+	  Dictionary&lt;string, object&gt; subMap = new Dictionary&lt;string, object&gt;();
+	  Collection&lt;object&gt; colors = new Collection&lt;object&gt;();
 
 	  // add simple types
 	  content["id"] = 987654321;
@@ -2221,20 +2219,20 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
 	  Message message = new Message(content);
 	  Send(message, true);
-	  ]]>     </programlisting>
+	       </programlisting>
 	</example>
 
 	<para>
 	  The following table shows the mapping between datatypes in .NET and C++.
 	</para>
 
-	<table  id="table-dotnet-Maps">
+	<table xml:id="table-dotnet-Maps">
 	  <title>Datatype Mapping between C++ and .NET binding</title>
 	  <tgroup cols="2">
 	    <thead>
 	      <row>
 		<entry>C++ Datatype</entry>
-		<entry>&rarr; .NET binding</entry>
+		<entry> .NET binding</entry>
 	      </row>
 	    </thead>
 	    <tbody>
@@ -2251,13 +2249,13 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	      <row><entry>float</entry><entry>Single</entry></row>
 	      <row><entry>double</entry><entry>Double</entry></row>
 	      <row><entry>string</entry><entry>string
-	      <footnote id="callout-dotnet-string">
+	      <footnote xml:id="callout-dotnet-string">
 		<para>Strings are currently interpreted only with UTF-8 encoding.</para>
 	      </footnote></entry></row>
 	      <row><entry>qpid::types::Uuid</entry><entry>Guid</entry></row>
-	      <row><entry>Variant::Map</entry><entry><![CDATA[Dictionary<string, object>]]>
+	      <row><entry>Variant::Map</entry><entry>Dictionary&lt;string, object&gt;
 	      <footnoteref linkend="callout-dotnet-string"/></entry></row>
-	      <row><entry>Variant::List</entry><entry><![CDATA[Collection<object>]]>
+	      <row><entry>Variant::List</entry><entry>Collection&lt;object&gt;
 	      <footnoteref linkend="callout-dotnet-string"/></entry></row>
 	    </tbody>
 	  </tgroup>
@@ -2272,8 +2270,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
     <section>
       <title>The Request / Response Pattern</title>
       <para>Request / Response applications use the reply-to property,
-      described in <xref
-      linkend="table-amqp0-10-message-properties"/>, to allow a server
+      described in <xref linkend="table-amqp0-10-message-properties"/>, to allow a server
       to respond to the client that sent a message. A server sets up a
       service queue, with a name known to clients. A client creates a
       private queue for the server's response, creates a message for a
@@ -2292,7 +2289,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	message to arrive. If it receives a message, it sends a
 	message back to the sender.</para>
 
-	<programlisting><![CDATA[Receiver receiver = session.createReceiver("service_queue; {create: always}");
+	<programlisting>Receiver receiver = session.createReceiver("service_queue; {create: always}");
 
 	Message request = receiver.fetch();
 	const Address&amp; address = request.getReplyTo(); // Get "reply-to" from request ...
@@ -2302,7 +2299,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	sender.send(response);
 	session.acknowledge();
 	}
-	]]></programlisting>
+	</programlisting>
 
 	<para>The client creates a sender for the service queue, and
 	also creates a response queue that is deleted when the
@@ -2310,7 +2307,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	client, if the address starts with the character
 	<literal>#</literal>, it is given a unique name.</para>
 
-	<programlisting><![CDATA[
+	<programlisting>
 	Sender sender = session.createSender("service_queue");
 
 	Address responseQueue("#response-queue; {create:always, delete:always}");
@@ -2321,8 +2318,8 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	request.setContent("ping");
 	sender.send(request);
 	Message response = receiver.fetch();
-	std::cout << request.getContent() << " -> " << response.getContent() << std::endl;
-	]]>	  </programlisting>
+	std::cout &lt;&lt; request.getContent() &lt;&lt; " -&gt; " &lt;&lt; response.getContent() &lt;&lt; std::endl;
+		  </programlisting>
 
 	<para>The client sends the string <literal>ping</literal> to
 	the server. The server sends the response
@@ -2401,20 +2398,20 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
 	<para>In C++:</para>
 
-	<programlisting><![CDATA[
-	#include <qpid/messaging/FailoverUpdates.h>
+	<programlisting>
+	#include &lt;qpid/messaging/FailoverUpdates.h&gt;
 	...
 	Connection connection("localhost:5672");
 	connection.setOption("reconnect", true);
 	try {
 	connection.open();
-	std::auto_ptr<FailoverUpdates> updates(new FailoverUpdates(connection));
-	]]>
+	std::auto_ptr&lt;FailoverUpdates&gt; updates(new FailoverUpdates(connection));
+	
 	</programlisting>
 
 	<para>In python:</para>
 
-	<programlisting><![CDATA[
+	<programlisting>
 	import qpid.messaging.util
 	...
 	connection = Connection("localhost:5672")
@@ -2422,7 +2419,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	try:
 	connection.open()
 	auto_fetch_reconnect_urls(connection)
-	]]>
+	
 	</programlisting>
 	<para>
 	  In .NET C#:
@@ -2431,7 +2428,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	<programlisting>
 	  using Org.Apache.Qpid.Messaging;
 	  ...
-	  connection = new Connection(&#34;localhost:5672&#34;);
+	  connection = new Connection("localhost:5672");
 	  connection.SetOption("reconnect", true);
 	  try {
 	  connection.Open();
@@ -2460,14 +2457,14 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	</para>
 
 	<screen>
-	  export QPID_LOG_ENABLE=&#34;warning+&#34;
+	  export QPID_LOG_ENABLE="warning+"
 	</screen>
 	<para>
 	  The Qpidd broker and C++ clients use QPID_LOG_OUTPUT to determine where logging output should be sent. This is either a file name or the special values stderr, stdout, or syslog:
 	</para>
 
 	<screen>
-	  export QPID_LOG_TO_FILE=&#34;/tmp/myclient.out&#34;
+	  export QPID_LOG_TO_FILE="/tmp/myclient.out"
 	</screen>
 
 	<para>
@@ -2497,14 +2494,14 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	enable("qpid.messaging.io", DEBUG)
 	</programlisting>
 	<para>
-	  For more information on Python logging, see <ulink url="http://docs.python.org/lib/node425.html">http://docs.python.org/lib/node425.html</ulink>. For more information on Qpid logging, use <command>$ pydoc qpid.log</command>.
+	  For more information on Python logging, see <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://docs.python.org/lib/node425.html">http://docs.python.org/lib/node425.html</link>. For more information on Qpid logging, use <command>$ pydoc qpid.log</command>.
 	</para>
       </section>
     </section>
 
 
 
-    <section id="section-amqp0-10-mapping">
+    <section xml:id="section-amqp0-10-mapping">
       <title>The AMQP 0-10 mapping</title>
 
       <para>
@@ -2643,7 +2640,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       <varname>dp</varname> refers to an AMQP 0-10
       <varname>delivery-properties</varname> struct.</para>
 
-      <table id="table-amqp0-10-message-properties" pgwide="1">
+      <table xml:id="table-amqp0-10-message-properties" pgwide="1">
         <title>Mapping to AMQP 0-10 Message Properties</title>
         <tgroup cols="3">
           <thead>
@@ -2657,7 +2654,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 		<para>
 		  The .NET Binding for C++ Messaging provides all the
 		  message and delivery properties described in the C++ API.
-		  See  <xref linkend="table-Dotnet-Binding-Message" /> .
+		  See  <xref linkend="table-Dotnet-Binding-Message"/> .
 		</para>
 	      </footnote>
 	      </entry>
@@ -2701,7 +2698,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
         </tgroup>
       </table>
 
-      <section role="h3" id="section-amqp0-10-message-props">
+      <section role="h3" xml:id="section-amqp0-10-message-props">
         <title>0-10 Message Property Keys</title>
         <para>
           The QPID Messaging API also recognises special message property keys and
@@ -2756,7 +2753,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
             The following code fragment checks for and extracts the message timestamp from
             a received message.
           </para>
-          <programlisting lang="python">
+          <programlisting xml:lang="python">
 	    try:
 	    msg = receiver.fetch(timeout=1)
 	    if "x-amqp-0-10.timestamp" in msg.properties:
@@ -2770,11 +2767,11 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
           <para>
             The same example, except in C++.
           </para>
-          <programlisting lang="c++">
+          <programlisting xml:lang="c++">
 	    messaging::Message msg;
 	    if (receiver.fetch(msg, messaging::Duration::SECOND*1)) {
 	    if (msg.getProperties().find("x-amqp-0-10.timestamp") != msg.getProperties().end()) {
-	    <![CDATA[std::cout << "Timestamp=" << msg.getProperties()["x-amqp-0-10.timestamp"].asString() << std::endl;]]>
+	    std::cout &lt;&lt; "Timestamp=" &lt;&lt; msg.getProperties()["x-amqp-0-10.timestamp"].asString() &lt;&lt; std::endl;
 	    }
 	    }
           </programlisting>
@@ -2787,7 +2784,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
   </chapter>
 
 
-  <chapter id="QpidJMS">
+  <chapter xml:id="QpidJMS">
     <title>Using the Qpid JMS client</title>
     <section>
       <title>A Simple Messaging Program in Java JMS</title>
@@ -2808,7 +2805,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
       <example>
 	<title>"Hello world!" in Java</title>
-	<programlisting lang="java">
+	<programlisting xml:lang="java">
 	  package org.apache.qpid.example.jmsexample.hello;
 
 	  import javax.jms.*;
@@ -2829,28 +2826,28 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	  private void runTest() {
 	  try {
 	  Properties properties = new Properties();
-	  properties.load(this.getClass().getResourceAsStream("hello.properties"));  <co id="hello-java-properties" linkends="callout-java-properties"/>
-	  Context context = new InitialContext(properties);   <co id="hello-java-context" linkends="callout-java-context"/>
+	  properties.load(this.getClass().getResourceAsStream("hello.properties"));  <co xml:id="hello-java-properties" linkends="callout-java-properties"/>
+	  Context context = new InitialContext(properties);   <co xml:id="hello-java-context" linkends="callout-java-context"/>
 
 	  ConnectionFactory connectionFactory
-          = (ConnectionFactory) context.lookup("qpidConnectionfactory"); <co id="hello-java-connection-factory" linkends="callout-java-connection-factory"/>
-	  Connection connection = connectionFactory.createConnection();  <co id="hello-java-connection" linkends="callout-java-connection"/>
-	  connection.start();  <co id="hello-java-start" linkends="callout-java-start"/>
+          = (ConnectionFactory) context.lookup("qpidConnectionfactory"); <co xml:id="hello-java-connection-factory" linkends="callout-java-connection-factory"/>
+	  Connection connection = connectionFactory.createConnection();  <co xml:id="hello-java-connection" linkends="callout-java-connection"/>
+	  connection.start();  <co xml:id="hello-java-start" linkends="callout-java-start"/>
 
-	  Session session=connection.createSession(false,Session.AUTO_ACKNOWLEDGE);<co id="hello-java-session" linkends="callout-java-session"/>
-	  Destination destination = (Destination) context.lookup("topicExchange");  <co id="hello-java-destination" linkends="callout-java-destination"/>
+	  Session session=connection.createSession(false,Session.AUTO_ACKNOWLEDGE);<co xml:id="hello-java-session" linkends="callout-java-session"/>
+	  Destination destination = (Destination) context.lookup("topicExchange");  <co xml:id="hello-java-destination" linkends="callout-java-destination"/>
 
-	  MessageProducer messageProducer = session.createProducer(destination);  <co id="hello-java-producer" linkends="callout-java-producer"/>
-	  MessageConsumer messageConsumer = session.createConsumer(destination);  <co id="hello-java-consumer" linkends="callout-java-consumer"/>
+	  MessageProducer messageProducer = session.createProducer(destination);  <co xml:id="hello-java-producer" linkends="callout-java-producer"/>
+	  MessageConsumer messageConsumer = session.createConsumer(destination);  <co xml:id="hello-java-consumer" linkends="callout-java-consumer"/>
 
 	  TextMessage message = session.createTextMessage("Hello world!");
 	  messageProducer.send(message);
 
-	  message = (TextMessage)messageConsumer.receive();    <co id="hello-java-receive" linkends="callout-java-receive"/>
+	  message = (TextMessage)messageConsumer.receive();    <co xml:id="hello-java-receive" linkends="callout-java-receive"/>
 	  System.out.println(message.getText());
 
-	  connection.close();  <co id="hello-java-close" linkends="callout-java-close"/>
-	  context.close();   <co id="hello-java-jndi-close" linkends="callout-java-jndi-close"/>
+	  connection.close();  <co xml:id="hello-java-close" linkends="callout-java-close"/>
+	  context.close();   <co xml:id="hello-java-jndi-close" linkends="callout-java-jndi-close"/>
 	  }
 	  catch (Exception exp) {
 	  exp.printStackTrace();
@@ -2861,40 +2858,40 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       </example>
 
       <calloutlist>
-	<callout id="callout-java-properties" arearefs="hello-java-properties">
+	<callout xml:id="callout-java-properties" arearefs="hello-java-properties">
 	  <para>Loads the JNDI properties file, which specifies connection properties, queues, topics, and addressing options. See <xref linkend="QpidJNDI"/> for details.</para>
 	</callout>
-	<callout id="callout-java-context" arearefs="hello-java-context">
+	<callout xml:id="callout-java-context" arearefs="hello-java-context">
 	  <para>Creates the JNDI initial context.</para>
 	</callout>
-	<callout id="callout-java-connection-factory" arearefs="hello-java-connection-factory">
+	<callout xml:id="callout-java-connection-factory" arearefs="hello-java-connection-factory">
 	  <para>Creates a JMS connection factory for Qpid.</para>
 	</callout>
-	<callout id="callout-java-connection" arearefs="hello-java-connection">
+	<callout xml:id="callout-java-connection" arearefs="hello-java-connection">
 	  <para>Creates a JMS connection.</para>
 	</callout>
-	<callout id="callout-java-start" arearefs="hello-java-start">
+	<callout xml:id="callout-java-start" arearefs="hello-java-start">
 	  <para>Activates the connection.</para>
 	</callout>
-	<callout id="callout-java-session" arearefs="hello-java-session">
+	<callout xml:id="callout-java-session" arearefs="hello-java-session">
 	  <para>Creates a session. This session is not transactional (transactions='false'), and messages are automatically acknowledged.</para>
 	</callout>
-	<callout id="callout-java-destination" arearefs="hello-java-destination">
+	<callout xml:id="callout-java-destination" arearefs="hello-java-destination">
 	  <para>Creates a destination for the topic exchange, so senders and receivers can use it.</para>
 	</callout>
-	<callout id="callout-java-producer" arearefs="hello-java-producer">
+	<callout xml:id="callout-java-producer" arearefs="hello-java-producer">
 	  <para>Creates a producer that sends messages to the topic exchange.</para>
 	</callout>
-	<callout id="callout-java-consumer" arearefs="hello-java-consumer">
+	<callout xml:id="callout-java-consumer" arearefs="hello-java-consumer">
 	  <para>Creates a consumer that reads messages from the topic exchange.</para>
 	</callout>
-	<callout id="callout-java-receive" arearefs="hello-java-receive">
+	<callout xml:id="callout-java-receive" arearefs="hello-java-receive">
 	  <para>Reads the next available message.</para>
 	</callout>
-	<callout id="callout-java-close" arearefs="hello-java-close">
+	<callout xml:id="callout-java-close" arearefs="hello-java-close">
 	  <para>Closes the connection, all sessions managed by the connection, and all senders and receivers managed by each session.</para>
 	</callout>
-	<callout id="callout-java-jndi-close" arearefs="hello-java-jndi-close">
+	<callout xml:id="callout-java-jndi-close" arearefs="hello-java-jndi-close">
 	  <para>Closes the JNDI context.</para>
 	</callout>
       </calloutlist>
@@ -2909,19 +2906,19 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
 	  # connectionfactory.[jndiname] = [ConnectionURL]
 	  connectionfactory.qpidConnectionfactory
-	  = amqp://guest:guest@clientid/test?brokerlist='tcp://localhost:5672' <co id="hello-properties-connectionfactory" linkends="callout-hello-properties-connectionfactory"/>
+	  = amqp://guest:guest@clientid/test?brokerlist='tcp://localhost:5672' <co xml:id="hello-properties-connectionfactory" linkends="callout-hello-properties-connectionfactory"/>
 	  # destination.[jndiname] = [address_string]
-	  destination.topicExchange = amq.topic <co id="hello-properties-destination" linkends="callout-hello-properties-destination"/>
+	  destination.topicExchange = amq.topic <co xml:id="hello-properties-destination" linkends="callout-hello-properties-destination"/>
 	</programlisting>
       </example>
 
       <calloutlist>
-	<callout id="callout-hello-properties-connectionfactory" arearefs="hello-properties-connectionfactory">
+	<callout xml:id="callout-hello-properties-connectionfactory" arearefs="hello-properties-connectionfactory">
 	  <para>Defines a connection factory from which connections
 	  can be created. The syntax of a ConnectionURL is given in
 	  <xref linkend="QpidJNDI"/>.</para>
 	</callout>
-	<callout id="callout-hello-properties-destination" arearefs="hello-properties-destination">
+	<callout xml:id="callout-hello-properties-destination" arearefs="hello-properties-destination">
 	  <para>Defines a destination for which MessageProducers
 	  and/or MessageConsumers can be created to send and receive
 	  messages. The value for the destination in the properties
@@ -2935,7 +2932,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
     </section>
 
-    <section id="QpidJNDI">
+    <section xml:id="QpidJNDI">
       <title>Apache Qpid JNDI Properties for AMQP Messaging</title>
 
 
@@ -2945,7 +2942,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
       <example>
 	<title>JNDI Properties File</title>
-	<programlisting><![CDATA[
+	<programlisting>
 	java.naming.factory.initial
 	= org.apache.qpid.jndi.PropertiesFileInitialContextFactory
 
@@ -2954,7 +2951,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	= amqp://guest:guest@clientid/test?brokerlist='tcp://localhost:5672'
 	# destination.[jndiname] = [address_string]
 	destination.topicExchange = amq.topic
-	]]></programlisting>
+	</programlisting>
       </example>
 
       <para>The following sections describe the JNDI properties that Qpid uses.</para>
@@ -3031,19 +3028,19 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
         </table>
       </section>
 
-      <section id="section-jms-connection-url">
+      <section xml:id="section-jms-connection-url">
         <title>Connection URLs</title>
         <para>
 	  In JNDI properties, a Connection URL specifies properties for a connection. The format for a Connection URL is:
         </para>
 
-        <programlisting>amqp://[&lt;user&gt;:&lt;pass&gt;@][&lt;clientid&gt;]&lt;virtualhost&gt;[?&lt;option&gt;=&#39;&lt;value&gt;&#39;[&amp;&lt;option&gt;=&#39;&lt;value&gt;&#39;]]
+        <programlisting>amqp://[&lt;user&gt;:&lt;pass&gt;@][&lt;clientid&gt;]&lt;virtualhost&gt;[?&lt;option&gt;='&lt;value&gt;'[&amp;&lt;option&gt;='&lt;value&gt;']]
         </programlisting>
         <para>
 	  For instance, the following Connection URL specifies a user name, a password, a client ID, a virtual host ("test"), a broker list with a single broker, and a TCP host with the host name <quote>localhost</quote> using port 5672:
         </para>
 
-        <programlisting>amqp://username:password@clientid/test?brokerlist=&#39;tcp://localhost:5672&#39;
+        <programlisting>amqp://username:password@clientid/test?brokerlist='tcp://localhost:5672'
         </programlisting>
         <para>
 	  Apache Qpid supports the following properties in Connection URLs:
@@ -3174,12 +3171,12 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	  Broker lists are specified using a URL in this format:
         </para>
 
-        <programlisting>brokerlist=&lt;transport&gt;://&lt;host&gt;[:&lt;port&gt;](?&lt;param>='&lt;value>')(&amp;&lt;param>='&lt;value>')*</programlisting>
+        <programlisting>brokerlist=&lt;transport&gt;://&lt;host&gt;[:&lt;port&gt;](?&lt;param&gt;='&lt;value&gt;')(&amp;&lt;param&gt;='&lt;value&gt;')*</programlisting>
         <para>
 	  For instance, this is a typical broker list:
         </para>
 
-        <programlisting>brokerlist=&#39;tcp://localhost:5672&#39;
+        <programlisting>brokerlist='tcp://localhost:5672'
         </programlisting>
 
 	<para>
@@ -3189,28 +3186,28 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	<example>
 	  <title>Broker Lists</title>
 	  <para>A broker list can specify properties to be used when connecting to the broker, such as security options. This broker list specifies options for a Kerberos connection using GSSAPI:</para>
-	  <programlisting><![CDATA[
+	  <programlisting>
 	  amqp://guest:guest@test/test?sync_ack='true'
-	  &brokerlist='tcp://ip1:5672?sasl_mechs='GSSAPI''
-	  ]]></programlisting>
+	  &amp;brokerlist='tcp://ip1:5672?sasl_mechs='GSSAPI''
+	  </programlisting>
 
 	  <para>This broker list specifies SSL options:</para>
 
-	  <programlisting><![CDATA[
+	  <programlisting>
 	  amqp://guest:guest@test/test?sync_ack='true'
-	  &brokerlist='tcp://ip1:5672?ssl='true'&ssl_cert_alias='cert1''
-	  ]]></programlisting>
+	  &amp;brokerlist='tcp://ip1:5672?ssl='true'&amp;ssl_cert_alias='cert1''
+	  </programlisting>
 
 	  <para>
 	    This broker list specifies two brokers using the connectdelay and retries broker options. It also illustrates the failover connection URL
 	    property.
 	  </para>
 
-	  <programlisting><![CDATA[
+	  <programlisting>
 
 	  amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
-	  &brokerlist='tcp://ip1:5672?retries='5'&connectdelay='2000';tcp://ip2:5672?retries='5'&connectdelay='2000''
-	  ]]></programlisting>
+	  &amp;brokerlist='tcp://ip1:5672?retries='5'&amp;connectdelay='2000';tcp://ip2:5672?retries='5'&amp;connectdelay='2000''
+	  </programlisting>
 	</example>
 
 	<para>The following broker list options are supported.</para>
@@ -3446,7 +3443,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       <varname>dp</varname> refers to an AMQP 0-10
       <varname>delivery-properties</varname> struct.</para>
 
-      <table >
+      <table>
         <title>Java JMS Mapping to AMQP 0-10 Message Properties</title>
         <tgroup cols="2">
           <thead>
@@ -3496,14 +3493,14 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
     </section>
 
-    <section id="section-JMS-MapMessage">
+    <section xml:id="section-JMS-MapMessage">
       <title>JMS MapMessage Types</title>
 
       <para>Qpid supports the Java JMS <classname>MapMessage</classname> interface, which provides support for maps in messages. The following code shows how to send a <classname>MapMessage</classname> in Java JMS.</para>
 
       <example>
 	<title>Sending a Java JMS MapMessage</title>
-	<programlisting><![CDATA[
+	<programlisting>
 	import java.util.ArrayList;
 	import java.util.HashMap;
 	import java.util.List;
@@ -3526,43 +3523,43 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	m.setStringProperty("name", "Widget");
 	m.setDoubleProperty("price", 0.99);
 
-	List<String> colors = new ArrayList<String>();
+	List&lt;String&gt; colors = new ArrayList&lt;String&gt;();
 	colors.add("red");
 	colors.add("green");
 	colors.add("white");
 	m.setObject("colours", colors);
 
-	Map<String,Double> dimensions = new HashMap<String,Double>();
+	Map&lt;String,Double&gt; dimensions = new HashMap&lt;String,Double&gt;();
 	dimensions.put("length",10.2);
 	dimensions.put("width",5.1);
 	dimensions.put("depth",2.0);
 	m.setObject("dimensions",dimensions);
 
-	List<List<Integer>> parts = new ArrayList<List<Integer>>();
+	List&lt;List&lt;Integer&gt;&gt; parts = new ArrayList&lt;List&lt;Integer&gt;&gt;();
 	parts.add(Arrays.asList(new Integer[] {1,2,5}));
 	parts.add(Arrays.asList(new Integer[] {8,2,5}));
 	m.setObject("parts", parts);
 
-	Map<String,Object> specs = new HashMap<String,Object>();
+	Map&lt;String,Object&gt; specs = new HashMap&lt;String,Object&gt;();
 	specs.put("colours", colors);
 	specs.put("dimensions", dimensions);
 	specs.put("parts", parts);
 	m.setObject("specs",specs);
 
 	producer.send(m);
-	]]></programlisting>
+	</programlisting>
       </example>
 
       <para>The following table shows the datatypes that can be sent in a <classname>MapMessage</classname>, and the corresponding datatypes that will be received by clients in Python or C++.</para>
 
-      <table id="table-Java-Maps">
+      <table xml:id="table-Java-Maps">
 	<title>Java Datatypes in Maps</title>
 	<tgroup cols="3">
 	  <thead>
 	    <row>
 	      <entry>Java Datatype</entry>
-	      <entry>&rarr; Python</entry>
-	      <entry>&rarr; C++</entry>
+	      <entry>Python</entry>
+	      <entry>C++</entry>
 	    </row>
 	  </thead>
 	  <tbody>
@@ -3582,9 +3579,9 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
     </section>
 
-    <section id="section-JMS-Logging">
+    <section xml:id="section-JMS-Logging">
       <title>JMS Client Logging</title>
-      <para>The JMS Client logging is handled using the Simple Logging Facade for Java (<ulink url="http://www.slf4j.org/">SLF4J</ulink>). As the name implies, slf4j is a facade that delegates to other logging systems like log4j or JDK 1.4 logging. For more information on how to configure slf4j for specific logging systems, please consult the slf4j documentation.</para>
+      <para>The JMS Client logging is handled using the Simple Logging Facade for Java (<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.slf4j.org/">SLF4J</link>). As the name implies, slf4j is a facade that delegates to other logging systems like log4j or JDK 1.4 logging. For more information on how to configure slf4j for specific logging systems, please consult the slf4j documentation.</para>
 
       <para>When using the log4j binding, please set the log level for org.apache.qpid explicitly. Otherwise log4j will default to DEBUG which will degrade performance considerably due to excessive logging. The recommended logging level for production is <literal>WARN</literal>.</para>
 
@@ -3593,7 +3590,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       <example>
 	<title>log4j Logging Properties</title>
 
-	<programlisting><![CDATA[
+	<programlisting>
 	log4j.logger.org.apache.qpid=WARN, console
 	log4j.additivity.org.apache.qpid=false
 
@@ -3601,7 +3598,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	log4j.appender.console.Threshold=all
 	log4j.appender.console.layout=org.apache.log4j.PatternLayout
 	log4j.appender.console.layout.ConversionPattern=%t %d %p [%c{4}] %m%n
-	]]></programlisting>
+	</programlisting>
       </example>
 
     </section>
@@ -3640,10 +3637,10 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
       <para>Some of these config options are available at all three levels (Ex. <varname>max_prefetch</varname>), while others are available only at JVM or connection level.</para>
 
-      <section id="client-jvm-properties">
+      <section xml:id="client-jvm-properties">
         <title>Qpid JVM Arguments</title>
 
-	<table >
+	<table>
 	  <title>Config Options For Connection Behaviour</title>
 	  <tgroup cols="4">
 	    <thead>
@@ -3678,7 +3675,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	</table>
 
 
-	<table >
+	<table>
 	  <title>Config Options For Session Behaviour</title>
 	  <tgroup cols="4">
 	    <thead>
@@ -3721,7 +3718,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	  </tgroup>
 	</table>
 
-	<table >
+	<table>
 	  <title>Config Options For Consumer Behaviour</title>
 	  <tgroup cols="4">
 	    <thead>
@@ -3747,7 +3744,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 		<entry><para>Timer interval to flush message acks in buffer when using AUTO_ACK and DUPS_OK.</para> <para>When using the above ack modes, message acks are batched and sent if one of the following conditions are met (which ever happens first).
 		<itemizedlist>
 		  <listitem><para>When the ack timer fires.</para></listitem>
-		  <listitem><para>if un_acked_msg_count > max_prefetch/2.</para></listitem>
+		  <listitem><para>if un_acked_msg_count &gt; max_prefetch/2.</para></listitem>
 		</itemizedlist>
 	      </para>
 	      <para>The ack timer can be disabled by setting it to 0.</para>
@@ -3764,7 +3761,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	  </tgroup>
 	</table>
 
-	<table >
+	<table>
 	  <title>Config Options For Producer Behaviour</title>
 	  <tgroup cols="4">
 	    <thead>
@@ -3786,7 +3783,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	  </tgroup>
 	</table>
 
-	<table >
+	<table>
 	  <title>Config Options For Threading</title>
 	  <tgroup cols="4">
 	    <thead>
@@ -3815,7 +3812,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	  </tgroup>
 	</table>
 
-	<table >
+	<table>
 	  <title>Config Options For I/O</title>
 	  <tgroup cols="4">
 	    <thead>
@@ -3881,7 +3878,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	  </tgroup>
 	</table>
 
-	<table >
+	<table>
 	  <title>Config Options For Security</title>
 	  <tgroup cols="4">
 	    <thead>
@@ -3939,15 +3936,15 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	      <row>
 		<entry>java.security.auth.login.config</entry>
 		<entry>string</entry>
-		<entry></entry>
+		<entry/>
 		<entry><para>Specifies the jass configuration file.</para><para><varname>Ex-Djava.security.auth.login.config=myjas.conf</varname>
-		</para><para>Here is the sample myjas.conf JASS configuration file: <programlisting><![CDATA[
+		</para><para>Here is the sample myjas.conf JASS configuration file: <programlisting>
 
 		com.sun.security.jgss.initiate {
 		com.sun.security.auth.module.Krb5LoginModule required useTicketCache=true;
 		};
 
-		]]></programlisting></para></entry>
+		</programlisting></para></entry>
 	      </row>
 	    </tbody>
 	  </tgroup>
@@ -4042,7 +4039,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
   </chapter>
 
-  <chapter id="QpidWCF">
+  <chapter xml:id="QpidWCF">
     <title>Using the Qpid WCF client</title>
     <section>
       <title>XML and Binary Bindings</title>
@@ -4061,7 +4058,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
       <example><?dbfo keep-together="auto" ?>
       <title>Traditional service model "Hello world!" example</title>
-      <programlisting><![CDATA[
+      <programlisting>
       namespace Apache.Qpid.Documentation.HelloService
       {
       using System;
@@ -4090,9 +4087,9 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       {
       Console.WriteLine("Service received: " + greeting);
       greetingCount++;
-      }]]></programlisting>
+      }</programlisting>
 
-      <programlisting><![CDATA[
+      <programlisting>
       static void Main(string[] args)
       {
       try
@@ -4109,8 +4106,8 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       // Send the service a test greeting
       Uri amqpClientUri=new Uri("amqp:amq.direct?routingkey=hello_service_node");
       EndpointAddress clientEndpoint = new EndpointAddress(amqpClientUri);
-      ChannelFactory<IHelloService> channelFactory =
-      new ChannelFactory<IHelloService>(amqpBinding, clientEndpoint);
+      ChannelFactory&lt;IHelloService&gt; channelFactory =
+      new ChannelFactory&lt;IHelloService&gt;(amqpBinding, clientEndpoint);
       IHelloService clientProxy = channelFactory.CreateChannel();
 
       clientProxy.SayHello("Greetings from WCF client");
@@ -4130,7 +4127,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       }
       }
       }
-      ]]></programlisting>
+      </programlisting>
       </example>
 
       <para>The second binding, AmqpBinaryBinding, is suitable for WCF
@@ -4154,7 +4151,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
       <example><?dbfo keep-together="auto" ?>
       <title>Binary  "Hello world!" example using the channel model</title>
-      <programlisting><![CDATA[
+      <programlisting>
       namespace Apache.Qpid.Samples.Channel.HelloWorld
       {
       using System;
@@ -4174,22 +4171,22 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       String target = "amq.topic";
       String source = "my_topic_node";
 
-      if (args.Length > 0)
+      if (args.Length &gt; 0)
       {
       broker = args[0];
       }
 
-      if (args.Length > 1)
+      if (args.Length &gt; 1)
       {
       port = int.Parse(args[1]);
       }
 
-      if (args.Length > 2)
+      if (args.Length &gt; 2)
       {
       target = args[2];
       }
 
-      if (args.Length > 3)
+      if (args.Length &gt; 3)
       {
       source = args[3];
       }
@@ -4198,12 +4195,12 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       binding.BrokerHost = broker;
       binding.BrokerPort = port;
 
-      IChannelFactory<IInputChannel> receiverFactory = binding.BuildChannelFactory<IInputChannel>();
+      IChannelFactory&lt;IInputChannel&gt; receiverFactory = binding.BuildChannelFactory&lt;IInputChannel&gt;();
       receiverFactory.Open();
       IInputChannel receiver = receiverFactory.CreateChannel(new EndpointAddress("amqp:" + source));
       receiver.Open();
 
-      IChannelFactory<IOutputChannel> senderFactory = binding.BuildChannelFactory<IOutputChannel>();
+      IChannelFactory&lt;IOutputChannel&gt; senderFactory = binding.BuildChannelFactory&lt;IOutputChannel&gt;();
       senderFactory.Open();
       IOutputChannel sender = senderFactory.CreateChannel(new EndpointAddress("amqp:" + target));
       sender.Open();
@@ -4241,7 +4238,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       }
       }
       }
-      ]]></programlisting>
+      </programlisting>
       </example>
 
       <para>Bindings define ChannelFactories and ChannelListeners associated with
@@ -4347,15 +4344,15 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       exchanges (IOutputChannel) or AMQP 0-10 queues (IInputChannel).
       The format for an IOutputChannel is</para>
 
-      <programlisting><![CDATA[
+      <programlisting>
   "amqp:amq.direct" or "amqp:my_exchange?routingkey=my_routing_key"
-]]></programlisting>
+</programlisting>
 
       <para>and for an IInputChannel is</para>
 
-      <programlisting><![CDATA[
+      <programlisting>
   "amqp:my_queue"
-]]></programlisting>
+</programlisting>
 
       <para>The routing key is in fact a default value associated with
       the particular channel.  Outgoing messages can always have their
@@ -4376,19 +4373,19 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
       <para>For example, on output:</para>
 
-      <programlisting><![CDATA[
+      <programlisting>
 AmqpProperties props = new AmqpProperties();
 props.Durable = true;
 props.PropertyMap.Add("my_custom_header", new AmqpString("a custom value"));
 Message msg = Message.CreateMessage(args);
 msg.Properties.Add("AmqpProperties", amqpProperties);
 outputChannel.Send(msg);
-]]></programlisting>
+</programlisting>
 
       <para>On input the headers can be accessed from the Message or extracted
       from the operation context</para>
 
-      <programlisting><![CDATA[
+      <programlisting>
 public void SayHello(string greeting)
 {
   AmqpProperties props = (AmqpProperties) OperationContext.
@@ -4396,7 +4393,7 @@ public void SayHello(string greeting)
   AmqpString extra = (AmqpString) props.PropertyMap["my_custom_header"];
   Console.WriteLine("Service received: {0} and {1}", greeting, extra);
 }
-]]></programlisting>
+</programlisting>
 
     </section>
 
@@ -4405,11 +4402,11 @@ public void SayHello(string greeting)
 
       <para>To engage TLS/SSL:</para>
 
-      <programlisting><![CDATA[
+      <programlisting>
 binding.Security.Mode = AmqpSecurityMode.Transport;
 binding.Security.Transport.UseSSL = true;
 binding.BrokerPort = 5671;
-]]></programlisting>
+</programlisting>
 
       <para>Currently the WCF client only provides SASL PLAIN (i.e. username and
       password) authentication.  To provide a username and password, you can
@@ -4422,14 +4419,14 @@ binding.BrokerPort = 5671;
       set), and finally defaulting to the DefaultAmqpCredential of the
       binding itself.  Here is a sample using ClientCredentials:</para>
 
-      <programlisting><![CDATA[
+      <programlisting>
 ClientCredentials credentials = new ClientCredentials();
 credentials.UserName.UserName = "guest";
 credentials.UserName.Password = "guest";
 bindingParameters = new BindingParameterCollection();
 bindingParameters.Add(credentials);
-readerFactory = binding.BuildChannelFactory<IInputChannel>(bindingParameters);
-]]></programlisting>
+readerFactory = binding.BuildChannelFactory&lt;IInputChannel&gt;(bindingParameters);
+</programlisting>
 
     </section>
 
@@ -4448,7 +4445,7 @@ readerFactory = binding.BuildChannelFactory<IInputChannel>(bindingParameters);
 
       <para>Server code:</para>
 
-      <programlisting><![CDATA[
+      <programlisting>
 [OperationBehavior(TransactionScopeRequired = true,
                    TransactionAutoComplete = true)]
 
@@ -4458,7 +4455,7 @@ public void SayHello(string greeting)
 
   // Success: transaction auto completes:
 }
-]]></programlisting>
+</programlisting>
 
       <para>Because this operation involves two transaction resources, the
       database and the AMQP message broker, this operates as a full two
@@ -4473,12 +4470,12 @@ public void SayHello(string greeting)
       message property and enclose the transacted activities in a
       TransactionScope:</para>
 
-      <programlisting><![CDATA[
+      <programlisting>
 AmqpProperties myDefaults = new AmqpProperties();
 myDefaults.Durable = true;
 amqpBinding.DefaultMessageProperties = myDefaults;
-ChannelFactory<IHelloService> channelFactory =
-new ChannelFactory<IHelloService>(amqpBinding, clientEndpoint);
+ChannelFactory&lt;IHelloService&gt; channelFactory =
+new ChannelFactory&lt;IHelloService&gt;(amqpBinding, clientEndpoint);
 IHelloService clientProxy = channelFactory.CreateChannel();
 
 using (TransactionScope ts = new TransactionScope())
@@ -4488,7 +4485,7 @@ using (TransactionScope ts = new TransactionScope())
    // increment ExactlyOnceSent counter on DB
    ts.Complete();
 }
-]]></programlisting>
+</programlisting>
 
     </section>
   </chapter>
@@ -4502,7 +4499,7 @@ using (TransactionScope ts = new TransactionScope())
     <section>
       <title>.NET Binding for the C++ Messaging Client Component Architecture</title>
 
-      <programlisting><![CDATA[
+      <programlisting>
                       +----------------------------+
                       | Dotnet examples            |
                       | Managed C#                 |
@@ -4532,13 +4529,13 @@ unmanaged              | org.apache.qpid.messaging.dll  |
           | QPID Messaging C++ Libraries     |
           | qpid*.dll qmf*.dll               |
           +--------+--------------+----------+
-]]></programlisting>
+</programlisting>
 
 
 <para>This diagram illustrates the code and library components of the binding
 and the hierarchical relationships between them.</para>
 
-	<table id="table-Dotnet-Binding-Component-Architecture" >
+	<table xml:id="table-Dotnet-Binding-Component-Architecture">
 	<title>.NET Binding for the C++ Messaging Client Component Architecture</title>
 	<tgroup cols="2">
 	  <thead>
@@ -4585,7 +4582,7 @@ and the hierarchical relationships between them.</para>
       <para>This chapter describes the various sample programs that
       are available to illustrate common Qpid Messaging usage.</para>
 
-      <table id="table-Dotnet-Binding-Example-Client-Server">
+      <table xml:id="table-Dotnet-Binding-Example-Client-Server">
         <title>Example : Client - Server</title>
         <tgroup cols="2">
           <colspec colname="c1"/>
@@ -4612,7 +4609,7 @@ and the hierarchical relationships between them.</para>
 	</tgroup>
       </table>
 
-      <table id="table-Dotnet-Binding-Example-MapSender-MapReceiver">
+      <table xml:id="table-Dotnet-Binding-Example-MapSender-MapReceiver">
         <title>Example : Map Sender – Map Receiver</title>
         <tgroup cols="2">
           <colspec colname="c1"/>
@@ -4639,7 +4636,7 @@ and the hierarchical relationships between them.</para>
 	</tgroup>
       </table>
 
-      <table id="table-Dotnet-Binding-Example-Spout-Drain">
+      <table xml:id="table-Dotnet-Binding-Example-Spout-Drain">
         <title>Example : Spout - Drain</title>
         <tgroup cols="2">
           <colspec colname="c1"/>
@@ -4666,7 +4663,7 @@ and the hierarchical relationships between them.</para>
 	</tgroup>
       </table>
 
-      <table id="table-Dotnet-Binding-Example-CallbackSender-CallbackReceiver">
+      <table xml:id="table-Dotnet-Binding-Example-CallbackSender-CallbackReceiver">
         <title>Example : Map Callback Sender – Map Callback Receiver</title>
         <tgroup cols="2">
           <colspec colname="c1"/>
@@ -4695,7 +4692,7 @@ and the hierarchical relationships between them.</para>
 	</tgroup>
       </table>
 
-      <table id="table-Dotnet-Binding-Example-DeclareQueues">
+      <table xml:id="table-Dotnet-Binding-Example-DeclareQueues">
         <title>Example - Declare Queues</title>
         <tgroup cols="2">
           <colspec colname="c1"/>
@@ -4716,7 +4713,7 @@ and the hierarchical relationships between them.</para>
 	</tgroup>
       </table>
 
-      <table id="table-Dotnet-Binding-Example-DirectSender-DirectReceiver">
+      <table xml:id="table-Dotnet-Binding-Example-DirectSender-DirectReceiver">
         <title>Example: Direct Sender - Direct Receiver</title>
         <tgroup cols="2">
           <colspec colname="c1"/>
@@ -4741,7 +4738,7 @@ and the hierarchical relationships between them.</para>
 	</tgroup>
       </table>
 
-      <table id="table-Dotnet-Binding-Example-Helloworld">
+      <table xml:id="table-Dotnet-Binding-Example-Helloworld">
         <title>Example: Hello World</title>
         <tgroup cols="2">
           <colspec colname="c1"/>
@@ -4772,7 +4769,7 @@ and the hierarchical relationships between them.</para>
 
     <section>
       <title>.NET Binding for the C++ Messaging API Class: Address</title>
-      <table id="table-Dotnet-Binding-Address">
+      <table xml:id="table-Dotnet-Binding-Address">
         <title>.NET Binding for the C++ Messaging API Class: Address</title>
         <tgroup cols="2">
           <colspec colname="c1" colwidth="1*"/>
@@ -4979,7 +4976,7 @@ and the hierarchical relationships between them.</para>
     </section>
     <section>
       <title>.NET Binding for the C++ Messaging API Class: Connection</title>
-      <table id="table-Dotnet-Binding-Connection">
+      <table xml:id="table-Dotnet-Binding-Connection">
         <title>.NET Binding for the C++ Messaging API Class: Connection</title>
         <tgroup cols="2">
           <colspec colname="c1" colwidth="1*"/>
@@ -5196,7 +5193,7 @@ and the hierarchical relationships between them.</para>
     </section>
     <section>
       <title>.NET Binding for the C++ Messaging API Class: Duration</title>
-      <table id="table-Dotnet-Binding-Duration">
+      <table xml:id="table-Dotnet-Binding-Duration">
         <title>.NET Binding for the C++ Messaging API Class: Duration</title>
         <tgroup cols="2">
           <colspec colname="c1" colwidth="1*"/>
@@ -5346,7 +5343,7 @@ and the hierarchical relationships between them.</para>
     </section>
     <section>
       <title>.NET Binding for the C++ Messaging API Class: FailoverUpdates</title>
-      <table id="table-Dotnet-Binding-FailoverUpdates">
+      <table xml:id="table-Dotnet-Binding-FailoverUpdates">
         <title>.NET Binding for the C++ Messaging API Class: FailoverUpdates</title>
         <tgroup cols="2">
           <colspec colname="c1" colwidth="1*"/>
@@ -5408,7 +5405,7 @@ and the hierarchical relationships between them.</para>
     </section>
     <section>
       <title>.NET Binding for the C++ Messaging API Class: Message</title>
-      <table id="table-Dotnet-Binding-Message">
+      <table xml:id="table-Dotnet-Binding-Message">
         <title>.NET Binding for the C++ Messaging API Class: Message</title>
         <tgroup cols="2">
           <colspec colname="c1" colwidth="1*"/>
@@ -5821,7 +5818,7 @@ and the hierarchical relationships between them.</para>
     </section>
     <section>
       <title>.NET Binding for the C++ Messaging API Class: Receiver</title>
-      <table id="table-Dotnet-Binding-Receiver">
+      <table xml:id="table-Dotnet-Binding-Receiver">
         <title>.NET Binding for the C++ Messaging API Class: Receiver</title>
         <tgroup cols="2">
           <colspec colname="c1" colwidth="1*"/>
@@ -6042,7 +6039,7 @@ and the hierarchical relationships between them.</para>
     </section>
     <section>
       <title>.NET Binding for the C++ Messaging API Class: Sender</title>
-      <table id="table-Dotnet-Binding-Sender">
+      <table xml:id="table-Dotnet-Binding-Sender">
         <title>.NET Binding for the C++ Messaging API Class: Sender</title>
         <tgroup cols="2">
           <colspec colname="c1" colwidth="1*"/>
@@ -6207,7 +6204,7 @@ and the hierarchical relationships between them.</para>
     </section>
     <section>
       <title>.NET Binding for the C++ Messaging API Class: Session</title>
-      <table id="table-Dotnet-Binding-Session">
+      <table xml:id="table-Dotnet-Binding-Session">
         <title>.NET Binding for the C++ Messaging API Class: Session</title>
         <tgroup cols="2">
           <colspec colname="c1" colwidth="1*"/>
@@ -6541,7 +6538,7 @@ and the hierarchical relationships between them.</para>
 	Session.
       </para>
       <para>
-	<programlisting><![CDATA[
+	<programlisting>
 using Org.Apache.Qpid.Messaging;
 using System;
 
@@ -6559,7 +6556,7 @@ namespace Org.Apache.Qpid.Messaging.SessionReceiver
         public void Close();
     }
 }
-]]>
+
 	</programlisting>
       </para>
       <para>
@@ -6579,16 +6576,3 @@ namespace Org.Apache.Qpid.Messaging.SessionReceiver
     </section>
   </chapter>
 </book>
-
-<!--
-   - client code remains exactly the same, but routing behavior
-   changes
-   - exchanges drop messages if nobody is listening, so we need to
-   start drain first
-   - drain will exit immediately if the source is empty (note that
-   this is actually a semantic guarantee provided by the API, we
-   know for a fact that the source is empty when drain/fetch
-   reports it, no fudge factor timeout is required [this assumes
-   nobody is concurrently publishing of course])
-   - drain -f invokes blocking fetch (you could use a timeout here also)
-  -->
