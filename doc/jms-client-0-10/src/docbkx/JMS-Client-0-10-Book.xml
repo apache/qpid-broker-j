@@ -172,154 +172,6 @@ destination.topicExchange = amq.topic <co xml:id="hello-properties-destination" 
     </section>
 
 
-    <section>
-      <title>Java JMS Message Properties</title>
-
-      <para>The following table shows how Qpid Messaging API message
-      properties are mapped to AMQP 0-10 message properties and
-      delivery properties. In this table <varname>msg</varname>
-      refers to the Message class defined in the Qpid Messaging API,
-      <varname>mp</varname> refers to an AMQP 0-10
-      <varname>message-properties</varname> struct, and
-      <varname>dp</varname> refers to an AMQP 0-10
-      <varname>delivery-properties</varname> struct.</para>
-
-      <table>
-        <title>Java JMS Mapping to AMQP 0-10 Message Properties</title>
-        <tgroup cols="2">
-          <thead>
-	    <row>
-	      <entry>Java JMS Message Property</entry>
-	      <entry>AMQP 0-10 Property<footnote><para>In these entries, <literal>mp</literal> refers to an AMQP message property, and <literal>dp</literal> refers to an AMQP delivery property.</para></footnote></entry>
-
-	    </row>
-          </thead>
-          <tbody>
-	    <row>
-	      <entry>JMSMessageID</entry><entry>mp.message_id</entry>
-	    </row>
-	    <row>
-	      <entry>qpid.subject<footnote><para>This is a custom JMS property, set automatically by the Java JMS client implementation.</para></footnote></entry><entry>mp.application_headers["qpid.subject"]</entry>
-	    </row>
-	    <row>
-	      <entry>JMSXUserID</entry><entry>mp.user_id</entry>
-	    </row>
-	    <row>
-	      <entry>JMSReplyTo</entry><entry>mp.reply_to<footnote><para>The reply_to is converted from the protocol representation into an address.</para></footnote></entry>
-	    </row>
-	    <row>
-	      <entry>JMSCorrelationID</entry><entry>mp.correlation_id</entry>
-	    </row>
-	    <row>
-	      <entry>JMSDeliveryMode</entry><entry>dp.delivery_mode</entry>
-	    </row>
-	    <row>
-	      <entry>JMSPriority</entry><entry>dp.priority</entry>
-	    </row>
-	    <row>
-	      <entry>JMSExpiration</entry><entry>dp.ttl<footnote><para>JMSExpiration = dp.ttl + currentTime</para></footnote></entry>
-	    </row>
-	    <row>
-	      <entry>JMSRedelivered</entry><entry>dp.redelivered</entry>
-	    </row>
-	    <row>
-	      <entry>JMS Properties</entry><entry>mp.application_headers</entry>
-	    </row>
-	    <row>
-	      <entry>JMSType</entry><entry>mp.content_type</entry>
-	    </row>
-          </tbody>
-        </tgroup>
-      </table>
-
-    </section>
-
-    <section xml:id="section-JMS-MapMessage">
-      <title>JMS MapMessage Types</title>
-
-      <para>Qpid supports the Java JMS <classname>MapMessage</classname> interface, which provides support for maps in messages. The following code shows how to send a <classname>MapMessage</classname> in Java JMS.</para>
-
-      <example>
-	<title>Sending a Java JMS MapMessage</title>
-	<programlisting>
-	import java.util.ArrayList;
-	import java.util.HashMap;
-	import java.util.List;
-	import java.util.Map;
-
-	import javax.jms.Connection;
-	import javax.jms.Destination;
-	import javax.jms.MapMessage;
-	import javax.jms.MessageProducer;
-	import javax.jms.Session;
-
-	import java.util.Arrays;
-
-	// !!! SNIP !!!
-
-	MessageProducer producer = session.createProducer(queue);
-
-	MapMessage m = session.createMapMessage();
-	m.setIntProperty("Id", 987654321);
-	m.setStringProperty("name", "Widget");
-	m.setDoubleProperty("price", 0.99);
-
-	List&lt;String&gt; colors = new ArrayList&lt;String&gt;();
-	colors.add("red");
-	colors.add("green");
-	colors.add("white");
-	m.setObject("colours", colors);
-
-	Map&lt;String,Double&gt; dimensions = new HashMap&lt;String,Double&gt;();
-	dimensions.put("length",10.2);
-	dimensions.put("width",5.1);
-	dimensions.put("depth",2.0);
-	m.setObject("dimensions",dimensions);
-
-	List&lt;List&lt;Integer&gt;&gt; parts = new ArrayList&lt;List&lt;Integer&gt;&gt;();
-	parts.add(Arrays.asList(new Integer[] {1,2,5}));
-	parts.add(Arrays.asList(new Integer[] {8,2,5}));
-	m.setObject("parts", parts);
-
-	Map&lt;String,Object&gt; specs = new HashMap&lt;String,Object&gt;();
-	specs.put("colours", colors);
-	specs.put("dimensions", dimensions);
-	specs.put("parts", parts);
-	m.setObject("specs",specs);
-
-	producer.send(m);
-	</programlisting>
-      </example>
-
-      <para>The following table shows the datatypes that can be sent in a <classname>MapMessage</classname>, and the corresponding datatypes that will be received by clients in Python or C++.</para>
-
-      <table xml:id="table-Java-Maps">
-	<title>Java Datatypes in Maps</title>
-	<tgroup cols="3">
-	  <thead>
-	    <row>
-	      <entry>Java Datatype</entry>
-	      <entry>Python</entry>
-	      <entry>C++</entry>
-	    </row>
-	  </thead>
-	  <tbody>
-   	    <row><entry>boolean</entry><entry>bool</entry><entry>bool</entry></row>
-	    <row><entry>short</entry><entry>int | long</entry><entry>int16</entry></row>
-	    <row><entry>int</entry><entry>int | long</entry><entry>int32</entry></row>
-	    <row><entry>long</entry><entry>int | long</entry><entry>int64</entry></row>
-	    <row><entry>float</entry><entry>float</entry><entry>float</entry></row>
-	    <row><entry>double</entry><entry>float</entry><entry>double</entry></row>
-	    <row><entry>java.lang.String</entry><entry>unicode</entry><entry>std::string</entry></row>
-	    <row><entry>java.util.UUID</entry><entry>uuid</entry><entry>qpid::types::Uuid</entry></row>
-	    <row><entry>java.util.Map<footnote><para>In Qpid, maps can nest. This goes beyond the functionality required by the JMS specification.</para></footnote></entry><entry>dict</entry><entry>Variant::Map</entry></row>
-	    <row><entry>java.util.List</entry><entry>list</entry><entry>Variant::List</entry></row>
-	  </tbody>
-	</tgroup>
-      </table>
-
-    </section>
-
     <section xml:id="section-JMS-Logging">
       <title>JMS Client Logging</title>
       <para>The JMS Client logging is handled using the Simple Logging Facade for Java (<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.slf4j.org/">SLF4J</link>). As the name implies, slf4j is a facade that delegates to other logging systems like log4j or JDK 1.4 logging. For more information on how to configure slf4j for specific logging systems, please consult the slf4j documentation.</para>
@@ -2350,6 +2202,162 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
      </section>
     </section>
+
+
+
+    <!-- begin misc section -->
+    <section>
+     <title>Miscellaneous</title>
+     <section>
+      <title>Java JMS Message Properties</title>
+
+      <para>The following table shows how Qpid Messaging API message
+      properties are mapped to AMQP 0-10 message properties and
+      delivery properties. In this table <varname>msg</varname>
+      refers to the Message class defined in the Qpid Messaging API,
+      <varname>mp</varname> refers to an AMQP 0-10
+      <varname>message-properties</varname> struct, and
+      <varname>dp</varname> refers to an AMQP 0-10
+      <varname>delivery-properties</varname> struct.</para>
+
+      <table>
+        <title>Java JMS Mapping to AMQP 0-10 Message Properties</title>
+        <tgroup cols="2">
+          <thead>
+	    <row>
+	      <entry>Java JMS Message Property</entry>
+	      <entry>AMQP 0-10 Property<footnote><para>In these entries, <literal>mp</literal> refers to an AMQP message property, and <literal>dp</literal> refers to an AMQP delivery property.</para></footnote></entry>
+
+	    </row>
+          </thead>
+          <tbody>
+	    <row>
+	      <entry>JMSMessageID</entry><entry>mp.message_id</entry>
+	    </row>
+	    <row>
+	      <entry>qpid.subject<footnote><para>This is a custom JMS property, set automatically by the Java JMS client implementation.</para></footnote></entry><entry>mp.application_headers["qpid.subject"]</entry>
+	    </row>
+	    <row>
+	      <entry>JMSXUserID</entry><entry>mp.user_id</entry>
+	    </row>
+	    <row>
+	      <entry>JMSReplyTo</entry><entry>mp.reply_to<footnote><para>The reply_to is converted from the protocol representation into an address.</para></footnote></entry>
+	    </row>
+	    <row>
+	      <entry>JMSCorrelationID</entry><entry>mp.correlation_id</entry>
+	    </row>
+	    <row>
+	      <entry>JMSDeliveryMode</entry><entry>dp.delivery_mode</entry>
+	    </row>
+	    <row>
+	      <entry>JMSPriority</entry><entry>dp.priority</entry>
+	    </row>
+	    <row>
+	      <entry>JMSExpiration</entry><entry>dp.ttl<footnote><para>JMSExpiration = dp.ttl + currentTime</para></footnote></entry>
+	    </row>
+	    <row>
+	      <entry>JMSRedelivered</entry><entry>dp.redelivered</entry>
+	    </row>
+	    <row>
+	      <entry>JMS Properties</entry><entry>mp.application_headers</entry>
+	    </row>
+	    <row>
+	      <entry>JMSType</entry><entry>mp.content_type</entry>
+	    </row>
+          </tbody>
+        </tgroup>
+      </table>
+
+    </section>
+
+    <section xml:id="section-JMS-MapMessage">
+      <title>JMS MapMessage Types</title>
+
+      <para>Qpid supports the Java JMS <classname>MapMessage</classname> interface, which provides support for maps in messages. The following code shows how to send a <classname>MapMessage</classname> in Java JMS.</para>
+
+      <example>
+	<title>Sending a Java JMS MapMessage</title>
+	<programlisting>
+	import java.util.ArrayList;
+	import java.util.HashMap;
+	import java.util.List;
+	import java.util.Map;
+
+	import javax.jms.Connection;
+	import javax.jms.Destination;
+	import javax.jms.MapMessage;
+	import javax.jms.MessageProducer;
+	import javax.jms.Session;
+
+	import java.util.Arrays;
+
+	// !!! SNIP !!!
+
+	MessageProducer producer = session.createProducer(queue);
+
+	MapMessage m = session.createMapMessage();
+	m.setIntProperty("Id", 987654321);
+	m.setStringProperty("name", "Widget");
+	m.setDoubleProperty("price", 0.99);
+
+	List&lt;String&gt; colors = new ArrayList&lt;String&gt;();
+	colors.add("red");
+	colors.add("green");
+	colors.add("white");
+	m.setObject("colours", colors);
+
+	Map&lt;String,Double&gt; dimensions = new HashMap&lt;String,Double&gt;();
+	dimensions.put("length",10.2);
+	dimensions.put("width",5.1);
+	dimensions.put("depth",2.0);
+	m.setObject("dimensions",dimensions);
+
+	List&lt;List&lt;Integer&gt;&gt; parts = new ArrayList&lt;List&lt;Integer&gt;&gt;();
+	parts.add(Arrays.asList(new Integer[] {1,2,5}));
+	parts.add(Arrays.asList(new Integer[] {8,2,5}));
+	m.setObject("parts", parts);
+
+	Map&lt;String,Object&gt; specs = new HashMap&lt;String,Object&gt;();
+	specs.put("colours", colors);
+	specs.put("dimensions", dimensions);
+	specs.put("parts", parts);
+	m.setObject("specs",specs);
+
+	producer.send(m);
+	</programlisting>
+      </example>
+
+      <para>The following table shows the datatypes that can be sent in a <classname>MapMessage</classname>, and the corresponding datatypes that will be received by clients in Python or C++.</para>
+
+      <table xml:id="table-Java-Maps">
+	<title>Java Datatypes in Maps</title>
+	<tgroup cols="3">
+	  <thead>
+	    <row>
+	      <entry>Java Datatype</entry>
+	      <entry>Python</entry>
+	      <entry>C++</entry>
+	    </row>
+	  </thead>
+	  <tbody>
+   	    <row><entry>boolean</entry><entry>bool</entry><entry>bool</entry></row>
+	    <row><entry>short</entry><entry>int | long</entry><entry>int16</entry></row>
+	    <row><entry>int</entry><entry>int | long</entry><entry>int32</entry></row>
+	    <row><entry>long</entry><entry>int | long</entry><entry>int64</entry></row>
+	    <row><entry>float</entry><entry>float</entry><entry>float</entry></row>
+	    <row><entry>double</entry><entry>float</entry><entry>double</entry></row>
+	    <row><entry>java.lang.String</entry><entry>unicode</entry><entry>std::string</entry></row>
+	    <row><entry>java.util.UUID</entry><entry>uuid</entry><entry>qpid::types::Uuid</entry></row>
+	    <row><entry>java.util.Map<footnote><para>In Qpid, maps can nest. This goes beyond the functionality required by the JMS specification.</para></footnote></entry><entry>dict</entry><entry>Variant::Map</entry></row>
+	    <row><entry>java.util.List</entry><entry>list</entry><entry>Variant::List</entry></row>
+	  </tbody>
+	</tgroup>
+      </table>
+
+    </section>
+   </section>
+   <!-- end misc section -->
+
   </chapter>
 
 </book>
