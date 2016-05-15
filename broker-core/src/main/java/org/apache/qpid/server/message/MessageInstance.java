@@ -94,7 +94,7 @@ public interface MessageInstance
 
     public abstract class EntryState
     {
-        private EntryState()
+        protected EntryState()
         {
         }
 

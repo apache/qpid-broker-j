@@ -193,6 +193,12 @@ public class MessageConverter_v0_8_to_Internal implements MessageConverter<AMQMe
         }
 
         @Override
+        public long getNotValidBefore()
+        {
+            return _delegate.getNotValidBefore();
+        }
+
+        @Override
         public String getType()
         {
             return _delegate.getType();

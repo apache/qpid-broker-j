@@ -38,6 +38,7 @@ public class Link
     private FilterType _filterType = FilterType.SUBJECT;
     private boolean _isNoLocal;
     private boolean _isDurable;
+    private long _delay;
     private int _consumerCapacity = -1;
     private int _producerCapacity = -1;
     private Subscription subscription;
@@ -143,6 +144,16 @@ public class Link
     public void setBindings(List<Binding> bindings)
     {
         _bindings = bindings;
+    }
+
+    public long getDelay()
+    {
+        return _delay;
+    }
+
+    public void setDelay(final long delay)
+    {
+        _delay = delay;
     }
 
     public SubscriptionQueue getSubscriptionQueue()

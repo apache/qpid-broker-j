@@ -253,6 +253,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private long _maximumMessageTtl;
     @ManagedAttributeField
     private boolean _ensureNondestructiveConsumers;
+    @ManagedAttributeField
+    private volatile boolean _holdOnPublishEnabled;
+
 
     private static final int RECOVERING = 1;
     private static final int COMPLETING_RECOVERY = 2;
@@ -266,6 +269,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final QueueRunner _queueRunner;
     private boolean _closing;
     private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
+    private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
+
+    private interface HoldMethod
+    {
+        boolean isHeld(MessageReference<?> message, long evalutaionTime);
+    }
 
     protected AbstractQueue(Map<String, Object> attributes, VirtualHost<?> virtualHost)
     {
@@ -499,6 +508,18 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
         }
 
+        if(isHoldOnPublishEnabled())
+        {
+            _holdMethods.add(new HoldMethod()
+                            {
+                                @Override
+                                public boolean isHeld(final MessageReference<?> messageReference, final long evaluationTime)
+                                {
+                                    return messageReference.getMessage().getMessageHeader().getNotValidBefore() >= evaluationTime;
+                                }
+                            });
+        }
+
         updateAlertChecks();
     }
 
@@ -633,7 +654,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _ensureNondestructiveConsumers;
     }
 
-
+    @Override
+    public boolean isHoldOnPublishEnabled()
+    {
+        return _holdOnPublishEnabled;
+    }
 
     @Override
     public Collection<String> getAvailableAttributes()
@@ -2509,6 +2534,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 }
                 else
                 {
+                    node.checkHeld(currentTime);
+
                     // There is a chance that the node could be deleted by
                     // the time the check actually occurs. So verify we
                     // can actually get the message to perform the check.
@@ -2744,6 +2771,42 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _persistentMessageDequeueCount.get();
     }
 
+    @Override
+    public boolean isHeld(final QueueEntry queueEntry, final long evaluationTime)
+    {
+        if(!_holdMethods.isEmpty())
+        {
+            ServerMessage message = queueEntry.getMessage();
+            try
+            {
+                MessageReference ref = message.newReference();
+                try
+                {
+                    for(HoldMethod method : _holdMethods)
+                    {
+                        if(method.isHeld(ref, evaluationTime))
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                finally
+                {
+                    ref.release();
+                }
+            }
+            catch (MessageDeletedException e)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return false;
+        }
+
+    }
 
     @Override
     public String toString()

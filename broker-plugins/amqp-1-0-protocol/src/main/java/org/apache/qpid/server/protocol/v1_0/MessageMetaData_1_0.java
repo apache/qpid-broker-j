@@ -510,6 +510,23 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         }
 
+
+        @Override
+        public long getNotValidBefore()
+        {
+            long notValidBefore;
+            Object annotation;
+            if(_messageAnnotations != null && (annotation = _messageAnnotations.get(Symbol.valueOf("x-qpid-not-valid-before"))) instanceof Number)
+            {
+                notValidBefore = ((Number)annotation).longValue();
+            }
+            else
+            {
+                notValidBefore = 0L;
+            }
+            return notValidBefore;
+        }
+
         public String getType()
         {
             String subject = getSubject();

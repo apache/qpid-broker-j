@@ -36,4 +36,6 @@ public interface MessageProducer extends javax.jms.MessageProducer
                      int priority, long timeToLive, boolean mandatory, boolean immediate)
             throws JMSException;
 
+    void setDeliveryDelay(long delay);
+
 }

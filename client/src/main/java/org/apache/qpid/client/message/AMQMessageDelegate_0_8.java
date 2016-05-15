@@ -97,14 +97,19 @@ public class AMQMessageDelegate_0_8 extends AbstractAMQMessageDelegate
     }
 
     // Used when generating a received message object
-    protected AMQMessageDelegate_0_8(long deliveryTag, BasicContentHeaderProperties contentHeader, String exchange,
-                                     String routingKey, AMQSession_0_8.DestinationCache<AMQQueue> queueDestinationCache,
-                                                         AMQSession_0_8.DestinationCache<AMQTopic> topicDestinationCache,
-                                    int addressType)
+    protected AMQMessageDelegate_0_8(long deliveryTag,
+                                     BasicContentHeaderProperties contentHeader,
+                                     String exchange,
+                                     String routingKey,
+                                     AMQSession_0_8.DestinationCache<AMQQueue> queueDestinationCache,
+                                     AMQSession_0_8.DestinationCache<AMQTopic> topicDestinationCache,
+                                     int addressType)
     {
         this(contentHeader, deliveryTag);
 
         Integer type = contentHeader.getHeaders().getInteger(CustomJMSXProperty.JMS_QPID_DESTTYPE.getShortStringName());
+
+        contentHeader.getHeaders().remove(QpidMessageProperties.QPID_NOT_VALID_BEFORE);
 
         AMQDestination dest = null;
 

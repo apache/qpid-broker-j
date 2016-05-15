@@ -112,7 +112,7 @@ public class BasicMessageProducer_0_10 extends BasicMessageProducer
      */
     void sendMessage(AMQDestination destination, Message origMessage, AbstractJMSMessage message,
                      UUID messageId, int deliveryMode, int priority, long timeToLive, boolean mandatory,
-                     boolean immediate) throws JMSException
+                     boolean immediate, final long deliveryDelay) throws JMSException
     {
         message.prepareForSending();
 
@@ -137,7 +137,7 @@ public class BasicMessageProducer_0_10 extends BasicMessageProducer
         }
 
         long currentTime = 0;
-        if (timeToLive > 0 || !isDisableTimestamps())
+        if (timeToLive > 0 || !isDisableTimestamps() || deliveryDelay != 0L)
         {
             currentTime = System.currentTimeMillis();
         }        
@@ -188,12 +188,13 @@ public class BasicMessageProducer_0_10 extends BasicMessageProducer
             deliveryProp.setRoutingKey(routingKey);
         }
         
-        if (destination.getDestSyntax() == AMQDestination.DestSyntax.ADDR && 
-           (destination.getSubject() != null || 
+        Map<String,Object> appProps = messageProps.getApplicationHeaders();
+
+        if (destination.getDestSyntax() == AMQDestination.DestSyntax.ADDR &&
+           (destination.getSubject() != null ||
               (messageProps.getApplicationHeaders() != null && messageProps.getApplicationHeaders().get(QpidMessageProperties.QPID_SUBJECT) != null))
            )
         {
-            Map<String,Object> appProps = messageProps.getApplicationHeaders();
             if (appProps == null)
             {
                 appProps = new HashMap<String,Object>();
@@ -211,6 +212,18 @@ public class BasicMessageProducer_0_10 extends BasicMessageProducer
                 deliveryProp.setRoutingKey((String)
                         messageProps.getApplicationHeaders().get(QpidMessageProperties.QPID_SUBJECT));                
             }
+        }
+
+
+        if(deliveryDelay != 0L && (appProps == null || appProps.get(QpidMessageProperties.QPID_NOT_VALID_BEFORE) == null))
+        {
+            if (appProps == null)
+            {
+                appProps = new HashMap<String,Object>();
+                messageProps.setApplicationHeaders(appProps);
+            }
+
+            appProps.put(QpidMessageProperties.QPID_NOT_VALID_BEFORE, deliveryDelay+currentTime);
         }
 
         ByteBuffer data = message.getData();

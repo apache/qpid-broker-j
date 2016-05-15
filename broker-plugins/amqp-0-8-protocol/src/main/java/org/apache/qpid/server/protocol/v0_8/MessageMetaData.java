@@ -247,6 +247,13 @@ public class MessageMetaData implements StorableMessageMetaData
             return getProperties().getReplyToAsString();
         }
 
+        @Override
+        public long getNotValidBefore()
+        {
+            Object header = getHeader("x-qpid-not-valid-before");
+            return header instanceof Number ? ((Number)header).longValue() : 0L;
+        }
+
         public Object getHeader(String name)
         {
             FieldTable ft = getProperties().getHeaders();
