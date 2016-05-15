@@ -23,7 +23,7 @@
 <book xmlns="http://docbook.org/ns/docbook" version="5.0">
   <title>Qpid AMQP 0-10 JMS Client</title>
 
-    <chapter>
+    <chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-10-Example">
       <title>A Simple Messaging Program in Java JMS</title>
 
       <para>The following program shows how to send and receive a
@@ -96,7 +96,7 @@ public class Hello {
 
       <calloutlist>
 	<callout xml:id="callout-java-properties" arearefs="hello-java-properties">
-	  <para>Loads the JNDI properties file, which specifies connection properties, queues, topics, and addressing options. See <xref linkend="QpidJNDI"/> for details.</para>
+	  <para>Loads the JNDI properties file, which specifies connection properties, queues, topics, and addressing options. See <xref linkend="JMS-Client-0-10-Configuring-JNDI"/> for details.</para>
 	</callout>
 	<callout xml:id="callout-java-context" arearefs="hello-java-context">
 	  <para>Creates the JNDI initial context.</para>
@@ -153,14 +153,14 @@ destination.topicExchange = amq.topic <co xml:id="hello-properties-destination" 
 	<callout xml:id="callout-hello-properties-connectionfactory" arearefs="hello-properties-connectionfactory">
 	  <para>Defines a connection factory from which connections
 	  can be created. The syntax of a ConnectionURL is given in
-	  <xref linkend="QpidJNDI"/>.</para>
+	  <xref linkend="JMS-Client-0-10-Configuring-JNDI"/>.</para>
 	</callout>
 	<callout xml:id="callout-hello-properties-destination" arearefs="hello-properties-destination">
 	  <para>Defines a destination for which MessageProducers
 	  and/or MessageConsumers can be created to send and receive
 	  messages. The value for the destination in the properties
 	  file is an address string as described in
-	  <xref linkend="section-addresses"/>. In the JMS
+	  <xref linkend="JMS-Client-0-10-Configuring-Addresses"/>. In the JMS
 	  implementation MessageProducers are analogous to senders in
 	  the Qpid Message API, and MessageConsumers are analogous to
 	  receivers.</para>
@@ -172,19 +172,16 @@ destination.topicExchange = amq.topic <co xml:id="hello-properties-destination" 
 
 
 
-    <chapter>
+    <chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-10-Configuring">
       <title>Configuring the JMS Client</title>
 
-      <para>The Qpid JMS Client allows several configuration options to customize it's behaviour at different levels of granualarity.</para>
+    <section xml:id="JMS-Client-0-10-Configuring-Overview">
+     <title>Overview</title>
+      <para>This chapter covers various configuration details for the Qpid AMQP 0-10 JMS client, from the basics of setting up the client
+      using JNDI in <xref linkend="JMS-Client-0-10-Configuring-JNDI"/>, to the various configuration options avilable to
+      customize it's behaviour at different levels of granualarity, e.g:</para>
 
       <itemizedlist>
-        <listitem>
-          <para>
-            JVM level using JVM arguments : Configuration that affects all connections, sessions, consumers and producers created within that JVM.
-	  </para>
-          <para>Ex. <varname>-Dmax_prefetch=1000</varname> property specifies the message credits to use.</para>
-        </listitem>
-
         <listitem>
           <para>
             Connection level using Connection/Broker properties : Affects the respective connection and sessions, consumers and produces created by that connection.
@@ -192,7 +189,15 @@ destination.topicExchange = amq.topic <co xml:id="hello-properties-destination" 
           <para>Ex. <varname>amqp://guest:guest@test/test?max_prefetch='1000'
 	  &amp;brokerlist='tcp://localhost:5672'
 	  </varname> property specifies the message credits to use. This overrides any value specified via the JVM argument <varname>max_prefetch</varname>.</para>
-          <para>Please refer to the <xref linkend="section-jms-connection-url"/> section for a complete list of all properties and how to use them.</para>
+          <para>Please refer to the <xref linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL"/> section for a complete list of all properties and how to use them.</para>
+        </listitem>
+
+        <listitem>
+          <para>
+            JVM level using JVM arguments : Configuration that affects all connections, sessions, consumers and producers created within that JVM.
+	  </para>
+          <para>Ex. <varname>-Dmax_prefetch=1000</varname> property specifies the message credits to use.</para>
+          <para>Please refer to the <xref linkend="JMS-Client-0-10-Configuring-JVM-Properties"/> section for a complete list of all properties and how to use them.</para>
         </listitem>
 
         <listitem>
@@ -200,16 +205,16 @@ destination.topicExchange = amq.topic <co xml:id="hello-properties-destination" 
             Destination level using Addressing options : Affects the producer(s) and consumer(s) created using the respective destination.
 	  </para>
           <para>Ex. <varname>my-queue; {create: always, link:{capacity: 10}}</varname>, where <varname>capacity</varname> option specifies the message credits to use. This overrides any connection level configuration.</para>
-          <para>Please refer to the <xref linkend="section-addresses"/> section for a complete understanding of addressing and it's various options.</para>
+          <para>Please refer to the <xref linkend="JMS-Client-0-10-Configuring-Addresses"/> section for a complete understanding of addressing and it's various options.</para>
         </listitem>
       </itemizedlist>
 
       <para>Some of these config options are available at all three levels (Ex. <varname>max_prefetch</varname>), while others are available only at JVM or connection level.</para>
-
+    </section>
 
 
     <!-- begin JNDI section -->
-    <section xml:id="QpidJNDI">
+    <section xml:id="JMS-Client-0-10-Configuring-JNDI">
       <title>Apache Qpid JNDI Properties for AMQP Messaging</title>
 
 
@@ -305,7 +310,7 @@ destination.topicExchange = amq.topic
         </table>
       </section>
 
-      <section xml:id="section-jms-connection-url">
+      <section xml:id="JMS-Client-0-10-Configuring-JNDI-Connection-URL">
         <title>Connection URLs</title>
         <para>
 	  In JNDI properties, a Connection URL specifies properties for a connection. The format for a Connection URL is:
@@ -362,7 +367,7 @@ destination.topicExchange = amq.topic
                     The maximum number of pre-fetched messages per consumer. If not specified, default value of 500 is used.
 		  </para>
 		  <para>
-                    Note: You can also set the default per-consumer prefetch value on a client-wide basis by configuring the client using <link linkend="client-jvm-properties">Java system properties.</link>
+                    Note: You can also set the default per-consumer prefetch value on a client-wide basis by configuring the client using <link linkend="JMS-Client-0-10-Configuring-JVM-Properties">Java system properties.</link>
 		  </para>
 	        </entry>
 	      </row>
@@ -629,7 +634,7 @@ amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
 	        <entry>
 	            <para>If <literal>ssl='true'</literal>, the JMS client will encrypt the connection to this broker using SSL.</para>
 
-	            <para>This can also be set/overridden for all brokers using the <link linkend="section-jms-connection-url">Connection URL</link> options.</para>
+	            <para>This can also be set/overridden for all brokers using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para>
 	        </entry>
 	      </row>
 	      <row>
@@ -710,7 +715,7 @@ amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
 
 
 
-      <section xml:id="client-jvm-properties">
+      <section xml:id="JMS-Client-0-10-Configuring-JVM-Properties">
         <title>Qpid JVM Arguments</title>
 
 	<table>
@@ -735,7 +740,7 @@ amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
 		<entry>qpid.heartbeat</entry>
 		<entry>int</entry>
 		<entry><para>When using the 0-10 protocol, the default is 120 (secs)</para><para>When using protocols 0-8...0-91, the default is the broker-supplied value.</para></entry>
-		<entry>Frequency of heartbeat messages (in seconds). A value of 0 disables heartbeating. <para>Two consective misssed heartbeats will result in the connection timing out.</para><para>This can also be set per connection using the <link linkend="section-jms-connection-url">Connection URL</link> options.</para><para>For compatibility with old client configuration, the synonym <varname>amqj.heartbeat.delay</varname> is supported.</para></entry>
+		<entry>Frequency of heartbeat messages (in seconds). A value of 0 disables heartbeating. <para>Two consective misssed heartbeats will result in the connection timing out.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para><para>For compatibility with old client configuration, the synonym <varname>amqj.heartbeat.delay</varname> is supported.</para></entry>
 	      </row>
 	      <row>
 		<entry>ignore_setclientID</entry>
@@ -778,7 +783,7 @@ amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
 		<entry>qpid.use_legacy_map_message</entry>
 		<entry>boolean</entry>
 		<entry>false</entry>
-		<entry><para>If set will use the old map message encoding. By default the Map messages are encoded using the 0-10 map encoding.</para><para>This can also be set per connection using the <link linkend="section-jms-connection-url">Connection URL</link> options.</para></entry>
+		<entry><para>If set will use the old map message encoding. By default the Map messages are encoded using the 0-10 map encoding.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
 	      </row>
 
 	      <row>
@@ -807,7 +812,7 @@ amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
 		<entry>max_prefetch</entry>
 		<entry>int</entry>
 		<entry>500</entry>
-		<entry>Maximum number of pre-fetched messages per consumer. <para>This can also be defaulted for consumers created on a particular connection using the <link linkend="section-jms-connection-url">Connection URL</link> options, or per destination (see the <varname>capacity</varname> option under link properties in addressing)</para></entry>
+		<entry>Maximum number of pre-fetched messages per consumer. <para>This can also be defaulted for consumers created on a particular connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options, or per destination (see the <varname>capacity</varname> option under link properties in addressing)</para></entry>
 	      </row>
 
 	      <row>
@@ -828,7 +833,7 @@ amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
 		<entry>sync_ack</entry>
 		<entry>boolean</entry>
 		<entry>false</entry>
-		<entry><para>If set, each message will be acknowledged synchronously. When using AUTO_ACK mode, you need to set this to "true", in order to get the correct behaviour as described by the JMS spec.</para><para>This is set to false by default for performance reasons, therefore by default AUTO_ACK behaves similar to DUPS_OK.</para><para>This can also be set per connection using the <link linkend="section-jms-connection-url">Connection URL</link> options.</para></entry>
+		<entry><para>If set, each message will be acknowledged synchronously. When using AUTO_ACK mode, you need to set this to "true", in order to get the correct behaviour as described by the JMS spec.</para><para>This is set to false by default for performance reasons, therefore by default AUTO_ACK behaves similar to DUPS_OK.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
 	      </row>
 	    </tbody>
 	  </tgroup>
@@ -850,7 +855,7 @@ amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
 		<entry>sync_publish</entry>
 		<entry>string</entry>
 		<entry>"" (disabled)</entry>
-		<entry><para>If one of {persistent|all} is set then persistent messages or all messages will be sent synchronously.</para><para>This can also be set per connection using the <link linkend="section-jms-connection-url">Connection URL</link> options.</para></entry>
+		<entry><para>If one of {persistent|all} is set then persistent messages or all messages will be sent synchronously.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
 	      </row>
 	    </tbody>
 	  </tgroup>
@@ -915,7 +920,7 @@ amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
 		<entry>true</entry>
 		<entry>
 		  <para>Sets the TCP_NODELAY property of the underlying socket. The default was changed to true as of Qpid 0.14.</para>
-		  <para>This can also be set per connection using the <link linkend="section-jms-connection-url">Connection URL</link> options.</para>
+		  <para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para>
 		  <para>For compatibility with older clients, the synonym <varname>amqj.tcp_nodelay</varname> is supported.</para>
 		</entry>
 	      </row>
@@ -967,21 +972,21 @@ amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
 		<entry>qpid.sasl_mechs</entry>
 		<entry>string</entry>
 		<entry>PLAIN</entry>
-		<entry><para>The SASL mechanism to be used. More than one could be specified as a comma separated list.</para><para>We currently support the following mechanisms {PLAIN | GSSAPI | EXTERNAL}.</para><para>This can also be set per connection using the <link linkend="section-jms-connection-url">Connection URL</link> options.</para></entry>
+		<entry><para>The SASL mechanism to be used. More than one could be specified as a comma separated list.</para><para>We currently support the following mechanisms {PLAIN | GSSAPI | EXTERNAL}.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
 	      </row>
 
 	      <row>
 		<entry>qpid.sasl_protocol</entry>
 		<entry>string</entry>
 		<entry>AMQP</entry>
-		<entry><para>When using GSSAPI as the SASL mechanism, <varname>sasl_protocol</varname> must be set to the principal for the qpidd broker, e.g. <varname>qpidd</varname>.</para><para>This can also be set per connection using the <link linkend="section-jms-connection-url">Connection URL</link> options.</para></entry>
+		<entry><para>When using GSSAPI as the SASL mechanism, <varname>sasl_protocol</varname> must be set to the principal for the qpidd broker, e.g. <varname>qpidd</varname>.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
 	      </row>
 
 	      <row>
 		<entry>qpid.sasl_server_name</entry>
 		<entry>string</entry>
 		<entry>localhost</entry>
-		<entry><para>When using GSSAPI as the SASL mechanism, <varname>sasl_server</varname> must be set to the host for the SASL server, e.g. <varname>example.com</varname>.</para><para>This can also be set per connection using the <link linkend="section-jms-connection-url">Connection URL</link> options.</para></entry>
+		<entry><para>When using GSSAPI as the SASL mechanism, <varname>sasl_server</varname> must be set to the host for the SASL server, e.g. <varname>example.com</varname>.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
 	      </row>
 	    </tbody>
 	  </tgroup>
@@ -1081,28 +1086,28 @@ amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
 		<entry>javax.net.ssl.keyStore</entry>
 		<entry>string</entry>
 		<entry>jvm default</entry>
-		<entry><para>Specifies the key store path.</para><para>This can also be set per connection using the <link linkend="section-jms-connection-url">Connection URL</link> options.</para></entry>
+		<entry><para>Specifies the key store path.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
 	      </row>
 
 	      <row>
 		<entry>javax.net.ssl.keyStorePassword</entry>
 		<entry>string</entry>
 		<entry>jvm default</entry>
-		<entry><para>Specifies the key store password.</para><para>This can also be set per connection using the <link linkend="section-jms-connection-url">Connection URL</link> options.</para></entry>
+		<entry><para>Specifies the key store password.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
 	      </row>
 
 	      <row>
 		<entry>javax.net.ssl.trustStore</entry>
 		<entry>string</entry>
 		<entry>jvm default</entry>
-		<entry><para>Specifies the trust store path.</para><para>This can also be set per connection using the <link linkend="section-jms-connection-url">Connection URL</link> options.</para></entry>
+		<entry><para>Specifies the trust store path.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
 	      </row>
 
 	      <row>
 		<entry>javax.net.ssl.trustStorePassword</entry>
 		<entry>string</entry>
 		<entry>jvm default</entry>
-		<entry><para>Specifies the trust store password.</para><para>This can also be set per connection using the <link linkend="section-jms-connection-url">Connection URL</link> options.</para></entry>
+		<entry><para>Specifies the trust store password.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
 	      </row>
 	    </tbody>
 	  </tgroup>
@@ -1110,7 +1115,7 @@ amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
       </section>
 
       <!-- begin addresses section -->
-      <section xml:id="section-addresses">
+      <section xml:id="JMS-Client-0-10-Configuring-Addresses">
       <title>Addresses</title>
 
       <para>An <firstterm>address</firstterm> is the name of a message
@@ -1324,16 +1329,12 @@ amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
 	also allow a subject. If a sender's address contains a
 	subject, it is used as the default subject for the messages
 	it sends.
-
+	<para>
+	</para>
 	If a receiver's address contains a subject, it is used to
 	select only messages that match the subject&#8212;the matching
-	algorithm depends on the message source.
-	</para>
-
-	<para>
-	  In AMQP 0-10, each exchange type has its own matching
-	  algorithm. This is discussed in
-	  <xref linkend="section-amqp0-10-mapping"/>.
+	algorithm depends on the message source. In AMQP 0-10, each exchange
+    type has its own matching algorithm.
 	</para>
 
 	<note>
@@ -2179,7 +2180,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
 
     <!-- begin logging section -->
-    <section xml:id="section-JMS-Logging">
+    <section xml:id="JMS-Client-0-10-Configuring-Logging">
       <title>JMS Client Logging</title>
       <para>The JMS Client logging is handled using the Simple Logging Facade for Java (<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.slf4j.org/">SLF4J</link>). As the name implies, slf4j is a facade that delegates to other logging systems like log4j or JDK 1.4 logging. For more information on how to configure slf4j for specific logging systems, please consult the slf4j documentation.</para>
 
@@ -2208,9 +2209,9 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
 
     <!-- begin misc chapter -->
-    <chapter>
+    <chapter xml:id="JMS-Client-0-10-Miscellaneous">
      <title>Miscellaneous</title>
-     <section>
+     <section xml:id="JMS-Client-0-10-Miscellaneous-Message-Properties">
       <title>Java JMS Message Properties</title>
 
       <para>The following table shows how Qpid Messaging API message
@@ -2272,7 +2273,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
     </section>
 
-    <section xml:id="section-JMS-MapMessage">
+    <section xml:id="JMS-Client-0-10-Miscellaneous-MapMessages">
       <title>JMS MapMessage Types</title>
 
       <para>Qpid supports the Java JMS <classname>MapMessage</classname> interface, which provides support for maps in messages. The following code shows how to send a <classname>MapMessage</classname> in Java JMS.</para>
