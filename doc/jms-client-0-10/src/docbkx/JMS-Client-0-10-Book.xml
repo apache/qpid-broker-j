@@ -24,10 +24,10 @@
   <title>Qpid AMQP 0-10 JMS Client</title>
 
     <chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-10-Example">
-      <title>A Simple Messaging Program in Java JMS</title>
+      <title>HelloWorld Example</title>
 
       <para>The following program shows how to send and receive a
-      message using the Qpid JMS client. JMS programs typically use
+      message using the Qpid AMQP 0-10 JMS client. JMS programs typically use
       JNDI to obtain connection factory and destination objects which
       the application needs. In this way the configuration is kept
       separate from the application code itself.</para>
@@ -96,7 +96,7 @@ public class Hello {
 
       <calloutlist>
 	<callout xml:id="callout-java-properties" arearefs="hello-java-properties">
-	  <para>Loads the JNDI properties file, which specifies connection properties, queues, topics, and addressing options. See <xref linkend="JMS-Client-0-10-Configuring-JNDI"/> for details.</para>
+	  <para>Loads the JNDI properties file, which specifies connection properties, queues, topics, and addressing options. See below for further details.</para>
 	</callout>
 	<callout xml:id="callout-java-context" arearefs="hello-java-context">
 	  <para>Creates the JNDI initial context.</para>
@@ -215,9 +215,10 @@ destination.topicExchange = amq.topic <co xml:id="hello-properties-destination" 
 
     <!-- begin JNDI section -->
     <section xml:id="JMS-Client-0-10-Configuring-JNDI">
-      <title>Apache Qpid JNDI Properties for AMQP Messaging</title>
+      <title>JNDI Properties</title>
 
-
+      <section>
+        <title>Properties File Format</title>
       <para>
 	Apache Qpid defines JNDI properties that can be used to specify JMS Connections and Destinations. Here is a typical JNDI properties file:
       </para>
@@ -232,20 +233,13 @@ java.naming.factory.initial
 connectionfactory.qpidConnectionfactory
 = amqp://guest:guest@clientid/test?brokerlist='tcp://localhost:5672'
 # destination.[jndiname] = [address_string]
-destination.topicExchange = amq.topic
-	</programlisting>
+destination.topicExchange = amq.topic</programlisting>
       </example>
 
-      <para>The following sections describe the JNDI properties that Qpid uses.</para>
+      <para>The following sections describe the JNDI properties syntax that Qpid uses.</para>
 
-
-      <section>
-        <title>JNDI Properties for Apache Qpid</title>
-        <para>
-	  Apache Qpid supports the properties shown in the following table:
-        </para>
-        <table>
-	  <title>JNDI Properties supported by Apache Qpid</title>
+      <table>
+	  <title>JNDI Properties syntax</title>
 	  <tgroup cols="2">
 	    <thead>
 	      <row>
@@ -715,10 +709,10 @@ amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
 
 
 
-      <section xml:id="JMS-Client-0-10-Configuring-JVM-Properties">
-        <title>Qpid JVM Arguments</title>
+    <section xml:id="JMS-Client-0-10-Configuring-JVM-Properties">
+     <title>JVM Properties</title>
 
-	<table>
+	 <table>
 	  <title>Config Options For Connection Behaviour</title>
 	  <tgroup cols="4">
 	    <thead>
@@ -2181,7 +2175,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 
     <!-- begin logging section -->
     <section xml:id="JMS-Client-0-10-Configuring-Logging">
-      <title>JMS Client Logging</title>
+      <title>Logging</title>
       <para>The JMS Client logging is handled using the Simple Logging Facade for Java (<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.slf4j.org/">SLF4J</link>). As the name implies, slf4j is a facade that delegates to other logging systems like log4j or JDK 1.4 logging. For more information on how to configure slf4j for specific logging systems, please consult the slf4j documentation.</para>
 
       <para>When using the log4j binding, please set the log level for org.apache.qpid explicitly. Otherwise log4j will default to DEBUG which will degrade performance considerably due to excessive logging. The recommended logging level for production is <literal>WARN</literal>.</para>
