@@ -23,9 +23,7 @@
 <book xmlns="http://docbook.org/ns/docbook" version="5.0">
   <title>Qpid AMQP 0-10 JMS Client</title>
 
-  <chapter xml:id="QpidJMS">
-    <title>Using the Qpid JMS client</title>
-    <section>
+    <chapter>
       <title>A Simple Messaging Program in Java JMS</title>
 
       <para>The following program shows how to send and receive a
@@ -169,12 +167,12 @@ destination.topicExchange = amq.topic <co xml:id="hello-properties-destination" 
 	</callout>
       </calloutlist>
 
-    </section>
+    </chapter>
 
 
 
 
-    <section>
+    <chapter>
       <title>Configuring the JMS Client</title>
 
       <para>The Qpid JMS Client allows several configuration options to customize it's behaviour at different levels of granualarity.</para>
@@ -1111,8 +1109,7 @@ amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
 	</table>
       </section>
 
-      <!-- begin addresses subsection -->
-
+      <!-- begin addresses section -->
       <section xml:id="section-addresses">
       <title>Addresses</title>
 
@@ -2178,7 +2175,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       </section>
 
     </section>
-    <!-- end addresses subsection -->
+    <!-- end addresses section -->
 
 
     <!-- begin logging section -->
@@ -2206,12 +2203,12 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
     </section>
     <!-- end logging section -->
 
-    </section>
+    </chapter>
 
 
 
-    <!-- begin misc section -->
-    <section>
+    <!-- begin misc chapter -->
+    <chapter>
      <title>Miscellaneous</title>
      <section>
       <title>Java JMS Message Properties</title>
@@ -2360,9 +2357,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       </table>
 
     </section>
-   </section>
-   <!-- end misc section -->
-
-  </chapter>
+   </chapter>
+   <!-- end misc chapter -->
 
 </book>
