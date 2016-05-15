@@ -45,55 +45,55 @@
       <example>
 	<title>"Hello world!" in Java</title>
 	<programlisting xml:lang="java">
-	  package org.apache.qpid.example.jmsexample.hello;
+package org.apache.qpid.example.jmsexample.hello;
 
-	  import javax.jms.*;
-	  import javax.naming.Context;
-	  import javax.naming.InitialContext;
-	  import java.util.Properties;
+import javax.jms.*;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import java.util.Properties;
 
-	  public class Hello {
+public class Hello {
 
-	  public Hello() {
-	  }
+    public Hello() {
+    }
 
-	  public static void main(String[] args) {
-	  Hello producer = new Hello();
-	  producer.runTest();
-	  }
+    public static void main(String[] args) {
+        Hello producer = new Hello();
+        producer.runTest();
+    }
 
-	  private void runTest() {
-	  try {
-	  Properties properties = new Properties();
-	  properties.load(this.getClass().getResourceAsStream("hello.properties"));  <co xml:id="hello-java-properties" linkends="callout-java-properties"/>
-	  Context context = new InitialContext(properties);   <co xml:id="hello-java-context" linkends="callout-java-context"/>
+    private void runTest() {
+        try {
+            Properties properties = new Properties();
+            properties.load(this.getClass().getResourceAsStream("hello.properties"));  <co xml:id="hello-java-properties" linkends="callout-java-properties"/>
+            Context context = new InitialContext(properties);   <co xml:id="hello-java-context" linkends="callout-java-context"/>
 
-	  ConnectionFactory connectionFactory
-          = (ConnectionFactory) context.lookup("qpidConnectionfactory"); <co xml:id="hello-java-connection-factory" linkends="callout-java-connection-factory"/>
-	  Connection connection = connectionFactory.createConnection();  <co xml:id="hello-java-connection" linkends="callout-java-connection"/>
-	  connection.start();  <co xml:id="hello-java-start" linkends="callout-java-start"/>
+            ConnectionFactory connectionFactory
+              = (ConnectionFactory) context.lookup("qpidConnectionfactory"); <co xml:id="hello-java-connection-factory" linkends="callout-java-connection-factory"/>
+            Connection connection = connectionFactory.createConnection();  <co xml:id="hello-java-connection" linkends="callout-java-connection"/>
+            connection.start();  <co xml:id="hello-java-start" linkends="callout-java-start"/>
 
-	  Session session=connection.createSession(false,Session.AUTO_ACKNOWLEDGE);<co xml:id="hello-java-session" linkends="callout-java-session"/>
-	  Destination destination = (Destination) context.lookup("topicExchange");  <co xml:id="hello-java-destination" linkends="callout-java-destination"/>
+            Session session=connection.createSession(false,Session.AUTO_ACKNOWLEDGE);<co xml:id="hello-java-session" linkends="callout-java-session"/>
+            Destination destination = (Destination) context.lookup("topicExchange");  <co xml:id="hello-java-destination" linkends="callout-java-destination"/>
 
-	  MessageProducer messageProducer = session.createProducer(destination);  <co xml:id="hello-java-producer" linkends="callout-java-producer"/>
-	  MessageConsumer messageConsumer = session.createConsumer(destination);  <co xml:id="hello-java-consumer" linkends="callout-java-consumer"/>
+            MessageProducer messageProducer = session.createProducer(destination);  <co xml:id="hello-java-producer" linkends="callout-java-producer"/>
+            MessageConsumer messageConsumer = session.createConsumer(destination);  <co xml:id="hello-java-consumer" linkends="callout-java-consumer"/>
 
-	  TextMessage message = session.createTextMessage("Hello world!");
-	  messageProducer.send(message);
+            TextMessage message = session.createTextMessage("Hello world!");
+            messageProducer.send(message);
 
-	  message = (TextMessage)messageConsumer.receive();    <co xml:id="hello-java-receive" linkends="callout-java-receive"/>
-	  System.out.println(message.getText());
+            message = (TextMessage)messageConsumer.receive();    <co xml:id="hello-java-receive" linkends="callout-java-receive"/>
+            System.out.println(message.getText());
 
-	  connection.close();  <co xml:id="hello-java-close" linkends="callout-java-close"/>
-	  context.close();   <co xml:id="hello-java-jndi-close" linkends="callout-java-jndi-close"/>
-	  }
-	  catch (Exception exp) {
-	  exp.printStackTrace();
-	  }
-	  }
-	  }
-	</programlisting>
+            connection.close();  <co xml:id="hello-java-close" linkends="callout-java-close"/>
+            context.close();   <co xml:id="hello-java-jndi-close" linkends="callout-java-jndi-close"/>
+        }
+        catch (Exception exp) {
+            exp.printStackTrace();
+        }
+    }
+}
+</programlisting>
       </example>
 
       <calloutlist>
@@ -140,14 +140,14 @@
       <example>
 	<title>JNDI Properties File for "Hello world!" example</title>
 	<programlisting>
-	  java.naming.factory.initial
-	  = org.apache.qpid.jndi.PropertiesFileInitialContextFactory
+java.naming.factory.initial
+= org.apache.qpid.jndi.PropertiesFileInitialContextFactory
 
-	  # connectionfactory.[jndiname] = [ConnectionURL]
-	  connectionfactory.qpidConnectionfactory
-	  = amqp://guest:guest@clientid/test?brokerlist='tcp://localhost:5672' <co xml:id="hello-properties-connectionfactory" linkends="callout-hello-properties-connectionfactory"/>
-	  # destination.[jndiname] = [address_string]
-	  destination.topicExchange = amq.topic <co xml:id="hello-properties-destination" linkends="callout-hello-properties-destination"/>
+# connectionfactory.[jndiname] = [ConnectionURL]
+connectionfactory.qpidConnectionfactory
+= amqp://guest:guest@clientid/test?brokerlist='tcp://localhost:5672' <co xml:id="hello-properties-connectionfactory" linkends="callout-hello-properties-connectionfactory"/>
+# destination.[jndiname] = [address_string]
+destination.topicExchange = amq.topic <co xml:id="hello-properties-destination" linkends="callout-hello-properties-destination"/>
 	</programlisting>
       </example>
 
@@ -182,14 +182,14 @@
       <example>
 	<title>JNDI Properties File</title>
 	<programlisting>
-	java.naming.factory.initial
-	= org.apache.qpid.jndi.PropertiesFileInitialContextFactory
+java.naming.factory.initial
+= org.apache.qpid.jndi.PropertiesFileInitialContextFactory
 
-	# connectionfactory.[jndiname] = [ConnectionURL]
-	connectionfactory.qpidConnectionfactory
-	= amqp://guest:guest@clientid/test?brokerlist='tcp://localhost:5672'
-	# destination.[jndiname] = [address_string]
-	destination.topicExchange = amq.topic
+# connectionfactory.[jndiname] = [ConnectionURL]
+connectionfactory.qpidConnectionfactory
+= amqp://guest:guest@clientid/test?brokerlist='tcp://localhost:5672'
+# destination.[jndiname] = [address_string]
+destination.topicExchange = amq.topic
 	</programlisting>
       </example>
 
@@ -426,15 +426,15 @@
 	  <title>Broker Lists</title>
 	  <para>A broker list can specify properties to be used when connecting to the broker, such as security options. This broker list specifies options for a Kerberos connection using GSSAPI:</para>
 	  <programlisting>
-	  amqp://guest:guest@test/test?sync_ack='true'
-	  &amp;brokerlist='tcp://ip1:5672?sasl_mechs='GSSAPI''
+amqp://guest:guest@test/test?sync_ack='true'
+&amp;brokerlist='tcp://ip1:5672?sasl_mechs='GSSAPI''
 	  </programlisting>
 
 	  <para>This broker list specifies SSL options:</para>
 
 	  <programlisting>
-	  amqp://guest:guest@test/test?sync_ack='true'
-	  &amp;brokerlist='tcp://ip1:5672?ssl='true'&amp;ssl_cert_alias='cert1''
+amqp://guest:guest@test/test?sync_ack='true'
+&amp;brokerlist='tcp://ip1:5672?ssl='true'&amp;ssl_cert_alias='cert1''
 	  </programlisting>
 
 	  <para>
@@ -443,9 +443,8 @@
 	  </para>
 
 	  <programlisting>
-
-	  amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
-	  &amp;brokerlist='tcp://ip1:5672?retries='5'&amp;connectdelay='2000';tcp://ip2:5672?retries='5'&amp;connectdelay='2000''
+amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
+&amp;brokerlist='tcp://ip1:5672?retries='5'&amp;connectdelay='2000';tcp://ip2:5672?retries='5'&amp;connectdelay='2000''
 	  </programlisting>
 	</example>
 
