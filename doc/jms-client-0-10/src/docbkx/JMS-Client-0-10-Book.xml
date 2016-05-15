@@ -186,7 +186,7 @@ destination.topicExchange = amq.topic <co xml:id="hello-properties-destination" 
           <para>
             Connection level using Connection/Broker properties : Affects the respective connection and sessions, consumers and produces created by that connection.
 	  </para>
-          <para>Ex. <varname>amqp://guest:guest@test/test?max_prefetch='1000'
+          <para>Ex. <varname>amqp://guest:guest@test/test?maxprefetch='1000'
 	  &amp;brokerlist='tcp://localhost:5672'
 	  </varname> property specifies the message credits to use. This overrides any value specified via the JVM argument <varname>max_prefetch</varname>.</para>
           <para>Please refer to the <xref linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL"/> section for a complete list of all properties and how to use them.</para>
@@ -209,7 +209,7 @@ destination.topicExchange = amq.topic <co xml:id="hello-properties-destination" 
         </listitem>
       </itemizedlist>
 
-      <para>Some of these config options are available at all three levels (Ex. <varname>max_prefetch</varname>), while others are available only at JVM or connection level.</para>
+      <para>Some of these config options are available at all three levels, while others are available only at JVM or connection level.</para>
     </section>
 
 
