@@ -1,0 +1,2358 @@
+<?xml version="1.0"?>
+<!--
+
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+
+-->
+
+<book xmlns="http://docbook.org/ns/docbook" version="5.0">
+  <title>Qpid AMQP 0-10 JMS Client</title>
+
+    <chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-10-Example">
+      <title>HelloWorld Example</title>
+
+      <para>The following program shows how to send and receive a
+      message using the Qpid AMQP 0-10 JMS client. JMS programs typically use
+      JNDI to obtain connection factory and destination objects which
+      the application needs. In this way the configuration is kept
+      separate from the application code itself.</para>
+
+      <para>In this example, we create a JNDI context using a
+      properties file, use the context to lookup a connection factory,
+      create and start a connection, create a session, and lookup a
+      destination from the JNDI context. Then we create a producer and
+      a consumer, send a message with the producer and receive it with
+      the consumer. This code should be straightforward for anyone
+      familiar with Java JMS.</para>
+
+      <example>
+	<title>"Hello world!" in Java</title>
+	<programlisting xml:lang="java">
+package org.apache.qpid.example.jmsexample.hello;
+
+import javax.jms.*;
+import javax.naming.Context;
+import javax.naming.InitialContext;
+import java.util.Properties;
+
+public class Hello {
+
+    public Hello() {
+    }
+
+    public static void main(String[] args) {
+        Hello producer = new Hello();
+        producer.runTest();
+    }
+
+    private void runTest() {
+        try {
+            Properties properties = new Properties();
+            properties.load(this.getClass().getResourceAsStream("hello.properties"));  <co xml:id="hello-java-properties" linkends="callout-java-properties"/>
+            Context context = new InitialContext(properties);   <co xml:id="hello-java-context" linkends="callout-java-context"/>
+
+            ConnectionFactory connectionFactory
+              = (ConnectionFactory) context.lookup("qpidConnectionfactory"); <co xml:id="hello-java-connection-factory" linkends="callout-java-connection-factory"/>
+            Connection connection = connectionFactory.createConnection();  <co xml:id="hello-java-connection" linkends="callout-java-connection"/>
+            connection.start();  <co xml:id="hello-java-start" linkends="callout-java-start"/>
+
+            Session session=connection.createSession(false,Session.AUTO_ACKNOWLEDGE);<co xml:id="hello-java-session" linkends="callout-java-session"/>
+            Destination destination = (Destination) context.lookup("topicExchange");  <co xml:id="hello-java-destination" linkends="callout-java-destination"/>
+
+            MessageProducer messageProducer = session.createProducer(destination);  <co xml:id="hello-java-producer" linkends="callout-java-producer"/>
+            MessageConsumer messageConsumer = session.createConsumer(destination);  <co xml:id="hello-java-consumer" linkends="callout-java-consumer"/>
+
+            TextMessage message = session.createTextMessage("Hello world!");
+            messageProducer.send(message);
+
+            message = (TextMessage)messageConsumer.receive();    <co xml:id="hello-java-receive" linkends="callout-java-receive"/>
+            System.out.println(message.getText());
+
+            connection.close();  <co xml:id="hello-java-close" linkends="callout-java-close"/>
+            context.close();   <co xml:id="hello-java-jndi-close" linkends="callout-java-jndi-close"/>
+        }
+        catch (Exception exp) {
+            exp.printStackTrace();
+        }
+    }
+}
+</programlisting>
+      </example>
+
+      <calloutlist>
+	<callout xml:id="callout-java-properties" arearefs="hello-java-properties">
+	  <para>Loads the JNDI properties file, which specifies connection properties, queues, topics, and addressing options. See below for further details.</para>
+	</callout>
+	<callout xml:id="callout-java-context" arearefs="hello-java-context">
+	  <para>Creates the JNDI initial context.</para>
+	</callout>
+	<callout xml:id="callout-java-connection-factory" arearefs="hello-java-connection-factory">
+	  <para>Creates a JMS connection factory for Qpid.</para>
+	</callout>
+	<callout xml:id="callout-java-connection" arearefs="hello-java-connection">
+	  <para>Creates a JMS connection.</para>
+	</callout>
+	<callout xml:id="callout-java-start" arearefs="hello-java-start">
+	  <para>Activates the connection.</para>
+	</callout>
+	<callout xml:id="callout-java-session" arearefs="hello-java-session">
+	  <para>Creates a session. This session is not transactional (transactions='false'), and messages are automatically acknowledged.</para>
+	</callout>
+	<callout xml:id="callout-java-destination" arearefs="hello-java-destination">
+	  <para>Creates a destination for the topic exchange, so senders and receivers can use it.</para>
+	</callout>
+	<callout xml:id="callout-java-producer" arearefs="hello-java-producer">
+	  <para>Creates a producer that sends messages to the topic exchange.</para>
+	</callout>
+	<callout xml:id="callout-java-consumer" arearefs="hello-java-consumer">
+	  <para>Creates a consumer that reads messages from the topic exchange.</para>
+	</callout>
+	<callout xml:id="callout-java-receive" arearefs="hello-java-receive">
+	  <para>Reads the next available message.</para>
+	</callout>
+	<callout xml:id="callout-java-close" arearefs="hello-java-close">
+	  <para>Closes the connection, all sessions managed by the connection, and all senders and receivers managed by each session.</para>
+	</callout>
+	<callout xml:id="callout-java-jndi-close" arearefs="hello-java-jndi-close">
+	  <para>Closes the JNDI context.</para>
+	</callout>
+      </calloutlist>
+
+      <para>The contents of the hello.properties file are shown below.</para>
+
+      <example>
+	<title>JNDI Properties File for "Hello world!" example</title>
+	<programlisting>
+java.naming.factory.initial
+= org.apache.qpid.jndi.PropertiesFileInitialContextFactory
+
+# connectionfactory.[jndiname] = [ConnectionURL]
+connectionfactory.qpidConnectionfactory
+= amqp://guest:guest@clientid/test?brokerlist='tcp://localhost:5672' <co xml:id="hello-properties-connectionfactory" linkends="callout-hello-properties-connectionfactory"/>
+# destination.[jndiname] = [address_string]
+destination.topicExchange = amq.topic <co xml:id="hello-properties-destination" linkends="callout-hello-properties-destination"/>
+	</programlisting>
+      </example>
+
+      <calloutlist>
+	<callout xml:id="callout-hello-properties-connectionfactory" arearefs="hello-properties-connectionfactory">
+	  <para>Defines a connection factory from which connections
+	  can be created. The syntax of a ConnectionURL is given in
+	  <xref linkend="JMS-Client-0-10-Configuring-JNDI"/>.</para>
+	</callout>
+	<callout xml:id="callout-hello-properties-destination" arearefs="hello-properties-destination">
+	  <para>Defines a destination for which MessageProducers
+	  and/or MessageConsumers can be created to send and receive
+	  messages. The value for the destination in the properties
+	  file is an address string as described in
+	  <xref linkend="JMS-Client-0-10-Configuring-Addresses"/>. In the JMS
+	  implementation MessageProducers are analogous to senders in
+	  the Qpid Message API, and MessageConsumers are analogous to
+	  receivers.</para>
+	</callout>
+      </calloutlist>
+
+    </chapter>
+
+
+
+
+    <chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-10-Configuring">
+      <title>Configuring the JMS Client</title>
+
+    <section xml:id="JMS-Client-0-10-Configuring-Overview">
+     <title>Overview</title>
+      <para>This chapter covers various configuration details for the Qpid AMQP 0-10 JMS client, from the basics of setting up the client
+      using JNDI in <xref linkend="JMS-Client-0-10-Configuring-JNDI"/>, to the various configuration options avilable to
+      customize it's behaviour at different levels of granualarity, e.g:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>
+            Connection level using Connection/Broker properties : Affects the respective connection and sessions, consumers and produces created by that connection.
+	  </para>
+          <para>Ex. <varname>amqp://guest:guest@test/test?maxprefetch='1000'
+	  &amp;brokerlist='tcp://localhost:5672'
+	  </varname> property specifies the message credits to use. This overrides any value specified via the JVM argument <varname>max_prefetch</varname>.</para>
+          <para>Please refer to the <xref linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL"/> section for a complete list of all properties and how to use them.</para>
+        </listitem>
+
+        <listitem>
+          <para>
+            JVM level using JVM arguments : Configuration that affects all connections, sessions, consumers and producers created within that JVM.
+	  </para>
+          <para>Ex. <varname>-Dmax_prefetch=1000</varname> property specifies the message credits to use.</para>
+          <para>Please refer to the <xref linkend="JMS-Client-0-10-Configuring-JVM-Properties"/> section for a complete list of all properties and how to use them.</para>
+        </listitem>
+
+        <listitem>
+          <para>
+            Destination level using Addressing options : Affects the producer(s) and consumer(s) created using the respective destination.
+	  </para>
+          <para>Ex. <varname>my-queue; {create: always, link:{capacity: 10}}</varname>, where <varname>capacity</varname> option specifies the message credits to use. This overrides any connection level configuration.</para>
+          <para>Please refer to the <xref linkend="JMS-Client-0-10-Configuring-Addresses"/> section for a complete understanding of addressing and it's various options.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Some of these config options are available at all three levels, while others are available only at JVM or connection level.</para>
+    </section>
+
+
+    <!-- begin JNDI section -->
+    <section xml:id="JMS-Client-0-10-Configuring-JNDI">
+      <title>JNDI Properties</title>
+
+      <section>
+        <title>Properties File Format</title>
+      <para>
+	Apache Qpid defines JNDI properties that can be used to specify JMS Connections and Destinations. Here is a typical JNDI properties file:
+      </para>
+
+      <example>
+	<title>JNDI Properties File</title>
+	<programlisting>
+java.naming.factory.initial
+= org.apache.qpid.jndi.PropertiesFileInitialContextFactory
+
+# connectionfactory.[jndiname] = [ConnectionURL]
+connectionfactory.qpidConnectionfactory
+= amqp://guest:guest@clientid/test?brokerlist='tcp://localhost:5672'
+# destination.[jndiname] = [address_string]
+destination.topicExchange = amq.topic</programlisting>
+      </example>
+
+      <para>The following sections describe the JNDI properties syntax that Qpid uses.</para>
+
+      <table>
+	  <title>JNDI Properties syntax</title>
+	  <tgroup cols="2">
+	    <thead>
+	      <row>
+	        <entry>
+		  Property
+	        </entry>
+	        <entry>
+		  Purpose
+	        </entry>
+	      </row>
+	    </thead>
+	    <tbody>
+	      <row>
+	        <entry>
+		  connectionfactory.&lt;jndiname&gt;
+	        </entry>
+	        <entry>
+		  <para>
+		    The Connection URL that the connection factory uses to perform connections.
+		  </para>
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  queue.&lt;jndiname&gt;
+	        </entry>
+	        <entry>
+		  <para>
+		    A JMS queue, which is implemented as an amq.direct exchange in Apache Qpid.
+		  </para>
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  topic.&lt;jndiname&gt;
+	        </entry>
+	        <entry>
+		  <para>
+		    A JMS topic, which is implemented as an amq.topic exchange in Apache Qpid.
+		  </para>
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  destination.&lt;jndiname&gt;
+	        </entry>
+	        <entry>
+		  <para>
+		    Can be used for defining all amq destinations,
+		    queues, topics and header matching, using an
+		    address string.
+
+		    <footnote><para>Binding URLs, which were used in
+		    earlier versions of the Qpid Java JMS client, can
+		    still be used instead of address
+		    strings.</para></footnote>
+		  </para>
+	        </entry>
+	      </row>
+	    </tbody>
+	  </tgroup>
+        </table>
+      </section>
+
+      <section xml:id="JMS-Client-0-10-Configuring-JNDI-Connection-URL">
+        <title>Connection URLs</title>
+        <para>
+	  In JNDI properties, a Connection URL specifies properties for a connection. The format for a Connection URL is:
+        </para>
+
+        <programlisting>amqp://[&lt;user&gt;:&lt;pass&gt;@][&lt;clientid&gt;]&lt;virtualhost&gt;[?&lt;option&gt;='&lt;value&gt;'[&amp;&lt;option&gt;='&lt;value&gt;']]
+        </programlisting>
+        <para>
+	  For instance, the following Connection URL specifies a user name, a password, a client ID, a virtual host ("test"), a broker list with a single broker, and a TCP host with the host name <quote>localhost</quote> using port 5672:
+        </para>
+
+        <programlisting>amqp://username:password@clientid/test?brokerlist='tcp://localhost:5672'
+        </programlisting>
+        <para>
+	  Apache Qpid supports the following properties in Connection URLs:
+        </para>
+        <table pgwide="1">
+	  <title>Connection URL Properties</title>
+	  <tgroup cols="3">
+	    <thead>
+	      <row>
+	        <entry>
+		  Option
+	        </entry>
+	        <entry>
+		  Type
+	        </entry>
+	        <entry>
+		  Description
+	        </entry>
+	      </row>
+	    </thead>
+	    <tbody>
+	      <row>
+	        <entry>
+		  brokerlist
+	        </entry>
+	        <entry>
+		  see below
+	        </entry>
+	        <entry>
+		  List of one or more broker addresses.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  maxprefetch
+	        </entry>
+	        <entry>
+		  integer
+	        </entry>
+	        <entry>
+		  <para>
+                    The maximum number of pre-fetched messages per consumer. If not specified, default value of 500 is used.
+		  </para>
+		  <para>
+                    Note: You can also set the default per-consumer prefetch value on a client-wide basis by configuring the client using <link linkend="JMS-Client-0-10-Configuring-JVM-Properties">Java system properties.</link>
+		  </para>
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  sync_publish
+	        </entry>
+	        <entry>
+		  {'persistent' | 'all'}
+	        </entry>
+	        <entry>
+		  A sync command is sent after every persistent message to guarantee that it has been received; if the value is 'persistent', this is done only for persistent messages.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  sync_ack
+	        </entry>
+	        <entry>
+		  Boolean
+	        </entry>
+	        <entry>
+		  A sync command is sent after every acknowledgement to guarantee that it has been received.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  use_legacy_map_msg_format
+	        </entry>
+	        <entry>
+		  Boolean
+	        </entry>
+	        <entry>
+		  If you are using JMS Map messages and deploying a new client with any JMS client older than 0.8 release, you must set this to true to ensure the older clients can understand the map message encoding.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  failover
+	        </entry>
+	        <entry>
+		  {'singlebroker' | 'roundrobin' | 'failover_exchange' | 'nofailover' | '&lt;class&gt;'}
+	        </entry>
+	        <entry>
+		  <para>
+		    This option controls failover behaviour.  The method <literal>singlebroker</literal> uses only the first broker in the list,
+		    <literal>roundrobin</literal> will try each broker given in the broker list until a connection is established,
+		    <literal>failover_exchange</literal> connects to the initial broker given in the broker URL and will receive membership updates
+		    via the failover exchange. <literal>nofailover</literal> disables all retry and failover logic.  Any other value is interpreted as a
+		    classname which must implement the <literal>org.apache.qpid.jms.failover.FailoverMethod</literal> interface.
+		  </para>
+		  <para>
+		    The broker list options <literal>retries</literal> and <literal>connectdelay</literal> (described below) determine the number of times a
+		    connection to a broker will be retried and the the length of time to wait between successive connection attempts before moving on to
+		    the next broker in the list. The failover option <literal>cyclecount</literal> controls the number of times to loop through the list of
+		    available brokers before finally giving up.
+		  </para>
+		  <para>
+		    Defaults to <literal>roundrobin</literal> if the brokerlist contains multiple brokers, or <literal>singlebroker</literal> otherwise.
+		  </para>
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		        ssl
+	        </entry>
+	        <entry>
+		        boolean
+	        </entry>
+	        <entry>
+	            <para>
+	                If <literal>ssl='true'</literal>, use SSL for all broker connections. Overrides any per-broker settings in the brokerlist (see below) entries. If not specified, the brokerlist entry for each given broker is used to determine whether SSL is used.
+	            </para>
+	            <para>
+	                Introduced in version 0.22.
+	            </para>
+	        </entry>
+	      </row>
+	    </tbody>
+	  </tgroup>
+        </table>
+        <para>
+	  Broker lists are specified using a URL in this format:
+        </para>
+
+        <programlisting>brokerlist=&lt;transport&gt;://&lt;host&gt;[:&lt;port&gt;](?&lt;param&gt;='&lt;value&gt;')(&amp;&lt;param&gt;='&lt;value&gt;')*</programlisting>
+        <para>
+	  For instance, this is a typical broker list:
+        </para>
+
+        <programlisting>brokerlist='tcp://localhost:5672'
+        </programlisting>
+
+	<para>
+	  A broker list can contain more than one broker address; if so, the connection is made to the first broker in the list that is available. In general, it is better to use the failover exchange when using multiple brokers, since it allows applications to fail over if a broker goes down.
+	</para>
+
+	<example>
+	  <title>Broker Lists</title>
+	  <para>A broker list can specify properties to be used when connecting to the broker, such as security options. This broker list specifies options for a Kerberos connection using GSSAPI:</para>
+	  <programlisting>
+amqp://guest:guest@test/test?sync_ack='true'
+&amp;brokerlist='tcp://ip1:5672?sasl_mechs='GSSAPI''
+	  </programlisting>
+
+	  <para>This broker list specifies SSL options:</para>
+
+	  <programlisting>
+amqp://guest:guest@test/test?sync_ack='true'
+&amp;brokerlist='tcp://ip1:5672?ssl='true'&amp;ssl_cert_alias='cert1''
+	  </programlisting>
+
+	  <para>
+	    This broker list specifies two brokers using the connectdelay and retries broker options. It also illustrates the failover connection URL
+	    property.
+	  </para>
+
+	  <programlisting>
+amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
+&amp;brokerlist='tcp://ip1:5672?retries='5'&amp;connectdelay='2000';tcp://ip2:5672?retries='5'&amp;connectdelay='2000''
+	  </programlisting>
+	</example>
+
+	<para>The following broker list options are supported.</para>
+
+        <table pgwide="1">
+	  <title>Broker List Options</title>
+	  <tgroup cols="3">
+	    <thead>
+	      <row>
+	        <entry>
+		  Option
+	        </entry>
+	        <entry>
+		  Type
+	        </entry>
+	        <entry>
+		  Description
+	        </entry>
+	      </row>
+	    </thead>
+	    <tbody>
+	      <row>
+	        <entry>
+		  heartbeat
+	        </entry>
+	        <entry>
+		  integer
+	        </entry>
+	        <entry>
+		  Frequency of heartbeat messages (in seconds). A value of 0 disables heartbeating. <para>For compatibility
+                  with old client configuration, option <varname>idle_timeout</varname> (in milliseconds) is also supported.</para>
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  sasl_mechs
+	        </entry>
+	        <entry>
+		  --
+	        </entry>
+	        <entry>
+		  For secure applications, we suggest CRAM-MD5,
+		  DIGEST-MD5, or GSSAPI. The ANONYMOUS method is not
+		  secure. The PLAIN method is secure only when used
+		  together with SSL. For Kerberos, sasl_mechs must be
+		  set to GSSAPI, sasl_protocol must be set to the
+		  principal for the qpidd broker, e.g. qpidd/, and
+		  sasl_server must be set to the host for the SASL
+		  server, e.g. sasl.com.  SASL External is supported
+		  using SSL certification, e.g.
+		  <literal>ssl='true'&amp;sasl_mechs='EXTERNAL'</literal>
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  sasl_encryption
+	        </entry>
+	        <entry>
+		  Boolean
+	        </entry>
+	        <entry>
+		  If <literal>sasl_encryption='true'</literal>, the JMS client attempts to negotiate a security layer with the broker using GSSAPI to encrypt the connection. Note that for this to happen, GSSAPI must be selected as the sasl_mech.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  sasl_protocol
+	        </entry>
+	        <entry>
+		  --
+	        </entry>
+	        <entry>
+		  Used only for
+		  Kerberos. <literal>sasl_protocol</literal> must be
+		  set to the principal for the qpidd broker,
+		  e.g. <literal>qpidd/</literal>
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  sasl_server
+	        </entry>
+	        <entry>
+		  --
+	        </entry>
+	        <entry>
+		  For Kerberos, sasl_mechs must be set to GSSAPI,
+		  sasl_server must be set to the host for the SASL
+		  server, e.g. <literal>sasl.com</literal>.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  trust_store
+	        </entry>
+	        <entry>
+		  --
+	        </entry>
+	        <entry>
+		  path to trust store
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  trust_store_password
+	        </entry>
+	        <entry>
+		        --
+	        </entry>
+	        <entry>
+		  Trust store password
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  key_store
+	        </entry>
+	        <entry>
+		        --
+	        </entry>
+	        <entry>
+		  path to key store
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  key_store_password
+	        </entry>
+	        <entry>
+		  --
+	        </entry>
+	        <entry>
+		  key store password
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  ssl
+	        </entry>
+	        <entry>
+		  Boolean
+	        </entry>
+	        <entry>
+	            <para>If <literal>ssl='true'</literal>, the JMS client will encrypt the connection to this broker using SSL.</para>
+
+	            <para>This can also be set/overridden for all brokers using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para>
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  ssl_verify_hostname
+	        </entry>
+	        <entry>
+		  Boolean
+	        </entry>
+	        <entry>
+		  When using SSL you can enable hostname verification
+		  by using <literal>ssl_verify_hostname='true'</literal> in the broker
+		  URL.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  ssl_cert_alias
+	        </entry>
+	        <entry>
+		        --
+	        </entry>
+	        <entry>
+		  If multiple certificates are present in the keystore, the alias will be used to extract the correct certificate.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  retries
+	        </entry>
+	        <entry>
+		  integer
+	        </entry>
+	        <entry>
+		  The number of times to retry connection to each broker in the broker list. Defaults to 1.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  connectdelay
+	        </entry>
+	        <entry>
+		  integer
+	        </entry>
+	        <entry>
+		  Length of time (in milliseconds) to wait before attempting to reconnect. Defaults to 0.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  connecttimeout
+	        </entry>
+	        <entry>
+		  integer
+	        </entry>
+	        <entry>
+		  Length of time (in milliseconds) to wait for the socket connection to succeed. A value of 0 represents an infinite timeout, i.e. the connection attempt will block until established or an error occurs.  Defaults to 30000.
+	        </entry>
+	      </row>
+	      <row>
+	        <entry>
+		  tcp_nodelay
+	        </entry>
+	        <entry>
+		  Boolean
+	        </entry>
+	        <entry>
+		  If <literal>tcp_nodelay='true'</literal>, TCP packet
+		  batching is disabled. Defaults to true since Qpid 0.14.
+	        </entry>
+	      </row>
+	    </tbody>
+	  </tgroup>
+	</table>
+      </section>
+    </section>
+    <!-- end JNDI section -->
+
+
+
+    <section xml:id="JMS-Client-0-10-Configuring-JVM-Properties">
+     <title>JVM Properties</title>
+
+	 <table>
+	  <title>Config Options For Connection Behaviour</title>
+	  <tgroup cols="4">
+	    <thead>
+	      <row>
+		<entry>Property Name</entry>
+		<entry>Type</entry>
+		<entry>Default Value</entry>
+		<entry>Description</entry>
+	      </row>
+	    </thead>
+	    <tbody>
+	      <row>
+		<entry>qpid.amqp.version</entry>
+		<entry>string</entry>
+		<entry>0-10</entry>
+		<entry><para>Sets the AMQP version to be used - currently supports one of {0-8,0-9,0-91,0-10}.</para><para>The client will begin negotiation at the specified version and only negotiate downwards if the Broker does not support the specified version.</para></entry>
+	      </row>
+	      <row>
+		<entry>qpid.heartbeat</entry>
+		<entry>int</entry>
+		<entry><para>When using the 0-10 protocol, the default is 120 (secs)</para><para>When using protocols 0-8...0-91, the default is the broker-supplied value.</para></entry>
+		<entry>Frequency of heartbeat messages (in seconds). A value of 0 disables heartbeating. <para>Two consective misssed heartbeats will result in the connection timing out.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para><para>For compatibility with old client configuration, the synonym <varname>amqj.heartbeat.delay</varname> is supported.</para></entry>
+	      </row>
+	      <row>
+		<entry>ignore_setclientID</entry>
+		<entry>boolean</entry>
+		<entry>false</entry>
+		<entry>If a client ID is specified in the connection URL it's used or else an ID is generated. If an ID is specified after it's been set Qpid will throw an exception. <para>Setting this property to 'true' will disable that check and allow you to set a client ID of your choice later on.</para></entry>
+	      </row>
+	    </tbody>
+	  </tgroup>
+	</table>
+
+
+	<table>
+	  <title>Config Options For Session Behaviour</title>
+	  <tgroup cols="4">
+	    <thead>
+	      <row>
+		<entry>Property Name</entry>
+		<entry>Type</entry>
+		<entry>Default Value</entry>
+		<entry>Description</entry>
+	      </row>
+	    </thead>
+	    <tbody>
+	      <row>
+		<entry>qpid.session.command_limit</entry>
+		<entry>int</entry>
+		<entry>65536</entry>
+		<entry>Limits the # of unacked commands</entry>
+	      </row>
+
+	      <row>
+		<entry>qpid.session.byte_limit</entry>
+		<entry>int</entry>
+		<entry>1048576</entry>
+		<entry>Limits the # of unacked commands in terms of bytes</entry>
+	      </row>
+
+	      <row>
+		<entry>qpid.use_legacy_map_message</entry>
+		<entry>boolean</entry>
+		<entry>false</entry>
+		<entry><para>If set will use the old map message encoding. By default the Map messages are encoded using the 0-10 map encoding.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
+	      </row>
+
+	      <row>
+		<entry>qpid.jms.daemon.dispatcher</entry>
+		<entry>boolean</entry>
+		<entry>false</entry>
+		<entry><para>Controls whether the Session dispatcher thread is a daemon thread or not. If this system property is set to true then the Session dispatcher threads will be created as daemon threads. This setting is introduced in version 0.16.</para></entry>
+	      </row>
+	    </tbody>
+	  </tgroup>
+	</table>
+
+	<table>
+	  <title>Config Options For Consumer Behaviour</title>
+	  <tgroup cols="4">
+	    <thead>
+	      <row>
+		<entry>Property Name</entry>
+		<entry>Type</entry>
+		<entry>Default Value</entry>
+		<entry>Description</entry>
+	      </row>
+	    </thead>
+	    <tbody>
+	      <row>
+		<entry>max_prefetch</entry>
+		<entry>int</entry>
+		<entry>500</entry>
+		<entry>Maximum number of pre-fetched messages per consumer. <para>This can also be defaulted for consumers created on a particular connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options, or per destination (see the <varname>capacity</varname> option under link properties in addressing)</para></entry>
+	      </row>
+
+	      <row>
+		<entry>qpid.session.max_ack_delay</entry>
+		<entry>long</entry>
+		<entry>1000 (ms)</entry>
+		<entry><para>Timer interval to flush message acks in buffer when using AUTO_ACK and DUPS_OK.</para> <para>When using the above ack modes, message acks are batched and sent if one of the following conditions are met (which ever happens first).
+		<itemizedlist>
+		  <listitem><para>When the ack timer fires.</para></listitem>
+		  <listitem><para>if un_acked_msg_count &gt; max_prefetch/2.</para></listitem>
+		</itemizedlist>
+	      </para>
+	      <para>The ack timer can be disabled by setting it to 0.</para>
+		</entry>
+	      </row>
+
+	      <row>
+		<entry>sync_ack</entry>
+		<entry>boolean</entry>
+		<entry>false</entry>
+		<entry><para>If set, each message will be acknowledged synchronously. When using AUTO_ACK mode, you need to set this to "true", in order to get the correct behaviour as described by the JMS spec.</para><para>This is set to false by default for performance reasons, therefore by default AUTO_ACK behaves similar to DUPS_OK.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
+	      </row>
+	    </tbody>
+	  </tgroup>
+	</table>
+
+	<table>
+	  <title>Config Options For Producer Behaviour</title>
+	  <tgroup cols="4">
+	    <thead>
+	      <row>
+		<entry>Property Name</entry>
+		<entry>Type</entry>
+		<entry>Default Value</entry>
+		<entry>Description</entry>
+	      </row>
+	    </thead>
+	    <tbody>
+	      <row>
+		<entry>sync_publish</entry>
+		<entry>string</entry>
+		<entry>"" (disabled)</entry>
+		<entry><para>If one of {persistent|all} is set then persistent messages or all messages will be sent synchronously.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
+	      </row>
+	    </tbody>
+	  </tgroup>
+	</table>
+
+	<table>
+	  <title>Config Options For Threading</title>
+	  <tgroup cols="4">
+	    <thead>
+	      <row>
+		<entry>Property Name</entry>
+		<entry>Type</entry>
+		<entry>Default Value</entry>
+		<entry>Description</entry>
+	      </row>
+	    </thead>
+	    <tbody>
+	      <row>
+		<entry>qpid.thread_factory</entry>
+		<entry>string</entry>
+		<entry>org.apache.qpid.thread.DefaultThreadFactory</entry>
+		<entry><para>Specifies the thread factory to use.</para><para>If using a real time JVM, you need to set the above property to <varname>org.apache.qpid.thread.RealtimeThreadFactory</varname>.</para></entry>
+	      </row>
+
+	      <row>
+		<entry>qpid.rt_thread_priority</entry>
+		<entry>int</entry>
+		<entry>20</entry>
+		<entry><para>Specifies the priority (1-99) for Real time threads created by the real time thread factory.</para></entry>
+	      </row>
+	    </tbody>
+	  </tgroup>
+	</table>
+
+	<table>
+	  <title>Config Options For I/O</title>
+	  <tgroup cols="4">
+	    <thead>
+	      <row>
+		<entry>Property Name</entry>
+		<entry>Type</entry>
+		<entry>Default Value</entry>
+		<entry>Description</entry>
+	      </row>
+	    </thead>
+	    <tbody>
+	      <row>
+		<entry>qpid.transport</entry>
+		<entry>string</entry>
+		<entry>org.apache.qpid.transport.network.io.IoNetworkTransport</entry>
+		<entry><para>The transport implementation to be used.</para><para>A user could specify an alternative transport mechanism that implements the interface <varname>org.apache.qpid.transport.network.OutgoingNetworkTransport</varname>.</para></entry>
+	      </row>
+	      <row>
+		<entry>qpid.sync_op_timeout</entry>
+		<entry>long</entry>
+		<entry>60000</entry>
+		<entry><para>The length of time (in milliseconds) to wait for a synchronous operation to complete.</para><para>For compatibility with older clients, the synonym <varname>amqj.default_syncwrite_timeout</varname> is supported.</para></entry>
+	      </row>
+	      <row>
+		<entry>qpid.tcp_nodelay</entry>
+		<entry>boolean</entry>
+		<entry>true</entry>
+		<entry>
+		  <para>Sets the TCP_NODELAY property of the underlying socket. The default was changed to true as of Qpid 0.14.</para>
+		  <para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para>
+		  <para>For compatibility with older clients, the synonym <varname>amqj.tcp_nodelay</varname> is supported.</para>
+		</entry>
+	      </row>
+	      <row>
+		<entry>qpid.send_buffer_size</entry>
+		<entry>integer</entry>
+		<entry>65535</entry>
+		<entry>
+		  <para>Sets the SO_SNDBUF property of the underlying socket. Added in Qpid 0.16.</para>
+		  <para>For compatibility with older clients, the synonym <varname>amqj.sendBufferSize</varname> is supported.</para>
+		</entry>
+	      </row>
+	      <row>
+		<entry>qpid.receive_buffer_size</entry>
+		<entry>integer</entry>
+		<entry>65535</entry>
+		<entry>
+		  <para>Sets the SO_RCVBUF property of the underlying socket. Added in Qpid 0.16.</para>
+		  <para>For compatibility with older clients, the synonym <varname>amqj.receiveBufferSize</varname> is supported.</para>
+		</entry>
+	      </row>
+          <row>
+            <entry>qpid.failover_method_timeout</entry>
+            <entry>long</entry>
+            <entry>60000</entry>
+            <entry>
+              <para>During failover, this is the timeout for each attempt to try to re-establish the connection.
+                    If a reconnection attempt exceeds the timeout, the entire failover process is aborted.</para>
+              <para>It is only applicable for AMQP 0-8/0-9/0-9-1 clients.</para>
+            </entry>
+          </row>
+	    </tbody>
+	  </tgroup>
+	</table>
+
+	<table>
+	  <title>Config Options For Security</title>
+	  <tgroup cols="4">
+	    <thead>
+	      <row>
+		<entry>Property Name</entry>
+		<entry>Type</entry>
+		<entry>Default Value</entry>
+		<entry>Description</entry>
+	      </row>
+	    </thead>
+	    <tbody>
+	      <row>
+		<entry>qpid.sasl_mechs</entry>
+		<entry>string</entry>
+		<entry>PLAIN</entry>
+		<entry><para>The SASL mechanism to be used. More than one could be specified as a comma separated list.</para><para>We currently support the following mechanisms {PLAIN | GSSAPI | EXTERNAL}.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
+	      </row>
+
+	      <row>
+		<entry>qpid.sasl_protocol</entry>
+		<entry>string</entry>
+		<entry>AMQP</entry>
+		<entry><para>When using GSSAPI as the SASL mechanism, <varname>sasl_protocol</varname> must be set to the principal for the qpidd broker, e.g. <varname>qpidd</varname>.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
+	      </row>
+
+	      <row>
+		<entry>qpid.sasl_server_name</entry>
+		<entry>string</entry>
+		<entry>localhost</entry>
+		<entry><para>When using GSSAPI as the SASL mechanism, <varname>sasl_server</varname> must be set to the host for the SASL server, e.g. <varname>example.com</varname>.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
+	      </row>
+	    </tbody>
+	  </tgroup>
+	</table>
+
+	<table>
+	  <title>Config Options For Security - Standard JVM properties needed when using GSSAPI as the SASL mechanism.<footnote><para>Please refer to the Java security documentation for a complete understanding of the above properties.</para></footnote></title>
+	  <tgroup cols="4">
+	    <thead>
+	      <row>
+		<entry>Property Name</entry>
+		<entry>Type</entry>
+		<entry>Default Value</entry>
+		<entry>Description</entry>
+	      </row>
+	    </thead>
+	    <tbody>
+	      <row>
+		<entry>javax.security.auth.useSubjectCredsOnly</entry>
+		<entry>boolean</entry>
+		<entry>true</entry>
+		<entry><para>If set to 'false', forces the SASL GASSPI client to obtain the kerberos credentials explicitly instead of obtaining from the "subject" that owns the current thread.</para></entry>
+	      </row>
+
+	      <row>
+		<entry>java.security.auth.login.config</entry>
+		<entry>string</entry>
+		<entry/>
+		<entry><para>Specifies the jass configuration file.</para><para><varname>Ex-Djava.security.auth.login.config=myjas.conf</varname>
+		</para><para>Here is the sample myjas.conf JASS configuration file: <programlisting>
+
+		com.sun.security.jgss.initiate {
+		com.sun.security.auth.module.Krb5LoginModule required useTicketCache=true;
+		};
+
+		</programlisting></para></entry>
+	      </row>
+	    </tbody>
+	  </tgroup>
+	</table>
+
+	<table>
+	  <title>Config Options For Security - Using SSL for securing connections or using EXTERNAL as the SASL mechanism.</title>
+	  <tgroup cols="4">
+	    <thead>
+	      <row>
+		<entry>Property Name</entry>
+		<entry>Type</entry>
+		<entry>Default Value</entry>
+		<entry>Description</entry>
+	      </row>
+	    </thead>
+	    <tbody>
+	      <row>
+		<entry>qpid.ssl_timeout</entry>
+		<entry>long</entry>
+		<entry>60000</entry>
+		<entry><para>Timeout value used by the Java SSL engine when waiting on operations.</para></entry>
+	      </row>
+
+	      <row>
+		<entry>qpid.ssl.KeyManagerFactory.algorithm</entry>
+		<entry>string</entry>
+		<entry>-</entry>
+		<entry>
+		  <para>The key manager factory algorithm name. If not set, defaults to the value returned from the Java runtime call <literal>KeyManagerFactory.getDefaultAlgorithm()</literal></para>
+		  <para>For compatibility with older clients, the synonym <varname>qpid.ssl.keyStoreCertType</varname> is supported.</para>
+		</entry>
+	      </row>
+
+	      <row>
+		<entry>qpid.ssl.TrustManagerFactory.algorithm</entry>
+		<entry>string</entry>
+		<entry>-</entry>
+		<entry>
+		  <para>The trust manager factory algorithm name. If not set, defaults to the value returned from the Java runtime call <literal>TrustManagerFactory.getDefaultAlgorithm()</literal></para>
+		  <para>For compatibility with older clients, the synonym <varname>qpid.ssl.trustStoreCertType</varname> is supported.</para>
+		</entry>
+	      </row>
+	    </tbody>
+	  </tgroup>
+	</table>
+
+	<table>
+	  <title>Config Options For Security - Standard JVM properties needed when Using SSL for securing connections or using EXTERNAL as the SASL mechanism.<footnote><para>Qpid allows you to have per connection key and trust stores if required. If specified per connection, the JVM arguments are ignored.</para></footnote></title>
+	  <tgroup cols="4">
+	    <thead>
+	      <row>
+		<entry>Property Name</entry>
+		<entry>Type</entry>
+		<entry>Default Value</entry>
+		<entry>Description</entry>
+	      </row>
+	    </thead>
+	    <tbody>
+	      <row>
+		<entry>javax.net.ssl.keyStore</entry>
+		<entry>string</entry>
+		<entry>jvm default</entry>
+		<entry><para>Specifies the key store path.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
+	      </row>
+
+	      <row>
+		<entry>javax.net.ssl.keyStorePassword</entry>
+		<entry>string</entry>
+		<entry>jvm default</entry>
+		<entry><para>Specifies the key store password.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
+	      </row>
+
+	      <row>
+		<entry>javax.net.ssl.trustStore</entry>
+		<entry>string</entry>
+		<entry>jvm default</entry>
+		<entry><para>Specifies the trust store path.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
+	      </row>
+
+	      <row>
+		<entry>javax.net.ssl.trustStorePassword</entry>
+		<entry>string</entry>
+		<entry>jvm default</entry>
+		<entry><para>Specifies the trust store password.</para><para>This can also be set per connection using the <link linkend="JMS-Client-0-10-Configuring-JNDI-Connection-URL">Connection URL</link> options.</para></entry>
+	      </row>
+	    </tbody>
+	  </tgroup>
+	</table>
+      </section>
+
+      <!-- begin addresses section -->
+      <section xml:id="JMS-Client-0-10-Configuring-Addresses">
+      <title>Addresses</title>
+
+      <para>An <firstterm>address</firstterm> is the name of a message
+      target or message source.
+
+      <footnote><para>In the programs we have just seen, we used
+      <literal>amq.topic</literal> as the default address if none is
+      passed in. This is the name of a standard exchange that always
+      exists on an AMQP 0-10 messaging broker.</para></footnote>
+
+      The methods that create senders and receivers require an
+      address. The details of sending to a particular target or
+      receiving from a particular source are then handled by the
+      sender or receiver. A different target or source can be used
+      simply by using a different address.
+      </para>
+
+      <para>An address resolves to a <firstterm>node</firstterm>. The
+      Qpid Messaging API recognises two kinds of nodes,
+      <firstterm>queues</firstterm> and <firstterm>topics</firstterm>
+
+      <footnote><para>The terms <emphasis>queue</emphasis> and
+      <emphasis>topic</emphasis> here were chosen to align with
+      their meaning in JMS. These two addressing 'patterns',
+      queue and topic, are sometimes refered as point-to-point
+      and publish-subscribe. AMQP 0-10 has an exchange type
+      called a <emphasis>topic exchange</emphasis>. When the term
+      <emphasis>topic</emphasis> occurs alone, it refers to a
+      Messaging API topic, not the topic
+      exchange.</para></footnote>.
+
+      A queue stores each message until it has been received and
+      acknowledged, and only one receiver can receive a given message
+
+      <footnote><para>There are exceptions to this rule; for instance,
+      a receiver can use <literal>browse</literal> mode, which leaves
+      messages on the queue for other receivers to
+      read.</para></footnote>.
+
+      A topic immediately delivers a message to all eligible
+      receivers; if there are no eligible receivers, it discards the
+      message.  In the AMQP 0-10 implementation of the API,
+
+      <footnote><para>The AMQP 0-10 implementation is the only one
+      that currently exists.</para></footnote>
+
+      queues map to AMQP queues, and topics map to AMQP exchanges.
+
+      <footnote><para>In AMQP 0-10, messages are sent to
+      exchanges, and read from queues. The Messaging API also
+      allows a sender to send messages to a queue; internally,
+      Qpid implements this by sending the message to the default
+      exchange, with the name of the queue as the routing key. The
+      Messaging API also allows a receiver to receive messages
+      from a topic; internally, Qpid implements this by setting up
+      a private subscription queue for the receiver and binding
+      the subscription queue to the exchange that corresponds to
+      the topic.</para></footnote>
+      </para>
+
+      <para>In the rest of this tutorial, we present many examples
+      using two programs that take an address as a command line
+      parameter.  <command>spout</command> sends messages to the
+      target address, <command>drain</command> receives messages from
+      the source address.  The source code is available in C++, Python, and
+      .NET C# and can be found in the examples directory for each
+      language. These programs can use any address string as a source
+      or a destination, and have many command line options to
+      configure behavior&#8212;use the <command>-h</command> option
+      for documentation on these options.
+
+      <footnote><para>Currently, the C++, Python, and .NET C#
+      implementations of <command>drain</command> and
+      <command>spout</command> have slightly different
+      options. This tutorial uses the C++ implementation. The
+      options will be reconciled in the near
+      future.</para></footnote>
+
+
+      The examples in this tutorial also use the
+      <command>qpid-config</command> utility to configure AMQP 0-10
+      queues and exchanges on a Qpid broker.
+      </para>
+
+
+      <example>
+        <title>Queues</title>
+
+        <para>Create a queue with <command>qpid-config</command>, send a message using
+	<command>spout</command>, and read it using <command>drain</command>:</para>
+
+        <screen>
+	  $ qpid-config add queue hello-world
+	  $ ./spout hello-world
+	  $ ./drain hello-world
+
+	  Message(properties={spout-id:c877e622-d57b-4df2-bf3e-6014c68da0ea:0}, content='')
+        </screen>
+
+        <para>The queue stored the message sent by <command>spout</command> and delivered
+        it to <command>drain</command> when requested.</para>
+
+	<para>Once the message has been delivered and and acknowledged
+	by <command>drain</command>, it is no longer available on the queue. If we run
+	<command>drain</command> one more time, no messages will be retrieved.</para>
+
+        <screen>
+	  $ ./drain hello-world
+	  $
+	</screen>
+
+      </example>
+
+      <example>
+	<title>Topics</title>
+
+	<para>This example is similar to the previous example, but it
+	uses a topic instead of a queue.</para>
+
+	<para>First, use <command>qpid-config</command> to remove the queue
+	and create an exchange with the same name:</para>
+
+        <screen>
+	  $ qpid-config del queue hello-world
+	  $ qpid-config add exchange topic hello-world
+        </screen>
+
+	<para>Now run <command>drain</command> and <command>spout</command> the same way we did in the previous example:</para>
+
+	<screen>
+	  $ ./spout hello-world
+	  $ ./drain hello-world
+	  $
+        </screen>
+
+        <para>Topics deliver messages immediately to any interested
+        receiver, and do not store messages. Because there were no
+        receivers at the time <command>spout</command> sent the
+        message, it was simply discarded. When we ran
+        <command>drain</command>, there were no messages to
+        receive.</para>
+
+	<para>Now let's run <command>drain</command> first, using the
+	<literal>-t</literal> option to specify a timeout in seconds.
+	While <command>drain</command> is waiting for messages,
+	run <command>spout</command> in another window.</para>
+
+        <para><emphasis>First Window:</emphasis></para>
+
+        <screen>
+	  $ ./drain -t 30 hello-word
+        </screen>
+
+
+        <para><emphasis>Second Window:</emphasis></para>
+
+        <screen>
+	  $ ./spout hello-word
+        </screen>
+
+        <para>Once <command>spout</command> has sent a message, return
+	to the first window to see the output from
+	<command>drain</command>:</para>
+
+        <screen>
+	  Message(properties={spout-id:7da2d27d-93e6-4803-8a61-536d87b8d93f:0}, content='')
+        </screen>
+
+        <para>You can run <command>drain</command> in several separate
+	windows; each creates a subscription for the exchange, and
+	each receives all messages sent to the exchange.</para>
+
+      </example>
+
+      <section>
+	<title>Address Strings</title>
+
+	<para>So far, our examples have used address strings that
+	contain only the name of a node. An <firstterm>address
+	string</firstterm> can also contain a
+	<firstterm>subject</firstterm> and
+	<firstterm>options</firstterm>.</para>
+
+	<para>The syntax for an address string is:</para>
+
+	<programlisting>
+	address_string ::=  &lt;address&gt; [ / &lt;subject&gt; ] [ ; &lt;options&gt; ]
+	options ::=  { &lt;key&gt; : &lt;value&gt;, ... }
+	</programlisting>
+
+	<para>Addresses, subjects, and keys are strings.  Values can
+	be numbers, strings (with optional single or double quotes),
+	maps, or lists. A complete BNF for address strings appears in
+	<xref linkend="section-address-string-bnf"/>.</para>
+
+
+	<para>So far, the address strings in this tutorial have only
+	used simple names. The following sections show how to use
+	subjects and options.</para>
+
+      </section>
+
+      <section>
+	<title>Subjects</title>
+
+
+	<para>Every message has a property called
+	<firstterm>subject</firstterm>, which is analogous to the
+	subject on an email message. If no subject is specified, the
+	message's subject is null. For convenience, address strings
+	also allow a subject. If a sender's address contains a
+	subject, it is used as the default subject for the messages
+	it sends.
+	<para>
+	</para>
+	If a receiver's address contains a subject, it is used to
+	select only messages that match the subject&#8212;the matching
+	algorithm depends on the message source. In AMQP 0-10, each exchange
+    type has its own matching algorithm.
+	</para>
+
+	<note>
+	  <para>
+	    Currently, a receiver bound to a queue ignores subjects,
+	    receiving messages from the queue without filtering. Support
+	    for subject filtering on queues will be implemented soon.
+	  </para>
+	</note>
+
+
+	<example>
+	  <title>Using subjects</title>
+
+	  <para>In this example we show how subjects affect message
+	  flow.</para>
+
+	  <para>First, let's use <command>qpid-config</command> to create a topic exchange.</para>
+
+	  <screen>
+	    $ qpid-config add exchange topic news-service
+	  </screen>
+
+	  <para>Now we use drain to receive messages from <literal>news-service</literal> that match the subject <literal>sports</literal>.</para>
+	  <para><emphasis>First Window:</emphasis></para>
+	  <screen>
+	    $ ./drain -t 30 news-service/sports
+	  </screen>
+
+	  <para>In a second window, let's send messages to <literal>news-service</literal> using two different subjects:</para>
+
+	  <para><emphasis>Second Window:</emphasis></para>
+	  <screen>
+	    $ ./spout news-service/sports
+	    $ ./spout news-service/news
+	  </screen>
+
+	  <para>Now look at the first window, the message with the
+	  subject <literal>sports</literal> has been received, but not
+	  the message with the subject <literal>news</literal>:</para>
+
+	  <screen>
+	    Message(properties={qpid.subject:sports, spout-id:9441674e-a157-4780-a78e-f7ccea998291:0}, content='')
+	  </screen>
+
+	  <para>If you run <command>drain</command> in multiple
+          windows using the same subject, all instances of
+          <command>drain</command> receive the messages for that
+          subject.</para>
+	</example>
+
+
+        <para>The AMQP exchange type we are using here,
+        <literal>amq.topic</literal>, can also do more sophisticated
+        matching.
+
+	A sender's subject can contain multiple words separated by a
+	<quote>.</quote> delimiter. For instance, in a news
+	application, the sender might use subjects like
+	<literal>usa.news</literal>, <literal>usa.weather</literal>,
+	<literal>europe.news</literal>, or
+	<literal>europe.weather</literal>.
+
+	The receiver's subject can include wildcard characters&#8212;
+	<quote>#</quote> matches one or more words in the message's
+	subject, <quote>*</quote> matches a single word.
+
+	For instance, if the subject in the source address is
+	<literal>*.news</literal>, it matches messages with the
+	subject <literal>europe.news</literal> or
+	<literal>usa.news</literal>; if it is
+	<literal>europe.#</literal>, it matches messages with subjects
+	like <literal>europe.news</literal> or
+	<literal>europe.pseudo.news</literal>.</para>
+
+	<example>
+	  <title>Subjects with multi-word keys</title>
+
+	  <para>This example uses drain and spout to demonstrate the
+	  use of subjects with two-word keys.</para>
+
+	  <para>Let's use <command>drain</command> with the subject
+	  <literal>*.news</literal> to listen for messages in which
+	  the second word of the key is
+	  <literal>news</literal>.</para>
+
+	  <para><emphasis>First Window:</emphasis></para>
+
+	  <screen>
+	    $ ./drain -t 30 news-service/*.news
+	  </screen>
+
+	  <para>Now let's send messages using several different
+	  two-word keys:</para>
+
+	  <para><emphasis>Second Window:</emphasis></para>
+
+	  <screen>
+	    $ ./spout news-service/usa.news
+	    $ ./spout news-service/usa.sports
+	    $ ./spout news-service/europe.sports
+	    $ ./spout news-service/europe.news
+	  </screen>
+
+	  <para>In the first window, the messages with
+	  <literal>news</literal> in the second word of the key have
+	  been received:</para>
+
+	  <screen>
+	    Message(properties={qpid.subject:usa.news, spout-id:73fc8058-5af6-407c-9166-b49a9076097a:0}, content='')
+	    Message(properties={qpid.subject:europe.news, spout-id:f72815aa-7be4-4944-99fd-c64c9747a876:0}, content='')
+	  </screen>
+
+
+	  <para>Next, let's use <command>drain</command> with the
+	  subject <literal>#.news</literal> to match any sequence of
+	  words that ends with <literal>news</literal>.</para>
+
+	  <para><emphasis>First Window:</emphasis></para>
+
+	  <screen>
+	    $ ./drain -t 30 news-service/#.news
+	  </screen>
+
+	  <para>In the second window, let's send messages using a
+	  variety of different multi-word keys:</para>
+
+	  <para><emphasis>Second Window:</emphasis></para>
+
+	  <screen>
+	    $ ./spout news-service/news
+	    $ ./spout news-service/sports
+	    $ ./spout news-service/usa.news
+	    $ ./spout news-service/usa.sports
+	    $ ./spout news-service/usa.faux.news
+	    $ ./spout news-service/usa.faux.sports
+	  </screen>
+
+	  <para>In the first window, messages with
+	  <literal>news</literal> in the last word of the key have been
+	  received:</para>
+
+	  <screen>
+	    Message(properties={qpid.subject:news, spout-id:cbd42b0f-c87b-4088-8206-26d7627c9640:0}, content='')
+	    Message(properties={qpid.subject:usa.news, spout-id:234a78d7-daeb-4826-90e1-1c6540781eac:0}, content='')
+	    Message(properties={qpid.subject:usa.faux.news, spout-id:6029430a-cfcb-4700-8e9b-cbe4a81fca5f:0}, content='')
+	  </screen>
+	</example>
+
+      </section>
+
+      <section>
+	<title>Address String Options</title>
+
+	<para>
+	  The options in an address string can contain additional
+	  information for the senders or receivers created for it,
+	  including:
+	</para>
+	<itemizedlist>
+	  <listitem>
+	    <para>
+	      Policies for assertions about the node to which an address
+	      refers.
+	    </para>
+	    <para>
+	      For instance, in the address string <literal>my-queue;
+	      {assert: always, node:{ type: queue }}</literal>, the node
+	      named <literal>my-queue</literal> must be a queue; if not,
+	      the address does not resolve to a node, and an exception
+	      is raised.
+	    </para>
+	  </listitem>
+	  <listitem>
+	    <para>
+	      Policies for automatically creating or deleting the node to which an address refers.
+	    </para>
+	    <para>
+	      For instance, in the address string <literal>xoxox ; {create: always}</literal>,
+	      the queue <literal>xoxox</literal> is created, if it does
+	      not exist, before the address is resolved.
+	    </para>
+	  </listitem>
+	  <listitem>
+	    <para>
+	      Extension points that can be used for sender/receiver configuration.
+	    </para>
+	    <para>
+	      For instance, if the address for a receiver is
+	      <literal>my-queue; {mode: browse}</literal>, the receiver
+	      works in <literal>browse</literal> mode, leaving messages
+	      on the queue so other receivers can receive them.
+	    </para>
+	  </listitem>
+	  <listitem>
+	    <para>
+	      Extension points providing more direct control over the underlying protocol.
+	    </para>
+	    <para>
+	      For instance, the <literal>x-bindings</literal> property
+	      allows greater control over the AMQP 0-10 binding process
+	      when an address is resolved.
+	    </para>
+	  </listitem>
+	</itemizedlist>
+
+
+	<para>
+	  Let's use some examples to show how these different kinds of
+	  address string options affect the behavior of senders and
+	  receives.
+	</para>
+
+	<section>
+	  <title>assert</title>
+	  <para>
+	    In this section, we use the <literal>assert</literal> option
+	    to ensure that the address resolves to a node of the required
+	    type.
+	  </para>
+
+
+	  <example>
+	    <title>Assertions on Nodes</title>
+
+	    <para>Let's use <command>qpid-config</command> to create a
+	    queue and a topic.</para>
+
+	    <screen>
+	      $ qpid-config add queue my-queue
+	      $ qpid-config add exchange topic my-topic
+	    </screen>
+
+	    <para>
+	      We can now use the address specified to drain to assert that it is
+	      of a particular type:
+	    </para>
+
+	    <screen>
+	      $ ./drain 'my-queue; {assert: always, node:{ type: queue }}'
+	      $ ./drain 'my-queue; {assert: always, node:{ type: topic }}'
+	      2010-04-20 17:30:46 warning Exception received from broker: not-found: not-found: Exchange not found: my-queue (../../src/qpid/broker/ExchangeRegistry.cpp:92) [caused by 2 \x07:\x01]
+	      Exchange my-queue does not exist
+	    </screen>
+
+	    <para>
+	      The first attempt passed without error as my-queue is indeed a
+	      queue. The second attempt however failed; my-queue is not a
+	      topic.
+	    </para>
+
+	    <para>
+	      We can do the same thing for my-topic:
+	    </para>
+
+	    <screen>
+	      $ ./drain 'my-topic; {assert: always, node:{ type: topic }}'
+	      $ ./drain 'my-topic; {assert: always, node:{ type: queue }}'
+	      2010-04-20 17:31:01 warning Exception received from broker: not-found: not-found: Queue not found: my-topic (../../src/qpid/broker/SessionAdapter.cpp:754) [caused by 1 \x08:\x01]
+	      Queue my-topic does not exist
+	    </screen>
+	  </example>
+
+	  <para>Now let's use the <literal>create</literal> option to
+	  create the queue <literal>xoxox</literal> if it does not already
+	  exist:</para>
+
+	</section>
+
+	<section>
+	  <title>create</title>
+
+	  <para>In previous examples, we created the queue before
+	  listening for messages on it. Using <literal>create:
+	  always</literal>, the queue is automatically created if it
+	  does not exist.</para>
+
+	  <example>
+	    <title>Creating a Queue Automatically</title>
+
+	    <para><emphasis>First Window:</emphasis></para>
+	    <screen>$ ./drain -t 30 "xoxox ; {create: always}"</screen>
+
+
+	    <para>Now we can send messages to this queue:</para>
+
+	    <para><emphasis>Second Window:</emphasis></para>
+	    <screen>$ ./spout "xoxox ; {create: always}"</screen>
+
+	    <para>Returning to the first window, we see that <command>drain</command> has received this message:</para>
+
+	    <screen>Message(properties={spout-id:1a1a3842-1a8b-4f88-8940-b4096e615a7d:0}, content='')</screen>
+	  </example>
+	  <para>The details of the node thus created can be controlled by further options within the node. See <xref linkend="table-node-properties"/> for details.</para>
+	</section>
+
+	<section>
+	  <title>browse</title>
+	  <para>Some options specify message transfer semantics; for
+	  instance, they may state whether messages should be consumed or
+	  read in browsing mode, or specify reliability
+	  characteristics. The following example uses the
+	  <literal>browse</literal> option to receive messages without
+	  removing them from a queue.</para>
+
+	  <example>
+	    <title>Browsing a Queue</title>
+	    <para>
+	      Let's use the browse mode to receive messages without
+	      removing them from the queue. First we send three messages to the
+	      queue:
+	    </para>
+	    <screen>
+	      $ ./spout my-queue --content one
+	      $ ./spout my-queue --content two
+	      $ ./spout my-queue --content three
+	    </screen>
+
+	    <para>Now we use drain to get those messages, using the browse option:</para>
+	    <screen>
+	      $ ./drain 'my-queue; {mode: browse}'
+	      Message(properties={spout-id:fbb93f30-0e82-4b6d-8c1d-be60eb132530:0}, content='one')
+	      Message(properties={spout-id:ab9e7c31-19b0-4455-8976-34abe83edc5f:0}, content='two')
+	      Message(properties={spout-id:ea75d64d-ea37-47f9-96a9-d38e01c97925:0}, content='three')
+	    </screen>
+
+	    <para>We can confirm the messages are still on the queue by repeating the drain:</para>
+	    <screen>
+	      $ ./drain 'my-queue; {mode: browse}'
+	      Message(properties={spout-id:fbb93f30-0e82-4b6d-8c1d-be60eb132530:0}, content='one')
+	      Message(properties={spout-id:ab9e7c31-19b0-4455-8976-34abe83edc5f:0}, content='two')
+	      Message(properties={spout-id:ea75d64d-ea37-47f9-96a9-d38e01c97925:0}, content='three')
+	    </screen>
+	  </example>
+	</section>
+
+	<section>
+	  <title>x-bindings</title>
+
+	  <para>Greater control over the AMQP 0-10 binding process can
+	  be achieved by including an <literal>x-bindings</literal>
+	  option in an address string.
+
+	  For instance, the XML Exchange is an AMQP 0-10 custom exchange
+	  provided by the Apache Qpid C++ broker. It allows messages to
+	  be filtered using XQuery; queries can address either message
+	  properties or XML content in the body of the message. The
+	  xquery is specified in the arguments field of the AMQP 0-10
+	  command. When using the messaging API an xquery can be
+	  specified in and address that resolves to an XML exchange by
+	  using the x-bindings property.</para>
+
+
+	  <para>An instance of the XML Exchange must be added before it
+	  can be used:</para>
+
+	  <programlisting>
+	    $ qpid-config add exchange xml xml
+	  </programlisting>
+
+	  <para>When using the XML Exchange, a receiver provides an
+	  XQuery as an x-binding argument. If the query contains a
+	  context item (a path starting with <quote>.</quote>), then it
+	  is applied to the content of the message, which must be
+	  well-formed XML. For instance, <literal>./weather</literal> is
+	  a valid XQuery, which matches any message in which the root
+	  element is named <literal>weather</literal>. Here is an
+	  address string that contains this query:</para>
+
+	  <programlisting>
+	  xml; {
+	  link: {
+	  x-bindings: [{exchange:xml, key:weather, arguments:{xquery:"./weather"} }]
+	  }
+	  }
+	  </programlisting>
+
+	  <para>When using longer queries with <command>drain</command>,
+	  it is often useful to place the query in a file, and use
+	  <command>cat</command> in the command line. We do this in the
+	  following example.</para>
+
+	  <example>
+	    <title>Using the XML Exchange</title>
+
+	    <para>This example uses an x-binding that contains queries, which filter based on the content of XML messages. Here is an XQuery that we will use in this example:</para>
+
+	    <programlisting>
+	      
+		       let $w := ./weather
+		       return $w/station = 'Raleigh-Durham International Airport (KRDU)'
+		       and $w/temperature_f &gt; 50
+		       and $w/temperature_f - $w/dewpoint &gt; 5
+		       and $w/wind_speed_mph &gt; 7
+		       and $w/wind_speed_mph &lt; 20 
+	    </programlisting>
+
+	    <para>We can specify this query in an x-binding to listen to messages that meet the criteria specified by the query:</para>
+
+	    <para><emphasis>First Window:</emphasis></para>
+
+	    <screen>
+	      $ ./drain -f "xml; {link:{x-bindings:[{key:'weather',
+	      arguments:{xquery:\"$(cat rdu.xquery )\"}}]}}"
+	    </screen>
+
+	    <para>In another window, let's create an XML message that meets the criteria in the query, and place it in the file <filename>rdu.xml</filename>:</para>
+
+	    <programlisting>
+	      
+		       &lt;weather&gt;
+		       &lt;station&gt;Raleigh-Durham International Airport (KRDU)&lt;/station&gt;
+		       &lt;wind_speed_mph&gt;16&lt;/wind_speed_mph&gt;
+		       &lt;temperature_f&gt;70&lt;/temperature_f&gt;
+		       &lt;dewpoint&gt;35&lt;/dewpoint&gt;
+		       &lt;/weather&gt;
+	      </programlisting>
+
+	      <para>Now let's use <command>spout</command> to send this message to the XML exchange:</para>
+
+	      <para><emphasis>Second Window:</emphasis></para>
+	      <screen>
+		spout --content "$(cat rdu.xml)" xml/weather
+	      </screen>
+
+	      <para>Returning to the first window, we see that the message has been received:</para>
+
+	      <screen>$ ./drain -f "xml; {link:{x-bindings:[{exchange:'xml', key:'weather', arguments:{xquery:\"$(cat rdu.xquery )\"}}]}}"
+	      Message(properties={qpid.subject:weather, spout-id:31c431de-593f-4bec-a3dd-29717bd945d3:0},
+	      content='&lt;weather&gt;
+	      &lt;station&gt;Raleigh-Durham International Airport (KRDU)&lt;/station&gt;
+	      &lt;wind_speed_mph&gt;16&lt;/wind_speed_mph&gt;
+	      &lt;temperature_f&gt;40&lt;/temperature_f&gt;
+	      &lt;dewpoint&gt;35&lt;/dewpoint&gt;
+	      &lt;/weather&gt;') 
+	      </screen>
+	  </example>
+	</section>
+
+	<!--
+	    <para>When sending data using <command>cat</command> to provide arguments to <command>spout</command>, you can use <command>sed</command> to change the values that are sent:</para>
+
+<screen>
+spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
+</screen>
+	-->
+
+	<!--
+	    TODO: Add some reliability option examples
+        -->
+
+	<section>
+	  <title>Address String Options - Reference</title>
+
+	  <table pgwide="1">
+	    <title>Address String Options</title>
+	    <tgroup cols="3">
+	      <thead>
+		<colspec colnum="1" colwidth="1*"/>
+		<colspec colnum="2" colwidth="3*"/>
+		<colspec colnum="3" colwidth="3*"/>
+		<row>
+		  <entry>option</entry>
+		  <entry>value</entry>
+		  <entry>semantics</entry>
+		</row>
+	      </thead>
+	      <tbody>
+		<row>
+		  <entry>
+		    assert
+		  </entry>
+		  <entry>
+		    one of: always, never, sender or receiver
+		  </entry>
+		  <entry>
+		    Asserts that the properties specified in the node option
+		    match whatever the address resolves to. If they do not,
+		    resolution fails and an exception is raised. <!-- ###
+		    Which exception -->
+		  </entry>
+		</row>
+
+		<row>
+		  <entry>
+		    create
+		  </entry>
+		  <entry>
+		    one of: always, never, sender or receiver
+		  </entry>
+		  <entry>
+		    Creates the node to which an address refers if it does
+		    not exist. No error is raised if the node does
+		    exist. The details of the node may be specified in the
+		    node option.
+		  </entry>
+		</row>
+		<row>
+		  <entry>
+		    delete
+		  </entry>
+		  <entry>
+		    one of: always, never, sender or receiver
+		  </entry>
+		  <entry>
+		    Delete the node when the sender or receiver is closed.
+		  </entry>
+		</row>
+		<row>
+		  <entry>
+		    node
+		  </entry>
+		  <entry>
+		    A nested map containing the entries shown in <xref linkend="table-node-properties"/>.
+		  </entry>
+		  <entry>
+		    Specifies properties of the node to which the address
+		    refers. These are used in conjunction with the assert or
+		    create options.
+		  </entry>
+		</row>
+		<row>
+		  <entry>
+		    link
+		  </entry>
+		  <entry>
+		    A nested map containing the entries shown in <xref linkend="table-link-properties"/>.
+		  </entry>
+		  <entry>
+		    Used to control the establishment of a conceptual link
+		    from the client application to or from the target/source
+		    address.
+		  </entry>
+		</row>
+		<row>
+		  <entry>
+		    mode
+		  </entry>
+		  <entry>
+		    one of: browse, consume
+		  </entry>
+		  <entry>
+		    This option is only of relevance for source addresses
+		    that resolve to a queue. If browse is specified the
+		    messages delivered to the receiver are left on the queue
+		    rather than being removed. If consume is specified the
+		    normal behaviour applies; messages are removed from the
+		    queue once the client acknowledges their receipt.
+		  </entry>
+		</row>
+	      </tbody>
+	    </tgroup>
+	  </table>
+
+
+	  <table xml:id="table-node-properties" pgwide="1">
+	    <title>Node Properties</title>
+	    <tgroup cols="3">
+	      <thead>
+		<colspec colnum="1" colwidth="1*"/>
+		<colspec colnum="2" colwidth="3*"/>
+		<colspec colnum="3" colwidth="3*"/>
+		<row>
+		  <entry>property</entry>
+		  <entry>value</entry>
+		  <entry>semantics</entry>
+		</row>
+	      </thead>
+	      <tbody>
+		<row>
+		  <entry>
+		    type
+		  </entry>
+		  <entry>
+		    topic, queue
+		  </entry>
+		  <entry>
+		    Indicates the type of the node.
+		  </entry>
+		</row>
+		<row>
+		  <entry>
+		    durable
+		  </entry>
+		  <entry>
+		    True, False
+		  </entry>
+		  <entry>
+		    Indicates whether the node survives a loss of
+		    volatile storage e.g. if the broker is restarted.
+		  </entry>
+		</row>
+		<row>
+		  <entry>
+		    x-declare
+		  </entry>
+		  <entry>
+		    A nested map whose values correspond to the valid fields
+		    on an AMQP 0-10 queue-declare or exchange-declare
+		    command.
+		  </entry>
+		  <entry>
+		    These values are used to fine tune the creation or
+		    assertion process. Note however that they are protocol
+		    specific.
+		  </entry>
+		</row>
+		<row>
+		  <entry>
+		    x-bindings
+		  </entry>
+		  <entry>
+		    A nested list in which each binding is represented by
+		    a map. The entries of the map for a binding contain
+		    the fields that describe an AMQP 0-10 binding. Here is
+		    the format for x-bindings:
+
+		    <programlisting>
+		    [
+		    {
+		    exchange: &lt;exchange&gt;,
+		    queue: &lt;queue&gt;,
+		    key: &lt;key&gt;,
+		    arguments: {
+		    &lt;key_1&gt;: &lt;value_1&gt;,
+		    ...,
+		    &lt;key_n&gt;: &lt;value_n&gt; }
+		    },
+		    ...
+		    ]
+		    </programlisting>
+		  </entry>
+		  <entry>
+		    In conjunction with the create option, each of these
+		    bindings is established as the address is resolved. In
+		    conjunction with the assert option, the existence of
+		    each of these bindings is verified during
+		    resolution. Again, these are protocol specific.
+		  </entry>
+		</row>
+	      </tbody>
+	    </tgroup>
+	  </table>
+
+	  <table xml:id="table-link-properties" pgwide="1">
+	    <title>Link Properties</title>
+	    <tgroup cols="3">
+	      <thead>
+		<colspec colnum="1" colwidth="1*"/>
+		<colspec colnum="2" colwidth="3*"/>
+		<colspec colnum="3" colwidth="3*"/>
+		<row>
+		  <entry>option</entry>
+		  <entry>value</entry>
+		  <entry>semantics</entry>
+		</row>
+	      </thead>
+	      <tbody>
+		<row>
+		  <entry>
+		    reliability
+		  </entry>
+		  <entry>
+		    one of: unreliable, at-least-once, at-most-once, exactly-once
+		  </entry>
+		  <entry>
+		    Reliability indicates the level of reliability that
+		    the sender or receiver.  <literal>unreliable</literal>
+		    and <literal>at-most-once</literal> are currently
+		    treated as synonyms, and allow messages to be lost if
+		    a broker crashes or the connection to a broker is
+		    lost. <literal>at-least-once</literal> guarantees that
+		    a message is not lost, but duplicates may be
+		    received. <literal>exactly-once</literal> guarantees
+		    that a message is not lost, and is delivered precisely
+		    once. Currently only <literal>unreliable</literal>
+		    and <literal>at-least-once</literal> are supported.
+		    <footnote><para>If at-most-once is requested,
+		    unreliable will be used and for durable messages on
+		    durable queues there is the possibility that messages
+		    will be redelivered; if exactly-once is requested,
+		    at-least-once will be used and the application needs to
+		    be able to deal with duplicates.</para></footnote>
+		  </entry>
+		</row>
+		<row>
+		  <entry>
+		    durable
+		  </entry>
+		  <entry>
+		    True, False
+		  </entry>
+		  <entry>
+		    Indicates whether the link survives a loss of
+		    volatile storage e.g. if the broker is restarted.
+		  </entry>
+		</row>
+		<row>
+		  <entry>
+		    x-declare
+		  </entry>
+		  <entry>
+		    A nested map whose values correspond to the valid fields
+		    of an AMQP 0-10 queue-declare command.
+		  </entry>
+		  <entry>
+		    These values can be used to customise the subscription
+		    queue in the case of receiving from an exchange. Note
+		    however that they are protocol specific.
+		  </entry>
+		</row>
+		<row>
+		  <entry>
+		    x-subscribe
+		  </entry>
+		  <entry>
+		    A nested map whose values correspond to the valid fields
+		    of an AMQP 0-10 message-subscribe command.
+		  </entry>
+		  <entry>
+		    These values can be used to customise the subscription.
+		  </entry>
+		</row>
+		<row>
+		  <entry>
+		    x-bindings
+		  </entry>
+		  <entry>
+		    A nested list each of whose entries is a map that may
+		    contain fields (queue, exchange, key and arguments)
+		    describing an AMQP 0-10 binding.
+		  </entry>
+		  <entry>
+		    These bindings are established during resolution
+		    independent of the create option. They are considered
+		    logically part of the linking process rather than of
+		    node creation.
+		  </entry>
+		</row>
+	      </tbody>
+	    </tgroup>
+	  </table>
+
+	</section>
+      </section>
+
+      <section xml:id="section-address-string-bnf">
+	<title>Address String Grammar</title>
+
+	<para>This section provides a formal grammar for address strings.</para>
+
+	<formalpara>
+	  <title>Tokens</title>
+	  <para>The following regular expressions define the tokens used
+	to parse address strings:</para></formalpara>
+	<programlisting>
+	LBRACE: \\{
+	RBRACE: \\}
+	LBRACK: \\[
+	RBRACK: \\]
+	COLON:  :
+	SEMI:   ;
+	SLASH:  /
+	COMMA:  ,
+	NUMBER: [+-]?[0-9]*\\.?[0-9]+
+	ID:     [a-zA-Z_](?:[a-zA-Z0-9_-]*[a-zA-Z0-9_])?
+	STRING: "(?:[^\\\\"]|\\\\.)*"|\'(?:[^\\\\\']|\\\\.)*\'
+	ESC:    \\\\[^ux]|\\\\x[0-9a-fA-F][0-9a-fA-F]|\\\\u[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]
+	SYM:    [.#*%@$^!+-]
+	WSPACE: [ \\n\\r\\t]+
+	</programlisting>
+
+	<formalpara>
+	  <title>Grammar</title>
+	  <para>The formal grammar for addresses is given below:</para>
+	</formalpara>
+
+	<programlisting>
+	address := name [ SLASH subject ] [ ";" options ]
+	name := ( part | quoted )+
+	subject := ( part | quoted | SLASH )*
+	quoted := STRING / ESC
+	part := LBRACE / RBRACE / COLON / COMMA / NUMBER / ID / SYM
+	options := map
+	map := "{" ( keyval ( "," keyval )* )? "}"
+	keyval "= ID ":" value
+	value := NUMBER / STRING / ID / map / list
+	list := "[" ( value ( "," value )* )? "]"
+	</programlisting>
+
+
+	<formalpara>
+	  <title>Address String Options</title>
+	  <para>The address string options map supports the following parameters:</para>
+	</formalpara>
+
+	<programlisting>
+	&lt;name&gt; [ / &lt;subject&gt; ] ; {
+	create: always | sender | receiver | never,
+	delete: always | sender | receiver | never,
+	assert: always | sender | receiver | never,
+	mode: browse | consume,
+	node: {
+	type: queue | topic,
+	durable: True | False,
+	x-declare: { ... &lt;declare-overrides&gt; ... },
+	x-bindings: [&lt;binding_1&gt;, ... &lt;binding_n&gt;]
+	},
+	link: {
+	name: &lt;link-name&gt;,
+	durable: True | False,
+	reliability: unreliable | at-most-once | at-least-once | exactly-once,
+	x-declare: { ... &lt;declare-overrides&gt; ... },
+	x-bindings: [&lt;binding_1&gt;, ... &lt;binding_n&gt;],
+	x-subscribe: { ... &lt;subscribe-overrides&gt; ... }
+	}
+	}
+	</programlisting>
+
+
+	<itemizedlist>
+	  <title>Create, Delete, and Assert Policies</title>
+	  <para>The create, delete, and assert policies specify who should
+	  perfom the associated action:</para>
+	  <listitem><para><emphasis>always</emphasis>: the action is performed by any messaging client</para></listitem>
+	  <listitem><para><emphasis>sender</emphasis>: the action is only performed by a sender</para></listitem>
+	  <listitem><para><emphasis>receiver</emphasis>: the action is only performed by a receiver</para></listitem>
+	  <listitem><para><emphasis>never</emphasis>: the action is never performed (this is the default)</para></listitem>
+	</itemizedlist>
+
+	<itemizedlist>
+	  <title>Node-Type</title>
+	  <para>The node-type is one of:</para>
+	  <listitem><para><emphasis>topic</emphasis>: in the AMQP 0-10
+	  mapping, a topic node defaults to the topic exchange, x-declare
+	  may be used to specify other exchange types</para></listitem>
+	  <listitem><para><emphasis>queue</emphasis>: this is the default node-type</para></listitem>
+	</itemizedlist>
+      </section>
+
+    </section>
+    <!-- end addresses section -->
+
+
+    <!-- begin logging section -->
+    <section xml:id="JMS-Client-0-10-Configuring-Logging">
+      <title>Logging</title>
+      <para>The JMS Client logging is handled using the Simple Logging Facade for Java (<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.slf4j.org/">SLF4J</link>). As the name implies, slf4j is a facade that delegates to other logging systems like log4j or JDK 1.4 logging. For more information on how to configure slf4j for specific logging systems, please consult the slf4j documentation.</para>
+
+      <para>When using the log4j binding, please set the log level for org.apache.qpid explicitly. Otherwise log4j will default to DEBUG which will degrade performance considerably due to excessive logging. The recommended logging level for production is <literal>WARN</literal>.</para>
+
+      <para>The following example shows the logging properties used to configure client logging for slf4j using the log4j binding. These properties can be placed in a log4j.properties file and placed in the <varname>CLASSPATH</varname>, or they can be set explicitly using the <literal>-Dlog4j.configuration</literal> property.</para>
+
+      <example>
+	<title>log4j Logging Properties</title>
+
+	<programlisting>
+	log4j.logger.org.apache.qpid=WARN, console
+	log4j.additivity.org.apache.qpid=false
+
+	log4j.appender.console=org.apache.log4j.ConsoleAppender
+	log4j.appender.console.Threshold=all
+	log4j.appender.console.layout=org.apache.log4j.PatternLayout
+	log4j.appender.console.layout.ConversionPattern=%t %d %p [%c{4}] %m%n
+	</programlisting>
+      </example>
+    </section>
+    <!-- end logging section -->
+
+    </chapter>
+
+
+
+    <!-- begin misc chapter -->
+    <chapter xml:id="JMS-Client-0-10-Miscellaneous">
+     <title>Miscellaneous</title>
+     <section xml:id="JMS-Client-0-10-Miscellaneous-Message-Properties">
+      <title>Java JMS Message Properties</title>
+
+      <para>The following table shows how Qpid Messaging API message
+      properties are mapped to AMQP 0-10 message properties and
+      delivery properties. In this table <varname>msg</varname>
+      refers to the Message class defined in the Qpid Messaging API,
+      <varname>mp</varname> refers to an AMQP 0-10
+      <varname>message-properties</varname> struct, and
+      <varname>dp</varname> refers to an AMQP 0-10
+      <varname>delivery-properties</varname> struct.</para>
+
+      <table>
+        <title>Java JMS Mapping to AMQP 0-10 Message Properties</title>
+        <tgroup cols="2">
+          <thead>
+	    <row>
+	      <entry>Java JMS Message Property</entry>
+	      <entry>AMQP 0-10 Property<footnote><para>In these entries, <literal>mp</literal> refers to an AMQP message property, and <literal>dp</literal> refers to an AMQP delivery property.</para></footnote></entry>
+
+	    </row>
+          </thead>
+          <tbody>
+	    <row>
+	      <entry>JMSMessageID</entry><entry>mp.message_id</entry>
+	    </row>
+	    <row>
+	      <entry>qpid.subject<footnote><para>This is a custom JMS property, set automatically by the Java JMS client implementation.</para></footnote></entry><entry>mp.application_headers["qpid.subject"]</entry>
+	    </row>
+	    <row>
+	      <entry>JMSXUserID</entry><entry>mp.user_id</entry>
+	    </row>
+	    <row>
+	      <entry>JMSReplyTo</entry><entry>mp.reply_to<footnote><para>The reply_to is converted from the protocol representation into an address.</para></footnote></entry>
+	    </row>
+	    <row>
+	      <entry>JMSCorrelationID</entry><entry>mp.correlation_id</entry>
+	    </row>
+	    <row>
+	      <entry>JMSDeliveryMode</entry><entry>dp.delivery_mode</entry>
+	    </row>
+	    <row>
+	      <entry>JMSPriority</entry><entry>dp.priority</entry>
+	    </row>
+	    <row>
+	      <entry>JMSExpiration</entry><entry>dp.ttl<footnote><para>JMSExpiration = dp.ttl + currentTime</para></footnote></entry>
+	    </row>
+	    <row>
+	      <entry>JMSRedelivered</entry><entry>dp.redelivered</entry>
+	    </row>
+	    <row>
+	      <entry>JMS Properties</entry><entry>mp.application_headers</entry>
+	    </row>
+	    <row>
+	      <entry>JMSType</entry><entry>mp.content_type</entry>
+	    </row>
+          </tbody>
+        </tgroup>
+      </table>
+
+    </section>
+
+    <section xml:id="JMS-Client-0-10-Miscellaneous-MapMessages">
+      <title>JMS MapMessage Types</title>
+
+      <para>Qpid supports the Java JMS <classname>MapMessage</classname> interface, which provides support for maps in messages. The following code shows how to send a <classname>MapMessage</classname> in Java JMS.</para>
+
+      <example>
+	<title>Sending a Java JMS MapMessage</title>
+	<programlisting>
+	import java.util.ArrayList;
+	import java.util.HashMap;
+	import java.util.List;
+	import java.util.Map;
+
+	import javax.jms.Connection;
+	import javax.jms.Destination;
+	import javax.jms.MapMessage;
+	import javax.jms.MessageProducer;
+	import javax.jms.Session;
+
+	import java.util.Arrays;
+
+	// !!! SNIP !!!
+
+	MessageProducer producer = session.createProducer(queue);
+
+	MapMessage m = session.createMapMessage();
+	m.setIntProperty("Id", 987654321);
+	m.setStringProperty("name", "Widget");
+	m.setDoubleProperty("price", 0.99);
+
+	List&lt;String&gt; colors = new ArrayList&lt;String&gt;();
+	colors.add("red");
+	colors.add("green");
+	colors.add("white");
+	m.setObject("colours", colors);
+
+	Map&lt;String,Double&gt; dimensions = new HashMap&lt;String,Double&gt;();
+	dimensions.put("length",10.2);
+	dimensions.put("width",5.1);
+	dimensions.put("depth",2.0);
+	m.setObject("dimensions",dimensions);
+
+	List&lt;List&lt;Integer&gt;&gt; parts = new ArrayList&lt;List&lt;Integer&gt;&gt;();
+	parts.add(Arrays.asList(new Integer[] {1,2,5}));
+	parts.add(Arrays.asList(new Integer[] {8,2,5}));
+	m.setObject("parts", parts);
+
+	Map&lt;String,Object&gt; specs = new HashMap&lt;String,Object&gt;();
+	specs.put("colours", colors);
+	specs.put("dimensions", dimensions);
+	specs.put("parts", parts);
+	m.setObject("specs",specs);
+
+	producer.send(m);
+	</programlisting>
+      </example>
+
+      <para>The following table shows the datatypes that can be sent in a <classname>MapMessage</classname>, and the corresponding datatypes that will be received by clients in Python or C++.</para>
+
+      <table xml:id="table-Java-Maps">
+	<title>Java Datatypes in Maps</title>
+	<tgroup cols="3">
+	  <thead>
+	    <row>
+	      <entry>Java Datatype</entry>
+	      <entry>Python</entry>
+	      <entry>C++</entry>
+	    </row>
+	  </thead>
+	  <tbody>
+   	    <row><entry>boolean</entry><entry>bool</entry><entry>bool</entry></row>
+	    <row><entry>short</entry><entry>int | long</entry><entry>int16</entry></row>
+	    <row><entry>int</entry><entry>int | long</entry><entry>int32</entry></row>
+	    <row><entry>long</entry><entry>int | long</entry><entry>int64</entry></row>
+	    <row><entry>float</entry><entry>float</entry><entry>float</entry></row>
+	    <row><entry>double</entry><entry>float</entry><entry>double</entry></row>
+	    <row><entry>java.lang.String</entry><entry>unicode</entry><entry>std::string</entry></row>
+	    <row><entry>java.util.UUID</entry><entry>uuid</entry><entry>qpid::types::Uuid</entry></row>
+	    <row><entry>java.util.Map<footnote><para>In Qpid, maps can nest. This goes beyond the functionality required by the JMS specification.</para></footnote></entry><entry>dict</entry><entry>Variant::Map</entry></row>
+	    <row><entry>java.util.List</entry><entry>list</entry><entry>Variant::List</entry></row>
+	  </tbody>
+	</tgroup>
+      </table>
+
+    </section>
+   </chapter>
+   <!-- end misc chapter -->
+
+</book>
