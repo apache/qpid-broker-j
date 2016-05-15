@@ -70,7 +70,7 @@
         <para>
           an instance of <literal>AMQQueue</literal> from a <literal>Reference</literal> containing reference
           address (<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJdkDocUrl}javax/naming/RefAddr.html">javax.naming.RefAddr</link>)
-          <literal>address</literal> with content set to either <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidProgrammingBook}">Address</link> or
+          <literal>address</literal> with content set to either <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJmsClient010Book}">Address</link> or
           <link linkend="JMS-Client-0-8-Binding-URL">Binding URL</link>.
         </para>
       </listitem>
@@ -78,7 +78,7 @@
         <para>
           an instance of <literal>AMQTopic</literal> from a <literal>Reference</literal> containing reference
           address (<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJdkDocUrl}javax/naming/RefAddr.html">javax.naming.RefAddr</link>)
-          <literal>address</literal> with content set to either <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidProgrammingBook}">Address</link> or
+          <literal>address</literal> with content set to either <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJmsClient010Book}">Address</link> or
           <link linkend="JMS-Client-0-8-Binding-URL">Binding URL</link>.
         </para>
       </listitem>
@@ -87,7 +87,7 @@
       <para>
         For  <literal>AMQQueue</literal> and <literal>AMQTopic</literal> prefix <literal>BURL:</literal> need
         to be specified for <link linkend="JMS-Client-0-8-Binding-URL">Binding URL</link>. Otherwise, client will try
-        to parse content using <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidProgrammingBook}">Address</link> format.
+        to parse content using <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJmsClient010Book}">Address</link> format.
       </para>
     </note>
   </para>

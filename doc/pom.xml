@@ -47,9 +47,9 @@
 
         <qpidJavaBrokerBook>../../java-broker/book/</qpidJavaBrokerBook>
         <qpidJmsClient08Book>../../jms-client-0-8/book/</qpidJmsClient08Book>
+        <qpidJmsClient010Book>../../jms-client-0-10/book/</qpidJmsClient010Book>
 
         <qpidCppBook>../../cpp-broker/book/</qpidCppBook>
-        <qpidProgrammingBook>../../programming/book/</qpidProgrammingBook>
 
         <oracleJdkDocUrl>http://docs.oracle.com/javase/7/docs/api/</oracleJdkDocUrl>
         <oracleJeeDocUrl>http://docs.oracle.com/javaee/6/api/</oracleJeeDocUrl>
@@ -74,6 +74,7 @@
     <modules>
         <module>java-broker</module>
         <module>jms-client-0-8</module>
+        <module>jms-client-0-10</module>
         <module>java-perftests</module>
     </modules>
 

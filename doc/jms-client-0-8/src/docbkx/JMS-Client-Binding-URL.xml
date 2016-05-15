@@ -24,7 +24,7 @@
   <title>Binding URL</title>
 
   <para> The <emphasis>Binding URL</emphasis> syntax for addressing<footnote>
-      <para>The client also supports the ADDR format. This is documented in <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidProgrammingBook}">Programming in Apache Qpid</link>.</para>
+      <para>The client also supports the <emphasis>Address/ADDR</emphasis> format. This is documented in <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJmsClient010Book}">Using the Qpid AMQP 0-10 JMS Client</link>.</para>
     </footnote>. It allows the specification of the bindings between a queue and an exchange, queue
     and exchange creation arguments and some ancillary options.</para>
 
