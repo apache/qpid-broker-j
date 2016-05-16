@@ -34,8 +34,7 @@ public interface UnacknowledgedMessageMap
     {
         /**
          * @param deliveryTag
-         *@param message the message being iterated over @return true to stop iteration, false to continue
-         * @throws QpidException
+         * @param message the message being iterated over @return true to stop iteration, false to continue
          */
         boolean callback(final long deliveryTag, MessageInstance message);
 

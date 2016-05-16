@@ -222,7 +222,7 @@ public class AMQConnectionFactory implements ConnectionFactory, QueueConnectionF
      *
      * @throws Exception
      *
-     * @Deprecated Use {@link ObjectFactory} instead
+     * @deprecated Use {@link ObjectFactory} instead
      */
     @Deprecated
     public Object getObjectInstance(Object obj, Name name, Context ctx, Hashtable env) throws Exception

@@ -35,7 +35,5 @@
  * "clientId" : "......",
  * "clientSecret" : "....",
  * </pre>
- *
- * </p>
  */
 package org.apache.qpid.server.security.auth.manager.oauth2.facebook;

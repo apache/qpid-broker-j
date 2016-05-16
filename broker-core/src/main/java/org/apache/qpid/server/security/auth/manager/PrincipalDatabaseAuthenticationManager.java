@@ -230,7 +230,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     }
 
     /**
-     * @see org.apache.qpid.server.model.AuthenticationProvider#authenticate(String, String)
+     * @see org.apache.qpid.server.security.auth.manager.UsernamePasswordAuthenticationProvider#authenticate(String, String)
      */
     public AuthenticationResult authenticate(final String username, final String password)
     {
