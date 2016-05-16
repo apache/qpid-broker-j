@@ -55,7 +55,7 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
 
     @Override
     protected MessageMetaData_1_0 convertMetaData(MessageTransferMessage serverMessage,
-                                                  SectionEncoder sectionEncoder)
+                                                  final Section bodySection, SectionEncoder sectionEncoder)
     {
         List<Section> sections = new ArrayList<Section>(3);
         final MessageProperties msgProps = serverMessage.getHeader().getMessageProperties();
@@ -142,6 +142,10 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
                 sections.add(new ApplicationProperties(applicationProperties));
 
             }
+        }
+        if(bodySection != null)
+        {
+            sections.add(bodySection);
         }
         return new MessageMetaData_1_0(sections, sectionEncoder);
     }
