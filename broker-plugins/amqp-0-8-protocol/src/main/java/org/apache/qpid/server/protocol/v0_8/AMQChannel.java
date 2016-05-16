@@ -696,8 +696,6 @@ public class AMQChannel
      *
      * @param exclusive Flag requesting exclusive access to the queue
      * @return the consumer tag. This is returned to the subscriber and used in subsequent unsubscribe requests
-     *
-     * @throws QpidException                  if something goes wrong
      */
     public AMQShortString consumeFromSource(AMQShortString tag, Collection<MessageSource> sources, boolean acks,
                                             FieldTable arguments, boolean exclusive, boolean noLocal)

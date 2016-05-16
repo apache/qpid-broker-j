@@ -74,7 +74,6 @@ public class ContentHeaderBody implements AMQBody
      * @return the decoded header body
      * @throws AMQFrameDecodingException if there is a decoding issue
      * @throws AMQProtocolVersionException if there is a version issue
-     * @throws IOException if there is an IO issue
      */
     public static ContentHeaderBody createFromBuffer(QpidByteBuffer buffer, long size)
         throws AMQFrameDecodingException, AMQProtocolVersionException
