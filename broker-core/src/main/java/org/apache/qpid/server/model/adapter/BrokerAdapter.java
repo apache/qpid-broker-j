@@ -1283,11 +1283,5 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         {
             return "text/plain;charset=utf-8";
         }
-
-        @RestContentHeader("Content-Length")
-        public long getSize()
-        {
-            return _threadStackTraces == null ? 0 : _threadStackTraces.length();
-        }
     }
 }

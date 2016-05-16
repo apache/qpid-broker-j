@@ -2698,12 +2698,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             return _messageReference.getMessage().getMessageHeader().getMimeType();
         }
 
-        @RestContentHeader("Content-Length")
-        public long getSize()
-        {
-            return _messageReference.getMessage().getSize();
-        }
-
     }
 
     private static class AcquireAllQueueEntryFilter implements QueueEntryFilter
