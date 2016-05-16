@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Qpid 0-8..0-10 specific class for creating/deleting queues using a non-JMS API.
- * Uses reflection to invoke methods to retain compatibility with Qpid versions <= 0.32.
+ * Uses reflection to invoke methods to retain compatibility with Qpid versions {@literal <= 0.32}.
  */
 public class QpidQueueCreator implements QueueCreator
 {

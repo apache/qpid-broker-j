@@ -2619,12 +2619,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             return _mimeType;
         }
 
-        @RestContentHeader("Content-Length")
-        public long getSize()
-        {
-            return _data.length;
-        }
-
     }
 
     private static class AcquireAllQueueEntryFilter implements QueueEntryFilter

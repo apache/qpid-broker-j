@@ -828,7 +828,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     /**
      * Callback method to perform ConfiguredObject specific exception handling on exception in open.
-     * <p/>
+     * <p>
      * The method is not expected to throw any runtime exception.
      * @param e open exception
      */

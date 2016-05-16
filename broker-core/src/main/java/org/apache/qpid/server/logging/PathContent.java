@@ -51,12 +51,6 @@ public class PathContent implements Content, CustomRestHeaders
         return _contentType;
     }
 
-    @RestContentHeader("Content-Length")
-    public long getContentLength()
-    {
-        return _contentSize;
-    }
-
     @RestContentHeader("Content-Disposition")
     public String getContentDisposition()
     {

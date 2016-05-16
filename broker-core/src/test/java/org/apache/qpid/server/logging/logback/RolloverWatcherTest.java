@@ -111,7 +111,6 @@ public class RolloverWatcherTest extends QpidTestCase
 
         assertEquals("Unexpected content type", "text/plain", content.getContentType());
         assertEquals("Unexpected data", "test", readContent(content));
-        assertEquals("Unexpected size", 4, content.getContentLength());
         assertEquals("Unexpected content disposition", "attachment; filename=\"" + _activeFile.getName().toString() + "\"", content.getContentDisposition());
     }
 
@@ -139,7 +138,6 @@ public class RolloverWatcherTest extends QpidTestCase
 
         assertEquals("Unexpected content type", "application/x-gzip", content.getContentType());
         assertEquals("Unexpected data", "test.gz", readContent(content));
-        assertEquals("Unexpected size", 7, content.getContentLength());
         assertEquals("Unexpected content disposition", "attachment; filename=\"test1.gz\"", content.getContentDisposition());
     }
 
@@ -153,7 +151,6 @@ public class RolloverWatcherTest extends QpidTestCase
 
         assertEquals("Unexpected content type", "application/x-zip", content.getContentType());
         assertEquals("Unexpected content disposition", "attachment", content.getContentDisposition());
-        assertEquals("Unexpected size", 0, content.getContentLength());
         try
         {
             readContent(content);

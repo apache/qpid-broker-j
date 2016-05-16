@@ -39,6 +39,5 @@
  *
  * Note that when configuring the Authorized redirect URIs in the Google Developer Console
  * include the trailing slash e.g. https://localhost:8080/.
- * </p>
  */
 package org.apache.qpid.server.security.auth.manager.oauth2.google;

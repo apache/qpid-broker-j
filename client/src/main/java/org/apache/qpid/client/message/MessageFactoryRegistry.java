@@ -98,9 +98,10 @@ public class MessageFactoryRegistry
      * @param contentHeader the content header that was received
      * @param bodies        a list of ContentBody instances @return the message.
      * @param queueDestinationCache
-     * @param topicDestinationCache @throws AMQException
+     * @param topicDestinationCache
      * @param addressType
      * @throws JMSException
+     * @throws QpidException
      */
     public AbstractJMSMessage createMessage(long deliveryTag,
                                             boolean redelivered,

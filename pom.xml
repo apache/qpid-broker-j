@@ -454,6 +454,7 @@
           <excludes>
             <exclude>test-profiles/test_resources/ssl/**</exclude>
             <exclude>specs/**</exclude>
+            <exclude>DEPENDENCIES</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -533,6 +534,7 @@
             <exclude>build/**</exclude>
             <exclude>lib/**</exclude>
             <exclude>test-profiles/test_resources/ssl/**</exclude>
+            <exclude>DEPENDENCIES</exclude>
           </excludes>
         </configuration>
       </plugin>
