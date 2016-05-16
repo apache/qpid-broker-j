@@ -22,6 +22,8 @@ package org.apache.qpid.server.management.plugin;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.net.BindException;
+import java.net.InetSocketAddress;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,6 +50,7 @@ import javax.servlet.http.HttpServletRequest;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.management.plugin.filter.ExceptionHandlingFilter;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
@@ -92,6 +95,7 @@ import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.model.adapter.AbstractPluginAdapter;
 import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.model.port.PortManager;
+import org.apache.qpid.server.transport.PortBindFailureException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.transport.network.security.ssl.QpidMultipleTrustManager;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
@@ -169,6 +173,11 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             {
                 _server.start();
                 logOperationalListenMessages();
+            }
+            catch (PortBindFailureException e)
+            {
+                getBroker().getEventLogger().message(PortMessages.BIND_FAILED("HTTP", e.getAddress().getPort()));
+                throw e;
             }
             catch (Exception e)
             {
@@ -340,6 +349,20 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                                 super.customize(endpoint, request);
                                 request.setAttribute(PORT_SERVLET_ATTRIBUTE, thePort);
                             }
+
+                            public void open() throws IOException
+                            {
+                                try
+                                {
+                                    super.open();
+                                }
+                                catch (BindException e)
+                                {
+                                    InetSocketAddress addr = getHost() == null ? new InetSocketAddress(getPort())
+                                                                               : new InetSocketAddress(getHost(), getPort());
+                                    throw new PortBindFailureException(addr);
+                                }
+                            }
                         };
         }
         else if (transports.contains(Transport.SSL))
@@ -501,6 +524,20 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                             super.customize(endpoint, request);
                             request.setAttribute(PORT_SERVLET_ATTRIBUTE, port);
                         }
+
+                        public void open() throws IOException
+                        {
+                            try
+                            {
+                                super.open();
+                            }
+                            catch (BindException e)
+                            {
+                                InetSocketAddress addr = getHost() == null ? new InetSocketAddress(getPort())
+                                        : new InetSocketAddress(getHost(), getPort());
+                                throw new PortBindFailureException(addr);
+                            }
+                        }
                     }
                 : new SslSelectChannelConnector(factory)
                     {
@@ -509,6 +546,20 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                         {
                             super.customize(endpoint, request);
                             request.setAttribute(PORT_SERVLET_ATTRIBUTE, port);
+                        }
+
+                        public void open() throws IOException
+                        {
+                            try
+                            {
+                                super.open();
+                            }
+                            catch (BindException e)
+                            {
+                                InetSocketAddress addr = getHost() == null ? new InetSocketAddress(getPort())
+                                        : new InetSocketAddress(getHost(), getPort());
+                                throw new PortBindFailureException(addr);
+                            }
                         }
                     };
         return connector;

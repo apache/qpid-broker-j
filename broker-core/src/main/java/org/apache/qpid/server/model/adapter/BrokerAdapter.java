@@ -352,6 +352,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     {
         boolean hasBrokerAnyErroredChildren = false;
 
+        List<ConfiguredObject<?>> failedChildren = new ArrayList<>();
         for (final Class<? extends ConfiguredObject> childClass : getModel().getChildTypes(getCategoryClass()))
         {
             final Collection<? extends ConfiguredObject> children = getChildren(childClass);
@@ -363,9 +364,15 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
                         hasBrokerAnyErroredChildren = true;
                         LOGGER.warn("Broker child object '{}' of type '{}' is {}",
                                 child.getName(), childClass.getSimpleName(), State.ERRORED);
+                        failedChildren.add(child);
                     }
                 }
             }
+        }
+
+        if(!failedChildren.isEmpty())
+        {
+            getEventLogger().message(BrokerMessages.FAILED_CHILDREN(failedChildren.toString()));
         }
 
         final boolean brokerShutdownOnErroredChild = getContextValue(Boolean.class,
