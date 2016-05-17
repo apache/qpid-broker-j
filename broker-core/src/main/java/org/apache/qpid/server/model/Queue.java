@@ -198,7 +198,12 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedContextDefault( name = "queue.holdOnPublishEnabled")
     boolean DEFAULT_HOLD_ON_PUBLISH_ENABLED = false;
 
-    @ManagedAttribute( defaultValue = "${queue.holdOnPublishEnabled}")
+    @ManagedAttribute( defaultValue = "${queue.holdOnPublishEnabled}",
+                       description = "If true then entries in the queue will be held (not made available for delivery or "
+                                     + "browsing) until the time (specified in milliseconds since the epoch) given in "
+                                     + "the message header (AMQP 0-8,0-9,0-9-1,0-10) or message annotation (AMQP 1.0) "
+                                     + "\"x-qpid-not-valid-before\".  Note that the actual time the entry is made "
+                                     + "visible may depend on how frequently the virtual host housekeeping thread runs.")
     boolean isHoldOnPublishEnabled();
 
     //children

@@ -358,4 +358,21 @@ amqp://guest:guest@client1/development?maxprefetch='1'&amp;brokerlist='tcp://loc
         </screen>
     </section>
   </section>
-</section>
+    <section xml:id="Java-Broker-Concepts-Queue-HoldingEntries">
+        <title>Holding messages on a Queue</title>
+        <para>Sometimes it is required that while a message has been placed on a queue, it is not released to consumers
+            until some external condition is met. </para>
+        <section>
+            <title>Hold until valid</title>
+            <para>Currently Queues support the "holding" of messages until a (per-message) provided point in time.
+                By default this support is not enabled (since it requires extra work to be performed against every
+                message entering the queue.  To enable support, the attribute <varname>holdOnPublishEnabled</varname>
+                must evaluate to true for the Queue.  When enabled messages on the queue will be checked for the header
+                (for AMQP 0-8, 0-9, 0-9-1 and 0-10 messages) or message annotation (for AMQP 1.0 messages)
+                <varname>x-qpid-not-valid-before</varname>. If this header/annotation exists and contains a numeric value,
+                it will be treated as a point in time given in milliseconds since the UNIX epoch.  The message will not
+                be released from the Queue to consumers until this time has been reached.
+            </para>
+        </section>
+      </section>
+    </section>
