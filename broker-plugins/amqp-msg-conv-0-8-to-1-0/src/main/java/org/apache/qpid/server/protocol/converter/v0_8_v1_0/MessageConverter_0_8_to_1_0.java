@@ -53,7 +53,9 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
         return AMQMessage.class;
     }
 
-    protected MessageMetaData_1_0 convertMetaData(final AMQMessage serverMessage, SectionEncoder sectionEncoder)
+    protected MessageMetaData_1_0 convertMetaData(final AMQMessage serverMessage,
+                                                  final Section bodySection,
+                                                  SectionEncoder sectionEncoder)
     {
 
         List<Section> sections = new ArrayList<>(3);
@@ -164,7 +166,10 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
             applicationProperties.remove("qpid.subject");
         }
         sections.add(new ApplicationProperties(applicationProperties));
-
+        if(bodySection != null)
+        {
+            sections.add(bodySection);
+        }
         return new MessageMetaData_1_0(sections, sectionEncoder);
     }
 
