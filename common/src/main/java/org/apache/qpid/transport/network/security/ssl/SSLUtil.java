@@ -625,13 +625,15 @@ public class SSLUtil
                                                          Arrays.toString(protocols)));
     }
 
-    public static void useCipherOrderIfPossible(final SSLParameters sslParameters)
+    public static void useCipherOrderIfPossible(final SSLEngine sslEngine)
     {
         if(SSL_PARAMETERS_SET_USE_CIPHER_SUITES_ORDER != null)
         {
+            SSLParameters sslParameters = sslEngine.getSSLParameters();
             try
             {
                 SSL_PARAMETERS_SET_USE_CIPHER_SUITES_ORDER.invoke(sslParameters, Boolean.TRUE);
+                sslEngine.setSSLParameters(sslParameters);
             }
             catch (IllegalAccessException | InvocationTargetException e)
             {

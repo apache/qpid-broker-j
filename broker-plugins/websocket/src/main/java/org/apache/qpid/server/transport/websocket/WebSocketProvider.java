@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLParameters;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -143,15 +142,15 @@ class WebSocketProvider implements AcceptingTransport
                                             public void customize(final SSLEngine sslEngine)
                                             {
                                                 super.customize(sslEngine);
-                                                useCipherOrderIfPossible(sslEngine.getSSLParameters());
+                                                useCipherOrderIfPossible(sslEngine);
                                             }
 
-                                            private void useCipherOrderIfPossible(final SSLParameters sslParameters)
+                                            private void useCipherOrderIfPossible(final SSLEngine sslEngine)
                                             {
                                                 if(_port.getTlsCipherSuiteWhiteList() != null
                                                    && !_port.getTlsCipherSuiteWhiteList().isEmpty())
                                                 {
-                                                    SSLUtil.useCipherOrderIfPossible(sslParameters);
+                                                    SSLUtil.useCipherOrderIfPossible(sslEngine);
                                                 }
                                             }
                                         };
