@@ -34,6 +34,7 @@ class MessageTransferHeader implements AMQMessageHeader
 
     private final DeliveryProperties _deliveryProps;
     private final MessageProperties _messageProps;
+    private long _notValidBefore;
 
     public MessageTransferHeader(DeliveryProperties deliveryProps, MessageProperties messageProps)
     {
@@ -98,6 +99,14 @@ class MessageTransferHeader implements AMQMessageHeader
     public long getTimestamp()
     {
         return _deliveryProps == null ? 0L : _deliveryProps.getTimestamp();
+    }
+
+
+    @Override
+    public long getNotValidBefore()
+    {
+        Object header = getHeader("x-qpid-not-valid-before");
+        return header instanceof Number ? ((Number)header).longValue() : 0L;
     }
 
     public String getType()

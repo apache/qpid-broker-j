@@ -43,6 +43,7 @@ public interface BindingURL
     String OPTION_EXCHANGE_INTERNAL = "exchangeinternal";
     String OPTION_SEND_ENCRYPTED = "sendencrypted";
     String OPTION_ENCRYPTED_RECIPIENTS = "encryptedrecipients";
+    String OPTION_DELIVERY_DELAY = "deliveryDelay";
 
 
     /**
@@ -66,7 +67,8 @@ public interface BindingURL
                                                                           OPTION_EXCHANGE_DURABLE,
                                                                           OPTION_REJECT_BEHAVIOUR,
                                                                           OPTION_SEND_ENCRYPTED,
-                                                                          OPTION_ENCRYPTED_RECIPIENTS)));
+                                                                          OPTION_ENCRYPTED_RECIPIENTS,
+                                                                          OPTION_DELIVERY_DELAY)));
 
 
     String getURL();

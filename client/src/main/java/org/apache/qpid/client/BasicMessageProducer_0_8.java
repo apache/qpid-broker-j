@@ -109,8 +109,8 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
     }
 
     void sendMessage(AMQDestination destination, Message origMessage, AbstractJMSMessage message,
-                     UUID messageId, int deliveryMode,int priority, long timeToLive, boolean mandatory,
-                     boolean immediate) throws JMSException
+                     UUID messageId, int deliveryMode, int priority, long timeToLive, boolean mandatory,
+                     boolean immediate, final long deliveryDelay) throws JMSException
     {
 
 
@@ -171,9 +171,11 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
                 .getHeaders()
                 .setInteger(CustomJMSXProperty.JMS_QPID_DESTTYPE.getShortStringName(), type);
 
+        long currentTime;
         if (!isDisableTimestamps())
         {
-            final long currentTime = System.currentTimeMillis();
+
+            currentTime = System.currentTimeMillis();
             contentHeaderProperties.setTimestamp(currentTime);
 
             if (timeToLive > 0)
@@ -194,6 +196,20 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
                 contentHeaderProperties.setExpiration(0);
             }
         }
+        else
+        {
+            currentTime = 0L;
+        }
+
+        if(deliveryDelay != 0L && headers.get(QpidMessageProperties.QPID_NOT_VALID_BEFORE) == null)
+        {
+            if(currentTime == 0L)
+            {
+                currentTime = System.currentTimeMillis();
+            }
+            headers.setLong(QpidMessageProperties.QPID_NOT_VALID_BEFORE, deliveryDelay+currentTime);
+        }
+
 
         contentHeaderProperties.setDeliveryMode((byte) deliveryMode);
         contentHeaderProperties.setPriority((byte) priority);

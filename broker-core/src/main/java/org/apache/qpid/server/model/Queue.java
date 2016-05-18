@@ -27,6 +27,7 @@ import java.util.Map;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.message.MessageInfo;
+import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.queue.QueueEntryVisitor;
 import org.apache.qpid.server.store.MessageDurability;
 
@@ -60,6 +61,8 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>
     String MINIMUM_MESSAGE_TTL = "minimumMessageTtl";
     String DEFAULT_FILTERS = "defaultFilters";
     String ENSURE_NONDESTRUCTIVE_CONSUMERS = "ensureNondestructiveConsumers";
+    String HOLD_ON_PUBLISH_ENABLED = "holdOnPublishEnabled";
+
 
     String QUEUE_MINIMUM_ESTIMATED_MEMORY_FOOTPRINT = "queue.minimumEstimatedMemoryFootprint";
     @ManagedContextDefault( name = QUEUE_MINIMUM_ESTIMATED_MEMORY_FOOTPRINT)
@@ -173,6 +176,13 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>
     @ManagedAttribute
     Map<String, Map<String,List<String>>> getDefaultFilters();
 
+
+    @ManagedContextDefault( name = "queue.holdOnPublishEnabled")
+    boolean DEFAULT_HOLD_ON_PUBLISH_ENABLED = false;
+
+    @ManagedAttribute( defaultValue = "${queue.holdOnPublishEnabled}")
+    boolean isHoldOnPublishEnabled();
+
     //children
     Collection<? extends Binding> getBindings();
 
@@ -259,4 +269,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>
     @ManagedOperation(nonModifying = true)
     MessageInfo getMessageInfoById(@Param(name = "messageId") long messageId);
 
+
+    boolean isHeld(QueueEntry queueEntry, final long evaluationTime);
 }

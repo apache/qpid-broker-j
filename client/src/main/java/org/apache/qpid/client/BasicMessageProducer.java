@@ -100,6 +100,8 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
 
     private String _userID;  // ref user id used in the connection.
 
+    private long _deliveryDelay;
+
 
     /**
      * The default value for immediate flag used this producer is false. That is, a consumer does
@@ -150,6 +152,11 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
                 : mandatory;
 
         _userID = connection.isPopulateUserId() ? connection.getUsername() : null;
+
+        if(destination != null && destination.getDeliveryDelay() != 0L)
+        {
+            _deliveryDelay = destination.getDeliveryDelay();
+        }
         setPublishMode();
     }
 
@@ -323,7 +330,8 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
 
         synchronized (_connection.getFailoverMutex())
         {
-            sendImpl(_destination, message, _deliveryMode, _messagePriority, _timeToLive, _mandatory, _immediate);
+            sendImpl(_destination, message, _deliveryMode, _messagePriority, _timeToLive, _mandatory, _immediate,
+                     _deliveryDelay);
         }
     }
 
@@ -334,7 +342,8 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
 
         synchronized (_connection.getFailoverMutex())
         {
-            sendImpl(_destination, message, deliveryMode, _messagePriority, _timeToLive, _mandatory, _immediate);
+            sendImpl(_destination, message, deliveryMode, _messagePriority, _timeToLive, _mandatory, _immediate,
+                     _deliveryDelay);
         }
     }
 
@@ -344,7 +353,8 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
         checkInitialDestination();
         synchronized (_connection.getFailoverMutex())
         {
-            sendImpl(_destination, message, deliveryMode, _messagePriority, _timeToLive, _mandatory, immediate);
+            sendImpl(_destination, message, deliveryMode, _messagePriority, _timeToLive, _mandatory, immediate,
+                     _deliveryDelay);
         }
     }
 
@@ -354,7 +364,7 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
         checkInitialDestination();
         synchronized (_connection.getFailoverMutex())
         {
-            sendImpl(_destination, message, deliveryMode, priority, timeToLive, _mandatory, _immediate);
+            sendImpl(_destination, message, deliveryMode, priority, timeToLive, _mandatory, _immediate, _deliveryDelay);
         }
     }
 
@@ -365,13 +375,15 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
         synchronized (_connection.getFailoverMutex())
         {
             validateDestination(destination);
-            sendImpl((AMQDestination) destination, message, _deliveryMode, _messagePriority, _timeToLive,
+            AMQDestination amqDestination = (AMQDestination) destination;
+            sendImpl(amqDestination, message, _deliveryMode, _messagePriority, _timeToLive,
                     _mandatory == null
                             ? destination instanceof Topic
                                 ? _defaultMandatoryTopicValue
                                 : _defaultMandatoryValue
                             : _mandatory,
-                     _immediate);
+                     _immediate,
+                     amqDestination.getDeliveryDelay() != 0L ? amqDestination.getDeliveryDelay() : _deliveryDelay);
         }
     }
 
@@ -383,13 +395,15 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
         synchronized (_connection.getFailoverMutex())
         {
             validateDestination(destination);
-            sendImpl((AMQDestination) destination, message, deliveryMode, priority, timeToLive,
+            AMQDestination amqDestination = (AMQDestination) destination;
+            sendImpl(amqDestination, message, deliveryMode, priority, timeToLive,
                     _mandatory == null
                             ? destination instanceof Topic
                                 ? _defaultMandatoryTopicValue
                                 : _defaultMandatoryValue
                             : _mandatory,
-                    _immediate);
+                     _immediate,
+                     amqDestination.getDeliveryDelay() != 0L ? amqDestination.getDeliveryDelay() : _deliveryDelay);
         }
     }
 
@@ -401,7 +415,9 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
         synchronized (_connection.getFailoverMutex())
         {
             validateDestination(destination);
-            sendImpl((AMQDestination) destination, message, deliveryMode, priority, timeToLive, mandatory, _immediate);
+            AMQDestination amqDestination = (AMQDestination) destination;
+            sendImpl(amqDestination, message, deliveryMode, priority, timeToLive, mandatory, _immediate,
+                     amqDestination.getDeliveryDelay() != 0L ? amqDestination.getDeliveryDelay() : _deliveryDelay);
         }
     }
 
@@ -413,7 +429,9 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
         synchronized (_connection.getFailoverMutex())
         {
             validateDestination(destination);
-            sendImpl((AMQDestination) destination, message, deliveryMode, priority, timeToLive, mandatory, immediate);
+            AMQDestination amqDestination = (AMQDestination) destination;
+            sendImpl(amqDestination, message, deliveryMode, priority, timeToLive, mandatory, immediate,
+                     amqDestination.getDeliveryDelay() != 0L ? amqDestination.getDeliveryDelay() : _deliveryDelay);
         }
     }
 
@@ -498,10 +516,17 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
      * @param mandatory
      * @param immediate
      *
+     * @param deliveryDelay
      * @throws JMSException
      */
-    protected void sendImpl(AMQDestination destination, Message origMessage, int deliveryMode, int priority, long timeToLive,
-                            boolean mandatory, boolean immediate) throws JMSException
+    protected void sendImpl(AMQDestination destination,
+                            Message origMessage,
+                            int deliveryMode,
+                            int priority,
+                            long timeToLive,
+                            boolean mandatory,
+                            boolean immediate,
+                            long deliveryDelay) throws JMSException
     {
         checkTemporaryDestination(destination);
         origMessage.setJMSDestination(destination);
@@ -521,7 +546,8 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
 
         try
         {
-            sendMessage(destination, origMessage, message, messageId, deliveryMode, priority, timeToLive, mandatory, immediate);
+            sendMessage(destination, origMessage, message, messageId, deliveryMode, priority, timeToLive, mandatory, immediate,
+                        deliveryDelay);
         }
         catch (TransportException e)
         {
@@ -549,7 +575,7 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
 
     abstract void sendMessage(AMQDestination destination, Message origMessage, AbstractJMSMessage message,
                               UUID messageId, int deliveryMode, int priority, long timeToLive, boolean mandatory,
-                              boolean immediate) throws JMSException;
+                              boolean immediate, final long deliveryDelay) throws JMSException;
 
     private void checkTemporaryDestination(AMQDestination destination) throws InvalidDestinationException
     {
@@ -722,6 +748,17 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
     protected void setPublishMode(PublishMode publishMode)
     {
         _publishMode = publishMode;
+    }
+
+    public long getDeliveryDelay()
+    {
+        return _deliveryDelay;
+    }
+
+    @Override
+    public void setDeliveryDelay(final long deliveryDelay)
+    {
+        _deliveryDelay = deliveryDelay;
     }
 
     Logger getLogger()

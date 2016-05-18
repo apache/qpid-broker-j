@@ -245,7 +245,11 @@ public class AddressHelper
                             reliability + "' is not yet supported");
                 }
             }
-            
+            Long delay = _linkPropAccess.getLong("delay");
+            if(delay != null)
+            {
+                link.setDelay(delay);
+            }
             if (((Map) _address.getOptions().get(LINK)).get(CAPACITY) instanceof Map)
             {
                 MapAccessor capacityProps = new MapAccessor((Map) ((Map) _address.getOptions().get(LINK)).get(CAPACITY));

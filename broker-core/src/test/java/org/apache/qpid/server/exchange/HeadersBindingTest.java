@@ -97,6 +97,12 @@ public class HeadersBindingTest extends QpidTestCase
             return 0;
         }
 
+        @Override
+        public long getNotValidBefore()
+        {
+            return 0;
+        }
+
         public String getType()
         {
             return null;

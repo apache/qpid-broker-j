@@ -120,7 +120,7 @@ public interface Accessor
                 }
                 else
                 {
-                    return Long.parseLong((String)source.get(name));
+                    return Long.parseLong(source.get(name).toString());
                 }
             }
             else
