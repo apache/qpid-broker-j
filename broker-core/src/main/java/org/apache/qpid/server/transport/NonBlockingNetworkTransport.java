@@ -21,6 +21,7 @@
 package org.apache.qpid.server.transport;
 
 import java.io.IOException;
+import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
@@ -35,8 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.transport.TransportException;
-import org.apache.qpid.transport.network.AggregateTicker;
-import org.apache.qpid.transport.network.Ticker;
 import org.apache.qpid.transport.network.TransportEncryption;
 
 import static org.apache.qpid.transport.ConnectionSettings.WILDCARD_ADDRESS;
@@ -86,7 +85,14 @@ public class NonBlockingNetworkTransport
             _serverSocket =  ServerSocketChannel.open();
 
             _serverSocket.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-            _serverSocket.bind(_address, acceptBacklog);
+            try
+            {
+                _serverSocket.bind(_address, acceptBacklog);
+            }
+            catch (BindException e)
+            {
+                throw new PortBindFailureException(_address);
+            }
             _serverSocket.configureBlocking(false);
             _encryptionSet = encryptionSet;
             _scheduler = scheduler;

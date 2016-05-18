@@ -328,7 +328,7 @@ abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + " [id=" + getId() + ", name=" + getName() + ", port=" + getPort() + "]";
+        return getCategoryClass().getSimpleName() + "[id=" + getId() + ", name=" + getName() + ", type=" + getType() +  ", port=" + getPort() + "]";
     }
 
 

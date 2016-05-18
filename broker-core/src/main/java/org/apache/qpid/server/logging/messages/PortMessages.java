@@ -45,42 +45,49 @@ public class PortMessages
     private static Locale _currentLocale = BrokerProperties.getLocale();
 
     public static final String PORT_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "port";
-    public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "port.open";
-    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "port.create";
     public static final String DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "port.delete";
-    public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "port.close";
-    public static final String CONNECTION_REJECTED_CLOSED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "port.connection_rejected_closed";
-    public static final String CONNECTION_REJECTED_TOO_MANY_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "port.connection_rejected_too_many";
-    public static final String CONNECTION_COUNT_WARN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "port.connection_count_warn";
+    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "port.create";
     public static final String UNSUPPORTED_PROTOCOL_HEADER_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "port.unsupported_protocol_header";
+    public static final String CONNECTION_REJECTED_CLOSED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "port.connection_rejected_closed";
+    public static final String CONNECTION_COUNT_WARN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "port.connection_count_warn";
+    public static final String BIND_FAILED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "port.bind_failed";
+    public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "port.close";
+    public static final String CONNECTION_REJECTED_TOO_MANY_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "port.connection_rejected_too_many";
+    public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "port.open";
 
     static
     {
         LoggerFactory.getLogger(PORT_LOG_HIERARCHY);
-        LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
-        LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
         LoggerFactory.getLogger(DELETE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(CONNECTION_COUNT_WARN_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(UNSUPPORTED_PROTOCOL_HEADER_LOG_HIERARCHY);
         LoggerFactory.getLogger(CONNECTION_REJECTED_CLOSED_LOG_HIERARCHY);
         LoggerFactory.getLogger(CONNECTION_COUNT_WARN_LOG_HIERARCHY);
-        LoggerFactory.getLogger(UNSUPPORTED_PROTOCOL_HEADER_LOG_HIERARCHY);
+        LoggerFactory.getLogger(BIND_FAILED_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CONNECTION_REJECTED_TOO_MANY_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Port_logmessages", _currentLocale);
     }
 
     /**
      * Log a Port message of the Format:
-     * <pre>PRT-1002 : Open</pre>
+     * <pre>PRT-1006 : Delete {0} Port "{1}"</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPEN()
+    public static LogMessage DELETE(String param1, String param2)
     {
-        String rawMessage = _messages.getString("OPEN");
+        String rawMessage = _messages.getString("DELETE");
 
-        final String message = rawMessage;
+        final Object[] messageArguments = {param1, param2};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {
@@ -91,7 +98,7 @@ public class PortMessages
 
             public String getLogHierarchy()
             {
-                return OPEN_LOG_HIERARCHY;
+                return DELETE_LOG_HIERARCHY;
             }
 
             @Override
@@ -182,16 +189,16 @@ public class PortMessages
 
     /**
      * Log a Port message of the Format:
-     * <pre>PRT-1006 : Delete {0} Port "{1}"</pre>
+     * <pre>PRT-1007 : Unsupported protocol header received, replying with {0}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage DELETE(String param1, String param2)
+    public static LogMessage UNSUPPORTED_PROTOCOL_HEADER(String param1)
     {
-        String rawMessage = _messages.getString("DELETE");
+        String rawMessage = _messages.getString("UNSUPPORTED_PROTOCOL_HEADER");
 
-        final Object[] messageArguments = {param1, param2};
+        final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -207,118 +214,7 @@ public class PortMessages
 
             public String getLogHierarchy()
             {
-                return DELETE_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a Port message of the Format:
-     * <pre>PRT-1003 : Close</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage CLOSE()
-    {
-        String rawMessage = _messages.getString("CLOSE");
-
-        final String message = rawMessage;
-
-        return new LogMessage()
-        {
-            public String toString()
-            {
-                return message;
-            }
-
-            public String getLogHierarchy()
-            {
-                return CLOSE_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a Port message of the Format:
-     * <pre>PRT-1005 : Connection from {0} rejected. Maximum connection count ({1, number}) for this port already reached.</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage CONNECTION_REJECTED_TOO_MANY(String param1, Number param2)
-    {
-        String rawMessage = _messages.getString("CONNECTION_REJECTED_TOO_MANY");
-
-        final Object[] messageArguments = {param1, param2};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            public String toString()
-            {
-                return message;
-            }
-
-            public String getLogHierarchy()
-            {
-                return CONNECTION_REJECTED_TOO_MANY_LOG_HIERARCHY;
+                return UNSUPPORTED_PROTOCOL_HEADER_LOG_HIERARCHY;
             }
 
             @Override
@@ -467,16 +363,16 @@ public class PortMessages
 
     /**
      * Log a Port message of the Format:
-     * <pre>PRT-1007 : Unsupported protocol header received, replying with {0}</pre>
+     * <pre>PRT-1009 : FAILED to bind {0} service to {1,number,#} - port in use</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage UNSUPPORTED_PROTOCOL_HEADER(String param1)
+    public static LogMessage BIND_FAILED(String param1, Number param2)
     {
-        String rawMessage = _messages.getString("UNSUPPORTED_PROTOCOL_HEADER");
+        String rawMessage = _messages.getString("BIND_FAILED");
 
-        final Object[] messageArguments = {param1};
+        final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -492,7 +388,7 @@ public class PortMessages
 
             public String getLogHierarchy()
             {
-                return UNSUPPORTED_PROTOCOL_HEADER_LOG_HIERARCHY;
+                return BIND_FAILED_LOG_HIERARCHY;
             }
 
             @Override
@@ -522,6 +418,171 @@ public class PortMessages
             }
         };
     }
+
+    /**
+     * Log a Port message of the Format:
+     * <pre>PRT-1003 : Close</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage CLOSE()
+    {
+        String rawMessage = _messages.getString("CLOSE");
+
+        final String message = rawMessage;
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return CLOSE_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Port message of the Format:
+     * <pre>PRT-1005 : Connection from {0} rejected. Maximum connection count ({1, number}) for this port already reached.</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage CONNECTION_REJECTED_TOO_MANY(String param1, Number param2)
+    {
+        String rawMessage = _messages.getString("CONNECTION_REJECTED_TOO_MANY");
+
+        final Object[] messageArguments = {param1, param2};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return CONNECTION_REJECTED_TOO_MANY_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Port message of the Format:
+     * <pre>PRT-1002 : Open</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage OPEN()
+    {
+        String rawMessage = _messages.getString("OPEN");
+
+        final String message = rawMessage;
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return OPEN_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
 
     private PortMessages()
     {
