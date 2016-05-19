@@ -69,6 +69,7 @@ import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.TransportProviderFactory;
 import org.apache.qpid.server.transport.AcceptingTransport;
+import org.apache.qpid.server.transport.PortBindFailureException;
 import org.apache.qpid.server.transport.TransportProvider;
 import org.apache.qpid.server.util.PortUtil;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -260,20 +261,28 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
                 _sslContext = createSslContext();
             }
             Protocol defaultSupportedProtocolReply = getDefaultAmqpSupportedReply();
-
-            _transport = transportProvider.createTransport(transportSet,
-                                                           _sslContext,
-                                                           this,
-                                                           getProtocols(),
-                                                           defaultSupportedProtocolReply);
-
-            _transport.start();
-            for (Transport transport : getTransports())
+            try
             {
-                _broker.getEventLogger().message(BrokerMessages.LISTENING(String.valueOf(transport), _transport.getAcceptingPort()));
-            }
+                _transport = transportProvider.createTransport(transportSet,
+                                                               _sslContext,
+                                                               this,
+                                                               getProtocols(),
+                                                               defaultSupportedProtocolReply);
 
-            return State.ACTIVE;
+                _transport.start();
+                for (Transport transport : getTransports())
+                {
+                    _broker.getEventLogger()
+                            .message(BrokerMessages.LISTENING(String.valueOf(transport),
+                                                              _transport.getAcceptingPort()));
+                }
+                return State.ACTIVE;
+            }
+            catch (PortBindFailureException e)
+            {
+                _broker.getEventLogger().message(PortMessages.BIND_FAILED(getType().toUpperCase(),getPort()));
+                throw e;
+            }
         }
     }
 

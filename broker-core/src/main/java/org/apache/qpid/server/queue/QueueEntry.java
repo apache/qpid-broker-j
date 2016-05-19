@@ -43,4 +43,6 @@ public interface QueueEntry extends MessageInstance, Comparable<QueueEntry>
     void setExpiration(long calculatedExpiration);
 
     MessageReference newMessageReference();
+
+    boolean checkHeld(final long evaluationTime);
 }

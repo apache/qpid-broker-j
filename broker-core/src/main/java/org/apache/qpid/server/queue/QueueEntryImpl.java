@@ -56,6 +56,21 @@ public abstract class QueueEntryImpl implements QueueEntry
 
     private Set<Long> _rejectedBy = null;
 
+    private static final EntryState HELD_STATE = new EntryState()
+    {
+        @Override
+        public State getState()
+        {
+            return State.AVAILABLE;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "HELD";
+        }
+    };
+
     private volatile EntryState _state = AVAILABLE_STATE;
 
     private static final
@@ -196,7 +211,7 @@ public abstract class QueueEntryImpl implements QueueEntry
 
     public boolean isAvailable()
     {
-        return _state == AVAILABLE_STATE;
+        return _state.getState() == State.AVAILABLE;
     }
 
     public boolean isAcquired()
@@ -268,7 +283,17 @@ public abstract class QueueEntryImpl implements QueueEntry
 
     private boolean acquire(final EntryState state)
     {
-        boolean acquired = _stateUpdater.compareAndSet(this, AVAILABLE_STATE, state);
+        boolean acquired = false;
+
+        EntryState currentState;
+
+        while((currentState = _state).getState() == State.AVAILABLE)
+        {
+            if(acquired = _stateUpdater.compareAndSet(this, currentState, state))
+            {
+                break;
+            }
+        }
 
         if(acquired && _stateChangeListeners != null)
         {
@@ -405,7 +430,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         if(!getQueue().isDeleted())
         {
             getQueue().requeue(this);
-            if(_stateChangeListeners != null)
+            if(_stateChangeListeners != null && previousState.getState() == State.ACQUIRED)
             {
                 notifyStateChange(State.ACQUIRED, State.AVAILABLE);
             }
@@ -415,6 +440,38 @@ public abstract class QueueEntryImpl implements QueueEntry
         {
             routeToAlternate(null, null);
         }
+    }
+
+    @Override
+    public boolean checkHeld(final long evaluationTime)
+    {
+        EntryState state;
+        while((state = _state).getState() == State.AVAILABLE)
+        {
+            boolean isHeld = getQueue().isHeld(this, evaluationTime);
+            if(state == AVAILABLE_STATE && isHeld)
+            {
+                if(!_stateUpdater.compareAndSet(this, state, HELD_STATE))
+                {
+                    continue;
+                }
+            }
+            else if(state == HELD_STATE && !isHeld)
+            {
+
+                if(_stateUpdater.compareAndSet(this, state, AVAILABLE_STATE))
+                {
+                    postRelease(state);
+                }
+                else
+                {
+                    continue;
+                }
+            }
+            return isHeld;
+
+        }
+        return false;
     }
 
     @Override

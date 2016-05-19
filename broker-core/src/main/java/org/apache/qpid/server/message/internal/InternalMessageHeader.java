@@ -43,19 +43,24 @@ public final class InternalMessageHeader implements AMQMessageHeader, Serializab
     private final String _encoding;
     private final byte _priority;
     private final long _timestamp;
+    private final long _notValidBefore;
     private final String _type;
     private final String _replyTo;
     private long _arrivalTime;
 
     public InternalMessageHeader(final Map<String, Object> headers,
-                          final String correlationId,
-                          final long expiration,
-                          final String userId,
-                          final String appId,
-                          final String messageId,
-                          final String mimeType,
-                          final String encoding,
-                          final byte priority, final long timestamp, final String type, final String replyTo)
+                                 final String correlationId,
+                                 final long expiration,
+                                 final String userId,
+                                 final String appId,
+                                 final String messageId,
+                                 final String mimeType,
+                                 final String encoding,
+                                 final byte priority,
+                                 final long timestamp,
+                                 final long notValidBefore,
+                                 final String type,
+                                 final String replyTo)
     {
         _headers = headers == null ? new LinkedHashMap<String, Object>()
                 : new LinkedHashMap<String, Object>(headers);
@@ -69,6 +74,7 @@ public final class InternalMessageHeader implements AMQMessageHeader, Serializab
         _encoding = encoding;
         _priority = priority;
         _timestamp = timestamp;
+        _notValidBefore = notValidBefore;
         _type = type;
         _replyTo = replyTo;
         _arrivalTime = System.currentTimeMillis();
@@ -85,6 +91,7 @@ public final class InternalMessageHeader implements AMQMessageHeader, Serializab
         _encoding = header.getEncoding();
         _priority = header.getPriority();
         _timestamp = header.getTimestamp();
+        _notValidBefore = header.getNotValidBefore();
         _type = header.getType();
         _replyTo = header.getReplyTo();
         _headers = new LinkedHashMap<String, Object>();
@@ -147,6 +154,12 @@ public final class InternalMessageHeader implements AMQMessageHeader, Serializab
     public long getTimestamp()
     {
         return _timestamp;
+    }
+
+    @Override
+    public long getNotValidBefore()
+    {
+        return _notValidBefore;
     }
 
     @Override

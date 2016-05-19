@@ -165,7 +165,7 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource impleme
         InternalMessageHeader header = new InternalMessageHeader(Collections.<String,Object>emptyMap(),
                                                                  null, 0l, null, null, UUID.randomUUID().toString(),
                                                                  null, null, (byte)4, System.currentTimeMillis(),
-                                                                 null, null);
+                                                                 0L, null, null);
         return InternalMessage.createListMessage(_virtualHost.getMessageStore(), header, messageList);
     }
 

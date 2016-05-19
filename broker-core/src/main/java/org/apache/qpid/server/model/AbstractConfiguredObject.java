@@ -1744,7 +1744,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + " [id=" + _id + ", name=" + getName() + "]";
+        return getCategoryClass().getSimpleName() + "[id=" + _id + ", name=" + getName() + ", type=" + getType() + "]";
     }
 
     public final ConfiguredObjectRecord asObjectRecord()

@@ -43,6 +43,8 @@ public interface AMQMessageHeader
 
     long getTimestamp();
 
+    long getNotValidBefore();
+
     String getType();
 
     String getReplyTo();

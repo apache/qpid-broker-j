@@ -1301,6 +1301,7 @@ class ManagementNode implements MessageSource, MessageDestination
         private String _encoding;
         private byte _priority;
         private long _timestamp;
+        private long _notValidBefore;
         private String _type;
         private String _replyTo;
 
@@ -1347,6 +1348,11 @@ class ManagementNode implements MessageSource, MessageDestination
         public void setTimestamp(final long timestamp)
         {
             _timestamp = timestamp;
+        }
+
+        public void setNotValidBefore(final long notValidBefore)
+        {
+            _notValidBefore = notValidBefore;
         }
 
         public void setType(final String type)
@@ -1402,6 +1408,12 @@ class ManagementNode implements MessageSource, MessageDestination
         public long getTimestamp()
         {
             return _timestamp;
+        }
+
+        @Override
+        public long getNotValidBefore()
+        {
+            return _notValidBefore;
         }
 
         public String getType()

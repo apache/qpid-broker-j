@@ -135,7 +135,12 @@ public class AMQMessageDelegate_0_10 extends AbstractAMQMessageDelegate
             dest = (AMQDestination) convertToAddressBasedDestination(_deliveryProps.getExchange(),
                     _deliveryProps.getRoutingKey(), subject, false, AMQDestination.UNKNOWN_TYPE);
         }
-        
+
+        if(messageProps != null && messageProps.getApplicationHeaders() != null)
+        {
+            messageProps.getApplicationHeaders().remove(QpidMessageProperties.QPID_NOT_VALID_BEFORE);
+        }
+
         setJMSDestination(dest);        
     }
 

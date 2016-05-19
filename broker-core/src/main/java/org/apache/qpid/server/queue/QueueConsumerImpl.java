@@ -414,9 +414,8 @@ class QueueConsumerImpl
     public final boolean hasInterest(QueueEntry entry)
     {
        //check that the message hasn't been rejected
-        if (entry.isRejectedBy(this))
+        if (entry.isRejectedBy(this) || entry.checkHeld(System.currentTimeMillis()))
         {
-
             return false;
         }
 

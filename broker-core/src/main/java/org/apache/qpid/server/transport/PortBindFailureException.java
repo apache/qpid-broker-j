@@ -7,9 +7,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -18,24 +18,22 @@
  * under the License.
  *
  */
-package org.apache.qpid.jms;
+package org.apache.qpid.server.transport;
 
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.Message;
+import java.net.InetSocketAddress;
 
-/**
- */
-public interface MessageProducer extends javax.jms.MessageProducer
+public class PortBindFailureException extends RuntimeException
 {
-    void send(Destination destination, Message message, int deliveryMode,
-                     int priority, long timeToLive, boolean immediate)
-            throws JMSException;
+    private final InetSocketAddress _address;
 
-    void send(Destination destination, Message message, int deliveryMode,
-                     int priority, long timeToLive, boolean mandatory, boolean immediate)
-            throws JMSException;
+    public PortBindFailureException(final InetSocketAddress address)
+    {
+        super("Unable to bind to address " + address);
+        _address = address;
+    }
 
-    void setDeliveryDelay(long delay);
-
+    public InetSocketAddress getAddress()
+    {
+        return _address;
+    }
 }

@@ -71,7 +71,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 abstract class AbstractQueueTestBase extends QpidTestCase
 {
     private static final Logger _logger = LoggerFactory.getLogger(AbstractQueueTestBase.class);
-
+    private static final long QUEUE_RUNNER_WAIT_TIME = Long.getLong("AbstractQueueTestBase.queueRunnerWaitTime", 150L);
 
     private AMQQueue<?> _queue;
     private VirtualHostImpl _virtualHost;
@@ -233,6 +233,88 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         assertEquals(messageB, _consumer.getQueueContext().getLastSeenEntry().getMessage());
         assertNull("There should be no releasedEntry after enqueues",
                    _consumer.getQueueContext().getReleasedEntry());
+    }
+
+    public void testMessageHeldIfNotYetValidWhenConsumerAdded() throws Exception
+    {
+        _queue.close();
+        Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, _qname);
+        attributes.put(Queue.OWNER, _owner);
+        attributes.put(Queue.HOLD_ON_PUBLISH_ENABLED, Boolean.TRUE);
+
+        _queue = (AMQQueue<?>) _virtualHost.createChild(Queue.class, attributes);
+
+        ServerMessage messageA = createMessage(new Long(24));
+        AMQMessageHeader messageHeader = messageA.getMessageHeader();
+        when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()+20000L);
+        _queue.enqueue(messageA, null, null);
+        _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
+                                                          EnumSet.of(ConsumerImpl.Option.ACQUIRES,
+                                                                     ConsumerImpl.Option.SEES_REQUEUES));
+        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
+
+        assertEquals("Message which was not yet valid was received", 0, _consumerTarget.getMessages().size());
+        when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()-100L);
+        _queue.checkMessageStatus();
+        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
+        assertEquals("Message which was valid was not received", 1, _consumerTarget.getMessages().size());
+    }
+
+    public void testMessageHoldingDependentOnQueueProperty() throws Exception
+    {
+        _queue.close();
+        Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, _qname);
+        attributes.put(Queue.OWNER, _owner);
+        attributes.put(Queue.HOLD_ON_PUBLISH_ENABLED, Boolean.FALSE);
+
+        _queue = (AMQQueue<?>) _virtualHost.createChild(Queue.class, attributes);
+
+        ServerMessage messageA = createMessage(new Long(24));
+        AMQMessageHeader messageHeader = messageA.getMessageHeader();
+        when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()+20000L);
+        _queue.enqueue(messageA, null, null);
+        _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
+                                                          EnumSet.of(ConsumerImpl.Option.ACQUIRES,
+                                                                     ConsumerImpl.Option.SEES_REQUEUES));
+        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
+
+        assertEquals("Message was held despite queue not having holding enabled", 1, _consumerTarget.getMessages().size());
+
+    }
+
+    public void testUnheldMessageOvertakesHeld() throws Exception
+    {
+        _queue.close();
+        Map<String,Object> attributes = new HashMap<>(_arguments);
+        attributes.put(Queue.NAME, _qname);
+        attributes.put(Queue.OWNER, _owner);
+        attributes.put(Queue.HOLD_ON_PUBLISH_ENABLED, Boolean.TRUE);
+
+        _queue = (AMQQueue<?>) _virtualHost.createChild(Queue.class, attributes);
+
+        ServerMessage messageA = createMessage(new Long(24));
+        AMQMessageHeader messageHeader = messageA.getMessageHeader();
+        when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()+20000L);
+        _queue.enqueue(messageA, null, null);
+        ServerMessage messageB = createMessage(new Long(25));
+        _queue.enqueue(messageB, null, null);
+
+        _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
+                                                          EnumSet.of(ConsumerImpl.Option.ACQUIRES,
+                                                                     ConsumerImpl.Option.SEES_REQUEUES));
+        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
+
+        assertEquals("Expect one message (message B)", 1, _consumerTarget.getMessages().size());
+        assertEquals("Wrong message received", messageB.getMessageHeader().getMessageId(), _consumerTarget.getMessages().get(0).getMessage().getMessageHeader().getMessageId());
+
+        when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()-100L);
+        _queue.checkMessageStatus();
+        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
+        assertEquals("Message which was valid was not received", 2, _consumerTarget.getMessages().size());
+        assertEquals("Wrong message received", messageA.getMessageHeader().getMessageId(), _consumerTarget.getMessages().get(1).getMessage().getMessageHeader().getMessageId());
+
     }
 
     /**

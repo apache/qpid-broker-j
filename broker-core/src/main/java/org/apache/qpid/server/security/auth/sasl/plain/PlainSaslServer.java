@@ -95,6 +95,10 @@ public class PlainSaslServer implements SaslServer
         {
             throw new SaslException("Unable to obtain data from callback handler: " + e, e);
         }
+        catch (IllegalArgumentException e)
+        {
+            throw new SaslException("Error processing SASL response: " + e.getMessage(), e);
+        }
 
         if (passwordCb.isAuthenticated())
         {

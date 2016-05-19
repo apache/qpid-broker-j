@@ -136,6 +136,12 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
         }
 
         @Override
+        public long getNotValidBefore()
+        {
+            return _delegate.getNotValidBefore();
+        }
+
+        @Override
         public String getType()
         {
             return _delegate.getType();

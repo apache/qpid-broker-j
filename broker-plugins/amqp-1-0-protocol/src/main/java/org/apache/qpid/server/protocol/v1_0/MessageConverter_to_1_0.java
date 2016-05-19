@@ -74,11 +74,15 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
 
     private StoredMessage<MessageMetaData_1_0> convertToStoredMessage(final M serverMessage, SectionEncoder sectionEncoder)
     {
-        final MessageMetaData_1_0 metaData = convertMetaData(serverMessage, sectionEncoder);
-        return convertServerMessage(metaData, serverMessage, sectionEncoder);
+        Section bodySection = getBodySection(serverMessage);
+
+        final MessageMetaData_1_0 metaData = convertMetaData(serverMessage, bodySection, sectionEncoder);
+        return convertServerMessage(metaData, serverMessage);
     }
 
-    abstract protected MessageMetaData_1_0 convertMetaData(final M serverMessage, SectionEncoder sectionEncoder);
+    abstract protected MessageMetaData_1_0 convertMetaData(final M serverMessage,
+                                                           final Section bodySection,
+                                                           SectionEncoder sectionEncoder);
 
 
     private static Section convertMessageBody(String mimeType, byte[] data)
@@ -203,25 +207,18 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
     }
 
     private StoredMessage<MessageMetaData_1_0> convertServerMessage(final MessageMetaData_1_0 metaData,
-                                                                      final M serverMessage,
-                                                                      SectionEncoder sectionEncoder)
+                                                                    final M serverMessage)
     {
-        final String mimeType = serverMessage.getMessageHeader().getMimeType();
-        byte[] data = new byte[(int) serverMessage.getSize()];
-        serverMessage.getContent(ByteBuffer.wrap(data));
-        byte[] uncompressed;
 
-        if(Symbol.valueOf(GZIPUtils.GZIP_CONTENT_ENCODING).equals(metaData.getPropertiesSection().getContentEncoding())
-                && (uncompressed = GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(data)))!=null)
+        final QpidByteBuffer allData = QpidByteBuffer.allocateDirect(metaData.getStorableSize());
+        metaData.writeToBuffer(allData);
+        allData.rewind();
+
+        if(metaData.getPropertiesSection() != null)
         {
-            data = uncompressed;
             metaData.getPropertiesSection().setContentEncoding(null);
         }
 
-
-        Section bodySection = convertMessageBody(mimeType, data);
-
-        final QpidByteBuffer allData = encodeConvertedMessage(metaData, bodySection, sectionEncoder);
 
         return new StoredMessage<MessageMetaData_1_0>()
                     {
@@ -283,17 +280,20 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         };
     }
 
-    private QpidByteBuffer encodeConvertedMessage(MessageMetaData_1_0 metaData, Section bodySection, SectionEncoder sectionEncoder)
+    private Section getBodySection(final M serverMessage)
     {
-        int headerSize = (int) metaData.getStorableSize();
+        final String mimeType = serverMessage.getMessageHeader().getMimeType();
+        byte[] data = new byte[(int) serverMessage.getSize()];
+        serverMessage.getContent(ByteBuffer.wrap(data));
+        byte[] uncompressed;
 
-        sectionEncoder.reset();
-        sectionEncoder.encodeObject(bodySection);
-        Binary dataEncoding = sectionEncoder.getEncoding();
+        if(Symbol.valueOf(GZIPUtils.GZIP_CONTENT_ENCODING).equals(serverMessage.getMessageHeader().getEncoding())
+           && (uncompressed = GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(data)))!=null)
+        {
+            data = uncompressed;
+        }
 
-        final QpidByteBuffer allData = QpidByteBuffer.allocateDirect(headerSize + dataEncoding.getLength());
-        metaData.writeToBuffer(allData);
-        allData.put(dataEncoding.getArray(),dataEncoding.getArrayOffset(),dataEncoding.getLength());
-        return allData;
+        return convertMessageBody(mimeType, data);
     }
+
 }

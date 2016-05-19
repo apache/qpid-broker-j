@@ -99,6 +99,7 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
     public static final int UNKNOWN_TYPE = 3;
     private boolean _sendEncrypted;
     private String _encryptedRecipients;
+    private long _deliveryDelay;
 
     protected void setExclusive(boolean exclusive)
     {
@@ -128,6 +129,11 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
     public String getEncryptedRecipients()
     {
         return _encryptedRecipients;
+    }
+
+    public long getDeliveryDelay()
+    {
+        return _deliveryDelay;
     }
 
     // ----- Fields required to support new address syntax -------
@@ -314,6 +320,8 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         _consumerArguments = binding.getConsumerOptions();
         _sendEncrypted = Boolean.parseBoolean(binding.getOption(BindingURL.OPTION_SEND_ENCRYPTED));
         _encryptedRecipients = binding.getOption(BindingURL.OPTION_ENCRYPTED_RECIPIENTS);
+        String deliveryDelayVal = binding.getOption(BindingURL.OPTION_DELIVERY_DELAY);
+        _deliveryDelay = deliveryDelayVal == null ? 0L : Long.parseLong(deliveryDelayVal);
     }
 
     protected AMQDestination(String exchangeName, String exchangeClass, String routingKey, String queueName)
@@ -957,7 +965,7 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         _addressType = _addrHelper.getNodeType();
         _node =  _addrHelper.getNode();
         _link = _addrHelper.getLink();
-
+        _deliveryDelay = _link.getDelay();
         _sendEncrypted = _addrHelper.getSendEncrypted();
         _encryptedRecipients = _addrHelper.getEncryptedRecipients();
     }

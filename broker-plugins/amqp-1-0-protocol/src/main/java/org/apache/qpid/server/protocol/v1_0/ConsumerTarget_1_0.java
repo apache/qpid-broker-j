@@ -412,8 +412,14 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                     {
                         public void postCommit()
                         {
-                            //_link.getEndpoint().settle(_deliveryTag);
-                            _link.getEndpoint().updateDisposition(_deliveryTag, (DeliveryState)outcome, true);
+                            if(Boolean.TRUE.equals(settled))
+                            {
+                                _link.getEndpoint().settle(_deliveryTag);
+                            }
+                            else
+                            {
+                                _link.getEndpoint().updateDisposition(_deliveryTag, (DeliveryState) outcome, true);
+                            }
                             _link.getEndpoint().sendFlowConditional();
                         }
 

@@ -32,7 +32,10 @@ public class QpidMessageProperties
     public static final String QPID_SUBJECT = "qpid.subject";
     public static final String QPID_SUBJECT_JMS_PROPERTY = "JMS_qpid_subject";
     public static final String QPID_SUBJECT_JMS_PROPER = QPID_SUBJECT_JMS_PROPERTY.substring(4);
-    
+
+    public static final String QPID_NOT_VALID_BEFORE = "x-qpid-not-valid-before";
+
+
     // AMQP 0-10 related properties
     public static final String AMQP_0_10_APP_ID = "x-amqp-0-10.app-id";
     public static final String AMQP_0_10_ROUTING_KEY = "x-amqp-0-10.routing-key";
