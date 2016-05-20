@@ -114,8 +114,8 @@ public class IoNetworkTransport
         {
             socket.setReuseAddress(true);
             socket.setTcpNoDelay(settings.isTcpNodelay());
-            socket.setSendBufferSize(socket.getSendBufferSize());
-            socket.setReceiveBufferSize(socket.getReceiveBufferSize());
+            socket.setSendBufferSize(settings.getWriteBufferSize());
+            socket.setReceiveBufferSize(settings.getReadBufferSize());
 
             if (LOGGER.isDebugEnabled())
             {
@@ -130,9 +130,12 @@ public class IoNetworkTransport
             InetSocketAddress socketAddress = new InetSocketAddress(address, settings.getPort());
             socket.connect(socketAddress, settings.getConnectTimeout());
 
-            LOGGER.debug("Socket connection from {} to {} established",
-                         socket.getLocalSocketAddress(),
-                         socket.getRemoteSocketAddress());
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug("Socket connection from {} to {} established",
+                             socket.getLocalSocketAddress(),
+                             socket.getRemoteSocketAddress());
+            }
 
         }
         catch (IOException e)
