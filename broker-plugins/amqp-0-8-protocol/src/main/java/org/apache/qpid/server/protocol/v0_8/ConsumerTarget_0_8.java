@@ -149,7 +149,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         {
             super(channel, consumerTag, filters, creditManager, deliveryMethod, recordMethod);
 
-            _txn = new AutoCommitTransaction(channel.getVirtualHost().getMessageStore());
+            _txn = new AutoCommitTransaction(channel.getAddressSpace().getMessageStore());
         }
 
         /**

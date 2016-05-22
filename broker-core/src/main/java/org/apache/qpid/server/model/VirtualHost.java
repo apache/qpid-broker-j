@@ -46,7 +46,7 @@ import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
 
 @ManagedObject( defaultType = "ProvidedStore", description = VirtualHost.CLASS_DESCRIPTION)
 public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<X>, StatisticsGatherer,
-                                                               EventLoggerProvider
+                                                               EventLoggerProvider, NamedAddressSpace
 {
     String CLASS_DESCRIPTION = "<p>A virtualhost is a namespace in which messaging is performed. Virtualhosts are "
                                + "independent; the messaging goes on a within a virtualhost is independent of any "
@@ -189,6 +189,7 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     Broker<?> getBroker();
 
+    @Override
     @ManagedOperation(nonModifying = true)
     Collection<? extends Connection<?>> getConnections();
 
@@ -199,18 +200,12 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     void stop();
 
-    String getRedirectHost(AmqpPort<?> port);
-
     Principal getPrincipal();
 
     void registerConnection(AMQPConnection<?> connection);
     void deregisterConnection(AMQPConnection<?> connection);
 
     Queue<?> getAttainedQueue(UUID id);
-
-    MessageSource getAttainedMessageSource(String name);
-
-    MessageDestination getAttainedMessageDestination(String name);
 
     <T extends ConfiguredObject<?>> T getAttainedChildFromAddress(Class<T> childClass,
                                                                   String address);
@@ -223,13 +218,7 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     void scheduleHouseKeepingTask(long period, HouseKeepingTask task);
 
-    DtxRegistry getDtxRegistry();
-
-    LinkRegistry getLinkRegistry(String remoteContainerId);
-
     ScheduledFuture<?> scheduleTask(long delay, Runnable timeoutTask);
-
-    boolean authoriseCreateConnection(AMQPConnection<?> connection);
 
     String getLocalAddress(String routingAddress);
 

@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.message.EnqueueableMessage;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -55,9 +56,8 @@ public class DtxBranch
 
     private Transaction _transaction;
     private long _expiration;
-    private VirtualHost<?> _vhost;
     private ScheduledFuture<?> _timeoutFuture;
-    private MessageStore _store;
+    private final DtxRegistry _dtxRegistry;
     private Transaction.StoredXidRecord _storedXidRecord;
 
 
@@ -73,16 +73,15 @@ public class DtxBranch
         ROLLBACK_ONLY
     }
 
-    public DtxBranch(Xid xid, MessageStore store, VirtualHost<?> vhost)
+    public DtxBranch(Xid xid, DtxRegistry dtxRegistry)
     {
         _xid = xid;
-        _store = store;
-        _vhost = vhost;
+        _dtxRegistry = dtxRegistry;
     }
 
-    public DtxBranch(Transaction.StoredXidRecord storedXidRecord, MessageStore store, VirtualHost<?> vhost)
+    public DtxBranch(Transaction.StoredXidRecord storedXidRecord, DtxRegistry dtxRegistry)
     {
-        this(new Xid(storedXidRecord.getFormat(), storedXidRecord.getGlobalId(), storedXidRecord.getBranchId()), store, vhost);
+        this(new Xid(storedXidRecord.getFormat(), storedXidRecord.getGlobalId(), storedXidRecord.getBranchId()), dtxRegistry);
         _storedXidRecord = storedXidRecord;
     }
 
@@ -132,7 +131,7 @@ public class DtxBranch
 
             _logger.debug("Scheduling timeout and rollback after {}s for DtxBranch {}", delay/1000, _xid);
 
-            _timeoutFuture = _vhost.scheduleTask(delay, new Runnable()
+            _timeoutFuture = _dtxRegistry.scheduleTask(delay, new Runnable()
             {
                 public void run()
                 {
@@ -215,7 +214,7 @@ public class DtxBranch
     {
         _logger.debug("Performing prepare for DtxBranch {}", _xid);
 
-        Transaction txn = _store.newTransaction();
+        Transaction txn = _dtxRegistry.getMessageStore().newTransaction();
         _storedXidRecord = txn.recordXid(_xid.getFormat(),
                       _xid.getGlobalId(),
                       _xid.getBranchId(),
@@ -244,7 +243,7 @@ public class DtxBranch
         {
             // prepare has previously been called
 
-            Transaction txn = _store.newTransaction();
+            Transaction txn = _dtxRegistry.getMessageStore().newTransaction();
             txn.removeXid(_storedXidRecord);
             txn.commitTran();
 
@@ -291,7 +290,7 @@ public class DtxBranch
 
     public void prePrepareTransaction() throws StoreException
     {
-        _transaction = _store.newTransaction();
+        _transaction = _dtxRegistry.getMessageStore().newTransaction();
 
         for(final EnqueueRecord enqueue : _enqueueRecords)
         {

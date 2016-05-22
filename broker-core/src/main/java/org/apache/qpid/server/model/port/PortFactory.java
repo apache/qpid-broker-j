@@ -31,6 +31,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
+import org.apache.qpid.server.model.ConfiguredSettableAttribute;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
@@ -63,7 +64,8 @@ public class PortFactory<X extends Port<X>> implements ConfiguredObjectTypeFacto
         ConfiguredObjectTypeRegistry typeRegistry = model.getTypeRegistry();
         Map<String, ConfiguredObjectAttribute<?, ?>> attributeTypes =
                 typeRegistry.getAttributeTypes(Port.class);
-        ConfiguredObjectAttribute protocolsAttribute = attributeTypes.get(Port.PROTOCOLS);
+        ConfiguredSettableAttribute protocolsAttribute =
+                (ConfiguredSettableAttribute) attributeTypes.get(Port.PROTOCOLS);
         Set<Protocol> protocols = (Set<Protocol>) protocolsAttribute.convert(portAttributes.get(Port.PROTOCOLS),broker);
         ProtocolType protocolType = null;
 

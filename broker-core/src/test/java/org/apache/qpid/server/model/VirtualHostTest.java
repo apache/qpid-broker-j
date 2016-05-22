@@ -552,7 +552,7 @@ public class VirtualHostTest extends QpidTestCase
             }
         };
         doAnswer(answer).when(connection).addDeleteTask(deleteTaskCaptor.capture());
-        when(connection.getVirtualHost()).thenReturn(virtualHost);
+        when(connection.getAddressSpace()).thenReturn(virtualHost);
         doAnswer(new Answer()
         {
             @Override

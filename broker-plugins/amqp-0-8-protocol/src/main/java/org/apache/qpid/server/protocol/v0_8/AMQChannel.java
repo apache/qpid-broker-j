@@ -51,7 +51,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQConnectionException;
-import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
@@ -69,6 +68,8 @@ import org.apache.qpid.server.filter.FilterManagerFactory;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.flow.FlowCreditManager;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
@@ -88,12 +89,12 @@ import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NoFactoryForTypeException;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.UnknownConfiguredObjectException;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
@@ -120,7 +121,8 @@ import org.apache.qpid.transport.network.Ticker;
 public class AMQChannel
         implements AMQSessionModel<AMQChannel>,
                    AsyncAutoCommitTransaction.FutureRecorder,
-                   ServerChannelMethodProcessor
+                   ServerChannelMethodProcessor,
+                   EventLoggerProvider
 {
     public static final int DEFAULT_PREFETCH = 4096;
 
@@ -239,7 +241,7 @@ public class AMQChannel
 
         _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(_subject);
 
-        _maxUncommittedInMemorySize = connection.getVirtualHost().getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
+        _maxUncommittedInMemorySize = connection.getContextProvider().getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
         _logSubject = new ChannelLogSubject(this);
 
         _messageStore = messageStore;
@@ -257,19 +259,24 @@ public class AMQChannel
             {
                 _connection.sendConnectionCloseAsync(AMQConstant.RESOURCE_ERROR, reason);
             }
-        }, getVirtualHost());
+        }, getConnection());
 
         AccessController.doPrivileged((new PrivilegedAction<Object>()
         {
             @Override
             public Object run()
             {
-                getVirtualHost().getEventLogger().message(ChannelMessages.CREATE());
+                message(ChannelMessages.CREATE());
 
                 return null;
             }
         }),_accessControllerContext);
 
+    }
+
+    private void message(final LogMessage message)
+    {
+        getEventLogger().message(message);
     }
 
     public AccessControlContext getAccessControllerContext()
@@ -417,9 +424,9 @@ public class AMQChannel
         {
             MessagePublishInfo info = _currentMessage.getMessagePublishInfo();
             String routingKey = AMQShortString.toString(info.getRoutingKey());
-            VirtualHost<?> virtualHost = getVirtualHost();
+            NamedAddressSpace virtualHost = getAddressSpace();
 
-            SecurityManager securityManager = virtualHost.getSecurityManager();
+            SecurityManager securityManager = getConnection().getBroker().getSecurityManager();
             try
             {
                 ContentHeaderBody contentHeader = _currentMessage.getContentHeader();
@@ -554,8 +561,7 @@ public class AMQChannel
                 handle.flowToDisk();
                 if(!_uncommittedMessages.isEmpty() || _uncommittedMessageSize == handle.getMetaData().getContentSize())
                 {
-                    getVirtualHost().getEventLogger()
-                            .message(_logSubject, ChannelMessages.LARGE_TRANSACTION_WARN(_uncommittedMessageSize));
+                    messageWithSubject(ChannelMessages.LARGE_TRANSACTION_WARN(_uncommittedMessageSize));
                 }
 
                 if(!_uncommittedMessages.isEmpty())
@@ -580,7 +586,7 @@ public class AMQChannel
      * Pre-requisite: the current message is judged to have no destination queues.
      *
      * @throws AMQConnectionException if the message is mandatory close-on-no-route
-     * @see AMQPConnection_0_8#isCloseWhenNoRoute()
+     * @see AMQPConnection_0_8Impl#isCloseWhenNoRoute()
      */
     private Runnable handleUnroutableMessage(AMQMessage message)
     {
@@ -632,7 +638,7 @@ public class AMQChannel
             else
             {
 
-                getVirtualHost().getEventLogger().message(ExchangeMessages.DISCARDMSG(exchangeName, routingKey));
+                message(ExchangeMessages.DISCARDMSG(exchangeName, routingKey));
             }
         }
         return returnVal;
@@ -892,8 +898,13 @@ public class AMQChannel
             LogMessage operationalLogMessage = cause == null ?
                     ChannelMessages.CLOSE() :
                     ChannelMessages.CLOSE_FORCED(cause.getCode(), message);
-            getVirtualHost().getEventLogger().message(_logSubject, operationalLogMessage);
+            messageWithSubject(operationalLogMessage);
         }
+    }
+
+    private void messageWithSubject(final LogMessage operationalLogMessage)
+    {
+        getEventLogger().message(_logSubject, operationalLogMessage);
     }
 
     private void unsubscribeAllConsumers()
@@ -1152,7 +1163,7 @@ public class AMQChannel
             // Log Flow Started before we start the subscriptions
             if (!suspended && _logChannelFlowMessages)
             {
-                getVirtualHost().getEventLogger().message(_logSubject, ChannelMessages.FLOW("Started"));
+                messageWithSubject(ChannelMessages.FLOW("Started"));
             }
 
 
@@ -1196,7 +1207,7 @@ public class AMQChannel
             // stopped.
             if (suspended && _logChannelFlowMessages)
             {
-                getVirtualHost().getEventLogger().message(_logSubject, ChannelMessages.FLOW("Stopped"));
+                messageWithSubject(ChannelMessages.FLOW("Stopped"));
             }
 
         }
@@ -1324,7 +1335,7 @@ public class AMQChannel
     {
         if (!_prefetchLoggedForChannel)
         {
-            getVirtualHost().getEventLogger().message(ChannelMessages.PREFETCH_SIZE(prefetchSize, prefetchCount));
+            message(ChannelMessages.PREFETCH_SIZE(prefetchSize, prefetchCount));
             _prefetchLoggedForChannel = true;
         }
 
@@ -1667,8 +1678,7 @@ public class AMQChannel
 
             if(_blocking.compareAndSet(false,true))
             {
-                getVirtualHost().getEventLogger().message(_logSubject,
-                                                          ChannelMessages.FLOW_ENFORCED("** All Queues **"));
+                messageWithSubject(ChannelMessages.FLOW_ENFORCED("** All Queues **"));
 
 
                 getConnection().notifyWork();
@@ -1682,7 +1692,7 @@ public class AMQChannel
         {
             if(_blockingEntities.isEmpty() && _blocking.compareAndSet(true,false))
             {
-                getVirtualHost().getEventLogger().message(_logSubject, ChannelMessages.FLOW_REMOVED());
+                messageWithSubject(ChannelMessages.FLOW_REMOVED());
                 getConnection().notifyWork();
             }
         }
@@ -1696,7 +1706,7 @@ public class AMQChannel
 
             if(_blocking.compareAndSet(false,true))
             {
-                getVirtualHost().getEventLogger().message(_logSubject, ChannelMessages.FLOW_ENFORCED(queue.getName()));
+                messageWithSubject(ChannelMessages.FLOW_ENFORCED(queue.getName()));
                 getConnection().notifyWork();
 
             }
@@ -1709,7 +1719,7 @@ public class AMQChannel
         {
             if(_blockingEntities.isEmpty() && _blocking.compareAndSet(true,false) && !isClosing())
             {
-                getVirtualHost().getEventLogger().message(_logSubject, ChannelMessages.FLOW_REMOVED());
+                messageWithSubject(ChannelMessages.FLOW_REMOVED());
                 getConnection().notifyWork();
             }
         }
@@ -1746,9 +1756,9 @@ public class AMQChannel
         return _blocking.get();
     }
 
-    public VirtualHost<?> getVirtualHost()
+    public NamedAddressSpace getAddressSpace()
     {
-        return getConnection().getVirtualHost();
+        return getConnection().getAddressSpace();
     }
 
     public void checkTransactionStatus(long openWarn, long openClose, long idleWarn, long idleClose)
@@ -1776,10 +1786,9 @@ public class AMQChannel
                     @Override
                     public void performAction(final MessageInstance requeueEntry)
                     {
-                        getVirtualHost().getEventLogger().message(_logSubject,
-                                                                  ChannelMessages.DEADLETTERMSG(msg.getMessageNumber(),
-                                                                                                requeueEntry.getOwningResource()
-                                                                                                        .getName()));
+                        messageWithSubject(ChannelMessages.DEADLETTERMSG(msg.getMessageNumber(),
+                                                                         requeueEntry.getOwningResource()
+                                                                               .getName()));
                     }
                 }, null);
             }
@@ -1802,10 +1811,9 @@ public class AMQChannel
                                     "No alternate exchange configured for queue, must discard the message as unable to DLQ: delivery tag: "
                                     + deliveryTag);
                         }
-                        getVirtualHost().getEventLogger().message(_logSubject,
-                                                                  ChannelMessages.DISCARDMSG_NOALTEXCH(msg.getMessageNumber(),
-                                                                                                       queue.getName(),
-                                                                                                       msg.getInitialRoutingAddress()));
+                        messageWithSubject(ChannelMessages.DISCARDMSG_NOALTEXCH(msg.getMessageNumber(),
+                                                                                queue.getName(),
+                                                                                msg.getInitialRoutingAddress()));
 
                     }
                     else
@@ -1816,9 +1824,8 @@ public class AMQChannel
                                     "Routing process provided no queues to enqueue the message on, must discard message as unable to DLQ: delivery tag: "
                                     + deliveryTag);
                         }
-                        getVirtualHost().getEventLogger().message(_logSubject,
-                                                                  ChannelMessages.DISCARDMSG_NOROUTE(msg.getMessageNumber(),
-                                                                                                     altExchange.getName()));
+                        messageWithSubject(ChannelMessages.DISCARDMSG_NOROUTE(msg.getMessageNumber(),
+                                                                              altExchange.getName()));
                     }
                 }
             }
@@ -2109,7 +2116,7 @@ public class AMQChannel
         }
 
         AMQShortString consumerTag1 = consumerTag;
-        VirtualHost<?> vHost = _connection.getVirtualHost();
+        NamedAddressSpace vHost = _connection.getAddressSpace();
         sync();
         String queueName = AMQShortString.toString(queue);
 
@@ -2119,7 +2126,7 @@ public class AMQChannel
         {
             sources.add(queue1);
         }
-        else if (vHost.getContextValue(Boolean.class, "qpid.enableMultiQueueConsumers")
+        else if (_connection.getContextProvider().getContextValue(Boolean.class, "qpid.enableMultiQueueConsumers")
                  && arguments != null
                  && arguments.get("x-multiqueue") instanceof Collection)
         {
@@ -2234,7 +2241,7 @@ public class AMQChannel
             _logger.debug("RECV[" + _channelId + "] BasicGet[" +" queue: " + queueName + " noAck: " + noAck + " ]");
         }
 
-        VirtualHost<?> vHost = _connection.getVirtualHost();
+        NamedAddressSpace vHost = _connection.getAddressSpace();
         sync();
         MessageSource queue = queueName == null ? getDefaultQueue() : vHost.getAttainedMessageSource(queueName.toString());
         if (queue == null)
@@ -2307,11 +2314,11 @@ public class AMQChannel
 
 
 
-        VirtualHost<?> vHost = _connection.getVirtualHost();
+        NamedAddressSpace vHost = _connection.getAddressSpace();
 
         if(blockingTimeoutExceeded())
         {
-            getVirtualHost().getEventLogger().message(ChannelMessages.FLOW_CONTROL_IGNORED());
+            message(ChannelMessages.FLOW_CONTROL_IGNORED());
             closeChannel(AMQConstant.MESSAGE_TOO_LARGE,
                          "Channel flow control was requested, but not enforced by sender");
         }
@@ -2352,6 +2359,12 @@ public class AMQChannel
                 }
             }
         }
+    }
+
+    @Override
+    public EventLogger getEventLogger()
+    {
+        return getConnection().getEventLogger();
     }
 
     private boolean blockingTimeoutExceeded()
@@ -2689,7 +2702,7 @@ public class AMQChannel
                           routingKey + " queue: " + queueName + " ]");
         }
 
-        VirtualHost<?> virtualHost = _connection.getVirtualHost();
+        NamedAddressSpace virtualHost = _connection.getAddressSpace();
         MethodRegistry methodRegistry = _connection.getMethodRegistry();
 
         sync();
@@ -2703,9 +2716,9 @@ public class AMQChannel
             {
                 if (queueName == null)
                 {
-                    replyCode = virtualHost.getChildren(Queue.class).isEmpty()
-                            ? ExchangeBoundOkBody.NO_BINDINGS
-                            : ExchangeBoundOkBody.OK;
+                    replyCode = virtualHost.hasMessageSources()
+                            ? ExchangeBoundOkBody.OK
+                            : ExchangeBoundOkBody.NO_BINDINGS;
                     replyText = null;
 
                 }
@@ -2728,14 +2741,15 @@ public class AMQChannel
             {
                 if (queueName == null)
                 {
-                    replyCode = virtualHost.getAttainedChildFromAddress(Queue.class, routingKey.toString()) == null
-                            ? ExchangeBoundOkBody.NO_QUEUE_BOUND_WITH_RK
-                            : ExchangeBoundOkBody.OK;
+                    replyCode = virtualHost.getAttainedMessageDestination(routingKey.toString()) instanceof Queue
+                            ? ExchangeBoundOkBody.OK
+                            : ExchangeBoundOkBody.NO_QUEUE_BOUND_WITH_RK;
                     replyText = null;
                 }
                 else
                 {
-                    Queue<?> queue = virtualHost.getAttainedChildFromAddress(Queue.class, queueName.toString());
+                    MessageDestination destination = virtualHost.getAttainedMessageDestination(queueName.toString());
+                    Queue<?> queue = destination instanceof Queue ? (Queue) destination : null;
                     if (queue == null)
                     {
 
@@ -2754,7 +2768,7 @@ public class AMQChannel
         }
         else
         {
-            Exchange<?> exchange = virtualHost.getAttainedChildFromAddress(Exchange.class, exchangeName.toString());
+            Exchange<?> exchange = getExchange(exchangeName.toString());
             if (exchange == null)
             {
 
@@ -2778,8 +2792,7 @@ public class AMQChannel
                 }
                 else
                 {
-
-                    Queue<?> queue = virtualHost.getAttainedChildFromAddress(Queue.class, queueName.toString());
+                    Queue<?> queue = getQueue(queueName.toString());
                     if (queue == null)
                     {
                         replyCode = ExchangeBoundOkBody.QUEUE_NOT_FOUND;
@@ -2806,7 +2819,7 @@ public class AMQChannel
             }
             else if (queueName != null)
             {
-                Queue<?> queue = virtualHost.getAttainedChildFromAddress(Queue.class, queueName.toString());
+                Queue<?> queue = getQueue(queueName.toString());
                 if (queue == null)
                 {
                     replyCode = ExchangeBoundOkBody.QUEUE_NOT_FOUND;
@@ -2878,7 +2891,7 @@ public class AMQChannel
         final AMQMethodBody declareOkBody = methodRegistry.createExchangeDeclareOkBody();
 
         Exchange<?> exchange;
-        VirtualHost<?> virtualHost = _connection.getVirtualHost();
+        NamedAddressSpace virtualHost = _connection.getAddressSpace();
 
         if (isDefaultExchange(exchangeName))
         {
@@ -2900,7 +2913,7 @@ public class AMQChannel
         {
             if (passive)
             {
-                exchange = virtualHost.getAttainedChildFromAddress(Exchange.class, exchangeName.toString());
+                exchange = getExchange(exchangeName.toString());
                 if (exchange == null)
                 {
                     closeChannel(AMQConstant.NOT_FOUND, "Unknown exchange: '" + exchangeName + "'");
@@ -2944,7 +2957,7 @@ public class AMQChannel
                     {
                         attributes.put(Exchange.ALTERNATE_EXCHANGE, null);
                     }
-                    exchange = virtualHost.createChild(Exchange.class, attributes);
+                    exchange = virtualHost.createMessageDestination(Exchange.class, attributes);
 
                     if (!nowait)
                     {
@@ -2955,7 +2968,7 @@ public class AMQChannel
                 }
                 catch (ReservedExchangeNameException e)
                 {
-                    Exchange existing = virtualHost.getAttainedChildFromAddress(Exchange.class, exchangeName.toString());
+                    Exchange existing = getExchange(exchangeName.toString());
                     if (existing != null && new AMQShortString(existing.getType()).equals(type))
                     {
                         sync();
@@ -3033,7 +3046,7 @@ public class AMQChannel
         }
 
 
-        VirtualHost<?> virtualHost = _connection.getVirtualHost();
+        NamedAddressSpace virtualHost = _connection.getAddressSpace();
         sync();
 
         if (isDefaultExchange(exchangeStr))
@@ -3047,7 +3060,7 @@ public class AMQChannel
         {
             final String exchangeName = exchangeStr.toString();
 
-            final Exchange<?> exchange = virtualHost.getAttainedChildFromAddress(Exchange.class, exchangeName);
+            final Exchange<?> exchange = getExchange(exchangeName);
             if (exchange == null)
             {
                 closeChannel(AMQConstant.NOT_FOUND, "No such exchange: '" + exchangeStr + "'");
@@ -3103,7 +3116,7 @@ public class AMQChannel
                           " nowait: " + nowait + " arguments: " + argumentsTable + " ]");
         }
 
-        VirtualHost<?> virtualHost = _connection.getVirtualHost();
+        NamedAddressSpace virtualHost = _connection.getAddressSpace();
         Queue<?> queue;
         if (queueName == null)
         {
@@ -3120,7 +3133,7 @@ public class AMQChannel
         }
         else
         {
-            queue = virtualHost.getAttainedChildFromAddress(Queue.class, queueName.toString());
+            queue = getQueue(queueName.toString());
             routingKey = routingKey == null ? AMQShortString.EMPTY_STRING : routingKey;
         }
 
@@ -3142,7 +3155,7 @@ public class AMQChannel
 
             final String exchangeName = exchange.toString();
 
-            final Exchange<?> exch = virtualHost.getAttainedChildFromAddress(Exchange.class, exchangeName);
+            final Exchange<?> exch = getExchange(exchangeName);
             if (exch == null)
             {
                 closeChannel(AMQConstant.NOT_FOUND,
@@ -3212,7 +3225,7 @@ public class AMQChannel
                           " autoDelete: " + autoDelete + " nowait: " + nowait + " arguments: " + arguments + " ]");
         }
 
-        VirtualHost<?> virtualHost = _connection.getVirtualHost();
+        NamedAddressSpace virtualHost = _connection.getAddressSpace();
 
         final AMQShortString queueName;
 
@@ -3233,7 +3246,7 @@ public class AMQChannel
 
         if (passive)
         {
-            queue = virtualHost.getAttainedChildFromAddress(Queue.class, queueName.toString());
+            queue = getQueue(queueName.toString());
             if (queue == null)
             {
                 closeChannel(AMQConstant.NOT_FOUND,
@@ -3309,7 +3322,7 @@ public class AMQChannel
                     attributes.put(Queue.LIFETIME_POLICY, lifetimePolicy);
                 }
 
-                queue = virtualHost.createChild(Queue.class, attributes);
+                queue = virtualHost.createMessageSource(Queue.class, attributes);
 
                 setDefaultQueue(queue);
 
@@ -3408,7 +3421,7 @@ public class AMQChannel
             _logger.debug("RECV[" + _channelId + "] QueueDelete[" +" queue: " + queueName + " ifUnused: " + ifUnused + " ifEmpty: " + ifEmpty + " nowait: " + nowait + " ]");
         }
 
-        VirtualHost<?> virtualHost = _connection.getVirtualHost();
+        NamedAddressSpace virtualHost = _connection.getAddressSpace();
         sync();
         Queue<?> queue;
         if (queueName == null)
@@ -3419,7 +3432,7 @@ public class AMQChannel
         }
         else
         {
-            queue = virtualHost.getAttainedChildFromAddress(Queue.class, queueName.toString());
+            queue = getQueue(queueName.toString());
         }
 
         if (queue == null)
@@ -3478,14 +3491,14 @@ public class AMQChannel
             _logger.debug("RECV[" + _channelId + "] QueuePurge[" +" queue: " + queueName + " nowait: " + nowait + " ]");
         }
 
-        VirtualHost<?> virtualHost = _connection.getVirtualHost();
+        NamedAddressSpace virtualHost = _connection.getAddressSpace();
         Queue<?> queue = null;
         if (queueName == null && (queue = getDefaultQueue()) == null)
         {
 
             _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED, "No queue specified.", getChannelId());
         }
-        else if ((queueName != null) && (queue = virtualHost.getAttainedChildFromAddress(Queue.class, queueName.toString())) == null)
+        else if ((queueName != null) && (queue = getQueue(queueName.toString())) == null)
         {
             closeChannel(AMQConstant.NOT_FOUND, "Queue '" + queueName + "' does not exist.");
         }
@@ -3531,13 +3544,13 @@ public class AMQChannel
                           " arguments: " + arguments + " ]");
         }
 
-        VirtualHost<?> virtualHost = _connection.getVirtualHost();
+        NamedAddressSpace virtualHost = _connection.getAddressSpace();
 
 
         final boolean useDefaultQueue = queueName == null;
         final Queue<?> queue = useDefaultQueue
                 ? getDefaultQueue()
-                : virtualHost.getAttainedChildFromAddress(Queue.class, queueName.toString());
+                : getQueue(queueName.toString());
 
 
         if (queue == null)
@@ -3557,7 +3570,7 @@ public class AMQChannel
         else
         {
 
-            final Exchange<?> exch = virtualHost.getAttainedChildFromAddress(Exchange.class, exchange.toString());
+            final Exchange<?> exch = getExchange(exchange.toString());
 
             if (exch == null)
             {
@@ -3813,5 +3826,17 @@ public class AMQChannel
     private Collection<ConsumerTarget_0_8> getConsumerTargets()
     {
         return _tag2SubscriptionTargetMap.values();
+    }
+
+    private Exchange<?> getExchange(String name)
+    {
+        MessageDestination destination = getAddressSpace().getAttainedMessageDestination(name);
+        return destination instanceof Exchange ? (Exchange<?>) destination : null;
+    }
+
+    private Queue<?> getQueue(String name)
+    {
+        MessageSource source = getAddressSpace().getAttainedMessageSource(name);
+        return source instanceof Queue ? (Queue<?>) source : null;
     }
 }

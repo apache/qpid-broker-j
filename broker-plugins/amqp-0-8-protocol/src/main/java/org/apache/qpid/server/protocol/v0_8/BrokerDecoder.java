@@ -36,13 +36,13 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 public class BrokerDecoder extends ServerDecoder
 {
     private static final Logger _logger = LoggerFactory.getLogger(BrokerDecoder.class);
-    private final AMQPConnection_0_8 _connection;
+    private final AMQPConnection_0_8Impl _connection;
     /**
      * Creates a new AMQP decoder.
      *
      * @param connection
      */
-    public BrokerDecoder(final AMQPConnection_0_8 connection)
+    public BrokerDecoder(final AMQPConnection_0_8Impl connection)
     {
         super(connection);
         _connection = connection;

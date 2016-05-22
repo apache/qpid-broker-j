@@ -29,13 +29,14 @@ import javax.security.auth.Subject;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
+import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.util.BrokerTestHelper;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.Binary;
@@ -77,12 +78,17 @@ public class ServerSessionTest extends QpidTestCase
     public void testOverlargeMessageTest() throws Exception
     {
         final Broker<?> broker = mock(Broker.class);
+        SecurityManager securityManager = new SecurityManager(broker, true);
+        when(broker.getSecurityManager()).thenReturn(securityManager);
         when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0l);
 
         AmqpPort port = createMockPort();
 
         final AMQPConnection_0_10 modelConnection = mock(AMQPConnection_0_10.class);
-        when(modelConnection.getVirtualHost()).thenReturn((VirtualHost) _virtualHost);
+        when(modelConnection.getAddressSpace()).thenReturn(_virtualHost);
+        when(modelConnection.getContextProvider()).thenReturn(_virtualHost);
+        when(modelConnection.getBroker()).thenReturn((Broker)broker);
+        when(modelConnection.getEventLogger()).thenReturn(mock(EventLogger.class));
         Subject subject = new Subject();
         when(modelConnection.getSubject()).thenReturn(subject);
         when(modelConnection.getMaxMessageSize()).thenReturn(1024l);

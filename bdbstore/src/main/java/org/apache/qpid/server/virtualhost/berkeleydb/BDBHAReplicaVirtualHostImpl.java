@@ -119,6 +119,12 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
+    public boolean isActive()
+    {
+        return false;
+    }
+
+    @Override
     protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
@@ -320,6 +326,27 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     public MessageStore getMessageStore()
     {
         return null;
+    }
+
+    @Override
+    public <T extends MessageSource> T createMessageSource(final Class<T> clazz, final Map<String, Object> attributes)
+    {
+        throwUnsupportedForReplica();
+        return null;
+    }
+
+    @Override
+    public <T extends MessageDestination> T createMessageDestination(final Class<T> clazz,
+                                                                     final Map<String, Object> attributes)
+    {
+        throwUnsupportedForReplica();
+        return null;
+    }
+
+    @Override
+    public boolean hasMessageSources()
+    {
+        return false;
     }
 
     @Override

@@ -37,7 +37,7 @@ import org.apache.qpid.server.store.ConfiguredObjectRecord;
 /**
  * An object that can be "managed" (eg via the web interface) and usually read from configuration.
  */
-public interface ConfiguredObject<X extends ConfiguredObject<X>>
+public interface ConfiguredObject<X extends ConfiguredObject<X>> extends ContextProvider, TaskExecutorProvider
 {
     String OVER_SIZED_ATTRIBUTE_ALTERNATIVE_TEXT = "Value is too long to display";
 
@@ -82,12 +82,6 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>>
 
     @ManagedAttribute
     Map<String, String> getContext();
-
-    <T> T getContextValue(Class<T> clazz, String propertyName);
-
-    <T> T getContextValue(Class<T> clazz, Type t, String propertyName);
-
-    Set<String> getContextKeys(final boolean excludeSystem);
 
     @DerivedAttribute( persist = true )
     String getLastUpdatedBy();
@@ -258,8 +252,6 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>>
     ListenableFuture<Void> closeAsync();
 
     ListenableFuture<Void> deleteAsync();
-
-    TaskExecutor getTaskExecutor();
 
     TaskExecutor getChildExecutor();
 

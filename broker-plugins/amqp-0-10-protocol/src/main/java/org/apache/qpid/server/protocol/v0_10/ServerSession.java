@@ -71,8 +71,8 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Consumer;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
@@ -198,11 +198,11 @@ public class ServerSession extends Session
             {
                 getAMQPConnection().closeSessionAsync(ServerSession.this, AMQConstant.RESOURCE_ERROR, reason);
             }
-        }, getVirtualHost());
+        }, getConnection().getAmqpConnection());
 
         _blockingTimeout = ((ServerConnection)connection).getBroker().getContextValue(Long.class,
                                                                   Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
-        _maxUncommittedInMemorySize = getVirtualHost().getContextValue(Long.class, org.apache.qpid.server.model.Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
+        _maxUncommittedInMemorySize = getConnection().getAmqpConnection().getContextProvider().getContextValue(Long.class, org.apache.qpid.server.model.Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
 
     }
 
@@ -219,7 +219,7 @@ public class ServerSession extends Session
 
             if (state == State.OPEN)
             {
-                getVirtualHost().getEventLogger().message(ChannelMessages.CREATE());
+                getConnection().getAmqpConnection().getEventLogger().message(ChannelMessages.CREATE());
             }
         }
         else
@@ -306,7 +306,7 @@ public class ServerSession extends Session
                 handle.flowToDisk();
                 if(!_uncommittedMessages.isEmpty() || _uncommittedMessageSize == handle.getMetaData().getContentSize())
                 {
-                    getVirtualHost().getEventLogger()
+                    getConnection().getAmqpConnection().getEventLogger()
                             .message(_logSubject, ChannelMessages.LARGE_TRANSACTION_WARN(_uncommittedMessageSize));
                 }
 
@@ -495,7 +495,7 @@ public class ServerSession extends Session
         }
         else if(_transaction instanceof DistributedTransaction)
         {
-            getVirtualHost().getDtxRegistry().endAssociations(this);
+            getAddressSpace().getDtxRegistry().endAssociations(this);
         }
 
         for(MessageDispositionChangeListener listener : _messageDispositionListenerMap.values())
@@ -514,7 +514,7 @@ public class ServerSession extends Session
         {
             operationalLoggingMessage = ChannelMessages.CLOSE();
         }
-        getVirtualHost().getEventLogger().message(getLogSubject(), operationalLoggingMessage);
+        getConnection().getAmqpConnection().getEventLogger().message(getLogSubject(), operationalLoggingMessage);
     }
 
     @Override
@@ -596,7 +596,7 @@ public class ServerSession extends Session
 
     public void selectDtx()
     {
-        _transaction = new DistributedTransaction(this, getMessageStore(), getVirtualHost());
+        _transaction = new DistributedTransaction(this, getAddressSpace().getDtxRegistry());
 
     }
 
@@ -626,14 +626,14 @@ public class ServerSession extends Session
     public long getTimeoutDtx(Xid xid)
             throws UnknownDtxBranchException
     {
-        return getVirtualHost().getDtxRegistry().getTimeout(xid);
+        return getAddressSpace().getDtxRegistry().getTimeout(xid);
     }
 
 
     public void setTimeoutDtx(Xid xid, long timeout)
             throws UnknownDtxBranchException
     {
-        getVirtualHost().getDtxRegistry().setTimeout(xid, timeout);
+        getAddressSpace().getDtxRegistry().setTimeout(xid, timeout);
     }
 
 
@@ -641,14 +641,14 @@ public class ServerSession extends Session
             throws UnknownDtxBranchException,
             IncorrectDtxStateException, StoreException, RollbackOnlyDtxException, TimeoutDtxException
     {
-        getVirtualHost().getDtxRegistry().prepare(xid);
+        getAddressSpace().getDtxRegistry().prepare(xid);
     }
 
     public void commitDtx(Xid xid, boolean onePhase)
             throws UnknownDtxBranchException,
             IncorrectDtxStateException, StoreException, RollbackOnlyDtxException, TimeoutDtxException
     {
-        getVirtualHost().getDtxRegistry().commit(xid, onePhase);
+        getAddressSpace().getDtxRegistry().commit(xid, onePhase);
     }
 
 
@@ -656,18 +656,18 @@ public class ServerSession extends Session
             throws UnknownDtxBranchException,
             IncorrectDtxStateException, StoreException, TimeoutDtxException
     {
-        getVirtualHost().getDtxRegistry().rollback(xid);
+        getAddressSpace().getDtxRegistry().rollback(xid);
     }
 
 
     public void forgetDtx(Xid xid) throws UnknownDtxBranchException, IncorrectDtxStateException
     {
-        getVirtualHost().getDtxRegistry().forget(xid);
+        getAddressSpace().getDtxRegistry().forget(xid);
     }
 
     public List<Xid> recoverDtx()
     {
-        return getVirtualHost().getDtxRegistry().recover();
+        return getAddressSpace().getDtxRegistry().recover();
     }
 
     private DistributedTransaction assertDtxTransaction() throws DtxNotSelectedException
@@ -776,12 +776,12 @@ public class ServerSession extends Session
 
     public MessageStore getMessageStore()
     {
-        return getVirtualHost().getMessageStore();
+        return getAddressSpace().getMessageStore();
     }
 
-    public VirtualHost<?> getVirtualHost()
+    public NamedAddressSpace getAddressSpace()
     {
-        return getConnection().getVirtualHost();
+        return getConnection().getAddressSpace();
     }
 
     public boolean isDurable()
@@ -802,7 +802,7 @@ public class ServerSession extends Session
     }
 
     @Override
-    public AMQPConnection<?> getAMQPConnection()
+    public AMQPConnection_0_10 getAMQPConnection()
     {
         return getConnection().getAmqpConnection();
     }
@@ -844,7 +844,7 @@ public class ServerSession extends Session
 
                 if(_blocking.compareAndSet(false,true))
                 {
-                    getVirtualHost().getEventLogger().message(_logSubject, ChannelMessages.FLOW_ENFORCED(name));
+                    getConnection().getAmqpConnection().getEventLogger().message(_logSubject, ChannelMessages.FLOW_ENFORCED(name));
                     if(getState() == State.OPEN)
                     {
                         getConnection().notifyWork();
@@ -872,7 +872,7 @@ public class ServerSession extends Session
         {
             if(_blocking.compareAndSet(true,false) && !isClosing())
             {
-                getVirtualHost().getEventLogger().message(_logSubject, ChannelMessages.FLOW_REMOVED());
+                getConnection().getAmqpConnection().getEventLogger().message(_logSubject, ChannelMessages.FLOW_REMOVED());
                 getConnection().notifyWork();
             }
         }
@@ -914,7 +914,7 @@ public class ServerSession extends Session
                                     connectionId,
                                     authorizedPrincipal,
                                     remoteAddress,
-                                    getVirtualHost().getName(),
+                                    getAddressSpace().getName(),
                                     getChannel())
             + "] ";
     }

@@ -36,6 +36,7 @@ import java.util.TreeMap;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.Named;
 
 public class ConfiguredObjectToMapConverter
 {
@@ -138,6 +139,10 @@ public class ConfiguredObjectToMapConverter
                         }
                     }
                     object.put(name, converted);
+                }
+                else if (value instanceof Named)
+                {
+                    object.put(name, ((Named) value).getName());
                 }
                 else if (value != null)
                 {

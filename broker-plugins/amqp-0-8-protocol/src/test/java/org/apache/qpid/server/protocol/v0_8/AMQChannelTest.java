@@ -51,6 +51,7 @@ import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
@@ -92,7 +93,9 @@ public class AMQChannelTest extends QpidTestCase
         when(_virtualHost.getContextValue(Boolean.class, Broker.BROKER_MSG_AUTH)).thenReturn(false);
         when(_virtualHost.getPrincipal()).thenReturn(mock(Principal.class));
         when(_virtualHost.getEventLogger()).thenReturn(mock(EventLogger.class));
-        when(_virtualHost.getSecurityManager()).thenReturn(new org.apache.qpid.server.security.SecurityManager(_broker, false));
+        SecurityManager securityManager = new SecurityManager(_broker, false);
+        when(_broker.getSecurityManager()).thenReturn(securityManager);
+        when(_virtualHost.getSecurityManager()).thenReturn(securityManager);
 
         _port = mock(AmqpPort.class);
         when(_port.getChildExecutor()).thenReturn(taskExecutor);
@@ -108,10 +111,14 @@ public class AMQChannelTest extends QpidTestCase
         _amqConnection = mock(AMQPConnection_0_8.class);
         when(_amqConnection.getSubject()).thenReturn(authenticatedSubject);
         when(_amqConnection.getAuthorizedPrincipal()).thenReturn(authenticatedPrincipal);
-        when(_amqConnection.getVirtualHost()).thenReturn((VirtualHost)_virtualHost);
+        when(_amqConnection.getAddressSpace()).thenReturn((VirtualHost)_virtualHost);
         when(_amqConnection.getProtocolOutputConverter()).thenReturn(_protocolOutputConverter);
         when(_amqConnection.getBroker()).thenReturn((Broker) _broker);
         when(_amqConnection.getMethodRegistry()).thenReturn(new MethodRegistry(ProtocolVersion.v0_9));
+        when(_amqConnection.getContextProvider()).thenReturn(_virtualHost);
+        when(_amqConnection.getEventLogger()).thenReturn(mock(EventLogger.class));
+        when(_amqConnection.isAuthorizedMessagePrincipal(eq(authenticatedPrincipal.getName()))).thenReturn(true);
+
         _messageDestination = mock(MessageDestination.class);
     }
 
@@ -120,7 +127,7 @@ public class AMQChannelTest extends QpidTestCase
         String testExchangeName = getTestName();
         Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(true);
-        doReturn(exchange).when(_virtualHost).getAttainedChildFromAddress(Exchange.class, testExchangeName);
+        doReturn(exchange).when(_virtualHost).getAttainedMessageDestination(testExchangeName);
 
         AMQChannel channel = new AMQChannel(_amqConnection, 1, _messageStore);
 
@@ -135,7 +142,7 @@ public class AMQChannelTest extends QpidTestCase
     {
         Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(false);
-        doReturn(exchange).when(_virtualHost).getAttainedChildFromAddress(Exchange.class, getTestName());
+        doReturn(exchange).when(_virtualHost).getAttainedMessageDestination(getTestName());
 
         AMQChannel channel = new AMQChannel(_amqConnection, 1, _messageStore);
         channel.receiveExchangeDelete(AMQShortString.valueOf(getTestName()), true, false);
@@ -165,7 +172,6 @@ public class AMQChannelTest extends QpidTestCase
     public void testPublishContentHeaderWhenMessageAuthorizationFails() throws Exception
     {
         when(_virtualHost.getDefaultDestination()).thenReturn(mock(MessageDestination.class));
-        when(_virtualHost.getContextValue(eq(Boolean.class), eq(Broker.BROKER_MSG_AUTH))).thenReturn(true);
         when(_virtualHost.getMessageStore()).thenReturn(new NullMessageStore()
         {
             @Override
@@ -176,12 +182,6 @@ public class AMQChannelTest extends QpidTestCase
             }
         });
 
-        Set<Principal> authenticatedUser = Collections.<Principal>singleton(new AuthenticatedPrincipal("user"));
-        _amqConnection.setSubject(new Subject(true,
-                                              authenticatedUser,
-                                              Collections.<Principal>emptySet(),
-                                              Collections.<Principal>emptySet()));
-        _amqConnection.associateVirtualHost(_virtualHost);
 
         int channelId = 1;
         AMQChannel channel = new AMQChannel(_amqConnection, channelId, _virtualHost.getMessageStore());
@@ -198,7 +198,6 @@ public class AMQChannelTest extends QpidTestCase
     public void testPublishContentHeaderWhenMessageAuthorizationSucceeds() throws Exception
     {
         when(_virtualHost.getDefaultDestination()).thenReturn(_messageDestination);
-        when(_virtualHost.getContextValue(Boolean.class, Broker.BROKER_MSG_AUTH)).thenReturn(true);
         when(_virtualHost.getMessageStore()).thenReturn(new NullMessageStore()
         {
             @Override
@@ -208,10 +207,6 @@ public class AMQChannelTest extends QpidTestCase
                 return messageHandle;
             }
         });
-
-        Set<Principal> authenticatedUser = Collections.<Principal>singleton(new AuthenticatedPrincipal("user"));
-        _amqConnection.setSubject(new Subject(true, authenticatedUser, Collections.<Principal>emptySet(), Collections.<Principal>emptySet()));
-        _amqConnection.associateVirtualHost(_virtualHost);
 
         AMQChannel channel = new AMQChannel(_amqConnection, 1, _virtualHost.getMessageStore());
 

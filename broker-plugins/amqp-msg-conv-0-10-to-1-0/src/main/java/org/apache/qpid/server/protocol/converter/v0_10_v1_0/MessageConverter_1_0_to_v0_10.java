@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
@@ -58,20 +59,20 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
     }
 
     @Override
-    public MessageTransferMessage convert(Message_1_0 serverMsg, VirtualHost<?> vhost)
+    public MessageTransferMessage convert(Message_1_0 serverMsg, NamedAddressSpace addressSpace)
     {
-        return new MessageTransferMessage(convertToStoredMessage(serverMsg, vhost), null);
+        return new MessageTransferMessage(convertToStoredMessage(serverMsg, addressSpace), null);
     }
 
     private StoredMessage<MessageMetaData_0_10> convertToStoredMessage(final Message_1_0 serverMsg,
-                                                                       final VirtualHost<?> vhost)
+                                                                       final NamedAddressSpace addressSpace)
     {
         Object bodyObject = MessageConverter_from_1_0.convertBodyToObject(serverMsg);
 
         final byte[] messageContent = MessageConverter_from_1_0.convertToBody(bodyObject);
 
         final MessageMetaData_0_10 messageMetaData_0_10 = convertMetaData(serverMsg,
-                                                                          vhost,
+                                                                          addressSpace,
                                                                           MessageConverter_from_1_0.getBodyMimeType(bodyObject),
                                                                           messageContent.length);
 
@@ -116,7 +117,7 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
     }
 
     private MessageMetaData_0_10 convertMetaData(Message_1_0 serverMsg,
-                                                 final VirtualHost<?> vhost,
+                                                 final NamedAddressSpace addressSpace,
                                                  final String bodyMimeType,
                                                  final int size)
     {
@@ -151,7 +152,7 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
                 String[] parts = origReplyTo.split("/",2);
                 replyTo = new ReplyTo(parts[0],parts[1]);
             }
-            else if(vhost.getAttainedChildFromAddress(Exchange.class, origReplyTo) != null)
+            else if(addressSpace.getAttainedMessageDestination(origReplyTo) instanceof Exchange)
             {
                 replyTo = new ReplyTo(origReplyTo,"");
             }

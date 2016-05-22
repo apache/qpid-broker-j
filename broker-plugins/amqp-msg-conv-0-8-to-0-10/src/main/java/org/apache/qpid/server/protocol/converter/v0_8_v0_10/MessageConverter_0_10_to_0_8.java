@@ -32,7 +32,9 @@ import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.framing.MessagePublishInfo;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
@@ -52,7 +54,7 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
     private static final int BASIC_CLASS_ID = 60;
 
     public static BasicContentHeaderProperties convertContentHeaderProperties(MessageTransferMessage messageTransferMessage,
-                                                                              VirtualHost<?> vhost)
+                                                                              NamedAddressSpace addressSpace)
     {
         BasicContentHeaderProperties props = new BasicContentHeaderProperties();
 
@@ -113,7 +115,9 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
                     exchangeName = "";
                 }
 
-                Exchange<?> exchange = vhost.getAttainedChildFromAddress(Exchange.class, exchangeName);
+                MessageDestination destination = addressSpace.getAttainedMessageDestination(exchangeName);
+                Exchange<?> exchange = destination instanceof Exchange ? (Exchange<?>) destination : null;
+
                 String exchangeClass = exchange == null
                                             ? ExchangeDefaults.DIRECT_EXCHANGE_CLASS
                                             : exchange.getType();
@@ -169,15 +173,15 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
     }
 
     @Override
-    public AMQMessage convert(MessageTransferMessage message, VirtualHost<?> vhost)
+    public AMQMessage convert(MessageTransferMessage message, NamedAddressSpace addressSpace)
     {
-        return new AMQMessage(convertToStoredMessage(message, vhost));
+        return new AMQMessage(convertToStoredMessage(message, addressSpace));
     }
 
     private StoredMessage<MessageMetaData> convertToStoredMessage(final MessageTransferMessage message,
-                                                                  VirtualHost<?> vhost)
+                                                                  NamedAddressSpace addressSpace)
     {
-        final MessageMetaData metaData = convertMetaData(message, vhost);
+        final MessageMetaData metaData = convertMetaData(message, addressSpace);
         return new StoredMessage<org.apache.qpid.server.protocol.v0_8.MessageMetaData>()
         {
             @Override
@@ -218,16 +222,16 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
         };
     }
 
-    private MessageMetaData convertMetaData(MessageTransferMessage message, VirtualHost<?> vhost)
+    private MessageMetaData convertMetaData(MessageTransferMessage message, NamedAddressSpace addressSpace)
     {
         return new MessageMetaData(convertPublishBody(message),
-                convertContentHeaderBody(message, vhost),
+                convertContentHeaderBody(message, addressSpace),
                 message.getArrivalTime());
     }
 
-    private ContentHeaderBody convertContentHeaderBody(MessageTransferMessage message, VirtualHost<?> vhost)
+    private ContentHeaderBody convertContentHeaderBody(MessageTransferMessage message, NamedAddressSpace addressSpace)
     {
-        BasicContentHeaderProperties props = convertContentHeaderProperties(message, vhost);
+        BasicContentHeaderProperties props = convertContentHeaderProperties(message, addressSpace);
         ContentHeaderBody chb = new ContentHeaderBody(props);
         chb.setBodySize(message.getSize());
         return chb;

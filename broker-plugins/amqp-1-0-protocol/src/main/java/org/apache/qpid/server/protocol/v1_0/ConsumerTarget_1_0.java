@@ -120,7 +120,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
         else
         {
             final MessageConverter converter = MessageConverterRegistry.getConverter(serverMessage.getClass(), Message_1_0.class);
-            message = (Message_1_0) converter.convert(serverMessage, _link.getVirtualHost());
+            message = (Message_1_0) converter.convert(serverMessage, _link.getAddressSpace());
         }
 
         Transfer transfer = new Transfer();
@@ -272,7 +272,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
         getEndpoint().close();
 
         final LinkRegistry linkReg = getSession().getConnection()
-                .getVirtualHost()
+                .getAddressSpace()
                 .getLinkRegistry(getEndpoint().getSession().getConnection().getRemoteContainerId());
         linkReg.unregisterSendingLink(getEndpoint().getName());
     }

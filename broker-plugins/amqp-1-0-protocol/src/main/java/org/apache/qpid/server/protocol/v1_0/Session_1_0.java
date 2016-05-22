@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.v1_0.framing.OversizeFrameException;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -87,7 +88,6 @@ import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.LinkRegistry;
@@ -715,7 +715,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         Link_1_0 link = null;
         Error error = null;
 
-        final LinkRegistry linkRegistry = getVirtualHost().getLinkRegistry(getConnection().getRemoteContainerId());
+        final LinkRegistry linkRegistry = getAddressSpace().getLinkRegistry(getConnection().getRemoteContainerId());
 
 
         if (endpoint.getRole() == Role.SENDER)
@@ -742,8 +742,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                     if (!addr.startsWith("/") && addr.contains("/"))
                     {
                         String[] parts = addr.split("/", 2);
-                        Exchange<?> exchg =
-                                getVirtualHost().getAttainedChildFromAddress(Exchange.class, parts[0]);
+                        Exchange<?> exchg = getExchange(parts[0]);
                         if (exchg != null)
                         {
                             ExchangeDestination exchangeDestination =
@@ -763,15 +762,14 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                     }
                     else
                     {
-                        MessageSource queue = getVirtualHost().getAttainedMessageSource(addr);
+                        MessageSource queue = getAddressSpace().getAttainedMessageSource(addr);
                         if (queue != null)
                         {
                             destination = new MessageSourceDestination(queue);
                         }
                         else
                         {
-                            Exchange<?> exchg =
-                                    getVirtualHost().getAttainedChildFromAddress(Exchange.class, addr);
+                            Exchange<?> exchg = getExchange(addr);
                             if (exchg != null)
                             {
                                 destination = new ExchangeDestination(exchg,
@@ -800,7 +798,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                     {
                         final SendingLink_1_0 sendingLink =
                                 new SendingLink_1_0(new SendingLinkAttachment(this, sendingLinkEndpoint),
-                                                    getVirtualHost(),
+                                                    getAddressSpace(),
                                                     (SendingDestination) destination
                                 );
 
@@ -885,7 +883,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
 
                 final ReceivingLinkEndpoint receivingLinkEndpoint = (ReceivingLinkEndpoint) endpoint;
                 final TxnCoordinatorLink_1_0 coordinatorLink =
-                        new TxnCoordinatorLink_1_0(getVirtualHost(),
+                        new TxnCoordinatorLink_1_0(getAddressSpace(),
                                                    this,
                                                    receivingLinkEndpoint,
                                                    _openTransactions);
@@ -918,15 +916,14 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                         String addr = target.getAddress();
                         if (addr == null || "".equals(addr.trim()))
                         {
-                            MessageDestination messageDestination = getVirtualHost().getDefaultDestination();
+                            MessageDestination messageDestination = getAddressSpace().getDefaultDestination();
                             destination = new NodeReceivingDestination(messageDestination, target.getDurable(),
                                                                        target.getExpiryPolicy(), "");
                         }
                         else if (!addr.startsWith("/") && addr.contains("/"))
                         {
                             String[] parts = addr.split("/", 2);
-                            Exchange<?> exchange =
-                                    getVirtualHost().getAttainedChildFromAddress(Exchange.class, parts[0]);
+                            Exchange<?> exchange =getExchange(parts[0]);
                             if (exchange != null)
                             {
                                 ExchangeDestination exchangeDestination =
@@ -949,7 +946,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                         else
                         {
                             MessageDestination messageDestination =
-                                    getVirtualHost().getAttainedMessageDestination(addr);
+                                    getAddressSpace().getAttainedMessageDestination(addr);
                             if (messageDestination != null)
                             {
                                 destination =
@@ -958,8 +955,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                             }
                             else
                             {
-                                Queue<?> queue =
-                                        getVirtualHost().getAttainedChildFromAddress(Queue.class, addr);
+                                Queue<?> queue = getQueue(addr);
                                 if (queue != null)
                                 {
 
@@ -984,7 +980,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                         final ReceivingLinkEndpoint receivingLinkEndpoint = (ReceivingLinkEndpoint) endpoint;
                         final ReceivingLink_1_0 receivingLink =
                                 new ReceivingLink_1_0(new ReceivingLinkAttachment(this, receivingLinkEndpoint),
-                                                      getVirtualHost(),
+                                                      getAddressSpace(),
                                                       (ReceivingDestination) destination);
 
                         receivingLinkEndpoint.setLinkEventListener(new SubjectSpecificReceivingLinkListener(
@@ -1085,7 +1081,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
 
             // TODO convert AMQP 1-0 node properties to queue attributes
 
-            queue = getVirtualHost().createChild(Queue.class, attributes);
+            queue = getAddressSpace().createMessageSource(Queue.class, attributes);
         }
         catch (AccessControlException e)
         {
@@ -1112,7 +1108,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         {
             if(_transaction == null)
             {
-                _transaction = new AutoCommitTransaction(_connection.getVirtualHost().getMessageStore());
+                _transaction = new AutoCommitTransaction(_connection.getAddressSpace().getMessageStore());
             }
             transaction = _transaction;
         }
@@ -1351,7 +1347,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                                     connectionId,
                                     authorizedPrincipal,
                                     remoteAddress,
-                                    getVirtualHost().getName(),
+                                    getAddressSpace().getName(),
                                     _sendingChannel) + "] ";
     }
 
@@ -1386,9 +1382,9 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         return _subject;
     }
 
-    private VirtualHost<?> getVirtualHost()
+    private NamedAddressSpace getAddressSpace()
     {
-        return _connection.getVirtualHost();
+        return _connection.getAddressSpace();
     }
 
 
@@ -1704,6 +1700,19 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
 
         // TODO
         throw new RuntimeException();
+    }
+
+
+    private Exchange<?> getExchange(String name)
+    {
+        MessageDestination destination = getAddressSpace().getAttainedMessageDestination(name);
+        return destination instanceof Exchange ? (Exchange<?>) destination : null;
+    }
+
+    private Queue<?> getQueue(String name)
+    {
+        MessageSource source = getAddressSpace().getAttainedMessageSource(name);
+        return source instanceof Queue ? (Queue<?>) source : null;
     }
 
 }

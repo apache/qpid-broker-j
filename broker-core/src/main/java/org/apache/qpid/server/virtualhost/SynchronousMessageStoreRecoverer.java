@@ -258,7 +258,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             DtxBranch branch = dtxRegistry.getBranch(id);
             if(branch == null)
             {
-                branch = new DtxBranch(storedXid, _store, _virtualHost);
+                branch = new DtxBranch(storedXid, dtxRegistry);
                 dtxRegistry.registerBranch(branch);
             }
             for(EnqueueRecord record : enqueues)

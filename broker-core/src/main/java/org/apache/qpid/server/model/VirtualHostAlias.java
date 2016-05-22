@@ -32,5 +32,6 @@ public interface VirtualHostAlias<X extends VirtualHostAlias<X>> extends Configu
     int getPriority();
 
 
-    VirtualHostNode getVirtualHostNode(String name);
+    NamedAddressSpace getAddressSpace(String name);
+
 }

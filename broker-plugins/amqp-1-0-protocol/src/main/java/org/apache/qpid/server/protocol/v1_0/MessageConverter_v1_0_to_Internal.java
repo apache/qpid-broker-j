@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.message.internal.InternalMessage;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 
@@ -52,7 +52,7 @@ public class MessageConverter_v1_0_to_Internal implements MessageConverter<Messa
     }
 
     @Override
-    public InternalMessage convert(Message_1_0 serverMessage, VirtualHost<?> vhost)
+    public InternalMessage convert(Message_1_0 serverMessage, NamedAddressSpace addressSpace)
     {
         Object bodyObject = MessageConverter_from_1_0.convertBodyToObject(serverMessage);
 

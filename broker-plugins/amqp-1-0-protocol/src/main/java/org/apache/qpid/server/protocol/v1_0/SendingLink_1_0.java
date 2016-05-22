@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
@@ -81,7 +82,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
 {
     private static final Logger _logger = LoggerFactory.getLogger(SendingLink_1_0.class);
 
-    private VirtualHost<?> _vhost;
+    private NamedAddressSpace _addressSpace;
     private SendingDestination _destination;
 
     private ConsumerImpl _consumer;
@@ -102,11 +103,11 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
 
 
     public SendingLink_1_0(final SendingLinkAttachment linkAttachment,
-                           final VirtualHost<?> vhost,
+                           final NamedAddressSpace addressSpace,
                            final SendingDestination destination)
             throws AmqpErrorException
     {
-        _vhost = vhost;
+        _addressSpace = addressSpace;
         _destination = destination;
         _linkAttachment = linkAttachment;
         final Source source = (Source) linkAttachment.getSource();
@@ -205,7 +206,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
                     name = UUID.randomUUID().toString();
                 }
 
-                Queue<?> queue = _vhost.getAttainedChildFromAddress(Queue.class, name);
+                Queue<?> queue = getQueue(name);
                 Exchange<?> exchange = exchangeDestination.getExchange();
 
                 if(queue == null)
@@ -217,7 +218,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
                     attributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);
                     attributes.put(Queue.EXCLUSIVE, ExclusivityPolicy.LINK);
 
-                    queue = _vhost.createChild(Queue.class, attributes);
+                    queue = _addressSpace.createMessageSource(Queue.class, attributes);
                 }
                 else
                 {
@@ -615,7 +616,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
 
                 if(outcome instanceof Accepted)
                 {
-                    AutoCommitTransaction txn = new AutoCommitTransaction(_vhost.getMessageStore());
+                    AutoCommitTransaction txn = new AutoCommitTransaction(_addressSpace.getMessageStore());
                     if(_consumer.acquires())
                     {
                         if(queueEntry.acquire() || queueEntry.isAcquired())
@@ -637,7 +638,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
                 }
                 else if(outcome instanceof Released)
                 {
-                    AutoCommitTransaction txn = new AutoCommitTransaction(_vhost.getMessageStore());
+                    AutoCommitTransaction txn = new AutoCommitTransaction(_addressSpace.getMessageStore());
                     if(_consumer.acquires())
                     {
                         txn.dequeue(Collections.singleton(queueEntry),
@@ -686,9 +687,9 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
         _closeAction = action;
     }
 
-    public VirtualHost<?> getVirtualHost()
+    public NamedAddressSpace getAddressSpace()
     {
-        return _vhost;
+        return _addressSpace;
     }
 
     public ConsumerImpl getConsumer()
@@ -699,5 +700,11 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
     public ConsumerTarget_1_0 getConsumerTarget()
     {
         return _target;
+    }
+
+    private Queue<?> getQueue(String name)
+    {
+        MessageSource source = getAddressSpace().getAttainedMessageSource(name);
+        return source instanceof Queue ? (Queue<?>) source : null;
     }
 }

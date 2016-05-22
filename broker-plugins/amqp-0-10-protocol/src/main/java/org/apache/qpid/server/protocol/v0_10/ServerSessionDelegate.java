@@ -39,8 +39,9 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.store.MessageHandle;
@@ -212,15 +213,15 @@ public class ServerSessionDelegate extends SessionDelegate
             else
             {
                 String queueName = method.getQueue();
-                VirtualHost<?> vhost = getVirtualHost(session);
+                NamedAddressSpace addressSpace = getAddressSpace(session);
 
                 final Collection<MessageSource> sources = new HashSet<>();
-                final MessageSource queue = vhost.getAttainedMessageSource(queueName);
+                final MessageSource queue = addressSpace.getAttainedMessageSource(queueName);
                 if(queue != null)
                 {
                     sources.add(queue);
                 }
-                else if(vhost.getContextValue(Boolean.class, "qpid.enableMultiQueueConsumers")
+                else if(getContextValue(session, Boolean.class, "qpid.enableMultiQueueConsumers")
                         && method.getArguments() != null
                         && method.getArguments().get("x-multiqueue") instanceof Collection)
                 {
@@ -230,7 +231,7 @@ public class ServerSessionDelegate extends SessionDelegate
                         sourceName = sourceName.trim();
                         if(sourceName.length() != 0)
                         {
-                            MessageSource source = vhost.getAttainedMessageSource(sourceName);
+                            MessageSource source = addressSpace.getAttainedMessageSource(sourceName);
                             if(source == null)
                             {
                                 sources.clear();
@@ -392,7 +393,7 @@ public class ServerSessionDelegate extends SessionDelegate
             ServerSession serverSession = (ServerSession) ssn;
             if(serverSession.blockingTimeoutExceeded())
             {
-                getVirtualHost(ssn).getEventLogger().message(ChannelMessages.FLOW_CONTROL_IGNORED());
+                getEventLogger(ssn).message(ChannelMessages.FLOW_CONTROL_IGNORED());
 
                 serverSession.close(AMQConstant.MESSAGE_TOO_LARGE,
                            "Session flow control was requested, but not enforced by sender");
@@ -415,10 +416,10 @@ public class ServerSessionDelegate extends SessionDelegate
 
                 final MessageMetaData_0_10 messageMetaData = new MessageMetaData_0_10(xfr);
 
-                final VirtualHost<?> virtualHost = getVirtualHost(ssn);
+                final NamedAddressSpace virtualHost = getAddressSpace(ssn);
                 try
                 {
-                    virtualHost.getSecurityManager()
+                    getServerConnection(ssn).getAmqpConnection().getBroker().getSecurityManager()
                             .authorisePublish(messageMetaData.isImmediate(),
                                               messageMetaData.getRoutingKey(),
                                               destination.getName(),
@@ -480,7 +481,7 @@ public class ServerSessionDelegate extends SessionDelegate
                         }
                         else
                         {
-                            virtualHost.getEventLogger().message(ExchangeMessages.DISCARDMSG(destination.getName(),
+                            getEventLogger(ssn).message(ExchangeMessages.DISCARDMSG(destination.getName(),
                                                                                              messageMetaData.getRoutingKey()));
                         }
                     }
@@ -826,7 +827,7 @@ public class ServerSessionDelegate extends SessionDelegate
     public void exchangeDeclare(Session session, ExchangeDeclare method)
     {
         String exchangeName = method.getExchange();
-        VirtualHost<?> virtualHost = getVirtualHost(session);
+        NamedAddressSpace addressSpace = getAddressSpace(session);
 
         //we must check for any unsupported arguments present and throw not-implemented
         if(method.hasArguments())
@@ -890,7 +891,7 @@ public class ServerSessionDelegate extends SessionDelegate
                     attributes.put(org.apache.qpid.server.model.Exchange.LIFETIME_POLICY,
                                    method.getAutoDelete() ? LifetimePolicy.DELETE_ON_NO_LINKS : LifetimePolicy.PERMANENT);
                     attributes.put(org.apache.qpid.server.model.Exchange.ALTERNATE_EXCHANGE, method.getAlternateExchange());
-                    virtualHost.createChild(Exchange.class, attributes);;
+                    addressSpace.createMessageDestination(Exchange.class, attributes);;
                 }
                 catch(ReservedExchangeNameException e)
                 {
@@ -958,38 +959,61 @@ public class ServerSessionDelegate extends SessionDelegate
 
     private Exchange<?> getExchange(Session session, String exchangeName)
     {
-        return getVirtualHost(session).getAttainedChildFromAddress(Exchange.class, exchangeName);
+        return getExchange(getAddressSpace(session),exchangeName);
+    }
+
+    private Exchange<?> getExchange(NamedAddressSpace addressSpace, String exchangeName)
+    {
+        MessageDestination destination = addressSpace.getAttainedMessageDestination(exchangeName);
+        return destination instanceof Exchange ? (Exchange<?>) destination : null;
+    }
+
+
+    private Queue<?> getQueue(NamedAddressSpace addressSpace, String name)
+    {
+        MessageSource source = addressSpace.getAttainedMessageSource(name);
+        return source instanceof Queue ? (Queue<?>) source : null;
     }
 
     private MessageDestination getDestinationForMessage(Session ssn, MessageTransfer xfr)
     {
-        VirtualHost<?> virtualHost = getVirtualHost(ssn);
+        NamedAddressSpace addressSpace = getAddressSpace(ssn);
 
         MessageDestination destination;
         if(xfr.hasDestination())
         {
-            destination = virtualHost.getAttainedMessageDestination(xfr.getDestination());
+            destination = addressSpace.getAttainedMessageDestination(xfr.getDestination());
             if(destination == null)
             {
-                destination = virtualHost.getDefaultDestination();
+                destination = addressSpace.getDefaultDestination();
             }
         }
         else
         {
-            destination = virtualHost.getDefaultDestination();
+            destination = addressSpace.getDefaultDestination();
         }
         return destination;
     }
 
-    private VirtualHost<?> getVirtualHost(Session session)
+    private NamedAddressSpace getAddressSpace(Session session)
     {
         ServerConnection conn = getServerConnection(session);
-        return conn.getVirtualHost();
+        return conn.getAddressSpace();
     }
 
     private ServerConnection getServerConnection(Session session)
     {
         return (ServerConnection) session.getConnection();
+    }
+
+    private <T> T getContextValue(Session session, Class<T> clazz, String name)
+    {
+        return getServerConnection(session).getAmqpConnection().getContextProvider().getContextValue(clazz, name);
+    }
+
+    private EventLogger getEventLogger(Session session)
+    {
+        return getServerConnection(session).getAmqpConnection().getEventLogger();
     }
 
     @Override
@@ -1083,7 +1107,7 @@ public class ServerSessionDelegate extends SessionDelegate
     public void exchangeBind(Session session, ExchangeBind method)
     {
 
-        VirtualHost<?> virtualHost = getVirtualHost(session);
+        NamedAddressSpace addressSpace = getAddressSpace(session);
 
         if (!method.hasQueue())
         {
@@ -1104,8 +1128,8 @@ public class ServerSessionDelegate extends SessionDelegate
                 {
                     method.setBindingKey(method.getQueue());
                 }
-                Queue<?> queue = virtualHost.getAttainedChildFromAddress(Queue.class, method.getQueue());
-                Exchange<?> exchange = virtualHost.getAttainedChildFromAddress(Exchange.class, exchangeName);
+                Queue<?> queue = getQueue(addressSpace, method.getQueue());
+                Exchange<?> exchange = getExchange(addressSpace, exchangeName);
                 if(queue == null)
                 {
                     exception(session, method, ExecutionErrorCode.NOT_FOUND, "Queue: '" + method.getQueue() + "' not found");
@@ -1148,7 +1172,7 @@ public class ServerSessionDelegate extends SessionDelegate
     @Override
     public void exchangeUnbind(Session session, ExchangeUnbind method)
     {
-        VirtualHost<?> virtualHost = getVirtualHost(session);
+        NamedAddressSpace addressSpace = getAddressSpace(session);
 
         if (!method.hasQueue())
         {
@@ -1164,8 +1188,8 @@ public class ServerSessionDelegate extends SessionDelegate
         }
         else
         {
-            Queue<?> queue = virtualHost.getAttainedChildFromAddress(Queue.class, method.getQueue());
-            Exchange<?> exchange = virtualHost.getAttainedChildFromAddress(Exchange.class, method.getExchange());
+            Queue<?> queue = getQueue(addressSpace, method.getQueue());
+            Exchange<?> exchange = getExchange(addressSpace, method.getExchange());
             if(queue == null)
             {
                 exception(session, method, ExecutionErrorCode.NOT_FOUND, "Queue: '" + method.getQueue() + "' not found");
@@ -1196,7 +1220,7 @@ public class ServerSessionDelegate extends SessionDelegate
     {
 
         ExchangeBoundResult result = new ExchangeBoundResult();
-        VirtualHost<?> virtualHost = getVirtualHost(session);
+        NamedAddressSpace addressSpace = getAddressSpace(session);
         Exchange<?> exchange;
         MessageSource source;
         Queue<?> queue;
@@ -1204,7 +1228,7 @@ public class ServerSessionDelegate extends SessionDelegate
         if(!nameNullOrEmpty(method.getExchange()))
         {
             isDefaultExchange = false;
-            exchange = virtualHost.getAttainedChildFromAddress(Exchange.class, method.getExchange());
+            exchange = getExchange(addressSpace, method.getExchange());
 
             if(exchange == null)
             {
@@ -1380,19 +1404,19 @@ public class ServerSessionDelegate extends SessionDelegate
 
     private MessageSource getMessageSource(Session session, String queue)
     {
-        return getVirtualHost(session).getAttainedMessageSource(queue);
+        return getAddressSpace(session).getAttainedMessageSource(queue);
     }
 
     private Queue<?> getQueue(Session session, String queue)
     {
-        return getVirtualHost(session).getAttainedChildFromAddress(Queue.class, queue);
+        return getQueue(getAddressSpace(session), queue);
     }
 
     @Override
     public void queueDeclare(Session session, final QueueDeclare method)
     {
 
-        final VirtualHost<?> virtualHost = getVirtualHost(session);
+        final NamedAddressSpace addressSpace = getAddressSpace(session);
 
         String queueName = method.getQueue();
         Queue<?> queue;
@@ -1403,11 +1427,11 @@ public class ServerSessionDelegate extends SessionDelegate
 
         if(method.getPassive())
         {
-            queue = virtualHost.getAttainedChildFromAddress(Queue.class, queueName);
+            queue = getQueue(addressSpace, queueName);
 
             if (queue == null)
             {
-                String description = "Queue: " + queueName + " not found on VirtualHost(" + virtualHost + ").";
+                String description = "Queue: " + queueName + " not found on VirtualHost(" + addressSpace + ").";
                 ExecutionErrorCode errorCode = ExecutionErrorCode.NOT_FOUND;
 
                 exception(session, method, errorCode, description);
@@ -1482,7 +1506,7 @@ public class ServerSessionDelegate extends SessionDelegate
                 arguments.put(Queue.DURABLE, method.getDurable());
 
 
-                queue = virtualHost.createChild(Queue.class, arguments);
+                queue = addressSpace.createMessageSource(Queue.class, arguments);
 
             }
             catch(QueueExistsException qe)
@@ -1541,8 +1565,6 @@ public class ServerSessionDelegate extends SessionDelegate
                 }
                 else
                 {
-                    VirtualHost<?> virtualHost = getVirtualHost(session);
-
                     try
                     {
                         queue.delete();

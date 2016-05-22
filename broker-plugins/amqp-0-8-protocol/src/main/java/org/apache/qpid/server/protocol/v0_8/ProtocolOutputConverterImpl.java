@@ -50,12 +50,12 @@ import org.apache.qpid.util.GZIPUtils;
 public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 {
     private static final int BASIC_CLASS_ID = 60;
-    private final AMQPConnection_0_8 _connection;
+    private final AMQPConnection_0_8Impl _connection;
     private static final AMQShortString GZIP_ENCODING = AMQShortString.valueOf(GZIPUtils.GZIP_CONTENT_ENCODING);
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolOutputConverterImpl.class);
 
-    public ProtocolOutputConverterImpl(AMQPConnection_0_8 connection)
+    public ProtocolOutputConverterImpl(AMQPConnection_0_8Impl connection)
     {
         _connection = connection;
     }
@@ -80,7 +80,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         }
         else
         {
-            return getMessageConverter(serverMessage).convert(serverMessage, _connection.getVirtualHost());
+            return getMessageConverter(serverMessage).convert(serverMessage, _connection.getAddressSpace());
         }
     }
 

@@ -47,8 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
-import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.FrameWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ProtocolHandler;
@@ -764,14 +763,14 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         {
             long desiredIdleTimeout = getDesiredIdleTimeout();
             initialiseHeartbeating(_idleTimeout / 2L, desiredIdleTimeout);
-            final VirtualHost vhost = ((AmqpPort) _port).getVirtualHost(_localHostname);
-            if (vhost == null)
+            final NamedAddressSpace addressSpace = ((AmqpPort) _port).getAddressSpace(_localHostname);
+            if (addressSpace == null)
             {
                 closeWithError(AmqpError.NOT_FOUND, "Unknown hostname in connection open: '" + _localHostname + "'");
             }
             else
             {
-                if (vhost.getState() != org.apache.qpid.server.model.State.ACTIVE)
+                if (!addressSpace.isActive())
                 {
                     final Error err = new Error();
                     err.setCondition(AmqpError.NOT_FOUND);
@@ -779,7 +778,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
                     _closedOnOpen = true;
 
-                    populateConnectionRedirect(vhost, err);
+                    populateConnectionRedirect(addressSpace, err);
 
                     closeConnection(err);
 
@@ -803,7 +802,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                     {
                         try
                         {
-                            setVirtualHost(vhost);
+                            setAddressSpace(addressSpace);
                         }
                         catch (VirtualHostUnavailableException e)
                         {
@@ -826,9 +825,9 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     }
 
-    private void populateConnectionRedirect(final VirtualHost vhost, final Error err)
+    private void populateConnectionRedirect(final NamedAddressSpace addressSpace, final Error err)
     {
-        final String redirectHost = vhost.getRedirectHost(((AmqpPort) _port));
+        final String redirectHost = addressSpace.getRedirectHost(((AmqpPort) _port));
 
         if(redirectHost == null)
         {
@@ -1005,7 +1004,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         }
         finally
         {
-            VirtualHost<?> virtualHost = getVirtualHost();
+            NamedAddressSpace virtualHost = getAddressSpace();
             if (virtualHost != null)
             {
                 virtualHost.deregisterConnection(this);
@@ -1206,7 +1205,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                 }
                 catch (StoreException e)
                 {
-                    if (getVirtualHost().getState() == State.ACTIVE)
+                    if (getAddressSpace().isActive())
                     {
                         throw new ServerScopedRuntimeException(e);
                     }
@@ -1534,7 +1533,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     @Override
     public String toString()
     {
-        VirtualHost<?> virtualHost = getVirtualHost();
+        NamedAddressSpace virtualHost = getAddressSpace();
         return "Connection_1_0["
                + _connectionId
                + " "

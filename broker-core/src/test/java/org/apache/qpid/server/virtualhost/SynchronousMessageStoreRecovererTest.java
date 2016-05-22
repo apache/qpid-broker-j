@@ -281,7 +281,7 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
             }
         };
 
-        DtxRegistry dtxRegistry = new DtxRegistry();
+        DtxRegistry dtxRegistry = new DtxRegistry(_virtualHost);
 
         when(_virtualHost.getMessageStore()).thenReturn(store);
         when(_virtualHost.getDtxRegistry()).thenReturn(dtxRegistry);
@@ -370,7 +370,7 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
             }
         };
 
-        DtxRegistry dtxRegistry = new DtxRegistry();
+        DtxRegistry dtxRegistry = new DtxRegistry(_virtualHost);
 
         when(_virtualHost.getMessageStore()).thenReturn(store);
         when(_virtualHost.getDtxRegistry()).thenReturn(dtxRegistry);

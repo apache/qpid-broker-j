@@ -66,8 +66,8 @@ public class ProtocolEngineCreator_0_9_1 implements ProtocolEngineCreator
                                             Transport transport,
                                             long id, final AggregateTicker aggregateTicker)
     {
-        final AMQPConnection_0_8 protocolEngine =
-                new AMQPConnection_0_8(broker, network, port, transport, getVersion(), id, aggregateTicker);
+        final AMQPConnection_0_8Impl protocolEngine =
+                new AMQPConnection_0_8Impl(broker, network, port, transport, getVersion(), id, aggregateTicker);
         protocolEngine.create();
         return protocolEngine;
     }

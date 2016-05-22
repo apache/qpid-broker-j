@@ -48,7 +48,7 @@ public class ServerSessionDelegateTest extends QpidTestCase
         _host = mock(VirtualHost.class);
 
         ServerConnection serverConnection = mock(ServerConnection.class);
-        doReturn(_host).when(serverConnection).getVirtualHost();
+        doReturn(_host).when(serverConnection).getAddressSpace();
 
         _session = mock(ServerSession.class);
         when(_session.getConnection()).thenReturn(serverConnection);
@@ -61,7 +61,7 @@ public class ServerSessionDelegateTest extends QpidTestCase
         Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(true);
 
-        doReturn(exchange).when(_host).getAttainedChildFromAddress(Exchange.class, getTestName());
+        doReturn(exchange).when(_host).getAttainedMessageDestination(getTestName());
 
         final ExchangeDelete method = new ExchangeDelete(getTestName(), Option.IF_UNUSED);
         _delegate.exchangeDelete(_session, method);
@@ -82,7 +82,7 @@ public class ServerSessionDelegateTest extends QpidTestCase
         Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(false);
 
-        doReturn(exchange).when(_host).getAttainedChildFromAddress(Exchange.class, getTestName());
+        doReturn(exchange).when(_host).getAttainedMessageDestination(getTestName());
 
         final ExchangeDelete method = new ExchangeDelete(getTestName(), Option.IF_UNUSED);
         _delegate.exchangeDelete(_session, method);

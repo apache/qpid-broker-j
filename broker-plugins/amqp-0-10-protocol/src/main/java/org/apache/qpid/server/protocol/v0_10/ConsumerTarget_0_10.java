@@ -228,7 +228,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
                     MessageConverterRegistry.getConverter(serverMsg.getClass(), MessageTransferMessage.class);
 
 
-            msg = (MessageTransferMessage) converter.convert(serverMsg, _session.getVirtualHost());
+            msg = (MessageTransferMessage) converter.convert(serverMsg, _session.getAddressSpace());
         }
         DeliveryProperties origDeliveryProps = msg.getHeader() == null ? null : msg.getHeader().getDeliveryProperties();
         messageProps = msg.getHeader() == null ? null : msg.getHeader().getMessageProperties();
@@ -410,7 +410,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
 
     private void forceDequeue(final MessageInstance entry, final boolean restoreCredit)
     {
-        AutoCommitTransaction dequeueTxn = new AutoCommitTransaction(_session.getVirtualHost().getMessageStore());
+        AutoCommitTransaction dequeueTxn = new AutoCommitTransaction(_session.getAddressSpace().getMessageStore());
         dequeueTxn.dequeue(entry.getEnqueueRecord(),
                            new ServerTransaction.Action()
                            {
@@ -506,7 +506,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
 
     protected EventLogger getEventLogger()
     {
-        return getSessionModel().getVirtualHost().getEventLogger();
+        return getSessionModel().getAMQPConnection().getEventLogger();
     }
 
     private boolean isMaxDeliveryLimitReached(MessageInstance entry)

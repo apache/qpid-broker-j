@@ -29,7 +29,7 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.FieldTable;
-import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.v0_10.MessageMetaData_0_10;
@@ -59,7 +59,7 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
     }
 
     @Override
-    public MessageTransferMessage convert(AMQMessage message_0_8, VirtualHost<?> vhost)
+    public MessageTransferMessage convert(AMQMessage message_0_8, NamedAddressSpace addressSpace)
     {
         return new MessageTransferMessage(convertToStoredMessage(message_0_8), null);
     }

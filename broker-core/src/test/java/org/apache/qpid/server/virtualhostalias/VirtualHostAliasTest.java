@@ -33,6 +33,7 @@ import java.util.UUID;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PatternMatchingAlias;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.VirtualHost;
@@ -96,38 +97,38 @@ public class VirtualHostAliasTest extends QpidTestCase
 
     public void testDefaultAliases_VirtualHostNameAlias()
     {
-        VirtualHost<?> vhost = _port.getVirtualHost("red");
+        NamedAddressSpace addressSpace = _port.getAddressSpace("red");
 
-        assertNotNull(vhost);
-        assertEquals(_vhosts.get("red"), vhost);
+        assertNotNull(addressSpace);
+        assertEquals(_vhosts.get("red"), addressSpace);
 
-        vhost = _port.getVirtualHost("blue");
+        addressSpace = _port.getAddressSpace("blue");
 
-        assertNotNull(vhost);
-        assertEquals(_vhosts.get("blue"), vhost);
+        assertNotNull(addressSpace);
+        assertEquals(_vhosts.get("blue"), addressSpace);
 
-        vhost = _port.getVirtualHost("orange!");
+        addressSpace = _port.getAddressSpace("orange!");
 
-        assertNull(vhost);
+        assertNull(addressSpace);
     }
 
     public void testDefaultAliases_DefaultVirtualHostAlias()
     {
 
         // test the default vhost resolution
-        VirtualHost<?> vhost = _port.getVirtualHost("");
+        NamedAddressSpace addressSpace = _port.getAddressSpace("");
 
-        assertNotNull(vhost);
-        assertEquals(_vhosts.get("black"), vhost);
+        assertNotNull(addressSpace);
+        assertEquals(_vhosts.get("black"), addressSpace);
     }
 
     public void testDefaultAliases_HostNameAlias()
     {
         // 127.0.0.1 should always resolve and thus return the default vhost
-        VirtualHost<?> vhost = _port.getVirtualHost("127.0.0.1");
+        NamedAddressSpace addressSpace = _port.getAddressSpace("127.0.0.1");
 
-        assertNotNull(vhost);
-        assertEquals(_vhosts.get("black"), vhost);
+        assertNotNull(addressSpace);
+        assertEquals(_vhosts.get("black"), addressSpace);
     }
 
     public void testPatternMatching()
@@ -139,42 +140,42 @@ public class VirtualHostAliasTest extends QpidTestCase
         attributes.put(PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("purple").getParent(VirtualHostNode.class));
         _port.createChild(VirtualHostAlias.class, attributes);
 
-        VirtualHost<?> vhost = _port.getVirtualHost("orange");
+        NamedAddressSpace addressSpace = _port.getAddressSpace("orange");
 
-        assertNotNull(vhost);
-        assertEquals(_vhosts.get("purple"), vhost);
+        assertNotNull(addressSpace);
+        assertEquals(_vhosts.get("purple"), addressSpace);
 
-        vhost = _port.getVirtualHost("pink");
+        addressSpace = _port.getAddressSpace("pink");
 
-        assertNotNull(vhost);
-        assertEquals(_vhosts.get("purple"), vhost);
-
-
-        vhost = _port.getVirtualHost("pinker");
-
-        assertNotNull(vhost);
-        assertEquals(_vhosts.get("purple"), vhost);
+        assertNotNull(addressSpace);
+        assertEquals(_vhosts.get("purple"), addressSpace);
 
 
+        addressSpace = _port.getAddressSpace("pinker");
 
-        vhost = _port.getVirtualHost("o.*");
+        assertNotNull(addressSpace);
+        assertEquals(_vhosts.get("purple"), addressSpace);
 
-        assertNull(vhost);
+
+
+        addressSpace = _port.getAddressSpace("o.*");
+
+        assertNull(addressSpace);
 
     }
 
     public void testPriority()
     {
 
-        VirtualHost<?> vhost = _port.getVirtualHost("blue");
+        NamedAddressSpace addressSpace = _port.getAddressSpace("blue");
 
-        assertNotNull(vhost);
-        assertEquals(_vhosts.get("blue"), vhost);
+        assertNotNull(addressSpace);
+        assertEquals(_vhosts.get("blue"), addressSpace);
 
-        vhost = _port.getVirtualHost("black");
+        addressSpace = _port.getAddressSpace("black");
 
-        assertNotNull(vhost);
-        assertEquals(_vhosts.get("black"), vhost);
+        assertNotNull(addressSpace);
+        assertEquals(_vhosts.get("black"), addressSpace);
 
 
 
@@ -186,15 +187,15 @@ public class VirtualHostAliasTest extends QpidTestCase
         attributes.put(PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("purple").getParent(VirtualHostNode.class));
         _port.createChild(VirtualHostAlias.class, attributes);
 
-        vhost = _port.getVirtualHost("blue");
+        addressSpace = _port.getAddressSpace("blue");
 
-        assertNotNull(vhost);
-        assertEquals(_vhosts.get("purple"), vhost);
+        assertNotNull(addressSpace);
+        assertEquals(_vhosts.get("purple"), addressSpace);
 
-        vhost = _port.getVirtualHost("black");
+        addressSpace = _port.getAddressSpace("black");
 
-        assertNotNull(vhost);
-        assertEquals(_vhosts.get("purple"), vhost);
+        assertNotNull(addressSpace);
+        assertEquals(_vhosts.get("purple"), addressSpace);
 
 
         attributes = new HashMap<>();
@@ -207,22 +208,22 @@ public class VirtualHostAliasTest extends QpidTestCase
 
 
 
-        vhost = _port.getVirtualHost("blue");
+        addressSpace = _port.getAddressSpace("blue");
 
-        assertNotNull(vhost);
-        assertEquals(_vhosts.get("red"), vhost);
+        assertNotNull(addressSpace);
+        assertEquals(_vhosts.get("red"), addressSpace);
 
-        vhost = _port.getVirtualHost("black");
+        addressSpace = _port.getAddressSpace("black");
 
-        assertNotNull(vhost);
-        assertEquals(_vhosts.get("purple"), vhost);
+        assertNotNull(addressSpace);
+        assertEquals(_vhosts.get("purple"), addressSpace);
 
 
 
-        vhost = _port.getVirtualHost("purple");
+        addressSpace = _port.getAddressSpace("purple");
 
-        assertNotNull(vhost);
-        assertEquals(_vhosts.get("red"), vhost);
+        assertNotNull(addressSpace);
+        assertEquals(_vhosts.get("red"), addressSpace);
 
 
 

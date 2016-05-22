@@ -276,7 +276,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                 DtxBranch branch = dtxRegistry.getBranch(id);
                 if (branch == null)
                 {
-                    branch = new DtxBranch(storedXid, _store, getVirtualHost());
+                    branch = new DtxBranch(storedXid, dtxRegistry);
                     dtxRegistry.registerBranch(branch);
                 }
                 for (Transaction.EnqueueRecord record : enqueues)

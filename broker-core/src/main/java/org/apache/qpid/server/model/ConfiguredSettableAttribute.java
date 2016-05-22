@@ -35,4 +35,9 @@ public interface ConfiguredSettableAttribute<C extends ConfiguredObject, T> exte
     String validValuePattern();
 
     boolean hasValidValues();
+
+    AttributeValueConverter<T> getConverter();
+
+    T convert(Object value, C object);
+
 }

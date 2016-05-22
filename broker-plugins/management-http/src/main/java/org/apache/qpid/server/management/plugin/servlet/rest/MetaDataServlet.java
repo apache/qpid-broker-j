@@ -207,7 +207,7 @@ public class MetaDataServlet extends AbstractServlet
                     Collection<Object> convertedValues = new ArrayList<>(validValues.size());
                     for (String value : validValues)
                     {
-                        convertedValues.add(attribute.convert(value, null));
+                        convertedValues.add(((ConfiguredSettableAttribute<?, ?>) attribute).convert(value, null));
                     }
                     attrDetails.put("validValues", convertedValues);
                 }

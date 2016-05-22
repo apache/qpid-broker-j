@@ -119,6 +119,12 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
+    public boolean isActive()
+    {
+        return false;
+    }
+
+    @Override
     protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
@@ -321,6 +327,27 @@ class RedirectingVirtualHostImpl
     public MessageStore getMessageStore()
     {
         return null;
+    }
+
+    @Override
+    public <T extends MessageSource> T createMessageSource(final Class<T> clazz, final Map<String, Object> attributes)
+    {
+        throwUnsupportedForRedirector();
+        return null;
+    }
+
+    @Override
+    public <T extends MessageDestination> T createMessageDestination(final Class<T> clazz,
+                                                                     final Map<String, Object> attributes)
+    {
+        throwUnsupportedForRedirector();
+        return null;
+    }
+
+    @Override
+    public boolean hasMessageSources()
+    {
+        return false;
     }
 
     @Override

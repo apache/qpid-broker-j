@@ -162,7 +162,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
                 }
                 catch (StoreException e)
                 {
-                    if (getVirtualHost().getState() == State.ACTIVE)
+                    if (getAddressSpace().isActive())
                     {
                         throw new ServerScopedRuntimeException(e);
                     }

@@ -28,6 +28,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
@@ -44,14 +45,13 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 
 public class TxnCoordinatorLink_1_0 implements ReceivingLinkListener, Link_1_0
 {
     private static final Logger _logger = LoggerFactory.getLogger(TxnCoordinatorLink_1_0.class);
-    private VirtualHost<?> _vhost;
+    private NamedAddressSpace _namedAddressSpace;
     private ReceivingLinkEndpoint _endpoint;
 
     private ArrayList<Transfer> _incompleteMessage;
@@ -60,11 +60,11 @@ public class TxnCoordinatorLink_1_0 implements ReceivingLinkListener, Link_1_0
     private Session_1_0 _session;
 
 
-    public TxnCoordinatorLink_1_0(VirtualHost<?> vhost,
+    public TxnCoordinatorLink_1_0(NamedAddressSpace namedAddressSpace,
                                   Session_1_0 session_1_0, ReceivingLinkEndpoint endpoint,
                                   LinkedHashMap<Integer, ServerTransaction> openTransactions)
     {
-        _vhost = vhost;
+        _namedAddressSpace = namedAddressSpace;
         _session = session_1_0;
         _endpoint  = endpoint;
         _sectionDecoder = new SectionDecoderImpl(endpoint.getSession().getConnection().getDescribedTypeRegistry());
@@ -136,7 +136,7 @@ public class TxnCoordinatorLink_1_0 implements ReceivingLinkListener, Link_1_0
                         }
                         txnId = Integer.valueOf(txnId.intValue() + 1);
 
-                        _openTransactions.put(txnId, new LocalTransaction(_vhost.getMessageStore()));
+                        _openTransactions.put(txnId, new LocalTransaction(_namedAddressSpace.getMessageStore()));
 
                         Declared state = new Declared();
 

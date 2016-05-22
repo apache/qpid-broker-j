@@ -32,7 +32,6 @@ abstract class ConfiguredObjectMethodAttributeOrStatistic<C extends ConfiguredOb
 
     private final String _name;
     private final Class<T> _type;
-    private final AttributeValueConverter<T> _converter;
     private final Method _getter;
 
     ConfiguredObjectMethodAttributeOrStatistic(final Method getter)
@@ -41,8 +40,6 @@ abstract class ConfiguredObjectMethodAttributeOrStatistic<C extends ConfiguredOb
         _getter = getter;
         _type = (Class<T>) AttributeValueConverter.getTypeFromMethod(getter);
         _name = AttributeValueConverter.getNameFromMethod(getter, getType());
-        _converter = AttributeValueConverter.getConverter(getType(), getter.getGenericReturnType());
-
     }
 
     @Override
@@ -103,12 +100,5 @@ abstract class ConfiguredObjectMethodAttributeOrStatistic<C extends ConfiguredOb
     {
         return _getter;
     }
-
-    @Override
-    public AttributeValueConverter<T> getConverter()
-    {
-        return _converter;
-    }
-
 
 }

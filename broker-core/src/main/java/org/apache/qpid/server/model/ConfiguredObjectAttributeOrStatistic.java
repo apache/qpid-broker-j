@@ -32,5 +32,5 @@ public interface ConfiguredObjectAttributeOrStatistic<C extends ConfiguredObject
 
     T getValue(C configuredObject);
 
-    AttributeValueConverter<T> getConverter();
+    //AttributeValueConverter<T> getConverter();
 }

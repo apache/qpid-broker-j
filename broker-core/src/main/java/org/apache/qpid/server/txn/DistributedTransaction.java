@@ -23,11 +23,10 @@ package org.apache.qpid.server.txn;
 
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.message.MessageInstance;
-import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
-import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.transport.Xid;
 
@@ -41,14 +40,14 @@ public class DistributedTransaction implements ServerTransaction
 
     private DtxBranch _branch;
     private AMQSessionModel _session;
-    private VirtualHost<?> _vhost;
+    private DtxRegistry _dtxRegistry;
 
 
-    public DistributedTransaction(AMQSessionModel session, MessageStore store, VirtualHost<?> vhost)
+    public DistributedTransaction(AMQSessionModel session, DtxRegistry dtxRegistry)
     {
         _session = session;
-        _vhost = vhost;
-        _autoCommitTransaction = new AutoCommitTransaction(vhost.getMessageStore());
+        _dtxRegistry = dtxRegistry;
+        _autoCommitTransaction = new AutoCommitTransaction(dtxRegistry.getMessageStore());
     }
 
     @Override
@@ -208,7 +207,7 @@ public class DistributedTransaction implements ServerTransaction
             throw new JoinAndResumeDtxException(id);
         }
 
-        DtxBranch branch = _vhost.getDtxRegistry().getBranch(id);
+        DtxBranch branch = _dtxRegistry.getBranch(id);
 
         if(branch == null)
         {
@@ -216,8 +215,8 @@ public class DistributedTransaction implements ServerTransaction
             {
                 throw new UnknownDtxBranchException(id);
             }
-            branch = new DtxBranch(id,_vhost.getMessageStore(), _vhost);
-            if(_vhost.getDtxRegistry().registerBranch(branch))
+            branch = new DtxBranch(id, _dtxRegistry);
+            if(_dtxRegistry.registerBranch(branch))
             {
                 _branch = branch;
                 branch.associateSession(_session);
@@ -248,7 +247,7 @@ public class DistributedTransaction implements ServerTransaction
     public void end(Xid id, boolean fail, boolean suspend)
             throws UnknownDtxBranchException, NotAssociatedDtxException, SuspendAndFailDtxException, TimeoutDtxException
     {
-        DtxBranch branch = _vhost.getDtxRegistry().getBranch(id);
+        DtxBranch branch = _dtxRegistry.getBranch(id);
 
         if(suspend && fail)
         {

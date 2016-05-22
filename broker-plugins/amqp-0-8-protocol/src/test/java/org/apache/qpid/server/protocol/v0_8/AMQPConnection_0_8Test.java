@@ -117,6 +117,8 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         when(_virtualHost.getModel()).thenReturn(model);
         when(_virtualHost.getCategoryClass()).thenReturn(VirtualHost.class);
         when(_virtualHost.getState()).thenReturn(State.ACTIVE);
+        when(_virtualHost.isActive()).thenReturn(true);
+
         when(_virtualHost.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_virtualHost.getPrincipal()).thenReturn(virtualHostPrincipal);
         when(_virtualHost.getContextValue(Integer.class, Broker.MESSAGE_COMPRESSION_THRESHOLD_SIZE)).thenReturn(1024);
@@ -144,7 +146,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         when(_port.getChildExecutor()).thenReturn(_taskExecutor);
         when(_port.getModel()).thenReturn(model);
         when(_port.getAuthenticationProvider()).thenReturn(authenticationProvider);
-        when(_port.getVirtualHost(VIRTUAL_HOST_NAME)).thenReturn(_virtualHost);
+        when(_port.getAddressSpace(VIRTUAL_HOST_NAME)).thenReturn(_virtualHost);
         when(_port.getContextValue(Long.class, Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY)).thenReturn(2500l);
         when(_port.getContextValue(Integer.class, Connection.MAX_MESSAGE_SIZE)).thenReturn(Connection.DEFAULT_MAX_MESSAGE_SIZE);
 
@@ -174,8 +176,8 @@ public class AMQPConnection_0_8Test extends QpidTestCase
     public void testCloseOnNoRoute()
     {
         {
-            AMQPConnection_0_8
-                    conn = new AMQPConnection_0_8(_broker, _network, _port, _transport, _protocol, 0, _ticker);
+            AMQPConnection_0_8Impl
+                    conn = new AMQPConnection_0_8Impl(_broker, _network, _port, _transport, _protocol, 0, _ticker);
             conn.create();
             conn.receiveProtocolHeader(new ProtocolInitiation(ProtocolVersion.v0_8));
 
@@ -188,8 +190,8 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         }
 
         {
-            AMQPConnection_0_8
-                    conn = new AMQPConnection_0_8(_broker, _network, _port, _transport, _protocol, 0, _ticker);
+            AMQPConnection_0_8Impl
+                    conn = new AMQPConnection_0_8Impl(_broker, _network, _port, _transport, _protocol, 0, _ticker);
             conn.create();
             conn.receiveProtocolHeader(new ProtocolInitiation(ProtocolVersion.v0_8));
 
@@ -203,8 +205,8 @@ public class AMQPConnection_0_8Test extends QpidTestCase
 
     public void testConnectionEnforcesMaxSessions() throws Exception
     {
-        AMQPConnection_0_8
-                conn = new AMQPConnection_0_8(_broker, _network, _port, _transport, _protocol, 0, _ticker);
+        AMQPConnection_0_8Impl
+                conn = new AMQPConnection_0_8Impl(_broker, _network, _port, _transport, _protocol, 0, _ticker);
         conn.create();
 
         conn.receiveProtocolHeader(new ProtocolInitiation(ProtocolVersion.v0_8));

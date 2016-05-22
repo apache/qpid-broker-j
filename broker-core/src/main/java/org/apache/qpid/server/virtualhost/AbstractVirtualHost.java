@@ -212,7 +212,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _broker = virtualHostNode.getParent(Broker.class);
         _virtualHostNode = virtualHostNode;
 
-        _dtxRegistry = new DtxRegistry();
+        _dtxRegistry = new DtxRegistry(this);
 
         _eventLogger = _broker.getParent(SystemConfig.class).getEventLogger();
 
@@ -468,6 +468,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             throw new IllegalStateException("The virtual host state of " + getState()
                                             + " does not permit this operation.");
         }
+    }
+
+    @Override
+    public boolean isActive()
+    {
+        return getState() == State.ACTIVE;
     }
 
     private void registerSystemNodes()
@@ -2074,4 +2080,40 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }
 
+    @Override
+    public <T extends MessageSource> T createMessageSource(final Class<T> clazz, final Map<String, Object> attributes)
+    {
+        if(Queue.class.isAssignableFrom(clazz))
+        {
+            return (T) createChild((Class<? extends Queue>)clazz, attributes);
+        }
+        else
+        {
+            throw new IllegalArgumentException("Cannot create message source children of class " + clazz.getSimpleName());
+        }
+    }
+
+    @Override
+    public <T extends MessageDestination> T createMessageDestination(final Class<T> clazz,
+                                                                     final Map<String, Object> attributes)
+    {
+        if(Exchange.class.isAssignableFrom(clazz))
+        {
+            return (T) createChild((Class<? extends Exchange>)clazz, attributes);
+        }
+        else if(Queue.class.isAssignableFrom(clazz))
+        {
+            return (T) createChild((Class<? extends Queue>)clazz, attributes);
+        }
+        else
+        {
+            throw new IllegalArgumentException("Cannot create message destination children of class " + clazz.getSimpleName());
+        }
+    }
+
+    @Override
+    public boolean hasMessageSources()
+    {
+        return !(_systemNodeSources.isEmpty() && getChildren(Queue.class).isEmpty());
+    }
 }

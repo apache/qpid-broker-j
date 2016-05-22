@@ -52,11 +52,6 @@ public class ConnectionPrincipal implements SocketConnectionPrincipal
         return _connection;
     }
 
-    public VirtualHost<?> getVirtualHost()
-    {
-        return _connection.getVirtualHost();
-    }
-
     @Override
     public boolean equals(final Object o)
     {

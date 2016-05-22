@@ -2929,21 +2929,32 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             Object value;
             if(!attribute.isDerived())
             {
-                ConfiguredSettableAttribute autoAttr = (ConfiguredSettableAttribute) attribute;
+                ConfiguredSettableAttribute settableAttr = (ConfiguredSettableAttribute) attribute;
                 value = _attributes.get(attribute.getName());
-                if (value == null && !"".equals(autoAttr.defaultValue()))
+                if (value == null && !"".equals(settableAttr.defaultValue()))
                 {
-                    value = autoAttr.defaultValue();
+                    value = settableAttr.defaultValue();
                 }
+                return convert(settableAttr, value);
             }
             else
             {
-                value = _attributes.get(attribute.getName());
+                if(_attributes.containsKey(attribute.getName()))
+                {
+                    return _attributes.get(attribute.getName());
+                }
+                else if(_configuredObject != null)
+                {
+                    return _configuredObject.getAttribute(attribute.getName());
+                }
+                else
+                {
+                    return null;
+                }
             }
-            return convert(attribute, value);
         }
 
-        protected Object convert(ConfiguredObjectAttribute attribute, Object value)
+        protected Object convert(ConfiguredSettableAttribute attribute, Object value)
         {
             return attribute.convert(value, _configuredObject);
         }
@@ -3018,7 +3029,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
 
         @Override
-        protected Object convert(ConfiguredObjectAttribute attribute, Object value)
+        protected Object convert(ConfiguredSettableAttribute attribute, Object value)
         {
             return attribute.convert(value, _parent);
         }

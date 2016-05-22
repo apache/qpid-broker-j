@@ -96,7 +96,7 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     Protocol getProtocol();
 
     @DerivedAttribute
-    VirtualHost<?> getVirtualHost();
+    NamedAddressSpace getAddressSpace();
 
     @DerivedAttribute
     Port<?> getPort();

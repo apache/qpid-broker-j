@@ -56,23 +56,4 @@ public abstract class ConfiguredObjectMethodAttribute<C extends ConfiguredObject
         return false;
     }
 
-    @Override
-    public T convert(final Object value, C object)
-    {
-        final AttributeValueConverter<T> converter = getConverter();
-        try
-        {
-            return converter.convert(value, object);
-        }
-        catch (IllegalArgumentException iae)
-        {
-            Type returnType = getGetter().getGenericReturnType();
-            String simpleName = returnType instanceof Class ? ((Class) returnType).getSimpleName() : returnType.toString();
-
-            throw new IllegalArgumentException("Cannot convert '" + value
-                                               + "' into a " + simpleName
-                                               + " for attribute " + getName()
-                                               + " (" + iae.getMessage() + ")", iae);
-        }
-    }
 }

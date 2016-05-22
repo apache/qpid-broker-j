@@ -25,7 +25,7 @@ import java.util.Collections;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.internal.InternalMessage;
-import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.store.StoredMessage;
@@ -50,7 +50,7 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
     }
 
     @Override
-    public MessageTransferMessage convert(InternalMessage serverMsg, VirtualHost<?> vhost)
+    public MessageTransferMessage convert(InternalMessage serverMsg, NamedAddressSpace addressSpace)
     {
         return new MessageTransferMessage(convertToStoredMessage(serverMsg), null);
     }

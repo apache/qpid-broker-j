@@ -38,7 +38,7 @@ import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.framing.MessagePublishInfo;
 import org.apache.qpid.server.message.internal.InternalMessage;
-import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.store.StoredMessage;
@@ -64,7 +64,7 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
     }
 
     @Override
-    public AMQMessage convert(InternalMessage serverMsg, VirtualHost<?> vhost)
+    public AMQMessage convert(InternalMessage serverMsg, NamedAddressSpace addressSpace)
     {
         return new AMQMessage(convertToStoredMessage(serverMsg), null);
     }

@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.qpid.server.model.FixedVirtualHostNodeAlias;
 import org.apache.qpid.server.model.ManagedAttributeField;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.VirtualHostNode;
 
@@ -47,9 +48,10 @@ abstract class AbstractFixedVirtualHostNodeAlias<X extends AbstractFixedVirtualH
     }
 
     @Override
-    public VirtualHostNode<?> getVirtualHostNode(final String name)
+    public NamedAddressSpace getAddressSpace(final String name)
     {
-        return matches(name) ? getVirtualHostNode() : null;
+        VirtualHostNode<?> node = matches(name) ? getVirtualHostNode() : null;
+        return node == null ? null : node.getVirtualHost();
     }
 
     protected abstract boolean matches(final String name);

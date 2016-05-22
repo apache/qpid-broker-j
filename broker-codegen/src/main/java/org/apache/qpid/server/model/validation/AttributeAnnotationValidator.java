@@ -86,8 +86,8 @@ public class AttributeAnnotationValidator extends AbstractProcessor
         typeUtils = processingEnv.getTypeUtils();
         messager = processingEnv.getMessager();
 
-        processAttributes(roundEnv, MANAGED_ATTRIBUTE_CLASS_NAME);
-        processAttributes(roundEnv, DERIVED_ATTRIBUTE_CLASS_NAME);
+        processAttributes(roundEnv, MANAGED_ATTRIBUTE_CLASS_NAME, false);
+        processAttributes(roundEnv, DERIVED_ATTRIBUTE_CLASS_NAME, true);
 
         processStatistics(roundEnv, MANAGED_STATISTIC_CLASS_NAME);
 
@@ -95,7 +95,7 @@ public class AttributeAnnotationValidator extends AbstractProcessor
     }
 
     public void processAttributes(final RoundEnvironment roundEnv,
-                                  String elementName)
+                                  String elementName, final boolean allowedNamed)
     {
 
         TypeElement annotationElement = elementUtils.getTypeElement(elementName);
@@ -109,7 +109,7 @@ public class AttributeAnnotationValidator extends AbstractProcessor
             checkInterfaceExtendsConfiguredObject(annotationElement, methodElement);
             checkMethodTakesNoArgs(annotationElement, methodElement);
             checkMethodName(annotationElement, methodElement);
-            checkMethodReturnType(annotationElement, methodElement);
+            checkMethodReturnType(annotationElement, methodElement, allowedNamed);
 
             checkTypeAgreesWithName(annotationElement, methodElement);
 
@@ -243,9 +243,11 @@ public class AttributeAnnotationValidator extends AbstractProcessor
         }
     }
 
-    public void checkMethodReturnType(final TypeElement annotationElement, final ExecutableElement methodElement)
+    public void checkMethodReturnType(final TypeElement annotationElement,
+                                      final ExecutableElement methodElement,
+                                      final boolean allowNamed)
     {
-        if (!isValidType(methodElement.getReturnType()))
+        if (!(isValidType(methodElement.getReturnType()) || (allowNamed && isNamed(methodElement.getReturnType()))))
         {
             messager.printMessage(Diagnostic.Kind.ERROR,
                                   "@"
@@ -428,6 +430,24 @@ public class AttributeAnnotationValidator extends AbstractProcessor
 
         return false;
     }
+
+    private boolean isNamed(final TypeMirror type)
+    {
+        return isNamed(processingEnv, type);
+    }
+
+    static boolean isNamed(ProcessingEnvironment processingEnv,
+                               final TypeMirror type)
+    {
+        Types typeUtils = processingEnv.getTypeUtils();
+
+        String className = "org.apache.qpid.server.model.Named";
+        TypeMirror namedType = getErasure(processingEnv, className);
+
+        return typeUtils.isAssignable(typeUtils.erasure(type), namedType);
+
+    }
+
 
     private TypeMirror getErasure(final String className)
     {

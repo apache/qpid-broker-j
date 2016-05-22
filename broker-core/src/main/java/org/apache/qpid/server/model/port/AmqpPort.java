@@ -29,6 +29,7 @@ import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedStatistic;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.StatisticType;
 import org.apache.qpid.server.model.StatisticUnit;
@@ -147,7 +148,7 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
                                     + " the connection will be aborted.")
     long getProtocolHandshakeTimeout();
 
-    VirtualHost<?> getVirtualHost(String name);
+    NamedAddressSpace getAddressSpace(String name);
 
     boolean canAcceptNewConnection(final SocketAddress remoteSocketAddress);
 

@@ -18,15 +18,11 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.plugin;
+package org.apache.qpid.server.model;
 
-import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.configuration.updater.TaskExecutor;
 
-public interface MessageConverter<M extends ServerMessage, N extends ServerMessage> extends Pluggable
+public interface TaskExecutorProvider
 {
-    Class<M> getInputClass();
-    Class<N> getOutputClass();
-
-    N convert(M message, NamedAddressSpace addressSpace);
+    TaskExecutor getTaskExecutor();
 }

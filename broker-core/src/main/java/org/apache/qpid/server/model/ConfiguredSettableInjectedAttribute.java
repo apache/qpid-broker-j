@@ -41,6 +41,7 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfiguredSettableInjectedAttribute.class);
 
+    private final AttributeValueConverter<T> _converter;
     private final Method _validValuesMethod;
     private final Pattern _secureValuePattern;
     private final String _defaultValue;
@@ -68,6 +69,7 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
                                                final String validValuePattern, final TypeValidator typeValidator)
     {
         super(name, type, genericType, typeValidator);
+        _converter = AttributeValueConverter.getConverter(type, genericType);
 
         _defaultValue = defaultValue;
         _secure = secure;
@@ -97,6 +99,12 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
         {
             _secureValuePattern = Pattern.compile(secureValueFilter);
         }
+    }
+
+    @Override
+    public final AttributeValueConverter<T> getConverter()
+    {
+        return _converter;
     }
 
     private Method getValidValuesMethod(final String validValue)
@@ -253,6 +261,26 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
         }
         return convert(value, configuredObject);
     }
+
+    public final T convert(final Object value, final C object)
+    {
+        final AttributeValueConverter<T> converter = getConverter();
+        try
+        {
+            return converter.convert(value, object);
+        }
+        catch (IllegalArgumentException iae)
+        {
+            Type returnType = getGenericType();
+            String simpleName = returnType instanceof Class ? ((Class) returnType).getSimpleName() : returnType.toString();
+
+            throw new IllegalArgumentException("Cannot convert '" + value
+                                               + "' into a " + simpleName
+                                               + " for attribute " + getName()
+                                               + " (" + iae.getMessage() + ")", iae);
+        }
+    }
+
 
     @Override
     public String validValuePattern()

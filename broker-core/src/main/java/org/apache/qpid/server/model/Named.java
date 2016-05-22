@@ -18,15 +18,9 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.plugin;
+package org.apache.qpid.server.model;
 
-import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.NamedAddressSpace;
-
-public interface MessageConverter<M extends ServerMessage, N extends ServerMessage> extends Pluggable
+public interface Named
 {
-    Class<M> getInputClass();
-    Class<N> getOutputClass();
-
-    N convert(M message, NamedAddressSpace addressSpace);
+    String getName();
 }

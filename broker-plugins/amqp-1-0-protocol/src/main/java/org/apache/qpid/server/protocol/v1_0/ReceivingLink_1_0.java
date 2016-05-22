@@ -26,6 +26,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
@@ -41,7 +43,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.MessageReference;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.StoredMessage;
@@ -50,7 +51,7 @@ import org.apache.qpid.server.txn.ServerTransaction;
 
 public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, DeliveryStateHandler
 {
-    private VirtualHost<?> _vhost;
+    private NamedAddressSpace _addressSpace;
 
     private ReceivingDestination _destination;
     private SectionDecoderImpl _sectionDecoder;
@@ -66,10 +67,10 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
     private ReceiverSettleMode _receivingSettlementMode;
 
 
-    public ReceivingLink_1_0(ReceivingLinkAttachment receivingLinkAttachment, VirtualHost<?> vhost,
+    public ReceivingLink_1_0(ReceivingLinkAttachment receivingLinkAttachment, NamedAddressSpace addressSpace,
                              ReceivingDestination destination)
     {
-        _vhost = vhost;
+        _addressSpace = addressSpace;
         _destination = destination;
         _attachment = receivingLinkAttachment;
         _receivingSettlementMode = receivingLinkAttachment.getEndpoint().getReceivingSettlementMode();
@@ -154,7 +155,7 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
             mmd = new MessageMetaData_1_0(fragments.toArray(new QpidByteBuffer[fragments.size()]),
                     _sectionDecoder,
                     immutableSections);
-            MessageHandle<MessageMetaData_1_0> handle = _vhost.getMessageStore().addMessage(mmd);
+            MessageHandle<MessageMetaData_1_0> handle = _addressSpace.getMessageStore().addMessage(mmd);
 
             for(QpidByteBuffer bareMessageBuf : immutableSections)
             {
@@ -192,16 +193,16 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
                     Session_1_0 session = getSession();
                     transaction = session != null
                             ? session.getTransaction(null)
-                            : new AutoCommitTransaction(_vhost.getMessageStore());
+                            : new AutoCommitTransaction(_addressSpace.getMessageStore());
                 }
 
-                final SecurityManager securityManager = _vhost.getSecurityManager();
+                final SecurityManager securityManager = getSession().getConnection().getBroker().getSecurityManager();
                 try
                 {
                     securityManager.authorisePublish(false,
                                                      _destination.getRoutingAddress(message),
                                                      _destination.getAddress(),
-                                                     _vhost.getName(),
+                                                     _addressSpace.getName(),
                                                      _attachment.getSession().getSubject(),
                                                      message.getMessageHeader().getUserId(),
                                                      _attachment.getSession().getAMQPConnection());

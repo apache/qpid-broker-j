@@ -45,6 +45,5 @@ public interface ConfiguredObjectAttribute<C extends ConfiguredObject, T>  exten
 
     boolean isSecureValue(Object value);
 
-    T convert(Object value, C object);
 
 }

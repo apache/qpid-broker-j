@@ -31,7 +31,7 @@ import java.util.Map;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.store.StoredMessage;
@@ -61,7 +61,7 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
     }
 
     @Override
-    public MessageTransferMessage convert(ServerMessage serverMsg, VirtualHost<?> vhost)
+    public MessageTransferMessage convert(ServerMessage serverMsg, NamedAddressSpace addressSpace)
     {
         return new MessageTransferMessage(convertToStoredMessage(serverMsg), null);
     }

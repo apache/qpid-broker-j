@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.logging.EventLogger;
@@ -143,14 +144,14 @@ public class ServerConnection extends Connection
         return _amqpConnection;
     }
 
-    public VirtualHost<?> getVirtualHost()
+    public NamedAddressSpace getAddressSpace()
     {
-        return _amqpConnection.getVirtualHost();
+        return _amqpConnection.getAddressSpace();
     }
 
-    public void setVirtualHost(VirtualHost<?> virtualHost)
+    public void setVirtualHost(NamedAddressSpace addressSpace)
     {
-        _amqpConnection.setVirtualHost(virtualHost);
+        _amqpConnection.setAddressSpace(addressSpace);
     }
 
     public AmqpPort<?> getPort()
@@ -381,10 +382,10 @@ public class ServerConnection extends Connection
         }
         finally
         {
-            VirtualHost<?> virtualHost = getVirtualHost();
-            if(virtualHost != null)
+            NamedAddressSpace addressSpace = getAddressSpace();
+            if(addressSpace != null)
             {
-                virtualHost.deregisterConnection(_amqpConnection);
+                addressSpace.deregisterConnection(_amqpConnection);
             }
         }
 

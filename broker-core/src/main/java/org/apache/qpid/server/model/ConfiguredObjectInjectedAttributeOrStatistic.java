@@ -29,7 +29,6 @@ abstract class ConfiguredObjectInjectedAttributeOrStatistic<C extends Configured
     private final String _name;
     private final Class<T> _type;
     private final Type _genericType;
-    private final AttributeValueConverter<T> _converter;
     private final TypeValidator _typeValidator;
 
     ConfiguredObjectInjectedAttributeOrStatistic(String name,
@@ -42,7 +41,6 @@ abstract class ConfiguredObjectInjectedAttributeOrStatistic<C extends Configured
         _type = type;
         _genericType = genericType;
         _typeValidator = typeValidator;
-        _converter = AttributeValueConverter.getConverter(type, genericType);
 
 
     }
@@ -66,35 +64,9 @@ abstract class ConfiguredObjectInjectedAttributeOrStatistic<C extends Configured
     }
 
     @Override
-    public final AttributeValueConverter<T> getConverter()
-    {
-        return _converter;
-    }
-
-    @Override
     public final boolean appliesToConfiguredObjectType(final Class<? extends ConfiguredObject<?>> type)
     {
         return _typeValidator.appliesToType(type);
     }
-
-    public final T convert(final Object value, final C object)
-    {
-        final AttributeValueConverter<T> converter = getConverter();
-        try
-        {
-            return converter.convert(value, object);
-        }
-        catch (IllegalArgumentException iae)
-        {
-            Type returnType = getGenericType();
-            String simpleName = returnType instanceof Class ? ((Class) returnType).getSimpleName() : returnType.toString();
-
-            throw new IllegalArgumentException("Cannot convert '" + value
-                                               + "' into a " + simpleName
-                                               + " for attribute " + getName()
-                                               + " (" + iae.getMessage() + ")", iae);
-        }
-    }
-
 
 }

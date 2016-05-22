@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -40,7 +41,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
@@ -64,7 +64,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
     }
 
     @Override
-    public final Message_1_0 convert(M message, VirtualHost<?> vhost)
+    public final Message_1_0 convert(M message, NamedAddressSpace addressSpace)
     {
 
         SectionEncoder sectionEncoder = new SectionEncoderImpl(_typeRegistry);

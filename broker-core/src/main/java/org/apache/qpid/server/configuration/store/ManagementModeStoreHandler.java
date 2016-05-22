@@ -36,6 +36,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
+import org.apache.qpid.server.model.ConfiguredSettableAttribute;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
@@ -412,7 +413,8 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
         ConfiguredObjectTypeRegistry typeRegistry = model.getTypeRegistry();
         Map<String, ConfiguredObjectAttribute<?, ?>> attributeTypes =
                 typeRegistry.getAttributeTypes(Port.class);
-        ConfiguredObjectAttribute protocolsAttribute = attributeTypes.get(Port.PROTOCOLS);
+        ConfiguredSettableAttribute protocolsAttribute =
+                (ConfiguredSettableAttribute) attributeTypes.get(Port.PROTOCOLS);
         return (Set<Protocol>) protocolsAttribute.convert(object,_parent);
 
     }

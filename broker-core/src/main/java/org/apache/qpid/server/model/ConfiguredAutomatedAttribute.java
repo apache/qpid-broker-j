@@ -43,12 +43,15 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
     private final ManagedAttribute _annotation;
     private final Method _validValuesMethod;
     private final Pattern _secureValuePattern;
+    private final AttributeValueConverter<T> _converter;
 
     ConfiguredAutomatedAttribute(final Class<C> clazz,
                                  final Method getter,
                                  final ManagedAttribute annotation)
     {
         super(clazz, getter);
+        _converter = AttributeValueConverter.getConverter(getType(), getter.getGenericReturnType());
+
         _annotation = annotation;
         Method validValuesMethod = null;
 
@@ -70,6 +73,13 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
             _secureValuePattern = Pattern.compile(secureValueFilter);
         }
     }
+
+    @Override
+    public final AttributeValueConverter<T> getConverter()
+    {
+        return _converter;
+    }
+
 
     private Method getValidValuesMethod(final String validValue, final Class<C> clazz)
     {
@@ -217,5 +227,26 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
     public String validValuePattern()
     {
         return _annotation.validValuePattern();
+    }
+
+
+    @Override
+    public T convert(final Object value, C object)
+    {
+        final AttributeValueConverter<T> converter = getConverter();
+        try
+        {
+            return converter.convert(value, object);
+        }
+        catch (IllegalArgumentException iae)
+        {
+            Type returnType = getGetter().getGenericReturnType();
+            String simpleName = returnType instanceof Class ? ((Class) returnType).getSimpleName() : returnType.toString();
+
+            throw new IllegalArgumentException("Cannot convert '" + value
+                                               + "' into a " + simpleName
+                                               + " for attribute " + getName()
+                                               + " (" + iae.getMessage() + ")", iae);
+        }
     }
 }

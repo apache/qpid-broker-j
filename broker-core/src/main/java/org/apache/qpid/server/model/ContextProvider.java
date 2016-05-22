@@ -18,15 +18,16 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.plugin;
+package org.apache.qpid.server.model;
 
-import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.NamedAddressSpace;
+import java.lang.reflect.Type;
+import java.util.Set;
 
-public interface MessageConverter<M extends ServerMessage, N extends ServerMessage> extends Pluggable
+public interface ContextProvider
 {
-    Class<M> getInputClass();
-    Class<N> getOutputClass();
+    <T> T getContextValue(Class<T> clazz, String propertyName);
 
-    N convert(M message, NamedAddressSpace addressSpace);
+    <T> T getContextValue(Class<T> clazz, Type t, String propertyName);
+
+    Set<String> getContextKeys(boolean excludeSystem);
 }

@@ -25,6 +25,7 @@ import java.util.Map;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.DefaultVirtualHostAlias;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.VirtualHostNode;
 
@@ -40,15 +41,14 @@ public final class DefaultVirtualHostAliasImpl
     }
 
     @Override
-    public VirtualHostNode getVirtualHostNode(final String name)
+    public NamedAddressSpace getAddressSpace(final String name)
     {
         if(name == null || name.trim().equals(""))
         {
             Broker<?> broker = getPort().getParent(Broker.class);
             VirtualHostNode defaultVirtualHostNode = broker.findDefautVirtualHostNode();
-            return defaultVirtualHostNode;
+            return defaultVirtualHostNode == null ? null : defaultVirtualHostNode.getVirtualHost();
         }
         return null;
     }
-
 }

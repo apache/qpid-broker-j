@@ -20,17 +20,20 @@
  */
 package org.apache.qpid.server.transport;
 
+import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
+import java.security.Security;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -47,24 +50,28 @@ import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.logging.subjects.ConnectionLogSubject;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ContextProvider;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.model.TaskExecutorProvider;
 import org.apache.qpid.server.model.Transport;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.adapter.SessionAdapter;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.stats.StatisticsCounter;
+import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
@@ -72,7 +79,7 @@ import org.apache.qpid.transport.network.Ticker;
 
 public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>>
         extends AbstractConfiguredObject<C>
-        implements ProtocolEngine, AMQPConnection<C>
+        implements ProtocolEngine, AMQPConnection<C>, EventLoggerProvider
 
 {
     private static final Logger _logger = LoggerFactory.getLogger(AbstractAMQPConnection.class);
@@ -91,6 +98,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private final LogSubject _logSubject;
     private final AtomicReference<Thread> _messageAssignmentAllowedThread = new AtomicReference<>();
     private final AtomicBoolean _messageAssignmentSuspended = new AtomicBoolean();
+    private volatile ContextProvider _contextProvider;
+    private volatile EventLoggerProvider _eventLoggerProvider;
     private String _clientProduct;
     private String _clientVersion;
     private String _remoteProcessPid;
@@ -101,11 +110,12 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private final SettableFuture<Void> _transportClosedFuture = SettableFuture.create();
     private final SettableFuture<Void> _modelClosedFuture = SettableFuture.create();
     private final AtomicBoolean _modelClosing = new AtomicBoolean();
-    private volatile VirtualHost<?> _virtualHost;
+    private volatile NamedAddressSpace _addressSpace;
     private volatile long _lastReadTime;
     private volatile long _lastWriteTime;
     private volatile AccessControlContext _accessControllerContext;
     private volatile Thread _ioThread;
+    private volatile StatisticsGatherer _statisticsGatherer;
 
     private volatile boolean _messageAuthorizationRequired;
 
@@ -123,6 +133,9 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         super(parentsMap(port),createAttributes(connectionId, network));
 
         _broker = broker;
+        _eventLoggerProvider = broker;
+        _contextProvider = broker;
+        _statisticsGatherer = broker;
         _network = network;
         _port = port;
         _transport = transport;
@@ -282,7 +295,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     @Override
     public final String getVirtualHostName()
     {
-        return getVirtualHost() == null ? null : getVirtualHost().getName();
+        return getAddressSpace() == null ? null : getAddressSpace().getName();
     }
 
     @Override
@@ -324,10 +337,10 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
 
     protected void updateMaxMessageSize()
     {
-        _maxMessageSize.set(Math.min(getMaxMessageSize(getPort()), getMaxMessageSize(getVirtualHost())));
+        _maxMessageSize.set(Math.min(getMaxMessageSize(getPort()), getMaxMessageSize(_contextProvider)));
     }
 
-    private long getMaxMessageSize(final ConfiguredObject<?> object)
+    private long getMaxMessageSize(final ContextProvider object)
     {
         long maxMessageSize;
         try
@@ -412,7 +425,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     {
         _messagesDelivered.registerEvent(1L);
         _dataDelivered.registerEvent(messageSize);
-        getVirtualHost().registerMessageDelivered(messageSize);
+        _statisticsGatherer.registerMessageDelivered(messageSize);
     }
 
     @Override
@@ -420,7 +433,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     {
         _messagesReceived.registerEvent(1L, timestamp);
         _dataReceived.registerEvent(messageSize, timestamp);
-        getVirtualHost().registerMessageReceived(messageSize, timestamp);
+        _statisticsGatherer.registerMessageReceived(messageSize, timestamp);
     }
 
     @Override
@@ -541,25 +554,17 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     {
     }
 
-    public final void associateVirtualHost(final VirtualHost<?> virtualHost)
-    {
-        virtualHost.registerConnection(this);
-        _virtualHost = virtualHost;
-        updateMaxMessageSize();
-        _messageAuthorizationRequired = getVirtualHost().getContextValue(Boolean.class, Broker.BROKER_MSG_AUTH);
-    }
-
     @Override
     public TaskExecutor getChildExecutor()
     {
-        VirtualHost virtualHost = getVirtualHost();
-        if (virtualHost == null)
+        NamedAddressSpace addressSpace = getAddressSpace();
+        if (addressSpace instanceof TaskExecutorProvider)
         {
-            return super.getChildExecutor();
+            return ((TaskExecutorProvider)addressSpace).getTaskExecutor();
         }
         else
         {
-            return virtualHost.getTaskExecutor();
+            return super.getChildExecutor();
         }
     }
 
@@ -758,17 +763,10 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return _logSubject;
     }
 
+    @Override
     public EventLogger getEventLogger()
     {
-        final VirtualHost<?> virtualHost = getVirtualHost();
-        if (virtualHost != null)
-        {
-            return virtualHost.getEventLogger();
-        }
-        else
-        {
-            return getBroker().getEventLogger();
-        }
+        return _eventLoggerProvider.getEventLogger();
     }
 
     @Override
@@ -778,23 +776,44 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     }
 
     @Override
-    public VirtualHost<?> getVirtualHost()
+    public NamedAddressSpace getAddressSpace()
     {
-        return _virtualHost;
+        return _addressSpace;
     }
 
-    public void setVirtualHost(VirtualHost<?> virtualHost)
+    public ContextProvider getContextProvider()
     {
-        associateVirtualHost(virtualHost);
+        return _contextProvider;
+    }
 
-        _messageCompressionThreshold = virtualHost.getContextValue(Integer.class,
-                                                                   Broker.MESSAGE_COMPRESSION_THRESHOLD_SIZE);
+    public void setAddressSpace(NamedAddressSpace addressSpace)
+    {
+        addressSpace.registerConnection(this);
+        _addressSpace = addressSpace;
+
+        if(addressSpace instanceof EventLoggerProvider)
+        {
+            _eventLoggerProvider = (EventLoggerProvider)addressSpace;
+        }
+        if(addressSpace instanceof ContextProvider)
+        {
+            _contextProvider = (ContextProvider) addressSpace;
+        }
+        if(addressSpace instanceof StatisticsGatherer)
+        {
+            _statisticsGatherer = (StatisticsGatherer) addressSpace;
+        }
+
+        updateMaxMessageSize();
+        _messageAuthorizationRequired = _contextProvider.getContextValue(Boolean.class, Broker.BROKER_MSG_AUTH);
+        _messageCompressionThreshold = _contextProvider.getContextValue(Integer.class,
+                                                                        Broker.MESSAGE_COMPRESSION_THRESHOLD_SIZE);
         if(_messageCompressionThreshold <= 0)
         {
             _messageCompressionThreshold = Integer.MAX_VALUE;
         }
 
-        getSubject().getPrincipals().add(virtualHost.getPrincipal());
+        getSubject().getPrincipals().add(addressSpace.getPrincipal());
 
         updateAccessControllerContext();
         logConnectionOpen();

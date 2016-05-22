@@ -41,11 +41,9 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.properties.ConnectionStartProperties;
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
@@ -54,7 +52,6 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.transport.*;
-import org.apache.qpid.transport.network.NetworkConnection;
 
 public class ServerConnectionDelegate extends ServerDelegate
 {
@@ -219,7 +216,7 @@ public class ServerConnectionDelegate extends ServerDelegate
     {
         final ServerConnection sconn = (ServerConnection) conn;
         assertState(sconn, ConnectionState.AWAIT_OPEN);
-        VirtualHost<?> vhost;
+        NamedAddressSpace addressSpace;
         String vhostName;
         if(open.hasVirtualHost())
         {
@@ -231,16 +228,16 @@ public class ServerConnectionDelegate extends ServerDelegate
         }
 
         AmqpPort port = (AmqpPort) sconn.getPort();
-        vhost = port.getVirtualHost(vhostName);
+        addressSpace = port.getAddressSpace(vhostName);
 
 
 
-        if(vhost != null)
+        if(addressSpace != null)
         {
-            if (vhost.getState() != State.ACTIVE)
+            if (!addressSpace.isActive())
             {
                 sconn.setState(Connection.State.CLOSING);
-                final String redirectHost = vhost.getRedirectHost(port);
+                final String redirectHost = addressSpace.getRedirectHost(port);
                 if(redirectHost == null)
                 {
                     sconn.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED,
@@ -255,8 +252,8 @@ public class ServerConnectionDelegate extends ServerDelegate
 
             try
             {
-                sconn.setVirtualHost(vhost);
-                if(!vhost.authoriseCreateConnection(sconn.getAmqpConnection()))
+                sconn.setVirtualHost(addressSpace);
+                if(!addressSpace.authoriseCreateConnection(sconn.getAmqpConnection()))
                 {
                     sconn.setState(Connection.State.CLOSING);
                     sconn.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED, "Connection not authorized");
@@ -406,7 +403,7 @@ public class ServerConnectionDelegate extends ServerDelegate
         final String userId = authorizedPrincipal == null ? "" : authorizedPrincipal.getName();
 
         final Iterator<? extends org.apache.qpid.server.model.Connection<?>> connections =
-                        ((ServerConnection)conn).getVirtualHost().getConnections().iterator();
+                        ((ServerConnection)conn).getAddressSpace().getConnections().iterator();
         while(connections.hasNext())
         {
             final AMQPConnection<?> amqConnectionModel = (AMQPConnection<?>) connections.next();

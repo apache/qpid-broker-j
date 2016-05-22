@@ -106,6 +106,8 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         when(_virtualHost.getChildExecutor()).thenReturn(taskExecutor);
         when(_virtualHost.getModel()).thenReturn(BrokerModel.getInstance());
         when(_virtualHost.getState()).thenReturn(State.ACTIVE);
+        when(_virtualHost.isActive()).thenReturn(true);
+
         final ArgumentCaptor<AMQPConnection> connectionCaptor = ArgumentCaptor.forClass(AMQPConnection.class);
         doAnswer(new Answer()
         {
@@ -117,7 +119,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
             }
         }).when(_virtualHost).registerConnection(connectionCaptor.capture());
         when(_virtualHost.getPrincipal()).thenReturn(mock(VirtualHostPrincipal.class));
-        when(_port.getVirtualHost(anyString())).thenReturn(_virtualHost);
+        when(_port.getAddressSpace(anyString())).thenReturn(_virtualHost);
         when(_authenticationProvider.getSubjectCreator(anyBoolean())).thenReturn(_subjectCreator);
 
         final ArgumentCaptor<Principal> userCaptor = ArgumentCaptor.forClass(Principal.class);

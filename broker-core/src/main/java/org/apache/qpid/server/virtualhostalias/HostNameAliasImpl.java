@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.HostNameAlias;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -78,21 +79,21 @@ public class HostNameAliasImpl
 
 
     @Override
-    public VirtualHostNode<?> getVirtualHostNode(final String name)
+    public NamedAddressSpace getAddressSpace(final String name)
     {
         VirtualHostNode<?> node = null;
-        if(matches(name))
+        if (matches(name))
         {
             node = getVirtualHostNode();
-            if(node == null)
+            if (node == null)
             {
                 Broker<?> broker = getPort().getParent(Broker.class);
-                VirtualHostNode defaultVirtualHostNode = broker.findDefautVirtualHostNode();
-                return defaultVirtualHostNode;
+                node = broker.findDefautVirtualHostNode();
             }
 
         }
-        return node;
+        return node == null ? null : node.getVirtualHost();
+
     }
 
     @Override

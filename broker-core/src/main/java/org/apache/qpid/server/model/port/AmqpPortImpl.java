@@ -53,21 +53,7 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.logging.subjects.PortLogSubject;
-import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.DefaultVirtualHostAlias;
-import org.apache.qpid.server.model.HostNameAlias;
-import org.apache.qpid.server.model.KeyStore;
-import org.apache.qpid.server.model.ManagedAttributeField;
-import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.Protocol;
-import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.Transport;
-import org.apache.qpid.server.model.TrustStore;
-import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.model.VirtualHostAlias;
-import org.apache.qpid.server.model.VirtualHostNameAlias;
-import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.TransportProviderFactory;
@@ -236,7 +222,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     }
 
     @Override
-    public VirtualHost<?> getVirtualHost(String name)
+    public NamedAddressSpace getAddressSpace(String name)
     {
         Collection<VirtualHostAlias> aliases = new TreeSet<>(VIRTUAL_HOST_ALIAS_COMPARATOR);
 
@@ -244,10 +230,10 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
 
         for(VirtualHostAlias alias : aliases)
         {
-            VirtualHostNode vhn = alias.getVirtualHostNode(name);
-            if (vhn != null)
+            NamedAddressSpace addressSpace = alias.getAddressSpace(name);
+            if (addressSpace != null)
             {
-                return vhn.getVirtualHost();
+                return addressSpace;
             }
         }
         return null;
