@@ -58,7 +58,7 @@ public class ConnectionLogSubject extends AbstractLogSubject
         {
             if (_connection.getAuthorizedPrincipal() != null)
             {
-                if (_connection.getVirtualHostName() != null)
+                if (_connection.getAddressSpaceName() != null)
                 {
                     /**
                      * LOG FORMAT used by the AMQPConnectorActor follows
@@ -74,7 +74,7 @@ public class ConnectionLogSubject extends AbstractLogSubject
                                                             _connection.getConnectionId(),
                                                             _connection.getAuthorizedPrincipal().getName(),
                                                             _connection.getRemoteAddressString(),
-                                                            _connection.getVirtualHostName())
+                                                            _connection.getAddressSpaceName())
                                  + "] ");
 
                     _upToDate = true;

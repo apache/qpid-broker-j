@@ -21,30 +21,22 @@
 package org.apache.qpid.server.management.amqp;
 
 import org.apache.qpid.server.plugin.PluggableService;
-import org.apache.qpid.server.plugin.SystemNodeCreator;
-import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
 
 @PluggableService
-public class ManagementNodeCreator implements SystemNodeCreator
+public class ManagementAddressSpaceCreator implements SystemAddressSpaceCreator
 {
-    @Override
-    public void register(final SystemNodeRegistry registry)
-    {
-        ManagementNode managementNode = new ManagementNode(registry.getVirtualHost(),
-                                                           registry.getVirtualHost(), new Action<ManagementNode>()
-                {
-                    @Override
-                    public void performAction(final ManagementNode node)
-                    {
-                        registry.removeSystemNode(node);
-                    }
-                });
-        registry.registerSystemNode(managementNode);
-    }
 
     @Override
     public String getType()
     {
-        return "AMQP-VIRTUALHOST-MANAGEMENT";
+        return "AMQP-SYSTEM-MANAGEMENT";
+    }
+
+    @Override
+    public void register(final AddressSpaceRegistry registry)
+    {
+        ManagementAddressSpace addressSpace = new ManagementAddressSpace(registry);
+        registry.registerAddressSpace(addressSpace);
     }
 }

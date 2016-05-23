@@ -149,7 +149,7 @@ public abstract class AbstractMessageLogger implements MessageLogger
     {
         if (connection.getAuthorizedPrincipal() != null)
         {
-            if (connection.getVirtualHostName() != null)
+            if (connection.getAddressSpaceName() != null)
             {
                 /**
                  * LOG FORMAT used by the AMQPConnectorActor follows
@@ -165,7 +165,7 @@ public abstract class AbstractMessageLogger implements MessageLogger
                                                   connection.getConnectionId(),
                                                   connection.getAuthorizedPrincipal().getName(),
                                                   connection.getRemoteAddressString(),
-                                                  connection.getVirtualHostName())
+                                                  connection.getAddressSpaceName())
                        + "] ";
 
             }
@@ -198,9 +198,9 @@ public abstract class AbstractMessageLogger implements MessageLogger
                                           (connection == null || connection.getRemoteAddressString() == null)
                                                   ? "?"
                                                   : connection.getRemoteAddressString(),
-                                          (connection == null || connection.getVirtualHostName() == null)
+                                          (connection == null || connection.getAddressSpaceName() == null)
                                                   ? "?"
-                                                  : connection.getVirtualHostName(),
+                                                  : connection.getAddressSpaceName(),
                                           session.getChannelId())
                + "] ";
     }

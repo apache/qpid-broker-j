@@ -52,8 +52,8 @@ import org.apache.qpid.server.message.internal.InternalMessageHeader;
 import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.SystemNodeCreator;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -102,11 +102,11 @@ class ManagementNode implements MessageSource, MessageDestination
     public static final String RESULTS = "results";
 
 
-    private final VirtualHost<?> _virtualHost;
+    private final NamedAddressSpace _addressSpace;
 
     private final UUID _id;
 
-    private final SystemNodeCreator.SystemNodeRegistry _registry;
+    private final Action<ManagementNode> _onDelete;
     private final ConfiguredObject<?> _managedObject;
     private Map<String, ManagementNodeConsumer> _consumers = new ConcurrentHashMap<String, ManagementNodeConsumer>();
 
@@ -115,11 +115,13 @@ class ManagementNode implements MessageSource, MessageDestination
     private Map<ManagedEntityType,Map<String,ConfiguredObject>> _entities = Collections.synchronizedMap(new LinkedHashMap<ManagedEntityType,Map<String,ConfiguredObject>>());
 
 
-    public ManagementNode(final SystemNodeCreator.SystemNodeRegistry registry,
-                          final ConfiguredObject<?> configuredObject)
+
+    public ManagementNode(final NamedAddressSpace addressSpace,
+                          final ConfiguredObject<?> configuredObject,
+                          final Action<ManagementNode> onDelete)
     {
-        _virtualHost = registry.getVirtualHost();
-        _registry = registry;
+        _addressSpace = addressSpace;
+        _onDelete = onDelete;
         final String name = configuredObject.getId() + MANAGEMENT_NODE_NAME;
         _id = UUID.nameUUIDFromBytes(name.getBytes(Charset.defaultCharset()));
 
@@ -127,7 +129,6 @@ class ManagementNode implements MessageSource, MessageDestination
         _managedObject = configuredObject;
 
         configuredObject.addChangeListener(new ModelObjectListener());
-
     }
 
     private Class getManagementClass(Class objectClass)
@@ -265,7 +266,7 @@ class ManagementNode implements MessageSource, MessageDestination
         MessageConverter converter =
                 MessageConverterRegistry.getConverter(message.getClass(), InternalMessage.class);
 
-        final InternalMessage msg = (InternalMessage) converter.convert(message, _virtualHost);
+        final InternalMessage msg = (InternalMessage) converter.convert(message, _addressSpace);
 
         if(validateMessage(msg))
         {
@@ -364,10 +365,10 @@ class ManagementNode implements MessageSource, MessageDestination
         }
         else
         {
-            _virtualHost.getDefaultDestination().send(response,
-                                                      message.getMessageHeader().getReplyTo(), InstanceProperties.EMPTY,
-                                                      new AutoCommitTransaction(_virtualHost.getMessageStore()),
-                                                      null);
+            _addressSpace.getDefaultDestination().send(response,
+                                                       message.getMessageHeader().getReplyTo(), InstanceProperties.EMPTY,
+                                                       new AutoCommitTransaction(_addressSpace.getMessageStore()),
+                                                       null);
         }
         // TODO - route to a queue
 
@@ -475,7 +476,7 @@ class ManagementNode implements MessageSource, MessageDestination
             responseBody.put(attribute, fixValue(entity.getAttribute(attribute)));
         }
 
-        return InternalMessage.createMapMessage(_virtualHost.getMessageStore(),responseHeader, responseBody);
+        return InternalMessage.createMapMessage(_addressSpace.getMessageStore(), responseHeader, responseBody);
     }
 
 
@@ -501,7 +502,7 @@ class ManagementNode implements MessageSource, MessageDestination
             responseHeader.setHeader(STATUS_CODE_HEADER, STATUS_CODE_FORBIDDEN);
         }
 
-        return InternalMessage.createMapMessage(_virtualHost.getMessageStore(),responseHeader, Collections.emptyMap());
+        return InternalMessage.createMapMessage(_addressSpace.getMessageStore(), responseHeader, Collections.emptyMap());
     }
 
 
@@ -612,7 +613,7 @@ class ManagementNode implements MessageSource, MessageDestination
         }
         responseHeader.setHeader(STATUS_CODE_HEADER, statusCode);
         responseHeader.setHeader(STATUS_DESCRIPTION_HEADER, MessageFormat.format(stateDescription, params));
-        return InternalMessage.createBytesMessage(_virtualHost.getMessageStore(), responseHeader, new byte[0]);
+        return InternalMessage.createBytesMessage(_addressSpace.getMessageStore(), responseHeader, new byte[0]);
 
     }
 
@@ -646,7 +647,7 @@ class ManagementNode implements MessageSource, MessageDestination
         }
         else
         {
-            responseMessage = InternalMessage.createBytesMessage(_virtualHost.getMessageStore(), requestHeader, new byte[0]);
+            responseMessage = InternalMessage.createBytesMessage(_addressSpace.getMessageStore(), requestHeader, new byte[0]);
         }
         return responseMessage;
     }
@@ -689,7 +690,7 @@ class ManagementNode implements MessageSource, MessageDestination
                 responseMap.put(type.getName(), parentNames);
             }
         }
-        responseMessage = InternalMessage.createMapMessage(_virtualHost.getMessageStore(), responseHeader, responseMap);
+        responseMessage = InternalMessage.createMapMessage(_addressSpace.getMessageStore(), responseHeader, responseMap);
         return responseMessage;
     }
 
@@ -727,7 +728,7 @@ class ManagementNode implements MessageSource, MessageDestination
             responseMap.put(restriction, Arrays.asList(entityMapCopy.get(restriction).getAttributes()));
         }
 
-        responseMessage = InternalMessage.createMapMessage(_virtualHost.getMessageStore(), responseHeader, responseMap);
+        responseMessage = InternalMessage.createMapMessage(_addressSpace.getMessageStore(), responseHeader, responseMap);
         return responseMessage;
     }
 
@@ -766,7 +767,7 @@ class ManagementNode implements MessageSource, MessageDestination
             ManagedEntityType type = entityMapCopy.get(restriction);
             responseMap.put(type.getName(), Arrays.asList(type.getOperations()));
         }
-        responseMessage = InternalMessage.createMapMessage(_virtualHost.getMessageStore(), responseHeader, responseMap);
+        responseMessage = InternalMessage.createMapMessage(_addressSpace.getMessageStore(), responseHeader, responseMap);
         return responseMessage;
     }
 
@@ -887,7 +888,7 @@ class ManagementNode implements MessageSource, MessageDestination
         Map<String,List> responseMap = new HashMap<String, List>();
         responseMap.put(ATTRIBUTE_NAMES, attributes);
         responseMap.put(RESULTS, responseList);
-        responseMessage = InternalMessage.createMapMessage(_virtualHost.getMessageStore(),
+        responseMessage = InternalMessage.createMapMessage(_addressSpace.getMessageStore(),
                                                            responseHeader,
                                                            responseMap);
         return responseMessage;
@@ -1223,7 +1224,10 @@ class ManagementNode implements MessageSource, MessageDestination
         {
             if(newState == State.DELETED)
             {
-                _registry.removeSystemNode(ManagementNode.this);
+                if(_onDelete != null)
+                {
+                    _onDelete.performAction(ManagementNode.this);
+                }
             }
             else if(newState == State.ACTIVE && object instanceof org.apache.qpid.server.model.VirtualHost)
             {

@@ -48,7 +48,7 @@ public class ChannelLogSubject extends AbstractLogSubject
                                connection == null ? -1L : connection.getConnectionId(),
                                (connection == null || connection.getAuthorizedPrincipal() == null) ? "?" : connection.getAuthorizedPrincipal().getName(),
                                (connection == null || connection.getRemoteAddressString() == null) ? "?" : connection.getRemoteAddressString(),
-                               (connection == null || connection.getVirtualHostName() == null) ? "?" : connection.getVirtualHostName(),
+                               (connection == null || connection.getAddressSpaceName() == null) ? "?" : connection.getAddressSpaceName(),
                                session.getChannelId());
 
     }

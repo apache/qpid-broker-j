@@ -18,17 +18,24 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.protocol;
+package org.apache.qpid.server.plugin;
 
-public interface LinkRegistry
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.NamedAddressSpace;
+
+public interface SystemAddressSpaceCreator extends Pluggable
 {
-    LinkModel getDurableSendingLink(String name);
+    interface AddressSpaceRegistry
+    {
+        void registerAddressSpace(NamedAddressSpace addressSpace);
+        void removeAddressSpace(NamedAddressSpace addressSpace);
+        void removeAddressSpace(String name);
 
-    boolean registerSendingLink(String name, LinkModel link);
+        NamedAddressSpace getAddressSpace(String name);
 
-    boolean unregisterSendingLink(String name);
+        Broker<?> getBroker();
 
-    LinkModel getDurableReceivingLink(String name);
+    }
 
-    boolean registerReceivingLink(String name, LinkModel link);
+    void register(AddressSpaceRegistry registry);
 }

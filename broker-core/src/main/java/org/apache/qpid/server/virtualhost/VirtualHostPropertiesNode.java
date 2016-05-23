@@ -32,16 +32,17 @@ import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.message.internal.InternalMessageHeader;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.VirtualHost;
 
 public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
 {
 
-    public VirtualHostPropertiesNode(final VirtualHost<?> virtualHost)
+    public VirtualHostPropertiesNode(final NamedAddressSpace virtualHost)
     {
         this(virtualHost, "$virtualhostProperties");
     }
-    public VirtualHostPropertiesNode(final VirtualHost<?> virtualHost, String name)
+    public VirtualHostPropertiesNode(final NamedAddressSpace virtualHost, String name)
     {
         super(name, virtualHost);
     }
@@ -66,7 +67,7 @@ public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
 
         Map<String, Object> headers = new HashMap<>();
 
-        final List<String> globalAddresseDomains = _virtualHost.getGlobalAddressDomains();
+        final List<String> globalAddresseDomains = _addressSpace.getGlobalAddressDomains();
         if (globalAddresseDomains != null && !globalAddresseDomains.isEmpty())
         {
             String primaryDomain = globalAddresseDomains.get(0);
@@ -86,7 +87,7 @@ public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
                                                                  null, null, (byte) 4, System.currentTimeMillis(),
                                                                  0L, null, null);
         final InternalMessage message =
-                InternalMessage.createBytesMessage(_virtualHost.getMessageStore(), header, new byte[0]);
+                InternalMessage.createBytesMessage(_addressSpace.getMessageStore(), header, new byte[0]);
         message.setInitialRoutingAddress(getName());
         return message;
     }

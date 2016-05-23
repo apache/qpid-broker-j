@@ -52,7 +52,7 @@ public class ConnectionLogSubjectTest extends AbstractTestLogSubject
         when(_connection.getConnectionId()).thenReturn(CONNECTION_ID);
         when(_connection.getAuthorizedPrincipal()).thenReturn(principal);
         when(_connection.getRemoteAddressString()).thenReturn("/"+IP_STRING);
-        when(_connection.getVirtualHostName()).thenReturn(VHOST);
+        when(_connection.getAddressSpaceName()).thenReturn(VHOST);
         _subject = new ConnectionLogSubject(_connection);
     }
 

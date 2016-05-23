@@ -41,7 +41,7 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
 
     String getRemoteAddressString();
 
-    String getVirtualHostName();
+    String getAddressSpaceName();
 
     void notifyWork();
 

@@ -20,31 +20,46 @@
  */
 package org.apache.qpid.server.management.amqp;
 
-import org.apache.qpid.server.plugin.PluggableService;
-import org.apache.qpid.server.plugin.SystemNodeCreator;
-import org.apache.qpid.server.util.Action;
+import java.security.Principal;
 
-@PluggableService
-public class ManagementNodeCreator implements SystemNodeCreator
+import org.apache.qpid.server.model.NamedAddressSpace;
+
+class ManagementAddressSpacePrincipal implements Principal
 {
-    @Override
-    public void register(final SystemNodeRegistry registry)
+    private final NamedAddressSpace _addressSpace;
+    private final String _name;
+
+    public ManagementAddressSpacePrincipal(NamedAddressSpace addressSpace)
     {
-        ManagementNode managementNode = new ManagementNode(registry.getVirtualHost(),
-                                                           registry.getVirtualHost(), new Action<ManagementNode>()
-                {
-                    @Override
-                    public void performAction(final ManagementNode node)
-                    {
-                        registry.removeSystemNode(node);
-                    }
-                });
-        registry.registerSystemNode(managementNode);
+        _addressSpace = addressSpace;
+        _name = "addressspace:" + addressSpace.getName();
     }
 
     @Override
-    public String getType()
+    public String getName()
     {
-        return "AMQP-VIRTUALHOST-MANAGEMENT";
+        return _name;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+
+        ManagementAddressSpacePrincipal that = (ManagementAddressSpacePrincipal) o;
+        return _addressSpace.equals(that._addressSpace);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return _addressSpace.hashCode();
     }
 }

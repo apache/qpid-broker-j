@@ -38,6 +38,7 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.store.MessageDurability;
@@ -52,16 +53,15 @@ public abstract class AbstractSystemMessageSource implements MessageSource
 {
     protected final UUID _id;
     protected final String _name;
-    protected final VirtualHost<?> _virtualHost;
+    protected final NamedAddressSpace _addressSpace;
     private List<Consumer> _consumers = new CopyOnWriteArrayList<>();
 
-    public AbstractSystemMessageSource(
-            String name, final VirtualHost<?> virtualHost)
+    public AbstractSystemMessageSource(String name, final NamedAddressSpace addressSpace)
     {
         _name = name;
-        _id = UUID.nameUUIDFromBytes((getClass().getSimpleName() + "/" + virtualHost.getName() + "/" + name).getBytes(
+        _id = UUID.nameUUIDFromBytes((getClass().getSimpleName() + "/" + addressSpace.getName() + "/" + name).getBytes(
                 StandardCharsets.UTF_8));
-        _virtualHost = virtualHost;
+        _addressSpace = addressSpace;
     }
 
     @Override

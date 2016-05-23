@@ -22,6 +22,7 @@ package org.apache.qpid.server.model;
 
 import java.security.Principal;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.message.MessageDestination;
@@ -66,4 +67,5 @@ public interface NamedAddressSpace extends Named
 
     Collection<? extends Connection<?>> getConnections();
 
+    List<String> getGlobalAddressDomains();
 }

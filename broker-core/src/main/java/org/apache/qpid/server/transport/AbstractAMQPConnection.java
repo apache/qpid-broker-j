@@ -293,7 +293,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     }
 
     @Override
-    public final String getVirtualHostName()
+    public final String getAddressSpaceName()
     {
         return getAddressSpace() == null ? null : getAddressSpace().getName();
     }

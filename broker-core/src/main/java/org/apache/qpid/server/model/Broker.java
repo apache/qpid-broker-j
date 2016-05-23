@@ -249,6 +249,8 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     Collection<AccessControlProvider<?>> getAccessControlProviders();
 
+    NamedAddressSpace getSystemAddressSpace(String name);
+
     Collection<GroupProvider<?>> getGroupProviders();
 
     /**

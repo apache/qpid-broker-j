@@ -298,7 +298,8 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                 }
 
             }
-            catch (IOException | ConnectionScopedRuntimeException e)
+            catch (IOException |
+                    ConnectionScopedRuntimeException e)
             {
                 if (LOGGER.isDebugEnabled())
                 {

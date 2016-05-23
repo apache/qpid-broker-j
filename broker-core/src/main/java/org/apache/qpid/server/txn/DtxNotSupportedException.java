@@ -18,17 +18,24 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.protocol;
+package org.apache.qpid.server.txn;
 
-public interface LinkRegistry
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+
+public class DtxNotSupportedException extends ConnectionScopedRuntimeException
 {
-    LinkModel getDurableSendingLink(String name);
+    public DtxNotSupportedException(final String message)
+    {
+        super(message);
+    }
 
-    boolean registerSendingLink(String name, LinkModel link);
+    public DtxNotSupportedException(final String message, final Throwable cause)
+    {
+        super(message, cause);
+    }
 
-    boolean unregisterSendingLink(String name);
-
-    LinkModel getDurableReceivingLink(String name);
-
-    boolean registerReceivingLink(String name, LinkModel link);
+    public DtxNotSupportedException(final Throwable cause)
+    {
+        super(cause);
+    }
 }

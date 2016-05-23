@@ -192,7 +192,7 @@ public class SecurityManagerTest extends QpidTestCase
     public void testAuthoriseCreateConnection()
     {
         AMQPConnection<?> connection = mock(AMQPConnection.class);
-        when(connection.getVirtualHostName()).thenReturn(TEST_VIRTUAL_HOST);
+        when(connection.getAddressSpaceName()).thenReturn(TEST_VIRTUAL_HOST);
 
         ObjectProperties properties = new ObjectProperties();
         properties.put(Property.NAME, TEST_VIRTUAL_HOST);

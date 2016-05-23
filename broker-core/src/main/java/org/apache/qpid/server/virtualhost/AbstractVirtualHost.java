@@ -76,6 +76,7 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.SystemNodeCreator;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.LinkRegistry;
+import org.apache.qpid.server.protocol.LinkRegistryImpl;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.stats.StatisticsCounter;
@@ -1079,7 +1080,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         LinkRegistry linkRegistry = _linkRegistry.get(remoteContainerId);
         if(linkRegistry == null)
         {
-            linkRegistry = new LinkRegistry();
+            linkRegistry = new LinkRegistryImpl();
             _linkRegistry.put(remoteContainerId, linkRegistry);
         }
         return linkRegistry;

@@ -44,14 +44,19 @@ public final class VirtualHostNameAliasImpl
     public NamedAddressSpace getAddressSpace(final String name)
     {
         Broker<?> broker = getPort().getParent(Broker.class);
-        for(VirtualHostNode<?> vhn : broker.getVirtualHostNodes())
+        NamedAddressSpace addressSpace = broker.getSystemAddressSpace(name);
+        if(addressSpace == null)
         {
-            VirtualHost<?> vh = vhn.getVirtualHost();
-            if(vh != null && vh.getName().equals(name))
+            for (VirtualHostNode<?> vhn : broker.getVirtualHostNodes())
             {
-                return vh;
+                VirtualHost<?> vh = vhn.getVirtualHost();
+                if (vh != null && vh.getName().equals(name))
+                {
+                    addressSpace = vh;
+                    break;
+                }
             }
         }
-        return null;
+        return addressSpace;
     }
 }

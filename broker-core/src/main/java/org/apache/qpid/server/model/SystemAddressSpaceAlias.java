@@ -18,17 +18,22 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.protocol;
+package org.apache.qpid.server.model;
 
-public interface LinkRegistry
+@ManagedObject( category = false, type = SystemAddressSpaceAlias.TYPE_NAME)
+public interface SystemAddressSpaceAlias<X extends SystemAddressSpaceAlias<X>> extends VirtualHostAlias<X>
 {
-    LinkModel getDurableSendingLink(String name);
 
-    boolean registerSendingLink(String name, LinkModel link);
+    String TYPE_NAME = "systemAddressAlias";
 
-    boolean unregisterSendingLink(String name);
+    String PATTERN = "pattern";
 
-    LinkModel getDurableReceivingLink(String name);
+    @ManagedAttribute( defaultValue = "200" )
+    int getPriority();
 
-    boolean registerReceivingLink(String name, LinkModel link);
+    @ManagedAttribute( mandatory = true)
+    String getPattern();
+
+    @ManagedAttribute( mandatory = true)
+    String getSystemAddressSpace();
 }

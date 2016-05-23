@@ -38,6 +38,7 @@ import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,6 +46,8 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -58,6 +61,7 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.BrokerPrincipal;
 import org.apache.qpid.server.logging.QpidLoggerTurboFilter;
 import org.apache.qpid.server.logging.StartupAppender;
+import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.util.HousekeepingExecutor;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -141,6 +145,8 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private final BufferPoolMXBean _bufferPoolMXBean;
     private final List<String> _jvmArguments;
     private HousekeepingExecutor _houseKeepingTaskExecutor;
+    private final AddressSpaceRegistry _addressSpaceRegistry = new AddressSpaceRegistry();
+
 
     @ManagedObjectFactoryConstructor
     public BrokerAdapter(Map<String, Object> attributes,
@@ -210,6 +216,17 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             setEncrypter(null);
         }
     }
+
+    private void registerSystemAddressSpaces()
+    {
+        QpidServiceLoader qpidServiceLoader = new QpidServiceLoader();
+        Iterable<SystemAddressSpaceCreator> factories = qpidServiceLoader.instancesOf(SystemAddressSpaceCreator.class);
+        for(SystemAddressSpaceCreator creator : factories)
+        {
+            creator.register(_addressSpaceRegistry);
+        }
+    }
+
 
     @Override
     protected void postResolve()
@@ -606,7 +623,15 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             getEventLogger().message(BrokerMessages.PROCESS(SystemUtils.getProcessPid()));
         }
 
+        registerSystemAddressSpaces();
+
         assignTargetSizes();
+    }
+
+    @Override
+    public NamedAddressSpace getSystemAddressSpace(String name)
+    {
+        return _addressSpaceRegistry.getAddressSpace(name);
     }
 
     @Override
@@ -1302,6 +1327,41 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         public String getContentType()
         {
             return "text/plain;charset=utf-8";
+        }
+    }
+
+    private class AddressSpaceRegistry implements SystemAddressSpaceCreator.AddressSpaceRegistry
+    {
+        private final ConcurrentMap<String, NamedAddressSpace> _systemAddressSpaces = new ConcurrentHashMap<>();
+
+        @Override
+        public void registerAddressSpace(final NamedAddressSpace addressSpace)
+        {
+            _systemAddressSpaces.put(addressSpace.getName(), addressSpace);
+        }
+
+        @Override
+        public void removeAddressSpace(final NamedAddressSpace addressSpace)
+        {
+            _systemAddressSpaces.remove(addressSpace.getName(), addressSpace);
+        }
+
+        @Override
+        public void removeAddressSpace(final String name)
+        {
+            _systemAddressSpaces.remove(name);
+        }
+
+        @Override
+        public NamedAddressSpace getAddressSpace(final String name)
+        {
+            return _systemAddressSpaces.get(name);
+        }
+
+        @Override
+        public Broker<?> getBroker()
+        {
+            return BrokerAdapter.this;
         }
     }
 }

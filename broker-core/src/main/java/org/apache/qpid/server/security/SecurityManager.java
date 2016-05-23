@@ -310,7 +310,7 @@ public class SecurityManager
 
     public void authoriseCreateConnection(final AMQPConnection<?> connection)
     {
-        String virtualHostName = connection.getVirtualHostName();
+        String virtualHostName = connection.getAddressSpaceName();
         ObjectProperties properties = new ObjectProperties(virtualHostName);
         properties.put(Property.VIRTUALHOST_NAME, virtualHostName);
         if (!checkAllPlugins(ObjectType.VIRTUALHOST,  properties, Operation.ACCESS))
