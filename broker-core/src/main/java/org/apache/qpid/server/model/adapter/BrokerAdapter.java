@@ -40,6 +40,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -128,8 +129,9 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @ManagedAttributeField
     private int _housekeepingThreadCount;
 
-    @ManagedAttributeField(afterSet = "postEncrypterProviderSet")
+    @ManagedAttributeField(beforeSet = "preEncrypterProviderSet", afterSet = "postEncrypterProviderSet")
     private String _confidentialConfigurationEncryptionProvider;
+    private String _preConfidentialConfigurationEncryptionProvider;
 
     private final boolean _virtualHostPropertiesNodeEnabled;
     private Collection<BrokerLogger> _brokerLoggersToClose;
@@ -168,6 +170,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
             final String encryptionProviderType = String.valueOf(attributes.get(CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER));
             updateEncrypter(encryptionProviderType);
+            _confidentialConfigurationEncryptionProvider = encryptionProviderType;
         }
         _messagesDelivered = new StatisticsCounter("messages-delivered");
         _dataDelivered = new StatisticsCounter("bytes-delivered");
@@ -939,10 +942,20 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     }
 
     @SuppressWarnings("unused")
+    private void preEncrypterProviderSet()
+    {
+        _preConfidentialConfigurationEncryptionProvider = _confidentialConfigurationEncryptionProvider;
+    }
+
+    @SuppressWarnings("unused")
     private void postEncrypterProviderSet()
     {
-        updateEncrypter(_confidentialConfigurationEncryptionProvider);
-        forceUpdateAllSecureAttributes();
+        if (!Objects.equals(_preConfidentialConfigurationEncryptionProvider,
+                            _confidentialConfigurationEncryptionProvider))
+        {
+            updateEncrypter(_confidentialConfigurationEncryptionProvider);
+            forceUpdateAllSecureAttributes();
+        }
     }
 
     @SuppressWarnings("unused")

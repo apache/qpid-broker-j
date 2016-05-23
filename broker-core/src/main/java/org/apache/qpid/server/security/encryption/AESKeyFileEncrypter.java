@@ -103,7 +103,7 @@ class AESKeyFileEncrypter implements ConfigurationSecretEncrypter
         }
         catch (IOException | InvalidAlgorithmParameterException | InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException e)
         {
-            throw new IllegalArgumentException("Unable to encrypt secret", e);
+            throw new IllegalArgumentException("Unable to decrypt secret", e);
         }
     }
 

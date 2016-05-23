@@ -1772,51 +1772,56 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     @Override
                     public Map<String, Object> run()
                     {
-                        Map<String,Object> attributes = new LinkedHashMap<String, Object>();
+                        Map<String,Object> attributes = new LinkedHashMap<>();
                         Map<String,Object> actualAttributes = getActualAttributes();
                         for(ConfiguredObjectAttribute<?,?> attr : _attributeTypes.values())
                         {
-                            if(attr.isPersisted())
+                            if (attr.isPersisted() && !ID.equals(attr.getName()))
                             {
                                 if(attr.isDerived())
                                 {
-                                    attributes.put(attr.getName(), getAttribute(attr.getName()));
+                                    Object value = getAttribute(attr.getName());
+                                    attributes.put(attr.getName(), toRecordedForm(attr, value));
                                 }
                                 else if(actualAttributes.containsKey(attr.getName()))
                                 {
                                     Object value = actualAttributes.get(attr.getName());
-                                    if(value instanceof ConfiguredObject)
-                                    {
-                                        value = ((ConfiguredObject)value).getId();
-                                    }
-                                    if(attr.isSecure() && _encrypter != null && value != null)
-                                    {
-                                        if(value instanceof Collection || value instanceof Map)
-                                        {
-                                            ObjectMapper mapper = new ObjectMapper();
-                                            try(StringWriter stringWriter = new StringWriter())
-                                            {
-                                                mapper.writeValue(stringWriter, value);
-                                                value = _encrypter.encrypt(stringWriter.toString());
-                                            }
-                                            catch (IOException e)
-                                            {
-                                                throw new IllegalConfigurationException("Failure when encrypting a secret value", e);
-                                            }
-                                        }
-                                        else
-                                        {
-                                            value = _encrypter.encrypt(value.toString());
-                                        }
-                                    }
-                                    attributes.put(attr.getName(), value);
+                                    attributes.put(attr.getName(), toRecordedForm(attr, value));
                                 }
                             }
                         }
-                        attributes.remove(ID);
                         return attributes;
                     }
                 });
+            }
+
+            public Object toRecordedForm(final ConfiguredObjectAttribute<?, ?> attr, Object value)
+            {
+                if(value instanceof ConfiguredObject)
+                {
+                    value = ((ConfiguredObject)value).getId();
+                }
+                if(attr.isSecure() && _encrypter != null && value != null)
+                {
+                    if(value instanceof Collection || value instanceof Map)
+                    {
+                        ObjectMapper mapper = new ObjectMapper();
+                        try(StringWriter stringWriter = new StringWriter())
+                        {
+                            mapper.writeValue(stringWriter, value);
+                            value = _encrypter.encrypt(stringWriter.toString());
+                        }
+                        catch (IOException e)
+                        {
+                            throw new IllegalConfigurationException("Failure when encrypting a secret value", e);
+                        }
+                    }
+                    else
+                    {
+                        value = _encrypter.encrypt(value.toString());
+                    }
+                }
+                return value;
             }
 
             @Override
