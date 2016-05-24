@@ -28,6 +28,7 @@ define(["qpid/common/util", "dojo/query", "dojo/domReady!"], function (util, que
         this.management = params.management;
         this.typeSpecificDetailsContainer = params.typeSpecificDetailsNode;
         this.modelObj = params.modelObj;
+        this.contentPane = params.contentPane;
         util.parse(params.containerNode, params.template, function ()
         {
             that.typeSpecificAttributesContainer =
@@ -55,6 +56,7 @@ define(["qpid/common/util", "dojo/query", "dojo/domReady!"], function (util, que
                     that.details = new Details({
                         containerNode: that.typeSpecificAttributesContainer,
                         typeSpecificDetailsNode: that.typeSpecificDetailsContainer,
+                        contentPane: that.contentPane,
                         metadata: that.metadata,
                         data: data,
                         management: that.management,

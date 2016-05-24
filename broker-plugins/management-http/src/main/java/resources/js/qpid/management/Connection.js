@@ -107,6 +107,7 @@ define(["dojo/parser",
         {
             var that = this;
             this.tabObject = connectionTab;
+            this.contentPane = connectionTab.contentPane;
             this.management = connectionTab.controller.management;
             this.modelObj = connectionTab.modelObj;
             var containerNode = connectionTab.contentPane.containerNode;
@@ -222,6 +223,10 @@ define(["dojo/parser",
 
         ConnectionUpdater.prototype.update = function (callback)
         {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
 
             var that = this;
 

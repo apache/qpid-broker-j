@@ -219,10 +219,15 @@ define(["dojo/parser",
         function PreferencesProviderUpdater(preferencesProvider)
         {
             this.preferencesProvider = preferencesProvider;
+            this.contentPane = preferencesProvider.contentPane;
         };
 
         PreferencesProviderUpdater.prototype.update = function ()
         {
+            if (!this.contentPane.selected)
+            {
+                return;
+            }
             this.preferencesProvider.reload();
         };
 

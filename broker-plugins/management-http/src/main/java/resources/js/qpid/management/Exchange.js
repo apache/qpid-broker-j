@@ -149,6 +149,7 @@ define(["dojo/_base/xhr",
             this.tabObject = exchangeTab;
             this.management = exchangeTab.controller.management;
             this.modelObj = exchangeTab.modelObj;
+            this.contentPane = exchangeTab.contentPane;
             var containerNode = exchangeTab.contentPane.containerNode;
 
             function findNode(name)
@@ -230,6 +231,10 @@ define(["dojo/_base/xhr",
 
         ExchangeUpdater.prototype.update = function (callback)
         {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
 
             var thisObj = this;
 

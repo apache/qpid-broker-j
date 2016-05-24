@@ -83,7 +83,6 @@ define(["dojo/parser",
         GroupProvider.prototype.onOpen = function ()
         {
             var that = this;
-            var contentPane = this.contentPane;
             this.groupProviderUpdater = new GroupProviderUpdater(this);
             this.groupProviderUpdater.update(function ()
             {
@@ -180,6 +179,7 @@ define(["dojo/parser",
         function GroupProviderUpdater(groupProviderTab)
         {
             this.tabObject = groupProviderTab;
+            this.contentPane = groupProviderTab.contentPane;
             var controller = groupProviderTab.controller;
             var groupProviderObj = groupProviderTab.modelObj;
             var node = groupProviderTab.contentPane.containerNode;
@@ -202,6 +202,11 @@ define(["dojo/parser",
 
         GroupProviderUpdater.prototype.update = function (callback)
         {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
+
             var that = this;
             var management = this.controller.management;
             management.load(this.modelObj, {excludeInheritedContext: true})

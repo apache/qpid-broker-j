@@ -67,6 +67,13 @@ define([], function ()
                     return;
                 }
             }
+        },
+
+        restartTimer: function()
+        {
+            clearInterval(timer);
+            invokeUpdates();
+            timer = setInterval(invokeUpdates, 1000 * updatePeriod);
         }
     };
 });

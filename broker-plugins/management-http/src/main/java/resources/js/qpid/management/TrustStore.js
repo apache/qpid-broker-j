@@ -105,6 +105,7 @@ define(["dojo/dom",
             this.management = tabObject.management;
             this.modelObj = tabObject.modelObj;
             this.tabObject = tabObject;
+            this.contentPane = tabObject.contentPane;
 
             function findNode(name)
             {
@@ -134,6 +135,11 @@ define(["dojo/dom",
 
         KeyStoreUpdater.prototype.update = function (callback)
         {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
+
             var that = this;
             this.management.load(this.modelObj, {excludeInheritedContext: true})
                 .then(function (data)

@@ -133,6 +133,7 @@ define(["dojo/parser",
         function GroupUpdater(tabObject)
         {
             this.tabObject = tabObject;
+            this.contentPane = tabObject.contentPane;
             this.management = tabObject.controller.management;
             this.modelObj = {
                 type: "groupmember",
@@ -192,6 +193,10 @@ define(["dojo/parser",
 
         GroupUpdater.prototype.update = function (callback)
         {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
 
             var that = this;
 

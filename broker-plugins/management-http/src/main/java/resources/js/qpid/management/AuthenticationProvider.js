@@ -81,7 +81,7 @@ define(["dojo/parser",
                 .then(function (instances)
                 {
 
-                    var authProviderUpdater = new AuthProviderUpdater(contentPane.containerNode, that.modelObj, that.controller, that);
+                    var authProviderUpdater = new AuthProviderUpdater(that);
                     that.authProviderUpdater = authProviderUpdater;
 
                     var editButtonNode = query(".editAuthenticationProviderButton", contentPane.containerNode)[0];
@@ -165,11 +165,13 @@ define(["dojo/parser",
             }
         };
 
-        function AuthProviderUpdater(node, authProviderObj, controller, authenticationProvider)
+        function AuthProviderUpdater(authenticationProvider)
         {
-            this.controller = controller;
+            var node = authenticationProvider.contentPane.containerNode;
+            this.controller = authenticationProvider.controller;
             this.management = management;
-            this.modelObj = authProviderObj;
+            this.modelObj = authenticationProvider.modelObj;
+            this.contentPane = authenticationProvider.contentPane;
             this.name = query(".name", node)[0];
             this.type = query(".type", node)[0];
             this.state = query(".state", node)[0];
@@ -220,6 +222,10 @@ define(["dojo/parser",
 
         AuthProviderUpdater.prototype.update = function (callback)
         {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
             var that = this;
             this.management.load(this.modelObj,
                 {

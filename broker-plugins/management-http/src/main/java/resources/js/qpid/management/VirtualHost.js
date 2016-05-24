@@ -229,6 +229,7 @@ define(["dojo/parser",
             var node = virtualHost.contentPane.containerNode;
 
             this.tabObject = virtualHost;
+            this.contentPane = virtualHost.contentPane;
             this.management = controller.management;
             this.modelObj = vhost;
             var that = this;
@@ -445,6 +446,11 @@ define(["dojo/parser",
 
         Updater.prototype.update = function (callback)
         {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
+
             var thisObj = this;
 
             thisObj.connectionsGrid.refresh();

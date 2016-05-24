@@ -113,8 +113,7 @@ define(["dojo/parser",
                 parser.parse(contentPane.containerNode)
                     .then(function (instances)
                     {
-                        that.brokerUpdater =
-                            new BrokerUpdater(contentPane.containerNode, that.modelObj, that.controller);
+                        that.brokerUpdater = new BrokerUpdater(that);
 
                         var addProviderButton = query(".addAuthenticationProvider", contentPane.containerNode)[0];
                         connect.connect(registry.byNode(addProviderButton), "onClick", function (evt)
@@ -311,12 +310,14 @@ define(["dojo/parser",
             updater.remove(this.brokerUpdater);
         };
 
-        function BrokerUpdater(node, brokerObj, controller)
+        function BrokerUpdater(brokerTab)
         {
-            this.controller = controller;
+            var node = brokerTab.contentPane.containerNode;
+            this.controller = brokerTab.controller;
+            this.brokerObj = brokerTab.modelObj;
+            this.contentPane = brokerTab.contentPane;
             this.accessControlProvidersWarn = query(".broker-access-control-providers-warning", node)[0];
-            this.management = controller.management;
-            this.brokerObj = brokerObj;
+            this.management = this.controller.management;
             var that = this;
 
             var gridProperties = {
@@ -405,7 +406,7 @@ define(["dojo/parser",
                         var idx = evt.rowIndex, theItem = this.getItem(idx);
                         if (theItem.vhId)
                         {
-                            that.showVirtualHost(theItem, brokerObj);
+                            that.showVirtualHost(theItem, that.brokerObj);
                         }
                     });
                 }, gridProperties, EnhancedGrid, true);
@@ -436,7 +437,7 @@ define(["dojo/parser",
                 var data = that.vhostsGrid.grid.selection.getSelected();
                 if (data.length == 1)
                 {
-                    that.showVirtualHost(data[0], brokerObj);
+                    that.showVirtualHost(data[0], that.brokerObj);
                     that.vhostsGrid.grid.selection.clear();
                 }
             });
@@ -447,7 +448,7 @@ define(["dojo/parser",
                 if (data.length == 1)
                 {
                     var item = data[0];
-                    that.controller.show("virtualhostnode", item.name, brokerObj, item.id);
+                    that.controller.show("virtualhostnode", item.name, that.brokerObj, item.id);
                     that.vhostsGrid.grid.selection.clear();
                 }
             });
@@ -589,7 +590,7 @@ define(["dojo/parser",
                 {
                     var idx = evt.rowIndex, theItem = this.getItem(idx);
                     var name = obj.dataStore.getValue(theItem, "name");
-                    that.controller.show("port", name, brokerObj, theItem.id);
+                    that.controller.show("port", name, that.brokerObj, theItem.id);
                 });
             }, gridProperties, EnhancedGrid);
 
@@ -642,7 +643,7 @@ define(["dojo/parser",
                     {
                         var idx = evt.rowIndex, theItem = this.getItem(idx);
                         var name = obj.dataStore.getValue(theItem, "name");
-                        that.controller.show("authenticationprovider", name, brokerObj, theItem.id);
+                        that.controller.show("authenticationprovider", name, that.brokerObj, theItem.id);
                     });
                 }, gridProperties, EnhancedGrid);
 
@@ -669,7 +670,7 @@ define(["dojo/parser",
                     {
                         var idx = evt.rowIndex, theItem = this.getItem(idx);
                         var name = obj.dataStore.getValue(theItem, "name");
-                        that.controller.show("keystore", name, brokerObj, theItem.id);
+                        that.controller.show("keystore", name, that.brokerObj, theItem.id);
                     });
                 }, gridProperties, EnhancedGrid);
 
@@ -704,7 +705,7 @@ define(["dojo/parser",
                     {
                         var idx = evt.rowIndex, theItem = this.getItem(idx);
                         var name = obj.dataStore.getValue(theItem, "name");
-                        that.controller.show("truststore", name, brokerObj, theItem.id);
+                        that.controller.show("truststore", name, that.brokerObj, theItem.id);
                     });
                 }, gridProperties, EnhancedGrid);
             this.groupProvidersGrid =
@@ -726,7 +727,7 @@ define(["dojo/parser",
                     {
                         var idx = evt.rowIndex, theItem = this.getItem(idx);
                         var name = obj.dataStore.getValue(theItem, "name");
-                        that.controller.show("groupprovider", name, brokerObj, theItem.id);
+                        that.controller.show("groupprovider", name, that.brokerObj, theItem.id);
                     });
                 }, gridProperties, EnhancedGrid);
             this.accessControlProvidersGrid =
@@ -748,7 +749,7 @@ define(["dojo/parser",
                     {
                         var idx = evt.rowIndex, theItem = this.getItem(idx);
                         var name = obj.dataStore.getValue(theItem, "name");
-                        that.controller.show("accesscontrolprovider", name, brokerObj, theItem.id);
+                        that.controller.show("accesscontrolprovider", name, that.brokerObj, theItem.id);
                     });
                 }, gridProperties, EnhancedGrid);
 
@@ -786,7 +787,7 @@ define(["dojo/parser",
                 {
                     var idx = evt.rowIndex, theItem = this.getItem(idx);
                     var name = obj.dataStore.getValue(theItem, "name");
-                    that.controller.show("brokerlogger", name, brokerObj, theItem.id);
+                    that.controller.show("brokerlogger", name, that.brokerObj, theItem.id);
                 });
             }, gridProperties, EnhancedGrid);
             this.update(function ()
@@ -872,6 +873,10 @@ define(["dojo/parser",
 
         BrokerUpdater.prototype.update = function (callback)
         {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
 
             var that = this;
 

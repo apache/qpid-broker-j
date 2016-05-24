@@ -22,14 +22,13 @@ define(["dojo/parser",
         "dojo/query",
         "dojo/_base/connect",
         "qpid/common/properties",
-        "qpid/common/updater",
         "qpid/common/util",
         "dijit/registry",
         "dojo/_base/event",
         "dojox/html/entities",
         "dojo/text!showPlugin.html",
         "dojo/domReady!"],
-    function (parser, query, connect, properties, updater, util, registry, event, entities, template)
+    function (parser, query, connect, properties, util, registry, event, entities, template)
     {
 
         function Plugin(name, parent, controller)
@@ -57,21 +56,25 @@ define(["dojo/parser",
             parser.parse(contentPane.containerNode)
                 .then(function (instances)
                 {
-                    that.pluginUpdater = new PluginUpdater(contentPane, that.modelObj, that.controller);
+                    that.pluginUpdater = new PluginUpdater(that);
                 });
         };
 
         Plugin.prototype.close = function ()
         {
-            updater.remove(this.pluginUpdater);
+            if (this.pluginUpdater.details)
+            {
+                this.pluginUpdater.details.close();
+            }
         };
 
-        function PluginUpdater(contentPane, pluginObject, controller)
+        function PluginUpdater(tabObject)
         {
-            this.controller = controller;
-            this.modelObj = pluginObject;
-            this.management = controller.management;
-            var node = contentPane.containerNode;
+            this.contentPane = tabObject.contentPane;
+            this.controller = tabObject.controller;
+            this.modelObj = tabObject.modelObj;
+            this.management = this.controller.management;
+            var node = this.contentPane.containerNode;
             this.name = query(".name", node)[0];
             this.type = query(".type", node)[0];
 
@@ -88,7 +91,7 @@ define(["dojo/parser",
                         .replace('-', '')], function (SpecificPlugin)
                     {
                         that.details =
-                            new SpecificPlugin(query(".pluginDetails", node)[0], pluginObject, controller, contentPane);
+                            new SpecificPlugin(query(".pluginDetails", node)[0], that.modelObj, that.controller, that.contentPane);
                     });
 
                 }, util.xhrErrorHandler);

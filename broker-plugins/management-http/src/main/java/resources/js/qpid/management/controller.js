@@ -23,6 +23,7 @@ define(["dojo/dom",
         "dijit/layout/ContentPane",
         "dijit/form/CheckBox",
         "dojox/html/entities",
+        "qpid/common/updater",
         "qpid/management/Broker",
         "qpid/management/VirtualHost",
         "qpid/management/Exchange",
@@ -48,6 +49,7 @@ define(["dojo/dom",
               ContentPane,
               CheckBox,
               entities,
+              updater,
               Broker,
               VirtualHost,
               Exchange,
@@ -90,11 +92,12 @@ define(["dojo/dom",
             queryTab: QueryTab
         };
 
-        var tabDiv = dom.byId("managedViews");
-
         ready(function ()
         {
             controller.tabContainer = registry.byId("managedViews");
+            controller.tabContainer.watch("selectedChildWidget", function(name, oval, nval){
+                updater.restartTimer();
+            });
         });
 
         controller.viewedObjects = {};

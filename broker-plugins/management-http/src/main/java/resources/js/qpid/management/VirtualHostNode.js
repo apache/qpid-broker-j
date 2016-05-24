@@ -182,6 +182,7 @@ define(["dojo/parser",
         {
             var domNode = virtualHostNode.contentPane.containerNode;
             this.tabObject = virtualHostNode;
+            this.contentPane = virtualHostNode.contentPane;
             this.modelObj = virtualHostNode.modelObj;
             var that = this;
 
@@ -204,6 +205,11 @@ define(["dojo/parser",
 
         Updater.prototype.update = function (callback)
         {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
+
             var that = this;
             that.tabObject.management.load(this.modelObj,
                 {

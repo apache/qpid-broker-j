@@ -41,7 +41,7 @@ define(["dojo/_base/xhr",
         return data;
     }
 
-    function LogViewer(loggerModelObj, management, containerNode)
+    function LogViewer(loggerModelObj, management, containerNode, contentPane)
     {
         var that = this;
         this.management = management;
@@ -52,6 +52,7 @@ define(["dojo/_base/xhr",
         };
         this.lastLogId = 0;
         this.containerNode = containerNode;
+        this.contentPane = contentPane;
         containerNode.innerHTML = template;
         parser.parse(containerNode)
             .then(function (instances)
@@ -134,6 +135,7 @@ define(["dojo/_base/xhr",
             var updater = new GridUpdater({
                 userPreferences: userPreferences,
                 updatable: false,
+                checkVisibilityFunc: function() {return that.contentPane.selected;},
                 serviceUrl: function ()
                 {
                     return that.management.buildObjectURL(that.modelObj, {lastLogId: that.lastLogId});

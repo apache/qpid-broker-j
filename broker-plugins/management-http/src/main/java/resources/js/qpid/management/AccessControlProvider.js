@@ -109,14 +109,11 @@ define(["dojo/parser",
 
         function AccessControlProviderUpdater(aclTab)
         {
-            this.tabObject = aclTab;
             var node = aclTab.contentPane.containerNode;
-            var groupProviderObj = aclTab.modelObj;
-            var controller = aclTab.controller;
-
-            this.controller = controller;
-            this.management = controller.management;
-            this.modelObj = groupProviderObj;
+            this.contentPane = aclTab.contentPane;
+            this.controller = aclTab.controller;
+            this.management = this.controller.management;
+            this.modelObj = aclTab.modelObj;
             this.name = query(".name", node)[0];
             this.type = query(".type", node)[0];
             this.state = query(".state", node)[0];
@@ -136,14 +133,14 @@ define(["dojo/parser",
                     require(["qpid/management/accesscontrolprovider/" + ui], function (SpecificProvider)
                     {
                         that.details = new SpecificProvider(query(".providerDetails",
-                            node)[0], groupProviderObj, controller, aclTab);
+                            node)[0], that.modelObj, that.controller, aclTab);
                     });
                 }, function (error)
                 {
                     util.tabErrorHandler(error, {
                         updater: that,
-                        contentPane: that.tabObject.contentPane,
-                        tabContainer: that.tabObject.controller.tabContainer,
+                        contentPane: that.contentPane,
+                        tabContainer: that.controller.tabContainer,
                         name: that.modelObj.name,
                         category: "Access Control Provider"
                     });

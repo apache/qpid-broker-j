@@ -124,6 +124,7 @@ define(["dojo/dom",
         {
             var that = this;
             this.tabObject = portTab;
+            this.contentPane = portTab.contentPane;
             this.management = portTab.controller.management;
             this.modelObj = portTab.modelObj;
             var containerNode = portTab.contentPane.containerNode;
@@ -246,6 +247,10 @@ define(["dojo/dom",
 
         PortUpdater.prototype.update = function (callback)
         {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
 
             var thisObj = this;
 

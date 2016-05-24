@@ -347,6 +347,7 @@ define(["dojo/_base/declare",
             this.management = tabObject.management;
             this.modelObj = tabObject.modelObj;
             this.tabObject = tabObject;
+            this.contentPane = tabObject.contentPane;
             var containerNode = tabObject.contentPane.containerNode;
 
             function findNode(name)
@@ -501,6 +502,10 @@ define(["dojo/_base/declare",
 
         QueueUpdater.prototype.update = function (callback)
         {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
 
             var thisObj = this;
 

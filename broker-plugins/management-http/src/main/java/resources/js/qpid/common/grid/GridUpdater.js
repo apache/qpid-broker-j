@@ -37,6 +37,7 @@ define(["dojo/_base/xhr",
 
         function GridUpdater(args, store)
         {
+            this.checkVisibilityFunc = args.hasOwnProperty("checkVisibilityFunc") ? args.checkVisibilityFunc : false;
             this.updatable = args.hasOwnProperty("updatable") ? args.updatable : true;
             this.serviceUrl = args.serviceUrl;
             this.userPreferences = args.userPreferences;
@@ -248,7 +249,7 @@ define(["dojo/_base/xhr",
 
         GridUpdater.prototype.update = function ()
         {
-            if (this.updatable)
+            if (this.updatable && (!this.checkVisibilityFunc || this.checkVisibilityFunc()))
             {
                 this.performUpdate();
             }

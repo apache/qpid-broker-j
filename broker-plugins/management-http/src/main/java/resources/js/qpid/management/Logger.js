@@ -214,6 +214,7 @@ define(["dojo/parser",
         {
             var domNode = logger.contentPane.containerNode;
             this.tabObject = logger;
+            this.contentPane = logger.contentPane;
             this.modelObj = logger.modelObj;
             var that = this;
 
@@ -243,6 +244,11 @@ define(["dojo/parser",
 
         Updater.prototype.update = function (callback)
         {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
+
             var that = this;
             that.tabObject.management.load(this.modelObj,
                 {
@@ -286,6 +292,7 @@ define(["dojo/parser",
                 {
                     that.details = new Details({
                         containerNode: that.loggerAttributes,
+                        contentPane: that.contentPane,
                         typeSpecificDetailsNode: that.loggerTypeSpecificDetails,
                         metadata: that.tabObject.management.metadata,
                         data: data,

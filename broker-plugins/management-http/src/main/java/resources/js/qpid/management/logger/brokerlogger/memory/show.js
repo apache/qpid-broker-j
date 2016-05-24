@@ -28,7 +28,7 @@ define(["qpid/common/util",
 {
     function BrokerMemoryLogger(params)
     {
-        this.logViewer = new LogViewer(params.modelObj, params.management, params.typeSpecificDetailsNode);
+        this.logViewer = new LogViewer(params.modelObj, params.management, params.typeSpecificDetailsNode, params.contentPane);
         TypeTabExtension.call(this,
             params.containerNode,
             template,

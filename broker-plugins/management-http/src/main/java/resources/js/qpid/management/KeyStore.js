@@ -104,7 +104,8 @@ define(["dojo/dom",
             this.keyStoreDetailsContainer = query(".typeFieldsContainer", containerNode)[0];
             this.management = tabObject.controller.management;
             this.modelObj = tabObject.modelObj;
-            this.tabObject = tabObject
+            this.tabObject = tabObject;
+            this.contentPane = tabObject.contentPane;
             function findNode(name)
             {
                 return query("." + name, containerNode)[0];
@@ -130,6 +131,10 @@ define(["dojo/dom",
 
         KeyStoreUpdater.prototype.update = function (callback)
         {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
 
             var that = this;
 

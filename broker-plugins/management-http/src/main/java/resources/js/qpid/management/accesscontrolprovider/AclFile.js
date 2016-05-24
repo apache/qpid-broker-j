@@ -99,6 +99,7 @@ define(["dojo/_base/xhr",
         function AclFileUpdater(node, tabObject)
         {
             this.tabObject = tabObject;
+            this.contentPane = tabObject.contentPane;
             var aclProviderObj = tabObject.modelObj;
             var controller = tabObject.controller;
             this.controller = controller;
@@ -112,6 +113,11 @@ define(["dojo/_base/xhr",
 
         AclFileUpdater.prototype.update = function ()
         {
+            if (!this.contentPane.selected)
+            {
+                return;
+            }
+
             var that = this;
 
             this.management.load(this.modelObj, {excludeInheritedContext: true})

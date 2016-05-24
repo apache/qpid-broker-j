@@ -55,22 +55,25 @@ define(["dojo/dom",
 
         function ManagementHttp(containerNode, pluginObject, controller, contentPane)
         {
-            var node = construct.create("div", null, containerNode, "last");
             var that = this;
+            this.node = construct.create("div", null, containerNode, "last");
             this.name = pluginObject.name;
+            this.contentPane = contentPane;
+            this.pluginObject = pluginObject;
             this.modelObj = pluginObject;
+            this.controller = controller;
             this.management = controller.management;
-            node.innerHTML = template;
-            parser.parse(node)
+            this.node.innerHTML = template;
+            parser.parse(this.node)
                 .then(function (instances)
                 {
-                    that.managementHttpUpdater = new ManagementHttpUpdater(node, pluginObject, controller, contentPane);
+                    that.managementHttpUpdater = new ManagementHttpUpdater(that);
                     that.managementHttpUpdater.update(function ()
                     {
                         updater.add(that.managementHttpUpdater)
                     });
 
-                    var editButton = query(".editPluginButton", node)[0];
+                    var editButton = query(".editPluginButton", that.node)[0];
                     connect.connect(registry.byNode(editButton), "onClick", function (evt)
                     {
                         that.edit();
@@ -88,23 +91,29 @@ define(["dojo/dom",
             editor.show(this.management, this.modelObj, this.managementHttpUpdater.pluginData);
         };
 
-        function ManagementHttpUpdater(node, pluginObject, controller, contentPane)
+        function ManagementHttpUpdater(tabObject)
         {
-            this.contentPane = contentPane;
-            this.controller = controller;
-            this.modelObj = pluginObject;
-            this.name = pluginObject.name;
+            var node = tabObject.node;
+            this.contentPane = tabObject.contentPane;
+            this.controller = tabObject.controller;
+            this.modelObj = tabObject.pluginObject;
+            this.name = tabObject.pluginObject.name;
             this.httpBasicAuthenticationEnabled = query(".httpBasicAuthenticationEnabled", node)[0];
             this.httpsBasicAuthenticationEnabled = query(".httpsBasicAuthenticationEnabled", node)[0];
             this.sessionTimeout = query(".sessionTimeout", node)[0];
             this.httpsSaslAuthenticationEnabled = query(".httpsSaslAuthenticationEnabled", node)[0];
             this.httpSaslAuthenticationEnabled = query(".httpSaslAuthenticationEnabled", node)[0];
             this.compressResponses = query(".compressResponses", node)[0];
-            this.management = controller.management;
+            this.management = this.controller.management;
         }
 
         ManagementHttpUpdater.prototype.update = function (callback)
         {
+            if (!this.contentPane.selected && !callback)
+            {
+                return;
+            }
+
             var that = this;
 
             function showBoolean(val)
