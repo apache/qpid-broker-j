@@ -18,6 +18,9 @@
  */
 package org.apache.qpid.server.model.testmodels.singleton;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,10 +35,11 @@ import javax.security.auth.Subject;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
-import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.NoopConfigurationChangeListener;
+import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -859,41 +863,110 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertTrue("Expected statistic not found", stats.containsKey("longStatistic"));
     }
 
-    private static class NoopConfigurationChangeListener implements ConfigurationChangeListener
+    public void testAuditInformation() throws Exception
     {
-        @Override
-        public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
-        {
-        }
+        final String creatingUser = "creatingUser";
+        final String updatingUser = "updatingUser";
+        final Subject creatorSubject = createTestAuthenticatedSubject(creatingUser);
+        final Subject updaterSubject = createTestAuthenticatedSubject(updatingUser);
+        final Date now = new Date();
 
-        @Override
-        public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-        {
-        }
+        Thread.sleep(5);  // Let a small amount of time pass
 
-        @Override
-        public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-        {
-        }
+        final Map<String, Object> attributes = new HashMap<>();
+        attributes.put(TestSingleton.NAME, "myName");
 
-        @Override
-        public void attributeSet(final ConfiguredObject<?> object,
-                                 final String attributeName,
-                                 final Object oldAttributeValue,
-                                 final Object newAttributeValue)
-        {
-        }
+        final TestSingleton object = Subject.doAs(creatorSubject,
+                     new PrivilegedAction<TestSingleton>()
+                     {
+                         @Override
+                         public TestSingleton run()
+                         {
+                             return _model.getObjectFactory().create(TestSingleton.class, attributes);
+                         }
+                     });
 
-        @Override
-        public void bulkChangeStart(final ConfiguredObject<?> object)
-        {
+        assertEquals("Unexpected creating user after object creation", creatingUser, object.getCreatedBy());
+        assertEquals("Unexpected last updating user after object creation", creatingUser, object.getLastUpdatedBy());
 
-        }
+        final Date originalCreatedTime = object.getCreatedTime();
+        final Date originalLastUpdatedTime = object.getLastUpdatedTime();
+        assertTrue("Unexpected created time", originalCreatedTime.after(now));
+        assertEquals("Unexpected created and updated time", object.getCreatedTime(), originalLastUpdatedTime);
 
-        @Override
-        public void bulkChangeEnd(final ConfiguredObject<?> object)
-        {
+        Thread.sleep(5);  // Let a small amount of time pass
 
-        }
+        Subject.doAs(updaterSubject,
+                     new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             object.setAttributes(Collections.singletonMap(TestSingleton.INT_VALUE, 5));
+                             return null;
+                         }
+                     });
+
+        assertEquals("Creating user should not be changed by update", creatingUser, object.getCreatedBy());
+        assertEquals("Created time should not be changed by update", originalCreatedTime, object.getCreatedTime());
+
+        assertEquals("Last updated by should be changed by update", updatingUser, object.getLastUpdatedBy());
+        assertTrue("Last updated time by should be changed by update", originalLastUpdatedTime.before(object.getLastUpdatedTime()));
     }
+
+    public void testAuditInformationPersistenceAndRecovery() throws Exception
+    {
+        final String creatingUser = "creatingUser";
+        final Subject creatorSubject = createTestAuthenticatedSubject(creatingUser);
+        final String objectName = "myName";
+
+        final Map<String, Object> attributes = new HashMap<>();
+        attributes.put(TestSingleton.NAME, objectName);
+
+        final TestSingleton object = Subject.doAs(creatorSubject,
+                                                  new PrivilegedAction<TestSingleton>()
+                                                  {
+                                                      @Override
+                                                      public TestSingleton run()
+                                                      {
+                                                          return _model.getObjectFactory()
+                                                                  .create(TestSingleton.class, attributes);
+                                                      }
+                                                  });
+
+        final ConfiguredObjectRecord cor = object.asObjectRecord();
+        final Map<String, Object> recordedAttributes = cor.getAttributes();
+
+        assertTrue(recordedAttributes.containsKey(ConfiguredObject.LAST_UPDATED_BY));
+        assertTrue(recordedAttributes.containsKey(ConfiguredObject.LAST_UPDATED_TIME));
+        assertTrue(recordedAttributes.containsKey(ConfiguredObject.CREATED_BY));
+        assertTrue(recordedAttributes.containsKey(ConfiguredObject.CREATED_TIME));
+
+        assertEquals(creatingUser, recordedAttributes.get(ConfiguredObject.CREATED_BY));
+        assertEquals(creatingUser, recordedAttributes.get(ConfiguredObject.LAST_UPDATED_BY));
+
+        // Now recover the object
+
+        final SystemConfig mockSystemConfig = mock(SystemConfig.class);
+        when(mockSystemConfig.getId()).thenReturn(UUID.randomUUID());
+        when(mockSystemConfig.getModel()).thenReturn(TestModel.getInstance());
+
+        final TestSingleton recovered = (TestSingleton) _model.getObjectFactory().recover(cor, mockSystemConfig).resolve();
+        recovered.open();
+
+        assertEquals("Unexpected recovered object created by", object.getCreatedBy(), recovered.getCreatedBy());
+        assertEquals("Unexpected recovered object created time", object.getCreatedTime(), recovered.getCreatedTime());
+
+        assertEquals("Unexpected recovered object updated by", object.getLastUpdatedBy(), recovered.getLastUpdatedBy());
+        assertEquals("Unexpected recovered object updated time", object.getLastUpdatedTime(), recovered.getLastUpdatedTime());
+    }
+
+    private Subject createTestAuthenticatedSubject(final String username)
+    {
+        return new Subject(true,
+                           Collections.singleton(new AuthenticatedPrincipal(username)),
+                           Collections.emptySet(),
+                           Collections.emptySet());
+    }
+
 }

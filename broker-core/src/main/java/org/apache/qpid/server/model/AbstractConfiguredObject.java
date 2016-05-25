@@ -769,14 +769,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                         String currentUserName = currentUser.getName();
                         _attributes.put(LAST_UPDATED_BY, currentUserName);
                         _attributes.put(CREATED_BY, currentUserName);
-                        _lastUpdatedBy = currentUserName;
-                        _createdBy = currentUserName;
                     }
                     final Date currentTime = new Date();
                     _attributes.put(LAST_UPDATED_TIME, currentTime);
                     _attributes.put(CREATED_TIME, currentTime);
-                    _lastUpdatedTime = currentTime;
-                    _createdTime = currentTime;
 
                     CreateExceptionHandler createExceptionHandler = new CreateExceptionHandler();
                     try
@@ -1055,6 +1051,22 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected void postResolve()
     {
+        if (getActualAttributes().get(CREATED_BY) != null)
+        {
+            _createdBy = (String) getActualAttributes().get(CREATED_BY);
+        }
+        if (getActualAttributes().get(CREATED_TIME) != null)
+        {
+            _createdTime = AttributeValueConverter.DATE_CONVERTER.convert(getActualAttributes().get(CREATED_TIME), this);
+        }
+        if (getActualAttributes().get(LAST_UPDATED_BY) != null)
+        {
+            _lastUpdatedBy = (String) getActualAttributes().get(LAST_UPDATED_BY);
+        }
+        if (getActualAttributes().get(LAST_UPDATED_TIME) != null)
+        {
+            _lastUpdatedTime = AttributeValueConverter.DATE_CONVERTER.convert(getActualAttributes().get(LAST_UPDATED_TIME), this);
+        }
     }
 
     protected final void doCreation(final boolean skipCheck, final AbstractConfiguredObjectExceptionHandler exceptionHandler)
