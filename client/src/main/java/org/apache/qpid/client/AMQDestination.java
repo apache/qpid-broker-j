@@ -100,6 +100,7 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
     private boolean _sendEncrypted;
     private String _encryptedRecipients;
     private long _deliveryDelay;
+    private String _localAddress;
 
     protected void setExclusive(boolean exclusive)
     {
@@ -134,6 +135,11 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
     public long getDeliveryDelay()
     {
         return _deliveryDelay;
+    }
+
+    public String getLocalAddress()
+    {
+        return _localAddress;
     }
 
     // ----- Fields required to support new address syntax -------
@@ -322,6 +328,7 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         _encryptedRecipients = binding.getOption(BindingURL.OPTION_ENCRYPTED_RECIPIENTS);
         String deliveryDelayVal = binding.getOption(BindingURL.OPTION_DELIVERY_DELAY);
         _deliveryDelay = deliveryDelayVal == null ? 0L : Long.parseLong(deliveryDelayVal);
+        _localAddress = binding.getOption(BindingURL.OPTION_LOCAL_ADDRESS);
     }
 
     protected AMQDestination(String exchangeName, String exchangeClass, String routingKey, String queueName)
@@ -966,6 +973,7 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         _node =  _addrHelper.getNode();
         _link = _addrHelper.getLink();
         _deliveryDelay = _link.getDelay();
+        _localAddress = _link.getLocalAddress();
         _sendEncrypted = _addrHelper.getSendEncrypted();
         _encryptedRecipients = _addrHelper.getEncryptedRecipients();
     }

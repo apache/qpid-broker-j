@@ -44,6 +44,7 @@ public interface BindingURL
     String OPTION_SEND_ENCRYPTED = "sendencrypted";
     String OPTION_ENCRYPTED_RECIPIENTS = "encryptedrecipients";
     String OPTION_DELIVERY_DELAY = "deliveryDelay";
+    String OPTION_LOCAL_ADDRESS = "localAddress";
 
 
     /**
@@ -68,7 +69,8 @@ public interface BindingURL
                                                                           OPTION_REJECT_BEHAVIOUR,
                                                                           OPTION_SEND_ENCRYPTED,
                                                                           OPTION_ENCRYPTED_RECIPIENTS,
-                                                                          OPTION_DELIVERY_DELAY)));
+                                                                          OPTION_DELIVERY_DELAY,
+                                                                          OPTION_LOCAL_ADDRESS)));
 
 
     String getURL();

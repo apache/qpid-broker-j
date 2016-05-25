@@ -26,12 +26,19 @@ import java.util.List;
 
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.MessageDestination;
+import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.store.StorableMessageMetaData;
+import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
 
-class ManagementNodeConsumer implements ConsumerImpl
+class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
 {
     private final long _id = ConsumerImpl.CONSUMER_NUMBER_GENERATOR.getAndIncrement();
     private final ManagementNode _managementNode;
@@ -155,6 +162,17 @@ class ManagementNodeConsumer implements ConsumerImpl
     public String getName()
     {
         return _name;
+    }
+
+    @Override
+    public <M extends ServerMessage<? extends StorableMessageMetaData>> int send(final M message,
+                                                                                 final String routingAddress,
+                                                                                 final InstanceProperties instanceProperties,
+                                                                                 final ServerTransaction txn,
+                                                                                 final Action<? super MessageInstance> postEnqueueAction)
+    {
+        send((InternalMessage)message);
+        return 1;
     }
 
     @Override

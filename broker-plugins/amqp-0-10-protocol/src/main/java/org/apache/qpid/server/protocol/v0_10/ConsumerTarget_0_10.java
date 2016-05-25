@@ -71,6 +71,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
 
     private final AtomicBoolean _deleted = new AtomicBoolean(false);
     private final String _name;
+    private final String _targetAddress;
 
 
     private FlowCreditManager_0_10 _creditManager;
@@ -84,7 +85,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     private final AtomicLong _unacknowledgedCount = new AtomicLong(0);
     private final AtomicLong _unacknowledgedBytes = new AtomicLong(0);
 
-    private final Map<String, Object> _arguments;
     private int _deferredMessageCredit;
     private long _deferredSizeCredit;
     private final List<ConsumerImpl> _consumers = new CopyOnWriteArrayList<>();
@@ -118,9 +118,15 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         _creditManager = creditManager;
         _flowMode = flowMode;
         _creditManager.addStateListener(this);
-        _arguments = arguments == null ? Collections.<String, Object> emptyMap() :
-                                         Collections.<String, Object> unmodifiableMap(arguments);
         _name = name;
+        if(arguments != null && arguments.containsKey("local-address"))
+        {
+            _targetAddress = String.valueOf(arguments.get("local-address"));
+        }
+        else
+        {
+            _targetAddress = name;
+        }
     }
 
     @Override
@@ -626,11 +632,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         return false;
     }
 
-    public Map<String, Object> getArguments()
-    {
-        return _arguments;
-    }
-
     public void queueEmpty()
     {
     }
@@ -639,6 +640,11 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     {
     }
 
+    @Override
+    public String getTargetAddress()
+    {
+        return _targetAddress;
+    }
 
     @Override
     public void consumerAdded(final ConsumerImpl sub)

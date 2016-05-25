@@ -29,16 +29,19 @@ import org.apache.qpid.client.AMQDestination.Binding;
 
 public class Link
 {
+
+
     public enum FilterType { SQL92, XQUERY, SUBJECT }
-    
+
     public enum Reliability { UNRELIABLE, AT_MOST_ONCE, AT_LEAST_ONCE, EXACTLY_ONCE }
-    
+
     private String name;
     private String _filter;
     private FilterType _filterType = FilterType.SUBJECT;
     private boolean _isNoLocal;
     private boolean _isDurable;
     private long _delay;
+    private String _localAddress;
     private int _consumerCapacity = -1;
     private int _producerCapacity = -1;
     private Subscription subscription;
@@ -154,6 +157,16 @@ public class Link
     public void setDelay(final long delay)
     {
         _delay = delay;
+    }
+
+    public void setLocalAddress(final String localAddress)
+    {
+        _localAddress = localAddress;
+    }
+
+    public String getLocalAddress()
+    {
+        return _localAddress;
     }
 
     public SubscriptionQueue getSubscriptionQueue()

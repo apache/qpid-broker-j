@@ -57,6 +57,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
     private final AtomicLong _unacknowledgedBytes = new AtomicLong(0);
     private final List<ConsumerImpl> _consumers = new CopyOnWriteArrayList<>();
     private final AtomicBoolean _needToClose = new AtomicBoolean();
+    private final String _targetAddress;
 
 
     public static ConsumerTarget_0_8 createBrowserTarget(AMQChannel channel,
@@ -327,10 +328,20 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
             {
                 _autoClose = false;
             }
+            if(arguments.containsKey("local-address"))
+            {
+                _targetAddress = String.valueOf(arguments.get("local-address"));
+            }
+            else
+            {
+                _targetAddress = consumerTag.toString();
+            }
         }
         else
         {
             _autoClose = false;
+            _targetAddress = consumerTag.toString();
+
         }
     }
 
@@ -348,6 +359,12 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
     public void consumerAdded(final ConsumerImpl sub)
     {
         _consumers.add( sub );
+    }
+
+    @Override
+    public String getTargetAddress()
+    {
+        return _targetAddress;
     }
 
     public AMQSessionModel getSessionModel()

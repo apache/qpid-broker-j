@@ -193,6 +193,10 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
         {
             ft.putAll(rawSelector);
         }
+        if(destination.getLocalAddress() != null)
+        {
+            ft.put("local-address", destination.getLocalAddress());
+        }
 
         // We must always send the selector argument even if empty, so that we can tell when a selector is removed from a
         // durable topic subscription that the broker arguments don't match any more. This is because it is not otherwise

@@ -250,6 +250,11 @@ public class AddressHelper
             {
                 link.setDelay(delay);
             }
+            String localAddress = _linkPropAccess.getString("localAddress");
+            if(localAddress != null)
+            {
+                link.setLocalAddress(localAddress);
+            }
             if (((Map) _address.getOptions().get(LINK)).get(CAPACITY) instanceof Map)
             {
                 MapAccessor capacityProps = new MapAccessor((Map) ((Map) _address.getOptions().get(LINK)).get(CAPACITY));

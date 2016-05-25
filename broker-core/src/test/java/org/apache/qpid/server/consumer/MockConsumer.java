@@ -176,6 +176,12 @@ public class MockConsumer implements ConsumerTarget
     }
 
     @Override
+    public String getTargetAddress()
+    {
+        return getName();
+    }
+
+    @Override
     public void consumerAdded(final ConsumerImpl sub)
     {
     }

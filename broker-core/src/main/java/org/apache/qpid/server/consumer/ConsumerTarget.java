@@ -37,6 +37,8 @@ public interface ConsumerTarget
 
     boolean hasPendingWork();
 
+    String getTargetAddress();
+
     enum State
     {
         ACTIVE, SUSPENDED, CLOSED

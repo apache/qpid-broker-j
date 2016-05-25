@@ -22,6 +22,7 @@ package org.apache.qpid.server.management.amqp;
 
 import java.nio.charset.Charset;
 import java.security.AccessControlException;
+import java.security.AccessController;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,8 +36,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
+import javax.security.auth.Subject;
+
+import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.FilterManager;
@@ -55,7 +59,6 @@ import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.plugin.MessageConverter;
-import org.apache.qpid.server.plugin.SystemNodeCreator;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.store.MessageDurability;
@@ -108,7 +111,7 @@ class ManagementNode implements MessageSource, MessageDestination
 
     private final Action<ManagementNode> _onDelete;
     private final ConfiguredObject<?> _managedObject;
-    private Map<String, ManagementNodeConsumer> _consumers = new ConcurrentHashMap<String, ManagementNodeConsumer>();
+    private List<ManagementNodeConsumer> _consumers = new CopyOnWriteArrayList<>();
 
     private Map<String,ManagedEntityType> _entityTypes = Collections.synchronizedMap(new LinkedHashMap<String, ManagedEntityType>());
 
@@ -356,22 +359,42 @@ class ManagementNode implements MessageSource, MessageDestination
         }
 
 
-        ManagementNodeConsumer consumer = _consumers.get(message.getMessageHeader().getReplyTo());
-        response.setInitialRoutingAddress(message.getMessageHeader().getReplyTo());
-        if(consumer != null)
-        {
-            // TODO - check same owner
-            consumer.send(response);
-        }
-        else
-        {
-            _addressSpace.getDefaultDestination().send(response,
-                                                       message.getMessageHeader().getReplyTo(), InstanceProperties.EMPTY,
-                                                       new AutoCommitTransaction(_addressSpace.getMessageStore()),
-                                                       null);
-        }
-        // TODO - route to a queue
+        sendResponse(message, response);
 
+    }
+
+    private void sendResponse(final InternalMessage message, final InternalMessage response)
+    {
+        String replyTo = message.getMessageHeader().getReplyTo();
+        response.setInitialRoutingAddress(replyTo);
+
+
+        getResponseDestination(replyTo).send(response,
+                                             replyTo, InstanceProperties.EMPTY,
+                                             new AutoCommitTransaction(_addressSpace.getMessageStore()),
+                                             null);
+
+    }
+
+    private MessageDestination getResponseDestination(String replyTo)
+    {
+        ManagementNodeConsumer consumer = null;
+        Subject currentSubject = Subject.getSubject(AccessController.getContext());
+        Set<SessionPrincipal> sessionPrincipals = currentSubject.getPrincipals(SessionPrincipal.class);
+        if (!sessionPrincipals.isEmpty())
+        {
+            AMQSessionModel publishingSession = sessionPrincipals.iterator().next().getSession();
+            for (ManagementNodeConsumer candidate : _consumers)
+            {
+                if (candidate.getTarget().getTargetAddress().equals(replyTo) && candidate.getSessionModel() == publishingSession)
+                {
+                    consumer = candidate;
+                    break;
+                }
+            }
+        }
+
+        return consumer == null ? _addressSpace.getDefaultDestination() : consumer;
     }
 
     private InternalMessage performCreateOperation(final InternalMessage message, final String type)
@@ -963,14 +986,27 @@ class ManagementNode implements MessageSource, MessageDestination
 
         final ManagementNodeConsumer managementNodeConsumer = new ManagementNodeConsumer(consumerName,this, target);
         target.consumerAdded(managementNodeConsumer);
-        _consumers.put(consumerName, managementNodeConsumer);
+        _consumers.add(managementNodeConsumer);
+        target.addStateListener(new StateChangeListener<ConsumerTarget, ConsumerTarget.State>()
+        {
+            @Override
+            public void stateChanged(final ConsumerTarget object,
+                                     final ConsumerTarget.State oldState,
+                                     final ConsumerTarget.State newState)
+            {
+                if(newState == ConsumerTarget.State.CLOSED)
+                {
+                    _consumers.remove(managementNodeConsumer);
+                }
+            }
+        });
         return managementNodeConsumer;
     }
 
     @Override
     public synchronized Collection<ManagementNodeConsumer> getConsumers()
     {
-        return new ArrayList<ManagementNodeConsumer>(_consumers.values());
+        return Collections.unmodifiableCollection(_consumers);
     }
 
     @Override

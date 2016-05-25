@@ -33,6 +33,8 @@ import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.protocol.v1_0.type.Source;
+import org.apache.qpid.server.protocol.v1_0.type.Target;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
@@ -504,6 +506,14 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     @Override
     public void acquisitionRemoved(final MessageInstance node)
     {
+    }
+
+    @Override
+    public String getTargetAddress()
+    {
+        Target target = _link.getEndpoint().getTarget();
+
+        return target instanceof org.apache.qpid.server.protocol.v1_0.type.messaging.Target ? ((org.apache.qpid.server.protocol.v1_0.type.messaging.Target) target).getAddress() : _link.getEndpoint().getName();
     }
 
     @Override
