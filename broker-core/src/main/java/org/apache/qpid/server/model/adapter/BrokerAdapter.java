@@ -1355,7 +1355,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         @Override
         public NamedAddressSpace getAddressSpace(final String name)
         {
-            return _systemAddressSpaces.get(name);
+            return name == null ? null : _systemAddressSpaces.get(name);
         }
 
         @Override
