@@ -892,7 +892,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         final Date originalCreatedTime = object.getCreatedTime();
         final Date originalLastUpdatedTime = object.getLastUpdatedTime();
         assertTrue("Unexpected created time", originalCreatedTime.after(now));
-        assertEquals("Unexpected created and updated time", object.getCreatedTime(), originalLastUpdatedTime);
+        assertEquals("Unexpected created and updated time", originalCreatedTime, originalLastUpdatedTime);
 
         Thread.sleep(5);  // Let a small amount of time pass
 
@@ -913,6 +913,68 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Last updated by should be changed by update", updatingUser, object.getLastUpdatedBy());
         assertTrue("Last updated time by should be changed by update", originalLastUpdatedTime.before(object.getLastUpdatedTime()));
     }
+
+    public void testAuditInformationIgnoresUserSuppliedAttributes() throws Exception
+    {
+        final String user = "user";
+        final Subject userSubject = createTestAuthenticatedSubject(user);
+
+        final Map<String, Object> attributes = new HashMap<>();
+        attributes.put(TestSingleton.NAME, "myName");
+        attributes.put(TestSingleton.CREATED_BY, "bogusCreator");
+        attributes.put(TestSingleton.CREATED_TIME, new Date(0));
+        attributes.put(TestSingleton.LAST_UPDATED_BY, "bogusUpdater");
+        attributes.put(TestSingleton.LAST_UPDATED_TIME, new Date(0));
+
+        final Date now = new Date();
+        Thread.sleep(5);  // Let a small amount of time pass
+
+        final TestSingleton object = Subject.doAs(userSubject,
+                                                  new PrivilegedAction<TestSingleton>()
+                                                  {
+                                                      @Override
+                                                      public TestSingleton run()
+                                                      {
+                                                          return _model.getObjectFactory().create(TestSingleton.class, attributes);
+                                                      }
+                                                  });
+
+        assertEquals("Unexpected creating user after object creation", user,  object.getCreatedBy());
+        assertEquals("Unexpected last updating user after object creation", user, object.getLastUpdatedBy());
+
+        final Date originalCreatedTime = object.getCreatedTime();
+        assertTrue("Unexpected created time", originalCreatedTime.after(now));
+        final Date originalLastUpdatedTime = object.getLastUpdatedTime();
+        assertEquals("Unexpected created and updated time", originalCreatedTime, originalLastUpdatedTime);
+
+
+        Subject.doAs(userSubject,
+                     new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             final Map<String, Object> updateMap = new HashMap<>();
+                             updateMap.put(TestSingleton.INT_VALUE, 5);
+                             updateMap.put(TestSingleton.CREATED_BY, "bogusCreator");
+                             updateMap.put(TestSingleton.CREATED_TIME, new Date(0));
+                             updateMap.put(TestSingleton.LAST_UPDATED_BY, "bogusUpdater");
+                             updateMap.put(TestSingleton.LAST_UPDATED_TIME, new Date(0));
+
+                             object.setAttributes(updateMap);
+                             return null;
+                         }
+                     });
+
+        Thread.sleep(5);  // Let a small amount of time pass
+
+        assertEquals("Creating user should not be changed by update", user, object.getCreatedBy());
+        assertEquals("Created time should not be changed by update", originalCreatedTime, object.getCreatedTime());
+
+        assertEquals("Last updated by should be changed by update", user, object.getLastUpdatedBy());
+        assertTrue("Last updated time by should be changed by update", originalLastUpdatedTime.before(object.getLastUpdatedTime()));
+    }
+
 
     public void testAuditInformationPersistenceAndRecovery() throws Exception
     {
