@@ -53,6 +53,7 @@ import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.AbstractAuthenticationManager;
 import org.apache.qpid.server.util.ConnectionBuilder;
 import org.apache.qpid.server.util.ParameterizedTypes;
@@ -220,10 +221,16 @@ public class OAuth2AuthenticationProviderImpl
     {
         try
         {
+            if (server.isComplete())
+            {
+                String accessToken = (String) server.getNegotiatedProperty(OAuth2SaslServer.ACCESS_TOKEN_PROPERTY);
+                return authenticateViaAccessToken(accessToken);
+            }
+
             // Process response from the client
             byte[] challenge = server.evaluateResponse(response != null ? response : new byte[0]);
 
-            if (server.isComplete())
+            if (server.isComplete() && (challenge == null || challenge.length == 0))
             {
                 String accessToken = (String) server.getNegotiatedProperty(OAuth2SaslServer.ACCESS_TOKEN_PROPERTY);
                 return authenticateViaAccessToken(accessToken);

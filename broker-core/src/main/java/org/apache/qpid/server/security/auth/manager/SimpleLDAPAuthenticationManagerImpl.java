@@ -250,10 +250,15 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     {
         try
         {
+            if (server.isComplete())
+            {
+                return new AuthenticationResult(new UsernamePrincipal(server.getAuthorizationID()));
+            }
+
             // Process response from the client
             byte[] challenge = server.evaluateResponse(response != null ? response : new byte[0]);
 
-            if (server.isComplete())
+            if (server.isComplete() && (challenge == null || challenge.length == 0))
             {
                 String authorizationID = server.getAuthorizationID();
                 _logger.debug("Authenticated as {}", authorizationID);

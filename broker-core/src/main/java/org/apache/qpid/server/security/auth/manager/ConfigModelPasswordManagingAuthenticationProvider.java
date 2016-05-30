@@ -218,6 +218,11 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
     {
         try
         {
+            if (server.isComplete())
+            {
+                return new AuthenticationResult(new UsernamePrincipal(server.getAuthorizationID()));
+            }
+
             // Process response from the client
             byte[] challenge = server.evaluateResponse(response != null ? response : new byte[0]);
 
