@@ -53,6 +53,8 @@ def transform(data):
   elif isinstance(data, list):
     return [transform(i) for i in data]
   elif isinstance(data, dict):
+    for k, v in data.items():
+      data[k] = transform(v)
     if "name" in data and data["name"] == objname:
       data[attrname] = attrvalue
     return data
