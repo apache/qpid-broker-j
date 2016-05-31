@@ -264,14 +264,7 @@ public abstract class AbstractServlet extends HttpServlet
 
     protected void sendJsonResponse(Object object, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        sendJsonResponse(object, request, response, HttpServletResponse.SC_OK);
-    }
-
-    protected void sendJsonResponse(Object object,
-                                    HttpServletRequest request,
-                                    HttpServletResponse response, int status) throws IOException
-    {
-        sendJsonResponse(object, request, response, status, true);
+        sendJsonResponse(object, request, response, HttpServletResponse.SC_OK, true);
     }
 
     protected final void sendJsonResponse(Object object, HttpServletRequest request, HttpServletResponse response, int responseCode, boolean sendCachingHeaders) throws IOException

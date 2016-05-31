@@ -40,7 +40,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.security.auth.Subject;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 
@@ -96,8 +95,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
-import org.apache.qpid.server.security.auth.AuthenticationResult;
-import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
 import org.apache.qpid.server.store.StoreException;
@@ -181,7 +179,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     private long _connectionId;
 
     private Container _container;
-    private Subject _subject;
+    private Principal _user;
 
 
     private int _channelMax = DEFAULT_CHANNEL_MAX;
@@ -398,7 +396,40 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
         assertState(FrameReceivingState.SASL_RESPONSE_ONLY);
 
-        processClientSASLResponse(response);
+        try
+        {
+
+            // Process response from the client
+            byte[] challenge = _saslServer.evaluateResponse(response != null ? response : new byte[0]);
+
+            if (_saslServer.isComplete())
+            {
+                SaslOutcome outcome = new SaslOutcome();
+
+                outcome.setCode(SaslCode.OK);
+                send(new SASLFrame(outcome), null);
+                _saslComplete = true;
+                _user = _saslServerProvider.getAuthenticatedPrincipal(_saslServer);
+                _frameReceivingState = FrameReceivingState.AMQP_HEADER;
+            }
+            else
+            {
+                SaslChallenge challengeBody = new SaslChallenge();
+                challengeBody.setChallenge(new Binary(challenge));
+                send(new SASLFrame(challengeBody), null);
+
+            }
+        }
+        catch (SaslException e)
+        {
+            SaslOutcome outcome = new SaslOutcome();
+
+            outcome.setCode(SaslCode.AUTH);
+            send(new SASLFrame(outcome), null);
+            _saslComplete = true;
+            closeSaslWithFailure();
+
+        }
     }
 
     public AMQPDescribedTypeRegistry getDescribedTypeRegistry()
@@ -758,10 +789,10 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                 }
                 else
                 {
-                    final Subject subject = _subject;
-                    if (subject != null)
+                    final Principal user = _user;
+                    if (user != null)
                     {
-                        setSubject(subject);
+                        setUserPrincipal(user);
                     }
                     if (AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(getSubject()) == null)
                     {
@@ -890,6 +921,11 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         _remoteAddress = remoteAddress;
     }
 
+    public Principal getUser()
+    {
+        return _user;
+    }
+
     public void setProperties(final Map<Symbol, Object> properties)
     {
         _properties = properties;
@@ -911,7 +947,30 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         try
         {
             _saslServer = _saslServerProvider.getSaslServer(mechanism, "localhost");
-            processClientSASLResponse(response);
+
+            // Process response from the client
+            byte[] challenge = _saslServer.evaluateResponse(response != null ? response : new byte[0]);
+
+            if (_saslServer.isComplete())
+            {
+                SaslOutcome outcome = new SaslOutcome();
+
+                outcome.setCode(SaslCode.OK);
+                send(new SASLFrame(outcome), null);
+                _saslComplete = true;
+                _user = _saslServerProvider.getAuthenticatedPrincipal(_saslServer);
+
+                _frameReceivingState = FrameReceivingState.AMQP_HEADER;
+
+            }
+            else
+            {
+                SaslChallenge challengeBody = new SaslChallenge();
+                challengeBody.setChallenge(new Binary(challenge));
+                send(new SASLFrame(challengeBody), null);
+
+                _frameReceivingState = FrameReceivingState.SASL_RESPONSE_ONLY;
+            }
         }
         catch (SaslException e)
         {
@@ -923,37 +982,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
             closeSaslWithFailure();
 
-        }
-    }
-
-    private void processClientSASLResponse(final byte[] response)
-    {
-        SubjectAuthenticationResult authenticationResult = _subjectCreator.authenticate(_saslServer, response != null ? response : new byte[0]);
-
-        if (authenticationResult.getStatus() == AuthenticationResult.AuthenticationStatus.SUCCESS)
-        {
-            SaslOutcome outcome = new SaslOutcome();
-            outcome.setCode(SaslCode.OK);
-            send(new SASLFrame(outcome), null);
-            _saslComplete = true;
-            _subject = authenticationResult.getSubject();
-            _frameReceivingState = FrameReceivingState.AMQP_HEADER;
-
-        }
-        else if (authenticationResult.getStatus() == AuthenticationResult.AuthenticationStatus.CONTINUE)
-        {
-            SaslChallenge challengeBody = new SaslChallenge();
-            challengeBody.setChallenge(new Binary(authenticationResult.getChallenge()));
-            send(new SASLFrame(challengeBody), null);
-            _frameReceivingState = FrameReceivingState.SASL_RESPONSE_ONLY;
-        }
-        else
-        {
-            SaslOutcome outcome = new SaslOutcome();
-            outcome.setCode(SaslCode.AUTH);
-            send(new SASLFrame(outcome), null);
-            _saslComplete = true;
-            closeSaslWithFailure();
         }
     }
 
@@ -1113,6 +1141,12 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
             public SaslServer getSaslServer(String mechanism, String fqdn) throws SaslException
             {
                 return subjectCreator.createSaslServer(mechanism, fqdn, network.getPeerPrincipal());
+            }
+
+            @Override
+            public Principal getAuthenticatedPrincipal(SaslServer server)
+            {
+                return new AuthenticatedPrincipal(new UsernamePrincipal(server.getAuthorizationID()));
             }
         };
     }
