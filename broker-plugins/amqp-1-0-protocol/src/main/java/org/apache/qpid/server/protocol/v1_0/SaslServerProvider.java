@@ -20,12 +20,10 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 
-import java.security.Principal;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 
 public interface SaslServerProvider
 {
     SaslServer getSaslServer(String mechanism, String fqdn) throws SaslException;
-    Principal getAuthenticatedPrincipal(SaslServer server);
 }

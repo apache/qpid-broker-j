@@ -23,6 +23,8 @@ package org.apache.qpid.server.management.plugin.servlet.rest;
 import java.io.IOException;
 import java.security.Principal;
 import java.security.SecureRandom;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +48,8 @@ import org.apache.qpid.server.management.plugin.servlet.ServletConnectionPrincip
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.server.security.auth.AuthenticationResult;
+import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public class SaslServlet extends AbstractServlet
@@ -210,34 +214,26 @@ public class SaslServlet extends AbstractServlet
                                       final HttpServletResponse response,
                                       final HttpSession session, final String saslResponse, final SaslServer saslServer, SubjectCreator subjectCreator) throws IOException
     {
-        final String id;
-        byte[] challenge;
-        try
-        {
-            challenge  = saslServer.evaluateResponse(saslResponse == null
-                                                             ? new byte[0]
-                                                             : DatatypeConverter.parseBase64Binary(saslResponse));
-        }
-        catch(SaslException e)
+        byte[] saslResponseBytes = saslResponse == null
+                ? new byte[0]
+                : DatatypeConverter.parseBase64Binary(saslResponse);
+        SubjectAuthenticationResult authenticationResult = subjectCreator.authenticate(saslServer, saslResponseBytes);
+
+        if (authenticationResult.getStatus() == AuthenticationResult.AuthenticationStatus.ERROR)
         {
             session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request));
             session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_SERVER, request));
             session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request));
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-
+            sendJsonResponse(Collections.emptyMap(), request, response, HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
+        byte[] challenge = authenticationResult.getChallenge();
+        Map<String, Object> outputObject = new LinkedHashMap<>();
+
         if(saslServer.isComplete())
         {
-            Subject originalSubject = subjectCreator.createSubjectWithGroups(new AuthenticatedPrincipal(saslServer.getAuthorizationID()));
-            Subject subject = new Subject(false,
-                                          originalSubject.getPrincipals(),
-                                          originalSubject.getPublicCredentials(),
-                                          originalSubject.getPrivateCredentials());
-            subject.getPrincipals().add(new ServletConnectionPrincipal(request));
-            subject.setReadOnly();
-
+            Subject subject = authenticationResult.getSubject();
             Broker broker = getBroker();
             try
             {
@@ -255,30 +251,21 @@ public class SaslServlet extends AbstractServlet
             session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request));
             if(challenge != null && challenge.length != 0)
             {
-                Map<String, Object> outputObject = new LinkedHashMap<String, Object>();
                 outputObject.put("challenge", DatatypeConverter.printBase64Binary(challenge));
-
-                sendJsonResponse(outputObject, request, response);
             }
-
-            response.setStatus(HttpServletResponse.SC_OK);
         }
         else
         {
             Random rand = getRandom(request);
-            id = String.valueOf(rand.nextLong());
+            String id = String.valueOf(rand.nextLong());
             session.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request), id);
             session.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_SERVER, request), saslServer);
             session.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request), System.currentTimeMillis() + SASL_EXCHANGE_EXPIRY);
 
-            response.setStatus(HttpServletResponse.SC_OK);
-
-            Map<String, Object> outputObject = new LinkedHashMap<String, Object>();
             outputObject.put("id", id);
             outputObject.put("challenge", DatatypeConverter.printBase64Binary(challenge));
-
-            sendJsonResponse(outputObject, request, response);
         }
+        sendJsonResponse(outputObject, request, response);
     }
 
     private SubjectCreator getSubjectCreator(HttpServletRequest request)
