@@ -164,6 +164,7 @@ public class AMQPConnection_0_8Impl
     private volatile int _currentMethodId;
     private final int _binaryDataLimit;
     private volatile boolean _transportBlockedForWriting;
+    private volatile SubjectAuthenticationResult _successfulAuthenticationResult;
 
     public AMQPConnection_0_8Impl(Broker<?> broker,
                                   ServerNetworkConnection network,
@@ -1046,8 +1047,6 @@ public class AMQPConnection_0_8Impl
 
         assertState(ConnectionState.AWAIT_SECURE_OK);
 
-        Broker<?> broker = getBroker();
-
         SubjectCreator subjectCreator = getSubjectCreator();
 
         SaslServer ss = getSaslServer();
@@ -1055,44 +1054,8 @@ public class AMQPConnection_0_8Impl
         {
             sendConnectionClose(AMQConstant.INTERNAL_ERROR, "No SASL context set up in connection", 0);
         }
-        MethodRegistry methodRegistry = getMethodRegistry();
-        SubjectAuthenticationResult authResult = subjectCreator.authenticate(ss, response);
-        switch (authResult.getStatus())
-        {
-            case ERROR:
-                Exception cause = authResult.getCause();
 
-                _logger.debug("Authentication failed: {}", (cause == null ? "" : cause.getMessage()));
-
-                sendConnectionClose(AMQConstant.NOT_ALLOWED, "Authentication failed", 0);
-
-                disposeSaslServer();
-                break;
-            case SUCCESS:
-                _logger.debug("Connected as: {} ", authResult.getSubject());
-
-                int frameMax = getDefaultMaxFrameSize();
-
-                if (frameMax <= 0)
-                {
-                    frameMax = Integer.MAX_VALUE;
-                }
-
-                ConnectionTuneBody tuneBody =
-                        methodRegistry.createConnectionTuneBody(broker.getConnection_sessionCountLimit(),
-                                                                frameMax,
-                                                                broker.getConnection_heartBeatDelay());
-                writeFrame(tuneBody.generateFrame(0));
-                _state = ConnectionState.AWAIT_TUNE_OK;
-                setSubject(authResult.getSubject());
-                disposeSaslServer();
-                break;
-            case CONTINUE:
-
-                ConnectionSecureBody
-                        secureBody = methodRegistry.createConnectionSecureBody(authResult.getChallenge());
-                writeFrame(secureBody.generateFrame(0));
-        }
+        processSaslResponse(response, subjectCreator, ss);
     }
 
 
@@ -1134,8 +1097,6 @@ public class AMQPConnection_0_8Impl
 
         assertState(ConnectionState.AWAIT_START_OK);
 
-        Broker<?> broker = getBroker();
-
         _logger.debug("SASL Mechanism selected: {} Locale : {}", mechanism, locale);
 
         SubjectCreator subjectCreator = getSubjectCreator();
@@ -1158,48 +1119,7 @@ public class AMQPConnection_0_8Impl
 
                 setSaslServer(ss);
 
-                final SubjectAuthenticationResult authResult = subjectCreator.authenticate(ss, response);
-
-                MethodRegistry methodRegistry = getMethodRegistry();
-
-                switch (authResult.getStatus())
-                {
-                    case ERROR:
-                        Exception cause = authResult.getCause();
-
-                        _logger.debug("Authentication failed: {}", (cause == null ? "" : cause.getMessage()));
-
-                        sendConnectionClose(AMQConstant.NOT_ALLOWED, "Authentication failed", 0);
-
-                        disposeSaslServer();
-                        break;
-
-                    case SUCCESS:
-                        _logger.debug("Connected as: {}", authResult.getSubject());
-                        setSubject(authResult.getSubject());
-
-                        int frameMax = getDefaultMaxFrameSize();
-
-                        if (frameMax <= 0)
-                        {
-                            frameMax = Integer.MAX_VALUE;
-                        }
-
-                        ConnectionTuneBody
-                                tuneBody =
-                                methodRegistry.createConnectionTuneBody(broker.getConnection_sessionCountLimit(),
-                                                                        frameMax,
-                                                                        broker.getConnection_heartBeatDelay());
-                        writeFrame(tuneBody.generateFrame(0));
-                        _state = ConnectionState.AWAIT_TUNE_OK;
-                        break;
-                    case CONTINUE:
-                        ConnectionSecureBody
-                                secureBody = methodRegistry.createConnectionSecureBody(authResult.getChallenge());
-                        writeFrame(secureBody.generateFrame(0));
-
-                        _state = ConnectionState.AWAIT_SECURE_OK;
-                }
+                processSaslResponse(response, subjectCreator, ss);
             }
         }
         catch (SaslException e)
@@ -1207,6 +1127,74 @@ public class AMQPConnection_0_8Impl
             disposeSaslServer();
             sendConnectionClose(AMQConstant.INTERNAL_ERROR, "SASL error: " + e, 0);
         }
+    }
+
+    private void processSaslResponse(final byte[] response,
+                                     final SubjectCreator subjectCreator,
+                                     final SaslServer ss)
+    {
+        MethodRegistry methodRegistry = getMethodRegistry();
+        SubjectAuthenticationResult authResult = _successfulAuthenticationResult;
+        byte[] challenge = null;
+        if (authResult == null)
+        {
+            authResult = subjectCreator.authenticate(ss, response);
+            challenge = authResult.getChallenge();
+        }
+
+        switch (authResult.getStatus())
+        {
+            case ERROR:
+                Exception cause = authResult.getCause();
+
+                _logger.debug("Authentication failed: {}", (cause == null ? "" : cause.getMessage()));
+
+                sendConnectionClose(AMQConstant.NOT_ALLOWED, "Authentication failed", 0);
+
+                disposeSaslServer();
+                break;
+
+            case SUCCESS:
+                _successfulAuthenticationResult = authResult;
+                if (challenge == null || challenge.length == 0)
+                {
+                    _logger.debug("Connected as: {}", authResult.getSubject());
+                    setSubject(authResult.getSubject());
+
+                    int frameMax = getDefaultMaxFrameSize();
+
+                    if (frameMax <= 0)
+                    {
+                        frameMax = Integer.MAX_VALUE;
+                    }
+
+                    Broker<?> broker = getBroker();
+
+                    ConnectionTuneBody tuneBody =
+                            methodRegistry.createConnectionTuneBody(broker.getConnection_sessionCountLimit(),
+                                                                    frameMax,
+                                                                    broker.getConnection_heartBeatDelay());
+                    writeFrame(tuneBody.generateFrame(0));
+                    _state = ConnectionState.AWAIT_TUNE_OK;
+                    disposeSaslServer();
+                }
+                else
+                {
+                    continueSaslNegotiation(challenge);
+                }
+                break;
+            case CONTINUE:
+                continueSaslNegotiation(challenge);
+                break;
+        }
+    }
+
+    private void continueSaslNegotiation(final byte[] challenge)
+    {
+        ConnectionSecureBody secureBody = getMethodRegistry().createConnectionSecureBody(challenge);
+        writeFrame(secureBody.generateFrame(0));
+
+        _state = ConnectionState.AWAIT_SECURE_OK;
     }
 
     @Override

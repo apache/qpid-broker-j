@@ -128,20 +128,15 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
     {
         try
         {
-            if (server.isComplete())
-            {
-                return new AuthenticationResult(new UsernamePrincipal(server.getAuthorizationID()));
-            }
-
             // Process response from the client
             byte[] challenge = server.evaluateResponse(response != null ? response : new byte[0]);
 
-            if (server.isComplete() && (challenge == null || challenge.length == 0))
+            if (server.isComplete())
             {
                 String authorizationID = server.getAuthorizationID();
                 _logger.debug("Authenticated as " + authorizationID);
 
-                return new AuthenticationResult(new UsernamePrincipal(authorizationID));
+                return new AuthenticationResult(new UsernamePrincipal(authorizationID), challenge);
             }
             else
             {

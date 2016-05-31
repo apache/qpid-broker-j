@@ -179,7 +179,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     private long _connectionId;
 
     private Container _container;
-    private Principal _user;
+    private volatile Principal _user;
 
 
     private int _channelMax = DEFAULT_CHANNEL_MAX;
@@ -396,40 +396,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
         assertState(FrameReceivingState.SASL_RESPONSE_ONLY);
 
-        try
-        {
-
-            // Process response from the client
-            byte[] challenge = _saslServer.evaluateResponse(response != null ? response : new byte[0]);
-
-            if (_saslServer.isComplete())
-            {
-                SaslOutcome outcome = new SaslOutcome();
-
-                outcome.setCode(SaslCode.OK);
-                send(new SASLFrame(outcome), null);
-                _saslComplete = true;
-                _user = _saslServerProvider.getAuthenticatedPrincipal(_saslServer);
-                _frameReceivingState = FrameReceivingState.AMQP_HEADER;
-            }
-            else
-            {
-                SaslChallenge challengeBody = new SaslChallenge();
-                challengeBody.setChallenge(new Binary(challenge));
-                send(new SASLFrame(challengeBody), null);
-
-            }
-        }
-        catch (SaslException e)
-        {
-            SaslOutcome outcome = new SaslOutcome();
-
-            outcome.setCode(SaslCode.AUTH);
-            send(new SASLFrame(outcome), null);
-            _saslComplete = true;
-            closeSaslWithFailure();
-
-        }
+        processSaslResponse(response);
     }
 
     public AMQPDescribedTypeRegistry getDescribedTypeRegistry()
@@ -947,42 +914,67 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         try
         {
             _saslServer = _saslServerProvider.getSaslServer(mechanism, "localhost");
+            processSaslResponse(response);
+        }
+        catch (SaslException e)
+        {
+            handleSaslException();
+        }
+    }
 
-            // Process response from the client
-            byte[] challenge = _saslServer.evaluateResponse(response != null ? response : new byte[0]);
+    private void processSaslResponse(final byte[] response)
+    {
+        try
+        {
+            byte[] challenge = null;
+            if (_user == null)
+            {
+                challenge = _saslServer.evaluateResponse(response != null ? response : new byte[0]);
+            }
 
             if (_saslServer.isComplete())
             {
-                SaslOutcome outcome = new SaslOutcome();
-
-                outcome.setCode(SaslCode.OK);
-                send(new SASLFrame(outcome), null);
-                _saslComplete = true;
                 _user = _saslServerProvider.getAuthenticatedPrincipal(_saslServer);
-
-                _frameReceivingState = FrameReceivingState.AMQP_HEADER;
-
+                if (challenge == null || challenge.length == 0)
+                {
+                    SaslOutcome outcome = new SaslOutcome();
+                    outcome.setCode(SaslCode.OK);
+                    send(new SASLFrame(outcome), null);
+                    _saslComplete = true;
+                    _frameReceivingState = FrameReceivingState.AMQP_HEADER;
+                }
+                else
+                {
+                    continueSaslNegotiation(challenge);
+                }
             }
             else
             {
-                SaslChallenge challengeBody = new SaslChallenge();
-                challengeBody.setChallenge(new Binary(challenge));
-                send(new SASLFrame(challengeBody), null);
-
-                _frameReceivingState = FrameReceivingState.SASL_RESPONSE_ONLY;
+                continueSaslNegotiation(challenge);
             }
         }
         catch (SaslException e)
         {
-            SaslOutcome outcome = new SaslOutcome();
-
-            outcome.setCode(SaslCode.AUTH);
-            send(new SASLFrame(outcome), null);
-            _saslComplete = true;
-
-            closeSaslWithFailure();
-
+            handleSaslException();
         }
+    }
+
+    private void continueSaslNegotiation(final byte[] challenge)
+    {
+        SaslChallenge challengeBody = new SaslChallenge();
+        challengeBody.setChallenge(new Binary(challenge));
+        send(new SASLFrame(challengeBody), null);
+
+        _frameReceivingState = FrameReceivingState.SASL_RESPONSE_ONLY;
+    }
+
+    private void handleSaslException()
+    {
+        SaslOutcome outcome = new SaslOutcome();
+        outcome.setCode(SaslCode.AUTH);
+        send(new SASLFrame(outcome), null);
+        _saslComplete = true;
+        closeSaslWithFailure();
     }
 
     public int getMaxFrameSize()

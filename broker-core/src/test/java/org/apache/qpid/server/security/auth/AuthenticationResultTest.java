@@ -87,7 +87,7 @@ public class AuthenticationResultTest extends QpidTestCase
         Principal secondaryPrincipal = mock(Principal.class);
         Set<Principal> secondaryPrincipals = Collections.singleton(secondaryPrincipal);
 
-        AuthenticationResult authenticationResult = new AuthenticationResult(mainPrincipal, secondaryPrincipals);
+        AuthenticationResult authenticationResult = new AuthenticationResult(mainPrincipal, secondaryPrincipals, null);
 
         assertOnlyContainsWrappedAndSecondaryPrincipals(mainPrincipal, secondaryPrincipals, authenticationResult.getPrincipals());
         assertSame(AuthenticationResult.AuthenticationStatus.SUCCESS, authenticationResult.getStatus());
@@ -103,7 +103,7 @@ public class AuthenticationResultTest extends QpidTestCase
         Set<Principal> deDuplicatedSecondaryPrincipals = Collections.singleton(secondaryPrincipal);
 
         AuthenticationResult authenticationResult = new AuthenticationResult(
-                mainPrincipal, secondaryPrincipalsContainingDuplicateOfMainPrincipal);
+                mainPrincipal, secondaryPrincipalsContainingDuplicateOfMainPrincipal, null);
 
         assertOnlyContainsWrappedAndSecondaryPrincipals(mainPrincipal, deDuplicatedSecondaryPrincipals, authenticationResult.getPrincipals());
 

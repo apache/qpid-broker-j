@@ -72,10 +72,15 @@ public class AuthenticationResult
 
     public AuthenticationResult(Principal mainPrincipal)
     {
-        this(mainPrincipal, Collections.<Principal>emptySet());
+        this(mainPrincipal, null);
     }
 
-    public AuthenticationResult(Principal mainPrincipal, Set<Principal> otherPrincipals)
+    public AuthenticationResult(Principal mainPrincipal, byte[] challenge)
+    {
+        this(mainPrincipal, Collections.<Principal>emptySet(), challenge);
+    }
+
+    public AuthenticationResult(Principal mainPrincipal, Set<Principal> otherPrincipals, byte[] challenge)
     {
         AuthenticatedPrincipal specialQpidAuthenticatedPrincipal = new AuthenticatedPrincipal(mainPrincipal);
         _principals.addAll(otherPrincipals);
@@ -84,7 +89,7 @@ public class AuthenticationResult
         _mainPrincipal = mainPrincipal;
 
         _status = AuthenticationStatus.SUCCESS;
-        _challenge = null;
+        _challenge = challenge;
         _cause = null;
     }
 

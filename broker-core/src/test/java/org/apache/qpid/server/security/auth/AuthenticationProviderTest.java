@@ -19,12 +19,8 @@
 package org.apache.qpid.server.security.auth;
 
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-
 import java.io.File;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -33,12 +29,23 @@ import java.util.Map;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.AuthenticationProvider;
-import org.apache.qpid.server.security.auth.manager.*;
-import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProvider;
-import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProviderImplFactory;
-import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2IdentityResolverService;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.security.auth.manager.Base64MD5PasswordDatabaseAuthenticationManager;
+import org.apache.qpid.server.security.auth.manager.Base64MD5PasswordDatabaseAuthenticationManagerFactory;
+import org.apache.qpid.server.security.auth.manager.KerberosAuthenticationManager;
+import org.apache.qpid.server.security.auth.manager.KerberosAuthenticationManagerFactory;
+import org.apache.qpid.server.security.auth.manager.MD5AuthenticationProvider;
+import org.apache.qpid.server.security.auth.manager.MD5AuthenticationProviderFactory;
+import org.apache.qpid.server.security.auth.manager.PlainAuthenticationProvider;
+import org.apache.qpid.server.security.auth.manager.PlainAuthenticationProviderFactory;
+import org.apache.qpid.server.security.auth.manager.PlainPasswordDatabaseAuthenticationManager;
+import org.apache.qpid.server.security.auth.manager.PlainPasswordDatabaseAuthenticationManagerFactory;
+import org.apache.qpid.server.security.auth.manager.ScramSHA1AuthenticationManager;
+import org.apache.qpid.server.security.auth.manager.ScramSHA1AuthenticationManagerFactory;
+import org.apache.qpid.server.security.auth.manager.ScramSHA256AuthenticationManager;
+import org.apache.qpid.server.security.auth.manager.ScramSHA256AuthenticationManagerFactory;
+import org.apache.qpid.server.security.auth.manager.SimpleAuthenticationManager;
 import org.apache.qpid.server.util.BrokerTestHelper;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
@@ -114,15 +121,9 @@ public class AuthenticationProviderTest extends QpidTestCase
 
         AuthenticationResult result = authenticationProvider.authenticate(saslServer, new byte[1]);
         assertEquals("Unexpected authentication status " + authenticationProvider,
-                     AuthenticationResult.AuthenticationStatus.CONTINUE,
-                     result.getStatus());
-        assertTrue("Unexpected challenge " + authenticationProvider, Arrays.equals(new byte[1], result.getChallenge()));
-
-        result = authenticationProvider.authenticate(saslServer, new byte[1]);
-        assertEquals("Unexpected authentication status for " + authenticationProvider,
                      AuthenticationResult.AuthenticationStatus.SUCCESS,
                      result.getStatus());
-        assertNull("Unexpected challenge " + authenticationProvider, result.getChallenge());
+        assertTrue("Unexpected challenge " + authenticationProvider, Arrays.equals(new byte[1], result.getChallenge()));
     }
 
 
