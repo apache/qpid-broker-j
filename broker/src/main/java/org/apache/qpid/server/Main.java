@@ -25,6 +25,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
@@ -39,6 +42,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.framing.ProtocolVersion;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.server.plugin.ProtocolEngineCreator;
+import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StringUtil;
 import org.apache.qpid.util.FileUtils;
@@ -195,7 +201,12 @@ public class Main
         {
             final StringBuilder protocol = new StringBuilder("AMQP version(s) [major.minor]: ");
             boolean first = true;
-            for (final ProtocolVersion pv : ProtocolVersion.getSupportedProtocolVersions())
+            Set<Protocol> protocols = new TreeSet<>();
+            for(ProtocolEngineCreator installedEngine : (new QpidServiceLoader()).instancesOf(ProtocolEngineCreator.class))
+            {
+                protocols.add(installedEngine.getVersion());
+            }
+            for(Protocol supportedProtocol : protocols)
             {
                 if (first)
                 {
@@ -206,8 +217,9 @@ public class Main
                     protocol.append(", ");
                 }
 
-                protocol.append(pv.getMajorVersion()).append('-').append(pv.getMinorVersion());
+                protocol.append(supportedProtocol.getProtocolVersion());
             }
+
             System.out.println(CommonProperties.getVersionString() + " (" + protocol + ")");
         }
         else
