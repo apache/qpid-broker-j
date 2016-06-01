@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.security.auth.sasl.plain;
 
+import org.apache.qpid.server.security.auth.AuthenticationResult;
+
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
@@ -32,12 +34,14 @@ import java.io.IOException;
 public class PlainSaslServer implements SaslServer
 {
     public static final String MECHANISM = "PLAIN";
+    public static final String AUTHENTICATION_RESULT = "authentication-result";
 
     private CallbackHandler _cbh;
 
     private String _authorizationId;
 
     private boolean _complete = false;
+    private volatile AuthenticationResult _authenticationResult;
 
     public PlainSaslServer(CallbackHandler cbh)
     {
@@ -63,7 +67,7 @@ public class PlainSaslServer implements SaslServer
         }
 
         PlainPasswordCallback passwordCb;
-        AuthorizeCallback authzCb;
+        AuthenticationResultPreservingAuthorizeCallback authzCb;
 
         try
         {
@@ -77,10 +81,11 @@ public class PlainSaslServer implements SaslServer
             // we do not care about the prompt but it throws if null
             NameCallback nameCb = new NameCallback("prompt", authzid);
             passwordCb = new PlainPasswordCallback("prompt", false, pwd);
-            authzCb = new AuthorizeCallback(authzid, authzid);
+            authzCb = new AuthenticationResultPreservingAuthorizeCallback(authzid, authzid);
 
             Callback[] callbacks = new Callback[]{nameCb, passwordCb, authzCb};
             _cbh.handle(callbacks);
+            _authenticationResult = authzCb.getAuthenticationResult();
 
         }
         catch (IOException e)
@@ -154,6 +159,10 @@ public class PlainSaslServer implements SaslServer
 
     public Object getNegotiatedProperty(String propName)
     {
+        if (AUTHENTICATION_RESULT.equals(propName))
+        {
+            return _authenticationResult;
+        }
         return null;
     }
 
@@ -162,4 +171,22 @@ public class PlainSaslServer implements SaslServer
         _cbh = null;
     }
 
+    public static class AuthenticationResultPreservingAuthorizeCallback extends AuthorizeCallback
+    {
+        private volatile AuthenticationResult _authenticationResult;
+
+        public AuthenticationResultPreservingAuthorizeCallback(String authnID, String authzID) {
+            super(authnID, authzID);
+        }
+
+        public AuthenticationResult getAuthenticationResult()
+        {
+            return _authenticationResult;
+        }
+
+        public void setAuthenticationResult(AuthenticationResult authenticationResult)
+        {
+            this._authenticationResult = authenticationResult;
+        }
+    }
 }

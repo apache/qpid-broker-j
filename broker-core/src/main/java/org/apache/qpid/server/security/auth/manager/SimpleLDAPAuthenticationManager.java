@@ -81,6 +81,18 @@ public interface SimpleLDAPAuthenticationManager<X extends SimpleLDAPAuthenticat
     @ManagedAttribute( description = "(Optional) password for authenticated search", secure = true)
     String getSearchPassword();
 
+    @ManagedAttribute( description = "User entry attribute name containing group name user belongs to. ")
+    String getGroupAttributeName();
+
+    @ManagedAttribute( description = "Search context to look for role entries")
+    String getGroupSearchContext();
+
+    @ManagedAttribute( description = "Group search filter to search for groups in group search context")
+    String getGroupSearchFilter();
+
+    @ManagedAttribute( description = "Defines the group search scope. If true the search for group entries is performed in the entire subtree of the group search context")
+    boolean isGroupSubtreeSearchScope();
+
     @DerivedAttribute
     List<String> getTlsProtocolWhiteList();
 

@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.Principal;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +38,9 @@ import javax.naming.AuthenticationException;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
+import javax.naming.directory.Attribute;
+import javax.naming.directory.Attributes;
+import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
@@ -51,6 +56,7 @@ import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,6 +123,18 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     private String _searchUsername;
     @ManagedAttributeField
     private String _searchPassword;
+
+    @ManagedAttributeField
+    private String _groupAttributeName;
+
+    @ManagedAttributeField
+    private String _groupSearchContext;
+
+    @ManagedAttributeField
+    private String _groupSearchFilter;
+
+    @ManagedAttributeField
+    private boolean _groupSubtreeSearchScope;
 
     private List<String> _tlsProtocolWhiteList;
     private List<String>  _tlsProtocolBlackList;
@@ -225,6 +243,29 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         return _searchPassword;
     }
 
+    @Override
+    public String getGroupAttributeName()
+    {
+        return _groupAttributeName;
+    }
+
+    @Override
+    public String getGroupSearchContext()
+    {
+        return _groupSearchContext;
+    }
+
+    @Override
+    public String getGroupSearchFilter()
+    {
+        return _groupSearchFilter;
+    }
+
+    @Override
+    public boolean isGroupSubtreeSearchScope()
+    {
+        return _groupSubtreeSearchScope;
+    }
 
     @Override
     public List<String> getMechanisms()
@@ -258,7 +299,12 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
                 String authorizationID = server.getAuthorizationID();
                 _logger.debug("Authenticated as {}", authorizationID);
 
-                return new AuthenticationResult(new UsernamePrincipal(authorizationID), challenge);
+                AuthenticationResult result = (AuthenticationResult)server.getNegotiatedProperty(PlainSaslServer.AUTHENTICATION_RESULT);
+                if (result == null)
+                {
+                    return new AuthenticationResult(AuthenticationStatus.ERROR);
+                }
+                return new AuthenticationResult(result.getMainPrincipal(), result.getPrincipals(), challenge);
             }
             else
             {
@@ -276,16 +322,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     {
         try
         {
-            AuthenticationResult result = doLDAPNameAuthentication(getNameFromId(username), password);
-            if(result.getStatus() == AuthenticationStatus.SUCCESS)
-            {
-                //Return a result based on the supplied username rather than the search name
-                return new AuthenticationResult(new UsernamePrincipal(username));
-            }
-            else
-            {
-                return result;
-            }
+            return doLDAPNameAuthentication(getNameFromId(username), password);
         }
         catch (NamingException e)
         {
@@ -301,7 +338,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
             return new AuthenticationResult(AuthenticationStatus.CONTINUE);
         }
 
-        String providerAuthUrl = _providerAuthUrl == null ? _providerUrl : _providerAuthUrl;
+        String providerAuthUrl = isSpecified(getProviderAuthUrl()) ? getProviderAuthUrl() : getProviderUrl();
         Hashtable<String, Object> env = createInitialDirContextEnvironment(providerAuthUrl);
 
         env.put(Context.SECURITY_AUTHENTICATION, "simple");
@@ -313,8 +350,19 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         {
             ctx = createInitialDirContext(env, _sslSocketFactoryOverrideClass);
 
+            Set<Principal> groups = Collections.emptySet();
+            if (isGroupSearchRequired())
+            {
+                if (!providerAuthUrl.equals(getProviderUrl()))
+                {
+                    closeSafely(ctx);
+                    ctx = createSearchInitialDirContext();
+                }
+                groups = findGroups(ctx, name);
+            }
+
             //Authentication succeeded
-            return new AuthenticationResult(new UsernamePrincipal(name));
+            return new AuthenticationResult(new UsernamePrincipal(name), groups, null);
         }
         catch(AuthenticationException ae)
         {
@@ -333,6 +381,107 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
                 closeSafely(ctx);
             }
         }
+    }
+
+    private boolean isGroupSearchRequired()
+    {
+        if (isSpecified(getGroupAttributeName()))
+        {
+            return true;
+        }
+
+        if (isSpecified(getGroupSearchContext()) && isSpecified(getGroupSearchFilter()))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean isSpecified(String value)
+    {
+        return value != null && !"".equals(value);
+    }
+
+    private Set<Principal> findGroups(DirContext context, String userDN) throws NamingException
+    {
+        Set<Principal> groupPrincipals = new HashSet<>();
+        if (getGroupAttributeName() != null && !"".equals(getGroupAttributeName()))
+        {
+            Attributes attributes = context.getAttributes(userDN, new String[]{getGroupAttributeName()});
+            NamingEnumeration<? extends Attribute> namingEnum = attributes.getAll();
+            while (namingEnum.hasMore())
+            {
+                Attribute attribute = namingEnum.next();
+                if (attribute != null)
+                {
+                    NamingEnumeration<?> attributeValues = attribute.getAll();
+                    while (attributeValues.hasMore())
+                    {
+                        Object attributeValue = attributeValues.next();
+                        if (attributeValue != null)
+                        {
+                            String groupDN = String.valueOf(attributeValue);
+                            groupPrincipals.add(new GroupPrincipal(groupDN));
+                        }
+                    }
+                }
+            }
+        }
+
+        if (getGroupSearchContext() != null && !"".equals(getGroupSearchContext()) &&
+            getGroupSearchFilter() != null && !"".equals(getGroupSearchFilter()))
+        {
+            SearchControls searchControls = new SearchControls();
+            searchControls.setReturningAttributes(new String[]{});
+            searchControls.setSearchScope(isGroupSubtreeSearchScope()
+                                                  ? SearchControls.SUBTREE_SCOPE
+                                                  : SearchControls.ONELEVEL_SCOPE);
+            NamingEnumeration<?> groupEnumeration = context.search(getGroupSearchContext(),
+                                                                   getGroupSearchFilter(),
+                                                                   new String[]{encode(userDN)},
+                                                                   searchControls);
+            while (groupEnumeration.hasMore())
+            {
+                SearchResult result = (SearchResult) groupEnumeration.next();
+                String groupDN = result.getNameInNamespace();
+                groupPrincipals.add(new GroupPrincipal(groupDN));
+            }
+        }
+
+        return groupPrincipals;
+    }
+
+    private String encode(String value)
+    {
+        StringBuilder encoded = new StringBuilder(value.length());
+        char[] chars = value.toCharArray();
+        for (int i = 0; i < chars.length; i++)
+        {
+            char ch = chars[i];
+            switch (ch)
+            {
+                case '\0':
+                    encoded.append("\\00");
+                    break;
+                case '(':
+                    encoded.append("\\28");
+                    break;
+                case ')':
+                    encoded.append("\\29");
+                    break;
+                case '*':
+                    encoded.append("\\2a");
+                    break;
+                case '\\':
+                    encoded.append("\\5c");
+                    break;
+                default:
+                    encoded.append(ch);
+                    break;
+            }
+        }
+        return encoded.toString();
     }
 
     private Hashtable<String, Object> createInitialDirContextEnvironment(String providerUrl)
@@ -501,6 +650,10 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
                 else if (callback instanceof AuthorizeCallback)
                 {
                     ((AuthorizeCallback) callback).setAuthorized(authenticated != null && authenticated.getStatus() == AuthenticationResult.AuthenticationStatus.SUCCESS);
+                    if (callback instanceof PlainSaslServer.AuthenticationResultPreservingAuthorizeCallback)
+                    {
+                        ((PlainSaslServer.AuthenticationResultPreservingAuthorizeCallback)callback).setAuthenticationResult(authenticated);
+                    }
                 }
                 else
                 {
@@ -514,11 +667,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     {
         if(!isBindWithoutSearch())
         {
-            Hashtable<String, Object> env = createInitialDirContextEnvironment(_providerUrl);
-
-            setupSearchContext(env, _searchUsername, _searchPassword);
-
-            InitialDirContext ctx = createInitialDirContext(env, _sslSocketFactoryOverrideClass);
+            InitialDirContext ctx = createSearchInitialDirContext();
 
             try
             {
@@ -554,6 +703,14 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         }
 
     }
+
+    private InitialDirContext createSearchInitialDirContext() throws NamingException
+    {
+        Hashtable<String, Object> env = createInitialDirContextEnvironment(_providerUrl);
+        setupSearchContext(env, _searchUsername, _searchPassword);
+        return createInitialDirContext(env, _sslSocketFactoryOverrideClass);
+    }
+
 
     @Override
     public boolean isBindWithoutSearch()

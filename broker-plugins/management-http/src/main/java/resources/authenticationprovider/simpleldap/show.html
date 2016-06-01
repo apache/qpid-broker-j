@@ -22,12 +22,16 @@
         <div ><span class="providerUrl" ></span></div>
     </div>
     <div class="clear">
-        <div class="formLabel-labelCell">Search context:</div>
-        <div><span class="searchContext" ></span></div>
+        <div class="formLabel-labelCell">LDAP authentication URL:</div>
+        <div><span class="providerAuthUrl" ></span></div>
     </div>
     <div class="clear">
-        <div class="formLabel-labelCell">Search filter:</div>
-        <div><span class="searchFilter" ></span></div>
+        <div class="formLabel-labelCell">Trust store:</div>
+        <div><span class="trustStore" ></span></div>
+    </div>
+    <div class="clear">
+        <div class="formLabel-labelCell">LDAP context factory:</div>
+        <div><span class="ldapContextFactory" ></span></div>
     </div>
     <div class="clear">
         <div class="formLabel-labelCell">Search user name:</div>
@@ -37,22 +41,49 @@
         <div class="formLabel-labelCell">Search password:</div>
         <div><span class="searchPassword" ></span></div>
     </div>
-    <div class="clear">
-        <div class="formLabel-labelCell">Trust Store:</div>
-        <div><span class="trustStore" ></span></div>
-    </div>
-    <div class="clear">
-        <div class="formLabel-labelCell">Bind without search:</div>
-        <div><span class="bindWithoutSearch" ></span></div>
-    </div>
-    <div class="clear">
-        <div class="formLabel-labelCell">LDAP Context Factory:</div>
-        <div><span class="ldapContextFactory" ></span></div>
-    </div>
-    <div class="clear">
-        <div class="formLabel-labelCell">LDAP authentication URL:</div>
-        <div><span class="providerAuthUrl" ></span></div>
+    <div class="clear"></div>
+
+    <div class="formBox">
+        <fieldset>
+            <legend>User Search</legend>
+            <div class="clear">
+                <div class="formLabel-labelCell">Search context:</div>
+                <div><span class="searchContext" ></span></div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell">Search filter:</div>
+                <div><span class="searchFilter" ></span></div>
+            </div>
+
+            <div class="clear">
+                <div class="formLabel-labelCell">Bind without search:</div>
+                <div><span class="bindWithoutSearch" ></span></div>
+            </div>
+        </fieldset>
     </div>
     <div class="clear"></div>
+    <div class="formBox">
+        <fieldset>
+            <legend>Group Search</legend>
+            <div class="clear">
+                <div class="formLabel-labelCell">Attribute name:</div>
+                <div><span class="groupAttributeName" ></span></div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell">Search context:</div>
+                <div><span class="groupSearchContext" ></span></div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell">Search filter:</div>
+                <div><span class="groupSearchFilter" ></span></div>
+            </div>
+
+            <div class="clear">
+                <div class="formLabel-labelCell">Subtree search scope:</div>
+                <div><span class="groupSubtreeSearchScope" ></span></div>
+            </div>
+        </fieldset>
+    </div>
+
 </div>
 

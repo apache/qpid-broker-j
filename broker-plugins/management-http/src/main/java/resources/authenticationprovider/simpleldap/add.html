@@ -57,31 +57,18 @@
         </div>
     </div>
     <div class="clear">
-        <div class="formLabel-labelCell tableContainer-labelCell">Search context*:</div>
+        <div class="formLabel-labelCell tableContainer-labelCell">LDAP Context Factory:</div>
         <div class="formLabel-controlCell tableContainer-valueCell">
-            <input type="text" class="searchContext"
+            <input type="text" class="ldapContextFactory"
                    data-dojo-type="dijit/form/ValidationTextBox"
                    data-dojo-props="
-                              name: 'searchContext',
-                              required: true,
-                              placeHolder: 'dc=users,dc=example,dc=com',
-                              title: 'Enter search context',
-                              promptMessage: 'Identifies the entry that is the base of the subtree containing users'"/>
+                              name: 'ldapContextFactory',
+                              placeHolder: 'com.sun.jndi.ldap.LdapCtxFactory',
+                              title: 'Enter fully qualified class name for LDAP Context Factory',
+                              promptMessage: 'Fully qualified class name for LDAP Context Factory'"/>
         </div>
     </div>
-    <div class="clear">
-        <div class="formLabel-labelCell tableContainer-labelCell">Search filter*:</div>
-        <div class="formLabel-controlCell tableContainer-valueCell">
-            <input type="text" class="searchFilter"
-                   data-dojo-type="dijit/form/ValidationTextBox"
-                   data-dojo-props="
-                              name: 'searchFilter',
-                              required: true,
-                              placeHolder: '(uid={0})',
-                              title: 'Enter user search filter ',
-                              promptMessage: 'Filter expression used to locate users within the subtree. {0} will be replaced by the user id.'"/>
-        </div>
-    </div>
+
     <div class="clear">
         <div class="formLabel-labelCell tableContainer-labelCell">Search username:</div>
         <div class="formLabel-controlCell tableContainer-valueCell">
@@ -106,28 +93,115 @@
                               promptMessage: 'The password to be used with the search username'"/>
         </div>
     </div>
-    <div class="clear">
-        <div class="formLabel-labelCell tableContainer-labelCell">Authenticate without search:</div>
-        <div class="formLabel-controlCell tableContainer-valueCell">
-            <input type="text" class="bindWithoutSearch" id="addAuthenticationProvider.simpleldap.bindWithoutSearch"
-                   data-dojo-type="dijit/form/CheckBox"
-                   data-dojo-props=" name: 'bindWithoutSearch' " />
-        </div>
+
+    <div class="formBox">
+        <fieldset>
+            <legend>User Search</legend>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Search context*:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" class="searchContext"
+                           data-dojo-type="dijit/form/ValidationTextBox"
+                           data-dojo-props="
+                                      name: 'searchContext',
+                                      required: true,
+                                      placeHolder: 'dc=users,dc=example,dc=com',
+                                      title: 'Enter search context',
+                                      promptMessage: 'Identifies the entry that is the base of the subtree containing users'"/>
+                </div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Search filter*:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" class="searchFilter"
+                           data-dojo-type="dijit/form/ValidationTextBox"
+                           data-dojo-props="
+                                      name: 'searchFilter',
+                                      required: true,
+                                      placeHolder: '(uid={0})',
+                                      title: 'Enter user search filter ',
+                                      promptMessage: 'Filter expression used to locate users within the subtree. {0} will be replaced by the user id.'"/>
+                </div>
+            </div>
+
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Authenticate without search:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" class="bindWithoutSearch" id="addAuthenticationProvider.simpleldap.bindWithoutSearch".
+                           data-dojo-type="dijit/form/CheckBox"
+                           data-dojo-props=" name: 'bindWithoutSearch' " />
+                </div>
+            </div>
+            <div data-dojo-type="dijit/Tooltip"
+                 data-dojo-props="connectId: ['addAuthenticationProvider.simpleldap.bindWithoutSearch'],
+                                                  label: 'If selected, the provider will not search the directory'">
+            </div>
+        </fieldset>
     </div>
-    <div data-dojo-type="dijit/Tooltip"
-         data-dojo-props="connectId: ['addAuthenticationProvider.simpleldap.bindWithoutSearch'],
-                                          label: 'If selected, the provider will not search the directory'">
-    </div>
-    <div class="clear">
-        <div class="formLabel-labelCell tableContainer-labelCell">LDAP Context Factory:</div>
-        <div class="formLabel-controlCell tableContainer-valueCell">
-            <input type="text" class="ldapContextFactory"
-                   data-dojo-type="dijit/form/ValidationTextBox"
-                   data-dojo-props="
-                              name: 'ldapContextFactory',
-                              placeHolder: 'com.sun.jndi.ldap.LdapCtxFactory',
-                              title: 'Enter fully qualified class name for LDAP Context Factory',
-                              promptMessage: 'Fully qualified class name for LDAP Context Factory'"/>
-        </div>
+
+    <div class="formBox">
+        <fieldset>
+            <legend>Group Search <span id="addAuthenticationProvider.simpleldap.groupSearchLegend" class="infoPane"></span></legend>
+            <div data-dojo-type="dijit/Tooltip"
+                 data-dojo-props="connectId: ['addAuthenticationProvider.simpleldap.groupSearchLegend']">
+                There are two common ways of representing group membership in LDAP.<br/>
+                User entries can reference their groups or group entries can reference their members.<br/>
+                To use the former specify group attribute name.<br/>
+                To use the latter specify search context and filter.<br/>
+                A combination of both approaches can be used.
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Attribute name:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" class="groupAttributeName"
+                           data-dojo-type="dijit/form/ValidationTextBox"
+                           data-dojo-props="
+                              name: 'groupAttributeName',
+                              placeHolder: 'groupMembership',
+                              title: 'Enter name of user entry attribute holding the group name',
+                              promptMessage: 'The user entry attribute name holding the group name user belongs to.'"/>
+                </div>
+            </div>
+
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Search context:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" class="groupSearchContext"
+                           data-dojo-type="dijit/form/ValidationTextBox"
+                           data-dojo-props="
+                                      name: 'groupSearchContext',
+                                      required: true,
+                                      placeHolder: 'dc=groups,dc=example,dc=com',
+                                      title: 'Enter group search context',
+                                      promptMessage: 'Identifies the entry that is the base of the subtree containing groups'"/>
+                </div>
+            </div>
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Search filter:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" class="groupSearchFilter"
+                           data-dojo-type="dijit/form/ValidationTextBox"
+                           data-dojo-props="
+                                      name: 'groupSearchFilter',
+                                      required: true,
+                                      placeHolder: '(uniquemember={0})',
+                                      title: 'Enter group search filter ',
+                                      promptMessage: 'Filter expression used to locate group containing the authenticated user. {0} will be replaced by the user DN.'"/>
+                </div>
+            </div>
+
+            <div class="clear">
+                <div class="formLabel-labelCell tableContainer-labelCell">Subtree search scope:</div>
+                <div class="formLabel-controlCell tableContainer-valueCell">
+                    <input type="text" class="groupSubtreeSearchScope" id="addAuthenticationProvider.simpleldap.groupSubtreeSearchScope"
+                           data-dojo-type="dijit/form/CheckBox"
+                           data-dojo-props=" name: 'groupSubtreeSearchScope' " />
+                </div>
+            </div>
+            <div data-dojo-type="dijit/Tooltip"
+                 data-dojo-props="connectId: ['addAuthenticationProvider.simpleldap.groupSubtreeSearchScope'],
+                                                  label: 'If selected, the he search for group entries is performed in the entire subtree of the group search context'">
+            </div>
+        </fieldset>
     </div>
 </div>

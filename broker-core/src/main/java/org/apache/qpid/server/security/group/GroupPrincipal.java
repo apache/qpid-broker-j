@@ -97,4 +97,10 @@ public class GroupPrincipal implements Group, Serializable
             }
         }
     }
+
+    @Override
+    public String toString()
+    {
+        return "GroupPrincipal{" + _groupName + "}";
+    }
 }
