@@ -109,11 +109,11 @@ public class SiteSpecificTrustStoreImpl
     @Override
     protected void postResolve()
     {
+        super.postResolve();
         if(getActualAttributes().containsKey(CERTIFICATE))
         {
             decodeCertificate();
         }
-
     }
 
     @Override
