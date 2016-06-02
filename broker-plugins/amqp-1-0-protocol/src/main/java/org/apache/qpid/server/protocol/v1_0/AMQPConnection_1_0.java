@@ -185,7 +185,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
         SubjectCreator subjectCreator = port.getAuthenticationProvider().getSubjectCreator(transport.isSecure());
         final ConnectionEndpoint endpoint =
-                new ConnectionEndpoint(container, useSASL ? asSaslServerProvider(subjectCreator, network) : null);
+                new ConnectionEndpoint(container, useSASL ? asSaslServerProvider(subjectCreator, network) : null, subjectCreator);
         endpoint.setLogger(new ConnectionEndpoint.FrameReceiptLogger()
         {
             @Override

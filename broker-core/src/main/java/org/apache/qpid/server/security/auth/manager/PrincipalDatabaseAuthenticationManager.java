@@ -210,13 +210,12 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     {
         try
         {
-            // Process response from the client
             byte[] challenge = server.evaluateResponse(response != null ? response : new byte[0]);
 
             if (server.isComplete())
             {
                 final String userId = server.getAuthorizationID();
-                return new AuthenticationResult(new UsernamePrincipal(userId));
+                return new AuthenticationResult(new UsernamePrincipal(userId), challenge);
             }
             else
             {

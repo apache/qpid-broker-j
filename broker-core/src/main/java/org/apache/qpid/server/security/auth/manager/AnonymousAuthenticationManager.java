@@ -93,7 +93,7 @@ public class AnonymousAuthenticationManager extends AbstractAuthenticationManage
             }
             else
             {
-                return new AuthenticationResult(challenge, AuthenticationResult.AuthenticationStatus.CONTINUE);
+                return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR);
             }
         }
         catch (SaslException e)

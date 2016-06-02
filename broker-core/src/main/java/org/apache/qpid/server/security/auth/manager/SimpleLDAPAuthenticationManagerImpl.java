@@ -239,7 +239,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
                 String authorizationID = server.getAuthorizationID();
                 _logger.debug("Authenticated as {}", authorizationID);
 
-                return new AuthenticationResult(new UsernamePrincipal(authorizationID));
+                return new AuthenticationResult(new UsernamePrincipal(authorizationID), challenge);
             }
             else
             {

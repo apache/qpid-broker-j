@@ -77,6 +77,9 @@ import org.apache.qpid.amqp_1_0.type.transport.Flow;
 import org.apache.qpid.amqp_1_0.type.transport.Open;
 import org.apache.qpid.amqp_1_0.type.transport.Transfer;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.security.SubjectCreator;
+import org.apache.qpid.server.security.auth.AuthenticationResult;
+import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 
 
 public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Source, ValueWriter.Registry.Source,
@@ -138,6 +141,8 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
 
     private Runnable _onSaslCompleteTask;
 
+    private volatile SubjectAuthenticationResult _successfulAuthenticationResult;
+    private SubjectCreator _subjectCreator;
     private SaslServerProvider _saslServerProvider;
     private SaslServer _saslServer;
     private boolean _authenticated;
@@ -154,10 +159,11 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
     private Map _remoteProperties;
     private long _desiredIdleTimeout;
 
-    public ConnectionEndpoint(Container container, SaslServerProvider cbs)
+    public ConnectionEndpoint(Container container, SaslServerProvider cbs, final SubjectCreator subjectCreator)
     {
         _container = container;
         _saslServerProvider = cbs;
+        _subjectCreator = subjectCreator;
         _requiresSASLClient = false;
         _requiresSASLServer = cbs != null;
     }
@@ -908,11 +914,28 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
         try
         {
             _saslServer = _saslServerProvider.getSaslServer(mechanism, "localhost");
+            processSaslResponse(response);
+        }
+        catch (SaslException e)
+        {
+            handleSaslError();
+        }
+    }
 
-            // Process response from the client
-            byte[] challenge = _saslServer.evaluateResponse(response != null ? response : new byte[0]);
+    private void processSaslResponse(final byte[] response)
+    {
+        byte[] challenge = null;
+        SubjectAuthenticationResult authenticationResult = _successfulAuthenticationResult;
+        if (authenticationResult == null)
+        {
+            authenticationResult = _subjectCreator.authenticate(_saslServer, response != null ? response : new byte[0]);
+            challenge = authenticationResult.getChallenge();
+        }
 
-            if (_saslServer.isComplete())
+        if (authenticationResult.getStatus() == AuthenticationResult.AuthenticationStatus.SUCCESS)
+        {
+            _successfulAuthenticationResult = authenticationResult;
+            if (challenge == null || challenge.length == 0)
             {
                 SaslOutcome outcome = new SaslOutcome();
 
@@ -930,33 +953,44 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
                 {
                     _onSaslCompleteTask.run();
                 }
-
             }
             else
             {
-                SaslChallenge challengeBody = new SaslChallenge();
-                challengeBody.setChallenge(new Binary(challenge));
-                _saslFrameOutput.send(new SASLFrame(challengeBody), null);
-
+                continueSaslNegotiation(challenge);
             }
         }
-        catch (SaslException e)
+        else if (authenticationResult.getStatus() == AuthenticationResult.AuthenticationStatus.CONTINUE)
         {
-            SaslOutcome outcome = new SaslOutcome();
+            continueSaslNegotiation(challenge);
+        }
+        else
+        {
+            handleSaslError();
+        }
+    }
 
-            outcome.setCode(SaslCode.AUTH);
-            _saslFrameOutput.send(new SASLFrame(outcome), null);
-            synchronized (getLock())
-            {
-                _saslComplete = true;
-                _authenticated = false;
-                getLock().notifyAll();
-            }
-            if (_onSaslCompleteTask != null)
-            {
-                _onSaslCompleteTask.run();
-            }
+    private void continueSaslNegotiation(final byte[] challenge)
+    {
+        SaslChallenge challengeBody = new SaslChallenge();
+        challengeBody.setChallenge(new Binary(challenge));
+        _saslFrameOutput.send(new SASLFrame(challengeBody), null);
+    }
 
+    private void handleSaslError()
+    {
+        SaslOutcome outcome = new SaslOutcome();
+
+        outcome.setCode(SaslCode.AUTH);
+        _saslFrameOutput.send(new SASLFrame(outcome), null);
+        synchronized (getLock())
+        {
+            _saslComplete = true;
+            _authenticated = false;
+            getLock().notifyAll();
+        }
+        if (_onSaslCompleteTask != null)
+        {
+            _onSaslCompleteTask.run();
         }
     }
 
@@ -1043,58 +1077,7 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
         final Binary responseBinary = saslResponse.getResponse();
         byte[] response = responseBinary == null ? new byte[0] : responseBinary.getArray();
 
-
-        try
-        {
-
-            // Process response from the client
-            byte[] challenge = _saslServer.evaluateResponse(response != null ? response : new byte[0]);
-
-            if (_saslServer.isComplete())
-            {
-                SaslOutcome outcome = new SaslOutcome();
-
-                outcome.setCode(SaslCode.OK);
-                _saslFrameOutput.send(new SASLFrame(outcome), null);
-                synchronized (getLock())
-                {
-                    _saslComplete = true;
-                    _authenticated = true;
-                    _user = _saslServerProvider.getAuthenticatedPrincipal(_saslServer);
-                    getLock().notifyAll();
-                }
-                if (_onSaslCompleteTask != null)
-                {
-                    _onSaslCompleteTask.run();
-                }
-
-            }
-            else
-            {
-                SaslChallenge challengeBody = new SaslChallenge();
-                challengeBody.setChallenge(new Binary(challenge));
-                _saslFrameOutput.send(new SASLFrame(challengeBody), null);
-
-            }
-        }
-        catch (SaslException e)
-        {
-            SaslOutcome outcome = new SaslOutcome();
-
-            outcome.setCode(SaslCode.AUTH);
-            _saslFrameOutput.send(new SASLFrame(outcome), null);
-            synchronized (getLock())
-            {
-                _saslComplete = true;
-                _authenticated = false;
-                getLock().notifyAll();
-            }
-            if (_onSaslCompleteTask != null)
-            {
-                _onSaslCompleteTask.run();
-            }
-
-        }
+        processSaslResponse(response);
     }
 
     public void receiveSaslOutcome(final SaslOutcome saslOutcome)

@@ -83,7 +83,7 @@ public class KerberosAuthenticationManager extends AbstractAuthenticationManager
 
             if (server.isComplete())
             {
-                return new AuthenticationResult(new UsernamePrincipal(server.getAuthorizationID()));
+                return new AuthenticationResult(new UsernamePrincipal(server.getAuthorizationID()), challenge);
             }
             else
             {

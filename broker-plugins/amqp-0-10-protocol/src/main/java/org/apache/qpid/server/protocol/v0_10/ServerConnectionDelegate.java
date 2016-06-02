@@ -79,6 +79,7 @@ public class ServerConnectionDelegate extends ServerDelegate
     }
 
     private volatile ConnectionState _state = ConnectionState.INIT;
+    private volatile SubjectAuthenticationResult _successfulAuthenticationResult;
 
 
     public ServerConnectionDelegate(Broker<?> broker, String localFQDN, SubjectCreator subjectCreator)
@@ -185,13 +186,28 @@ public class ServerConnectionDelegate extends ServerDelegate
     protected void secure(final SaslServer ss, final Connection conn, final byte[] response)
     {
         final ServerConnection sconn = (ServerConnection) conn;
-        final SubjectAuthenticationResult authResult = _subjectCreator.authenticate(ss, response);
+        SubjectAuthenticationResult authResult = _successfulAuthenticationResult;
+        byte[] challenge = null;
+        if (authResult == null)
+        {
+            authResult = _subjectCreator.authenticate(ss, response);
+            challenge = authResult.getChallenge();
+        }
 
         if (AuthenticationStatus.SUCCESS.equals(authResult.getStatus()))
         {
-            tuneAuthorizedConnection(sconn);
-            sconn.setAuthorizedSubject(authResult.getSubject());
-            _state = ConnectionState.AWAIT_TUNE_OK;
+            _successfulAuthenticationResult = authResult;
+            if (challenge == null || challenge.length == 0)
+            {
+                tuneAuthorizedConnection(sconn);
+                sconn.setAuthorizedSubject(authResult.getSubject());
+                _state = ConnectionState.AWAIT_TUNE_OK;
+            }
+            else
+            {
+                connectionAuthContinue(sconn, authResult.getChallenge());
+                _state = ConnectionState.AWAIT_SECURE_OK;
+            }
         }
         else if (AuthenticationStatus.CONTINUE.equals(authResult.getStatus()))
         {
