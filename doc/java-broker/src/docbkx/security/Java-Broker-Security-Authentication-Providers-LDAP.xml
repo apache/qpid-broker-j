@@ -56,6 +56,23 @@
                 which is protected by a certificate signed by a private CA (or utilising a self-signed
                 certificate).</para>
         </listitem>
+        <listitem>
+            <para>Additional group information can be obtained from LDAP.
+                There are two common ways of representing group membership in LDAP.
+                <itemizedlist>
+                    <listitem>
+                        User entries can hold membership information as attribute.
+                        To use this the <emphasis>attribute name</emphasis> that holds the group information must be specified.
+                    </listitem>
+                    <listitem>
+                        Group entries can hold a list of their members as attribute.
+                        This can be used by specifying a <emphasis>search context</emphasis> and <emphasis>search filter</emphasis> to find all groups that the user should be considered a member of.
+                        Typically this involves filtering groups by looking for the user's DN on a group attribute.
+                        The <emphasis>subtree search scope</emphasis> determines whether the search should include the subtree extending from the <emphasis>search context</emphasis>.
+                    </listitem>
+                </itemizedlist>
+            </para>
+        </listitem>
     </itemizedlist>
     </para>
 
