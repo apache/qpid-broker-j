@@ -80,11 +80,36 @@
 					  </para>
 					</entry>
 				</row>
+				<!-- 0-10 only
 				<row>
 					<entry> sync_ack </entry>
 					<entry> Boolean </entry>
 					<entry> A sync command is sent after every acknowledgement to guarantee that it
 						has been received. </entry>
+				</row>
+				-->
+				<row>
+					<entry> sync_client_ack </entry>
+					<entry> Boolean </entry>
+					<entry>
+						<para>
+							If set <literal>true</literal>, for sessions using <link xmlns:xlink="http://www.w3.org/1999/xlink"
+							xlink:href="${oracleJeeDocUrl}javax/jms/Session.html#CLIENT_ACKNOWLEDGE">Session#CLIENT_ACKNOWLEDGE</link>,
+							a sync command is sent after every message <link xmlns:xlink="http://www.w3.org/1999/xlink"
+							xlink:href="${oracleJeeDocUrl}javax/jms/Message.html#acknowledge()">Message#acknowledge()</link>.
+							This ensure that the client awaits the successful processing of the acknowledgement by server before continuing.
+						</para>
+						<para>If <literal>false</literal>, the sync is not performed.  This will improve performance but will mean
+							duplicate messages are more likely to be received following a failure.
+						</para>
+						<para>
+							Defaults to <literal>true</literal>.
+						</para>
+						<para>
+							Note: You can also set the default on a client-wide basis by configuring the
+							client using <link linkend="JMS-Client-0-8-System-Properties">Java system properties.</link>
+						</para>
+					</entry>
 				</row>
 				<row xml:id="JMS-Client-0-8-Connection-URL-ConnectionOptions-UseLegacyMap">
 					<entry> use_legacy_map_msg_format </entry>

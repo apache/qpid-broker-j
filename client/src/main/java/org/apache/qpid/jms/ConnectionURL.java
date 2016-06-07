@@ -36,6 +36,7 @@ public interface ConnectionURL
     String OPTIONS_SYNC_PERSISTENCE = "sync_persistence";
     String OPTIONS_MAXPREFETCH = "maxprefetch";
     String OPTIONS_SYNC_ACK = "sync_ack";
+    String OPTIONS_SYNC_CLIENT_ACK = "sync_client_ack";
     String OPTIONS_SYNC_PUBLISH = "sync_publish";
     String OPTIONS_USE_LEGACY_MAP_MESSAGE_FORMAT = "use_legacy_map_msg_format";
     String OPTIONS_USE_LEGACY_STREAM_MESSAGE_FORMAT = "use_legacy_stream_msg_format";

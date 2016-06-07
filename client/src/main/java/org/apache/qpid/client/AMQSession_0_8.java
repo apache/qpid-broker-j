@@ -73,11 +73,6 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
     /** Used for debugging. */
     private static final Logger _logger = LoggerFactory.getLogger(AMQSession.class);
 
-    public static final String QPID_SYNC_AFTER_CLIENT_ACK = "qpid.sync_after_client.ack";
-
-    private final boolean _syncAfterClientAck =
-            Boolean.parseBoolean(System.getProperty(QPID_SYNC_AFTER_CLIENT_ACK, "true"));
-
     private final boolean _useLegacyQueueDepthBehaviour =
             Boolean.parseBoolean(System.getProperty(ClientProperties.QPID_USE_LEGACY_GETQUEUEDEPTH_BEHAVIOUR, "false"));
 
@@ -152,7 +147,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         _currentPrefetch.set(0);
         try
         {
-            if (syncRequired && _syncAfterClientAck)
+            if (syncRequired && getAMQConnection().getSyncClientAck())
             {
                 sync();
             }

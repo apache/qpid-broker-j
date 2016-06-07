@@ -1273,7 +1273,10 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
         if(ranges.size() > 0 )
         {
             messageAcknowledge(ranges, true);
-            getQpidSession().sync();
+            if (getAMQConnection().getSyncClientAck())
+            {
+                getQpidSession().sync();
+            }
         }
     }
 

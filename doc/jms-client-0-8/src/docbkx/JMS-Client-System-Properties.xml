@@ -240,6 +240,25 @@
 								>Connection URL</link> options.</para></entry>
 				</row>
 				-->
+				<row>
+					<entry>sync_client_ack</entry>
+					<entry>boolean</entry>
+					<entry>true</entry>
+					<entry>
+						<para>
+							If set <literal>true</literal>, for sessions using <link xmlns:xlink="http://www.w3.org/1999/xlink"
+							xlink:href="${oracleJeeDocUrl}javax/jms/Session.html#CLIENT_ACKNOWLEDGE">Session#CLIENT_ACKNOWLEDGE</link>,
+							a sync command is sent after every message <link xmlns:xlink="http://www.w3.org/1999/xlink"
+							xlink:href="${oracleJeeDocUrl}javax/jms/Message.html#acknowledge()">Message#acknowledge()</link>.
+							This ensure that the client awaits the successful processing of the acknowledgement by server before continuing.
+						</para>
+						<para>If <literal>false</literal>, the sync is not performed.  This will improve performance but will mean
+							duplicate messages are more likely to be received following a failure.
+						</para>
+						<para>This can also be set per connection using the <link linkend="section-jms-connection-url">
+							Connection URL</link> options.</para>
+					</entry>
+				</row>
 			</tbody>
 		</tgroup>
 	</table>

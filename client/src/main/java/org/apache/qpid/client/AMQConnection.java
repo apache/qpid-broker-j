@@ -204,6 +204,9 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
     //Indicates whether we need to sync on every message ack
     private boolean _syncAck;
 
+    //Indicates whether we need to sync on every message ack on a client ack session, default to true
+    private final boolean _syncClientAck;
+
     //Indicates the sync publish options (persistent|all)
     //By default it's async publish
     private String _syncPublish = "";
@@ -340,6 +343,22 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         {
             // use the default value set for all connections
             _syncAck = Boolean.getBoolean(ClientProperties.SYNC_ACK_PROP_NAME);
+        }
+
+        if (connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_CLIENT_ACK) != null)
+        {
+            _syncClientAck = Boolean.parseBoolean(connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_CLIENT_ACK));
+        }
+        else
+        {
+            String legacyProperty = System.getProperty("qpid.sync_after_client.ack");
+            if (legacyProperty != null)
+            {
+                _logger.warn("'qpid.sync_after_client.ack' is a deprecated system property, " +
+                             "please use '{}' instead", ClientProperties.SYNC_CLIENT_ACK);
+            }
+            _syncClientAck = Boolean.parseBoolean(System.getProperty(ClientProperties.SYNC_CLIENT_ACK,
+                                                                     legacyProperty != null ? legacyProperty : "true"));
         }
 
         if (connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_PUBLISH) != null)
@@ -1759,6 +1778,11 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
     public boolean getSyncAck()
     {
         return _syncAck;
+    }
+
+    boolean getSyncClientAck()
+    {
+        return _syncClientAck;
     }
 
     public String getSyncPublish()
