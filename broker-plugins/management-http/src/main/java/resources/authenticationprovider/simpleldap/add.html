@@ -141,67 +141,95 @@
 
     <div class="formBox">
         <fieldset>
-            <legend>Group Search <span id="addAuthenticationProvider.simpleldap.groupSearchLegend" class="infoPane"></span></legend>
+            <legend>Additional Group Information <span id="addAuthenticationProvider.simpleldap.groupSearchLegend" class="infoPane"></span></legend>
             <div data-dojo-type="dijit/Tooltip"
                  data-dojo-props="connectId: ['addAuthenticationProvider.simpleldap.groupSearchLegend']">
                 There are two common ways of representing group membership in LDAP.<br/>
-                User entries can reference their groups or group entries can reference their members.<br/>
-                To use the former specify group attribute name.<br/>
-                To use the latter specify search context and filter.<br/>
-                A combination of both approaches can be used.
+                <ul>
+                    <li>
+                        User entries can hold membership information as attribute.<br/>
+                        To use this simply specify the name of the attrribute that holds<br/>
+                        the group information.
+                    </li>
+                    <li>
+                        Group entries can hold a list of their members as attribute.<br/>
+                        You can specify a search context and filter to find all groups<br/>
+                        that the user should be considered a member of. Typically this<br/>
+                        involves filtering groups by looking for the user's DN on a<br/>
+                        group attribute.
+                    </li>
+                </ul>
             </div>
-            <div class="clear">
-                <div class="formLabel-labelCell tableContainer-labelCell">Attribute name:</div>
-                <div class="formLabel-controlCell tableContainer-valueCell">
-                    <input type="text" class="groupAttributeName"
-                           data-dojo-type="dijit/form/ValidationTextBox"
-                           data-dojo-props="
-                              name: 'groupAttributeName',
-                              placeHolder: 'groupMembership',
-                              title: 'Enter name of user entry attribute holding the group name',
-                              promptMessage: 'The user entry attribute name holding the group name user belongs to.'"/>
+            <div id="ldapGroupInfoRadioGroup">
+                <div class="clear">
+                    <input id="ldapGroupInfoRadioButtonNone" type="radio" name="groupInfo" value="none" data-dojo-type="dijit/form/RadioButton" checked />
+                    <label for="ldapGroupInfoRadioButtonNone">No Additional Group Information from LDAP</label>
+                </div>
+                <div class="clear">
+                    <input id="ldapGroupInfoRadioButtonAttribute" type="radio" name="groupInfo" value="attribute" data-dojo-type="dijit/form/RadioButton"/>
+                    <label for="ldapGroupInfoRadioButtonAttribute">Group Membership from User Entry Attribute</label>
+                    <div class="clear radioButtonIndent" id="ldapGroupInfoRadioButtonAttributeContent">
+                        <div class="formLabel-labelCell tableContainer-labelCell">Attribute name:</div>
+                        <div class="formLabel-controlCell tableContainer-valueCell">
+                            <input type="text" class="groupAttributeName" disabled
+                                   id="ldapGroupInfoRadioButtonAttributeContentAttrName"
+                                   data-dojo-type="dijit/form/ValidationTextBox"
+                                   data-dojo-props="
+                                  name: 'groupAttributeName',
+                                  placeHolder: 'groupMembership',
+                                  title: 'Enter name of user entry attribute holding the group memberships',
+                                  promptMessage: 'The name of the attribute on the user entry that<br/>holds the group membership information.'"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="clear">
+                    <input id="ldapGroupInfoRadioButtonQuery" type="radio" name="groupInfo" value="query" data-dojo-type="dijit/form/RadioButton"/>
+                    <label for="ldapGroupInfoRadioButtonQuery">Group Membership from Query</label>
+                    <div class="radioButtonIndent" id="ldapGroupInfoRadioButtonQueryContent">
+                        <div class="clear">
+                            <div class="formLabel-labelCell tableContainer-labelCell">Search context:</div>
+                            <div class="formLabel-controlCell tableContainer-valueCell">
+                                <input type="text" class="groupSearchContext" disabled
+                                       id="ldapGroupInfoRadioButtonQueryContentSearchContext"
+                                       data-dojo-type="dijit/form/ValidationTextBox"
+                                       data-dojo-props="
+                                              name: 'groupSearchContext',
+                                              placeHolder: 'dc=groups,dc=example,dc=com',
+                                              title: 'Enter group search context',
+                                              promptMessage: 'The entry that is the base of the subtree containing groups'"/>
+                            </div>
+                        </div>
+                        <div class="clear">
+                            <div class="formLabel-labelCell tableContainer-labelCell">Search filter:</div>
+                            <div class="formLabel-controlCell tableContainer-valueCell">
+                                <input type="text" class="groupSearchFilter" disabled
+                                       id="ldapGroupInfoRadioButtonQueryContentSearchFilter"
+                                       data-dojo-type="dijit/form/ValidationTextBox"
+                                       data-dojo-props="
+                                              name: 'groupSearchFilter',
+                                              placeHolder: '(uniquemember={0})',
+                                              title: 'Enter group search filter',
+                                              promptMessage: 'Filter expression used to locate groups containing the user.<br/>{0} will be replaced by the user DN.'"/>
+                            </div>
+                        </div>
+
+                        <div class="clear">
+                            <div class="formLabel-labelCell tableContainer-labelCell">Subtree search scope:</div>
+                            <div class="formLabel-controlCell tableContainer-valueCell">
+                                <input type="text" class="groupSubtreeSearchScope" disabled
+                                       id="ldapGroupInfoRadioButtonQueryContentSubtreeSearch"
+                                       data-dojo-type="dijit/form/CheckBox"
+                                       data-dojo-props=" name: 'groupSubtreeSearchScope' "/>
+                            </div>
+                        </div>
+                        <div data-dojo-type="dijit/Tooltip"
+                             data-dojo-props="connectId: ['ldapGroupInfoRadioButtonQueryContentSubtreeSearch'],
+                                                          label: 'If selected, the search for group entries is performed<br/>in the entire subtree of the group search context'">
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="clear">
-                <div class="formLabel-labelCell tableContainer-labelCell">Search context:</div>
-                <div class="formLabel-controlCell tableContainer-valueCell">
-                    <input type="text" class="groupSearchContext"
-                           data-dojo-type="dijit/form/ValidationTextBox"
-                           data-dojo-props="
-                                      name: 'groupSearchContext',
-                                      required: true,
-                                      placeHolder: 'dc=groups,dc=example,dc=com',
-                                      title: 'Enter group search context',
-                                      promptMessage: 'Identifies the entry that is the base of the subtree containing groups'"/>
-                </div>
-            </div>
-            <div class="clear">
-                <div class="formLabel-labelCell tableContainer-labelCell">Search filter:</div>
-                <div class="formLabel-controlCell tableContainer-valueCell">
-                    <input type="text" class="groupSearchFilter"
-                           data-dojo-type="dijit/form/ValidationTextBox"
-                           data-dojo-props="
-                                      name: 'groupSearchFilter',
-                                      required: true,
-                                      placeHolder: '(uniquemember={0})',
-                                      title: 'Enter group search filter ',
-                                      promptMessage: 'Filter expression used to locate group containing the authenticated user. {0} will be replaced by the user DN.'"/>
-                </div>
-            </div>
-
-            <div class="clear">
-                <div class="formLabel-labelCell tableContainer-labelCell">Subtree search scope:</div>
-                <div class="formLabel-controlCell tableContainer-valueCell">
-                    <input type="text" class="groupSubtreeSearchScope" id="addAuthenticationProvider.simpleldap.groupSubtreeSearchScope"
-                           data-dojo-type="dijit/form/CheckBox"
-                           data-dojo-props=" name: 'groupSubtreeSearchScope' " />
-                </div>
-            </div>
-            <div data-dojo-type="dijit/Tooltip"
-                 data-dojo-props="connectId: ['addAuthenticationProvider.simpleldap.groupSubtreeSearchScope'],
-                                                  label: 'If selected, the he search for group entries is performed in the entire subtree of the group search context'">
-            </div>
         </fieldset>
     </div>
 </div>

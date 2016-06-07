@@ -191,6 +191,10 @@ define(["dojo/dom",
                 {
                     var authenticationProviderData = util.getFormWidgetValues(this.authenticationProviderForm,
                         this.initialData);
+                    if (this.typeUI && this.typeUI._preSubmit)
+                    {
+                        this.typeUI._preSubmit(authenticationProviderData);
+                    }
                     var context = this.context.get("value");
                     if (context && (!this.initialData || !util.equals(context, this.initialData.context)))
                     {
@@ -297,6 +301,7 @@ define(["dojo/dom",
                                 metadata: that.management.metadata
                             });
                             util.applyMetadataToWidgets(typeFieldsContainer, category, type, that.management.metadata);
+                            that.typeUI = typeUI;
                         }
                         catch (e)
                         {

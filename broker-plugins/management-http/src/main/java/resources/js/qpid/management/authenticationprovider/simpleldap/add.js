@@ -22,6 +22,7 @@ define(["dojo/query",
         "dijit/registry",
         "qpid/common/util",
         "dojo/store/Memory",
+        "dijit/form/RadioButton",
         "dijit/form/FilteringSelect",
         "dijit/form/ValidationTextBox",
         "dijit/form/CheckBox"], function (query, registry, util, Memory)
@@ -38,6 +39,40 @@ define(["dojo/query",
         _postParse: function (data)
         {
             var that = this;
+
+            this.groupInfoAttributeName = registry.byId('ldapGroupInfoRadioButtonAttributeContentAttrName');
+            this.groupInfoSearchContext = registry.byId('ldapGroupInfoRadioButtonQueryContentSearchContext');
+            this.groupInfoSearchFilter = registry.byId('ldapGroupInfoRadioButtonQueryContentSearchFilter');
+            this.groupInfoSubtreeSearch = registry.byId('ldapGroupInfoRadioButtonQueryContentSubtreeSearch');
+
+            registry.byId("ldapGroupInfoRadioButtonNone").on("change", function(isChecked){
+                if(isChecked){
+                    that.groupInfoAttributeName.set('disabled', true);
+
+                    that.groupInfoSearchContext.set('disabled', true);
+                    that.groupInfoSearchFilter.set('disabled', true);
+                    that.groupInfoSubtreeSearch.set('disabled', true);
+                }
+            }, true);
+            registry.byId("ldapGroupInfoRadioButtonAttribute").on("change", function(isChecked){
+                if(isChecked){
+                    that.groupInfoAttributeName.set('disabled', false);
+
+                    that.groupInfoSearchContext.set('disabled', true);
+                    that.groupInfoSearchFilter.set('disabled', true);
+                    that.groupInfoSubtreeSearch.set('disabled', true);
+                }
+            }, true);
+            registry.byId("ldapGroupInfoRadioButtonQuery").on("change", function(isChecked){
+                if(isChecked){
+                    that.groupInfoAttributeName.set('disabled', true);
+
+                    that.groupInfoSearchContext.set('disabled', false);
+                    that.groupInfoSearchFilter.set('disabled', false);
+                    that.groupInfoSubtreeSearch.set('disabled', false);
+                }
+            }, true);
+
             var obj = {
                 type: "truststore",
                 parent: {type: "broker"}
@@ -49,10 +84,44 @@ define(["dojo/query",
                     if (data.data)
                     {
                         that._initFields(data.data, data.containerNode, data.parent.management.metadata);
+                        if (data.data.groupAttributeName)
+                        {
+                            registry.byId("ldapGroupInfoRadioButtonAttribute").set('checked', true);
+                        }
+                        else if (data.data.groupSearchFilter || data.data.groupSearchContext)
+                        {
+                            registry.byId("ldapGroupInfoRadioButtonQuery").set('checked', true);
+                        }
                     }
                 }, util.xhrErrorHandler);
-
         },
+
+        _preSubmit: function(formData)
+        {
+            if ("none" === formData.groupInfo)
+            {
+                formData.groupAttributeName = "";
+
+                formData.groupSearchContext = "";
+                formData.groupSearchFilter = "";
+                formData.groupSubtreeSearchScope = false;
+            }
+            else if ("attribute" === formData.groupInfo)
+            {
+                formData.groupSearchContext = "";
+                formData.groupSearchFilter = "";
+                formData.groupSubtreeSearchScope = false;
+            }
+            else if ("query" === formData.groupInfo)
+            {
+                formData.groupAttributeName = "";
+            }
+            else
+            {
+                console.error("Unexpected value of 'groupInfo': " + formData.groupInfo);
+            }
+        },
+
         _initTrustStores: function (trustStores, containerNode)
         {
             var data = [];

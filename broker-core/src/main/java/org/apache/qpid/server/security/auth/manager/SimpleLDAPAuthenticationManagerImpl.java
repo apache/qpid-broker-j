@@ -320,14 +320,17 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     @Override
     public AuthenticationResult authenticate(String username, String password)
     {
+        String nameFromId;
         try
         {
-            return doLDAPNameAuthentication(getNameFromId(username), password);
+            nameFromId = getNameFromId(username);
         }
         catch (NamingException e)
         {
+            _logger.warn("Retrieving LDAP name for user '{}' resulted in error.", username, e);
             return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
         }
+        return doLDAPNameAuthentication(nameFromId, password);
     }
 
     private AuthenticationResult doLDAPNameAuthentication(String name, String password)
@@ -372,6 +375,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         catch (NamingException e)
         {
             //Some other failure
+            _logger.warn("LDAP authentication attempt for username '{}' resulted in error.", name, e);
             return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
         }
         finally

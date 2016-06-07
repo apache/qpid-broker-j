@@ -503,3 +503,9 @@ div .messages {
 .virtualHostConnections .field-bytesInRate { width: 10% }
 .virtualHostConnections .field-msgOutRate { width: 10% }
 .virtualHostConnections .field-bytesOutRate { width: 10% }
+
+.radioButtonIndent {
+    padding-left: 20px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
