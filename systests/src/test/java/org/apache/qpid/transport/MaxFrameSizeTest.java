@@ -26,8 +26,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -41,7 +39,6 @@ import javax.security.sasl.Sasl;
 import javax.security.sasl.SaslClient;
 import javax.security.sasl.SaslException;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.codec.ClientDecoder;
 import org.apache.qpid.framing.AMQDataBlock;
@@ -383,69 +380,4 @@ public class MaxFrameSizeTest extends QpidBrokerTestCase
         }
 
     }
-
-    private static class TestSender implements ByteBufferSender
-    {
-        private final Collection<QpidByteBuffer> _sentBuffers = new ArrayList<>();
-        private final OutputStream _output;
-
-
-        private TestSender(final OutputStream output)
-        {
-            _output = output;
-        }
-
-        @Override
-        public boolean isDirectBufferPreferred()
-        {
-            return false;
-        }
-
-        @Override
-        public void send(final QpidByteBuffer msg)
-        {
-            _sentBuffers.add(msg.duplicate());
-            msg.position(msg.limit());
-        }
-
-        @Override
-        public void flush()
-        {
-            int size = 0;
-            for(QpidByteBuffer buf : _sentBuffers)
-            {
-                size += buf.remaining();
-            }
-            byte[] data = new byte[size];
-            int offset = 0;
-            for(QpidByteBuffer buf : _sentBuffers)
-            {
-                int bufSize = buf.remaining();
-                buf.get(data, offset, bufSize);
-                offset+=bufSize;
-                buf.dispose();
-            }
-            try
-            {
-                _output.write(data);
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-            finally
-            {
-                _sentBuffers.clear();
-            }
-
-        }
-
-        @Override
-        public void close()
-        {
-
-        }
-
-    }
-
 }

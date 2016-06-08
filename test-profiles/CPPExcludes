@@ -238,3 +238,7 @@ org.apache.qpid.test.unit.client.temporaryqueue.TemporaryQueueTest#testClosingSe
 
 # QPID-7156: Test requires a Broker with a virtualhost
 org.apache.qpid.test.unit.client.connection.BrokerClosesClientConnectionTest#testClientCloseOnVirtualHostStop
+
+# cpp broker allows anonymous access by default
+# the following test requires running broker with authentication enabled
+org.apache.qpid.transport.ConnectionEstablishmentTest#testAuthenticationBypass
