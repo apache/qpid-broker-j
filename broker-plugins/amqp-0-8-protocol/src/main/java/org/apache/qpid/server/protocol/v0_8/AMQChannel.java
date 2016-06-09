@@ -2938,10 +2938,10 @@ public class AMQChannel
             }
             else
             {
+                String name = exchangeName.toString();
+                String typeString = type == null ? null : type.toString();
                 try
                 {
-                    String name = exchangeName.toString();
-                    String typeString = type == null ? null : type.toString();
 
                     Map<String, Object> attributes = new HashMap<String, Object>();
                     if (arguments != null)
@@ -2968,23 +2968,23 @@ public class AMQChannel
                 }
                 catch (ReservedExchangeNameException e)
                 {
-                    Exchange existing = getExchange(exchangeName.toString());
-                    if (existing != null && new AMQShortString(existing.getType()).equals(type))
+                    Exchange existing = getExchange(name);
+                    if (existing == null || !existing.getType().equals(typeString))
+                    {
+                        _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED,
+                                                        "Attempt to declare exchange: '" + exchangeName +
+                                                        "' which begins with reserved prefix.", getChannelId());
+                    }
+                    else if(!nowait)
                     {
                         sync();
                         _connection.writeFrame(declareOkBody.generateFrame(getChannelId()));
-                    }
-                    else
-                    {
-                        _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED,
-                                "Attempt to declare exchange: '" + exchangeName +
-                                        "' which begins with reserved prefix.", getChannelId());
                     }
                 }
                 catch (ExchangeExistsException e)
                 {
                     exchange = e.getExistingExchange();
-                    if (!new AMQShortString(exchange.getType()).equals(type))
+                    if (!exchange.getType().equals(typeString))
                     {
                         _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED, "Attempt to redeclare exchange: '"
                                 + exchangeName + "' of type "
