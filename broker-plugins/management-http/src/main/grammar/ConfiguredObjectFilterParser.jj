@@ -653,7 +653,7 @@ Expression functionExpression() :
 }
 {
     (
-        t = <FUNCTIONNAME> ( expr = primaryExpr() { args.add(expr); } ( "," expr = primaryExpr() { args.add(expr); } )* )? ")"
+        t = <FUNCTIONNAME> ( expr = addExpression() { args.add(expr); } ( "," expr = addExpression() { args.add(expr); } )* )? ")"
     )
     {
         return _factory.createFunctionExpression( t.image.substring(0, t.image.length() - 1), args );
@@ -715,7 +715,7 @@ Map<String, Expression> selectClauseElement() :
 
 }
 {
-    ( expr = primaryExpr() ( <AS> name = identifier() )?
+    ( expr = addExpression() ( <AS> name = identifier() )?
       {
           if(name == null)
           {
@@ -746,7 +746,7 @@ OrderByExpression orderByClauseElement() :
     OrderByExpression.Order order = OrderByExpression.Order.ASC;
 }
 {
-    ( expr = primaryExpr() ( <ASC> | <DESC> { order = OrderByExpression.Order.DESC; } )?
+    ( expr = addExpression() ( <ASC> | <DESC> { order = OrderByExpression.Order.DESC; } )?
       {
           return new OrderByExpression(expr, order);
       }

@@ -595,6 +595,7 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     Expression expr;
     t = jj_consume_token(FUNCTIONNAME);
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case NOT:
     case TRUE:
     case FALSE:
     case NULL:
@@ -607,8 +608,10 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     case ID:
     case QUOTED_ID:
     case 37:
-      expr = primaryExpr();
-                                                    args.add(expr);
+    case 40:
+    case 41:
+      expr = addExpression();
+                                                      args.add(expr);
       label_9:
       while (true) {
         switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -619,8 +622,8 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
           break label_9;
         }
         jj_consume_token(38);
-        expr = primaryExpr();
-                                                                                                   args.add(expr);
+        expr = addExpression();
+                                                                                                       args.add(expr);
       }
       break;
     default:
@@ -687,7 +690,7 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
   final public Map<String, Expression> selectClauseElement() throws ParseException {
     String name = null;
     Expression expr;
-    expr = primaryExpr();
+    expr = addExpression();
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case AS:
       jj_consume_token(AS);
@@ -730,7 +733,7 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     Expression expr;
     OrderByExpression orderByExpr;
     OrderByExpression.Order order = OrderByExpression.Order.ASC;
-    expr = primaryExpr();
+    expr = addExpression();
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case ASC:
     case DESC:
@@ -740,7 +743,7 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
         break;
       case DESC:
         jj_consume_token(DESC);
-                                              order = OrderByExpression.Order.DESC;
+                                                order = OrderByExpression.Order.DESC;
         break;
       default:
         jj_consume_token(-1);
@@ -804,7 +807,7 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
 
   private boolean jj_3R_67() {
     if (jj_scan_token(ESCAPE)) return true;
-    if (jj_3R_47()) return true;
+    if (jj_3R_48()) return true;
     return false;
   }
 
@@ -828,12 +831,12 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
-  private boolean jj_3R_48() {
-    if (jj_3R_50()) return true;
+  private boolean jj_3R_49() {
+    if (jj_3R_52()) return true;
     Token xsp;
     while (true) {
       xsp = jj_scanpos;
-      if (jj_3R_51()) { jj_scanpos = xsp; break; }
+      if (jj_3R_53()) { jj_scanpos = xsp; break; }
     }
     return false;
   }
@@ -841,16 +844,16 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
   private boolean jj_3_2() {
     if (jj_scan_token(NOT)) return true;
     if (jj_scan_token(LIKE)) return true;
-    if (jj_3R_47()) return true;
+    if (jj_3R_48()) return true;
     Token xsp;
     xsp = jj_scanpos;
     if (jj_3R_68()) jj_scanpos = xsp;
     return false;
   }
 
-  private boolean jj_3R_62() {
+  private boolean jj_3R_64() {
     if (jj_scan_token(LIKE)) return true;
-    if (jj_3R_47()) return true;
+    if (jj_3R_48()) return true;
     Token xsp;
     xsp = jj_scanpos;
     if (jj_3R_67()) jj_scanpos = xsp;
@@ -887,9 +890,9 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
-  private boolean jj_3R_49() {
+  private boolean jj_3R_50() {
     if (jj_scan_token(AND)) return true;
-    if (jj_3R_48()) return true;
+    if (jj_3R_49()) return true;
     return false;
   }
 
@@ -918,18 +921,18 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
-  private boolean jj_3R_66() {
+  private boolean jj_3R_55() {
     if (jj_scan_token(41)) return true;
     if (jj_3R_12()) return true;
     return false;
   }
 
   private boolean jj_3R_44() {
-    if (jj_3R_48()) return true;
+    if (jj_3R_49()) return true;
     Token xsp;
     while (true) {
       xsp = jj_scanpos;
-      if (jj_3R_49()) { jj_scanpos = xsp; break; }
+      if (jj_3R_50()) { jj_scanpos = xsp; break; }
     }
     return false;
   }
@@ -945,14 +948,20 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
-  private boolean jj_3R_61() {
+  private boolean jj_3R_63() {
     if (jj_scan_token(36)) return true;
-    if (jj_3R_52()) return true;
+    if (jj_3R_46()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_47() {
+    if (jj_scan_token(38)) return true;
+    if (jj_3R_46()) return true;
     return false;
   }
 
   private boolean jj_3R_35() {
-    if (jj_3R_47()) return true;
+    if (jj_3R_48()) return true;
     return false;
   }
 
@@ -964,21 +973,15 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
-  private boolean jj_3R_46() {
-    if (jj_scan_token(38)) return true;
-    if (jj_3R_25()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_65() {
+  private boolean jj_3R_54() {
     if (jj_scan_token(40)) return true;
     if (jj_3R_12()) return true;
     return false;
   }
 
-  private boolean jj_3R_60() {
+  private boolean jj_3R_62() {
     if (jj_scan_token(35)) return true;
-    if (jj_3R_52()) return true;
+    if (jj_3R_46()) return true;
     return false;
   }
 
@@ -1016,12 +1019,12 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
-  private boolean jj_3R_57() {
+  private boolean jj_3R_51() {
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3R_65()) {
+    if (jj_3R_54()) {
     jj_scanpos = xsp;
-    if (jj_3R_66()) return true;
+    if (jj_3R_55()) return true;
     }
     return false;
   }
@@ -1052,38 +1055,38 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
-  private boolean jj_3R_59() {
+  private boolean jj_3R_61() {
     if (jj_scan_token(34)) return true;
-    if (jj_3R_52()) return true;
+    if (jj_3R_46()) return true;
     return false;
   }
 
-  private boolean jj_3R_58() {
+  private boolean jj_3R_60() {
     if (jj_scan_token(33)) return true;
-    if (jj_3R_52()) return true;
+    if (jj_3R_46()) return true;
     return false;
   }
 
-  private boolean jj_3R_53() {
+  private boolean jj_3R_56() {
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3R_58()) {
-    jj_scanpos = xsp;
-    if (jj_3R_59()) {
-    jj_scanpos = xsp;
     if (jj_3R_60()) {
     jj_scanpos = xsp;
     if (jj_3R_61()) {
     jj_scanpos = xsp;
     if (jj_3R_62()) {
     jj_scanpos = xsp;
+    if (jj_3R_63()) {
+    jj_scanpos = xsp;
+    if (jj_3R_64()) {
+    jj_scanpos = xsp;
     if (jj_3_2()) {
     jj_scanpos = xsp;
-    if (jj_3R_63()) {
+    if (jj_3R_65()) {
     jj_scanpos = xsp;
     if (jj_3_3()) {
     jj_scanpos = xsp;
-    if (jj_3R_64()) {
+    if (jj_3R_66()) {
     jj_scanpos = xsp;
     if (jj_3_4()) return true;
     }
@@ -1098,12 +1101,12 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
-  private boolean jj_3R_52() {
+  private boolean jj_3R_46() {
     if (jj_3R_12()) return true;
     Token xsp;
     while (true) {
       xsp = jj_scanpos;
-      if (jj_3R_57()) { jj_scanpos = xsp; break; }
+      if (jj_3R_51()) { jj_scanpos = xsp; break; }
     }
     return false;
   }
@@ -1162,17 +1165,17 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
-  private boolean jj_3R_50() {
-    if (jj_3R_52()) return true;
+  private boolean jj_3R_52() {
+    if (jj_3R_46()) return true;
     Token xsp;
     while (true) {
       xsp = jj_scanpos;
-      if (jj_3R_53()) { jj_scanpos = xsp; break; }
+      if (jj_3R_56()) { jj_scanpos = xsp; break; }
     }
     return false;
   }
 
-  private boolean jj_3R_47() {
+  private boolean jj_3R_48() {
     if (jj_scan_token(STRING_LITERAL)) return true;
     return false;
   }
@@ -1199,7 +1202,7 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
 
   private boolean jj_3R_68() {
     if (jj_scan_token(ESCAPE)) return true;
-    if (jj_3R_47()) return true;
+    if (jj_3R_48()) return true;
     return false;
   }
 
@@ -1220,7 +1223,7 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
-  private boolean jj_3R_64() {
+  private boolean jj_3R_66() {
     if (jj_scan_token(IN)) return true;
     if (jj_scan_token(37)) return true;
     if (jj_3R_25()) return true;
@@ -1233,7 +1236,7 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
-  private boolean jj_3R_56() {
+  private boolean jj_3R_59() {
     if (jj_scan_token(IS)) return true;
     if (jj_scan_token(NOT)) return true;
     if (jj_scan_token(NULL)) return true;
@@ -1247,11 +1250,11 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
   }
 
   private boolean jj_3R_34() {
-    if (jj_3R_25()) return true;
+    if (jj_3R_46()) return true;
     Token xsp;
     while (true) {
       xsp = jj_scanpos;
-      if (jj_3R_46()) { jj_scanpos = xsp; break; }
+      if (jj_3R_47()) { jj_scanpos = xsp; break; }
     }
     return false;
   }
@@ -1298,9 +1301,9 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
-  private boolean jj_3R_55() {
+  private boolean jj_3R_58() {
     if (jj_scan_token(32)) return true;
-    if (jj_3R_50()) return true;
+    if (jj_3R_52()) return true;
     return false;
   }
 
@@ -1317,28 +1320,28 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
   private boolean jj_3_3() {
     if (jj_scan_token(NOT)) return true;
     if (jj_scan_token(BETWEEN)) return true;
-    if (jj_3R_52()) return true;
+    if (jj_3R_46()) return true;
     if (jj_scan_token(AND)) return true;
+    if (jj_3R_46()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_57() {
+    if (jj_scan_token(31)) return true;
     if (jj_3R_52()) return true;
     return false;
   }
 
-  private boolean jj_3R_54() {
-    if (jj_scan_token(31)) return true;
-    if (jj_3R_50()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_51() {
+  private boolean jj_3R_53() {
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3R_54()) {
+    if (jj_3R_57()) {
     jj_scanpos = xsp;
-    if (jj_3R_55()) {
+    if (jj_3R_58()) {
     jj_scanpos = xsp;
     if (jj_3_1()) {
     jj_scanpos = xsp;
-    if (jj_3R_56()) return true;
+    if (jj_3R_59()) return true;
     }
     }
     }
@@ -1350,11 +1353,11 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     return false;
   }
 
-  private boolean jj_3R_63() {
+  private boolean jj_3R_65() {
     if (jj_scan_token(BETWEEN)) return true;
-    if (jj_3R_52()) return true;
+    if (jj_3R_46()) return true;
     if (jj_scan_token(AND)) return true;
-    if (jj_3R_52()) return true;
+    if (jj_3R_46()) return true;
     return false;
   }
 
