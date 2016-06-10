@@ -53,6 +53,7 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
     private final String _description;
     private final String[] _validValues;
     private final String _validValuePattern;
+    private Initialization _initialization;
 
     public ConfiguredSettableInjectedAttribute(final String name,
                                                final Class<T> type,
@@ -66,7 +67,9 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
                                                final String oversizedAltText,
                                                final String description,
                                                final String[] validValues,
-                                               final String validValuePattern, final TypeValidator typeValidator)
+                                               final String validValuePattern,
+                                               final TypeValidator typeValidator,
+                                               final Initialization initialization)
     {
         super(name, type, genericType, typeValidator);
         _converter = AttributeValueConverter.getConverter(type, genericType);
@@ -80,6 +83,7 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
         _description = description;
         _validValues = validValues;
         _validValuePattern = validValuePattern;
+        _initialization = initialization;
 
         Method validValuesMethod = null;
 
@@ -157,6 +161,12 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
     public String defaultValue()
     {
         return _defaultValue;
+    }
+
+    @Override
+    public Initialization getInitialization()
+    {
+        return _initialization;
     }
 
     public boolean isSecure()

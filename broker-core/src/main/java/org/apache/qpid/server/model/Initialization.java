@@ -20,25 +20,9 @@
  */
 package org.apache.qpid.server.model;
 
-import java.util.Collection;
-
-public interface ConfiguredSettableAttribute<C extends ConfiguredObject, T> extends ConfiguredObjectAttribute<C,T>
+public enum Initialization
 {
-    String defaultValue();
-
-    boolean isMandatory();
-
-    boolean isImmutable();
-
-    Collection<String> validValues();
-
-    String validValuePattern();
-
-    boolean hasValidValues();
-
-    AttributeValueConverter<T> getConverter();
-
-    T convert(Object value, C object);
-
-    Initialization getInitialization();
+    none,
+    copy,
+    materialize
 }

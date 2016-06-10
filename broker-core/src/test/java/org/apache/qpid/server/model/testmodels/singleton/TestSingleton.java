@@ -18,6 +18,9 @@
  */
 package org.apache.qpid.server.model.testmodels.singleton;
 
+import static org.apache.qpid.server.model.Initialization.copy;
+import static org.apache.qpid.server.model.Initialization.materialize;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +28,7 @@ import java.util.Set;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.DerivedAttribute;
+import org.apache.qpid.server.model.Initialization;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
@@ -110,5 +114,14 @@ public interface TestSingleton<X extends TestSingleton<X>> extends ConfiguredObj
 
     @ManagedStatistic(units = StatisticUnit.ABSOLUTE_TIME, statisticType = StatisticType.POINT_IN_TIME)
     Long getLongStatistic();
+
+    @ManagedAttribute( defaultValue = "${TEST_CONTEXT_DEFAULT}")
+    String getAttrWithDefaultFromContextNoInit();
+
+    @ManagedAttribute( defaultValue = "${TEST_CONTEXT_DEFAULT}", initialization = copy)
+    String getAttrWithDefaultFromContextCopyInit();
+
+    @ManagedAttribute( defaultValue = "${TEST_CONTEXT_DEFAULT}", initialization = materialize)
+    String getAttrWithDefaultFromContextMaterializeInit();
 
 }

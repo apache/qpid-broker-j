@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.model;
 
+import static org.apache.qpid.server.model.Initialization.none;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -41,6 +43,7 @@ public @interface ManagedAttribute
     String secureValueFilter() default "";
     /** If true, the model attribute value cannot be mutated after construction. */
     boolean immutable() default false;
+    Initialization initialization() default none;
 
     boolean updateAttributeDespiteUnchangedValue() default false;
 }

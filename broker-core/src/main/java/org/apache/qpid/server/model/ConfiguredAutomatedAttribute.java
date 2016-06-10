@@ -175,6 +175,12 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
         return _annotation.oversizedAltText();
     }
 
+    @Override
+    public Initialization getInitialization()
+    {
+        return _annotation.initialization();
+    }
+
     public String getDescription()
     {
         return _annotation.description();

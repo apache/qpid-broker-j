@@ -763,16 +763,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             {
                 if (_dynamicState.compareAndSet(DynamicState.UNINIT, DynamicState.OPENED))
                 {
-                    final AuthenticatedPrincipal currentUser = SecurityManager.getCurrentUser();
-                    if (currentUser != null)
-                    {
-                        String currentUserName = currentUser.getName();
-                        _attributes.put(LAST_UPDATED_BY, currentUserName);
-                        _attributes.put(CREATED_BY, currentUserName);
-                    }
-                    final Date currentTime = new Date();
-                    _attributes.put(LAST_UPDATED_TIME, currentTime);
-                    _attributes.put(CREATED_TIME, currentTime);
+                    initializeAttributes();
 
                     CreateExceptionHandler createExceptionHandler = new CreateExceptionHandler();
                     try
@@ -824,6 +815,50 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             }
         });
 
+    }
+
+    private void initializeAttributes()
+    {
+        final AuthenticatedPrincipal currentUser = SecurityManager.getCurrentUser();
+        if (currentUser != null)
+        {
+            String currentUserName = currentUser.getName();
+            _attributes.put(LAST_UPDATED_BY, currentUserName);
+            _attributes.put(CREATED_BY, currentUserName);
+        }
+
+        final Date currentTime = new Date();
+        _attributes.put(LAST_UPDATED_TIME, currentTime);
+        _attributes.put(CREATED_TIME, currentTime);
+
+        ConfiguredObject<?> proxyForInitialization = null;
+        for(ConfiguredObjectAttribute<?,?> attr : _attributeTypes.values())
+        {
+            if(!attr.isDerived())
+            {
+                ConfiguredSettableAttribute autoAttr = (ConfiguredSettableAttribute)attr;
+                final boolean isPresent = _attributes.containsKey(attr.getName());
+                final boolean hasDefault = !"".equals(autoAttr.defaultValue());
+                if(!isPresent && hasDefault)
+                {
+                    switch(autoAttr.getInitialization())
+                    {
+                        case copy:
+                            _attributes.put(autoAttr.getName(), autoAttr.defaultValue());
+                            break;
+                        case materialize:
+
+                            if(proxyForInitialization == null)
+                            {
+                                proxyForInitialization = createProxyForInitialization(_attributes);
+                            }
+                            _attributes.put(autoAttr.getName(), autoAttr.convert(autoAttr.defaultValue(),
+                                                                                 proxyForInitialization));
+                            break;
+                    }
+                }
+            }
+        }
     }
 
     protected void validateOnCreate()
@@ -2614,6 +2649,13 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                             new AttributeGettingHandler(attributes, _attributeTypes, this));
     }
 
+    private ConfiguredObject<?> createProxyForInitialization(final Map<String, Object> attributes)
+    {
+        return (ConfiguredObject<?>) Proxy.newProxyInstance(getClass().getClassLoader(),
+                                                            new Class<?>[]{_bestFitInterface},
+                                                            new AttributeInitializationInvocationHandler(attributes, _attributeTypes, this));
+    }
+
     private ConfiguredObject<?> createProxyForAuthorisation(final Class<? extends ConfiguredObject> category,
                                                             final Map<String, Object> attributes,
                                                             final ConfiguredObject<?> parent,
@@ -2999,6 +3041,35 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         protected Class<? extends ConfiguredObject> getCategoryClass()
         {
             return _configuredObject.getCategoryClass();
+        }
+
+        ConfiguredObject<?> getConfiguredObject()
+        {
+            return _configuredObject;
+        }
+    }
+
+    private static class AttributeInitializationInvocationHandler extends AttributeGettingHandler
+    {
+
+        AttributeInitializationInvocationHandler(final Map<String, Object> modifiedAttributes,
+                                                 final Map<String, ConfiguredObjectAttribute<?, ?>> attributeTypes,
+                                                 final ConfiguredObject<?> configuredObject)
+        {
+            super(modifiedAttributes, attributeTypes, configuredObject);
+        }
+
+        @Override
+        public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable
+        {
+            if (Arrays.asList("getModel", "getCategoryClass", "getParent").contains(method.getName()))
+            {
+                return method.invoke(getConfiguredObject(), args);
+            }
+            else
+            {
+                return super.invoke(proxy, method, args);
+            }
         }
     }
 

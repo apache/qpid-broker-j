@@ -83,6 +83,15 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     @ManagedAttributeField
     private Date _dateValue;
 
+    @ManagedAttributeField
+    private String _attrWithDefaultFromContextNoInit;
+
+    @ManagedAttributeField
+    private String _attrWithDefaultFromContextCopyInit;
+
+    @ManagedAttributeField
+    private String _attrWithDefaultFromContextMaterializeInit;
+
     @ManagedObjectFactoryConstructor
     public TestSingletonImpl(final Map<String, Object> attributes)
     {
@@ -205,5 +214,23 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     public Long getLongStatistic()
     {
         return System.currentTimeMillis();
+    }
+
+    @Override
+    public String getAttrWithDefaultFromContextNoInit()
+    {
+        return _attrWithDefaultFromContextNoInit;
+    }
+
+    @Override
+    public String getAttrWithDefaultFromContextCopyInit()
+    {
+        return _attrWithDefaultFromContextCopyInit;
+    }
+
+    @Override
+    public String getAttrWithDefaultFromContextMaterializeInit()
+    {
+        return _attrWithDefaultFromContextMaterializeInit;
     }
 }

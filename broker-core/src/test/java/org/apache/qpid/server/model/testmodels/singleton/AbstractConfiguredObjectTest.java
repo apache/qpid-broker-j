@@ -142,6 +142,53 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(TestSingleton.DEFAULTED_VALUE_DEFAULT, object.getDefaultedValue());
     }
 
+    public void testDefaultInitialization()
+    {
+        TestSingleton object =
+                _model.getObjectFactory().create(TestSingleton.class,
+                                                 Collections.<String, Object>singletonMap(ConfiguredObject.NAME,
+                                                                                          "testDefaultInitialization")
+                                                );
+        assertEquals(object.getAttrWithDefaultFromContextNoInit(), TestSingleton.testGlobalDefault);
+        assertEquals(object.getAttrWithDefaultFromContextCopyInit(), TestSingleton.testGlobalDefault);
+        assertEquals(object.getAttrWithDefaultFromContextMaterializeInit(), TestSingleton.testGlobalDefault);
+
+        assertFalse(object.getActualAttributes().containsKey("attrWithDefaultFromContextNoInit"));
+        assertEquals("${"+TestSingleton.TEST_CONTEXT_DEFAULT+"}",object.getActualAttributes().get("attrWithDefaultFromContextCopyInit"));
+        assertEquals(TestSingleton.testGlobalDefault,object.getActualAttributes().get("attrWithDefaultFromContextMaterializeInit"));
+
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(ConfiguredObject.NAME, "testDefaultInitialization2");
+        attributes.put(ConfiguredObject.CONTEXT, Collections.singletonMap(TestSingleton.TEST_CONTEXT_DEFAULT, "foo"));
+        object = _model.getObjectFactory().create(TestSingleton.class,
+                                         attributes
+                                        );
+        assertEquals("foo", object.getAttrWithDefaultFromContextNoInit());
+        assertEquals("foo", object.getAttrWithDefaultFromContextCopyInit());
+        assertEquals("foo", object.getAttrWithDefaultFromContextMaterializeInit());
+
+        assertFalse(object.getActualAttributes().containsKey("attrWithDefaultFromContextNoInit"));
+        assertEquals("${"+TestSingleton.TEST_CONTEXT_DEFAULT+"}",object.getActualAttributes().get("attrWithDefaultFromContextCopyInit"));
+        assertEquals("foo",object.getActualAttributes().get("attrWithDefaultFromContextMaterializeInit"));
+
+
+        setTestSystemProperty(TestSingleton.TEST_CONTEXT_DEFAULT, "bar");
+        object = _model.getObjectFactory().create(TestSingleton.class,
+                                        Collections.<String, Object>singletonMap(ConfiguredObject.NAME,
+                                                                                 "testDefaultInitialization3")
+                                       );
+
+        assertEquals("bar", object.getAttrWithDefaultFromContextNoInit());
+        assertEquals("bar", object.getAttrWithDefaultFromContextCopyInit());
+        assertEquals("bar", object.getAttrWithDefaultFromContextMaterializeInit());
+
+        assertFalse(object.getActualAttributes().containsKey("attrWithDefaultFromContextNoInit"));
+        assertEquals("${"+TestSingleton.TEST_CONTEXT_DEFAULT+"}",object.getActualAttributes().get("attrWithDefaultFromContextCopyInit"));
+        assertEquals("bar",object.getActualAttributes().get("attrWithDefaultFromContextMaterializeInit"));
+
+    }
+
     public void testEnumAttributeValueFromString()
     {
         final String objectName = "myName";

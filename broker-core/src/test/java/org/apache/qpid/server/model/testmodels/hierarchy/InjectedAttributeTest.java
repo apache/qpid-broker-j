@@ -127,7 +127,7 @@ public class InjectedAttributeTest extends QpidTestCase
                                                                              "",
                                                                              "",
                                                                              null,
-                                                                             "", validator);
+                                                                             "", validator, Initialization.none);
 
         TestModel model = new TestModel(null, new TestInjector(attrInjector));
 
@@ -175,7 +175,7 @@ public class InjectedAttributeTest extends QpidTestCase
                                                                              "",
                                                                              "",
                                                                              new String[] { "42", "49" },
-                                                                             "", validator);
+                                                                             "", validator, Initialization.none);
 
         TestModel model = new TestModel(null, new TestInjector(attrInjector));
 
@@ -203,19 +203,19 @@ public class InjectedAttributeTest extends QpidTestCase
     {
         final ConfiguredSettableInjectedAttribute<?, ?> attribute =
                 new ConfiguredSettableInjectedAttribute<TestCar<?>, Colour>("trimColour",
-                                                                             Colour.class,
-                                                                             Colour.class,
-                                                                             Colour.BLACK.name(),
-                                                                             false,
-                                                                             true,
-                                                                             false,
-                                                                             "",
-                                                                             false,
-                                                                             "",
-                                                                             "",
-                                                                             null,
-                                                                             "",
-                                                                             null);
+                                                                            Colour.class,
+                                                                            Colour.class,
+                                                                            Colour.BLACK.name(),
+                                                                            false,
+                                                                            true,
+                                                                            false,
+                                                                            "",
+                                                                            false,
+                                                                            "",
+                                                                            "",
+                                                                            null,
+                                                                            "",
+                                                                            null, Initialization.none);
 
         assertEquals("The attribute's valid values should match the set of the enum",
                      Lists.newArrayList("BLACK", "RED", "BLUE", "GREY"),
@@ -238,7 +238,7 @@ public class InjectedAttributeTest extends QpidTestCase
                                                                             "",
                                                                             new String[] {Colour.GREY.name(), Colour.BLACK.name()},
                                                                             "",
-                                                                            null);
+                                                                            null, Initialization.none);
 
         assertEquals("The attribute's valid values should match the restricted set defined on the attribute itself",
                      Lists.newArrayList("GREY", "BLACK"),

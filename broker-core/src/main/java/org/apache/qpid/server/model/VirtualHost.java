@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.model;
 
+import static org.apache.qpid.server.model.Initialization.materialize;
+
 import java.security.AccessControlContext;
 import java.security.AccessControlException;
 import java.security.Principal;
@@ -81,7 +83,7 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     public static final boolean DEFAULT_DEAD_LETTER_QUEUE_ENABLED = false;
     String DEFAULT_DLE_NAME_SUFFIX = "_DLE";
 
-    @ManagedAttribute( defaultValue = "${queue.deadLetterQueueEnabled}")
+    @ManagedAttribute( defaultValue = "${queue.deadLetterQueueEnabled}", initialization = materialize)
     boolean isQueue_deadLetterQueueEnabled();
 
     @ManagedContextDefault( name = "virtualhost.housekeepingCheckPeriod")
