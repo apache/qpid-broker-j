@@ -64,11 +64,11 @@ public class IoNetworkTransport
     {
 
         final Socket socket;
-        if("tcp".equalsIgnoreCase(settings.getProtocol()))
+        if("tcp".equalsIgnoreCase(settings.getTransport()))
         {
             socket = connectTcp(settings);
         }
-        else if("socket".equalsIgnoreCase(settings.getProtocol()))
+        else if("socket".equalsIgnoreCase(settings.getTransport()))
         {
             socket = _registeredSockets.remove(settings.getHost());
             if(socket == null)
@@ -78,7 +78,7 @@ public class IoNetworkTransport
         }
         else
         {
-            throw new TransportException("Unknown transport '"+settings.getProtocol()+"'");
+            throw new TransportException("Unknown transport '" + settings.getTransport() + "'");
         }
 
         int sendBufferSize = settings.getWriteBufferSize();

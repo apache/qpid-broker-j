@@ -461,6 +461,7 @@ public class BrokerDetails implements Serializable
 
         conSettings.setHost(getHost());
         conSettings.setPort(getPort());
+        conSettings.setTransport(getTransport());
 
         // ------------ sasl options ---------------
         if (getProperty(BrokerDetails.OPTIONS_SASL_MECHS) != null)

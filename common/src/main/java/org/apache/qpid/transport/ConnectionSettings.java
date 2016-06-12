@@ -76,7 +76,7 @@ public class ConnectionSettings
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private String protocol = "tcp";
+    private String _transport = "tcp";
     private String host = "localhost";
     private String vhost;
     private String username;
@@ -194,14 +194,14 @@ public class ConnectionSettings
         return this.heartbeatTimeoutFactor;
     }
 
-    public String getProtocol()
+    public String getTransport()
     {
-        return protocol;
+        return _transport;
     }
 
-    public void setProtocol(String protocol)
+    public void setTransport(String transport)
     {
-        this.protocol = protocol;
+        _transport = transport;
     }
 
     public String getHost()
