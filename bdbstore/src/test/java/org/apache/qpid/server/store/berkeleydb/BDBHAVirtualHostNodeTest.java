@@ -543,7 +543,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         nonMasterNode.setAttributes(Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.PERMITTED_NODES, amendedPermittedNodes));
     }
 
-    public void testIntruderProtection() throws Exception
+    public void testNodeCannotStartWithIntruder() throws Exception
     {
         int nodePortNumber = _portHelper.getNextAvailable();
         int intruderPortNumber = _portHelper.getNextAvailable();
@@ -552,13 +552,8 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         String groupName = "group";
         String nodeName = "node";
 
-        Map<String, Object> node1Attributes = _helper.createNodeAttributes(nodeName, groupName, helperAddress, helperAddress, nodeName, nodePortNumber, intruderPortNumber);
+        Map<String, Object> node1Attributes = _helper.createNodeAttributes(nodeName, groupName, helperAddress, helperAddress, nodeName, nodePortNumber);
         BDBHAVirtualHostNode<?> node = _helper.createAndStartHaVHN(node1Attributes);
-
-        Map<String, Object> intruderAttributes = _helper.createNodeAttributes("intruder", groupName, "localhost:" + intruderPortNumber, helperAddress, nodeName);
-        intruderAttributes.put(BDBHAVirtualHostNode.PRIORITY, 0);
-        BDBHAVirtualHostNode<?> intruder = _helper.createAndStartHaVHN(intruderAttributes);
-
         final CountDownLatch stopLatch = new CountDownLatch(1);
         ConfigurationChangeListener listener = new NoopConfigurationChangeListener()
         {
@@ -573,11 +568,37 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         };
         node.addChangeListener(listener);
 
-        List<String> permittedNodes = new ArrayList<String>();
-        permittedNodes.add(helperAddress);
-        node.setAttributes(Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.PERMITTED_NODES, permittedNodes));
+        File environmentPathFile = new File(_helper.getMessageStorePath() + File.separator + "intruder");
+        Durability durability = Durability.parse((String) node1Attributes.get(BDBHAVirtualHostNode.DURABILITY));
+        joinIntruder(intruderPortNumber, "intruder", groupName, helperAddress, durability, environmentPathFile);
 
         assertTrue("Intruder protection was not triggered during expected timeout", stopLatch.await(10, TimeUnit.SECONDS));
+
+        final CountDownLatch stateChangeLatch = new CountDownLatch(1);
+        final CountDownLatch roleChangeLatch = new CountDownLatch(1);
+        node.addChangeListener(new NoopConfigurationChangeListener()
+        {
+            @Override
+            public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
+            {
+                if (newState == State.ERRORED)
+                {
+                    stateChangeLatch.countDown();
+                }
+            }
+
+            @Override
+            public void attributeSet(final ConfiguredObject<?> object,
+                                     final String attributeName,
+                                     final Object oldAttributeValue,
+                                     final Object newAttributeValue)
+            {
+                if (BDBHAVirtualHostNode.ROLE.equals(attributeName) && NodeRole.DETACHED.equals(NodeRole.DETACHED))
+                {
+                    roleChangeLatch.countDown();
+                }
+            }
+        });
 
         // Try top re start the ERRORED node and ensure exception is thrown
         try
@@ -587,9 +608,13 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         }
         catch (IllegalStateException ise)
         {
-            assertEquals("Unexpected exception when restarting node post intruder detection", "Intruder node detected: " + "localhost:" + intruderPortNumber, ise.getMessage());
+            assertEquals("Unexpected exception when restarting node post intruder detection",
+                         "Intruder node detected: " + "localhost:" + intruderPortNumber, ise.getMessage());
         }
-        _helper.awaitForAttributeChange(node, AbstractConfiguredObject.STATE, State.ERRORED);
+
+        // verify that intruder detection is triggered after restart and environment is closed
+        assertTrue("Node state was not set to ERRORED", stateChangeLatch.await(10, TimeUnit.SECONDS));
+        assertTrue("Node role was not set to DETACHED", roleChangeLatch.await(10, TimeUnit.SECONDS));
     }
 
     public void testIntruderProtectionInManagementMode() throws Exception
