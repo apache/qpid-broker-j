@@ -65,7 +65,7 @@ public class ExistingSocketTest extends QpidBrokerTestCase
         }
         catch (JMSException e)
         {
-            String expected = String.format("Error creating connection: No socket registered with id 'unknownSock'",
+            String expected = String.format("Error creating connection: No socket registered with id '%s'",
                                             unknownSockName);
             assertEquals(expected, e.getMessage());
         }
