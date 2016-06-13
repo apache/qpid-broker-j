@@ -49,6 +49,12 @@ public class SelectorParserTest extends QpidTestCase
         testPass("prop1 = prop2");
     }
 
+    public void testPropertyInvalid()
+    {
+        testFail("prop1 = prop2 foo AND string = 'Test'");
+    }
+
+
     public void testPropertyNames()
     {
         testPass("$min= TRUE AND _max= FALSE AND Prop_2 = true AND prop$3 = false");

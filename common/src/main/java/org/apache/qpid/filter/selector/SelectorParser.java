@@ -43,7 +43,6 @@ import org.apache.qpid.filter.UnaryExpression;
 public class SelectorParser<E> implements SelectorParserConstants {
     private PropertyExpressionFactory<E> _factory;
 
-
     public SelectorParser()
     {
         this(new StringReader(""));
@@ -81,6 +80,7 @@ public class SelectorParser<E> implements SelectorParserConstants {
   final public BooleanExpression JmsSelector() throws ParseException {
     Expression left=null;
     left = orExpression();
+    jj_consume_token(0);
         {if (true) return asBooleanExpression(left);}
     throw new Error("Missing return statement in function");
   }
@@ -602,6 +602,38 @@ public class SelectorParser<E> implements SelectorParserConstants {
     catch(LookaheadSuccess ls) { return true; }
   }
 
+  private boolean jj_3R_12() {
+    if (jj_scan_token(36)) return true;
+    if (jj_3R_10()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_55() {
+    if (jj_scan_token(IN)) return true;
+    if (jj_scan_token(33)) return true;
+    if (jj_3R_38()) return true;
+    Token xsp;
+    while (true) {
+      xsp = jj_scanpos;
+      if (jj_3R_60()) { jj_scanpos = xsp; break; }
+    }
+    if (jj_scan_token(35)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_47() {
+    if (jj_scan_token(IS)) return true;
+    if (jj_scan_token(NOT)) return true;
+    if (jj_scan_token(NULL)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_13() {
+    if (jj_scan_token(37)) return true;
+    if (jj_3R_10()) return true;
+    return false;
+  }
+
   private boolean jj_3R_33() {
     if (jj_scan_token(NULL)) return true;
     return false;
@@ -1056,38 +1088,6 @@ public class SelectorParser<E> implements SelectorParserConstants {
 
   private boolean jj_3R_14() {
     if (jj_scan_token(NOT)) return true;
-    if (jj_3R_10()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_12() {
-    if (jj_scan_token(36)) return true;
-    if (jj_3R_10()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_55() {
-    if (jj_scan_token(IN)) return true;
-    if (jj_scan_token(33)) return true;
-    if (jj_3R_38()) return true;
-    Token xsp;
-    while (true) {
-      xsp = jj_scanpos;
-      if (jj_3R_60()) { jj_scanpos = xsp; break; }
-    }
-    if (jj_scan_token(35)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_47() {
-    if (jj_scan_token(IS)) return true;
-    if (jj_scan_token(NOT)) return true;
-    if (jj_scan_token(NULL)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_13() {
-    if (jj_scan_token(37)) return true;
     if (jj_3R_10()) return true;
     return false;
   }
