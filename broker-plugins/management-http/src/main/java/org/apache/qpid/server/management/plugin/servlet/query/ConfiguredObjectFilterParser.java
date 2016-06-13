@@ -100,6 +100,7 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
   final public BooleanExpression filter() throws ParseException {
     Expression left=null;
     left = orExpression();
+    jj_consume_token(0);
         {if (true) return asBooleanExpression(left);}
     throw new Error("Missing return statement in function");
   }
@@ -683,6 +684,7 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
       element = selectClauseElement();
                                               returnVal.add( element );
     }
+    jj_consume_token(0);
         {if (true) return returnVal;}
     throw new Error("Missing return statement in function");
   }
@@ -725,6 +727,7 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
       element = orderByClauseElement();
                                                returnVal.add( element );
     }
+    jj_consume_token(0);
         {if (true) return returnVal;}
     throw new Error("Missing return statement in function");
   }

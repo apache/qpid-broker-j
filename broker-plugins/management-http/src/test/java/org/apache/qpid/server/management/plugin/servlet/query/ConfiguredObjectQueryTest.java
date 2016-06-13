@@ -39,6 +39,7 @@ import javax.xml.bind.DatatypeConverter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import org.apache.qpid.filter.OrderByExpression;
 import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -83,6 +84,41 @@ public class ConfiguredObjectQueryTest extends QpidTestCase
 
         List<Object> row = results.iterator().next();
         assertEquals("Unexpected row", Lists.newArrayList(objectUuid, objectName), row);
+    }
+
+    public void testArithmeticStatementInOrderBy() throws Exception
+    {
+        final List<OrderByExpression> orderByExpressions;
+        String orderByClause = "a + b";
+        ConfiguredObjectFilterParser parser = new ConfiguredObjectFilterParser();
+        parser.setConfiguredObjectExpressionFactory(new ConfiguredObjectExpressionFactory());
+        try
+        {
+            orderByExpressions = parser.parseOrderBy(orderByClause);
+            assertEquals(1, orderByExpressions.size());
+        }
+        catch (ParseException | TokenMgrError e)
+        {
+            throw new SelectorParsingException("Unable to parse orderBy clause", e);
+        }
+    }
+
+
+    public void testInvalidStatementInOrderBy() throws Exception
+    {
+        final List<OrderByExpression> orderByExpressions;
+        String orderByClause = "a + b foo";
+        ConfiguredObjectFilterParser parser = new ConfiguredObjectFilterParser();
+        parser.setConfiguredObjectExpressionFactory(new ConfiguredObjectExpressionFactory());
+        try
+        {
+            orderByExpressions = parser.parseOrderBy(orderByClause);
+            fail("Invalid expression was parsed without exception");
+        }
+        catch (ParseException | TokenMgrError e)
+        {
+            // pass
+        }
     }
 
     public void testNoClauses_TwoResult() throws Exception

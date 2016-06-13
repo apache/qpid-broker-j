@@ -215,7 +215,7 @@ BooleanExpression filter() :
 {
     (
         left = orExpression()
-    )
+    ) <EOF>
     {
         return asBooleanExpression(left);
     }
@@ -702,7 +702,7 @@ List<Map<String, Expression>> selectClause() :
 }
 {
     ( element = selectClauseElement() { returnVal.add( element ); }
-    ) ( "," element = selectClauseElement() { returnVal.add( element ); } )*
+    ) ( "," element = selectClauseElement() { returnVal.add( element ); } )*  <EOF>
     {
         return returnVal;
     }
@@ -733,7 +733,7 @@ List<OrderByExpression> orderByClause() :
 }
 {
     ( element = orderByClauseElement() { returnVal.add( element ); }
-    ) ( "," element = orderByClauseElement() { returnVal.add( element ); } )*
+    ) ( "," element = orderByClauseElement() { returnVal.add( element ); } )*  <EOF>
     {
         return returnVal;
     }
