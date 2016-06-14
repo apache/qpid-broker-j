@@ -50,7 +50,6 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
     static final String UTF8 = StandardCharsets.UTF_8.name();
 
     private static final String TEST_ENDPOINT_HOST = "localhost";
-    static final int TEST_ENDPOINT_PORT = 38888;
     private static final String TEST_AUTHORIZATION_ENDPOINT_PATH = "/testauth";
     private static final String TEST_TOKEN_ENDPOINT_PATH = "/testtoken";
     private static final String TEST_IDENTITY_RESOLVER_ENDPOINT_PATH = "/testidresolver";
@@ -59,11 +58,11 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
     static final String TEST_CLIENT_ID = "testClientId";
     static final String TEST_CLIENT_SECRET = "testClientSecret";
     private static final String TEST_IDENTITY_RESOLVER_TYPE = CloudFoundryOAuth2IdentityResolverService.TYPE;
-    private static final String TEST_AUTHORIZATION_ENDPOINT_URI = String.format("https://%s:%d%s", TEST_ENDPOINT_HOST, TEST_ENDPOINT_PORT, TEST_AUTHORIZATION_ENDPOINT_PATH);
-    private static final String TEST_TOKEN_ENDPOINT_URI = String.format("https://%s:%d%s", TEST_ENDPOINT_HOST, TEST_ENDPOINT_PORT, TEST_TOKEN_ENDPOINT_PATH);
+    private static final String TEST_AUTHORIZATION_ENDPOINT_URI_PATTERN = "https://%s:%d%s";
+    private static final String TEST_TOKEN_ENDPOINT_URI_PATTERN = "https://%s:%d%s";
     private static final String TEST_AUTHORIZATION_ENDPOINT_NEEDS_AUTH = "true";
-    private static final String TEST_IDENTITY_RESOLVER_ENDPOINT_URI = String.format("https://%s:%d%s", TEST_ENDPOINT_HOST, TEST_ENDPOINT_PORT, TEST_IDENTITY_RESOLVER_ENDPOINT_PATH);
-    private static final String TEST_POST_LOGOUT_URI = String.format("https://%s:%d%s", TEST_ENDPOINT_HOST, TEST_ENDPOINT_PORT, TEST_POST_LOGOUT_PATH);
+    private static final String TEST_IDENTITY_RESOLVER_ENDPOINT_URI_PATTERN = "https://%s:%d%s";
+    private static final String TEST_POST_LOGOUT_URI_PATTERN = "https://%s:%d%s";
     private static final String TEST_SCOPE = "testScope";
     private static final String TEST_TRUST_STORE_NAME = null;
 
@@ -73,15 +72,18 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
     private static final String TEST_INVALID_ACCESS_TOKEN = "invalidAccessToken";
     private static final String TEST_USER_NAME = "testUser";
 
-
     private static final String TEST_REDIRECT_URI = "localhost:23523";
 
     private OAuth2AuthenticationProvider<?> _authProvider;
+    private OAuth2MockEndpointHolder _server;
 
     @Override
     public void setUp() throws Exception
     {
         super.setUp();
+        _server = new OAuth2MockEndpointHolder();
+        _server.start();
+
         Broker broker = BrokerTestHelper.createBrokerMock();
         TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         when(broker.getTaskExecutor()).thenReturn(taskExecutor);
@@ -91,11 +93,27 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         authProviderAttributes.put("clientId", TEST_CLIENT_ID);
         authProviderAttributes.put("clientSecret", TEST_CLIENT_SECRET);
         authProviderAttributes.put("identityResolverType", TEST_IDENTITY_RESOLVER_TYPE);
-        authProviderAttributes.put("authorizationEndpointURI", TEST_AUTHORIZATION_ENDPOINT_URI);
-        authProviderAttributes.put("tokenEndpointURI", TEST_TOKEN_ENDPOINT_URI);
+        authProviderAttributes.put("authorizationEndpointURI",
+                                   String.format(TEST_AUTHORIZATION_ENDPOINT_URI_PATTERN,
+                                                 TEST_ENDPOINT_HOST,
+                                                 _server.getPort(),
+                                                 TEST_AUTHORIZATION_ENDPOINT_PATH));
+        authProviderAttributes.put("tokenEndpointURI",
+                                   String.format(TEST_TOKEN_ENDPOINT_URI_PATTERN,
+                                                 TEST_ENDPOINT_HOST,
+                                                 _server.getPort(),
+                                                 TEST_TOKEN_ENDPOINT_PATH));
         authProviderAttributes.put("tokenEndpointNeedsAuth", TEST_AUTHORIZATION_ENDPOINT_NEEDS_AUTH);
-        authProviderAttributes.put("identityResolverEndpointURI", TEST_IDENTITY_RESOLVER_ENDPOINT_URI);
-        authProviderAttributes.put("postLogoutURI", TEST_POST_LOGOUT_URI);
+        authProviderAttributes.put("identityResolverEndpointURI",
+                                   String.format(TEST_IDENTITY_RESOLVER_ENDPOINT_URI_PATTERN,
+                                                 TEST_ENDPOINT_HOST,
+                                                 _server.getPort(),
+                                                 TEST_IDENTITY_RESOLVER_ENDPOINT_PATH));
+        authProviderAttributes.put("postLogoutURI",
+                                   String.format(TEST_POST_LOGOUT_URI_PATTERN,
+                                                 TEST_ENDPOINT_HOST,
+                                                 _server.getPort(),
+                                                 TEST_POST_LOGOUT_PATH));
         authProviderAttributes.put("scope", TEST_SCOPE);
         authProviderAttributes.put("trustStore", TEST_TRUST_STORE_NAME);
 
@@ -111,6 +129,22 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         HttpsURLConnection.setDefaultHostnameVerifier(new BlindHostnameVerifier());
     }
 
+    @Override
+    public void tearDown() throws Exception
+    {
+        try
+        {
+            if (_server != null)
+            {
+                _server.stop();
+            }
+        }
+        finally
+        {
+            super.tearDown();
+        }
+    }
+
     public void testGetSecureOnlyMechanisms() throws Exception
     {
         assertEquals("OAuth2 should be a secure only mechanism",
@@ -119,22 +153,13 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
 
     public void testAuthenticateViaSasl() throws Exception
     {
-        OAuth2MockEndpointHolder
-                server = new OAuth2MockEndpointHolder(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
-                                                                               createMockIdentityResolverEndpoint()));
-        try
-        {
-            server.start();
-            SaslServer saslServer = _authProvider.createSaslServer(OAuth2SaslServer.MECHANISM, TEST_ENDPOINT_HOST, null);
-            AuthenticationResult authenticationResult = _authProvider.authenticate(saslServer, ("auth=Bearer "
-                                                                                                + TEST_VALID_ACCESS_TOKEN
-                                                                                                + "\1\1").getBytes(UTF8));
-            assertSuccess(authenticationResult);
-        }
-        finally
-        {
-            server.stop();
-        }
+        _server.setEndpoints(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
+                                                      createMockIdentityResolverEndpoint()));
+        SaslServer saslServer = _authProvider.createSaslServer(OAuth2SaslServer.MECHANISM, TEST_ENDPOINT_HOST, null);
+        AuthenticationResult authenticationResult = _authProvider.authenticate(saslServer, ("auth=Bearer "
+                                                                                            + TEST_VALID_ACCESS_TOKEN
+                                                                                            + "\1\1").getBytes(UTF8));
+        assertSuccess(authenticationResult);
     }
 
     public void testFailAuthenticateViaSasl() throws Exception
@@ -142,22 +167,14 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         OAuth2MockEndpoint mockIdentityResolverEndpoint = createMockIdentityResolverEndpoint();
         mockIdentityResolverEndpoint.putExpectedParameter("token", TEST_INVALID_ACCESS_TOKEN);
         mockIdentityResolverEndpoint.setResponse(400, "{\"error\":\"invalid_token\"}");
-        OAuth2MockEndpointHolder
-                server = new OAuth2MockEndpointHolder(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
-                                                                               mockIdentityResolverEndpoint));
-        try
-        {
-            server.start();
-            SaslServer saslServer = _authProvider.createSaslServer(OAuth2SaslServer.MECHANISM, TEST_ENDPOINT_HOST, null);
-            AuthenticationResult authenticationResult = _authProvider.authenticate(saslServer, ("auth=Bearer "
-                                                                                                + TEST_INVALID_ACCESS_TOKEN
-                                                                                                + "\1\1").getBytes(UTF8));
-            assertFailure(authenticationResult, "invalid_token");
-        }
-        finally
-        {
-            server.stop();
-        }
+        _server.setEndpoints(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
+                                                      mockIdentityResolverEndpoint));
+
+        SaslServer saslServer = _authProvider.createSaslServer(OAuth2SaslServer.MECHANISM, TEST_ENDPOINT_HOST, null);
+        AuthenticationResult authenticationResult = _authProvider.authenticate(saslServer, ("auth=Bearer "
+                                                                                            + TEST_INVALID_ACCESS_TOKEN
+                                                                                            + "\1\1").getBytes(UTF8));
+        assertFailure(authenticationResult, "invalid_token");
     }
 
     public void testAuthenticateViaAuthorizationCode() throws Exception
@@ -165,18 +182,11 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         Map<String, OAuth2MockEndpoint> mockEndpoints = new HashMap<>();
         mockEndpoints.put(TEST_TOKEN_ENDPOINT_PATH, createMockTokenEndpoint());
         mockEndpoints.put(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH, createMockIdentityResolverEndpoint());
-        OAuth2MockEndpointHolder server = new OAuth2MockEndpointHolder(mockEndpoints);
-        try
-        {
-            server.start();
-            AuthenticationResult authenticationResult =
-                    _authProvider.authenticateViaAuthorizationCode(TEST_VALID_AUTHORIZATION_CODE, TEST_REDIRECT_URI);
-            assertSuccess(authenticationResult);
-        }
-        finally
-        {
-            server.stop();
-        }
+        _server.setEndpoints(mockEndpoints);
+
+        AuthenticationResult authenticationResult =
+                _authProvider.authenticateViaAuthorizationCode(TEST_VALID_AUTHORIZATION_CODE, TEST_REDIRECT_URI);
+        assertSuccess(authenticationResult);
     }
 
     public void testFailAuthenticateViaInvalidAuthorizationCode() throws Exception
@@ -187,35 +197,20 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         mockTokenEndpoint.setResponse(400, "{\"error\":\"invalid_grant\",\"error_description\":\"authorization grant is not valid\"}");
         mockEndpoints.put(TEST_TOKEN_ENDPOINT_PATH, mockTokenEndpoint);
         mockEndpoints.put(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH, createMockIdentityResolverEndpoint());
-        OAuth2MockEndpointHolder server = new OAuth2MockEndpointHolder(mockEndpoints);
-        try
-        {
-            server.start();
-            AuthenticationResult authenticationResult =
-                    _authProvider.authenticateViaAuthorizationCode(TEST_INVALID_AUTHORIZATION_CODE, TEST_REDIRECT_URI);
-            assertFailure(authenticationResult, "invalid_grant");
-        }
-        finally
-        {
-            server.stop();
-        }
+        _server.setEndpoints(mockEndpoints);
+
+        AuthenticationResult authenticationResult =
+                _authProvider.authenticateViaAuthorizationCode(TEST_INVALID_AUTHORIZATION_CODE, TEST_REDIRECT_URI);
+        assertFailure(authenticationResult, "invalid_grant");
     }
 
     public void testAuthenticateViaAccessToken() throws Exception
     {
-        OAuth2MockEndpointHolder
-                server = new OAuth2MockEndpointHolder(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
-                                                                               createMockIdentityResolverEndpoint()));
-        try
-        {
-            server.start();
-            AuthenticationResult authenticationResult = _authProvider.authenticateViaAccessToken(TEST_VALID_ACCESS_TOKEN);
-            assertSuccess(authenticationResult);
-        }
-        finally
-        {
-            server.stop();
-        }
+        _server.setEndpoints(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
+                                                      createMockIdentityResolverEndpoint()));
+
+        AuthenticationResult authenticationResult = _authProvider.authenticateViaAccessToken(TEST_VALID_ACCESS_TOKEN);
+        assertSuccess(authenticationResult);
     }
 
     public void testFailAuthenticateViaInvalidAccessToken() throws Exception
@@ -223,20 +218,12 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         OAuth2MockEndpoint mockIdentityResolverEndpoint = createMockIdentityResolverEndpoint();
         mockIdentityResolverEndpoint.putExpectedParameter("token", TEST_INVALID_ACCESS_TOKEN);
         mockIdentityResolverEndpoint.setResponse(400, "{\"error\":\"invalid_token\"}");
-        OAuth2MockEndpointHolder
-                server = new OAuth2MockEndpointHolder(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
-                                                                               mockIdentityResolverEndpoint));
-        try
-        {
-            server.start();
-            AuthenticationResult authenticationResult =
-                    _authProvider.authenticateViaAccessToken(TEST_INVALID_ACCESS_TOKEN);
-            assertFailure(authenticationResult, "invalid_token");
-        }
-        finally
-        {
-            server.stop();
-        }
+        _server.setEndpoints(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
+                                                      mockIdentityResolverEndpoint));
+
+        AuthenticationResult authenticationResult =
+                _authProvider.authenticateViaAccessToken(TEST_INVALID_ACCESS_TOKEN);
+        assertFailure(authenticationResult, "invalid_token");
     }
 
     private void assertSuccess(final AuthenticationResult authenticationResult)

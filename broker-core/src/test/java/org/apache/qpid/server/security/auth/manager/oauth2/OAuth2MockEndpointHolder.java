@@ -49,9 +49,16 @@ class OAuth2MockEndpointHolder
     private static final String KEYSTORE_RESOURCE = "ssl/test_keystore.jks";
     private final Server _server;
     private final SslSocketConnector _connector;
+    private volatile Map<String, OAuth2MockEndpoint> _endpoints;
+
+    OAuth2MockEndpointHolder()
+    {
+        this(Collections.<String, OAuth2MockEndpoint>emptyMap());
+    }
 
     OAuth2MockEndpointHolder(final Map<String, OAuth2MockEndpoint> endpoints)
     {
+        _endpoints = endpoints;
         final List<String> protocolWhiteList =
                 getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST,
                                         CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST_DEFAULT);
@@ -86,7 +93,8 @@ class OAuth2MockEndpointHolder
         InputStream keyStoreInputStream = getClass().getClassLoader().getResourceAsStream(KEYSTORE_RESOURCE);
         sslContextFactory.setKeyStoreInputStream(keyStoreInputStream);
         _connector = new SslSocketConnector(sslContextFactory);
-        _connector.setPort(OAuth2AuthenticationProviderImplTest.TEST_ENDPOINT_PORT);
+        _connector.setPort(0);
+        _connector.setReuseAddress(true);
         _server.setHandler(new AbstractHandler()
         {
             @Override
@@ -99,7 +107,7 @@ class OAuth2MockEndpointHolder
                 try
                 {
                     final OAuth2MockEndpoint
-                            mockEndpoint = endpoints.get(request.getPathInfo());
+                            mockEndpoint = _endpoints.get(request.getPathInfo());
                     TestCase.assertNotNull(String.format("Could not find mock endpoint for request path '%s'",
                                                          request.getPathInfo()), mockEndpoint);
                     if (mockEndpoint != null)
@@ -131,6 +139,11 @@ class OAuth2MockEndpointHolder
     public int getPort()
     {
         return _connector.getLocalPort();
+    }
+
+    public void setEndpoints(final Map<String, OAuth2MockEndpoint> endpoints)
+    {
+        _endpoints = endpoints;
     }
 
     private List<String> getSystemPropertyAsList(final String propertyName, final String defaultValue)
