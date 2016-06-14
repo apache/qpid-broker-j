@@ -98,7 +98,9 @@ public class RestServlet extends AbstractServlet
 
     private final ConfiguredObjectToMapConverter _objectConverter = new ConfiguredObjectToMapConverter();
     private final boolean _hierarchyInitializationRequired;
+    private volatile RequestInfoParser _requestInfoParser;
 
+    @SuppressWarnings("unused")
     public RestServlet()
     {
         super();
@@ -120,6 +122,7 @@ public class RestServlet extends AbstractServlet
         {
             doInitialization();
         }
+        _requestInfoParser = new RequestInfoParser(_hierarchy);
         Handler.register();
     }
 
@@ -163,21 +166,9 @@ public class RestServlet extends AbstractServlet
         }
     }
 
-    protected Collection<ConfiguredObject<?>> getObjects(HttpServletRequest request)
+    private Collection<ConfiguredObject<?>> getObjects(HttpServletRequest request, RequestInfo requestInfo)
     {
-        String[] pathInfoElements = getPathInfoElements(request);
-        List<String> names = new ArrayList<>();
-        if(pathInfoElements != null)
-        {
-            if(pathInfoElements.length > _hierarchy.length)
-            {
-                throw new IllegalArgumentException("Too many entries in path for REST servlet "
-                        + getServletName() + ". Expected hierarchy length: " + _hierarchy.length
-                        + "; Request hierarchy length: " + pathInfoElements.length
-                        + "; Path Elements: " + Arrays.toString(pathInfoElements));
-            }
-            names.addAll(Arrays.asList(pathInfoElements));
-        }
+        List<String> names = requestInfo.getModelParts();
 
         Collection<ConfiguredObject<?>> parents = new ArrayList<>();
         parents.add(getBroker());
@@ -352,13 +343,15 @@ public class RestServlet extends AbstractServlet
     @Override
     protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
+        RequestInfo requestInfo = _requestInfoParser.parse(request);
+        switch(requestInfo.getType())
         {
-            String[] pathInfoElements = getPathInfoElements(request);
-            if (pathInfoElements != null && pathInfoElements.length == _hierarchy.length + 1)
+            case OPERATION:
             {
-                doOperation(request, response);
+                doOperation(requestInfo, request, response);
+                break;
             }
-            else
+            case MODEL_OBJECT:
             {
                 // TODO - sort special params, everything else should act as a filter
                 String attachmentFilename = request.getParameter(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM);
@@ -369,9 +362,9 @@ public class RestServlet extends AbstractServlet
                     setContentDispositionHeaderIfNecessary(response, attachmentFilename);
                 }
 
-                Collection<ConfiguredObject<?>> allObjects = getObjects(request);
+                Collection<ConfiguredObject<?>> allObjects = getObjects(request, requestInfo);
 
-                if (allObjects == null || allObjects.isEmpty() && isSingleObjectRequest(request))
+                if (allObjects == null || allObjects.isEmpty() && isSingleObjectRequest(requestInfo))
                 {
                     sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
                     return;
@@ -474,20 +467,25 @@ public class RestServlet extends AbstractServlet
 
                 boolean sendCachingHeaders = attachmentFilename == null;
                 sendJsonResponse(extractInitialConfig && output.size() == 1 ? output.get(0) : output,
-                        request,
-                        response,
-                        HttpServletResponse.SC_OK,
-                        sendCachingHeaders);
+                                 request,
+                                 response,
+                                 HttpServletResponse.SC_OK,
+                                 sendCachingHeaders);
+                break;
+            }
+            default:
+            {
+                throw new IllegalStateException(String.format("Unexpected request type '%s' for path '%s'", requestInfo.getType(), request.getPathInfo()));
             }
         }
     }
 
-    private boolean isSingleObjectRequest(HttpServletRequest request)
+    private boolean isSingleObjectRequest(final RequestInfo requestInfo)
     {
         if (_hierarchy.length > 0)
         {
-            String[] pathInfoElements = getPathInfoElements(request);
-            return pathInfoElements != null && pathInfoElements.length == _hierarchy.length;
+            List<String> pathInfoElements = requestInfo.getModelParts();
+            return pathInfoElements.size() == _hierarchy.length;
         }
 
         return false;
@@ -539,14 +537,13 @@ public class RestServlet extends AbstractServlet
     {
         response.setContentType("application/json");
 
-        List<String> names = getParentNamesFromServletPath(request);
-        boolean isFullObjectURL = names.size() == _hierarchy.length;
-        boolean isPostToFullURL = isFullObjectURL && "POST".equalsIgnoreCase(request.getMethod());
-        final String[] pathInfoElements = getPathInfoElements(request);
-        boolean isOperation = pathInfoElements != null && pathInfoElements.length == _hierarchy.length + 1 && isPostToFullURL;
+        RequestInfo requestInfo = _requestInfoParser.parse(request);
+        switch(requestInfo.getType())
         {
-            if(!isOperation)
+            case MODEL_OBJECT:
             {
+                List<String> names = requestInfo.getModelParts();
+                boolean isFullObjectURL = names.size() == _hierarchy.length;
                 Map<String, Object> providedObject = getRequestProvidedObject(request);
                 if (names.isEmpty() && _hierarchy.length == 0)
                 {
@@ -578,7 +575,7 @@ public class RestServlet extends AbstractServlet
                         response.setStatus(HttpServletResponse.SC_OK);
                         return;
                     }
-                    else if (isPostToFullURL)
+                    else if ("POST".equalsIgnoreCase(request.getMethod()))
                     {
                         sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Object with "
                                                                                                    + (providedObject.containsKey(
@@ -596,20 +593,25 @@ public class RestServlet extends AbstractServlet
                 }
                 response.setHeader("Location", requestURL.toString());
                 response.setStatus(HttpServletResponse.SC_CREATED);
+                break;
             }
-            else
+            case OPERATION:
             {
-                doOperation(request, response);
+                doOperation(requestInfo, request, response);
+                break;
+            }
+            default:
+            {
+                throw new IllegalStateException(String.format("Unexpected request type '%s' for path '%s'", requestInfo.getType(), request.getPathInfo()));
             }
         }
     }
 
-    private void doOperation(final HttpServletRequest request,
+    private void doOperation(final RequestInfo requestInfo, final HttpServletRequest request,
                              final HttpServletResponse response) throws IOException, ServletException
     {
         ConfiguredObject<?> subject;
-        final List<String> names = getParentNamesFromServletPath(request);
-        final String[] pathInfoElements = getPathInfoElements(request);
+        final List<String> names = requestInfo.getModelParts();
 
         if (names.isEmpty() && _hierarchy.length == 0)
         {
@@ -636,12 +638,12 @@ public class RestServlet extends AbstractServlet
                                       HttpServletResponse.SC_NOT_FOUND,
                                       getConfiguredClass().getSimpleName()
                                       + " '"
-                                      + pathInfoElements[pathInfoElements.length - 2]
+                                      + names.get(names.size() - 1)
                                       + "' not found.");
                 return;
             }
         }
-        String operationName = pathInfoElements[pathInfoElements.length - 1];
+        String operationName = requestInfo.getOperationName();
         final Map<String, ConfiguredObjectOperation<?>> availableOperations =
                 getBroker().getModel().getTypeRegistry().getOperations(subject.getClass());
         ConfiguredObjectOperation operation = availableOperations.get(operationName);
@@ -865,40 +867,6 @@ public class RestServlet extends AbstractServlet
         return parents;
     }
 
-    private List<String> getParentNamesFromServletPath(HttpServletRequest request)
-    {
-        List<String> names = new ArrayList<>();
-        String[] pathInfoElements = getPathInfoElements(request);
-        if (pathInfoElements != null)
-        {
-            if (!(pathInfoElements.length == _hierarchy.length ||
-                    (_hierarchy.length > 0 && pathInfoElements.length == _hierarchy.length - 1)))
-            {
-                if(pathInfoElements.length == _hierarchy.length + 1)
-                {
-                    names.addAll(Arrays.asList(pathInfoElements).subList(0,pathInfoElements.length-1));
-                }
-                else
-                {
-                    throw new IllegalArgumentException(
-                            "Either parent path or full object path must be specified on object creation."
-                            + " Full object path must be specified on object update. "
-                            + "Found "
-                            + names
-                            + " of size "
-                            + names.size()
-                            + " expecting "
-                            + _hierarchy.length);
-                }
-            }
-            else
-            {
-                names.addAll(Arrays.asList(pathInfoElements));
-            }
-        }
-        return names;
-    }
-
     private Map<String, Object> getRequestProvidedObject(HttpServletRequest request) throws IOException, ServletException
     {
         Map<String, Object> providedObject;
@@ -1044,22 +1012,22 @@ public class RestServlet extends AbstractServlet
     @Override
     protected void doDeleteWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        {
-            Collection<ConfiguredObject<?>> allObjects = getObjects(request);
-            if(allObjects != null)
-            {
-                for (ConfiguredObject o : allObjects)
-                {
-                    o.delete();
-                }
+        RequestInfo requestInfo = _requestInfoParser.parse(request);
 
-                sendCachingHeadersOnResponse(response);
-                response.setStatus(HttpServletResponse.SC_OK);
-            }
-            else
+        Collection<ConfiguredObject<?>> allObjects = getObjects(request, requestInfo);
+        if(allObjects != null)
+        {
+            for (ConfiguredObject o : allObjects)
             {
-                sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
+                o.delete();
             }
+
+            sendCachingHeadersOnResponse(response);
+            response.setStatus(HttpServletResponse.SC_OK);
+        }
+        else
+        {
+            sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
         }
     }
 

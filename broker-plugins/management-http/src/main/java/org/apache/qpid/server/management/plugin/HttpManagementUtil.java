@@ -22,11 +22,14 @@ package org.apache.qpid.server.management.plugin;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -203,5 +206,29 @@ public class HttpManagementUtil
     public static String ensureFilenameIsRfc2183(final String requestedFilename)
     {
         return requestedFilename.replaceAll("[\\P{InBasic_Latin}\\\\:/\\p{Cntrl}]", "");
+    }
+
+    public static List<String> getPathInfoElements(final String servletPath, final String pathInfo)
+    {
+        if (pathInfo == null || pathInfo.length() == 0)
+        {
+            return Collections.emptyList();
+        }
+
+        String[] pathInfoElements = pathInfo.substring(1).split("/");
+        for (int i = 0; i < pathInfoElements.length; i++)
+        {
+            try
+            {
+                // double decode to allow slashes in object names. first decoding happens in request.getPathInfo().
+                pathInfoElements[i] = URLDecoder.decode(pathInfoElements[i], StandardCharsets.UTF_8.name());
+            }
+            catch (UnsupportedEncodingException e)
+            {
+                throw new IllegalArgumentException("Servlet at " + servletPath
+                                                   + " could not decode path element: " + pathInfoElements[i], e);
+            }
+        }
+        return Arrays.asList(pathInfoElements);
     }
 }

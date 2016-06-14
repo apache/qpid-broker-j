@@ -38,6 +38,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.PreferencesProvider;
@@ -52,14 +53,15 @@ public class UserPreferencesServlet extends AbstractServlet
     protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws IOException,
             ServletException
     {
-        String[] pathElements = getPathInfoElements(request);
-        if (pathElements != null && pathElements.length > 1)
+        List<String> pathElements =
+                HttpManagementUtil.getPathInfoElements(request.getServletPath(), request.getPathInfo());
+        if (pathElements.size() > 1)
         {
-            getUserPreferences(pathElements[0], pathElements[1], request, response);
+            getUserPreferences(pathElements.get(0), pathElements.get(1), request, response);
         }
         else
         {
-            getUserList(pathElements, request, response);
+            getUserList(pathElements.toArray(new String[pathElements.size()]), request, response);
         }
     }
 

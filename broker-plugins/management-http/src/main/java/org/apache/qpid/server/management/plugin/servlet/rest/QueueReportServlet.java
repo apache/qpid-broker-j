@@ -21,11 +21,13 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.management.plugin.report.ReportRunner;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
@@ -37,11 +39,12 @@ public class QueueReportServlet extends AbstractServlet
                                                                                                       IOException,
                                                                                                       ServletException
     {
-        String[] pathInfoElements = getPathInfoElements(request);
-        if(pathInfoElements != null && pathInfoElements.length == 3)
+        List<String> pathInfoElements =
+                HttpManagementUtil.getPathInfoElements(request.getServletPath(), request.getPathInfo());
+        if (pathInfoElements.size() == 3)
         {
-            Queue<?> queue = getQueueFromRequest(request);
-            ReportRunner<?> reportRunner = ReportRunner.createRunner(pathInfoElements[2],request.getParameterMap());
+            Queue<?> queue = getQueueFromRequest(pathInfoElements);
+            ReportRunner<?> reportRunner = ReportRunner.createRunner(pathInfoElements.get(2),request.getParameterMap());
             Object output = reportRunner.runReport(queue);
             response.setContentType(reportRunner.getContentType());
             if(reportRunner.isBinaryReport())
@@ -60,15 +63,14 @@ public class QueueReportServlet extends AbstractServlet
 
     }
 
-    private Queue<?> getQueueFromRequest(HttpServletRequest request)
+    private Queue<?> getQueueFromRequest(final List<String> pathInfoElements)
     {
-        String[] pathInfoElements = getPathInfoElements(request);
-        if(pathInfoElements == null || pathInfoElements.length < 2)
+        if (pathInfoElements.size() < 2)
         {
             throw new IllegalArgumentException("Invalid path is specified");
         }
-        String vhostName = pathInfoElements[0];
-        String queueName = pathInfoElements[1];
+        String vhostName = pathInfoElements.get(0);
+        String queueName = pathInfoElements.get(1);
 
         VirtualHost<?> vhost = getBroker().findVirtualHostByName(vhostName);
         if (vhost == null)

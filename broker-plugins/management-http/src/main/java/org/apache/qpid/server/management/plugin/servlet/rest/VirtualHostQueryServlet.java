@@ -41,12 +41,16 @@ public class VirtualHostQueryServlet extends QueryServlet<VirtualHost<?>>
     @Override
     protected VirtualHost<?> getParent(final HttpServletRequest request)
     {
-        final String[] path = getPathInfoElements(request);
+        final List<String>
+                path = HttpManagementUtil.getPathInfoElements(request.getServletPath(), request.getPathInfo());
         final Broker<?> broker = HttpManagementUtil.getBroker(request.getServletContext());
-        VirtualHostNode<?> vhn = broker.getChildByName(VirtualHostNode.class, path[0]);
-        if(vhn != null)
+        if (path.size() == 3)
         {
-            return vhn.getChildByName(VirtualHost.class, path[1]);
+            VirtualHostNode<?> vhn = broker.getChildByName(VirtualHostNode.class, path.get(0));
+            if (vhn != null)
+            {
+                return vhn.getChildByName(VirtualHost.class, path.get(1));
+            }
         }
         return null;
     }
@@ -80,10 +84,11 @@ public class VirtualHostQueryServlet extends QueryServlet<VirtualHost<?>>
 
     protected String getRequestedCategory(final HttpServletRequest request)
     {
-        String[] pathInfoElements = getPathInfoElements(request);
-        if(pathInfoElements.length == 3)
+        List<String> pathInfoElements =
+                HttpManagementUtil.getPathInfoElements(request.getServletPath(), request.getPathInfo());
+        if (pathInfoElements.size() == 3)
         {
-            return pathInfoElements[2];
+            return pathInfoElements.get(2);
         }
         return null;
     }

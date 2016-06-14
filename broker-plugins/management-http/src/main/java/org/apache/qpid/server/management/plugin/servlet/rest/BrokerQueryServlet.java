@@ -59,10 +59,11 @@ public class BrokerQueryServlet extends QueryServlet<Broker<?>>
 
     protected String getRequestedCategory(final HttpServletRequest request)
     {
-        String[] pathInfoElements = getPathInfoElements(request);
-        if(pathInfoElements.length == 1)
+        List<String> pathInfoElements =
+                HttpManagementUtil.getPathInfoElements(request.getServletPath(), request.getPathInfo());
+        if (pathInfoElements.size() == 1)
         {
-            return pathInfoElements[0];
+            return pathInfoElements.get(0);
         }
         return null;
     }

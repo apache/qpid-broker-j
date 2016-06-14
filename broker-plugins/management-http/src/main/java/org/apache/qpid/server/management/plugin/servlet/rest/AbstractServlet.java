@@ -22,9 +22,7 @@ package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
@@ -319,29 +317,6 @@ public abstract class AbstractServlet extends HttpServlet
         response.setHeader("Cache-Control", "no-cache");
         response.setHeader("Pragma", "no-cache");
         response.setDateHeader("Expires", 0);
-    }
-
-    protected String[] getPathInfoElements(HttpServletRequest request)
-    {
-        String pathInfo = request.getPathInfo();
-        if (pathInfo != null && pathInfo.length() > 0)
-        {
-            String[] pathInfoElements = pathInfo.substring(1).split("/");
-            for (int i = 0; i < pathInfoElements.length; i++)
-            {
-                try
-                {
-                    // double decode to allow slashes in object names. first decoding happens in request.getPathInfo().
-                    pathInfoElements[i] = URLDecoder.decode(pathInfoElements[i], "UTF-8");
-                }
-                catch (UnsupportedEncodingException e)
-                {
-                    throw new IllegalArgumentException("REST servlet " + getServletName() + " could not decode path element: " + pathInfoElements[i], e);
-                }
-            }
-            return pathInfoElements;
-        }
-        return null;
     }
 
     protected void writeTypedContent(Content content, HttpServletRequest request, HttpServletResponse response) throws IOException
