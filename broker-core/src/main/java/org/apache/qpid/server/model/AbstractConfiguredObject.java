@@ -2699,12 +2699,26 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         getSecurityManager().authoriseDelete(object);
     }
 
+    private int getAwaitAttainmentTimeout()
+    {
+        int awaitAttainmentTimeout;
+        try
+        {
+            awaitAttainmentTimeout = getContextValue(Integer.class, AWAIT_ATTAINMENT_TIMEOUT);
+        }
+        catch (IllegalArgumentException e)
+        {
+            awaitAttainmentTimeout = DEFAULT_AWAIT_ATTAINMENT_TIMEOUT;
+        }
+        return awaitAttainmentTimeout;
+    }
+
     protected final <C extends ConfiguredObject> C awaitChildClassToAttainState(final Class<C> childClass, final String name)
     {
         ListenableFuture<C> attainedChildByName = getAttainedChildByName(childClass, name);
         try
         {
-            return (C) doSync(attainedChildByName, VirtualHost.DEFAULT_AWAIT_ATTAINMENT_TIMEOUT, TimeUnit.MILLISECONDS);
+            return (C) doSync(attainedChildByName, getAwaitAttainmentTimeout(), TimeUnit.MILLISECONDS);
         }
         catch (TimeoutException e)
         {
@@ -2718,7 +2732,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         ListenableFuture<C> attainedChildByName = getAttainedChildById(childClass, id);
         try
         {
-            return (C) doSync(attainedChildByName, VirtualHost.DEFAULT_AWAIT_ATTAINMENT_TIMEOUT, TimeUnit.MILLISECONDS);
+            return (C) doSync(attainedChildByName, getAwaitAttainmentTimeout(), TimeUnit.MILLISECONDS);
         }
         catch (TimeoutException e)
         {

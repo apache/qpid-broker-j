@@ -145,9 +145,6 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     @ManagedAttribute( defaultValue = "${" + VIRTUALHOST_CONNECTION_THREAD_POOL_NUMBER_OF_SELECTORS + "}")
     int getNumberOfSelectors();
 
-    @ManagedContextDefault( name = "virtualhost.awaitAttainmentTimeout")
-    public static final int DEFAULT_AWAIT_ATTAINMENT_TIMEOUT = 5000;
-
     @DerivedAttribute( persist = true )
     String getModelVersion();
 

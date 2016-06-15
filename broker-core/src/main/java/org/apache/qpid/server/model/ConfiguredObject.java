@@ -57,6 +57,10 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
     String CREATED_TIME = "createdTime";
 
 
+    String AWAIT_ATTAINMENT_TIMEOUT = "awaitAttainmentTimeout";
+    @ManagedContextDefault( name = AWAIT_ATTAINMENT_TIMEOUT)
+    public static final int DEFAULT_AWAIT_ATTAINMENT_TIMEOUT = 5000;
+
     /**
      * Get the universally unique identifier for the object
      *
