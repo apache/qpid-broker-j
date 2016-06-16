@@ -20,17 +20,16 @@
  */
 package org.apache.qpid.server.model;
 
-import java.lang.reflect.Type;
 import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 
 @ManagedObject( creatable = false, category = false )
@@ -266,4 +265,6 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
     void delete();
 
     void decryptSecrets();
+
+    UserPreferences getUserPreferences();
 }

@@ -70,6 +70,8 @@ public class RestTestHelper
     public static final String API_BASE = "/api/latest/";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RestTestHelper.class);
+    public static final String DEFAULT_USERNAME = "webadmin";
+    public static final String DEFAULT_PASSWORD = "webadmin";
 
     private int _httpPort;
 
@@ -95,7 +97,7 @@ public class RestTestHelper
     public RestTestHelper(int httpPort)
     {
         _httpPort = httpPort;
-        setUsernameAndPassword("webadmin", "webadmin");
+        setUsernameAndPassword(DEFAULT_USERNAME, DEFAULT_PASSWORD);
     }
 
     public int getHttpPort()
@@ -256,6 +258,15 @@ public class RestTestHelper
         return providedObject;
     }
 
+    public <T> T readJsonResponse(HttpURLConnection connection, Class<T> valueType) throws IOException
+    {
+        byte[] data = readConnectionInputStream(connection);
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        return mapper.readValue(new ByteArrayInputStream(data), valueType);
+    }
+
     private byte[] readConnectionInputStream(HttpURLConnection connection) throws IOException
     {
         InputStream is = connection.getInputStream();
@@ -273,7 +284,7 @@ public class RestTestHelper
         return baos.toByteArray();
     }
 
-    private void writeJsonRequest(HttpURLConnection connection, Map<String, Object> data) throws IOException
+    private void writeJsonRequest(HttpURLConnection connection, Object data) throws IOException
     {
         ObjectMapper mapper = new ObjectMapper();
         mapper.writeValue(connection.getOutputStream(), data);
@@ -360,6 +371,13 @@ public class RestTestHelper
         connection.connect();
         Map<String, Object> response = readJsonResponseAsMap(connection);
         return response;
+    }
+
+    public <T> T getJson(String path, final Class<T> valueType) throws IOException
+    {
+        HttpURLConnection connection = openManagementConnection(path, "GET");
+        connection.connect();
+        return readJsonResponse(connection, valueType);
     }
 
     public void createNewGroupMember(String groupProviderName, String groupName, String memberName, int responseCode) throws IOException
@@ -517,17 +535,17 @@ public class RestTestHelper
     }
 
 
-    public int submitRequest(String url, String method, Map<String, Object> attributes) throws IOException
+    public int submitRequest(String url, String method, Object data) throws IOException
     {
-        return submitRequest(url, method, attributes, null);
+        return submitRequest(url, method, data, null);
     }
 
-    public int submitRequest(String url, String method, Map<String, Object> attributes, Map<String, List<String>> responseHeadersToCapture) throws IOException
+    public int submitRequest(String url, String method, Object data, Map<String, List<String>> responseHeadersToCapture) throws IOException
     {
         HttpURLConnection connection = openManagementConnection(url, method);
-        if (attributes != null)
+        if (data != null)
         {
-            writeJsonRequest(connection, attributes);
+            writeJsonRequest(connection, data);
         }
         int responseCode = connection.getResponseCode();
         if (responseHeadersToCapture!= null)
@@ -543,10 +561,10 @@ public class RestTestHelper
         return submitRequest(url, method, (byte[])null);
     }
 
-    public void submitRequest(String url, String method, Map<String, Object> attributes, int expectedResponseCode) throws IOException
+    public void submitRequest(String url, String method, Object data, int expectedResponseCode) throws IOException
     {
         Map<String, List<String>> headers = new HashMap<>();
-        int responseCode = submitRequest(url, method, attributes, headers);
+        int responseCode = submitRequest(url, method, data, headers);
         Assert.assertEquals("Unexpected response code from " + method + " " + url , expectedResponseCode, responseCode);
         if (expectedResponseCode == 201)
         {

@@ -44,6 +44,7 @@ import javax.servlet.http.Part;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Joiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +57,7 @@ import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 import org.apache.qpid.util.DataUrlUtils;
@@ -342,10 +344,11 @@ public class RestServlet extends AbstractServlet
     }
 
     @Override
-    protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
     {
         RequestInfo requestInfo = _requestInfoParser.parse(request);
-        switch(requestInfo.getType())
+        switch (requestInfo.getType())
         {
             case OPERATION:
             {
@@ -365,7 +368,7 @@ public class RestServlet extends AbstractServlet
 
                 Collection<ConfiguredObject<?>> allObjects = getObjects(request, requestInfo);
 
-                if (allObjects == null || allObjects.isEmpty() && isSingleObjectRequest(requestInfo))
+                if (allObjects == null || (allObjects.isEmpty() && isSingleObjectRequest(requestInfo)))
                 {
                     sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
                     return;
@@ -465,7 +468,6 @@ public class RestServlet extends AbstractServlet
                                                                            excludeInheritedContext)));
                 }
 
-
                 boolean sendCachingHeaders = attachmentFilename == null;
                 sendJsonResponse(extractInitialConfig && output.size() == 1 ? output.get(0) : output,
                                  request,
@@ -474,12 +476,21 @@ public class RestServlet extends AbstractServlet
                                  sendCachingHeaders);
                 break;
             }
+            case USER_PREFERENCES:
+            {
+                doGetUserPreferences(requestInfo, request, response);
+                break;
+            }
+
             default:
             {
-                throw new IllegalStateException(String.format("Unexpected request type '%s' for path '%s'", requestInfo.getType(), request.getPathInfo()));
+                throw new IllegalStateException(String.format("Unexpected request type '%s' for path '%s'",
+                                                              requestInfo.getType(),
+                                                              request.getPathInfo()));
             }
         }
     }
+
 
     private boolean isSingleObjectRequest(final RequestInfo requestInfo)
     {
@@ -515,13 +526,15 @@ public class RestServlet extends AbstractServlet
     }
 
     @Override
-    protected void doPutWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doPutWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
     {
         performCreateOrUpdate(request, response);
     }
 
     @Override
-    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void service(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException
     {
         try
         {
@@ -534,12 +547,13 @@ public class RestServlet extends AbstractServlet
         }
     }
 
-    private void performCreateOrUpdate(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    private void performCreateOrUpdate(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException
     {
         response.setContentType("application/json");
 
         RequestInfo requestInfo = _requestInfoParser.parse(request);
-        switch(requestInfo.getType())
+        switch (requestInfo.getType())
         {
             case MODEL_OBJECT:
             {
@@ -552,7 +566,6 @@ public class RestServlet extends AbstractServlet
                     response.setStatus(HttpServletResponse.SC_OK);
                     return;
                 }
-
 
                 ConfiguredObject theParent = getBroker();
                 ConfiguredObject[] otherParents = null;
@@ -601,52 +614,85 @@ public class RestServlet extends AbstractServlet
                 doOperation(requestInfo, request, response);
                 break;
             }
+            case USER_PREFERENCES:
+            {
+                doPostOrPutUserPreference(requestInfo, request, response);
+                break;
+            }
             default:
             {
-                throw new IllegalStateException(String.format("Unexpected request type '%s' for path '%s'", requestInfo.getType(), request.getPathInfo()));
+                throw new IllegalStateException(String.format("Unexpected request type '%s' for path '%s'",
+                                                              requestInfo.getType(),
+                                                              request.getPathInfo()));
             }
+        }
+    }
+
+    private void doGetUserPreferences(final RequestInfo requestInfo,
+                                      final HttpServletRequest request,
+                                      final HttpServletResponse response) throws IOException, ServletException
+    {
+        ConfiguredObject<?> target = getTarget(requestInfo, request, response);
+        final UserPreferences userPreferences = target.getUserPreferences();
+
+        Object responseObject = new RestUserPreferenceHandler().handleGET(userPreferences, requestInfo);
+        sendJsonResponse(responseObject, request, response);
+
+    }
+
+    private void doPostOrPutUserPreference(final RequestInfo requestInfo,
+                                           final HttpServletRequest request,
+                                           final HttpServletResponse response) throws IOException, ServletException
+    {
+        ConfiguredObject<?> target = getTarget(requestInfo, request, response);
+
+        final UserPreferences userPreferences = target.getUserPreferences();
+        final RestUserPreferenceHandler restUserPreferenceHandler = new RestUserPreferenceHandler();
+
+        if ("POST".equals(request.getMethod()))
+        {
+            Object providedObject = getRequestProvidedObject(request, Object.class);
+            restUserPreferenceHandler.handlePOST(userPreferences, requestInfo, providedObject);
+        }
+        else if ("PUT".equals(request.getMethod()))
+        {
+            Map<String, Object> providedObject = getRequestProvidedObject(request);
+            final RestUserPreferenceHandler.ActionTaken actionTaken =
+                    restUserPreferenceHandler.handlePUT(userPreferences, requestInfo, providedObject);
+
+            switch(actionTaken)
+            {
+                case CREATED:
+                    response.setHeader("Location", request.getRequestURL().toString());
+                    response.setStatus(HttpServletResponse.SC_CREATED);
+                    break;
+                case UPDATED:
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected action taken value : " + actionTaken);
+            }
+        }
+        else
+        {
+            sendJsonErrorResponse(request,
+                                  response,
+                                  HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                                  "unexpected http method");
         }
     }
 
     private void doOperation(final RequestInfo requestInfo, final HttpServletRequest request,
                              final HttpServletResponse response) throws IOException, ServletException
     {
-        ConfiguredObject<?> subject;
-        final List<String> names = requestInfo.getModelParts();
-
-        if (names.isEmpty() && _hierarchy.length == 0)
+        ConfiguredObject<?> target = getTarget(requestInfo, request, response);
+        if (target == null)
         {
-            subject = getBroker();
-        }
-        else
-        {
-            ConfiguredObject theParent = getBroker();
-            ConfiguredObject[] otherParents = null;
-            Class<? extends ConfiguredObject> objClass = getConfiguredClass();
-            if (_hierarchy.length > 1)
-            {
-                List<ConfiguredObject> parents = findAllObjectParents(names);
-                theParent = parents.remove(0);
-                otherParents = parents.toArray(new ConfiguredObject[parents.size()]);
-            }
-            Map<String, Object> objectName =
-                    Collections.<String, Object>singletonMap("name", names.get(names.size() - 1));
-            subject = findObjectToUpdateInParent(objClass, objectName, theParent, otherParents);
-            if(subject == null)
-            {
-                sendJsonErrorResponse(request,
-                                      response,
-                                      HttpServletResponse.SC_NOT_FOUND,
-                                      getConfiguredClass().getSimpleName()
-                                      + " '"
-                                      + names.get(names.size() - 1)
-                                      + "' not found.");
-                return;
-            }
+            return;
         }
         String operationName = requestInfo.getOperationName();
         final Map<String, ConfiguredObjectOperation<?>> availableOperations =
-                getBroker().getModel().getTypeRegistry().getOperations(subject.getClass());
+                getBroker().getModel().getTypeRegistry().getOperations(target.getClass());
         ConfiguredObjectOperation operation = availableOperations.get(operationName);
         Map<String, Object> operationArguments;
 
@@ -698,7 +744,7 @@ public class RestServlet extends AbstractServlet
                     return;
             }
         }
-        Object returnVal = operation.perform(subject, operationArguments);
+        Object returnVal = operation.perform(target, operationArguments);
         if(returnVal instanceof Content)
         {
             Content content = (Content)returnVal;
@@ -740,7 +786,43 @@ public class RestServlet extends AbstractServlet
             }
             sendJsonResponse(returnVal, request, response);
         }
+    }
 
+    private ConfiguredObject<?> getTarget(final RequestInfo requestInfo,
+                                          final HttpServletRequest request,
+                                          final HttpServletResponse response) throws IOException
+    {
+        final ConfiguredObject<?> target;
+        final List<String> names = requestInfo.getModelParts();
+
+        if (names.isEmpty() && _hierarchy.length == 0)
+        {
+            target = getBroker();
+        }
+        else
+        {
+            ConfiguredObject theParent = getBroker();
+            ConfiguredObject[] otherParents = null;
+            if (_hierarchy.length > 1)
+            {
+                List<ConfiguredObject> parents = findAllObjectParents(names);
+                theParent = parents.remove(0);
+                otherParents = parents.toArray(new ConfiguredObject[parents.size()]);
+            }
+            Class<? extends ConfiguredObject> objClass = getConfiguredClass();
+            Map<String, Object> objectName =
+                    Collections.<String, Object>singletonMap("name", names.get(names.size() - 1));
+            target = findObjectToUpdateInParent(objClass, objectName, theParent, otherParents);
+            if (target == null)
+            {
+
+                final String errorMessage = String.format("%s '%s' not found",
+                                                          getConfiguredClass().getSimpleName(),
+                                                          Joiner.on("/").join(names));
+                throw new NotFoundException(errorMessage);
+            }
+        }
+        return target;
     }
 
     private boolean returnsCollectionOfConfiguredObjects(ConfiguredObjectOperation operation)
@@ -868,23 +950,30 @@ public class RestServlet extends AbstractServlet
         return parents;
     }
 
-    private Map<String, Object> getRequestProvidedObject(HttpServletRequest request) throws IOException, ServletException
+    private Map<String, Object> getRequestProvidedObject(HttpServletRequest request)
+            throws IOException, ServletException
     {
-        Map<String, Object> providedObject;
+        return getRequestProvidedObject(request, LinkedHashMap.class);
+    }
+
+    private <T> T getRequestProvidedObject(HttpServletRequest request, Class<T> expectedClass)
+            throws IOException, ServletException
+    {
+        T providedObject;
 
         ArrayList<String> headers = Collections.list(request.getHeaderNames());
         ObjectMapper mapper = new ObjectMapper();
 
-        if(headers.contains("Content-Type") && request.getHeader("Content-Type").startsWith("multipart/form-data"))
+        if (headers.contains("Content-Type") && request.getHeader("Content-Type").startsWith("multipart/form-data"))
         {
-            providedObject = new HashMap<>();
-            Map<String,String> fileUploads = new HashMap<>();
+            providedObject = (T) new LinkedHashMap<>();
+            Map<String, String> fileUploads = new HashMap<>();
             Collection<Part> parts = request.getParts();
-            for(Part part : parts)
+            for (Part part : parts)
             {
-                if("data".equals(part.getName()) && "application/json".equals(part.getContentType()))
+                if ("data".equals(part.getName()) && "application/json".equals(part.getContentType()))
                 {
-                    providedObject = mapper.readValue(part.getInputStream(), LinkedHashMap.class);
+                    providedObject = (T) mapper.readValue(part.getInputStream(), LinkedHashMap.class);
                 }
                 else
                 {
@@ -894,13 +983,13 @@ public class RestServlet extends AbstractServlet
                     fileUploads.put(part.getName(), inlineURL);
                 }
             }
-            providedObject.putAll(fileUploads);
+            ((Map<String, Object>) providedObject).putAll(fileUploads);
         }
         else
         {
             try
             {
-                providedObject = mapper.readValue(request.getInputStream(), LinkedHashMap.class);
+                providedObject = mapper.readValue(request.getInputStream(), expectedClass);
             }
             catch (JsonParseException e)
             {
@@ -956,7 +1045,8 @@ public class RestServlet extends AbstractServlet
         return true;
     }
 
-    private void setResponseStatus(HttpServletRequest request, HttpServletResponse response, Throwable e) throws IOException
+    private void setResponseStatus(HttpServletRequest request, HttpServletResponse response, Throwable e)
+            throws IOException
     {
         if (e instanceof AccessControlException)
         {
@@ -968,18 +1058,26 @@ public class RestServlet extends AbstractServlet
             int responseCode = HttpServletResponse.SC_BAD_REQUEST;
             String message = e.getMessage();
             if (e instanceof AbstractConfiguredObject.DuplicateIdException
-                    || e instanceof AbstractConfiguredObject.DuplicateNameException
-                    || e instanceof IntegrityViolationException
-                    || e instanceof IllegalStateTransitionException)
+                || e instanceof AbstractConfiguredObject.DuplicateNameException
+                || e instanceof IntegrityViolationException
+                || e instanceof IllegalStateTransitionException)
             {
                 responseCode = HttpServletResponse.SC_CONFLICT;
+            }
+            else if (e instanceof NotFoundException)
+            {
+                if (LOGGER.isTraceEnabled())
+                {
+                    LOGGER.trace(e.getClass().getSimpleName() + " processing request", e);
+                }
+                responseCode = HttpServletResponse.SC_NOT_FOUND;
             }
             else if (e instanceof IllegalConfigurationException || e instanceof IllegalArgumentException)
             {
                 LOGGER.warn(e.getClass().getSimpleName() + " processing request : " + message);
                 Throwable t = e;
                 int maxDepth = 10;
-                while((t = t.getCause())!=null && maxDepth-- != 0)
+                while ((t = t.getCause()) != null && maxDepth-- != 0)
                 {
                     LOGGER.warn("... caused by " + t.getClass().getSimpleName() + "  : " + t.getMessage());
                 }
@@ -999,11 +1097,11 @@ public class RestServlet extends AbstractServlet
                 // This should not happen
                 if (e instanceof RuntimeException)
                 {
-                    throw (RuntimeException)e;
+                    throw (RuntimeException) e;
                 }
                 else if (e instanceof Error)
                 {
-                    throw (Error)e;
+                    throw (Error) e;
                 }
                 else
                 {
@@ -1012,7 +1110,6 @@ public class RestServlet extends AbstractServlet
             }
 
             sendJsonErrorResponse(request, response, responseCode, message);
-
         }
     }
 
@@ -1020,21 +1117,38 @@ public class RestServlet extends AbstractServlet
     protected void doDeleteWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         RequestInfo requestInfo = _requestInfoParser.parse(request);
-
         Collection<ConfiguredObject<?>> allObjects = getObjects(request, requestInfo);
-        if(allObjects != null)
+        if (allObjects == null)
         {
-            for (ConfiguredObject o : allObjects)
+            throw new NotFoundException("Not Found");
+        }
+
+        switch (requestInfo.getType())
+        {
+            case MODEL_OBJECT:
             {
-                o.delete();
+                for (ConfiguredObject o : allObjects)
+                {
+                    o.delete();
+                }
+
+                sendCachingHeadersOnResponse(response);
+                response.setStatus(HttpServletResponse.SC_OK);
+                break;
+            }
+            case USER_PREFERENCES:
+            {
+                for (ConfiguredObject o : allObjects)
+                {
+                    new RestUserPreferenceHandler().handleDELETE(o.getUserPreferences(), requestInfo);
+                }
+                break;
             }
 
-            sendCachingHeadersOnResponse(response);
-            response.setStatus(HttpServletResponse.SC_OK);
-        }
-        else
-        {
-            sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
+            default:
+            {
+                sendJsonErrorResponse(request, response, HttpServletResponse.SC_BAD_REQUEST, "Unsupported delete call");
+            }
         }
     }
 

@@ -29,6 +29,8 @@ import org.apache.qpid.server.model.ConfiguredObject;
 
 public class RequestInfoParser
 {
+    private static final String USER_PREFERENCES = "userpreferences";
+
     private final List<Class<? extends ConfiguredObject>> _hierarchy;
 
     public RequestInfoParser(final Class<? extends ConfiguredObject>... hierarchy)
@@ -62,7 +64,7 @@ public class RequestInfoParser
         else
         {
             throw new IllegalArgumentException(String.format("Unexpected method type '%s' for path '%s%s'",
-                                               method, servletPath, pathInfo));
+                                                             method, servletPath, pathInfo));
         }
     }
 
@@ -70,42 +72,60 @@ public class RequestInfoParser
     {
         if (parts.size() <= _hierarchy.size())
         {
-            return new RequestInfo(RequestInfo.RequestType.MODEL_OBJECT, parts);
+            return RequestInfo.createModelRequestInfo(parts);
         }
-        else
+        else if (parts.size() > _hierarchy.size())
         {
-            String expectedPath = buildExpectedPath(servletPath, _hierarchy);
-            throw new IllegalArgumentException(String.format("Invalid DELETE path '%s%s'. Expected: '%s'",
-                                                             servletPath, pathInfo,
-                                                             expectedPath));
+            if (USER_PREFERENCES.equals(parts.get(_hierarchy.size())))
+            {
+                return RequestInfo.createPreferencesRequestInfo(parts.subList(0, _hierarchy.size()),
+                                                                parts.subList(_hierarchy.size() + 1, parts.size()));
+            }
         }
+        String expectedPath = buildExpectedPath(servletPath, _hierarchy);
+        throw new IllegalArgumentException(String.format(
+                "Invalid DELETE path '%s%s'. Expected: '%s' or '%s/userpreferences[/<preference type>[/<preference name>]]'",
+                servletPath,
+                pathInfo,
+                expectedPath,
+                expectedPath));
     }
 
     private RequestInfo parseGet(final String servletPath, final String pathInfo, final List<String> parts)
     {
         if (parts.size() <= _hierarchy.size())
         {
-            return new RequestInfo(RequestInfo.RequestType.MODEL_OBJECT, parts);
+            return RequestInfo.createModelRequestInfo(parts);
         }
-        else if (parts.size() == _hierarchy.size() + 1)
+        else if (parts.size() > _hierarchy.size())
         {
-            return new RequestInfo(RequestInfo.RequestType.OPERATION, parts.subList(0, _hierarchy.size()),
-                                   parts.get(parts.size() - 1));
+            if (USER_PREFERENCES.equals(parts.get(_hierarchy.size())))
+            {
+                return RequestInfo.createPreferencesRequestInfo(parts.subList(0, _hierarchy.size()),
+                                                                parts.subList(_hierarchy.size() + 1, parts.size()));
+            }
+            else if (parts.size() == _hierarchy.size() + 1)
+            {
+                return RequestInfo.createOperationRequestInfo(parts.subList(0, _hierarchy.size()),
+                                                              parts.get(parts.size() - 1));
+            }
         }
-        else
-        {
-            String expectedPath = buildExpectedPath(servletPath, _hierarchy);
-            throw new IllegalArgumentException(String.format("Invalid GET path '%s%s'. Expected: '%s[/<operation name>]'",
-                                                             servletPath, pathInfo,
-                                                             expectedPath));
-        }
+        String expectedPath = buildExpectedPath(servletPath, _hierarchy);
+        throw new IllegalArgumentException(String.format("Invalid GET path '%s%s'. Expected: '%s[/<operation name>]'",
+                                                         servletPath, pathInfo,
+                                                         expectedPath));
     }
 
     private RequestInfo parsePut(final String servletPath, final String pathInfo, final List<String> parts)
     {
         if (parts.size() == _hierarchy.size() || parts.size() == _hierarchy.size() - 1)
         {
-            return new RequestInfo(RequestInfo.RequestType.MODEL_OBJECT, parts);
+            return RequestInfo.createModelRequestInfo(parts);
+        }
+        else if (parts.size() > _hierarchy.size() && USER_PREFERENCES.equals(parts.get(_hierarchy.size())))
+        {
+            return RequestInfo.createPreferencesRequestInfo(parts.subList(0, _hierarchy.size()),
+                                                            parts.subList(_hierarchy.size() + 1, parts.size()));
         }
         else
         {
@@ -120,23 +140,29 @@ public class RequestInfoParser
     {
         if (parts.size() == _hierarchy.size() || parts.size() == _hierarchy.size() - 1)
         {
-            return new RequestInfo(RequestInfo.RequestType.MODEL_OBJECT, parts);
+            return RequestInfo.createModelRequestInfo(parts);
         }
-        else if (parts.size() == _hierarchy.size() + 1)
+        else if (parts.size() > _hierarchy.size())
         {
-            return new RequestInfo(RequestInfo.RequestType.OPERATION, parts.subList(0, _hierarchy.size()),
-                                   parts.get(parts.size() - 1));
+            if (USER_PREFERENCES.equals(parts.get(_hierarchy.size())))
+            {
+                return RequestInfo.createPreferencesRequestInfo(parts.subList(0, _hierarchy.size()),
+                                                                parts.subList(_hierarchy.size() + 1, parts.size()));
+            }
+            else if (parts.size() == _hierarchy.size() + 1)
+            {
+                return RequestInfo.createOperationRequestInfo(parts.subList(0, _hierarchy.size()),
+                                                              parts.get(parts.size() - 1));
+            }
         }
-        else
-        {
-            String expectedFullPath = buildExpectedPath(servletPath, _hierarchy);
-            String expectedParentPath = buildExpectedPath(servletPath, _hierarchy.subList(0, _hierarchy.size() - 1));
+        String expectedFullPath = buildExpectedPath(servletPath, _hierarchy);
+        String expectedParentPath = buildExpectedPath(servletPath, _hierarchy.subList(0, _hierarchy.size() - 1));
 
-            throw new IllegalArgumentException(String.format("Invalid POST path '%s%s'. Expected: '%s/<operation name>'"
-                                                             + " or '%s'",
-                                                             servletPath, pathInfo,
-                                                             expectedFullPath, expectedParentPath));
-        }
+        throw new IllegalArgumentException(String.format("Invalid POST path '%s%s'. Expected: '%s/<operation name>'"
+                                                         + " or '%s'"
+                                                         + " or '%s/userpreferences[/<preference type>]'",
+                                                         servletPath, pathInfo,
+                                                         expectedFullPath, expectedParentPath, expectedFullPath));
     }
 
     private String buildExpectedPath(final String servletPath, final List<Class<? extends ConfiguredObject>> hierarchy)

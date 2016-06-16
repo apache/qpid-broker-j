@@ -29,7 +29,7 @@ import org.apache.qpid.server.model.adapter.FileSystemPreferencesProvider;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.test.utils.TestFileUtils;
 
-public class PreferencesRestTest extends QpidRestTestCase
+public class LegacyPreferencesRestTest extends QpidRestTestCase
 {
     private File _preferencesProviderFile;
 

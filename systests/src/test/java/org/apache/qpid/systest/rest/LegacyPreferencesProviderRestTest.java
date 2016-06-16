@@ -40,7 +40,7 @@ import org.apache.qpid.server.security.auth.manager.PlainPasswordDatabaseAuthent
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.test.utils.TestFileUtils;
 
-public class PreferencesProviderRestTest extends QpidRestTestCase
+public class LegacyPreferencesProviderRestTest extends QpidRestTestCase
 {
     private Map<String, File> _preferencesProviderFiles;
     private File _authenticationProviderFile;

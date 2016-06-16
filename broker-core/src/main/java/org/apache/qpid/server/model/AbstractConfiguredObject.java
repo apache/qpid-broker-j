@@ -70,6 +70,9 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.model.preferences.Preference;
+import org.apache.qpid.server.model.preferences.UserPreferences;
+import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.encryption.ConfigurationSecretEncrypter;
@@ -101,6 +104,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     }
 
     private ConfigurationSecretEncrypter _encrypter;
+    private final Map<UUID, Preference> _userPreferences = new HashMap<>();
+    private final Map<String, List<Preference>> _userPreferencesByName = new HashMap<>();
 
     private enum DynamicState { UNINIT, OPENED, CLOSED };
     private final AtomicReference<DynamicState> _dynamicState = new AtomicReference<>(DynamicState.UNINIT);
@@ -2871,6 +2876,13 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     {
         return _lastOpenedTime;
     }
+
+    @Override
+    public UserPreferences getUserPreferences()
+    {
+        return new UserPreferencesImpl(this, _userPreferences, _userPreferencesByName);
+    }
+
     //=========================================================================================
 
     static String interpolate(ConfiguredObject<?> object, String value)

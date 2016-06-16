@@ -34,7 +34,7 @@ import org.apache.qpid.systest.rest.QpidRestTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.test.utils.TestFileUtils;
 
-public class UserPreferencesRestACLTest extends QpidRestTestCase
+public class LegacyUserPreferencesRestACLTest extends QpidRestTestCase
 {
 
     private static final String REST_USER_PREFERENCES_BASE_URL = "/service/userpreferences";

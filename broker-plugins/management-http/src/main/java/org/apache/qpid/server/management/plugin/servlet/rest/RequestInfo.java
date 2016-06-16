@@ -27,17 +27,29 @@ public class RequestInfo
     private final RequestType _type;
     private final List<String> _modelParts;
     private final String _operationName;
+    private final List<String> _preferencesParts;
 
-    public RequestInfo(final RequestType type, final List<String> modelParts)
+    public static RequestInfo createModelRequestInfo(final List<String> modelParts)
     {
-        this(type, modelParts, null);
+        return new RequestInfo(RequestType.MODEL_OBJECT, modelParts, null, Collections.<String>emptyList());
     }
 
-    public RequestInfo(final RequestType type, final List<String> modelParts, final String operationName)
+    public static RequestInfo createOperationRequestInfo(final List<String> modelParts, final String operationName)
+    {
+        return new RequestInfo(RequestType.OPERATION, modelParts, operationName, Collections.<String>emptyList());
+    }
+
+    public static RequestInfo createPreferencesRequestInfo(final List<String> modelParts, final List<String> preferencesParts)
+    {
+        return new RequestInfo(RequestType.USER_PREFERENCES, modelParts, null, preferencesParts);
+    }
+
+    private RequestInfo(final RequestType type, final List<String> modelParts, final String operationName, final List<String> preferencesParts)
     {
         _type = type;
         _operationName = operationName;
         _modelParts = Collections.unmodifiableList(modelParts);
+        _preferencesParts = Collections.unmodifiableList(preferencesParts);
     }
 
     public RequestType getType()
@@ -59,8 +71,13 @@ public class RequestInfo
         return _operationName;
     }
 
+    public List<String> getPreferencesParts()
+    {
+        return _preferencesParts;
+    }
+
     enum RequestType
     {
-        OPERATION, MODEL_OBJECT
+        OPERATION, USER_PREFERENCES, MODEL_OBJECT
     }
 }
