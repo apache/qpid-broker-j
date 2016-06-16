@@ -20,8 +20,10 @@
  */
 package org.apache.qpid.server.queue;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
@@ -29,16 +31,19 @@ import org.apache.qpid.server.model.VirtualHost;
 abstract class QueueEntryTransaction implements VirtualHost.TransactionalOperation
 {
     private final Queue _sourceQueue;
-    private final List _messageIds;
+    private final List<Long> _messageIds;
+    private final MessageFilter _filter;
+    private final List<Long> _modifiedMessageIds = new ArrayList<>();
 
-    protected QueueEntryTransaction(Queue sourceQueue, List messageIds)
+    QueueEntryTransaction(Queue sourceQueue, List<Long> messageIds, final MessageFilter filter)
     {
         _sourceQueue = sourceQueue;
-        _messageIds = messageIds;
+        _messageIds = messageIds == null ? null : new ArrayList<>(messageIds);
+        _filter = filter;
     }
 
     @Override
-    public void withinTransaction(final VirtualHost.Transaction txn)
+    public final void withinTransaction(final VirtualHost.Transaction txn)
     {
 
         _sourceQueue.visit(new QueueEntryVisitor()
@@ -50,17 +55,24 @@ abstract class QueueEntryTransaction implements VirtualHost.TransactionalOperati
                 if(message != null)
                 {
                     final long messageId = message.getMessageNumber();
-                    if (_messageIds.remove(messageId) || (messageId <= (long) Integer.MAX_VALUE
-                                                          && _messageIds.remove(Integer.valueOf((int)messageId))))
+                    if ((_messageIds == null || _messageIds.remove(messageId))
+                        && (_filter == null || _filter.matches(entry.asFilterable())))
                     {
                         updateEntry(entry, txn);
+                        _modifiedMessageIds.add(messageId);
                     }
                 }
-                return _messageIds.isEmpty();
+                return _messageIds != null && _messageIds.isEmpty();
             }
         });
     }
 
 
     protected abstract void updateEntry(QueueEntry entry, VirtualHost.Transaction txn);
+
+    @Override
+    public final List<Long> getModifiedMessageIds()
+    {
+        return _modifiedMessageIds;
+    }
 }

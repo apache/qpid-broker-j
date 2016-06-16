@@ -234,6 +234,8 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     interface TransactionalOperation
     {
         void withinTransaction(Transaction txn);
+
+        List<Long> getModifiedMessageIds();
     }
 
     void executeTransaction(TransactionalOperation op);

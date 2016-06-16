@@ -272,15 +272,20 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     long getOldestMessageAge();
 
     @ManagedOperation
-    List<Long> moveMessages(@Param(name = "destination") Queue<?> destination, @Param(name = "messageIds") List<Long> messageIds);
+    List<Long> moveMessages(@Param(name = "destination", description = "The queue to which the messages should be moved") Queue<?> destination,
+                            @Param(name = "messageIds", description = "If provided, only messages in the queue whose (internal) message-id is supplied will be considered for moving") List<Long> messageIds,
+                            @Param(name = "selector", description = "A (JMS) selector - if provided, only messages which match the selector will be considered for moving") String selector);
 
 
     @ManagedOperation
-    List<Long> copyMessages(@Param(name = "destination") Queue<?> destination, @Param(name = "messageIds") List<Long> messageIds);
+    List<Long> copyMessages(@Param(name = "destination", description = "The queue to which the messages should be copied") Queue<?> destination,
+                            @Param(name = "messageIds", description = "If provided, only messages in the queue whose (internal) message-id is supplied will be considered for copying") List<Long> messageIds,
+                            @Param(name = "selector", description = "A (JMS) selector - if provided, only messages which match the selector will be considered for copying")  String selector);
 
 
     @ManagedOperation
-    List<Long> deleteMessages(@Param(name = "messageIds") List<Long> messageIds);
+    List<Long> deleteMessages(@Param(name = "messageIds", description = "If provided, only messages in the queue whose (internal) message-id is supplied will be considered for deletion") List<Long> messageIds,
+                              @Param(name = "selector", description = "A (JMS) selector - if provided, only messages which match the selector will be considered for deletion") String selector);
 
 
     @ManagedOperation

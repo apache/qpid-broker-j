@@ -52,7 +52,11 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.filter.SelectorParsingException;
+import org.apache.qpid.filter.selector.ParseException;
+import org.apache.qpid.filter.selector.TokenMgrError;
 import org.apache.qpid.server.configuration.updater.Task;
+import org.apache.qpid.server.filter.JMSSelectorFilter;
 import org.apache.qpid.server.message.MessageInfo;
 import org.apache.qpid.server.message.MessageInfoImpl;
 import org.apache.qpid.server.model.*;
@@ -3412,48 +3416,55 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public List<Long> moveMessages(Queue<?> destination, List<Long> messageIds)
+    public List<Long> moveMessages(Queue<?> destination, List<Long> messageIds, final String selector)
     {
         // FIXME: added temporary authorization check until we introduce management layer
         // and review current ACL rules to have common rules for all management interfaces
         authorizeMethod("moveMessages");
 
-        List<Long> copy = new ArrayList<>(messageIds);
-        _virtualHost.executeTransaction(new MoveMessagesTransaction(this, copy, destination));
-        List<Long> returnVal = new ArrayList<>(messageIds);
-        returnVal.removeAll(copy);
-        return returnVal;
+        MoveMessagesTransaction transaction = new MoveMessagesTransaction(this, messageIds, destination, parseSelector(selector));
+        _virtualHost.executeTransaction(transaction);
+        return transaction.getModifiedMessageIds();
 
     }
 
+    private JMSSelectorFilter parseSelector(final String selector)
+    {
+        try
+        {
+            return selector == null ? null : new JMSSelectorFilter(selector);
+        }
+        catch (ParseException | SelectorParsingException | TokenMgrError e)
+        {
+            throw new IllegalArgumentException("Cannot parse JMS selector \"" + selector + "\"", e);
+        }
+    }
+
     @Override
-    public List<Long> copyMessages(Queue<?> destination, List<Long> messageIds)
+    public List<Long> copyMessages(Queue<?> destination, List<Long> messageIds, final String selector)
     {
         // FIXME: added temporary authorization check until we introduce management layer
         // and review current ACL rules to have common rules for all management interfaces
         authorizeMethod("copyMessages");
 
-        List<Long> copy = new ArrayList<>(messageIds);
-        _virtualHost.executeTransaction(new CopyMessagesTransaction(this, copy, destination));
-        List<Long> returnVal = new ArrayList<>(messageIds);
-        returnVal.removeAll(copy);
-        return returnVal;
+        CopyMessagesTransaction transaction = new CopyMessagesTransaction(this, messageIds, destination, parseSelector(selector));
+        _virtualHost.executeTransaction(transaction);
+        return transaction.getModifiedMessageIds();
 
     }
 
     @Override
-    public List<Long> deleteMessages(final List<Long> messageIds)
+    public List<Long> deleteMessages(final List<Long> messageIds, final String selector)
     {
 
         // FIXME: added temporary authorization check until we introduce management layer
         // and review current ACL rules to have common rules for all management interfaces
         authorizeMethod("deleteMessages");
 
-        List<Long> copy = new ArrayList<>(messageIds);
-        _virtualHost.executeTransaction(new DeleteMessagesTransaction(this, copy));
-        List<Long> returnVal = new ArrayList<>(messageIds);
-        returnVal.removeAll(copy);
-        return returnVal;
+        DeleteMessagesTransaction transaction = new DeleteMessagesTransaction(this, messageIds, parseSelector(selector));
+        _virtualHost.executeTransaction(transaction);
+
+        return transaction.getModifiedMessageIds();
     }
 
     @Override
