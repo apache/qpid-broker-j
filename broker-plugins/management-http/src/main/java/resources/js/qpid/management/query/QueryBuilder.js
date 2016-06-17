@@ -30,7 +30,8 @@ define(["dojo/_base/declare",
         "dgrid/Selection",
         "dgrid/extensions/Pagination",
         "dgrid/Selector",
-        "dgrid/extensions/ColumnResizer",
+        "dgrid/extensions/ColumnReorder",
+        "dgrid/extensions/ColumnHider",
         "dstore/Memory",
         'dstore/legacy/DstoreAdapter',
         "qpid/management/query/QueryGrid",
@@ -69,7 +70,8 @@ define(["dojo/_base/declare",
               Selection,
               Pagination,
               Selector,
-              ColumnResizer,
+              ColumnReorder,
+              ColumnHider,
               Memory,
               DstoreAdapter,
               QueryGrid)
@@ -168,6 +170,10 @@ define(["dojo/_base/declare",
                     this._resultsGrid.setParentObject(this._scopeModelObjects[scope]);
                     this._resultsGrid.refresh();
                 },
+                getDefaultColumns: function(category)
+                {
+                    return ["id", "name"];
+                },
                 _showModeSwitchWarningIfRequired: function ()
                 {
                     var userPreferences = this.management.userPreferences;
@@ -178,9 +184,10 @@ define(["dojo/_base/declare",
                     {
                         if (!this._switchModeWarningDialog)
                         {
-                            var formattedMessage = "<div>Switching to advanced mode is a one-way street,<br/>"
-                                                   + "switching back from advanced mode to standard mode will<br/>"
-                                                   + "completely reset the query.</div>";
+                            var formattedMessage = "<div>Copying of query settings is only supported on switching from Standard view into Advanced view!<br/>"
+                                                   + "Switching back from Advanced view into Standard view will completely reset the query.<br/><br/>"
+                                                   + "Are you sure you want to switch from Standard view into Advanced view?"
+                                                   "</div>";
                             this._switchModeWarningDialog = new qpid.management.query.MessageDialog({
                                 title: "Warning!",
                                 message: formattedMessage
@@ -228,7 +235,6 @@ define(["dojo/_base/declare",
                 _advancedModeOrderByChanged: function ()
                 {
                     this._resultsGrid.setOrderBy(this.advancedOrderBy.value);
-                    this._resultsGrid.setSort([]);
                 },
                 _toggleSearchButton: function (select)
                 {
@@ -278,14 +284,67 @@ define(["dojo/_base/declare",
                     }
                     this._resultsGrid.setSort(newSort);
                 },
-                _standardModeSelectChanged: function (selectedColumns)
+                _processStandardModeSelectChange : function (selectedColumns)
                 {
                     this._normalizeSorting(selectedColumns);
                     var selectClause = this._buildSelectExpression(selectedColumns);
                     this._setSelectClause(selectClause);
                     this._lastStandardModeSelect = lang.clone(selectedColumns);
                     this._toggleSearchButton(selectClause);
+                },
+                _standardModeSelectChanged: function (selectedColumns)
+                {
+                    this._processStandardModeSelectChange(selectedColumns);
                     this.search();
+                },
+                _standardModeColumnOrderChanged: function(event)
+                {
+                    if (this._standardMode)
+                    {
+                        var columnRow = event.subRow;
+                        var selectedItems = this.standardSelectChooser.get("selectedItems");
+                        var newSelectedItems = [];
+                        for(var i = 0; i < columnRow.length; i++)
+                        {
+                            var field = parseInt(columnRow[i].field) - 1;
+                            newSelectedItems.push(selectedItems[field]);
+                        }
+                        this._processStandardModeSelectChange(newSelectedItems);
+                        this.standardSelectChooser.set("data", {"selected": newSelectedItems});
+                    }
+                    else
+                    {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                },
+                _standardModeColumnStateChanged: function(event)
+                {
+                    if (event.hidden)
+                    {
+                        var checkNode = null;
+                        if (this._resultsGrid._columnHiderCheckboxes && this._resultsGrid._columnHiderCheckboxes[event.column.id])
+                        {
+                            checkNode = this._resultsGrid._columnHiderCheckboxes[event.column.id].parentNode;
+                            checkNode.style.display = 'none';
+                        }
+                        try
+                        {
+                            var columnIndex = parseInt(event.column.field) - 1;
+                            var newSelectedItems = this.standardSelectChooser.get("selectedItems");
+                            newSelectedItems.splice(columnIndex, 1);
+                            this._processStandardModeSelectChange(newSelectedItems);
+                            this.standardSelectChooser.set("data", {"selected": newSelectedItems});
+                            this._resultsGrid.refresh();
+                        }
+                        finally
+                        {
+                            if (checkNode)
+                            {
+                                checkNode.style.display = '';
+                            }
+                        }
+                    }
                 },
                 _standardModeWhereChanged: function (result)
                 {
@@ -294,7 +353,7 @@ define(["dojo/_base/declare",
                 },
                 _buildGrid: function ()
                 {
-                    var grid = new QueryGrid({
+                    var grid = new (declare([QueryGrid,ColumnReorder,ColumnHider]))({
                         controller: this.controller,
                         management: this.management,
                         category: this._categorySelector.value.toLowerCase(),
@@ -331,6 +390,9 @@ define(["dojo/_base/declare",
                     {
                         this.advancedOrderBy.set("value", event.orderBy);
                     }));
+                    grid.on('dgrid-columnreorder', lang.hitch(this, this._standardModeColumnOrderChanged));
+                    grid.on('dgrid-columnstatechange', lang.hitch(this, this._standardModeColumnStateChanged))
+                    grid.hiderToggleNode.title = "Remove columns";
                     this._resultsGrid = grid;
                     this._resultsGrid.startup();
                 },
@@ -345,6 +407,7 @@ define(["dojo/_base/declare",
                     {
                         this._lastHeaders = headers;
                         this._resultsGrid.setUseCachedResults(true);
+                        this._resultsGrid.hiderToggleNode.style.display = this._standardMode && headers.length > 0 ? '' : 'none';
                         this._resultsGrid.set("columns", this._getColumns(headers));
                         this._resultsGrid.resize();
                     }
@@ -375,7 +438,9 @@ define(["dojo/_base/declare",
                             var column = {
                                 label: attribute,
                                 field: "" + (i + 1),
-                                sortable: true
+                                sortable: true,
+                                reorderable: !!this._standardMode,
+                                unhidable: !this._standardMode
                             };
                             columns.push(column);
                             if (this._columns)
@@ -535,42 +600,59 @@ define(["dojo/_base/declare",
                 },
                 _categoryChanged: function (value)
                 {
-                    this._resetSearch();
                     var metadata = this._getCategoryMetadata(value);
-                    var disableMetadataDependant = !metadata;
-                    this.standardWhereChooser.set("disabled", disableMetadataDependant);
-                    this.standardSelectChooser.set("disabled", disableMetadataDependant);
-                    this.searchButton.set("disabled", true);
-                    this.modeButton.set("disabled", disableMetadataDependant);
-                    this.advancedSelect.set("disabled", disableMetadataDependant);
-                    this.advancedWhere.set("disabled", disableMetadataDependant);
-                    this.advancedOrderBy.set("disabled", disableMetadataDependant);
-                    this._resultsGrid.setCategory(value);
-
-                    if (disableMetadataDependant)
+                    var columns, items, selectedItems;
+                    if (!metadata)
                     {
                         dijit.showTooltip(this._categorySelector.get("invalidMessage"),
                             this._categorySelector.domNode,
                             this._categorySelector.get("tooltipPosition"),
                             !this._categorySelector.isLeftToRight());
+                        columns = {};
+                        items = [];
+                        selectedItems = [];
                     }
                     else
                     {
                         var data = this._combineTypeAttributesAndStatistics(metadata);
-                        this._columns = data.asObject;
-                        this.standardSelectChooser.set("data", {
-                            items: data.asArray,
-                            idProperty: "id",
-                            selected: [],
-                            nameProperty: "attributeName"
-                        });
-                        this.standardWhereChooser.set("data", {
-                            items: data.asArray,
-                            selected: [],
-                            idProperty: "id",
-                            nameProperty: "attributeName"
-                        });
+                        columns = data.asObject;
+                        items = data.asArray;
+                        selectedItems = this.getDefaultColumns(value);
                     }
+
+                    this.standardSelectChooser.set("data", {
+                        items: items,
+                        idProperty: "id",
+                        selected: selectedItems,
+                        nameProperty: "attributeName"
+                    });
+                    this.standardWhereChooser.set("data", {
+                        items: items,
+                        selected: [],
+                        idProperty: "id",
+                        nameProperty: "attributeName"
+                    });
+                    this.standardWhereExpressionBuilder.clearWhereCriteria();
+                    this.advancedWhere.set("value", "");
+                    this.advancedOrderBy.set("value", "");
+                    this._columns = columns;
+                    this._lastStandardModeSelect = this.standardSelectChooser.get("selectedItems");
+                    var select = this._buildSelectExpression(this._lastStandardModeSelect);
+                    this.advancedSelect.set("value", select);
+                    this._setSelectClause(select);
+                    this._resultsGrid.setWhere("");
+                    this._resultsGrid.setOrderBy("");
+                    this._resultsGrid.setSort([]);
+                    this._resultsGrid.setCategory(value);
+                    var disableMetadataDependant = !metadata;
+                    this.standardWhereChooser.set("disabled", disableMetadataDependant);
+                    this.standardSelectChooser.set("disabled", disableMetadataDependant);
+                    this.modeButton.set("disabled", disableMetadataDependant);
+                    this.advancedSelect.set("disabled", disableMetadataDependant);
+                    this.advancedWhere.set("disabled", disableMetadataDependant);
+                    this.advancedOrderBy.set("disabled", disableMetadataDependant);
+                    this.searchButton.set("disabled", disableMetadataDependant);
+                    this.search();
                 },
                 _advancedModeKeyPressed: function (evt)
                 {
@@ -582,7 +664,6 @@ define(["dojo/_base/declare",
                         this._setSelectClause(this.advancedSelect.value);
                         this._resultsGrid.setWhere(this.advancedWhere.value);
                         this._resultsGrid.setOrderBy(this.advancedOrderBy.value);
-                        this._resultsGrid.setSort([]);
                         this.search();
                     }
                 },
@@ -602,6 +683,16 @@ define(["dojo/_base/declare",
                             this._buildSelectExpression(this.standardSelectChooser.get("selectedItems")));
                         this.advancedWhere.set("value", this._resultsGrid.getWhere());
                         this.advancedOrderBy.set("value", this._resultsGrid.getOrderBy());
+
+                        this._resultsGrid.hiderToggleNode.style.display = 'none';
+
+                        // rebuild columns to disable column reordering and removal
+                        if (this._lastHeaders && this._lastHeaders.length)
+                        {
+                            this._resultsGrid.setUseCachedResults(true);
+                            this._resultsGrid.set("columns", this._getColumns(this._lastHeaders));
+                            this._resultsGrid.resize();
+                        }
                     }
                     else
                     {
@@ -612,18 +703,22 @@ define(["dojo/_base/declare",
                         this.standardSearch.style.display = "";
                         this.standardWhereExpressionBuilder.domNode.style.display = "";
                         this.advancedSearch.style.display = "none";
-                        this._resetSearch();
+                        var category = this._categorySelector.value;
+                        var selectedItems = this.getDefaultColumns(category);
+                        this.standardSelectChooser.set("data", {selected: selectedItems});
+                        this.standardWhereChooser.set("data", {selected: []});
+                        this.standardWhereExpressionBuilder.clearWhereCriteria();
+                        this._lastStandardModeSelect = this.standardSelectChooser.get("selectedItems");
+                        this._lastHeaders = [];
+                        var select = this._buildSelectExpression(this._lastStandardModeSelect);
+                        this._setSelectClause(select);
+                        this._resultsGrid.setWhere("");
+                        this._resultsGrid.setOrderBy("");
+                        this._resultsGrid.setSort([]);
+                        this._toggleSearchButton(select);
+                        this._resultsGrid.hiderToggleNode.style.display = '';
+                        this.search();
                     }
-                },
-                _resetSearch: function ()
-                {
-                    this._resultsGrid.resetQuery();
-                    this.standardSelectChooser.set("data", {selected: []});
-                    this.standardWhereExpressionBuilder.clearWhereCriteria();
-                    this.advancedSelect.set("value", "");
-                    this.advancedWhere.set("value", "");
-                    this.advancedOrderBy.set("value", "");
-                    this.search();
                 },
                 _getCategoryMetadata: function (value)
                 {

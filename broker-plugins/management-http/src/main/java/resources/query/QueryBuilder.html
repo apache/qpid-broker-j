@@ -19,8 +19,14 @@
 
 <div>
     <div class="dijit queryToolBar">
-        <label>Scope : <span data-dojo-attach-point="scope"></span></label>
-        <label>Category : <span data-dojo-attach-point="categoryName"></span></label>
+        <div class="dijitInline">
+            <label class="searchLabel" for="queryScope_${id}">Scope: </label>
+            <span id="queryScope_${id}" data-dojo-attach-point="scope"></span>
+        </div>
+        <div class="dijitInline">
+            <label class="searchLabel" for="queryCategory_${id}">Category: </label>
+            <span id="queryCategory_${id}" data-dojo-attach-point="categoryName"></span>
+        </div>
         <span data-dojo-attach-point="standardSearch">
             <span data-dojo-type="qpid/management/query/DropDownSelect"
                  data-dojo-attach-point="standardSelectChooser"
@@ -44,11 +50,12 @@
              data-dojo-type="qpid/management/query/WhereExpression" class="dijitToolbar"></div>
         <div data-dojo-attach-point="advancedSearch"  style="display:none;">
             <div class="advancedSearchItem">
-                <div class="advancedSearchLabel">Select :</div>
+                <label class="searchLabel" for="advancedSelect_${id}">Select: </label>
                 <div class="advancedSearchField">
-                    <textarea data-dojo-attach-point="advancedSelect" type="text"
-                               data-dojo-type="dijit/form/SimpleTextarea"
-                               data-dojo-props=" name: 'select',
+                    <textarea id="advancedSelect_${id}"
+                              data-dojo-attach-point="advancedSelect" type="text"
+                              data-dojo-type="dijit/form/SimpleTextarea"
+                              data-dojo-props=" name: 'select',
                                                  rows: 1,
                                                  intermediateChanges: true,
                                                  placeHolder: 'comma separated attribute names',
@@ -57,9 +64,10 @@
                 </div>
             </div>
             <div class="advancedSearchItem">
-                <div class="advancedSearchLabel">Where : </div>
+                <label class="searchLabel" for="advancedWhere_${id}">Where: </label>
                 <div class="advancedSearchField" >
-                    <textarea data-dojo-attach-point="advancedWhere" type="text"
+                    <textarea id="advancedWhere_${id}"
+                              data-dojo-attach-point="advancedWhere" type="text"
                               data-dojo-type="dijit/form/SimpleTextarea"
                               data-dojo-props=" name: 'where',
                                                 rows: 1,
@@ -70,9 +78,10 @@
                 </div>
             </div>
             <div class="advancedSearchItem">
-                <div class="advancedSearchLabel">Order : </div>
+                <label class="searchLabel" for="advancedOrderBy_${id}">Order: </label>
                 <div class="advancedSearchField" >
-                    <textarea data-dojo-attach-point="advancedOrderBy" type="text"
+                    <textarea id="advancedOrderBy_${id}"
+                              data-dojo-attach-point="advancedOrderBy" type="text"
                               data-dojo-type="dijit/form/SimpleTextarea"
                               data-dojo-props=" name: 'orderBy',
                                                 rows: 1,

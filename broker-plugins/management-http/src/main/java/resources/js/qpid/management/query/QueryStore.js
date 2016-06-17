@@ -130,7 +130,7 @@ define(['dojo/_base/lang',
                 }
             }, function (error)
             {
-                if (error.status)
+                if (error && (!error.hasOwnProperty("response") || error.response.hasOwnProperty("status")))
                 {
                     this.management.errorHandler(error);
                 }

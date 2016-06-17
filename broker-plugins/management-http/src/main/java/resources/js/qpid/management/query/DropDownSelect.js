@@ -126,6 +126,7 @@ define(["dojo/_base/declare",
                 _optionsGrid: null,
                 _descending: false,
                 _selectedItems: [],
+                _selectedIds: {},
 
                 postCreate: function ()
                 {
@@ -184,7 +185,13 @@ define(["dojo/_base/declare",
                 {
                     for (var i = 0; i < event.rows.length; ++i)
                     {
-                        this._selectedItems.push(event.rows[i].data);
+                        var item = event.rows[i].data;
+                        var id = item[this.idProperty];
+                        if (!this._selectedIds[id])
+                        {
+                            this._selectedItems.push(item);
+                            this._selectedIds[id] = true;
+                        }
                     }
                     this._selectionChanged();
                 },
@@ -195,9 +202,10 @@ define(["dojo/_base/declare",
                         var id = event.rows[i].id;
                         for (var j = 0; j < this._selectedItems.length; ++j)
                         {
-                            if (this._selectedItems[j].id === id)
+                            if (this._selectedItems[j][this.idProperty] === id)
                             {
                                 this._selectedItems.splice(j, 1);
+                                delete this._selectedIds[id];
                                 break;
                             }
                         }

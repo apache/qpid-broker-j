@@ -437,23 +437,33 @@ div .messages {
 
 .advancedSearchItem
 {
-   width:100%;
-   margin-left:0px;
-   margin-right:0px;
-   padding: 2px;
+   width: 100%;
+   margin: 0px;
+   padding: 2px 0px 2px 0px;
+   vertical-align: middle;
 }
-.advancedSearchLabel
+.searchLabel
 {
    float: left;
-   padding: 0px 4px 0px 4px;
+   text-align: right;
+   vertical-align: middle;
+   padding: 0.2em;
+   min-width: 3.5em;
 }
 .advancedSearchField
 {
     overflow: hidden;
 }
+.claro .advancedSearchField .dijitTextArea,
 .advancedSearchField textarea
 {
-  height: 1.2em;
+    height: 1.6em;
+    width: 100%;
+    padding: 0px;
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -ms-box-sizing: border-box;
 }
 .criteriaCondition
 {
@@ -508,4 +518,18 @@ div .messages {
     padding-left: 20px;
     padding-top: 5px;
     padding-bottom: 5px;
+}
+
+.claro.qpid .dgrid-pagination .dgrid-page-link {
+    color: #5D88AF;
+    font-weight: normal;
+}
+
+.claro.qpid .dgrid-pagination .dgrid-page-disabled {
+    color: black;
+    font-weight: normal;
+}
+
+.claro.qpid  .dgrid-hider-toggle {
+      background-position: -32px -192px;
 }

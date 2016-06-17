@@ -31,7 +31,7 @@ define(["dojo/_base/declare",
         "dgrid/extensions/Pagination",
         "dgrid/extensions/ColumnResizer",
         "qpid/management/query/QueryStore",
-        "qpid/management/query/MessageDialog"],
+        "dojo/keys"],
     function (declare,
               lang,
               domConstruct,
@@ -44,7 +44,8 @@ define(["dojo/_base/declare",
               Selection,
               Pagination,
               ColumnResizer,
-              QueryStore)
+              QueryStore,
+              keys)
     {
         var QueryGrid = declare("qpid.management.query.QueryGrid",
             [Grid, Keyboard, Selection, Pagination, ColumnResizer],
@@ -63,7 +64,7 @@ define(["dojo/_base/declare",
                         collection: this._store,
                         rowsPerPage: 100,
                         selectionMode: 'single',
-                        cellNavigation: false,
+                        cellNavigation: true,
                         className: 'dgrid-autoheight',
                         pageSizeOptions: [10, 20, 30, 40, 50, 100, 1000],
                         adjustLastColumn: true
@@ -75,6 +76,14 @@ define(["dojo/_base/declare",
                 {
                     this.inherited(arguments);
                     this.on('.dgrid-row:dblclick', lang.hitch(this, this._onRowClick));
+                    this.on('.dgrid-row:keypress', lang.hitch(this, function (event)
+                    {
+                        if (event.keyCode === keys.ENTER)
+                        {
+                            this._onRowClick(event);
+                        }
+                    }));
+
                     this.on('dgrid-sort', lang.hitch(this, function (event)
                     {
                         for (var i = 0; i < this._sort.length; ++i)
@@ -87,9 +96,6 @@ define(["dojo/_base/declare",
                         }
                         this._sort.splice(0, 0, event.sort[0]);
                         this._updateOrderByExpression();
-                        event.preventDefault();
-                        event.stopPropagation();
-                        this.refresh();
                     }));
                     this.on('dgrid-refresh-complete', lang.hitch(this, function ()
                     {
@@ -131,6 +137,7 @@ define(["dojo/_base/declare",
                 setOrderBy: function (orderBy)
                 {
                     this._store.orderBy = orderBy;
+                    this._sort = [];
                 },
                 setUseCachedResults: function (value)
                 {
@@ -139,23 +146,29 @@ define(["dojo/_base/declare",
                 setSort: function (value)
                 {
                     this._sort = lang.clone(value);
+                    this._store.orderBy = this._buildOrderBy(this._sort);
                 },
                 getSort: function ()
                 {
                     return lang.clone(this._sort);
                 },
-                _updateOrderByExpression: function ()
+                _buildOrderBy: function(sort)
                 {
                     var orderByExpression = "";
-                    if (this._sort && this._sort.length)
+                    if (sort && sort.length)
                     {
                         var orders = [];
-                        for (var i = 0; i < this._sort.length; ++i)
+                        for (var i = 0; i < sort.length; ++i)
                         {
-                            orders.push(parseInt(this._sort[i].property) + (this._sort[i].descending ? " desc" : ""));
+                            orders.push(sort[i].property + (sort[i].descending ? " desc" : ""));
                         }
                         orderByExpression = orders.join(",");
                     }
+                    return orderByExpression;
+                },
+                _updateOrderByExpression: function ()
+                {
+                    var orderByExpression = this._buildOrderBy(this._sort);
                     this._store.orderBy = orderByExpression;
                     on.emit(this.domNode, "orderByChanged", {orderBy: orderByExpression});
                 },
@@ -206,13 +219,6 @@ define(["dojo/_base/declare",
                             this.controller.show(item.type, item.name, item.parent, item.id);
                         }
                     }));
-                },
-                resetQuery: function ()
-                {
-                    this._store.where = "";
-                    this._store.selectClause = "";
-                    this._store.orderBy = "";
-                    this._sort = [];
                 }
             });
 
