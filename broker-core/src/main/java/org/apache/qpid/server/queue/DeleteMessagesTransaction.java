@@ -28,9 +28,12 @@ import org.apache.qpid.server.model.VirtualHost;
 
 public class DeleteMessagesTransaction extends QueueEntryTransaction
 {
-    public DeleteMessagesTransaction(Queue sourceQueue, List<Long> messageIds, final MessageFilter filter)
+    public DeleteMessagesTransaction(Queue sourceQueue,
+                                     List<Long> messageIds,
+                                     final MessageFilter filter,
+                                     final int limit)
     {
-        super(sourceQueue, messageIds, filter);
+        super(sourceQueue, messageIds, filter, limit);
     }
 
     @Override

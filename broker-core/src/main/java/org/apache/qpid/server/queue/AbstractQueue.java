@@ -1831,7 +1831,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     /**
-     * Returns a list of QueEntries from a given range of queue positions, eg messages 5 to 10 on the queue.
+     * Returns a list of QueueEntries from a given range of queue positions, eg messages 5 to 10 on the queue.
      *
      * The 'queue position' index starts from 1. Using 0 in 'from' will be ignored and continue from 1.
      * Using 0 in the 'to' field will return an empty list regardless of the 'from' value.
@@ -3416,13 +3416,14 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public List<Long> moveMessages(Queue<?> destination, List<Long> messageIds, final String selector)
+    public List<Long> moveMessages(Queue<?> destination, List<Long> messageIds, final String selector, final int limit)
     {
         // FIXME: added temporary authorization check until we introduce management layer
         // and review current ACL rules to have common rules for all management interfaces
         authorizeMethod("moveMessages");
 
-        MoveMessagesTransaction transaction = new MoveMessagesTransaction(this, messageIds, destination, parseSelector(selector));
+        MoveMessagesTransaction transaction = new MoveMessagesTransaction(this, messageIds, destination, parseSelector(selector),
+                                                                          limit);
         _virtualHost.executeTransaction(transaction);
         return transaction.getModifiedMessageIds();
 
@@ -3441,27 +3442,29 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public List<Long> copyMessages(Queue<?> destination, List<Long> messageIds, final String selector)
+    public List<Long> copyMessages(Queue<?> destination, List<Long> messageIds, final String selector, int limit)
     {
         // FIXME: added temporary authorization check until we introduce management layer
         // and review current ACL rules to have common rules for all management interfaces
         authorizeMethod("copyMessages");
 
-        CopyMessagesTransaction transaction = new CopyMessagesTransaction(this, messageIds, destination, parseSelector(selector));
+        CopyMessagesTransaction transaction = new CopyMessagesTransaction(this, messageIds, destination, parseSelector(selector),
+                                                                          limit);
         _virtualHost.executeTransaction(transaction);
         return transaction.getModifiedMessageIds();
 
     }
 
     @Override
-    public List<Long> deleteMessages(final List<Long> messageIds, final String selector)
+    public List<Long> deleteMessages(final List<Long> messageIds, final String selector, int limit)
     {
 
         // FIXME: added temporary authorization check until we introduce management layer
         // and review current ACL rules to have common rules for all management interfaces
         authorizeMethod("deleteMessages");
 
-        DeleteMessagesTransaction transaction = new DeleteMessagesTransaction(this, messageIds, parseSelector(selector));
+        DeleteMessagesTransaction transaction = new DeleteMessagesTransaction(this, messageIds, parseSelector(selector),
+                                                                              limit);
         _virtualHost.executeTransaction(transaction);
 
         return transaction.getModifiedMessageIds();

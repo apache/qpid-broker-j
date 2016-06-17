@@ -34,25 +34,26 @@ abstract class QueueEntryTransaction implements VirtualHost.TransactionalOperati
     private final List<Long> _messageIds;
     private final MessageFilter _filter;
     private final List<Long> _modifiedMessageIds = new ArrayList<>();
+    private int _limit;
 
-    QueueEntryTransaction(Queue sourceQueue, List<Long> messageIds, final MessageFilter filter)
+    QueueEntryTransaction(Queue sourceQueue, List<Long> messageIds, final MessageFilter filter, final int limit)
     {
         _sourceQueue = sourceQueue;
         _messageIds = messageIds == null ? null : new ArrayList<>(messageIds);
         _filter = filter;
+        _limit = limit <= 0 ? -1 : _limit;
     }
 
     @Override
     public final void withinTransaction(final VirtualHost.Transaction txn)
     {
-
         _sourceQueue.visit(new QueueEntryVisitor()
         {
 
             public boolean visit(final QueueEntry entry)
             {
                 final ServerMessage message = entry.getMessage();
-                if(message != null)
+                if (message != null)
                 {
                     final long messageId = message.getMessageNumber();
                     if ((_messageIds == null || _messageIds.remove(messageId))
@@ -60,11 +61,16 @@ abstract class QueueEntryTransaction implements VirtualHost.TransactionalOperati
                     {
                         updateEntry(entry, txn);
                         _modifiedMessageIds.add(messageId);
+                        if (_limit > 0)
+                        {
+                            _limit--;
+                        }
                     }
                 }
-                return _messageIds != null && _messageIds.isEmpty();
+                return _limit == 0 || (_messageIds != null && _messageIds.isEmpty());
             }
         });
+
     }
 
 

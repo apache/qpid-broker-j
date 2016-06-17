@@ -35,9 +35,9 @@ public class CopyMessagesTransaction extends QueueEntryTransaction
     public CopyMessagesTransaction(Queue sourceQueue,
                                    List<Long> messageIds,
                                    Queue destinationQueue,
-                                   final MessageFilter filter)
+                                   final MessageFilter filter, final int limit)
     {
-        super(sourceQueue, messageIds, filter);
+        super(sourceQueue, messageIds, filter, limit);
         _destinationQueue = destinationQueue;
     }
 
