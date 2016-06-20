@@ -31,14 +31,18 @@
         <para>The following truststore types are supported. <itemizedlist>
                 <listitem>
                     <para><emphasis>File Trust Store</emphasis>. This type accepts the standard JKS
-                        truststore format undertood by Java and Java tools such as <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleKeytool}">keytool</link>.</para>
+                        truststore format understood by Java and Java tools such as <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleKeytool}">keytool</link>.</para>
                 </listitem>
                 <listitem>
-                    <para><emphasis>Non Java Trust Store</emphasis>. A non java keystore accepts key
-                        material in PEM and DER file formats. </para>
+                    <para><emphasis>Non Java Trust Store</emphasis>. A non java trust store accepts key
+                        material in PEM and DER file formats. Either a path to the certificate on the server can be specified using the file:// protocol or the certificate can be uploaded with the data:// protocol</para>
                 </listitem>
                 <listitem>
-                    <para>TODO</para>
+                    <para><emphasis>Managed Certificate Store</emphasis>. This type accepts key
+                        material in PEM and DER file formats. Contrary to the Non Java Trust Store this store allows the user to add multiple certificates and stores them in the broker configuration.</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Site Specific Trust Store</emphasis>. This type will download a certificate from the provided SSL/TLS enabled URL. Note that you must specify both the protocol and the port. Example: https://example.com:443</para>
                 </listitem>
             </itemizedlist>
         </para>
