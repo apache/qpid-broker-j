@@ -3422,23 +3422,14 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         // and review current ACL rules to have common rules for all management interfaces
         authorizeMethod("moveMessages");
 
-        MoveMessagesTransaction transaction = new MoveMessagesTransaction(this, messageIds, destination, parseSelector(selector),
+        MoveMessagesTransaction transaction = new MoveMessagesTransaction(this,
+                                                                          messageIds,
+                                                                          destination,
+                                                                          parseSelector(selector),
                                                                           limit);
         _virtualHost.executeTransaction(transaction);
         return transaction.getModifiedMessageIds();
 
-    }
-
-    private JMSSelectorFilter parseSelector(final String selector)
-    {
-        try
-        {
-            return selector == null ? null : new JMSSelectorFilter(selector);
-        }
-        catch (ParseException | SelectorParsingException | TokenMgrError e)
-        {
-            throw new IllegalArgumentException("Cannot parse JMS selector \"" + selector + "\"", e);
-        }
     }
 
     @Override
@@ -3448,7 +3439,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         // and review current ACL rules to have common rules for all management interfaces
         authorizeMethod("copyMessages");
 
-        CopyMessagesTransaction transaction = new CopyMessagesTransaction(this, messageIds, destination, parseSelector(selector),
+        CopyMessagesTransaction transaction = new CopyMessagesTransaction(this,
+                                                                          messageIds,
+                                                                          destination,
+                                                                          parseSelector(selector),
                                                                           limit);
         _virtualHost.executeTransaction(transaction);
         return transaction.getModifiedMessageIds();
@@ -3462,12 +3456,25 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         // FIXME: added temporary authorization check until we introduce management layer
         // and review current ACL rules to have common rules for all management interfaces
         authorizeMethod("deleteMessages");
-
-        DeleteMessagesTransaction transaction = new DeleteMessagesTransaction(this, messageIds, parseSelector(selector),
+        DeleteMessagesTransaction transaction = new DeleteMessagesTransaction(this,
+                                                                              messageIds,
+                                                                              parseSelector(selector),
                                                                               limit);
         _virtualHost.executeTransaction(transaction);
 
         return transaction.getModifiedMessageIds();
+    }
+
+    private JMSSelectorFilter parseSelector(final String selector)
+    {
+        try
+        {
+            return selector == null ? null : new JMSSelectorFilter(selector);
+        }
+        catch (ParseException | SelectorParsingException | TokenMgrError e)
+        {
+            throw new IllegalArgumentException("Cannot parse JMS selector \"" + selector + "\"", e);
+        }
     }
 
     @Override

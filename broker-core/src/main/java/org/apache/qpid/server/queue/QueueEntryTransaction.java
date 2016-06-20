@@ -41,35 +41,38 @@ abstract class QueueEntryTransaction implements VirtualHost.TransactionalOperati
         _sourceQueue = sourceQueue;
         _messageIds = messageIds == null ? null : new ArrayList<>(messageIds);
         _filter = filter;
-        _limit = limit <= 0 ? -1 : _limit;
+        _limit = limit;
     }
 
     @Override
     public final void withinTransaction(final VirtualHost.Transaction txn)
     {
-        _sourceQueue.visit(new QueueEntryVisitor()
+        if(_limit != 0)
         {
-
-            public boolean visit(final QueueEntry entry)
+            _sourceQueue.visit(new QueueEntryVisitor()
             {
-                final ServerMessage message = entry.getMessage();
-                if (message != null)
+
+                public boolean visit(final QueueEntry entry)
                 {
-                    final long messageId = message.getMessageNumber();
-                    if ((_messageIds == null || _messageIds.remove(messageId))
-                        && (_filter == null || _filter.matches(entry.asFilterable())))
+                    final ServerMessage message = entry.getMessage();
+                    if (message != null)
                     {
-                        updateEntry(entry, txn);
-                        _modifiedMessageIds.add(messageId);
-                        if (_limit > 0)
+                        final long messageId = message.getMessageNumber();
+                        if ((_messageIds == null || _messageIds.remove(messageId))
+                            && (_filter == null || _filter.matches(entry.asFilterable())))
                         {
-                            _limit--;
+                            updateEntry(entry, txn);
+                            _modifiedMessageIds.add(messageId);
+                            if (_limit > 0)
+                            {
+                                _limit--;
+                            }
                         }
                     }
+                    return _limit == 0 || (_messageIds != null && _messageIds.isEmpty());
                 }
-                return _limit == 0 || (_messageIds != null && _messageIds.isEmpty());
-            }
-        });
+            });
+        }
 
     }
 

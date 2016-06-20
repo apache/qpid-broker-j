@@ -189,6 +189,94 @@ public class MessagesRestTest extends QpidRestTestCase
         }
     }
 
+    public void testPostMoveMessagesWithSelector() throws Exception
+    {
+        String queueName = getTestQueueName();
+        String queueName2 = queueName + "_2";
+        Destination queue2 = _session.createQueue(queueName2);
+        _session.createConsumer(queue2);
+
+
+        // move messages
+
+        Map<String, Object> messagesData = new HashMap<>();
+        messagesData.put("selector", "index % 2 = 0");
+        messagesData.put("destination", queueName2);
+
+
+        getRestTestHelper().submitRequest("queue/test/test/" + queueName + "/moveMessages", "POST", messagesData, HttpServletResponse.SC_OK);
+
+        // check messages on target queue
+        List<Map<String, Object>> messages = getRestTestHelper().getJsonAsList("queue/test/test/" + queueName2 + "/getMessageInfo");
+        assertNotNull("Messages are not found", messages);
+        assertEquals("Unexpected number of messages", MESSAGE_NUMBER / 2, messages.size());
+        final List<Long> movedMessageIds = getMesssageIds(queueName2);
+        for (Long id : movedMessageIds)
+        {
+            Map<String, Object> message = getRestTestHelper().find("id", id.intValue(), messages);
+            assertMessageAttributes(message);
+            assertMessageAttributeValues(message, true);
+        }
+
+        // check messages on original queue
+        messages = getRestTestHelper().getJsonAsList("queue/test/test/" + queueName + "/getMessageInfo");
+        assertNotNull("Messages are not found", messages);
+        assertEquals("Unexpected number of messages", MESSAGE_NUMBER / 2, messages.size());
+
+        for (Long id : getMesssageIds(queueName))
+        {
+            Map<String, Object> message = getRestTestHelper().find("id", id.intValue(), messages);
+            assertMessageAttributes(message);
+            assertMessageAttributeValues(message, false);
+
+        }
+        for (Long id : movedMessageIds)
+        {
+            Map<String, Object> message = getRestTestHelper().find("id", id.intValue(), messages);
+            assertNull("Moved message " + id + " is found on original queue", message);
+        }
+    }
+
+
+    public void testPostMoveAllMessages() throws Exception
+    {
+        String queueName = getTestQueueName();
+        String queueName2 = queueName + "_2";
+        Destination queue2 = _session.createQueue(queueName2);
+        _session.createConsumer(queue2);
+
+
+        // get message IDs
+        List<Long> ids = getMesssageIds(queueName);
+
+
+        // move messages
+
+        Map<String, Object> messagesData = new HashMap<>();
+        messagesData.put("destination", queueName2);
+
+
+        getRestTestHelper().submitRequest("queue/test/test/" + queueName + "/moveMessages", "POST", messagesData, HttpServletResponse.SC_OK);
+
+        // check messages on target queue
+        List<Map<String, Object>> messages = getRestTestHelper().getJsonAsList("queue/test/test/" + queueName2 + "/getMessageInfo");
+        assertNotNull("Messages are not found", messages);
+        assertEquals("Unexpected number of messages", MESSAGE_NUMBER, messages.size());
+        final List<Long> movedMessageIds = getMesssageIds(queueName2);
+        for (Long id : movedMessageIds)
+        {
+            Map<String, Object> message = getRestTestHelper().find("id", id.intValue(), messages);
+            assertMessageAttributes(message);
+        }
+
+        // check messages on original queue
+        messages = getRestTestHelper().getJsonAsList("queue/test/test/" + queueName + "/getMessageInfo");
+        assertNotNull("Messages are not found", messages);
+        assertEquals("Unexpected number of messages", 0, messages.size());
+
+    }
+
+
     public void testPostCopyMessages() throws Exception
     {
         String queueName = getTestQueueName();
@@ -240,6 +328,40 @@ public class MessagesRestTest extends QpidRestTestCase
         }
     }
 
+    public void testPostCopyMessagesWithSelectorAndLimit() throws Exception
+    {
+        String queueName = getTestQueueName();
+        String queueName2 = queueName + "_2";
+        Destination queue2 = _session.createQueue(queueName2);
+        _session.createConsumer(queue2);
+
+        // copy messages
+        Map<String, Object> messagesData = new HashMap<>();
+        messagesData.put("selector", "index % 2 = 0");
+        messagesData.put("limit", 1);
+        messagesData.put("destination", queueName2);
+
+        getRestTestHelper().submitRequest("queue/test/test/" + queueName + "/copyMessages", "POST", messagesData, HttpServletResponse.SC_OK);
+
+        // check messages on target queue
+        List<Map<String, Object>> messages = getRestTestHelper().getJsonAsList("queue/test/test/" + queueName2 + "/getMessageInfo");
+        assertNotNull("Messages are not found", messages);
+        assertEquals("Unexpected number of messages", 1, messages.size());
+        for (Long id : getMesssageIds(queueName2))
+        {
+            Map<String, Object> message = getRestTestHelper().find("id", id.intValue(), messages);
+            assertMessageAttributes(message);
+            assertMessageAttributeValues(message, true);
+        }
+
+        // check messages on original queue
+        messages = getRestTestHelper().getJsonAsList("queue/test/test/" + queueName + "/getMessageInfo");
+        assertNotNull("Messages are not found", messages);
+        assertEquals("Unexpected number of messages", MESSAGE_NUMBER, messages.size());
+
+    }
+
+
     public void testDeleteMessages() throws Exception
     {
         String queueName = getTestQueueName();
@@ -276,6 +398,30 @@ public class MessagesRestTest extends QpidRestTestCase
             assertNull("Message with id " + id + " was not deleted", message);
         }
     }
+
+    public void testDeleteMessagesWithLimit() throws Exception
+    {
+        String queueName = getTestQueueName();
+
+        // get message IDs
+        List<Long> ids = getMesssageIds(queueName);
+
+        // delete half of the messages
+        int deleteNumber = MESSAGE_NUMBER/2;
+
+        // delete messages
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("limit", deleteNumber);
+        getRestTestHelper().submitRequest("queue/test/test/" + queueName + "/deleteMessages", "POST", parameters, HttpServletResponse.SC_OK);
+
+        // check messages on queue
+        List<Map<String, Object>> messages = getRestTestHelper().getJsonAsList("queue/test/test/" + queueName + "/getMessageInfo");
+        assertNotNull("Messages are not found", messages);
+        assertEquals("Unexpected number of messages", MESSAGE_NUMBER/2, messages.size());
+
+    }
+
+
 
     public void testClearQueue() throws Exception
     {
