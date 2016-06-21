@@ -29,7 +29,7 @@ import javax.net.ssl.TrustManager;
 @ManagedObject( defaultType = "FileTrustStore" )
 public interface TrustStore<X extends TrustStore<X>> extends ConfiguredObject<X>
 {
-    @ManagedAttribute( defaultValue = "false" )
+    @ManagedAttribute( defaultValue = "false", description = "If true the Trust Store will expose its certificates as a special artificial message source.")
     boolean isExposedAsMessageSource();
 
     @ManagedAttribute( defaultValue = "[]" )
