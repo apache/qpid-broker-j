@@ -353,6 +353,8 @@ define(["dojo/parser",
             }, gridProperties, EnhancedGrid);
 
             this.connectionsGrid = new QueryGrid({
+                detectChanges: true,
+                rowsPerPage: 10,
                 transformer: lang.hitch(this, this._transformConnectionData),
                 management: this.management,
                 controller: controller,
@@ -453,7 +455,7 @@ define(["dojo/parser",
 
             var thisObj = this;
 
-            thisObj.connectionsGrid.refresh();
+            thisObj.connectionsGrid.updateData();
             thisObj.connectionsGrid.resize();
 
             this.management.load(this.modelObj,
@@ -582,27 +584,35 @@ define(["dojo/parser",
                 for (var i = 0; i < connections.length; i++)
                 {
                     var connection = connections[i];
+                    var oldConnection = null;
                     for (var j = 0; j < this._previousConnections.length; j++)
                     {
-                        var oldConnection = this._previousConnections[j];
-                        if (oldConnection.id == connection.id)
+                        if (this._previousConnections[j].id == connection.id)
                         {
-                            var msgOutRate = (1000 * (connection.messagesOut - oldConnection.messagesOut))
-                                             / samplePeriod;
-                            connection.msgOutRate = msgOutRate.toFixed(0) + "msg/s";
-
-                            var bytesOutRate = (1000 * (connection.bytesOut - oldConnection.bytesOut)) / samplePeriod;
-                            var bytesOutRateFormat = formatter.formatBytes(bytesOutRate);
-                            connection.bytesOutRate = bytesOutRateFormat.value + bytesOutRateFormat.units + "/s";
-
-                            var msgInRate = (1000 * (connection.messagesIn - oldConnection.messagesIn)) / samplePeriod;
-                            connection.msgInRate = msgInRate.toFixed(0) + "msg/s";
-
-                            var bytesInRate = (1000 * (connection.bytesIn - oldConnection.bytesIn)) / samplePeriod;
-                            var bytesInRateFormat = formatter.formatBytes(bytesInRate);
-                            connection.bytesInRate = bytesInRateFormat.value + bytesInRateFormat.units + "/s";
+                            oldConnection = this._previousConnections[j];
+                            break;
                         }
                     }
+                    var msgOutRate = 0;
+                    var bytesOutRate = 0;
+                    var bytesInRate = 0;
+                    var msgInRate = 0;
+
+                    if (oldConnection)
+                    {
+                        msgOutRate = (1000 * (connection.messagesOut - oldConnection.messagesOut))
+                                         / samplePeriod;
+                        bytesOutRate = (1000 * (connection.bytesOut - oldConnection.bytesOut)) / samplePeriod;
+                        msgInRate = (1000 * (connection.messagesIn - oldConnection.messagesIn)) / samplePeriod;
+                        bytesInRate = (1000 * (connection.bytesIn - oldConnection.bytesIn)) / samplePeriod;
+                    }
+
+                    connection.msgOutRate = msgOutRate.toFixed(0) + "msg/s";
+                    var bytesOutRateFormat = formatter.formatBytes(bytesOutRate);
+                    connection.bytesOutRate = bytesOutRateFormat.value + bytesOutRateFormat.units + "/s";
+                    connection.msgInRate = msgInRate.toFixed(0) + "msg/s";
+                    var bytesInRateFormat = formatter.formatBytes(bytesInRate);
+                    connection.bytesInRate = bytesInRateFormat.value + bytesInRateFormat.units + "/s";
                 }
             }
             this._previousConnectionSampleTime = sampleTime;

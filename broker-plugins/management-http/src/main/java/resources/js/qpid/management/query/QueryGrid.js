@@ -31,7 +31,9 @@ define(["dojo/_base/declare",
         "dgrid/extensions/Pagination",
         "dgrid/extensions/ColumnResizer",
         "qpid/management/query/QueryStore",
-        "dojo/keys"],
+        "dojo/keys",
+        'dojo/promise/all',
+        "qpid/common/util"],
     function (declare,
               lang,
               domConstruct,
@@ -45,20 +47,55 @@ define(["dojo/_base/declare",
               Pagination,
               ColumnResizer,
               QueryStore,
-              keys)
+              keys,
+              all,
+              util)
     {
+        var TrackableQueryStore = declare(QueryStore,
+                                          {
+                                              /*
+                                                 adding method track
+                                                 enables tracking of add, update and delete events
+                                              */
+                                              track:      function()
+                                                          {
+                                                              this.track = null;
+                                                              return this;
+                                                          },
+                                              /*
+                                                 override fetchRange to emit 'fetchCompleted' event
+                                              */
+                                              fetchRange: function (kwArgs)
+                                                          {
+                                                              var queryResults = this.inherited(arguments);
+                                                              all({results: queryResults,
+                                                                   totalLength: queryResults.totalLength})
+                                                              .then(lang.hitch(this,
+                                                                               function(data)
+                                                                               {
+                                                                                  this.emit("fetchCompleted",
+                                                                                              {start: kwArgs.start,
+                                                                                               end: kwArgs.end,
+                                                                                               results: data.results,
+                                                                                               totalLength: data.totalLength});
+                                                                               }));
+                                                              return queryResults;
+                                                          }
+                                          });
+
         var QueryGrid = declare("qpid.management.query.QueryGrid",
             [Grid, Keyboard, Selection, Pagination, ColumnResizer],
             {
                 management: null,
                 controller: null,
+                detectChanges: false,
                 _store: null,
                 _sort: [],
                 _lastHeaders: [],
 
                 postscript: function (args)
                 {
-                    this._store = new QueryStore(args);
+                    this._store = !!args.detectChanges ? new TrackableQueryStore(args) : new QueryStore(args);
 
                     var settings = lang.mixin({
                         collection: this._store,
@@ -105,6 +142,43 @@ define(["dojo/_base/declare",
                     {
                         on.emit(this.domNode, 'queryCompleted', event);
                     }));
+                    if (this.detectChanges)
+                    {
+                        /*
+                          Handle 'fetchCompleted' event
+                          and detect changes in row data.
+                          Emit 'add', 'delete', 'update' events
+                          for changed rows
+                        */
+                        this._store.on('fetchCompleted', lang.hitch(this, function (event)
+                        {
+                            this._start = event.start;
+                            this._end = event.end;
+                            if (this._updatingData)
+                            {
+                                try
+                                {
+                                    this._compareResultsAndEmitEventsOnChanges(event);
+                                }
+                                finally
+                                {
+                                    this._updatingData = false;
+                                }
+                            }
+                            else
+                            {
+                                this._currentResults = event.results.slice(0);
+                            }
+                        }));
+                    }
+                },
+                updateData()
+                {
+                    if (this.detectChanges && this._end)
+                    {
+                        this._updatingData = true;
+                        this._store.fetchRange({start: this._start, end: this._end});
+                    }
                 },
                 setCategory: function (category)
                 {
@@ -219,6 +293,107 @@ define(["dojo/_base/declare",
                             this.controller.show(item.type, item.name, item.parent, item.id);
                         }
                     }));
+                },
+                _compareResultsAndEmitEventsOnChanges: function (evt)
+                {
+                    var results = evt.results;
+                    if (results)
+                    {
+                        var newResults = results.slice(0);
+                        if (this._currentResults)
+                        {
+                            var store = this._store;
+                            var currentResults = this._currentResults.slice(0);
+                            var idProperty = store.idProperty;
+                            for (var i = currentResults.length - 1; i >= 0; i--)
+                            {
+                                var currentResult = currentResults[i];
+                                var id = currentResult[idProperty];
+                                var newResult = null;
+                                for (var j = 0; j < newResults.length; j++)
+                                {
+                                    if (newResults[j][idProperty] === id)
+                                    {
+                                        newResult = newResults[j];
+                                        break;
+                                    }
+                                }
+
+                                if (newResult == null)
+                                {
+                                    var event = {"target": currentResult, "previousIndex": i, "index": i};
+                                    store.emit("delete", event);
+                                    currentResults.splice(i, 1);
+                                }
+                            }
+
+                            for (var j = 0; j < newResults.length; j++)
+                            {
+                                var newResult = newResults[j];
+                                var id = newResult[idProperty];
+                                var currentResult = null;
+                                var previousIndex = -1;
+                                for (var i = 0; i < currentResults.length; i++)
+                                {
+                                    if (currentResults[i][idProperty] === id)
+                                    {
+                                        currentResult = currentResults[i];
+                                        previousIndex = i;
+                                        break;
+                                    }
+                                }
+
+                                if (currentResult == null)
+                                {
+                                    var event = {"target": newResult, "index": j};
+                                    store.emit("add", event);
+                                    currentResults.splice(j, 0, currentResults);
+                                }
+                                else
+                                {
+                                    var event = {"target": newResult, "previousIndex": previousIndex, "index": j};
+                                    if (previousIndex === j)
+                                    {
+                                        currentResults[j] = newResult;
+                                        if (!util.equals(newResult, currentResult))
+                                        {
+                                            store.emit("update", event);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        currentResults.splice(previousIndex, 1);
+                                        currentResults.splice(j, 0, currentResult);
+                                        store.emit("update", event);
+                                    }
+                                }
+                            }
+                        }
+                        this._currentResults = newResults;
+                        this._onFetchCompleted(evt)
+                    }
+                },
+                _onFetchCompleted: function (event)
+                 {
+                    var rowsPerPage = this.rowsPerPage;
+                    if ( event.totalLength > 0 && event.results.length == 0)
+                    {
+                        this.gotoPage(Math.min(this._currentPage, Math.ceil(event.totalLength / this.rowsPerPage)) || 1);
+                    }
+                    else if (event.totalLength !== this._totalLength)
+                    {
+                        this._updatePaginationStatus(event.totalLength);
+                        this._updateNavigation(event.totalLength);
+                        this._totalLength = event.totalLength;
+                    }
+                },
+                _onNotification: function (rows, event, collection)
+                 {
+                    // suppress notification in detecting changes mode
+                    if (!this.detectChanges)
+                    {
+                        this.inherited(arguments);
+                    }
                 }
             });
 
