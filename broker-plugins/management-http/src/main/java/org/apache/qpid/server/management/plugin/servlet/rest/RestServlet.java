@@ -42,6 +42,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -922,8 +923,14 @@ public class RestServlet extends AbstractServlet
         }
         else
         {
-
-            providedObject = mapper.readValue(request.getInputStream(), LinkedHashMap.class);
+            try
+            {
+                providedObject = mapper.readValue(request.getInputStream(), LinkedHashMap.class);
+            }
+            catch (JsonParseException e)
+            {
+                throw new IllegalArgumentException("Cannot parse the operation body as json",e);
+            }
         }
         return providedObject;
     }

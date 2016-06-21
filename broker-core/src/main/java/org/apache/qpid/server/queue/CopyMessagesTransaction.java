@@ -22,6 +22,7 @@ package org.apache.qpid.server.queue;
 
 import java.util.List;
 
+import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
@@ -31,9 +32,12 @@ public class CopyMessagesTransaction extends QueueEntryTransaction
 {
     private final Queue _destinationQueue;
 
-    public CopyMessagesTransaction(Queue sourceQueue, List<Long> messageIds, Queue destinationQueue)
+    public CopyMessagesTransaction(Queue sourceQueue,
+                                   List<Long> messageIds,
+                                   Queue destinationQueue,
+                                   final MessageFilter filter, final int limit)
     {
-        super(sourceQueue, messageIds);
+        super(sourceQueue, messageIds, filter, limit);
         _destinationQueue = destinationQueue;
     }
 

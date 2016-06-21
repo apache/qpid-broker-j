@@ -22,14 +22,18 @@ package org.apache.qpid.server.queue;
 
 import java.util.List;
 
+import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 
 public class DeleteMessagesTransaction extends QueueEntryTransaction
 {
-    public DeleteMessagesTransaction(Queue sourceQueue, List<Long> messageIds)
+    public DeleteMessagesTransaction(Queue sourceQueue,
+                                     List<Long> messageIds,
+                                     final MessageFilter filter,
+                                     final int limit)
     {
-        super(sourceQueue, messageIds);
+        super(sourceQueue, messageIds, filter, limit);
     }
 
     @Override
