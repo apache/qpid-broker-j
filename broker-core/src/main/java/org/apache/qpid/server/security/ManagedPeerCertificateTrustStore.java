@@ -30,25 +30,28 @@ import org.apache.qpid.server.model.ManagedOperation;
 import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.model.TrustStore;
 
-@ManagedObject( category = false, type = ManagedPeerCertificateTrustStore.TYPE_NAME)
+@ManagedObject(category = false, type = ManagedPeerCertificateTrustStore.TYPE_NAME,
+        description = "Stores multiple PEM or DER encoded certificates in the broker configuration which the Trust Store will trust for secure connections (e.g., HTTPS or AMQPS)")
 public interface ManagedPeerCertificateTrustStore<X extends ManagedPeerCertificateTrustStore<X>> extends TrustStore<X>
 {
 
     String TYPE_NAME = "ManagedCertificateStore";
 
 
-    @ManagedAttribute( defaultValue = "true" )
+    @ManagedAttribute(defaultValue = "true")
     boolean isExposedAsMessageSource();
 
-    @ManagedAttribute( oversize = true, defaultValue = "[]" )
+    @ManagedAttribute(oversize = true, defaultValue = "[]", description = "List of base64 encoded representations of the ASN.1 DER encoded certificates")
     List<Certificate> getStoredCertificates();
 
-    @ManagedOperation
-    void addCertificate(@Param(name="certificate") Certificate certificate);
+    @ManagedOperation(description = "Add a given certificate to the Trust Store")
+    void addCertificate(@Param(name = "certificate", description = "PEM or base64 encoded DER certificate to be added to the Trust Store")
+                        Certificate certificate);
 
-    @DerivedAttribute
+    @DerivedAttribute(description = "List of details about the certificates like validity dates, SANs, issuer and subject names, etc.")
     List<CertificateDetails> getCertificateDetails();
 
-    @ManagedOperation
-    void removeCertificates(@Param(name="certificates") List<CertificateDetails> certificates);
+    @ManagedOperation(description = "Remove given certificates from the Trust Store.")
+    void removeCertificates(@Param(name = "certificates", description = "List of certificate details to be removed. The details should take the form given by the certificateDetails attribute")
+                            List<CertificateDetails> certificates);
 }

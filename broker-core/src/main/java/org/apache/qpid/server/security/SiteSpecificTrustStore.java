@@ -28,35 +28,36 @@ import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedOperation;
 import org.apache.qpid.server.model.TrustStore;
 
-@ManagedObject( category = false, type = "SiteSpecificTrustStore" )
+@ManagedObject(category = false, type = "SiteSpecificTrustStore",
+        description = "Obtains a SSL/TLS certificate from a given URL which the Trust Store will trust for secure connections (e.g., HTTPS or AMQPS)")
 public interface SiteSpecificTrustStore<X extends SiteSpecificTrustStore<X>> extends TrustStore<X>
 {
     String CERTIFICATE = "certificate";
 
-    @ManagedAttribute(immutable = true)
+    @ManagedAttribute(immutable = true, description = "The URL from which to obtain the trusted certificate. This must include the protocol and port. Example: https://example.com:443")
     String getSiteUrl();
 
-    @DerivedAttribute(persist = true)
+    @DerivedAttribute(persist = true, description = "The X.509 certificate obtained from the given URL as base64 encoded representation of the ASN.1 DER encoding")
     String getCertificate();
 
-    @DerivedAttribute
+    @DerivedAttribute(description = "The distinguished name of the issuer of the certificate or null if no issuer information is present")
     String getCertificateIssuer();
 
-    @DerivedAttribute
+    @DerivedAttribute(description = "The distinguished name of the subject of the certificate or null if no subject information is present")
     String getCertificateSubject();
 
-    @DerivedAttribute
+    @DerivedAttribute(description = "The serial number of the certificate assigned by the CA or null if no serial number is present")
     String getCertificateSerialNumber();
 
-    @DerivedAttribute
+    @DerivedAttribute(description = "A (possibly truncated) hex encoded representation of the signature. The bytes are separated by spaces. null if no signature information is present")
     String getCertificateSignature();
 
-    @DerivedAttribute
+    @DerivedAttribute(description = "The start date of the validity of the certificate")
     Date getCertificateValidFromDate();
 
-    @DerivedAttribute
+    @DerivedAttribute(description = "The end date of the validity of the certificate")
     Date getCertificateValidUntilDate();
 
-    @ManagedOperation
+    @ManagedOperation(description = "Re-download the certificate from the URL")
     void refreshCertificate();
 }
