@@ -130,6 +130,9 @@ public class ServerConnection extends Connection
         if(state == State.CLOSING)
         {
             getAmqpConnection().getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis() + CLOSE_OK_TIMEOUT, (ServerNetworkConnection) getNetworkConnection()));
+
+            // trigger a wakeup to ensure the ticker will be taken into account
+            notifyWork();
         }
     }
 
