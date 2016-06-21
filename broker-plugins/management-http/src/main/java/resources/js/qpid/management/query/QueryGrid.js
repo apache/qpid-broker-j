@@ -59,7 +59,6 @@ define(["dojo/_base/declare",
                                               */
                                               track:      function()
                                                           {
-                                                              this.track = null;
                                                               return this;
                                                           },
                                               /*
@@ -321,7 +320,9 @@ define(["dojo/_base/declare",
 
                                 if (newResult == null)
                                 {
-                                    var event = {"target": currentResult, "previousIndex": i, "index": i};
+                                    var event = {"target": currentResult,
+                                                 "previousIndex": evt.start + i,
+                                                 "index": evt.start +i};
                                     store.emit("delete", event);
                                     currentResults.splice(i, 1);
                                 }
@@ -345,13 +346,15 @@ define(["dojo/_base/declare",
 
                                 if (currentResult == null)
                                 {
-                                    var event = {"target": newResult, "index": j};
+                                    var event = {"target": newResult, "index": j + evt.start};
                                     store.emit("add", event);
                                     currentResults.splice(j, 0, currentResults);
                                 }
                                 else
                                 {
-                                    var event = {"target": newResult, "previousIndex": previousIndex, "index": j};
+                                    var event = {"target": newResult,
+                                                 "previousIndex": previousIndex + evt.start,
+                                                 "index": j + evt.start};
                                     if (previousIndex === j)
                                     {
                                         currentResults[j] = newResult;
