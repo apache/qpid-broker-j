@@ -527,7 +527,7 @@ div .messages {
 
 .claro.qpid .dgrid-pagination .dgrid-page-disabled {
     color: black;
-    font-weight: normal;
+    font-weight: bold;
 }
 
 .claro.qpid  .dgrid-hider-toggle {
