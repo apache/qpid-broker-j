@@ -590,6 +590,9 @@ public class AMQPConnection_0_8
                 {
                     final long timeoutTime = System.currentTimeMillis() + CLOSE_OK_TIMEOUT;
                     getAggregateTicker().addTicker(new ConnectionClosingTicker(timeoutTime, _network));
+
+                    // trigger a wakeup to ensure the ticker will be taken into account
+                    notifyWork();
                 }
             }
         }

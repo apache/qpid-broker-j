@@ -568,6 +568,8 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis() + CLOSE_RESPONSE_TIMEOUT,
                                                                    getNetwork()));
 
+        // trigger a wakeup to ensure the ticker will be taken into account
+        notifyWork();
     }
 
     @Override
