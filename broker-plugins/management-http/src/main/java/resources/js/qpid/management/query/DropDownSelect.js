@@ -125,8 +125,8 @@ define(["dojo/_base/declare",
                  */
                 _optionsGrid: null,
                 _descending: false,
-                _selectedItems: [],
-                _selectedIds: {},
+                _selectedItems: null,
+                _selectedIds: null,
 
                 postCreate: function ()
                 {
@@ -140,6 +140,8 @@ define(["dojo/_base/declare",
                 },
                 _postCreate: function ()
                 {
+                    this._selectedItems = [];
+                    this._selectedIds = {};
                     this.clearButton.on("click", lang.hitch(this, this._onClear));
                     this.search.on("change", lang.hitch(this, this._searchChanged));
                     this.search.on("keyUp", lang.hitch(this, function (evt)
