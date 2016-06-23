@@ -41,6 +41,8 @@ public final class ConfiguredObjectQuery
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfiguredObjectQuery.class);
 
     private static final String[] STANDARD_FIELDS = new String[]{ConfiguredObject.ID, ConfiguredObject.NAME};
+    public static final int DEFAULT_LIMIT = -1;
+    public static final int DEFAULT_OFFSET = 0;
 
     private final ConfiguredObjectExpressionFactory _expressionFactory = new ConfiguredObjectExpressionFactory();
 
@@ -74,8 +76,8 @@ public final class ConfiguredObjectQuery
                                  String limitClause,
                                  String offsetClause)
     {
-        int limit = toInt(limitClause, -1);
-        int offset = toInt(offsetClause, 0);
+        int limit = toInt(limitClause, DEFAULT_LIMIT);
+        int offset = toInt(offsetClause, DEFAULT_OFFSET);
 
         HeadersAndValueExpressions headersAndValueExpressions = parseSelectClause(selectClause);
 

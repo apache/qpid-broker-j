@@ -19,8 +19,14 @@
 
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -30,6 +36,8 @@ import org.apache.qpid.server.model.ConfiguredObject;
 public class RequestInfoParser
 {
     private static final String USER_PREFERENCES = "userpreferences";
+    private static final String VISIBLE_USER_PREFERENCES = "visiblepreferences";
+    private static final String UTF8 = StandardCharsets.UTF_8.name();
 
     private final List<Class<? extends ConfiguredObject>> _hierarchy;
 
@@ -43,23 +51,24 @@ public class RequestInfoParser
         final String servletPath = request.getServletPath();
         final String pathInfo = (request.getPathInfo() != null ? request.getPathInfo() : "");
         List<String> parts = HttpManagementUtil.getPathInfoElements(servletPath, pathInfo);
+        Map<String, List<String>> queryParameters =  parseQueryString(request.getQueryString());
 
         final String method = request.getMethod();
         if ("POST".equals(method))
         {
-            return parsePost(servletPath, pathInfo, parts);
+            return parsePost(servletPath, pathInfo, parts, queryParameters);
         }
         else if ("PUT".equals(method))
         {
-            return parsePut(servletPath, pathInfo, parts);
+            return parsePut(servletPath, pathInfo, parts, queryParameters);
         }
         else if ("GET".equals(method))
         {
-            return parseGet(servletPath, pathInfo, parts);
+            return parseGet(servletPath, pathInfo, parts, queryParameters);
         }
         else if ("DELETE".equals(method))
         {
-            return parseDelete(servletPath, pathInfo, parts);
+            return parseDelete(servletPath, pathInfo, parts, queryParameters);
         }
         else
         {
@@ -68,18 +77,23 @@ public class RequestInfoParser
         }
     }
 
-    private RequestInfo parseDelete(final String servletPath, final String pathInfo, final List<String> parts)
+    private RequestInfo parseDelete(final String servletPath,
+                                    final String pathInfo,
+                                    final List<String> parts,
+                                    final Map<String, List<String>> queryParameters)
     {
         if (parts.size() <= _hierarchy.size())
         {
-            return RequestInfo.createModelRequestInfo(parts);
+            return RequestInfo.createModelRequestInfo(parts,
+                                                      queryParameters);
         }
         else if (parts.size() > _hierarchy.size())
         {
             if (USER_PREFERENCES.equals(parts.get(_hierarchy.size())))
             {
                 return RequestInfo.createPreferencesRequestInfo(parts.subList(0, _hierarchy.size()),
-                                                                parts.subList(_hierarchy.size() + 1, parts.size()));
+                                                                parts.subList(_hierarchy.size() + 1, parts.size()),
+                                                                queryParameters);
             }
         }
         String expectedPath = buildExpectedPath(servletPath, _hierarchy);
@@ -91,23 +105,35 @@ public class RequestInfoParser
                 expectedPath));
     }
 
-    private RequestInfo parseGet(final String servletPath, final String pathInfo, final List<String> parts)
+    private RequestInfo parseGet(final String servletPath,
+                                 final String pathInfo,
+                                 final List<String> parts,
+                                 final Map<String, List<String>> queryParameters)
     {
         if (parts.size() <= _hierarchy.size())
         {
-            return RequestInfo.createModelRequestInfo(parts);
+            return RequestInfo.createModelRequestInfo(parts,
+                                                      queryParameters);
         }
         else if (parts.size() > _hierarchy.size())
         {
             if (USER_PREFERENCES.equals(parts.get(_hierarchy.size())))
             {
                 return RequestInfo.createPreferencesRequestInfo(parts.subList(0, _hierarchy.size()),
-                                                                parts.subList(_hierarchy.size() + 1, parts.size()));
+                                                                parts.subList(_hierarchy.size() + 1, parts.size()),
+                                                                queryParameters);
+            }
+            else if (VISIBLE_USER_PREFERENCES.equals(parts.get(_hierarchy.size())))
+            {
+                return RequestInfo.createVisiblePreferencesRequestInfo(parts.subList(0, _hierarchy.size()),
+                                                                       parts.subList(_hierarchy.size() + 1, parts.size()),
+                                                                       queryParameters);
             }
             else if (parts.size() == _hierarchy.size() + 1)
             {
                 return RequestInfo.createOperationRequestInfo(parts.subList(0, _hierarchy.size()),
-                                                              parts.get(parts.size() - 1));
+                                                              parts.get(parts.size() - 1),
+                                                              queryParameters);
             }
         }
         String expectedPath = buildExpectedPath(servletPath, _hierarchy);
@@ -116,16 +142,20 @@ public class RequestInfoParser
                                                          expectedPath));
     }
 
-    private RequestInfo parsePut(final String servletPath, final String pathInfo, final List<String> parts)
+    private RequestInfo parsePut(final String servletPath,
+                                 final String pathInfo,
+                                 final List<String> parts,
+                                 final Map<String, List<String>> queryParameters)
     {
         if (parts.size() == _hierarchy.size() || parts.size() == _hierarchy.size() - 1)
         {
-            return RequestInfo.createModelRequestInfo(parts);
+            return RequestInfo.createModelRequestInfo(parts, queryParameters);
         }
         else if (parts.size() > _hierarchy.size() && USER_PREFERENCES.equals(parts.get(_hierarchy.size())))
         {
             return RequestInfo.createPreferencesRequestInfo(parts.subList(0, _hierarchy.size()),
-                                                            parts.subList(_hierarchy.size() + 1, parts.size()));
+                                                            parts.subList(_hierarchy.size() + 1, parts.size()),
+                                                            queryParameters);
         }
         else
         {
@@ -136,23 +166,29 @@ public class RequestInfoParser
         }
     }
 
-    private RequestInfo parsePost(final String servletPath, final String pathInfo, final List<String> parts)
+    private RequestInfo parsePost(final String servletPath,
+                                  final String pathInfo,
+                                  final List<String> parts,
+                                  final Map<String, List<String>> queryParameters)
     {
         if (parts.size() == _hierarchy.size() || parts.size() == _hierarchy.size() - 1)
         {
-            return RequestInfo.createModelRequestInfo(parts);
+            return RequestInfo.createModelRequestInfo(parts, queryParameters);
         }
         else if (parts.size() > _hierarchy.size())
         {
             if (USER_PREFERENCES.equals(parts.get(_hierarchy.size())))
             {
+
                 return RequestInfo.createPreferencesRequestInfo(parts.subList(0, _hierarchy.size()),
-                                                                parts.subList(_hierarchy.size() + 1, parts.size()));
+                                                                parts.subList(_hierarchy.size() + 1, parts.size()),
+                                                                queryParameters);
             }
-            else if (parts.size() == _hierarchy.size() + 1)
+            else if (parts.size() == _hierarchy.size() + 1 && !VISIBLE_USER_PREFERENCES.equals(parts.get(_hierarchy.size())))
             {
                 return RequestInfo.createOperationRequestInfo(parts.subList(0, _hierarchy.size()),
-                                                              parts.get(parts.size() - 1));
+                                                              parts.get(parts.size() - 1),
+                                                              queryParameters);
             }
         }
         String expectedFullPath = buildExpectedPath(servletPath, _hierarchy);
@@ -175,5 +211,47 @@ public class RequestInfoParser
             expectedPath.append(" name>");
         }
         return expectedPath.toString();
+    }
+
+    private Map<String, List<String>> parseQueryString(String queryString)
+    {
+
+        Map<String, List<String>> query = new LinkedHashMap<>();
+        if (queryString == null || queryString.isEmpty())
+        {
+            return query;
+        }
+
+        final List<String> pairs = Arrays.asList(queryString.split("&"));
+        for (String pairString : pairs)
+        {
+            List<String> pair = Arrays.asList(pairString.split("="));
+            if (pair.size() == 1)
+            {
+                pair.add(null);
+            }
+            else if (pair.size() != 2)
+            {
+                throw new IllegalArgumentException(String.format("could not parse query string '%s'", queryString));
+            }
+
+            String key;
+            String value;
+            try
+            {
+                key = URLDecoder.decode(pair.get(0), UTF8);
+                value = pair.get(1) == null ? null : URLDecoder.decode(pair.get(1), UTF8);
+            }
+            catch (UnsupportedEncodingException e)
+            {
+                throw new RuntimeException(e);
+            }
+            if (!query.containsKey(key))
+            {
+                query.put(key, new ArrayList<String>());
+            }
+            query.get(key).add(value);
+        }
+        return query;
     }
 }

@@ -20,6 +20,7 @@
 package org.apache.qpid.server.model.preferences;
 
 import java.security.Principal;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -41,6 +42,7 @@ public class PreferenceImpl implements Preference
     private final Principal _owner;
     private final ConfiguredObject<?> _associatedObject;
     private final String _type;
+    private final Date _lastUpdatedDate;
 
     public PreferenceImpl(final ConfiguredObject<?> associatedObject,
                           final UUID uuid,
@@ -50,6 +52,7 @@ public class PreferenceImpl implements Preference
                           final Set<Principal> visibilitySet,
                           final PreferenceValue preferenceValue)
     {
+        _lastUpdatedDate = new Date();
         _associatedObject = associatedObject;
         _id = uuid;
         _name = name;
@@ -103,6 +106,12 @@ public class PreferenceImpl implements Preference
     }
 
     @Override
+    public Date getLastUpdatedDate()
+    {
+        return new Date(_lastUpdatedDate.getTime());
+    }
+
+    @Override
     public PreferenceValue getValue()
     {
         return _preferenceValue;
@@ -112,21 +121,20 @@ public class PreferenceImpl implements Preference
     public Map<String, Object> getAttributes()
     {
         Map<String, Object> map = new LinkedHashMap<>();
-        map.put("id", _id);
-        map.put("name", _name);
-        map.put("type", _type);
-        map.put("description", _description);
-        map.put("owner", _owner.getName());
-        map.put("associatedObject", _associatedObject.getId());
+        map.put(ID_ATTRIBUTE, _id);
+        map.put(NAME_ATTRIBUTE, _name);
+        map.put(TYPE_ATTRIBUTE, _type);
+        map.put(DESCRIPTION_ATTRIBUTE, _description);
+        map.put(OWNER_ATTRIBUTE, _owner == null ? "" : _owner.getName());
+        map.put(ASSOCIATED_OBJECT_ATTRIBUTE, _associatedObject.getId());
         Set<String> visibilityList = new HashSet<>(_visibilitySet.size());
         for (Principal principal : _visibilitySet)
         {
             visibilityList.add(principal.getName());
         }
-        map.put("visibilityList", visibilityList);
-        //map.put("createdDate", foundPreference.get);
-        //map.put("lastUpdatedDate", foundPreference.get);
-        map.put("value", _preferenceValue.getAttributes());
+        map.put(VISIBILITY_LIST_ATTRIBUTE, visibilityList);
+        map.put(LAST_UPDATED_DATE_ATTRIBUTE, new Date(_lastUpdatedDate.getTime()));
+        map.put(VALUE_ATTRIBUTE, _preferenceValue.getAttributes());
         return map;
     }
 }

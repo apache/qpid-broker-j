@@ -21,6 +21,10 @@ package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 public class RequestInfo
 {
@@ -28,28 +32,46 @@ public class RequestInfo
     private final List<String> _modelParts;
     private final String _operationName;
     private final List<String> _preferencesParts;
+    private final Map<String, List<String>> _queryParameters;
 
-    public static RequestInfo createModelRequestInfo(final List<String> modelParts)
+    public static RequestInfo createModelRequestInfo(final List<String> modelParts, Map<String, List<String>> queryParameters)
     {
-        return new RequestInfo(RequestType.MODEL_OBJECT, modelParts, null, Collections.<String>emptyList());
+        return new RequestInfo(RequestType.MODEL_OBJECT, modelParts, null, Collections.<String>emptyList(), queryParameters);
     }
 
-    public static RequestInfo createOperationRequestInfo(final List<String> modelParts, final String operationName)
+    public static RequestInfo createOperationRequestInfo(final List<String> modelParts, final String operationName, Map<String, List<String>> queryParameters)
     {
-        return new RequestInfo(RequestType.OPERATION, modelParts, operationName, Collections.<String>emptyList());
+        return new RequestInfo(RequestType.OPERATION, modelParts, operationName, Collections.<String>emptyList(), queryParameters);
     }
 
     public static RequestInfo createPreferencesRequestInfo(final List<String> modelParts, final List<String> preferencesParts)
     {
-        return new RequestInfo(RequestType.USER_PREFERENCES, modelParts, null, preferencesParts);
+        return new RequestInfo(RequestType.USER_PREFERENCES, modelParts, null, preferencesParts, Collections.<String, List<String>>emptyMap());
     }
 
-    private RequestInfo(final RequestType type, final List<String> modelParts, final String operationName, final List<String> preferencesParts)
+    public static RequestInfo createPreferencesRequestInfo(final List<String> modelParts, final List<String> preferencesParts, Map<String, List<String>> queryParameters)
+    {
+        return new RequestInfo(RequestType.USER_PREFERENCES, modelParts, null, preferencesParts, queryParameters);
+    }
+
+    public static RequestInfo createVisiblePreferencesRequestInfo(final List<String> modelParts,
+                                                                  final List<String> preferencesParts,
+                                                                  final Map<String, List<String>> queryParameters)
+    {
+        return new RequestInfo(RequestType.VISIBLE_PREFERENCES, modelParts, null, preferencesParts, queryParameters);
+    }
+
+    private RequestInfo(final RequestType type,
+                        final List<String> modelParts,
+                        final String operationName,
+                        final List<String> preferencesParts,
+                        final Map<String, List<String>> queryParameters)
     {
         _type = type;
         _operationName = operationName;
-        _modelParts = Collections.unmodifiableList(modelParts);
-        _preferencesParts = Collections.unmodifiableList(preferencesParts);
+        _modelParts = ImmutableList.copyOf(modelParts);
+        _preferencesParts = ImmutableList.copyOf(preferencesParts);
+        _queryParameters = ImmutableMap.copyOf(queryParameters);
     }
 
     public RequestType getType()
@@ -76,8 +98,13 @@ public class RequestInfo
         return _preferencesParts;
     }
 
+    public Map<String, List<String>> getQueryParameters()
+    {
+        return _queryParameters;
+    }
+
     enum RequestType
     {
-        OPERATION, USER_PREFERENCES, MODEL_OBJECT
+        OPERATION, USER_PREFERENCES, VISIBLE_PREFERENCES, MODEL_OBJECT
     }
 }

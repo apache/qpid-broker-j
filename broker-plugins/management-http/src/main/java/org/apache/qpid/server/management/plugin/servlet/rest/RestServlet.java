@@ -476,6 +476,7 @@ public class RestServlet extends AbstractServlet
                                  sendCachingHeaders);
                 break;
             }
+            case VISIBLE_PREFERENCES:
             case USER_PREFERENCES:
             {
                 doGetUserPreferences(requestInfo, request, response);
@@ -559,7 +560,7 @@ public class RestServlet extends AbstractServlet
             {
                 List<String> names = requestInfo.getModelParts();
                 boolean isFullObjectURL = names.size() == _hierarchy.length;
-                Map<String, Object> providedObject = getRequestProvidedObject(request);
+                Map<String, Object> providedObject = getRequestProvidedObject(request, requestInfo);
                 if (names.isEmpty() && _hierarchy.length == 0)
                 {
                     getBroker().setAttributes(providedObject);
@@ -651,12 +652,12 @@ public class RestServlet extends AbstractServlet
 
         if ("POST".equals(request.getMethod()))
         {
-            Object providedObject = getRequestProvidedObject(request, Object.class);
+            Object providedObject = getRequestProvidedObject(request, requestInfo, Object.class);
             restUserPreferenceHandler.handlePOST(userPreferences, requestInfo, providedObject);
         }
         else if ("PUT".equals(request.getMethod()))
         {
-            Map<String, Object> providedObject = getRequestProvidedObject(request);
+            Map<String, Object> providedObject = getRequestProvidedObject(request, requestInfo);
             final RestUserPreferenceHandler.ActionTaken actionTaken =
                     restUserPreferenceHandler.handlePUT(userPreferences, requestInfo, providedObject);
 
@@ -729,7 +730,7 @@ public class RestServlet extends AbstractServlet
 
                     break;
                 case "POST":
-                    operationArguments = getRequestProvidedObject(request);
+                    operationArguments = getRequestProvidedObject(request, requestInfo);
                     break;
                 default:
                     response.addHeader("Allow", (operation.isNonModifying() ? "POST, GET" : "POST"));
@@ -950,13 +951,15 @@ public class RestServlet extends AbstractServlet
         return parents;
     }
 
-    private Map<String, Object> getRequestProvidedObject(HttpServletRequest request)
+    private Map<String, Object> getRequestProvidedObject(HttpServletRequest request, final RequestInfo requestInfo)
             throws IOException, ServletException
     {
-        return getRequestProvidedObject(request, LinkedHashMap.class);
+        return getRequestProvidedObject(request, requestInfo, LinkedHashMap.class);
     }
 
-    private <T> T getRequestProvidedObject(HttpServletRequest request, Class<T> expectedClass)
+    private <T> T getRequestProvidedObject(HttpServletRequest request,
+                                           final RequestInfo requestInfo,
+                                           Class<T> expectedClass)
             throws IOException, ServletException
     {
         T providedObject;

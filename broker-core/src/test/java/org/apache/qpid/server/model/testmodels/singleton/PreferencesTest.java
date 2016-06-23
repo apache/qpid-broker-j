@@ -24,6 +24,8 @@ import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -70,6 +72,7 @@ public class PreferencesTest extends QpidTestCase
         assertEquals("Unexpected preference name", "myprefname", p.getName());
         assertEquals("Unexpected preference description", "myprefdescription", p.getDescription());
         assertEquals("Unexpected preference visibility list", Collections.emptySet(), p.getVisibilityList());
+        assertNotNull("Preference creation date must not be null", p.getLastUpdatedDate());
         final PreferenceValue preferenceValue = p.getValue();
         assertNotNull("Preference value is null", preferenceValue);
         assertEquals("Unexpected preference value", prefValueMap, preferenceValue.getAttributes());
@@ -795,11 +798,11 @@ public class PreferencesTest extends QpidTestCase
                                                                                   Collections.<String, Object>emptyMap());
                 preferences.add(p1);
                 Preference p1b = _testObject.getUserPreferences().createPreference(null,
-                                                                                  replaceType,
-                                                                                  "unaffectedPropName",
-                                                                                  null,
-                                                                                  null,
-                                                                                  Collections.<String, Object>emptyMap());
+                                                                                   replaceType,
+                                                                                   "unaffectedPropName",
+                                                                                   null,
+                                                                                   null,
+                                                                                   Collections.<String, Object>emptyMap());
                 preferences.add(p1b);
                 Preference p2 = _testObject.getUserPreferences().createPreference(null,
                                                                                   unaffectedType,
@@ -942,5 +945,83 @@ public class PreferencesTest extends QpidTestCase
                 return null;
             }
         });
+    }
+
+    public void testLastUpdatedDate() throws Exception
+    {
+        Date before = new Date();
+        Thread.sleep(1);
+        final Preference p1 = Subject.doAs(_testSubject, new PrivilegedAction<Preference>()
+        {
+            @Override
+            public Preference run()
+            {
+                return _testObject.getUserPreferences().createPreference(null,
+                                                                         "X-testType",
+                                                                         "propName1",
+                                                                         null,
+                                                                         null,
+                                                                         Collections.<String, Object>emptyMap());
+            }
+        });
+        Thread.sleep(1);
+        Date after = new Date();
+        Date lastUpdatedDate = p1.getLastUpdatedDate();
+        assertTrue(String.format("Creation date is too early. Expected : after %s  Found : %s", before, lastUpdatedDate),
+                   before.before(lastUpdatedDate));
+        assertTrue(String.format("Creation date is too late. Expected : after %s  Found : %s", after, lastUpdatedDate),
+                   after.after(lastUpdatedDate));
+    }
+
+    public void testLastUpdatedDateIsImmutable() throws Exception
+    {
+        final Preference p1 = Subject.doAs(_testSubject, new PrivilegedAction<Preference>()
+        {
+            @Override
+            public Preference run()
+            {
+                return _testObject.getUserPreferences().createPreference(null,
+                                                                         "X-testType",
+                                                                         "propName1",
+                                                                         null,
+                                                                         null,
+                                                                         Collections.<String, Object>emptyMap());
+            }
+        });
+        Date lastUpdatedDate = p1.getLastUpdatedDate();
+        lastUpdatedDate.setTime(0);
+        Date lastUpdatedDate2 = p1.getLastUpdatedDate();
+        assertTrue("Creation date is not immutable.", lastUpdatedDate2.getTime() != 0);
+    }
+
+    public void testGetAttributes() throws Exception
+    {
+        final Map<String, Object> prefValueMap = Collections.<String, Object>singletonMap("myprefkey", "myprefvalue");
+        final UUID uuid = UUID.randomUUID();
+        final String type = "X-PREF1";
+        final String name = "myprefname";
+        final String description = "myprefdescription";
+        final Set<Principal> visibilitySet = Collections.<Principal>emptySet();
+        Preference p = _testObject.getUserPreferences()
+                                  .createPreference(uuid,
+                                                    type,
+                                                    name,
+                                                    description,
+                                                    visibilitySet,
+                                                    prefValueMap);
+        assertNotNull("Creation failed", p);
+        Date lastUpdatedDate = p.getLastUpdatedDate();
+
+        Map<String, Object> expectedAttributes = new HashMap<>();
+        expectedAttributes.put("id", uuid);
+        expectedAttributes.put("type", type);
+        expectedAttributes.put("name", name);
+        expectedAttributes.put("description", description);
+        expectedAttributes.put("owner", "");
+        expectedAttributes.put("associatedObject", _testObject.getId());
+        expectedAttributes.put("visibilityList", visibilitySet);
+        expectedAttributes.put("lastUpdatedDate", lastUpdatedDate);
+        expectedAttributes.put("value", prefValueMap);
+        assertEquals("Unexpected preference attributes", expectedAttributes, p.getAttributes());
     }
 }

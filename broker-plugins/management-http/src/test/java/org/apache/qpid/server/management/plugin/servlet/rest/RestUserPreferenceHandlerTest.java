@@ -26,6 +26,7 @@ import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,6 +41,7 @@ import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -78,8 +80,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                                                                                "myprefname"));
 
         final Map<String, Object> pref = new HashMap<>();
-        pref.put("value", Collections.emptyMap());
-        pref.put("visibilityList", Collections.singletonList(MYGROUP));
+        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList(MYGROUP));
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
                      {
@@ -110,8 +112,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                                                                                "myprefname"));
 
         final Map<String, Object> pref = new HashMap<>();
-        pref.put("value", Collections.emptyMap());
-        pref.put("visibilityList", Collections.singletonList("Invalid Group"));
+        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList("Invalid Group"));
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
                      {
@@ -139,9 +141,9 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                                                                      Arrays.asList("X-testtype"));
 
         final Map<String, Object> pref = new HashMap<>();
-        pref.put("name", "testPref");
-        pref.put("value", Collections.emptyMap());
-        pref.put("visibilityList", Collections.singletonList(MYGROUP));
+        pref.put(Preference.NAME_ATTRIBUTE, "testPref");
+        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList(MYGROUP));
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
                      {
@@ -167,9 +169,9 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
         final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
                                                                                      Collections.<String>emptyList());
         final Map<String, Object> pref = new HashMap<>();
-        pref.put("name", "testPref");
-        pref.put("value", Collections.emptyMap());
-        pref.put("visibilityList", Collections.singletonList(MYGROUP));
+        pref.put(Preference.NAME_ATTRIBUTE, "testPref");
+        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList(MYGROUP));
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
                      {
@@ -199,9 +201,9 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                                                                  Arrays.asList("X-testtype"));
 
         final Map<String, Object> pref = new HashMap<>();
-        pref.put("name", "testPref");
-        pref.put("value", Collections.emptyMap());
-        pref.put("visibilityList", Collections.singletonList("Invalid Group"));
+        pref.put(Preference.NAME_ATTRIBUTE, "testPref");
+        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList("Invalid Group"));
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
                      {
@@ -230,9 +232,9 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                                                                  Collections.<String>emptyList());
 
         final Map<String, Object> pref = new HashMap<>();
-        pref.put("name", "testPref");
-        pref.put("value", Collections.emptyMap());
-        pref.put("visibilityList", Collections.singletonList("Invalid Group"));
+        pref.put(Preference.NAME_ATTRIBUTE, "testPref");
+        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList("Invalid Group"));
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
                      {
@@ -260,10 +262,6 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
     {
         final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
                                                                                      Collections.<String>emptyList());
-        final Map<String, Object> pref = new HashMap<>();
-        pref.put("name", "testPref");
-        pref.put("value", Collections.emptyMap());
-        pref.put("visibilityList", Collections.singletonList(MYGROUP));
         final String type = "X-testtype";
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
@@ -297,6 +295,86 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                     );
     }
 
+    public void testGetById() throws Exception
+    {
+        Subject.doAs(_subject, new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             final String type = "X-testtype";
+                             Preference p1 = _userPreferences.createPreference(null,
+                                                                               type,
+                                                                               "testpref",
+                                                                               null,
+                                                                               null,
+                                                                               Collections.<String, Object>emptyMap());
+                             Preference p2 = _userPreferences.createPreference(null,
+                                                                               type,
+                                                                               "testpref2",
+                                                                               null,
+                                                                               null,
+                                                                               Collections.<String, Object>emptyMap());
+                             _userPreferences.updateOrAppend(Arrays.asList(p1, p2));
+                             UUID id = p1.getId();
+
+                             final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
+                                                                                                          Collections.<String>emptyList(),
+                                                                                                          Collections.singletonMap("id", Collections.singletonList(id.toString())));
+
+                             Map<String, List<Map<String, Object>>> typeToPreferenceListMap =
+                                     (Map<String, List<Map<String, Object>>>) _handler.handleGET(_userPreferences, rootRequestInfo);
+                             assertEquals("Unexpected p1 map size", 1, typeToPreferenceListMap.size());
+                             assertEquals("Unexpected type in p1 map",
+                                          type,
+                                          typeToPreferenceListMap.keySet().iterator().next());
+                             List<Map<String, Object>> preferences = typeToPreferenceListMap.get(type);
+                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             assertEquals("Unexpected id", id, preferences.get(0).get(Preference.ID_ATTRIBUTE));
+                             return null;
+                         }
+                     }
+                    );
+    }
+
+    public void testDeleteById() throws Exception
+    {
+        Subject.doAs(_subject, new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             final String type = "X-testtype";
+                             Preference p1 = _userPreferences.createPreference(null,
+                                                                               type,
+                                                                               "testpref",
+                                                                               null,
+                                                                               null,
+                                                                               Collections.<String, Object>emptyMap());
+                             Preference p2 = _userPreferences.createPreference(null,
+                                                                               type,
+                                                                               "testpref2",
+                                                                               null,
+                                                                               null,
+                                                                               Collections.<String, Object>emptyMap());
+                             _userPreferences.updateOrAppend(Arrays.asList(p1, p2));
+                             UUID id = p1.getId();
+
+                             final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
+                                                                                                          Collections.<String>emptyList(),
+                                                                                                          Collections.singletonMap("id", Collections.singletonList(id.toString())));
+
+                             _handler.handleDELETE(_userPreferences, rootRequestInfo);
+
+                             final Set<Preference> retrievedPreferences = _userPreferences.getPreferences();
+                             assertEquals("Unexpected number of preferences", 1, retrievedPreferences.size());
+                             assertTrue("Unexpected type in p1 map", retrievedPreferences.contains(p2));
+                             return null;
+                         }
+                     }
+                    );
+    }
+
     public void testDeleteByTypeAndName() throws Exception
     {
         final String preferenceType = "X-testtype";
@@ -306,7 +384,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                                                                                preferenceName));
 
         final Map<String, Object> pref = new HashMap<>();
-        pref.put("value", Collections.emptyMap());
+        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
 
         doTestDelete(preferenceType, preferenceName, requestInfo);
     }
@@ -319,7 +397,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                                                                  Arrays.asList(preferenceType));
 
         final Map<String, Object> pref = new HashMap<>();
-        pref.put("value", Collections.emptyMap());
+        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
 
         doTestDelete(preferenceType, preferenceName, requestInfo);
     }
@@ -332,9 +410,178 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                                                                  Collections.<String>emptyList());
 
         final Map<String, Object> pref = new HashMap<>();
-        pref.put("value", Collections.emptyMap());
+        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
 
         doTestDelete(preferenceType, preferenceName, requestInfo);
+    }
+
+    public void testGetVisiblePreferencesByRoot() throws Exception
+    {
+        final String prefName = "testpref";
+        final String prefType = "X-testtype";
+        final RequestInfo rootRequestInfo = RequestInfo.createVisiblePreferencesRequestInfo(Collections.<String>emptyList(),
+                                                                                            Collections.<String>emptyList(),
+                                                                                            Collections.<String, List<String>>emptyMap());
+
+        Subject.doAs(_subject, new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             final Set<Preference> preferences = new HashSet<>();
+                             Preference p1 = _userPreferences.createPreference(null,
+                                                                               prefType,
+                                                                               prefName,
+                                                                               null,
+                                                                               Collections.<Principal>singleton(
+                                                                                       _groupPrincipal),
+                                                                               Collections.<String, Object>emptyMap());
+                             preferences.add(p1);
+                             Preference p2 = _userPreferences.createPreference(null,
+                                                                               prefType,
+                                                                               "testPref2",
+                                                                               null,
+                                                                               Collections.<Principal>emptySet(),
+                                                                               Collections.<String, Object>emptyMap());
+                             preferences.add(p2);
+                             _userPreferences.updateOrAppend(preferences);
+                             return null;
+                         }
+                     }
+                    );
+
+        Subject testSubject2 = TestPrincipalUtils.createTestSubject("testUser2", MYGROUP);
+        Subject.doAs(testSubject2, new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             Map<String, List<Map<String, Object>>> typeToPreferenceListMap =
+                                     (Map<String, List<Map<String, Object>>>) _handler.handleGET(_userPreferences, rootRequestInfo);
+                             assertEquals("Unexpected preference map size", 1, typeToPreferenceListMap.size());
+                             assertEquals("Unexpected prefType in preference map",
+                                          prefType,
+                                          typeToPreferenceListMap.keySet().iterator().next());
+                             List<Map<String, Object>> preferences = typeToPreferenceListMap.get(prefType);
+                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             assertEquals("Unexpected name of preferences", prefName, preferences.get(0).get(Preference.NAME_ATTRIBUTE));
+                             Set<String> visibilityList = (Set<String>) preferences.get(0).get(Preference.VISIBILITY_LIST_ATTRIBUTE);
+                             assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
+                             assertEquals("Unexpected principal in visibility list", MYGROUP, visibilityList.iterator().next());
+                             assertEquals("Unexpected owner", MYUSER, preferences.get(0).get(Preference.OWNER_ATTRIBUTE));
+                             return null;
+                         }
+                     }
+                    );
+    }
+
+    public void testGetVisiblePreferencesByType() throws Exception
+    {
+        final String prefName = "testpref";
+        final String prefType = "X-testtype";
+        final RequestInfo rootRequestInfo = RequestInfo.createVisiblePreferencesRequestInfo(Collections.<String>emptyList(),
+                                                                                            Arrays.asList(prefType),
+                                                                                            Collections.<String, List<String>>emptyMap());
+
+        Subject.doAs(_subject, new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             final Set<Preference> preferences = new HashSet<>();
+                             Preference p1 = _userPreferences.createPreference(null,
+                                                                               prefType,
+                                                                               prefName,
+                                                                               null,
+                                                                               Collections.<Principal>singleton(
+                                                                                       _groupPrincipal),
+                                                                               Collections.<String, Object>emptyMap());
+                             preferences.add(p1);
+                             Preference p2 = _userPreferences.createPreference(null,
+                                                                               prefType,
+                                                                               "testPref2",
+                                                                               null,
+                                                                               Collections.<Principal>emptySet(),
+                                                                               Collections.<String, Object>emptyMap());
+                             preferences.add(p2);
+                             _userPreferences.updateOrAppend(preferences);
+                             return null;
+                         }
+                     }
+                    );
+
+        Subject testSubject2 = TestPrincipalUtils.createTestSubject("testUser2", MYGROUP);
+        Subject.doAs(testSubject2, new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             List<Map<String, Object>> preferences =
+                                     (List<Map<String, Object>>) _handler.handleGET(_userPreferences, rootRequestInfo);
+                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             assertEquals("Unexpected name of preferences", prefName, preferences.get(0).get(Preference.NAME_ATTRIBUTE));
+                             Set<String> visibilityList = (Set<String>) preferences.get(0).get(Preference.VISIBILITY_LIST_ATTRIBUTE);
+                             assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
+                             assertEquals("Unexpected principal in visibility list", MYGROUP, visibilityList.iterator().next());
+                             assertEquals("Unexpected owner", MYUSER, preferences.get(0).get(Preference.OWNER_ATTRIBUTE));
+                             return null;
+                         }
+                     }
+                    );
+    }
+
+    public void testGetVisiblePreferencesByTypeAndName() throws Exception
+    {
+        final String prefName = "testpref";
+        final String prefType = "X-testtype";
+        final RequestInfo rootRequestInfo = RequestInfo.createVisiblePreferencesRequestInfo(Collections.<String>emptyList(),
+                                                                                            Arrays.asList(prefType, prefName),
+                                                                                            Collections.<String, List<String>>emptyMap());
+
+        Subject.doAs(_subject, new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             final Set<Preference> preferences = new HashSet<>();
+                             Preference p1 = _userPreferences.createPreference(null,
+                                                                               prefType,
+                                                                               prefName,
+                                                                               null,
+                                                                               Collections.<Principal>singleton(
+                                                                                       _groupPrincipal),
+                                                                               Collections.<String, Object>emptyMap());
+                             preferences.add(p1);
+                             Preference p2 = _userPreferences.createPreference(null,
+                                                                               prefType,
+                                                                               "testPref2",
+                                                                               null,
+                                                                               Collections.<Principal>emptySet(),
+                                                                               Collections.<String, Object>emptyMap());
+                             preferences.add(p2);
+                             _userPreferences.updateOrAppend(preferences);
+                             return null;
+                         }
+                     }
+                    );
+
+        Subject testSubject2 = TestPrincipalUtils.createTestSubject("testUser2", MYGROUP);
+        Subject.doAs(testSubject2, new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             Map<String, Object> preference =
+                                     (Map<String, Object>) _handler.handleGET(_userPreferences, rootRequestInfo);
+                             assertEquals("Unexpected name of preferences", prefName, preference.get(Preference.NAME_ATTRIBUTE));
+                             Set<String> visibilityList = (Set<String>) preference.get(Preference.VISIBILITY_LIST_ATTRIBUTE);
+                             assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
+                             assertEquals("Unexpected principal in visibility list", MYGROUP, visibilityList.iterator().next());
+                             assertEquals("Unexpected owner", MYUSER, preference.get(Preference.OWNER_ATTRIBUTE));
+                             return null;
+                         }
+                     }
+                    );
     }
 
     private void doTestDelete(final String preferenceType, final String preferenceName, final RequestInfo requestInfo)

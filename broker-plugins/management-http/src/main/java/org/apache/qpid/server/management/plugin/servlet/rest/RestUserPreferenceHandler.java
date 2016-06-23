@@ -44,6 +44,37 @@ public class RestUserPreferenceHandler
     public void handleDELETE(final UserPreferences userPreferences, final RequestInfo requestInfo)
     {
         final List<String> preferencesParts = requestInfo.getPreferencesParts();
+        final Map<String, List<String>> queryParameters = requestInfo.getQueryParameters();
+        String id = getIdFromQueryParameters(queryParameters);
+
+        if (id != null)
+        {
+            final Set<Preference> allPreferences = userPreferences.getPreferences();
+            for (Preference preference : allPreferences)
+            {
+                if (id.equals(preference.getId().toString()))
+                {
+                    String type = null;
+                    String name = null;
+                    if (preferencesParts.size() == 2)
+                    {
+                        type = preferencesParts.get(0);
+                        name = preferencesParts.get(1);
+                    }
+                    else if (preferencesParts.size() == 1)
+                    {
+                        type = preferencesParts.get(0);
+                    }
+                    if ((type == null || type.equals(preference.getType()))
+                        && (name == null || name.equals(preference.getName())))
+                    {
+                        userPreferences.replaceByTypeAndName(preference.getType(), preference.getName(), null);
+                    }
+                    return;
+                }
+            }
+        }
+
         if (preferencesParts.size() == 2)
         {
             String type = preferencesParts.get(0);
@@ -89,7 +120,6 @@ public class RestUserPreferenceHandler
 
             Set<Principal> visibilityList = getProvidedVisibilityList(providedAttributes);
             Map<String, Object> providedValueAttributes = getProvidedValueAttributes(providedAttributes);
-
 
             final Preference newPref = userPreferences.createPreference(providedUuid,
                                                                         type,
@@ -206,19 +236,39 @@ public class RestUserPreferenceHandler
     Object handleGET(UserPreferences userPreferences, RequestInfo requestInfo)
     {
         final List<String> preferencesParts = requestInfo.getPreferencesParts();
+        final Map<String, List<String>> queryParameters = requestInfo.getQueryParameters();
+        String id = getIdFromQueryParameters(queryParameters);
+
+        final Set<Preference> allPreferences;
+        if (requestInfo.getType() == RequestInfo.RequestType.USER_PREFERENCES)
+        {
+            allPreferences = userPreferences.getPreferences();
+        }
+        else if (requestInfo.getType() == RequestInfo.RequestType.VISIBLE_PREFERENCES)
+        {
+            allPreferences = userPreferences.getVisiblePreferences();
+        }
+        else
+        {
+            throw new IllegalStateException(String.format(
+                    "RestUserPreferenceHandler called with a unsupported request type: %s", requestInfo.getType()));
+        }
+
         if (preferencesParts.size() == 2)
         {
             String type = preferencesParts.get(0);
             String name = preferencesParts.get(1);
 
-            final Set<Preference> allPreferences = userPreferences.getPreferences();
 
             Preference foundPreference = null;
             for (Preference preference : allPreferences)
             {
                 if (preference.getType().equals(type) && preference.getName().equals(name))
                 {
-                    foundPreference = preference;
+                    if (id == null || id.equals(preference.getId().toString()))
+                    {
+                        foundPreference = preference;
+                    }
                     break;
                 }
             }
@@ -229,9 +279,20 @@ public class RestUserPreferenceHandler
             }
             else
             {
-                final String errorMessage = String.format("Preference with name '%s' of type '%s' cannot be found",
-                                                          name,
-                                                          type);
+                String errorMessage;
+                if (id == null)
+                {
+                    errorMessage = String.format("Preference with name '%s' of type '%s' cannot be found",
+                                                 name,
+                                                 type);
+                }
+                else
+                {
+                    errorMessage = String.format("Preference with name '%s' of type '%s' and id '%s' cannot be found",
+                                                 name,
+                                                 type,
+                                                 id);
+                }
                 throw new NotFoundException(errorMessage);
             }
         }
@@ -239,31 +300,35 @@ public class RestUserPreferenceHandler
         {
             String type = preferencesParts.get(0);
 
-            final Set<Preference> allPreferences = userPreferences.getPreferences();
-
             List<Map<String, Object>> preferences = new ArrayList<>();
             for (Preference preference : allPreferences)
             {
                 if (preference.getType().equals(type))
                 {
-                    preferences.add(preference.getAttributes());
+                    if (id == null || id.equals(preference.getId().toString()))
+                    {
+                        preferences.add(preference.getAttributes());
+                    }
                 }
             }
             return preferences;
         }
         else if (preferencesParts.size() == 0)
         {
-            final Set<Preference> allPreferences = userPreferences.getPreferences();
             final Map<String, List<Map<String, Object>>> preferences = new HashMap<>();
 
             for (Preference preference : allPreferences)
             {
-                final String type = preference.getType();
-                if (!preferences.containsKey(type))
+                if (id == null || id.equals(preference.getId().toString()))
                 {
-                    preferences.put(type, new ArrayList<Map<String, Object>>());
+                    final String type = preference.getType();
+                    if (!preferences.containsKey(type))
+                    {
+                        preferences.put(type, new ArrayList<Map<String, Object>>());
+                    }
+
+                    preferences.get(type).add(preference.getAttributes());
                 }
-                preferences.get(type).add(preference.getAttributes());
             }
 
             return preferences;
@@ -273,6 +338,17 @@ public class RestUserPreferenceHandler
             throw new IllegalArgumentException(String.format("unexpected path '%s'",
                                                              Joiner.on("/").join(preferencesParts)));
         }
+    }
+
+    private String getIdFromQueryParameters(final Map<String, List<String>> queryParameters)
+    {
+        final String id;
+        List<String> ids = queryParameters.get("id");
+        if (ids != null && ids.size() > 1)
+        {
+            throw new IllegalArgumentException("Multiple ids in query string are not allowed");
+        }
+        return (ids == null ? null : ids.get(0));
     }
 
     private Map<String, Object> getProvidedValueAttributes(final Map<String, Object> preferenceAttributes)
