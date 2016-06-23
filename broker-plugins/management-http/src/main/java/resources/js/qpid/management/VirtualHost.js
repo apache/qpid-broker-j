@@ -394,6 +394,15 @@ define(["dojo/parser",
             }, findNode("connections"));
             that.connectionsGrid.startup();
 
+            // Add onShow handler to work around an issue with not rendering of grid columns before first update.
+            // It seems if dgrid is created when tab is not shown (not active) the grid columns are not rendered.
+            this.contentPane.on("show",
+                                function()
+                                {
+                                    that.connectionsGrid.resize();
+                                });
+
+
             that.virtualHostLoggersGrid = new UpdatableStore([], findNode("loggers"), [{
                 name: "Name",
                 field: "name",
