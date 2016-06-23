@@ -348,7 +348,7 @@ define(["dojo/_base/declare",
                                 {
                                     var event = {"target": newResult, "index": j + evt.start};
                                     store.emit("add", event);
-                                    currentResults.splice(j, 0, currentResults);
+                                    currentResults.splice(j, 0, newResult);
                                 }
                                 else
                                 {
