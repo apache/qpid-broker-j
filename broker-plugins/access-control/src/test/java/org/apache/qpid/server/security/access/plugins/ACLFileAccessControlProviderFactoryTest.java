@@ -92,7 +92,6 @@ public class ACLFileAccessControlProviderFactoryTest extends QpidTestCase
         attributes.put(AccessControlProvider.TYPE, FileAccessControlProviderConstants.ACL_FILE_PROVIDER_TYPE);
         attributes.put(FileAccessControlProviderConstants.PATH, aclFile.getAbsolutePath());
         AccessControlProvider acl = _objectFactory.create(AccessControlProvider.class, attributes, _broker);
-        acl.getAccessControl().open();
 
         assertNotNull("ACL was not created from acl file: " + aclFile.getAbsolutePath(), acl);
     }
@@ -109,7 +108,6 @@ public class ACLFileAccessControlProviderFactoryTest extends QpidTestCase
         try
         {
             AccessControlProvider control = _objectFactory.create(AccessControlProvider.class, attributes, _broker);
-            control.getAccessControl().open();
             fail("It should not be possible to create and initialise ACL with non existing file");
         }
         catch (IllegalConfigurationException e)

@@ -18,17 +18,11 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.security.access.plugins;
+package org.apache.qpid.server.security.access.config;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.net.SocketAddress;
-import java.net.URL;
 import java.security.AccessController;
 import java.util.Set;
 
@@ -37,116 +31,22 @@ import javax.security.auth.Subject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
-import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.ObjectProperties;
 import org.apache.qpid.server.security.access.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
-import org.apache.qpid.server.security.access.config.ConfigurationFile;
-import org.apache.qpid.server.security.access.config.PlainConfiguration;
-import org.apache.qpid.server.security.access.config.RuleSet;
 
-public class DefaultAccessControl implements AccessControl
+public class RuleBasedAccessControl implements AccessControl
 {
-    private static final Logger _logger = LoggerFactory.getLogger(DefaultAccessControl.class);
-    private final String _fileName;
+    private static final Logger _logger = LoggerFactory.getLogger(RuleBasedAccessControl.class);
 
     private RuleSet _ruleSet;
-    private final EventLoggerProvider _eventLogger;
 
-    public DefaultAccessControl(String name, final EventLoggerProvider eventLogger)
+    public RuleBasedAccessControl(RuleSet rs)
     {
-        _fileName = name;
-        _eventLogger = eventLogger;
-
-        _logger.debug("Creating AccessControl instance");
-    }
-
-    DefaultAccessControl(RuleSet rs)
-    {
-        _fileName = null;
         _ruleSet = rs;
-        _eventLogger = rs;
-    }
-
-    public void open()
-    {
-        if(_fileName != null)
-        {
-            ConfigurationFile configFile = new PlainConfiguration(_fileName, _eventLogger);
-            _ruleSet = configFile.load(getReaderFromURLString(_fileName));
-        }
-    }
-
-    @Override
-    public boolean validate()
-    {
-        try
-        {
-            getReaderFromURLString(_fileName);
-            return true;
-        }
-        catch(IllegalConfigurationException e)
-        {
-            return false;
-        }
-    }
-
-
-    private static Reader getReaderFromURLString(String urlString)
-    {
-        try
-        {
-            URL url;
-
-            try
-            {
-                url = new URL(urlString);
-            }
-            catch (MalformedURLException e)
-            {
-                File file = new File(urlString);
-                try
-                {
-                    url = file.toURI().toURL();
-                }
-                catch (MalformedURLException notAFile)
-                {
-                    throw new IllegalConfigurationException("Cannot convert " + urlString + " to a readable resource", notAFile);
-                }
-
-            }
-            return new InputStreamReader(url.openStream());
-        }
-        catch (IOException e)
-        {
-            throw new IllegalConfigurationException("Cannot convert " + urlString + " to a readable resource", e);
-        }
-    }
-
-    @Override
-    public void close()
-    {
-        //no-op
-    }
-
-    @Override
-    public void onDelete()
-    {
-        //no-op
-    }
-
-    @Override
-    public void onCreate()
-    {
-        if(_fileName != null)
-        {
-            //verify it is parsable
-            new PlainConfiguration(_fileName, _eventLogger).load(getReaderFromURLString(_fileName));
-        }
     }
 
     public Result getDefault()

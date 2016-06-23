@@ -28,68 +28,25 @@ import org.apache.qpid.server.security.access.Permission;
  * A rule consists of {@link Permission} for a particular identity to perform an {@link Action}. The identity
  * may be either a user or a group.
  */
-public class Rule
+class Rule
 {
 	/** String indicating all identified. */
 	public static final String ALL = "all";
 
-    private Integer _number;
-    private String _identity;
-    private AclAction _action;
-    private Permission _permission;
-    private Boolean _enabled = Boolean.TRUE;
-
-    public Rule(Integer number, String identity, AclAction action, Permission permission)
-    {
-        setNumber(number);
-        setIdentity(identity);
-        setAction(action);
-        setPermission(permission);
-    }
+    private final String _identity;
+    private final AclAction _action;
+    private final Permission _permission;
 
     public Rule(String identity, AclAction action, Permission permission)
     {
-        this(null, identity, action, permission);
-    }
-
-    public boolean isEnabled()
-    {
-        return _enabled;
-    }
-
-    public void setEnabled(boolean enabled)
-    {
-        _enabled = enabled;
-    }
-
-    public void enable()
-    {
-        _enabled = Boolean.TRUE;
-    }
-
-    public void disable()
-    {
-        _enabled = Boolean.FALSE;
-    }
-
-    public Integer getNumber()
-    {
-        return _number;
-    }
-
-    public void setNumber(Integer number)
-    {
-        _number = number;
+        _identity = identity;
+        _action = action;
+        _permission = permission;
     }
 
     public String getIdentity()
     {
         return _identity;
-    }
-
-    public void setIdentity(String identity)
-    {
-        _identity = identity;
     }
 
     public Action getAction()
@@ -102,19 +59,9 @@ public class Rule
         return _action;
     }
 
-    public void setAction(AclAction action)
-    {
-        _action = action;
-    }
-
     public Permission getPermission()
     {
         return _permission;
-    }
-
-    public void setPermission(Permission permission)
-    {
-        _permission = permission;
     }
 
     @Override
@@ -131,10 +78,6 @@ public class Rule
 
         final Rule rule = (Rule) o;
 
-        if (getNumber() != null ? !getNumber().equals(rule.getNumber()) : rule.getNumber() != null)
-        {
-            return false;
-        }
         if (getIdentity() != null ? !getIdentity().equals(rule.getIdentity()) : rule.getIdentity() != null)
         {
             return false;
@@ -150,8 +93,7 @@ public class Rule
     @Override
     public int hashCode()
     {
-        int result = getNumber() != null ? getNumber().hashCode() : 0;
-        result = 31 * result + (getIdentity() != null ? getIdentity().hashCode() : 0);
+        int result = (getIdentity() != null ? getIdentity().hashCode() : 0);
         result = 31 * result + (getAction() != null ? getAction().hashCode() : 0);
         result = 31 * result + (getPermission() != null ? getPermission().hashCode() : 0);
         return result;
@@ -161,11 +103,9 @@ public class Rule
     public String toString()
     {
         return "Rule[" +
-               "#=" + _number +
-               ", identity='" + _identity + '\'' +
+               "identity='" + _identity + '\'' +
                ", action=" + _action +
                ", permission=" + _permission +
-               ", enabled=" + _enabled +
                ']';
     }
 

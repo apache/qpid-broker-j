@@ -37,6 +37,8 @@ import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.access.config.AclFileParser;
+import org.apache.qpid.server.security.access.config.RuleBasedAccessControl;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
 public class ACLFileAccessControlProviderImpl
@@ -50,7 +52,7 @@ public class ACLFileAccessControlProviderImpl
         Handler.register();
     }
 
-    private volatile DefaultAccessControl _accessControl;
+    private volatile RuleBasedAccessControl _accessControl;
     private final Broker _broker;
     private final EventLogger _eventLogger;
 
@@ -81,31 +83,21 @@ public class ACLFileAccessControlProviderImpl
     @Override
     protected void validateOnCreate()
     {
-        DefaultAccessControl accessControl = null;
         try
         {
-            accessControl = new DefaultAccessControl(getPath(), _broker);
-            accessControl.validate();
-            accessControl.open();
+            new RuleBasedAccessControl(AclFileParser.parse(getPath(), _broker));
         }
         catch(RuntimeException e)
         {
             throw new IllegalConfigurationException(e.getMessage(), e);
         }
-        finally
-        {
-            if (accessControl != null)
-            {
-                accessControl.close();
-            }
-        }
+
     }
 
     @Override
     protected void onOpen()
     {
         super.onOpen();
-        _accessControl = new DefaultAccessControl(getPath(), _broker);
     }
 
     @Override
@@ -119,15 +111,10 @@ public class ACLFileAccessControlProviderImpl
     {
         try
         {
-            DefaultAccessControl accessControl = new DefaultAccessControl(getPath(), _broker);
-            accessControl.open();
-            DefaultAccessControl oldAccessControl = _accessControl;
+            RuleBasedAccessControl accessControl = new RuleBasedAccessControl(AclFileParser.parse(getPath(), _broker));
             _accessControl = accessControl;
             _eventLogger.message(AccessControlMessages.LOADED(String.valueOf(getPath()).startsWith("data:") ? "data:..." : getPath()));
-            if(oldAccessControl != null)
-            {
-                oldAccessControl.close();
-            }
+
         }
         catch(RuntimeException e)
         {
@@ -146,29 +133,21 @@ public class ACLFileAccessControlProviderImpl
     private ListenableFuture<Void> activate()
     {
 
-        if(_broker.isManagementMode())
+        try
         {
-
-            setState(_accessControl.validate() ? State.QUIESCED : State.ERRORED);
+            _accessControl = new RuleBasedAccessControl(AclFileParser.parse(getPath(), _broker));
+            setState(_broker.isManagementMode() ? State.QUIESCED : State.ACTIVE);
         }
-        else
+        catch (RuntimeException e)
         {
-            try
+            setState(State.ERRORED);
+            if (_broker.isManagementMode())
             {
-                _accessControl.open();
-                setState(State.ACTIVE);
+                LOGGER.warn("Failed to activate ACL provider: " + getName(), e);
             }
-            catch (RuntimeException e)
+            else
             {
-                setState(State.ERRORED);
-                if (_broker.isManagementMode())
-                {
-                    LOGGER.warn("Failed to activate ACL provider: " + getName(), e);
-                }
-                else
-                {
-                    throw e;
-                }
+                throw e;
             }
         }
         return Futures.immediateFuture(null);
@@ -178,10 +157,7 @@ public class ACLFileAccessControlProviderImpl
     protected void onClose()
     {
         super.onClose();
-        if (_accessControl != null)
-        {
-            _accessControl.close();
-        }
+
     }
 
     @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)

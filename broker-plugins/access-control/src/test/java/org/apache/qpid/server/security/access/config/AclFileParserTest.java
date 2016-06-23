@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
@@ -34,9 +35,9 @@ import org.apache.qpid.server.security.access.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.test.utils.QpidTestCase;
 
-public class PlainConfigurationTest extends QpidTestCase
+public class AclFileParserTest extends QpidTestCase
 {
-    private PlainConfiguration writeACLConfig(String...aclData) throws Exception
+    private RuleSet writeACLConfig(String...aclData) throws Exception
     {
         File acl = File.createTempFile(getClass().getName() + getName(), "acl");
         acl.deleteOnExit();
@@ -50,9 +51,8 @@ public class PlainConfigurationTest extends QpidTestCase
         aclWriter.close();
 
         // Load ruleset
-        PlainConfiguration configFile = new PlainConfiguration(acl.getName(), mock(EventLoggerProvider.class));
-        configFile.load(new FileReader(acl));
-        return configFile;
+        return AclFileParser.parse(new FileReader(acl), mock(EventLoggerProvider.class));
+
     }
 
     public void testACLFileSyntaxContinuation() throws Exception
@@ -64,7 +64,7 @@ public class PlainConfigurationTest extends QpidTestCase
         }
         catch (IllegalConfigurationException ce)
         {
-            assertEquals(String.format(PlainConfiguration.PREMATURE_CONTINUATION_MSG, 1), ce.getMessage());
+            assertEquals(String.format(AclFileParser.PREMATURE_CONTINUATION_MSG, 1), ce.getMessage());
         }
     }
 
@@ -77,7 +77,7 @@ public class PlainConfigurationTest extends QpidTestCase
         }
         catch (IllegalConfigurationException ce)
         {
-            assertEquals(String.format(PlainConfiguration.PARSE_TOKEN_FAILED_MSG, 1), ce.getMessage());
+            assertEquals(String.format(AclFileParser.PARSE_TOKEN_FAILED_MSG, 1), ce.getMessage());
             assertTrue(ce.getCause() instanceof IllegalArgumentException);
             assertEquals("Not a valid permission: unparsed", ce.getCause().getMessage());
         }
@@ -92,7 +92,7 @@ public class PlainConfigurationTest extends QpidTestCase
         }
         catch (IllegalConfigurationException ce)
         {
-            assertEquals(String.format(PlainConfiguration.NOT_ENOUGH_ACL_MSG, 1), ce.getMessage());
+            assertEquals(String.format(AclFileParser.NOT_ENOUGH_ACL_MSG, 1), ce.getMessage());
         }
     }
 
@@ -105,7 +105,7 @@ public class PlainConfigurationTest extends QpidTestCase
         }
         catch (IllegalConfigurationException ce)
         {
-            assertEquals(String.format(PlainConfiguration.NOT_ENOUGH_TOKENS_MSG, 1), ce.getMessage());
+            assertEquals(String.format(AclFileParser.NOT_ENOUGH_TOKENS_MSG, 1), ce.getMessage());
         }
     }
 
@@ -118,7 +118,7 @@ public class PlainConfigurationTest extends QpidTestCase
         }
         catch (IllegalConfigurationException ce)
         {
-            assertEquals(String.format(PlainConfiguration.NOT_ENOUGH_TOKENS_MSG, 1), ce.getMessage());
+            assertEquals(String.format(AclFileParser.NOT_ENOUGH_TOKENS_MSG, 1), ce.getMessage());
         }
     }
 
@@ -131,7 +131,7 @@ public class PlainConfigurationTest extends QpidTestCase
         }
         catch (IllegalConfigurationException ce)
         {
-            assertEquals(String.format(PlainConfiguration.PROPERTY_KEY_ONLY_MSG, 1), ce.getMessage());
+            assertEquals(String.format(AclFileParser.PROPERTY_KEY_ONLY_MSG, 1), ce.getMessage());
         }
     }
 
@@ -144,7 +144,7 @@ public class PlainConfigurationTest extends QpidTestCase
         }
         catch (IllegalConfigurationException ce)
         {
-            assertEquals(String.format(PlainConfiguration.PROPERTY_NO_EQUALS_MSG, 1), ce.getMessage());
+            assertEquals(String.format(AclFileParser.PROPERTY_NO_EQUALS_MSG, 1), ce.getMessage());
         }
     }
 
@@ -157,7 +157,7 @@ public class PlainConfigurationTest extends QpidTestCase
         }
         catch (IllegalConfigurationException ce)
         {
-            assertEquals(String.format(PlainConfiguration.PROPERTY_NO_VALUE_MSG, 1), ce.getMessage());
+            assertEquals(String.format(AclFileParser.PROPERTY_NO_VALUE_MSG, 1), ce.getMessage());
         }
     }
 
@@ -167,11 +167,10 @@ public class PlainConfigurationTest extends QpidTestCase
      */
     public void testValidRule() throws Exception
     {
-        final PlainConfiguration config = writeACLConfig("ACL DENY-LOG user1 ACCESS VIRTUALHOST");
-        final RuleSet rs = config.getConfiguration();
+        final RuleSet rs = writeACLConfig("ACL DENY-LOG user1 ACCESS VIRTUALHOST");
         assertEquals(1, rs.getRuleCount());
 
-        final Map<Integer, Rule> rules = rs.getAllRules();
+        final List<Rule> rules = rs.getAllRules();
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
@@ -185,11 +184,10 @@ public class PlainConfigurationTest extends QpidTestCase
      */
     public void testValidRuleWithSingleQuotedProperty() throws Exception
     {
-        final PlainConfiguration config = writeACLConfig("ACL ALLOW all CREATE EXCHANGE name = \'value\'");
-        final RuleSet rs = config.getConfiguration();
+        final RuleSet rs = writeACLConfig("ACL ALLOW all CREATE EXCHANGE name = \'value\'");
         assertEquals(1, rs.getRuleCount());
 
-        final Map<Integer, Rule> rules = rs.getAllRules();
+        final List<Rule> rules = rs.getAllRules();
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "all", rule.getIdentity());
@@ -205,11 +203,10 @@ public class PlainConfigurationTest extends QpidTestCase
      */
     public void testValidRuleWithDoubleQuotedProperty() throws Exception
     {
-        final PlainConfiguration config = writeACLConfig("ACL ALLOW all CREATE EXCHANGE name = \"value\"");
-        final RuleSet rs = config.getConfiguration();
+        final RuleSet rs = writeACLConfig("ACL ALLOW all CREATE EXCHANGE name = \"value\"");
         assertEquals(1, rs.getRuleCount());
 
-        final Map<Integer, Rule> rules = rs.getAllRules();
+        final List<Rule> rules = rs.getAllRules();
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "all", rule.getIdentity());
@@ -225,11 +222,10 @@ public class PlainConfigurationTest extends QpidTestCase
      */
     public void testValidRuleWithManyProperties() throws Exception
     {
-        final PlainConfiguration config = writeACLConfig("ACL ALLOW admin DELETE QUEUE name=name1 owner = owner1");
-        final RuleSet rs = config.getConfiguration();
+        final RuleSet rs = writeACLConfig("ACL ALLOW admin DELETE QUEUE name=name1 owner = owner1");
         assertEquals(1, rs.getRuleCount());
 
-        final Map<Integer, Rule> rules = rs.getAllRules();
+        final List<Rule> rules = rs.getAllRules();
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "admin", rule.getIdentity());
@@ -247,13 +243,12 @@ public class PlainConfigurationTest extends QpidTestCase
      */
     public void testValidRuleWithWildcardProperties() throws Exception
     {
-        final PlainConfiguration config = writeACLConfig("ACL ALLOW all CREATE EXCHANGE routingKey = \'news.#\'",
+        final RuleSet rs = writeACLConfig("ACL ALLOW all CREATE EXCHANGE routingKey = \'news.#\'",
                                                          "ACL ALLOW all CREATE EXCHANGE routingKey = \'news.co.#\'",
                                                          "ACL ALLOW all CREATE EXCHANGE routingKey = *.co.medellin");
-        final RuleSet rs = config.getConfiguration();
         assertEquals(3, rs.getRuleCount());
 
-        final Map<Integer, Rule> rules = rs.getAllRules();
+        final List<Rule> rules = rs.getAllRules();
         assertEquals(3, rules.size());
         final Rule rule1 = rules.get(0);
         assertEquals("Rule has unexpected identity", "all", rule1.getIdentity());
@@ -263,12 +258,12 @@ public class PlainConfigurationTest extends QpidTestCase
         expectedProperties1.put(Property.ROUTING_KEY,"news.#");
         assertEquals("Rule has unexpected object properties", expectedProperties1, rule1.getAction().getProperties());
 
-        final Rule rule2 = rules.get(10);
+        final Rule rule2 = rules.get(1);
         final ObjectProperties expectedProperties2 = new ObjectProperties();
         expectedProperties2.put(Property.ROUTING_KEY,"news.co.#");
         assertEquals("Rule has unexpected object properties", expectedProperties2, rule2.getAction().getProperties());
 
-        final Rule rule3 = rules.get(20);
+        final Rule rule3 = rules.get(2);
         final ObjectProperties expectedProperties3 = new ObjectProperties();
         expectedProperties3.put(Property.ROUTING_KEY,"*.co.medellin");
         assertEquals("Rule has unexpected object properties", expectedProperties3, rule3.getAction().getProperties());
@@ -279,11 +274,10 @@ public class PlainConfigurationTest extends QpidTestCase
      */
     public void testMixedCaseRuleInterpretation() throws Exception
     {
-        final PlainConfiguration config = writeACLConfig("AcL deny-LOG User1 BiND Exchange Name=AmQ.dIrect");
-        final RuleSet rs = config.getConfiguration();
+        final RuleSet rs  = writeACLConfig("AcL deny-LOG User1 BiND Exchange Name=AmQ.dIrect");
         assertEquals(1, rs.getRuleCount());
 
-        final Map<Integer, Rule> rules = rs.getAllRules();
+        final List<Rule> rules = rs.getAllRules();
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "User1", rule.getIdentity());
@@ -300,13 +294,12 @@ public class PlainConfigurationTest extends QpidTestCase
      */
     public void testCommentsSupported() throws Exception
     {
-        final PlainConfiguration config = writeACLConfig("#Comment",
+        final RuleSet rs = writeACLConfig("#Comment",
                                                          "ACL DENY-LOG user1 ACCESS VIRTUALHOST # another comment",
                                                          "  # final comment with leading whitespace");
-        final RuleSet rs = config.getConfiguration();
         assertEquals(1, rs.getRuleCount());
 
-        final Map<Integer, Rule> rules = rs.getAllRules();
+        final List<Rule> rules = rs.getAllRules();
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
@@ -321,11 +314,10 @@ public class PlainConfigurationTest extends QpidTestCase
      */
     public void testWhitespace() throws Exception
     {
-        final PlainConfiguration config = writeACLConfig("ACL\tDENY-LOG\t\t user1\t \tACCESS VIRTUALHOST");
-        final RuleSet rs = config.getConfiguration();
+        final RuleSet rs = writeACLConfig("ACL\tDENY-LOG\t\t user1\t \tACCESS VIRTUALHOST");
         assertEquals(1, rs.getRuleCount());
 
-        final Map<Integer, Rule> rules = rs.getAllRules();
+        final List<Rule> rules = rs.getAllRules();
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
@@ -339,12 +331,11 @@ public class PlainConfigurationTest extends QpidTestCase
      */
     public void testLineContinuation() throws Exception
     {
-        final PlainConfiguration config = writeACLConfig("ACL DENY-LOG user1 \\",
+        final RuleSet rs = writeACLConfig("ACL DENY-LOG user1 \\",
                                                          "ACCESS VIRTUALHOST");
-        final RuleSet rs = config.getConfiguration();
         assertEquals(1, rs.getRuleCount());
 
-        final Map<Integer, Rule> rules = rs.getAllRules();
+        final List<Rule> rules = rs.getAllRules();
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
@@ -429,12 +420,11 @@ public class PlainConfigurationTest extends QpidTestCase
         validateRule(writeACLConfig("ACL ALLOW user1 ALL BROKER"), "user1", Operation.ALL, ObjectType.BROKER, ObjectProperties.EMPTY);
     }
 
-    private void validateRule(final PlainConfiguration config, String username, Operation operation, ObjectType objectType, ObjectProperties objectProperties)
+    private void validateRule(final RuleSet rs, String username, Operation operation, ObjectType objectType, ObjectProperties objectProperties)
     {
-        final RuleSet rs = config.getConfiguration();
         assertEquals(1, rs.getRuleCount());
 
-        final Map<Integer, Rule> rules = rs.getAllRules();
+        final List<Rule> rules = rs.getAllRules();
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", username, rule.getIdentity());

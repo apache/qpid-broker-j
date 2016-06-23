@@ -20,7 +20,7 @@ package org.apache.qpid.server.security.access.config;
 
 import java.net.InetAddress;
 import java.security.Principal;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.WeakHashMap;
 
 import javax.security.auth.Subject;
@@ -50,31 +49,36 @@ import org.apache.qpid.server.security.access.Permission;
 /**
  * Models the rule configuration for the access control plugin.
  */
-public class RuleSet implements EventLoggerProvider
+class RuleSet implements EventLoggerProvider
 {
     private static final Logger _logger = LoggerFactory.getLogger(RuleSet.class);
-
-    private static final String AT = "@";
-    private static final String SLASH = "/";
 
     public static final String DEFAULT_ALLOW = "defaultallow";
     public static final String DEFAULT_DENY = "defaultdeny";
 
-    public static final List<String> CONFIG_PROPERTIES = Arrays.asList(DEFAULT_ALLOW, DEFAULT_DENY);
-
     private static final Integer _increment = 10;
 
-    private final SortedMap<Integer, Rule> _rules = new TreeMap<Integer, Rule>();
+    private final List<Rule> _rules;
     private final Map<Subject, Map<Operation, Map<ObjectType, List<Rule>>>> _cache =
                         Collections.synchronizedMap(new WeakHashMap<Subject, Map<Operation, Map<ObjectType, List<Rule>>>>());
     private final Map<String, Boolean> _config = new HashMap<String, Boolean>();
     private final EventLoggerProvider _eventLogger;
+    private Result _defaultResult = Result.DENIED;
 
     public RuleSet(EventLoggerProvider eventLogger)
     {
         _eventLogger = eventLogger;
         // set some default configuration properties
-        configure(DEFAULT_DENY, Boolean.TRUE);
+        _rules = new ArrayList<>();
+    }
+
+    public RuleSet(final EventLoggerProvider eventLogger,
+                   final SortedMap<Integer, Rule> rules,
+                   final Result defaultResult)
+    {
+        _eventLogger = eventLogger;
+        _rules = new ArrayList<>(rules.values());
+        _defaultResult = defaultResult;
     }
 
     /**
@@ -84,7 +88,6 @@ public class RuleSet implements EventLoggerProvider
     {
         _rules.clear();
         _cache.clear();
-        _config.clear();
     }
 
     public int getRuleCount()
@@ -108,11 +111,10 @@ public class RuleSet implements EventLoggerProvider
             final Set<Principal> principals = subject.getPrincipals();
             boolean controlled = false;
             List<Rule> filtered = new LinkedList<Rule>();
-            for (Rule rule : _rules.values())
+            for (Rule rule : _rules)
             {
                 final Action ruleAction = rule.getAction();
-                if (rule.isEnabled()
-                    && (ruleAction.getOperation() == Operation.ALL || ruleAction.getOperation() == operation)
+                if ((ruleAction.getOperation() == Operation.ALL || ruleAction.getOperation() == operation)
                     && (ruleAction.getObjectType() == ObjectType.ALL || ruleAction.getObjectType() == objectType))
                 {
                     controlled = true;
@@ -142,125 +144,6 @@ public class RuleSet implements EventLoggerProvider
         _logger.debug("Returning RuleList: {}", rules);
 
         return rules;
-    }
-
-    public boolean isValidNumber(Integer number)
-    {
-        return !_rules.containsKey(number);
-    }
-
-    public void grant(Integer number, String identity, Permission permission, Operation operation)
-    {
-        AclAction action = new AclAction(operation);
-        addRule(number, identity, permission, action);
-    }
-
-    public void grant(Integer number, String identity, Permission permission, Operation operation, ObjectType object, ObjectProperties properties)
-    {
-        AclAction action = new AclAction(operation, object, properties);
-        addRule(number, identity, permission, action);
-    }
-
-    public void grant(Integer number, String identity, Permission permission, Operation operation, ObjectType object, AclRulePredicates predicates)
-    {
-        AclAction aclAction = new AclAction(operation, object, predicates);
-        addRule(number, identity, permission, aclAction);
-    }
-
-    public boolean ruleExists(String identity, AclAction action)
-    {
-        for (Rule rule : _rules.values())
-        {
-            if (rule.getIdentity().equals(identity) && rule.getAclAction().equals(action))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public void addRule(Integer number, String identity, Permission permission, AclAction action)
-    {
-
-        if (!action.isAllowed())
-        {
-            throw new IllegalArgumentException("Action is not allowed: " + action);
-        }
-        if (ruleExists(identity, action))
-        {
-            return;
-        }
-
-        // set rule number if needed
-        Rule rule = new Rule(number, identity, action, permission);
-        if (rule.getNumber() == null)
-        {
-            if (_rules.isEmpty())
-            {
-                rule.setNumber(0);
-            }
-            else
-            {
-                rule.setNumber(_rules.lastKey() + _increment);
-            }
-        }
-
-        // save rule
-        _cache.clear();
-        _rules.put(rule.getNumber(), rule);
-    }
-
-    public void enableRule(int ruleNumber)
-    {
-        _rules.get(Integer.valueOf(ruleNumber)).enable();
-    }
-
-    public void disableRule(int ruleNumber)
-    {
-        _rules.get(Integer.valueOf(ruleNumber)).disable();
-    }
-
-    /** Return true if the name is well-formed (contains legal characters). */
-    protected boolean checkName(String name)
-    {
-        for (int i = 0; i < name.length(); i++)
-        {
-            Character c = name.charAt(i);
-            if (!Character.isLetterOrDigit(c) && c != '-' && c != '_' && c != '@' && c != '.' && c != '/')
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /** Returns true if a username has the name[@domain][/realm] format  */
-    protected boolean isvalidUserName(String name)
-    {
-        // check for '@' and '/' in name
-        int atPos = name.indexOf(AT);
-        int slashPos = name.indexOf(SLASH);
-        boolean atFound = atPos != -1 && atPos == name.lastIndexOf(AT);
-        boolean slashFound = slashPos != -1 && slashPos == name.lastIndexOf(SLASH);
-
-        // must be at least one character after '@' or '/'
-        if (atFound && atPos > name.length() - 2)
-        {
-            return false;
-        }
-        if (slashFound && slashPos > name.length() - 2)
-        {
-            return false;
-        }
-
-        // must be at least one character between '@' and '/'
-        if (atFound && slashFound)
-        {
-            return (atPos < (slashPos - 1));
-        }
-
-        // otherwise all good
-        return true;
     }
 
     /**
@@ -337,23 +220,8 @@ public class RuleSet implements EventLoggerProvider
     /** Default deny. */
     public Result getDefault()
     {
-        if (isSet(DEFAULT_ALLOW))
-        {
-            return Result.ALLOWED;
-        }
-        if (isSet(DEFAULT_DENY))
-        {
-            return Result.DENIED;
-        }
-        return Result.ABSTAIN;
-    }
+        return _defaultResult;
 
-    /**
-     * Check if a configuration property is set.
-     */
-    protected boolean isSet(String key)
-    {
-        return Boolean.TRUE.equals(_config.get(key));
     }
 
     /**
@@ -367,23 +235,12 @@ public class RuleSet implements EventLoggerProvider
     }
 
     /**
-     * Configure a single property for the plugin instance.
-     *
-     * @param key
-     * @param value
-     */
-    public void configure(String key, Boolean value)
-    {
-        _config.put(key, value);
-    }
-
-     /**
       * Returns all rules in the {@link RuleSet}.   Primarily intended to support unit-testing.
       * @return map of rules
       */
-     public Map<Integer, Rule> getAllRules()
+     public List<Rule> getAllRules()
      {
-         return Collections.unmodifiableMap(_rules);
+         return Collections.unmodifiableList(_rules);
      }
 
     private boolean isRelevant(final Set<Principal> principals, final Rule rule)

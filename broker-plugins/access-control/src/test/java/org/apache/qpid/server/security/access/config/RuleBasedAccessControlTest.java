@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.security.access.plugins;
+package org.apache.qpid.server.security.access.config;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -40,8 +40,6 @@ import org.apache.qpid.server.security.access.ObjectProperties;
 import org.apache.qpid.server.security.access.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.Permission;
-import org.apache.qpid.server.security.access.config.Rule;
-import org.apache.qpid.server.security.access.config.RuleSet;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -51,12 +49,12 @@ import org.apache.qpid.test.utils.QpidTestCase;
  *
  * @see RuleSetTest
  */
-public class DefaultAccessControlTest extends QpidTestCase
+public class RuleBasedAccessControlTest extends QpidTestCase
 {
     private static final String ALLOWED_GROUP = "allowed_group";
     private static final String DENIED_GROUP = "denied_group";
 
-    private DefaultAccessControl _plugin = null;  // Class under test
+    private RuleBasedAccessControl _plugin = null;  // Class under test
     private UnitTestMessageLogger _messageLogger;
     private EventLogger _eventLogger;
 
@@ -75,24 +73,24 @@ public class DefaultAccessControlTest extends QpidTestCase
 
     private void configureAccessControl(final RuleSet rs)
     {
-        _plugin = new DefaultAccessControl(rs);
+        _plugin = new RuleBasedAccessControl(rs);
     }
 
     private RuleSet createGroupRuleSet()
     {
         final EventLoggerProvider provider = mock(EventLoggerProvider.class);
         when(provider.getEventLogger()).thenReturn(_eventLogger);
-        final RuleSet rs = new RuleSet(provider);
+        RuleSetCreator rsc = new RuleSetCreator();
 
         // Rule expressed with username
-        rs.grant(0, "user1", Permission.ALLOW, Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+        rsc.grant(0, "user1", Permission.ALLOW, Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
         // Rules expressed with groups
-        rs.grant(1, ALLOWED_GROUP, Permission.ALLOW, Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
-        rs.grant(2, DENIED_GROUP, Permission.DENY, Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+        rsc.grant(1, ALLOWED_GROUP, Permission.ALLOW, Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+        rsc.grant(2, DENIED_GROUP, Permission.DENY, Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
         // Catch all rule
-        rs.grant(3, Rule.ALL, Permission.DENY_LOG, Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+        rsc.grant(3, Rule.ALL, Permission.DENY_LOG, Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
 
-        return rs;
+        return new RuleSet(provider, rsc.getRules(), rsc.getDefaultResult());
     }
 
     /**
@@ -179,11 +177,11 @@ public class DefaultAccessControlTest extends QpidTestCase
      */
     public void testAuthoriseAccessMethodWhenAllAccessOperationsAllowedOnAllComponents()
     {
-        final RuleSet rs = new RuleSet(mock(EventLoggerProvider.class));
+        final RuleSetCreator rs = new RuleSetCreator();
 
         // grant user4 access right on any method in any component
         rs.grant(1, "user4", Permission.ALLOW, Operation.ACCESS, ObjectType.METHOD, new ObjectProperties(ObjectProperties.WILD_CARD));
-        configureAccessControl(rs);
+        configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user4"), new PrivilegedAction<Object>()
         {
             @Override
@@ -205,13 +203,13 @@ public class DefaultAccessControlTest extends QpidTestCase
      */
     public void testAuthoriseAccessMethodWhenAllAccessOperationsAllowedOnSpecifiedComponent()
     {
-        final RuleSet rs = new RuleSet(mock(EventLoggerProvider.class));
+        final RuleSetCreator rs = new RuleSetCreator();
 
         // grant user5 access right on any methods in "Test" component
         ObjectProperties ruleProperties = new ObjectProperties(ObjectProperties.WILD_CARD);
         ruleProperties.put(ObjectProperties.Property.COMPONENT, "Test");
         rs.grant(1, "user5", Permission.ALLOW, Operation.ACCESS, ObjectType.METHOD, ruleProperties);
-        configureAccessControl(rs);
+        configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user5"), new PrivilegedAction<Object>()
         {
             @Override
@@ -251,7 +249,7 @@ public class DefaultAccessControlTest extends QpidTestCase
             {
                 RuleSet mockRuleSet = mock(RuleSet.class);
 
-                DefaultAccessControl accessControl = new DefaultAccessControl(mockRuleSet);
+                RuleBasedAccessControl accessControl = new RuleBasedAccessControl(mockRuleSet);
 
                 ObjectProperties properties = new ObjectProperties(testVirtualHost);
                 accessControl.authorise(Operation.ACCESS, ObjectType.VIRTUALHOST, properties);
@@ -289,7 +287,7 @@ public class DefaultAccessControlTest extends QpidTestCase
                         ObjectProperties.EMPTY,
                         inetAddress)).thenThrow(new RuntimeException());
 
-                DefaultAccessControl accessControl = new DefaultAccessControl(mockRuleSet);
+                RuleBasedAccessControl accessControl = new RuleBasedAccessControl(mockRuleSet);
                 Result result = accessControl.authorise(Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
 
                 assertEquals(Result.DENIED, result);
@@ -305,13 +303,13 @@ public class DefaultAccessControlTest extends QpidTestCase
      */
     public void testAuthoriseAccessMethodWhenSpecifiedAccessOperationsAllowedOnSpecifiedComponent()
     {
-        final RuleSet rs = new RuleSet(mock(EventLoggerProvider.class));
+        final RuleSetCreator rs = new RuleSetCreator();
 
         // grant user6 access right on "getAttribute" method in "Test" component
         ObjectProperties ruleProperties = new ObjectProperties("getAttribute");
         ruleProperties.put(ObjectProperties.Property.COMPONENT, "Test");
         rs.grant(1, "user6", Permission.ALLOW, Operation.ACCESS, ObjectType.METHOD, ruleProperties);
-        configureAccessControl(rs);
+        configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user6"), new PrivilegedAction<Object>()
         {
             @Override
@@ -342,11 +340,11 @@ public class DefaultAccessControlTest extends QpidTestCase
      */
     public void testAuthoriseAccessUpdateMethodWhenAllRightsGrantedOnSpecifiedMethodForAllComponents()
     {
-        final RuleSet rs = new RuleSet(mock(EventLoggerProvider.class));
+        final RuleSetCreator rs = new RuleSetCreator();
 
         // grant user8 all rights on method queryNames in all component
         rs.grant(1, "user8", Permission.ALLOW, Operation.ALL, ObjectType.METHOD, new ObjectProperties("queryNames"));
-        configureAccessControl(rs);
+        configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user8"), new PrivilegedAction<Object>()
         {
             @Override
@@ -381,11 +379,11 @@ public class DefaultAccessControlTest extends QpidTestCase
      */
     public void testAuthoriseAccessUpdateMethodWhenAllRightsGrantedOnAllMethodsInAllComponents()
     {
-        final RuleSet rs = new RuleSet(mock(EventLoggerProvider.class));
+        final RuleSetCreator rs = new RuleSetCreator();
 
         // grant user9 all rights on any method in all component
         rs.grant(1, "user9", Permission.ALLOW, Operation.ALL, ObjectType.METHOD, new ObjectProperties());
-        configureAccessControl(rs);
+        configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user9"), new PrivilegedAction<Object>()
         {
             @Override
@@ -419,7 +417,7 @@ public class DefaultAccessControlTest extends QpidTestCase
      */
     public void testAuthoriseAccessMethodWhenMatchingAccessOperationsAllowedOnSpecifiedComponent()
     {
-        final RuleSet rs = new RuleSet(mock(EventLoggerProvider.class));
+        final RuleSetCreator rs = new RuleSetCreator();
 
         // grant user9 all rights on "getAttribute*" methods in Test component
         ObjectProperties ruleProperties = new ObjectProperties();
@@ -427,7 +425,7 @@ public class DefaultAccessControlTest extends QpidTestCase
         ruleProperties.put(ObjectProperties.Property.NAME, "getAttribute*");
 
         rs.grant(1, "user9", Permission.ALLOW, Operation.ACCESS, ObjectType.METHOD, ruleProperties);
-        configureAccessControl(rs);
+        configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user9"), new PrivilegedAction<Object>()
         {
             @Override
