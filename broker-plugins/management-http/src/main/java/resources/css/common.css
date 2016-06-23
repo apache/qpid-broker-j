@@ -442,18 +442,21 @@ div .messages {
    padding: 2px 0px 2px 0px;
    vertical-align: middle;
 }
-.searchLabel
-{
-   float: left;
+.searchLabel {
    text-align: right;
    vertical-align: middle;
    padding: 0.2em;
    min-width: 3.5em;
 }
-.advancedSearchField
-{
-    overflow: hidden;
+
+col.searchLabel, td.searchLabel {
+     width: 3.5em;
 }
+
+td.advancedSearchField, col.autoWidth {
+    width: auto;
+}
+
 .claro .advancedSearchField .dijitTextArea,
 .advancedSearchField textarea
 {
@@ -464,6 +467,7 @@ div .messages {
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
     -ms-box-sizing: border-box;
+    resize: vertical;
 }
 .criteriaCondition
 {

@@ -48,10 +48,14 @@
         <div class="clear"></div>
         <div data-dojo-attach-point="standardWhereExpressionBuilder"
              data-dojo-type="qpid/management/query/WhereExpression" class="dijitToolbar"></div>
-        <div data-dojo-attach-point="advancedSearch"  style="display:none;">
-            <div class="advancedSearchItem">
-                <label class="searchLabel" for="advancedSelect_${id}">Select: </label>
-                <div class="advancedSearchField">
+        <table data-dojo-attach-point="advancedSearch"  class="advancedSearchItem" style="display:none">
+            <colgroup>
+                <col span="1" class="searchLabel"/>
+                <col span="1" class="autoWidth"/>
+            </colgroup>
+            <tr>
+                <td class="searchLabel" colspan="1">Select:</td>
+                <td class="advancedSearchField">
                     <textarea id="advancedSelect_${id}"
                               data-dojo-attach-point="advancedSelect" type="text"
                               data-dojo-type="dijit/form/SimpleTextarea"
@@ -61,11 +65,11 @@
                                                  placeHolder: 'comma separated attribute names',
                                                  title: 'Enter comma separated list of attributes to select',
                                                  promptMessage: 'Comma separated list of attributes to select, for example: name,type,description'" rows="1"> </textarea>
-                </div>
-            </div>
-            <div class="advancedSearchItem">
-                <label class="searchLabel" for="advancedWhere_${id}">Where: </label>
-                <div class="advancedSearchField" >
+                </td>
+            </tr>
+            <tr>
+                <td class="searchLabel" colspan="1">Where: </td>
+                <td class="advancedSearchField">
                     <textarea id="advancedWhere_${id}"
                               data-dojo-attach-point="advancedWhere" type="text"
                               data-dojo-type="dijit/form/SimpleTextarea"
@@ -75,11 +79,11 @@
                                                 placeHolder: 'where expression',
                                                 title: 'Enter where conditions using sql syntax',
                                                 promptMessage: 'Use JMS filter syntax to specify where conditions'" rows="1"></textarea>
-                </div>
-            </div>
-            <div class="advancedSearchItem">
-                <label class="searchLabel" for="advancedOrderBy_${id}">Order: </label>
-                <div class="advancedSearchField" >
+                </td>
+            </tr>
+            <tr>
+                <td class="searchLabel" colspan="1">Order: </td>
+                <td class="advancedSearchField">
                     <textarea id="advancedOrderBy_${id}"
                               data-dojo-attach-point="advancedOrderBy" type="text"
                               data-dojo-type="dijit/form/SimpleTextarea"
@@ -89,9 +93,9 @@
                                                 placeHolder: 'order expression',
                                                 title: 'Enter order by conditions using sql syntax',
                                                 promptMessage: 'Use JMS filter syntax to specify where conditions'" rows="1"></textarea>
-                </div>
-            </div>
-        </div>
+                </td>
+            </tr>
+        </table>
     </div>
     <div data-dojo-attach-point="queryResultGrid"  jsid='grid'></div>
 </div>
