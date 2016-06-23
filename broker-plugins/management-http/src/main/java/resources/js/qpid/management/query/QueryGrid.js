@@ -171,7 +171,7 @@ define(["dojo/_base/declare",
                         }));
                     }
                 },
-                updateData()
+                updateData: function()
                 {
                     if (this.detectChanges && this._end)
                     {
