@@ -342,6 +342,10 @@ define(["dojo/_base/declare",
                                                  "index": evt.start + i};
                                     store.emit("delete", event);
                                     currentResults.splice(i, 1);
+                                    updateIdToIndexMap(currentResults,
+                                                       idProperty,
+                                                       this._currentResultsIdToIndexMap,
+                                                       i);
                                     delete this._currentResultsIdToIndexMap[id];
                                 }
                             }
