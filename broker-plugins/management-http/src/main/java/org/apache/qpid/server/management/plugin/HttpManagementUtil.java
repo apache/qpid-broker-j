@@ -25,9 +25,7 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.security.Principal;
 import java.security.PrivilegedAction;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,29 +34,16 @@ import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 import javax.security.auth.Subject;
-import javax.security.auth.x500.X500Principal;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.server.management.plugin.servlet.ServletConnectionPrincipal;
 import org.apache.qpid.server.management.plugin.session.LoginLogoutReporter;
-import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.SecurityManager;
-import org.apache.qpid.server.security.SubjectCreator;
-import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
-import org.apache.qpid.server.security.auth.AuthenticationResult;
-import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
-import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
-import org.apache.qpid.server.security.auth.UsernamePrincipal;
-import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
-import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManager;
-import org.apache.qpid.server.security.auth.manager.UsernamePasswordAuthenticationProvider;
-import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 public class HttpManagementUtil
 {
@@ -126,20 +111,23 @@ public class HttpManagementUtil
                 throw new SecurityException("Only authenticated users can access the management interface");
             }
 
-            Subject original = subject;
-            subject = new Subject(false,
-                                  original.getPrincipals(),
-                                  original.getPublicCredentials(),
-                                  original.getPrivateCredentials());
-            subject.getPrincipals().add(new ServletConnectionPrincipal(request));
-            subject.setReadOnly();
+            subject = createServletConnectionSubject(request, subject);
 
             assertManagementAccess(broker.getSecurityManager(), subject);
 
             saveAuthorisedSubject(request, subject);
-
-
         }
+    }
+
+    public static Subject createServletConnectionSubject(final HttpServletRequest request, Subject original)
+    {
+        Subject subject = new Subject(false,
+                              original.getPrincipals(),
+                              original.getPublicCredentials(),
+                              original.getPrivateCredentials());
+        subject.getPrincipals().add(new ServletConnectionPrincipal(request));
+        subject.setReadOnly();
+        return subject;
     }
 
     public static void assertManagementAccess(final SecurityManager securityManager, Subject subject)

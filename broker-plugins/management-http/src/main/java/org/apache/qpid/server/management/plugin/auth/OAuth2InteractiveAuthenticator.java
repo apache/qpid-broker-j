@@ -192,21 +192,14 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                     {
                         SubjectCreator subjectCreator = oauth2Provider.getSubjectCreator(request.isSecure());
                         SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
+                        Subject original = result.getSubject();
 
-                        Subject subject = result.getSubject();
-
-                        if (subject == null)
+                        if (original == null)
                         {
                             throw new SecurityException("Only authenticated users can access the management interface");
                         }
 
-                        Subject original = subject;
-                        subject = new Subject(false,
-                                              original.getPrincipals(),
-                                              original.getPublicCredentials(),
-                                              original.getPrivateCredentials());
-                        subject.getPrincipals().add(new ServletConnectionPrincipal(request));
-                        subject.setReadOnly();
+                        Subject subject = HttpManagementUtil.createServletConnectionSubject(request, original);
                         return subject;
                     }
 

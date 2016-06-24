@@ -220,11 +220,12 @@ public class SaslServlet extends AbstractServlet
 
         if (authenticationResult.getStatus() == AuthenticationResult.AuthenticationStatus.SUCCESS)
         {
-            Subject subject = authenticationResult.getSubject();
+            Subject original = authenticationResult.getSubject();
             Broker broker = getBroker();
             try
             {
-                HttpManagementUtil.assertManagementAccess(broker.getSecurityManager(), subject);
+                HttpManagementUtil.assertManagementAccess(broker.getSecurityManager(), original);
+                Subject subject = HttpManagementUtil.createServletConnectionSubject(request, original);
 
                 HttpManagementUtil.saveAuthorisedSubject(request, subject);
                 session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request));
