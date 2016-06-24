@@ -53,6 +53,27 @@ define(["dojo/_base/declare",
               all,
               util)
     {
+
+        var createIdToIndexMap = function(results, idProperty)
+        {
+            var map = {};
+            for(var i = 0; i < results.length; i++)
+            {
+                var id = results[i][idProperty];
+                map[id] = i;
+            }
+            return map;
+        }
+
+        var updateIdToIndexMap = function(results, idProperty, idToIndexMap, startIndex)
+        {
+            for(var i = startIndex; i < results.length; i++)
+            {
+                 var id = results[i][idProperty];
+                 idToIndexMap[id] = i;
+            }
+        }
+
         var TrackableQueryStore = declare(QueryStore,
                                           {
                                               /*
@@ -168,7 +189,9 @@ define(["dojo/_base/declare",
                             }
                             else
                             {
-                                this._currentResults = event.results.slice(0);
+                                var results = event.results.slice(0);
+                                this._currentResults = results;
+                                this._currentResultsIdToIndexMap = createIdToIndexMap(results, this._store.idProperty);
                             }
                         }));
                     }
@@ -301,32 +324,25 @@ define(["dojo/_base/declare",
                     if (results)
                     {
                         var newResults = results.slice(0);
+                        var store = this._store;
+                        var idProperty = store.idProperty;
+                        var newResultsIdToIndexMap = createIdToIndexMap(newResults, idProperty);
                         if (this._currentResults)
                         {
-                            var store = this._store;
                             var currentResults = this._currentResults.slice(0);
-                            var idProperty = store.idProperty;
                             for (var i = currentResults.length - 1; i >= 0; i--)
                             {
                                 var currentResult = currentResults[i];
                                 var id = currentResult[idProperty];
-                                var newResult = null;
-                                for (var j = 0; j < newResults.length; j++)
-                                {
-                                    if (newResults[j][idProperty] === id)
-                                    {
-                                        newResult = newResults[j];
-                                        break;
-                                    }
-                                }
-
-                                if (newResult == null)
+                                var newResultIndex = newResultsIdToIndexMap[id];
+                                if (newResultIndex === undefined)
                                 {
                                     var event = {"target": currentResult,
                                                  "previousIndex": evt.start + i,
-                                                 "index": evt.start +i};
+                                                 "index": evt.start + i};
                                     store.emit("delete", event);
                                     currentResults.splice(i, 1);
+                                    delete this._currentResultsIdToIndexMap[id];
                                 }
                             }
 
@@ -334,26 +350,21 @@ define(["dojo/_base/declare",
                             {
                                 var newResult = newResults[j];
                                 var id = newResult[idProperty];
-                                var currentResult = null;
-                                var previousIndex = -1;
-                                for (var i = 0; i < currentResults.length; i++)
-                                {
-                                    if (currentResults[i][idProperty] === id)
-                                    {
-                                        currentResult = currentResults[i];
-                                        previousIndex = i;
-                                        break;
-                                    }
-                                }
+                                var previousIndex = this._currentResultsIdToIndexMap[id];
 
-                                if (currentResult == null)
+                                if (previousIndex === undefined)
                                 {
                                     var event = {"target": newResult, "index": j + evt.start};
                                     store.emit("add", event);
                                     currentResults.splice(j, 0, newResult);
+                                    updateIdToIndexMap(currentResults,
+                                                       idProperty,
+                                                       this._currentResultsIdToIndexMap,
+                                                       j);
                                 }
                                 else
                                 {
+                                    var currentResult = currentResults[previousIndex];
                                     var event = {"target": newResult,
                                                  "previousIndex": previousIndex + evt.start,
                                                  "index": j + evt.start};
@@ -369,12 +380,17 @@ define(["dojo/_base/declare",
                                     {
                                         currentResults.splice(previousIndex, 1);
                                         currentResults.splice(j, 0, currentResult);
+                                        updateIdToIndexMap(currentResults,
+                                                           idProperty,
+                                                           this._currentResultsIdToIndexMap,
+                                                           Math.min(previousIndex, j));
                                         store.emit("update", event);
                                     }
                                 }
                             }
                         }
                         this._currentResults = newResults;
+                        this._currentResultsIdToIndexMap = newResultsIdToIndexMap
                         this._onFetchCompleted(evt)
                     }
                 },
