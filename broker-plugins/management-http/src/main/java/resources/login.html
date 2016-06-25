@@ -95,6 +95,7 @@
                     e.preventDefault()
                     if (this.validate())
                     {
+                        var that = this;
                         require(["qpid/management/Management", "dojo/json"],
                                 function (Management, json)
                                 {
@@ -132,6 +133,7 @@
                                             alert(error.message ? error.message : "Authentication failed:"
                                                                                   + json.stringify(error));
                                         }
+                                        that.reset();
                                     };
                                     var management = new Management("", errorHandler);
                                     management.authenticate(true).then(redirectIfAuthenticated);

@@ -115,10 +115,9 @@ public class SaslServlet extends AbstractServlet
     {
         checkSaslAuthEnabled(request);
 
+        final HttpSession session = request.getSession();
         try
         {
-            HttpSession session = request.getSession();
-
             String mechanism = request.getParameter("mechanism");
             String id = request.getParameter("id");
             String saslResponse = request.getParameter("response");
@@ -176,15 +175,12 @@ public class SaslServlet extends AbstractServlet
                 }
             }
         }
-        catch(IOException e)
+        finally
         {
-            LOGGER.error("Error processing SASL request", e);
-            throw e;
-        }
-        catch(RuntimeException e)
-        {
-            LOGGER.error("Error processing SASL request", e);
-            throw e;
+            if (response.getStatus() != HttpServletResponse.SC_OK)
+            {
+                session.invalidate();
+            }
         }
     }
 
