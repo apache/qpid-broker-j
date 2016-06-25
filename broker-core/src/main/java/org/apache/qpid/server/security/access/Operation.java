@@ -37,18 +37,6 @@ public enum Operation
     ACCESS_LOGS,
     SHUTDOWN;
 
-    public static Operation parse(String text)
-    {
-        for (Operation operation : values())
-        {
-            if (operation.name().equalsIgnoreCase(text))
-            {
-                return operation;
-            }
-        }
-        throw new IllegalArgumentException("Not a valid operation: " + text);
-    }
-    
     public String toString()
     {
         String name = name();

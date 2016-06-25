@@ -42,7 +42,7 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
-import org.apache.qpid.server.security.access.Permission;
+import org.apache.qpid.server.security.access.RuleOutcome;
 
 public final class AclFileParser
 {
@@ -256,9 +256,19 @@ public final class AclFileParser
             throw new IllegalConfigurationException(String.format(NOT_ENOUGH_ACL_MSG, line));
         }
 
-        Permission permission = Permission.parse(args.get(0));
+        String text = args.get(0);
+        RuleOutcome outcome;
+
+        try
+        {
+            outcome = RuleOutcome.valueOf(text.replace('-', '_').toUpperCase());
+        }
+        catch(IllegalArgumentException e)
+        {
+            throw new IllegalArgumentException("Not a valid permission: " + text, e);
+        }
         String identity = args.get(1);
-        Operation operation = Operation.parse(args.get(2));
+        Operation operation = Operation.valueOf(args.get(2).toUpperCase());
 
         if (number != null && !ruleSetCreator.isValidNumber(number))
         {
@@ -267,14 +277,14 @@ public final class AclFileParser
 
         if (args.size() == 3)
         {
-            ruleSetCreator.grant(number, identity, permission, operation);
+            ruleSetCreator.grant(number, identity, outcome, operation);
         }
         else
         {
-            ObjectType object = ObjectType.parse(args.get(3));
+            ObjectType object = ObjectType.valueOf(args.get(3).toUpperCase());
             AclRulePredicates predicates = toRulePredicates(args.subList(4, args.size()), line);
 
-            ruleSetCreator.grant(number, identity, permission, operation, object, predicates);
+            ruleSetCreator.grant(number, identity, outcome, operation, object, predicates);
         }
     }
 

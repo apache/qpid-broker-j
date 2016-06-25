@@ -7,9 +7,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -18,10 +18,23 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.security.access;
+package org.apache.qpid.server.security.access.plugins;
 
-public class FileAccessControlProviderConstants
+import java.util.Map;
+
+import org.apache.qpid.server.model.ManagedAttributeValue;
+import org.apache.qpid.server.model.ManagedAttributeValueType;
+import org.apache.qpid.server.security.access.ObjectProperties;
+import org.apache.qpid.server.security.access.ObjectType;
+import org.apache.qpid.server.security.access.Operation;
+import org.apache.qpid.server.security.access.RuleOutcome;
+
+@ManagedAttributeValueType
+public interface AclRule extends ManagedAttributeValue
 {
-    public static final String ACL_FILE_PROVIDER_TYPE = "AclFile";
-    public static final String PATH = "path";
+    String getIdentity();
+    ObjectType getObjectType();
+    Operation getOperation();
+    Map<ObjectProperties.Property,String> getAttributes();
+    RuleOutcome getOutcome();
 }

@@ -42,7 +42,7 @@ import org.apache.qpid.server.security.access.config.RuleBasedAccessControl;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
 public class ACLFileAccessControlProviderImpl
-        extends AbstractConfiguredObject<ACLFileAccessControlProviderImpl>
+        extends AbstractRuleBasedAccessControlProvider<ACLFileAccessControlProviderImpl>
         implements ACLFileAccessControlProvider<ACLFileAccessControlProviderImpl>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ACLFileAccessControlProviderImpl.class);
@@ -52,46 +52,19 @@ public class ACLFileAccessControlProviderImpl
         Handler.register();
     }
 
-    private volatile RuleBasedAccessControl _accessControl;
-    private final Broker _broker;
-    private final EventLogger _eventLogger;
-
     @ManagedAttributeField( afterSet = "reloadAclFile")
     private String _path;
 
     @ManagedObjectFactoryConstructor
     public ACLFileAccessControlProviderImpl(Map<String, Object> attributes, Broker broker)
     {
-        super(parentsMap(broker), attributes);
-
-
-        _broker = broker;
-        _eventLogger = _broker.getEventLogger();
-        _eventLogger.message(AccessControlMessages.CREATE(getName()));
+        super(attributes, broker);
     }
 
     @Override
-    public void onValidate()
+    protected RuleBasedAccessControl createRuleBasedAccessController()
     {
-        super.onValidate();
-        if(!isDurable())
-        {
-            throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
-        }
-    }
-
-    @Override
-    protected void validateOnCreate()
-    {
-        try
-        {
-            new RuleBasedAccessControl(AclFileParser.parse(getPath(), _broker));
-        }
-        catch(RuntimeException e)
-        {
-            throw new IllegalConfigurationException(e.getMessage(), e);
-        }
-
+        return new RuleBasedAccessControl(AclFileParser.parse(getPath(), getBroker()));
     }
 
     @Override
@@ -111,9 +84,8 @@ public class ACLFileAccessControlProviderImpl
     {
         try
         {
-            RuleBasedAccessControl accessControl = new RuleBasedAccessControl(AclFileParser.parse(getPath(), _broker));
-            _accessControl = accessControl;
-            _eventLogger.message(AccessControlMessages.LOADED(String.valueOf(getPath()).startsWith("data:") ? "data:..." : getPath()));
+            recreateAccessController();
+            getEventLogger().message(AccessControlMessages.LOADED(String.valueOf(getPath()).startsWith("data:") ? "data:..." : getPath()));
 
         }
         catch(RuntimeException e)
@@ -128,65 +100,4 @@ public class ACLFileAccessControlProviderImpl
         return _path;
     }
 
-    @StateTransition(currentState = {State.UNINITIALIZED, State.QUIESCED, State.ERRORED}, desiredState = State.ACTIVE)
-    @SuppressWarnings("unused")
-    private ListenableFuture<Void> activate()
-    {
-
-        try
-        {
-            _accessControl = new RuleBasedAccessControl(AclFileParser.parse(getPath(), _broker));
-            setState(_broker.isManagementMode() ? State.QUIESCED : State.ACTIVE);
-        }
-        catch (RuntimeException e)
-        {
-            setState(State.ERRORED);
-            if (_broker.isManagementMode())
-            {
-                LOGGER.warn("Failed to activate ACL provider: " + getName(), e);
-            }
-            else
-            {
-                throw e;
-            }
-        }
-        return Futures.immediateFuture(null);
-    }
-
-    @Override
-    protected void onClose()
-    {
-        super.onClose();
-
-    }
-
-    @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)
-    @SuppressWarnings("unused")
-    private ListenableFuture<Void> startQuiesced()
-    {
-        setState(State.QUIESCED);
-        return Futures.immediateFuture(null);
-    }
-
-    @StateTransition(currentState = {State.ACTIVE, State.QUIESCED, State.ERRORED}, desiredState = State.DELETED)
-    @SuppressWarnings("unused")
-    private ListenableFuture<Void> doDelete()
-    {
-        return doAfterAlways(closeAsync(),
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        setState(State.DELETED);
-                        deleted();
-                        _eventLogger.message(AccessControlMessages.DELETE(getName()));
-                    }
-                });
-    }
-
-    public AccessControl getAccessControl()
-    {
-        return _accessControl;
-    }
 }

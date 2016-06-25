@@ -21,25 +21,32 @@
 package org.apache.qpid.server.security.access;
 
 /**
- * An enumeration of all possible permissions that can be applied to an access control v2 rule.
+ * An enumeration of all possible outcomes that can be applied to an access control v2 rule.
  */
-public enum Permission
+public enum RuleOutcome
 {
-    ALLOW,
-    ALLOW_LOG,
-    DENY,
-    DENY_LOG;
-    
-    public static Permission parse(String text)
+    ALLOW(true, false),
+    ALLOW_LOG(true, true),
+    DENY(false, false),
+    DENY_LOG(false, true);
+
+    private final boolean _allowed;
+    private final boolean _logged;
+
+    RuleOutcome(final boolean allowed, final boolean logged)
     {
-        
-        for (Permission permission : values())
-        {
-            if (permission.name().equalsIgnoreCase(text.replace('-', '_')))
-            {
-                return permission;
-            }
-        }
-        throw new IllegalArgumentException("Not a valid permission: " + text);
+        _allowed = allowed;
+        _logged = logged;
     }
+
+    public boolean isAllowed()
+    {
+        return _allowed;
+    }
+
+    public boolean isLogged()
+    {
+        return _logged;
+    }
+
 }

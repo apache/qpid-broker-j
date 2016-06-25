@@ -28,7 +28,7 @@ import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.ObjectProperties;
 import org.apache.qpid.server.security.access.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
-import org.apache.qpid.server.security.access.Permission;
+import org.apache.qpid.server.security.access.RuleOutcome;
 
 final class RuleSetCreator
 {
@@ -46,32 +46,32 @@ final class RuleSetCreator
         return !_rules.containsKey(number);
     }
 
-    void grant(Integer number, String identity, Permission permission, Operation operation)
+    void grant(Integer number, String identity, RuleOutcome ruleOutcome, Operation operation)
     {
         AclAction action = new AclAction(operation);
-        addRule(number, identity, permission, action);
+        addRule(number, identity, ruleOutcome, action);
     }
 
     void grant(Integer number,
                String identity,
-               Permission permission,
+               RuleOutcome ruleOutcome,
                Operation operation,
                ObjectType object,
                ObjectProperties properties)
     {
         AclAction action = new AclAction(operation, object, properties);
-        addRule(number, identity, permission, action);
+        addRule(number, identity, ruleOutcome, action);
     }
 
     void grant(Integer number,
                String identity,
-               Permission permission,
+               RuleOutcome ruleOutcome,
                Operation operation,
                ObjectType object,
                AclRulePredicates predicates)
     {
         AclAction aclAction = new AclAction(operation, object, predicates);
-        addRule(number, identity, permission, aclAction);
+        addRule(number, identity, ruleOutcome, aclAction);
     }
 
     private boolean ruleExists(String identity, AclAction action)
@@ -87,7 +87,7 @@ final class RuleSetCreator
     }
 
 
-    private void addRule(Integer number, String identity, Permission permission, AclAction action)
+    private void addRule(Integer number, String identity, RuleOutcome ruleOutcome, AclAction action)
     {
 
         if (!action.isAllowed())
@@ -100,7 +100,7 @@ final class RuleSetCreator
         }
 
         // set rule number if needed
-        Rule rule = new Rule(identity, action, permission);
+        Rule rule = new Rule(identity, action, ruleOutcome);
         if (number == null)
         {
             if (_rules.isEmpty())
@@ -134,6 +134,6 @@ final class RuleSetCreator
 
     RuleSet createRuleSet(EventLoggerProvider eventLoggerProvider)
     {
-        return new RuleSet(eventLoggerProvider, _rules, _defaultResult);
+        return new RuleSet(eventLoggerProvider, _rules.values(), _defaultResult);
     }
 }

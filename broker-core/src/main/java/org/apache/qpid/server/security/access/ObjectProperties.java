@@ -18,10 +18,9 @@
  */
 package org.apache.qpid.server.security.access;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -68,7 +67,7 @@ public class ObjectProperties
         {
             for (Property property : values())
             {
-                _canonicalNameToPropertyMap.put(getCanonicalName(property.name()), property);
+                _canonicalNameToPropertyMap.put(property.getCanonicalName(), property);
             }
         }
 
@@ -94,6 +93,11 @@ public class ObjectProperties
             }
         }
 
+        public String getCanonicalName()
+        {
+            return getCanonicalName(name());
+        }
+
         private static String getCanonicalName(String name)
         {
             return name.replace("_","").toLowerCase();
@@ -101,16 +105,6 @@ public class ObjectProperties
     }
 
     private final EnumMap<Property, String> _properties = new EnumMap<Property, String>(Property.class);
-
-    public static List<String> getAllPropertyNames()
-    {
-        List<String> properties = new ArrayList<String>();
-        for (Property property : Property.values())
-        {
-            properties.add(property.name().replace("_","").toLowerCase());
-        }
-        return properties;
-    }
 
     public ObjectProperties()
     {
@@ -249,5 +243,10 @@ public class ObjectProperties
     public boolean isEmpty()
     {
         return _properties.isEmpty();
+    }
+
+    public Map<Property, String> asPropertyMap()
+    {
+        return Collections.unmodifiableMap(_properties);
     }
 }

@@ -20,28 +20,28 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import org.apache.qpid.server.security.access.Permission;
+import org.apache.qpid.server.security.access.RuleOutcome;
 
 /**
  * An access control v2 rule.
  *
- * A rule consists of {@link Permission} for a particular identity to perform an {@link Action}. The identity
+ * A rule consists of {@link RuleOutcome} for a particular identity to perform an {@link Action}. The identity
  * may be either a user or a group.
  */
-class Rule
+public class Rule
 {
 	/** String indicating all identified. */
 	public static final String ALL = "all";
 
     private final String _identity;
     private final AclAction _action;
-    private final Permission _permission;
+    private final RuleOutcome _ruleOutcome;
 
-    public Rule(String identity, AclAction action, Permission permission)
+    public Rule(String identity, AclAction action, RuleOutcome ruleOutcome)
     {
         _identity = identity;
         _action = action;
-        _permission = permission;
+        _ruleOutcome = ruleOutcome;
     }
 
     public String getIdentity()
@@ -59,9 +59,9 @@ class Rule
         return _action;
     }
 
-    public Permission getPermission()
+    public RuleOutcome getRuleOutcome()
     {
-        return _permission;
+        return _ruleOutcome;
     }
 
     @Override
@@ -86,7 +86,7 @@ class Rule
         {
             return false;
         }
-        return getPermission() == rule.getPermission();
+        return getRuleOutcome() == rule.getRuleOutcome();
 
     }
 
@@ -95,7 +95,7 @@ class Rule
     {
         int result = (getIdentity() != null ? getIdentity().hashCode() : 0);
         result = 31 * result + (getAction() != null ? getAction().hashCode() : 0);
-        result = 31 * result + (getPermission() != null ? getPermission().hashCode() : 0);
+        result = 31 * result + (getRuleOutcome() != null ? getRuleOutcome().hashCode() : 0);
         return result;
     }
 
@@ -105,7 +105,7 @@ class Rule
         return "Rule[" +
                "identity='" + _identity + '\'' +
                ", action=" + _action +
-               ", permission=" + _permission +
+               ", permission=" + _ruleOutcome +
                ']';
     }
 

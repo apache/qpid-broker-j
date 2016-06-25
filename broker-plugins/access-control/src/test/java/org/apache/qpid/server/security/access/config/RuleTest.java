@@ -21,7 +21,7 @@ package org.apache.qpid.server.security.access.config;
 import static org.mockito.Mockito.*;
 
 import org.apache.qpid.server.security.access.Operation;
-import org.apache.qpid.server.security.access.Permission;
+import org.apache.qpid.server.security.access.RuleOutcome;
 
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -31,7 +31,7 @@ public class RuleTest extends QpidTestCase
     {
         AclAction aclAction = mock(AclAction.class);
         String identity = "identity";
-        Permission allow = Permission.ALLOW;
+        RuleOutcome allow = RuleOutcome.ALLOW;
 
         Rule rule = new Rule(identity, aclAction, allow);
         Rule equalRule = new Rule(identity, aclAction, allow);
@@ -54,6 +54,6 @@ public class RuleTest extends QpidTestCase
                     rule.equals(new Rule(identity, differentAclAction, allow)));
 
         assertFalse("Different permission should cause rules to be unequal",
-                rule.equals(new Rule(identity, aclAction, Permission.DENY)));
+                rule.equals(new Rule(identity, aclAction, RuleOutcome.DENY)));
     }
 }

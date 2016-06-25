@@ -28,8 +28,8 @@ import org.apache.qpid.server.security.access.Operation;
  * An access control v2 rule action.
  *
  * An action consists of an {@link Operation} on an {@link ObjectType} with certain properties, stored in a {@link java.util.Map}.
- * The operation and object should be an allowable combination, based on the {@link ObjectType#isAllowed(Operation)}
- * method of the object, which is exposed as the {@link #isAllowed()} method here. The internal #propertiesMatch(Map)
+ * The operation and object should be an allowable combination, based on the {@link ObjectType#isSupported(Operation)}
+ * method of the object, which is exposed as the {@link #isSupported()} method here. The internal #propertiesMatch(Map)
  * and #valueMatches(String, String) methods are used to determine wildcarded matching of properties, with
  * the empty string or "*" matching all values, and "*" at the end of a rule value indicating prefix matching.
  * <p>
@@ -80,29 +80,14 @@ public class Action
         return _properties;
     }
 
-    public boolean isAllowed()
+    boolean isSupported()
     {
-        return _object.isAllowed(_operation);
+        return _object.isSupported(_operation);
     }
 
     public boolean matches(Action a)
     {
-        if (!operationsMatch(a))
-        {
-            return false;
-        }
-
-        if (!objectTypesMatch(a))
-        {
-            return false;
-        }
-
-        if (!propertiesMatch(a))
-        {
-            return false;
-        }
-
-        return true;
+        return operationsMatch(a) && objectTypesMatch(a) && propertiesMatch(a);
     }
 
     private boolean operationsMatch(Action a)

@@ -18,6 +18,8 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,27 +44,46 @@ public class AclRulePredicates
 
     private FirewallRuleFactory _firewallRuleFactory = new FirewallRuleFactory();
 
+    public AclRulePredicates()
+    {
+    }
+
+    public AclRulePredicates(Map<Property, String> values)
+    {
+        if(values != null)
+        {
+            for(Map.Entry<Property, String> entry : values.entrySet())
+            {
+                addPropertyValue(entry.getKey(), entry.getValue());
+            }
+        }
+    }
+
     public void parse(String key, String value)
     {
         ObjectProperties.Property property = ObjectProperties.Property.parse(key);
 
+        addPropertyValue(property, value);
+
+        _logger.debug("Parsed {} with value {}",  property, value);
+    }
+
+    private void addPropertyValue(final Property property, final String value)
+    {
         if(property == Property.FROM_HOSTNAME)
         {
-            checkFirewallRuleNotAlreadyDefined(key, value);
+            checkFirewallRuleNotAlreadyDefined(property.name(), value);
             _firewallRule = _firewallRuleFactory.createForHostname(value.split(SEPARATOR));
         }
         else if(property == Property.FROM_NETWORK)
         {
-            checkFirewallRuleNotAlreadyDefined(key, value);
+            checkFirewallRuleNotAlreadyDefined(property.name(), value);
             _firewallRule = _firewallRuleFactory.createForNetwork(value.split(SEPARATOR));
         }
         else
         {
             _properties.put(property, value);
         }
-
-
-        _logger.debug("Parsed {} with value {}",  property, value);
     }
 
     private void checkFirewallRuleNotAlreadyDefined(String key, String value)

@@ -56,7 +56,7 @@ public class AclAction
 
     public boolean isAllowed()
     {
-        return _action.isAllowed();
+        return _action.isSupported();
     }
 
     @Override

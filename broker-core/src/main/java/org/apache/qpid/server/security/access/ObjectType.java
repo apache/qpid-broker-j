@@ -38,67 +38,42 @@ import java.util.Set;
  * An enumeration of all possible object types that can form part of an access control v2 rule.
  * 
  * Each object type is valid only for a certain set of {@link Operation}s, which are passed as a list to
- * the constructor, and can be checked using the {@link #isAllowed(Operation)} method.
+ * the constructor, and can be checked using the {@link #isSupported(Operation)} method.
  */
 public enum ObjectType
 {
-    ALL(Operation.ALL),
+    ALL(EnumSet.allOf(Operation.class)),
     VIRTUALHOSTNODE(Operation.ALL, CREATE, DELETE, UPDATE),
     VIRTUALHOST(Operation.ALL, ACCESS, CREATE, DELETE, UPDATE, ACCESS_LOGS),
     MANAGEMENT(Operation.ALL, ACCESS),
     QUEUE(Operation.ALL, CREATE, DELETE, PURGE, CONSUME, UPDATE),
     EXCHANGE(Operation.ALL, ACCESS, CREATE, DELETE, BIND, UNBIND, PUBLISH, UPDATE),
-    LINK, // Not allowed in the Java broker
-    ROUTE, // Not allowed in the Java broker
     METHOD(Operation.ALL, ACCESS, UPDATE),
     USER(Operation.ALL, CREATE, DELETE, UPDATE),
     GROUP(Operation.ALL, CREATE, DELETE, UPDATE),
     BROKER(Operation.ALL, CONFIGURE, ACCESS_LOGS, SHUTDOWN);
 
-    private EnumSet<Operation> _actions;
-    
-    private ObjectType()
+    private EnumSet<Operation> _operations;
+
+
+    ObjectType(Operation first, Operation... rest)
     {
-        _actions = EnumSet.noneOf(Operation.class);
+        this(EnumSet.of(first, rest));
+    }
+
+    ObjectType(EnumSet<Operation> operations)
+    {
+        _operations = operations;
     }
     
-    private ObjectType(Operation operation)
+    public Set<Operation> getOperations()
     {
-        if (operation == Operation.ALL)
-        {
-            _actions = EnumSet.allOf(Operation.class);
-        }
-        else
-        {
-            _actions = EnumSet.of(operation);
-        }
+        return _operations;
     }
     
-    private ObjectType(Operation first, Operation...rest)
+    public boolean isSupported(Operation operation)
     {
-        _actions = EnumSet.of(first, rest);
-    }
-    
-    public Set<Operation> getActions()
-    {
-        return _actions;
-    }
-    
-    public boolean isAllowed(Operation operation)
-    {
-        return _actions.contains(operation);
-    }
-    
-    public static ObjectType parse(String text)
-    {
-        for (ObjectType object : values())
-        {
-            if (object.name().equalsIgnoreCase(text))
-            {
-                return object;
-            }
-        }
-        throw new IllegalArgumentException("Not a valid object type: " + text);
+        return _operations.contains(operation);
     }
     
     public String toString()
@@ -106,4 +81,5 @@ public enum ObjectType
         String name = name();
         return name.charAt(0) + name.substring(1).toLowerCase();
     }
+
 }

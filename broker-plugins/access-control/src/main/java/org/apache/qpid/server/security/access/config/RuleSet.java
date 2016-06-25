@@ -21,6 +21,7 @@ package org.apache.qpid.server.security.access.config;
 import java.net.InetAddress;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -44,12 +45,12 @@ import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.ObjectProperties;
 import org.apache.qpid.server.security.access.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
-import org.apache.qpid.server.security.access.Permission;
+import org.apache.qpid.server.security.access.RuleOutcome;
 
 /**
  * Models the rule configuration for the access control plugin.
  */
-class RuleSet implements EventLoggerProvider
+public class RuleSet implements EventLoggerProvider
 {
     private static final Logger _logger = LoggerFactory.getLogger(RuleSet.class);
 
@@ -73,11 +74,11 @@ class RuleSet implements EventLoggerProvider
     }
 
     public RuleSet(final EventLoggerProvider eventLogger,
-                   final SortedMap<Integer, Rule> rules,
+                   final Collection<Rule> rules,
                    final Result defaultResult)
     {
         _eventLogger = eventLogger;
-        _rules = new ArrayList<>(rules.values());
+        _rules = new ArrayList<>(rules);
         _defaultResult = defaultResult;
     }
 
@@ -189,27 +190,28 @@ class RuleSet implements EventLoggerProvider
 
             if (action.matches(rule.getAclAction(), addressOfClient))
             {
-                Permission permission = rule.getPermission();
-
-                switch (permission)
+                RuleOutcome ruleOutcome = rule.getRuleOutcome();
+                boolean allowed = ruleOutcome.isAllowed();
+                if(ruleOutcome.isLogged())
                 {
-                    case ALLOW_LOG:
+                    if(allowed)
+                    {
                         getEventLogger().message(AccessControlMessages.ALLOWED(
                                 action.getOperation().toString(),
                                 action.getObjectType().toString(),
                                 action.getProperties().toString()));
-                    case ALLOW:
-                        return Result.ALLOWED;
-                    case DENY_LOG:
+                    }
+                    else
+                    {
                         getEventLogger().message(AccessControlMessages.DENIED(
                                 action.getOperation().toString(),
                                 action.getObjectType().toString(),
                                 action.getProperties().toString()));
-                    case DENY:
-                        return Result.DENIED;
+                    }
                 }
 
-                return Result.DENIED;
+
+                return allowed ? Result.ALLOWED : Result.DENIED;
             }
         }
 

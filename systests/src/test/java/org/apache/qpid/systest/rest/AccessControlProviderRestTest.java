@@ -31,7 +31,7 @@ import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
 import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.security.access.FileAccessControlProviderConstants;
+import org.apache.qpid.server.security.access.plugins.ACLFileAccessControlProvider;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.test.utils.TestFileUtils;
 
@@ -175,7 +175,7 @@ public class AccessControlProviderRestTest extends QpidRestTestCase
 
         Map<String, Object> acl = getRestTestHelper().getJsonAsSingletonList("accesscontrolprovider/" + TestBrokerConfiguration.ENTRY_NAME_ACL_FILE + "?" + RestServlet.OVERSIZE_PARAM + "=" + (file.getAbsolutePath().length()+10));
         assertEquals("Unexpected id", id.toString(), acl.get(AccessControlProvider.ID));
-        assertEquals("Unexpected path", file.getAbsolutePath() , acl.get(FileAccessControlProviderConstants.PATH));
+        assertEquals("Unexpected path", file.getAbsolutePath() , acl.get(ACLFileAccessControlProvider.PATH));
         assertEquals("Unexpected state", State.ERRORED.name(), acl.get(AccessControlProvider.STATE));
 
         int status = getRestTestHelper().submitRequest("accesscontrolprovider/" + TestBrokerConfiguration.ENTRY_NAME_ACL_FILE, "DELETE");
@@ -203,8 +203,8 @@ public class AccessControlProviderRestTest extends QpidRestTestCase
         File file = TestFileUtils.createTempFile(this, ".acl", content);
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(AccessControlProvider.NAME, accessControlProviderName);
-        attributes.put(AccessControlProvider.TYPE, FileAccessControlProviderConstants.ACL_FILE_PROVIDER_TYPE);
-        attributes.put(FileAccessControlProviderConstants.PATH, file.getAbsoluteFile());
+        attributes.put(AccessControlProvider.TYPE, ACLFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE);
+        attributes.put(ACLFileAccessControlProvider.PATH, file.getAbsoluteFile());
 
         return getRestTestHelper().submitRequest("accesscontrolprovider/" + accessControlProviderName, "PUT", attributes);
     }

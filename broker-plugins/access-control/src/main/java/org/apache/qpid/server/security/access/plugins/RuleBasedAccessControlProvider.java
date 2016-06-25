@@ -21,20 +21,33 @@
 package org.apache.qpid.server.security.access.plugins;
 
 
+import java.util.List;
+
 import org.apache.qpid.server.model.AccessControlProvider;
+import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedOperation;
+import org.apache.qpid.server.model.Param;
+import org.apache.qpid.server.security.Result;
+import org.apache.qpid.server.security.access.RuleOutcome;
 
-@ManagedObject( category = false, type=ACLFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE )
-public interface ACLFileAccessControlProvider<X extends ACLFileAccessControlProvider<X>> extends AccessControlProvider<X>
+@ManagedObject( category = false, type= RuleBasedAccessControlProvider.RULE_BASED_TYPE)
+public interface RuleBasedAccessControlProvider<X extends RuleBasedAccessControlProvider<X>> extends AccessControlProvider<X>
 {
-    String ACL_FILE_PROVIDER_TYPE = "AclFile";
-    String PATH = "path";
+    String RULE_BASED_TYPE = "RuleBased";
+    String DEFAULT_RESULT= "defaultResult";
+    String RULES = "rules";
 
-    @ManagedAttribute( mandatory = true, description = "File location", oversize = true, oversizedAltText = OVER_SIZED_ATTRIBUTE_ALTERNATIVE_TEXT)
-    String getPath();
+    @ManagedAttribute( mandatory = true, defaultValue = "DENIED", validValues = { "ALLOWED", "DENIED" })
+    Result getDefaultResult();
 
-    @ManagedOperation( description = "Causes the ACL rules to be reloaded.  Changes are applied immediately.")
-    void reload();
+    @ManagedAttribute( mandatory = true, defaultValue = "[ { \"identity\" : \"ALL\", \"objectType\" : \"ALL\", \"operation\" : \"ALL\", \"attributes\" : {}, \"outcome\" : \"ALLOW\"} ]")
+    List<AclRule> getRules();
+
+    @ManagedOperation
+    void loadFromFile(@Param(name = "path")String path);
+
+    @ManagedOperation(nonModifying = true)
+    Content extractRules();
 }
