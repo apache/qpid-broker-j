@@ -1144,7 +1144,43 @@ abstract class AttributeValueConverter<T>
                     public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable
                     {
                         AttributeValueConverter<?> converter = _propertyConverters.get(method);
-                        return converter == null ? null : converter.convert(((Map)value).get(getNameFromMethod(method, getTypeFromMethod(method))), object);
+                        Map map = (Map) value;
+                        if(converter != null)
+                        {
+                            return converter.convert(map.get(getNameFromMethod(method, getTypeFromMethod(method))), object);
+                        }
+                        else if("toString".equals(method.getName()) && method.getParameterTypes().length == 0)
+                        {
+                            return _klazz.getSimpleName() + " : " + map.toString();
+                        }
+                        else if("hashCode".equals(method.getName()) && method.getParameterTypes().length == 0)
+                        {
+                            return map.hashCode();
+                        }
+                        else if("equals".equals(method.getName()) && method.getParameterTypes().length == 1 && method.getParameterTypes()[0] == Object.class)
+                        {
+                            if(_klazz.isInstance(args[0]))
+                            {
+                                for(Map.Entry<Method, AttributeValueConverter<?>> entry : _propertyConverters.entrySet())
+                                {
+                                    AttributeValueConverter<?> conv = entry.getValue();
+                                    Method meth = entry.getKey();
+
+                                    Object lvalue = conv.convert(map.get(getNameFromMethod(meth, getTypeFromMethod(meth))), object);
+                                    Object rvalue = meth.invoke(args[0]);
+                                    if((lvalue == null && rvalue != null) || (lvalue != null && !lvalue.equals(rvalue)))
+                                    {
+                                        return false;
+                                    }
+                                }
+                                return true;
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        }
+                        return converter == null ? null : converter.convert(map.get(getNameFromMethod(method, getTypeFromMethod(method))), object);
                     }
                 });
             }

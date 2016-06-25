@@ -291,7 +291,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             if(getNodeAutoCreationPolicies() != null)
             {
-                for(NodeAutoCreationPolicy policy : getNodeAutoCreationPolicies())
+                for(NodeAutoCreationPolicy policy : virtualHost.getNodeAutoCreationPolicies())
                 {
                     validateNodeAutoCreationPolicy(policy);
                 }
@@ -310,7 +310,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         String pattern = policy.getPattern();
         if(pattern == null)
         {
-            throw new IllegalArgumentException("The 'pattern' attribute of a NodeAutoCreationPattern MUST be supplied");
+            throw new IllegalArgumentException("The 'pattern' attribute of a NodeAutoCreationPattern MUST be supplied: " + policy);
         }
 
         try
@@ -320,7 +320,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         catch (PatternSyntaxException e)
         {
             throw new IllegalArgumentException("The 'pattern' attribute of a NodeAutoCreationPattern MUST be a valid "
-                                               + "Java Regular Expression Pattern, the value '" + pattern + "' is not");
+                                               + "Java Regular Expression Pattern, the value '" + pattern + "' is not: " + policy);
 
         }
 

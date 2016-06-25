@@ -55,12 +55,12 @@ public class DefaultDestination implements MessageDestination
                                                                                         final ServerTransaction txn,
                                                                                         final Action<? super MessageInstance> postEnqueueAction)
     {
-        if(routingAddress == null)
+        if(routingAddress == null || routingAddress.trim().equals(""))
         {
-            routingAddress = "";
+            return 0;
         }
-        final Queue<?> q = _virtualHost.getAttainedChildFromAddress(Queue.class, routingAddress);
-        if(q == null)
+        final MessageDestination dest = _virtualHost.getAttainedMessageDestination(routingAddress);
+        if(dest == null)
         {
             routingAddress = _virtualHost.getLocalAddress(routingAddress);
             if(routingAddress.contains("/") && !routingAddress.startsWith("/"))
@@ -84,28 +84,7 @@ public class DefaultDestination implements MessageDestination
         }
         else
         {
-            txn.enqueue(q,message, new ServerTransaction.EnqueueAction()
-            {
-                MessageReference _reference = message.newReference();
-
-                public void postCommit(MessageEnqueueRecord... records)
-                {
-                    try
-                    {
-                        q.enqueue(message, postEnqueueAction, records[0]);
-                    }
-                    finally
-                    {
-                        _reference.release();
-                    }
-                }
-
-                public void onRollback()
-                {
-                    _reference.release();
-                }
-            });
-            return 1;
+            return dest.send(message, routingAddress, instanceProperties, txn, postEnqueueAction);
         }
     }
 

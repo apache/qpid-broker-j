@@ -242,3 +242,6 @@ org.apache.qpid.test.unit.client.connection.BrokerClosesClientConnectionTest#tes
 # cpp broker allows anonymous access by default
 # the following test requires running broker with authentication enabled
 org.apache.qpid.transport.ConnectionEstablishmentTest#testAuthenticationBypass
+
+//Node Creation Policy Tests use Java Specific Config
+org.apache.qpid.server.queue.NodeAutoCreationPolicyTest#*

@@ -609,7 +609,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                                  (!isConsumer && dest.getCreate() == AMQDestination.AddressOption.SENDER);
 
 
-
+            int suppliedType = dest.getNode() == null ? AMQDestination.UNKNOWN_TYPE : dest.getNode().getType();
             int type = resolveAddressType(dest);
             switch (type)
             {
@@ -621,26 +621,26 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                         handleQueueNodeCreation(dest,noLocal);
                         break;
                     }
-                    else if (isQueueExist(dest,assertNode))
+                    else if (isQueueExist(dest,assertNode) || suppliedType == AMQDestination.QUEUE_TYPE)
                     {
                         break;
                     }
-
                 case AMQDestination.TOPIC_TYPE:
-
-                    setLegacyFieldsForTopicType(dest);
-                    if(createNode)
+                    if(suppliedType != AMQDestination.QUEUE_TYPE)
                     {
-                        verifySubject(dest);
-                        handleExchangeNodeCreation(dest);
-                        break;
+                        setLegacyFieldsForTopicType(dest);
+                        if (createNode)
+                        {
+                            verifySubject(dest);
+                            handleExchangeNodeCreation(dest);
+                            break;
+                        }
+                        else if (isExchangeExist(dest, assertNode) || suppliedType == AMQDestination.TOPIC_TYPE)
+                        {
+                            verifySubject(dest);
+                            break;
+                        }
                     }
-                    else if (isExchangeExist(dest,assertNode))
-                    {
-                        verifySubject(dest);
-                        break;
-                    }
-
                 default:
                     throw new QpidException(
                             "The name '" + dest.getAddressName() +

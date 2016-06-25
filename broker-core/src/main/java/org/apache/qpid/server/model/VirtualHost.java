@@ -126,7 +126,12 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     @ManagedAttribute( defaultValue = "${virtualhost.housekeepingThreadCount}")
     int getHousekeepingThreadCount();
 
-    @ManagedAttribute( defaultValue = "[]" )
+    @ManagedAttribute( defaultValue = "[]",
+            description = "a list of policies used for auto-creating nodes (such as Queues or Exchanges) when an "
+                          + "address is published to or subscribed from and no node matching the address currently "
+                          + "exists. Each policy describes a pattern to match against the address, the circumstances "
+                          + "when auto-creation should occur (on publish, on consume, or both), the type of node to be "
+                          + "created, and the properties of the node.")
     List<NodeAutoCreationPolicy> getNodeAutoCreationPolicies();
 
     String VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE = "virtualhost.connectionThreadPool.size";

@@ -1013,7 +1013,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                          }
                      });
 
-        Thread.sleep(5);  // Let a small amount of time pass
+        Thread.sleep(50);  // Let a small amount of time pass
 
         assertEquals("Creating user should not be changed by update", user, object.getCreatedBy());
         assertEquals("Created time should not be changed by update", originalCreatedTime, object.getCreatedTime());

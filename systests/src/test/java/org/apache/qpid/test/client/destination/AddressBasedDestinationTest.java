@@ -132,6 +132,7 @@ public class AddressBasedDestinationTest extends QpidBrokerTestCase
         try
         {
             prod = jmsSession.createProducer(dest);
+            fail("producer creation should fail");
         }
         catch(JMSException e)
         {
@@ -161,6 +162,7 @@ public class AddressBasedDestinationTest extends QpidBrokerTestCase
         try
         {
             cons = jmsSession.createConsumer(dest);
+            fail("Consumer creation should fail");
         }
         catch(JMSException e)
         {
@@ -170,6 +172,8 @@ public class AddressBasedDestinationTest extends QpidBrokerTestCase
         try
         {
             prod = jmsSession.createProducer(dest);
+            fail("Producer creation should fail");
+
         }
         catch(JMSException e)
         {
@@ -189,6 +193,7 @@ public class AddressBasedDestinationTest extends QpidBrokerTestCase
         try
         {
             cons = jmsSession.createConsumer(dest);
+            fail("Consumer creation should fail");
         }
         catch(JMSException e)
         {
