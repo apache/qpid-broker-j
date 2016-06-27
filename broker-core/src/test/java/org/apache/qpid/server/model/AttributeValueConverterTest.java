@@ -32,6 +32,7 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -280,4 +281,72 @@ public class AttributeValueConverterTest extends QpidTestCase
         assertEquals("CN=app2@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA", x509Certificate.getSubjectX500Principal().getName());
         assertEquals("CN=MyRootCA,O=ACME,ST=Ontario,C=CA", x509Certificate.getIssuerX500Principal().getName());
     }
+
+    public void testMapToManagedAttributeValue()
+    {
+        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes);
+
+        final AttributeValueConverter<TestManagedAttributeValue> converter =
+                getConverter(TestManagedAttributeValue.class, TestManagedAttributeValue.class);
+
+        final String expectedStringValue = "mystringvalue";
+        final Integer expectedIntegerValue = 31;
+        final int expectedIntegerPrimitiveValue = 32;
+        final Map<String, Object> input = new HashMap<>();
+        input.put("string", expectedStringValue);
+        input.put("integer", expectedIntegerValue);
+        input.put("int", expectedIntegerPrimitiveValue);
+
+        final TestManagedAttributeValue value = converter.convert(input, object);
+
+        assertEquals(expectedStringValue, value.getString());
+        assertEquals(expectedIntegerValue, value.getInteger());
+        assertEquals(expectedIntegerPrimitiveValue, value.getInt());
+        assertNull(expectedStringValue, value.getAnotherString());
+
+        // TODO: should changes to the underlying map be visible?
+//        input.put("anotherString", "laterchange");
+//        assertNull(expectedStringValue, value.getAnotherString());
+    }
+
+    @ManagedAttributeValueType
+    public interface TestManagedAttributeValue extends ManagedAttributeValue
+    {
+        String getString();
+        Integer getInteger();
+        int getInt();
+        String getAnotherString();
+    }
+
+    public void testMapToManagedAttributeValueEquality()
+    {
+        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes);
+
+        final AttributeValueConverter<SimpleTestManagedAttributeValue> converter =
+                getConverter(SimpleTestManagedAttributeValue.class, SimpleTestManagedAttributeValue.class);
+
+        Object elephant = new Object();
+
+        final Map<String, String> map = Collections.singletonMap("string", "mystring");
+        final Map<String, String> mapWithSameContent = Collections.singletonMap("string", "mystring");
+        final Map<String, String> mapWithDifferentContent = Collections.singletonMap("string", "mydifferentstring");
+
+        final SimpleTestManagedAttributeValue value = converter.convert(map, object);
+        final SimpleTestManagedAttributeValue same = converter.convert(map, object);
+        final SimpleTestManagedAttributeValue sameContent = converter.convert(mapWithSameContent, object);
+        final SimpleTestManagedAttributeValue differentContent = converter.convert(mapWithDifferentContent, object);
+
+        assertFalse(value.equals(elephant));
+        assertTrue(value.equals(value));
+        assertTrue(value.equals(same));
+        assertTrue(sameContent.equals(value));
+        assertFalse(differentContent.equals(value));
+    }
+
+    @ManagedAttributeValueType
+    public interface SimpleTestManagedAttributeValue extends ManagedAttributeValue
+    {
+        String getString();
+    }
+
 }
