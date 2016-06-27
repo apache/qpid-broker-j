@@ -44,11 +44,21 @@ public class ClassLoadingAwareObjectInputStream extends ObjectInputStream
 
     /** <p>Maps primitive type names to corresponding class objects.</p> */
     private static final HashMap<String, Class> _primitives = new HashMap<String, Class>(8, 1.0F);
+    private final TrustedClassFilter _securityFilter;
 
+    /**
+     * Security Filter used to filter classes that the application deems to be insecure, this filter
+     * is not applied to the class instances for the primitive types.
+     */
+    public interface TrustedClassFilter
+    {
+        boolean isTrusted(Class<?> clazz);
+    }
 
-    public ClassLoadingAwareObjectInputStream(InputStream in) throws IOException
+    public ClassLoadingAwareObjectInputStream(InputStream in, TrustedClassFilter filter) throws IOException
     {
         super(in);
+        _securityFilter = filter;
     }
 
     @Override
@@ -58,8 +68,8 @@ public class ClassLoadingAwareObjectInputStream extends ObjectInputStream
 
         // Here we use TTCL as our primary class loader to load the classes
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-
-        return load(classDesc.getName(), cl);
+        Class<?> clazz = load(classDesc.getName(), cl);
+        return checkSecurity(clazz);
     }
 
     @Override
@@ -75,14 +85,47 @@ public class ClassLoadingAwareObjectInputStream extends ObjectInputStream
             cinterfaces[i] = load(interfaces[i], cl);
         }
 
+
+        Class<?> clazz = null;
+        Throwable failureCause = null;
+
         try
         {
-            return Proxy.getProxyClass(cinterfaces[0].getClassLoader(), cinterfaces);
+            clazz = Proxy.getProxyClass(cl, cinterfaces);
         }
         catch (IllegalArgumentException e)
         {
-            throw new ClassNotFoundException(null, e);
+            failureCause = e;
+
+            try
+            {
+                clazz = Proxy.getProxyClass(_ON_FAULT_CLASS_LOADER, cinterfaces);
+            }
+            catch (IllegalArgumentException e2)
+            {
+            }
         }
+
+        if (clazz != null)
+        {
+            return checkSecurity(clazz);
+        }
+
+        throw new ClassNotFoundException("Failed find class.", failureCause);
+    }
+
+    private Class<?> checkSecurity(Class<?> clazz) throws ClassNotFoundException
+    {
+        if (!clazz.isPrimitive() && _securityFilter != null)
+        {
+            if (!_securityFilter.isTrusted(clazz))
+            {
+                throw new ClassNotFoundException("Forbidden " + clazz + "! " +
+                                                 "This class is not trusted to be deserialized from ObjectMessage payloads.");
+            }
+        }
+
+        return clazz;
     }
 
     /**

@@ -21,15 +21,23 @@
 package org.apache.qpid.client.message;
 
 import org.apache.qpid.QpidException;
+import org.apache.qpid.client.util.ClassLoadingAwareObjectInputStream;
 
 import java.nio.ByteBuffer;
 
 public class JMSObjectMessageFactory extends AbstractJMSMessageFactory
 {
+    private final ClassLoadingAwareObjectInputStream.TrustedClassFilter _trustedClassFilter;
+
+    public JMSObjectMessageFactory(final ClassLoadingAwareObjectInputStream.TrustedClassFilter trustedClassFilter)
+    {
+        _trustedClassFilter = trustedClassFilter;
+    }
+
     protected AbstractJMSMessage createMessage(AbstractAMQMessageDelegate delegate, ByteBuffer data) throws
                                                                                                      QpidException
     {
-        return new JMSObjectMessage(delegate, data);
+        return new JMSObjectMessage(_trustedClassFilter, delegate, data);
     }
 
 }

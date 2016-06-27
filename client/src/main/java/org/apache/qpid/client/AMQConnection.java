@@ -32,6 +32,7 @@ import java.security.KeyStore;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -58,6 +59,7 @@ import javax.naming.Referenceable;
 import javax.naming.StringRefAddr;
 
 import org.apache.qpid.client.state.AMQState;
+import org.apache.qpid.client.util.ClassLoadingAwareObjectInputStream;
 import org.apache.qpid.jndi.ObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +88,8 @@ import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.transport.ConnectionSettings;
 import org.apache.qpid.url.URLSyntaxException;
 
-public class AMQConnection extends Closeable implements CommonConnection, Referenceable
+public class AMQConnection extends Closeable implements CommonConnection, Referenceable,
+                                                        ClassLoadingAwareObjectInputStream.TrustedClassFilter
 {
     public static final String JNDI_ADDRESS_CONNECTION_URL = "connectionURL";
 
@@ -102,6 +105,9 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
                                                                    ClientProperties.DEFAULT_CLOSE_TIMEOUT);
 
     private final long _connectionNumber = CONN_NUMBER_GENERATOR.incrementAndGet();
+
+    private final List<String> _whiteListedClassHierarchies;
+    private final List<String> _blackListedClassHierarchies;
 
     /**
      * This is the "root" mutex that must be held when doing anything that could be impacted by failover. This must be
@@ -485,6 +491,28 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         }
 
         _connectionMetaData = new QpidConnectionMetaData();
+
+        if (connectionURL.getOption(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST) != null)
+        {
+            String whiteListedClassHierarchiesString = connectionURL.getOption(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST);
+            _whiteListedClassHierarchies = Arrays.asList(whiteListedClassHierarchiesString.split(","));
+        }
+        else
+        {
+            final String defaultWhiteListedClassHierarchiesString = System.getProperty(CommonProperties.QPID_SECURITY_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST, "*");
+            _whiteListedClassHierarchies = Arrays.asList(defaultWhiteListedClassHierarchiesString.split(","));
+        }
+
+        if (connectionURL.getOption(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_BLACK_LIST) != null)
+        {
+            String blackListedClassHierarchiesString = connectionURL.getOption(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_BLACK_LIST);
+            _blackListedClassHierarchies = Arrays.asList(blackListedClassHierarchiesString.split(","));
+        }
+        else
+        {
+            final String defaultBlackListedClassHierarchiesString = System.getProperty(CommonProperties.QPID_SECURITY_OBJECT_MESSAGE_CLASS_HIERARCHY_BLACK_LIST, "");
+            _blackListedClassHierarchies = Arrays.asList(defaultBlackListedClassHierarchiesString.split(","));
+        }
     }
 
     private void makeConnection() throws QpidException
@@ -1916,5 +1944,56 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
     public ConnectionSettings getConnectionSettings()
     {
         return _connectionSettings;
+    }
+
+    @Override
+    public boolean isTrusted(Class<?> clazz)
+    {
+        while (clazz.isArray())
+        {
+            clazz = clazz.getComponentType();
+        }
+
+        if (clazz.isPrimitive())
+        {
+            return true;
+        }
+
+        while (clazz != null && (clazz.isAnonymousClass() || clazz.isLocalClass()))
+        {
+            clazz = clazz.getEnclosingClass();
+        }
+
+        if (clazz == null || clazz.getCanonicalName() == null)
+        {
+            return false;
+        }
+
+        String className = clazz.getCanonicalName();
+
+        for (String blackListedClassHierarchy : _blackListedClassHierarchies)
+        {
+            if ("*".equals(blackListedClassHierarchy))
+            {
+                return false;
+            }
+            else if (className != null && (className.equals(blackListedClassHierarchy) || className.startsWith(blackListedClassHierarchy + ".")))
+            {
+                return false;
+            }
+        }
+
+        for (String whiteListedClassHierarchy : _whiteListedClassHierarchies)
+        {
+            if ("*".equals(whiteListedClassHierarchy))
+            {
+                return true;
+            }
+            else if (className != null && (className.equals(whiteListedClassHierarchy) || className.startsWith(whiteListedClassHierarchy + ".")))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

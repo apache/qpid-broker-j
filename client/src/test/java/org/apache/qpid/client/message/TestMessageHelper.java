@@ -22,6 +22,8 @@ package org.apache.qpid.client.message;
 
 import javax.jms.JMSException;
 
+import org.apache.qpid.client.util.ClassLoadingAwareObjectInputStream;
+
 public class TestMessageHelper
 {
     public static JMSTextMessage newJMSTextMessage() throws JMSException
@@ -46,6 +48,13 @@ public class TestMessageHelper
 
     public static JMSObjectMessage newJMSObjectMessage()
     {
-        return new JMSObjectMessage(AMQMessageDelegateFactory.FACTORY_0_8);
+        return new JMSObjectMessage(new ClassLoadingAwareObjectInputStream.TrustedClassFilter()
+        {
+            @Override
+            public boolean isTrusted(final Class<?> clazz)
+            {
+                return true;
+            }
+        }, AMQMessageDelegateFactory.FACTORY_0_8);
     }
 }

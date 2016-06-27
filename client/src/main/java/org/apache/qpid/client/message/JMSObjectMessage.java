@@ -38,6 +38,7 @@ public class JMSObjectMessage extends AbstractJMSMessage implements ObjectMessag
 {
     public static final String MIME_TYPE = "application/java-object-stream";
     private static final int DEFAULT_OUTPUT_BUFFER_SIZE = 256;
+    private final ClassLoadingAwareObjectInputStream.TrustedClassFilter _trustedClassFilter;
 
     private Serializable _readData;
     private ByteBuffer _data;
@@ -51,18 +52,20 @@ public class JMSObjectMessage extends AbstractJMSMessage implements ObjectMessag
      * Creates empty, writable message for use by producers
      * @param delegateFactory
      */
-    public JMSObjectMessage(AMQMessageDelegateFactory delegateFactory)
+    public JMSObjectMessage(final ClassLoadingAwareObjectInputStream.TrustedClassFilter trustedClassFilter, AMQMessageDelegateFactory delegateFactory)
     {
         super(delegateFactory, false);
+        _trustedClassFilter = trustedClassFilter;
     }
 
     /**
      * Creates read only message for delivery to consumers
      */
 
-      JMSObjectMessage(AMQMessageDelegate delegate, final ByteBuffer data) throws QpidException
+      JMSObjectMessage(final ClassLoadingAwareObjectInputStream.TrustedClassFilter trustedClassFilter, AMQMessageDelegate delegate, final ByteBuffer data) throws QpidException
       {
           super(delegate, data!=null);
+          _trustedClassFilter = trustedClassFilter;
 
           try
           {
@@ -193,14 +196,10 @@ public class JMSObjectMessage extends AbstractJMSMessage implements ObjectMessag
         Serializable result = null;
         if (data != null && data.hasRemaining())
         {
-            ClassLoadingAwareObjectInputStream in = new ClassLoadingAwareObjectInputStream(new ByteBufferInputStream(data));
-            try
+            try (ClassLoadingAwareObjectInputStream in = new ClassLoadingAwareObjectInputStream(new ByteBufferInputStream(data),
+                                                                                                _trustedClassFilter))
             {
                 result = (Serializable) in.readObject();
-            }
-            finally
-            {
-                in.close();
             }
         }
         return result;
