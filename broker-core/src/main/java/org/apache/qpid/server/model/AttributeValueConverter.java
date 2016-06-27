@@ -1148,7 +1148,7 @@ abstract class AttributeValueConverter<T>
                         Map map = (Map) value;
                         if(converter != null)
                         {
-                            return converter.convert(map.get(getNameFromMethod(method, getTypeFromMethod(method))), object);
+                            return convertValue(map, converter, method);
                         }
                         else if("toString".equals(method.getName()) && method.getParameterTypes().length == 0)
                         {
@@ -1181,7 +1181,7 @@ abstract class AttributeValueConverter<T>
                                 return false;
                             }
                         }
-                        return converter == null ? null : convertValue(map, converter, method);
+                        throw new UnsupportedOperationException("The proxy class implements only attribute getters and toString(), hashCode() and equals()");
                     }
 
                     private Object convertValue(final Map map,
