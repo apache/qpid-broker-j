@@ -50,6 +50,7 @@ import java.util.regex.Pattern;
 import javax.xml.bind.DatatypeConverter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Defaults;
 
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
@@ -1166,7 +1167,7 @@ abstract class AttributeValueConverter<T>
                                     AttributeValueConverter<?> conv = entry.getValue();
                                     Method meth = entry.getKey();
 
-                                    Object lvalue = conv.convert(map.get(getNameFromMethod(meth, getTypeFromMethod(meth))), object);
+                                    Object lvalue = convertValue(map, conv, meth);
                                     Object rvalue = meth.invoke(args[0]);
                                     if((lvalue == null && rvalue != null) || (lvalue != null && !lvalue.equals(rvalue)))
                                     {
@@ -1180,7 +1181,17 @@ abstract class AttributeValueConverter<T>
                                 return false;
                             }
                         }
-                        return converter == null ? null : converter.convert(map.get(getNameFromMethod(method, getTypeFromMethod(method))), object);
+                        return converter == null ? null : convertValue(map, converter, method);
+                    }
+
+                    private Object convertValue(final Map map,
+                                                final AttributeValueConverter<?> converter,
+                                                final Method method)
+                    {
+                        String attributeName = getNameFromMethod(method, getTypeFromMethod(method));
+                        return map.containsKey(attributeName)
+                                ? converter.convert(map.get(attributeName), object)
+                                : Defaults.defaultValue(method.getReturnType());
                     }
                 });
             }
