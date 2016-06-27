@@ -1983,9 +1983,14 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
             return true;
         }
 
-        while (clazz.isAnonymousClass() || clazz.isLocalClass())
+        while (clazz != null && (clazz.isAnonymousClass() || clazz.isLocalClass()))
         {
             clazz = clazz.getEnclosingClass();
+        }
+
+        if (clazz == null || clazz.getCanonicalName() == null)
+        {
+            return false;
         }
 
         String className = clazz.getCanonicalName();
