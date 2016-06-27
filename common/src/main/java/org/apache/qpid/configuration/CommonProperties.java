@@ -62,6 +62,9 @@ public class CommonProperties
     public static final String QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST = "qpid.security.tls.cipherSuiteBlackList";
     public static final String QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST_DEFAULT = "";
 
+    public static final String QPID_SECURITY_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST = "qpid.security.objectMessage.classHierarchyWhiteList";
+    public static final String QPID_SECURITY_OBJECT_MESSAGE_CLASS_HIERARCHY_BLACK_LIST = "qpid.security.objectMessage.classHierarchyBlackList";
+
     /** The name of the version properties file to load from the class path. */
     public static final String VERSION_RESOURCE = "qpidversion.properties";
 

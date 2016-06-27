@@ -71,7 +71,7 @@ public class MessageFactoryRegistry
         mf.registerFactory("text/plain", new JMSTextMessageFactory());
         mf.registerFactory("text/xml", new JMSTextMessageFactory());
         mf.registerFactory(JMSBytesMessage.MIME_TYPE, new JMSBytesMessageFactory());
-        mf.registerFactory(JMSObjectMessage.MIME_TYPE, new JMSObjectMessageFactory());
+        mf.registerFactory(JMSObjectMessage.MIME_TYPE, new JMSObjectMessageFactory(session.getAMQConnection()));
         mf.registerFactory(JMSStreamMessage.MIME_TYPE, new JMSStreamMessageFactory());
         mf.registerFactory(AMQPEncodedMapMessage.MIME_TYPE, new AMQPEncodedMapMessageFactory());
         mf.registerFactory(AMQPEncodedListMessage.MIME_TYPE, new AMQPEncodedListMessageFactory());

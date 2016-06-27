@@ -1252,7 +1252,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     public ObjectMessage createObjectMessage() throws JMSException
     {
         checkNotClosed();
-         JMSObjectMessage msg = new JMSObjectMessage(getMessageDelegateFactory());
+         JMSObjectMessage msg = new JMSObjectMessage(getAMQConnection(), getMessageDelegateFactory());
          msg.setAMQSession(this);
          return msg;
     }

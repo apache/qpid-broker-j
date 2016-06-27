@@ -82,12 +82,13 @@ public interface ConnectionURL
     String OPTIONS_TEMPORARY_TOPIC_EXCHANGE = "temporaryTopicExchange";
     String OPTIONS_TEMPORARY_QUEUE_EXCHANGE = "temporaryQueueExchange";
     String OPTIONS_VERIFY_QUEUE_ON_SEND = "verifyQueueOnSend";
+    String OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST = "objectMessageClassHierarchyWhiteList";
+    String OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_BLACK_LIST = "objectMessageClassHierarchyBlackList";
 
     /**
      * This option specifies whether User-ID should be attached to each message sent over the connection
      */
     String OPTIONS_POPULATE_USER_ID = "populateJMSXUserID";
-
     byte  URL_0_8 = 1;
     byte  URL_0_10 = 2;
 
