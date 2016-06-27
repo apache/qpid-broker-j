@@ -310,11 +310,6 @@ public class AttributeValueConverterTest extends QpidTestCase
         assertNull(nullValues.getInteger());
         assertEquals(0, nullValues.getInt());
         assertNull(expectedStringValue, nullValues.getAnotherString());
-
-
-        // TODO: should changes to the underlying map be visible?
-//        input.put("anotherString", "laterchange");
-//        assertNull(expectedStringValue, value.getAnotherString());
     }
 
     @ManagedAttributeValueType
