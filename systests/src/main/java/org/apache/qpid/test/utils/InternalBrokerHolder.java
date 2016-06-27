@@ -87,30 +87,35 @@ public class InternalBrokerHolder extends AbstractBrokerHolder
     @Override
     public void shutdown()
     {
-        LOGGER.info("Shutting down Broker instance");
-
-        Subject.doAs(SecurityManager.getSystemTaskSubject("Shutdown"), new PrivilegedAction<Object>()
+        if (_broker != null)
         {
-            @Override
-            public Object run()
+            LOGGER.info("Shutting down Broker instance");
+
+            Subject.doAs(SecurityManager.getSystemTaskSubject("Shutdown"), new PrivilegedAction<Object>()
             {
-                if (_broker != null)
+                @Override
+                public Object run()
                 {
-                    _broker.shutdown();
+                    if (_broker != null)
+                    {
+                        _broker.shutdown();
+                    }
+                    return null;
                 }
-                return null;
-            }
-
-
-        });
-        waitUntilPortsAreFree();
+            });
+            waitUntilPortsAreFree();
+            LOGGER.info("Broker instance shutdown");
+        }
+        else
+        {
+            LOGGER.info("Nothing to shutdown. Broker instance either was already shut down or not started at all.");
+        }
 
         if (UNCAUGHT_EXCEPTION_HANDLER.getAndResetCount() > 0)
         {
             throw new RuntimeException(
                     "One or more uncaught exceptions occurred prior to end of this test. Check test logs.");
         }
-        LOGGER.info("Broker instance shutdown");
     }
 
     @Override
