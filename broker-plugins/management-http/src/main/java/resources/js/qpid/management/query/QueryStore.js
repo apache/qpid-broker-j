@@ -25,7 +25,9 @@ define(['dojo/_base/lang',
         "dojo/json",
         'dstore/Store',
         'dstore/QueryResults',
-        "dojo/Deferred"], function (lang, declare, Evented, json, Store, QueryResults, Deferred)
+        'dojo/promise/all',
+        "dojo/Deferred"],
+function (lang, declare, Evented, json, Store, QueryResults, all, Deferred)
 {
 
     return declare("qpid.management.query.QueryStore", [Store, Evented], {
@@ -46,7 +48,20 @@ define(['dojo/_base/lang',
 
         fetchRange: function (kwArgs)
         {
-            return this._request(kwArgs);
+            var queryResults = this._request(kwArgs);
+            all({results: queryResults, totalLength: queryResults.totalLength})
+                .then(lang.hitch(this,
+                    function (data)
+                    {
+                        this.emit("fetchCompleted",
+                            {
+                                start: kwArgs.start,
+                                end: kwArgs.end,
+                                results: data.results,
+                                totalLength: data.totalLength
+                            });
+                    }));
+            return queryResults;
         },
 
         _request: function (kwArgs)

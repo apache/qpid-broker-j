@@ -23,57 +23,39 @@ define(["dojo/_base/declare",
         "dojo/parser",
         "dojo/dom-construct",
         "dojo/json",
-        "dojo/text!query/QueryBuilder.html",
+        "dojo/Evented",
+        "dojo/text!query/QueryWidget.html",
+        "dojo/text!query/QueryCloneDialogForm.html",
+        "dojo/text!query/QuerySaveDialogForm.html",
+        "dojo/store/Memory",
         "dojox/html/entities",
-        "dgrid/Grid",
-        "dgrid/Keyboard",
-        "dgrid/Selection",
-        "dgrid/extensions/Pagination",
-        "dgrid/Selector",
         "dgrid/extensions/ColumnReorder",
         "dgrid/extensions/ColumnHider",
-        "dstore/Memory",
-        'dstore/legacy/DstoreAdapter',
         "qpid/management/query/QueryGrid",
         "qpid/management/query/DropDownSelect",
         "qpid/management/query/WhereExpression",
-        "dojo/Evented",
         "dijit/_WidgetBase",
         "dijit/_TemplatedMixin",
         "dijit/_WidgetsInTemplateMixin",
-        "dijit/form/FilteringSelect",
-        "dijit/form/ComboBox",
         "dijit/form/Button",
-        "dijit/form/ComboButton",
-        "dijit/form/CheckBox",
-        "dijit/form/DropDownButton",
-        "dijit/form/NumberTextBox",
         "dijit/form/ValidationTextBox",
-        "dijit/form/Select",
         "dijit/form/SimpleTextarea",
-        "dijit/Menu",
-        "dijit/MenuItem",
         "dijit/Toolbar",
-        "dijit/TooltipDialog",
         "dijit/Dialog",
-        "dojo/Deferred",
         "qpid/management/query/MessageDialog"],
     function (declare,
               lang,
               parser,
               domConstruct,
               json,
+              Evented,
               template,
+              queryCloneDialogFormTemplate,
+              querySaveDialogFormTemplate,
+              Memory,
               entities,
-              Grid,
-              Keyboard,
-              Selection,
-              Pagination,
-              Selector,
               ColumnReorder,
               ColumnHider,
-              Memory,
-              DstoreAdapter,
               QueryGrid)
     {
         var predefinedCategories = [{
@@ -84,45 +66,128 @@ define(["dojo/_base/declare",
             name: "Connection"
         }];
 
-        var QueryBuilder = declare("qpid.management.query.QueryBuilder",
-            [dijit._Widget, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin],
+        var QuerySaveDialogForm = declare("qpid.management.query.QuerySaveDialogForm",
+            [dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
             {
+                /**
+                 * dijit._TemplatedMixin enforced fields
+                 */
                 //Strip out the apache comment header from the template html as comments unsupported.
-                templateString: template.replace(/<!--[\s\S]*?-->/g, ""),
+                templateString: querySaveDialogFormTemplate.replace(/<!--[\s\S]*?-->/g, ""),
 
                 /**
-                 * Fields from template
-                 **/
+                 * template attach points
+                 */
+                queryName: null,
+                queryDescription: null,
+                groupChooser: null,
+                saveButton: null,
+                cancelButton: null,
+                queryForm: null,
+
+                postCreate: function ()
+                {
+                    this.inherited(arguments);
+                    this._postCreate();
+                },
+                startup: function ()
+                {
+                    this.inherited(arguments);
+                    this.groupChooser.startup();
+                },
+                _setPreferenceAttr: function (preference)
+                {
+                    this.preference = lang.clone(preference);
+                    this.queryName.set("value", this.preference.name);
+                    this.queryDescription.set("value", this.preference.description);
+
+                    var userGroups = [];  // TODO retrieve groups from server
+                    var selected = this.preference.visibilityList || [];
+                    for (var i = 0; i < selected.length; i++)
+                    {
+                        var present = false;
+                        for (var j = 0; j < userGroups.length; j++)
+                        {
+                            if (selected[i] === userGroups[j])
+                            {
+                                present = true;
+                                break;
+                            }
+                        }
+                        if (!present)
+                        {
+                            userGroups.push(selected[i]);
+                        }
+                    }
+                    var items = [];
+                    for (var j = 0; j < userGroups.length; j++)
+                    {
+                        items[j] = {id: userGroups[j], name: userGroups[j]};
+                    }
+                    this.groupChooser.set("data", {items: items, selected: selected});
+                    this._onChange();
+                },
+                _postCreate: function ()
+                {
+                    this.cancelButton.on("click", lang.hitch(this, this._onCancel));
+                    this.queryName.on("change", lang.hitch(this, this._onChange));
+                    this.queryForm.on("submit", lang.hitch(this, this._onFormSubmit))
+                },
+                _onCancel: function (data)
+                {
+                    this.emit("cancel");
+                },
+                _onChange: function (e)
+                {
+                    var invalid = !this.queryName.value;
+                    this.saveButton.set("disabled", invalid);
+                },
+                _onFormSubmit: function (e)
+                {
+                    try
+                    {
+                        if (this.queryForm.validate())
+                        {
+                            var preference = this.preference;
+                            preference.name = this.queryName.value;
+                            preference.description = this.queryDescription.value;
+                            var groups = [];
+                            var selected = this.groupChooser.get("selectedItems");
+                            for (var i = 0; i < selected.length; i++)
+                            {
+                                groups.push(selected[i].name);
+                            }
+                            preference.visibilityList = groups;
+                            this.emit("save", {preference: preference});
+                        }
+                        else
+                        {
+                            alert('Form contains invalid data.  Please correct first');
+                        }
+                    }
+                    finally
+                    {
+                        return false;
+                    }
+                }
+            });
+
+        var QueryCloneDialogForm = declare("qpid.management.query.QueryCloneDialogForm",
+            [dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
+            {
+                /**
+                 * dijit._TemplatedMixin enforced fields
+                 */
+                //Strip out the apache comment header from the template html as comments unsupported.
+                templateString: queryCloneDialogFormTemplate.replace(/<!--[\s\S]*?-->/g, ""),
+
+                /**
+                 * template attach points
+                 */
                 scope: null,
-                categoryName: null,
-                advancedSearch: null,
-                advancedSelect: null,
-                advancedWhere: null,
-                standardSearch: null,
-                standardSelectChooser: null,
-                standardWhereChooser: null,
-                searchButton: null,
-                modeButton: null,
-                standardWhereExpressionBuilder: null,
-                queryResultGrid: null,
-                advancedOrderBy: null,
-
-                /**
-                 * constructor parameter
-                 */
-                management: null,
-                controller: null,
-                parentObject: null,
-
-                /**
-                 * Inner fields
-                 */
-                _standardMode: true,
-                _scopeModelObjects: {},
-                _categorySelector: null,
-                _searchScopeSelector: null,
-                _lastStandardModeSelect: [],
-                _lastHeaders: [],
+                cloneQueryForm: null,
+                okButton: null,
+                cancelButton: null,
 
                 postCreate: function ()
                 {
@@ -131,12 +196,145 @@ define(["dojo/_base/declare",
                 },
                 _postCreate: function ()
                 {
-                    var promise = this._createScopeList();
-                    promise.then(lang.hitch(this, this._postCreateScope));
+                    this.cancelButton.on("click", lang.hitch(this, this._onCancel));
+                    this.cloneQueryForm.on("submit", lang.hitch(this, this._onFormSubmit));
+                    this.scope.on("change", lang.hitch(this, this._onChange));
                 },
-                _postCreateScope: function ()
+                _setScopeItemsAttr: function (items)
                 {
-                    this._createCategoryList();
+                    this._scopeModelObjects = {};
+                    var options = [];
+                    for (var i = 0; i < items.length; i++)
+                    {
+                        var id = items[i].type === "broker" ? "broker" : items[i].id;
+                        var name = items[i].type === "broker" ? "Broker" : "VH:" + items[i].parent.name + "/"
+                                                                           + items[i].name;
+                        this._scopeModelObjects[id] = items[i];
+                        options.push({id: id, name: name});
+                    }
+
+                    var scopeStore = new Memory({
+                        data: options,
+                        idProperty: 'id'
+                    });
+                    this.scope.set("store", scopeStore);
+                },
+                _setDefaultScopeItemAttr: function (defaultValue)
+                {
+                    this.scope.set("value",
+                        !defaultValue || defaultValue.type === "broker" ? "broker" : defaultValue.id);
+                },
+
+                _onCancel: function (data)
+                {
+                    this.emit("cancel");
+                },
+                _onChange: function (e)
+                {
+                    var invalid = !this._scopeModelObjects[this.scope.value];
+                    this.okButton.set("disabled", invalid);
+                },
+                _onFormSubmit: function (e)
+                {
+                    try
+                    {
+                        if (this.cloneQueryForm.validate())
+                        {
+                            var parentObject = this._scopeModelObjects[this.scope.value];
+                            this.emit("clone", {parentObject: parentObject});
+                        }
+                        else
+                        {
+                            alert('Form contains invalid data.  Please correct first');
+                        }
+
+                    }
+                    finally
+                    {
+                        return false;
+                    }
+                }
+            });
+
+        var QueryWidget = declare("qpid.management.query.QueryWidget",
+            [dijit._Widget, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
+            {
+                //Strip out the apache comment header from the template html as comments unsupported.
+                templateString: template.replace(/<!--[\s\S]*?-->/g, ""),
+
+                /**
+                 * Fields from template
+                 **/
+                advancedSearch: null,
+                advancedSelect: null,
+                advancedWhere: null,
+                advancedOrderBy: null,
+                advancedSearchButton: null,
+                standardSearch: null,
+                standardSelectChooser: null,
+                standardWhereChooser: null,
+                standardSearchButton: null,
+                standardWhereExpressionBuilder: null,
+                modeButton: null,
+                queryResultGrid: null,
+                saveButton: null,
+                cloneButton: null,
+                deleteButton: null,
+
+                /**
+                 * constructor parameter
+                 */
+                management: null,
+                controller: null,
+                parentObject: null,
+                preference: null,
+
+                /**
+                 * Inner fields
+                 */
+                _querySaveDialog: null,
+                _standardMode: true,
+                _lastStandardModeSelect: null,
+                _lastHeaders: null,
+                _queryCloneDialogForm: null,
+
+                postCreate: function ()
+                {
+                    this.inherited(arguments);
+                    this._postCreate();
+                },
+                startup: function ()
+                {
+                    this.inherited(arguments);
+                    this.standardSelectChooser.startup();
+                    this.standardWhereChooser.startup();
+                    this.standardWhereExpressionBuilder.startup();
+                    this._resultsGrid.startup();
+                    this._querySaveDialog.startup();
+                    this._queryCloneDialog.startup();
+                },
+                _postCreate: function ()
+                {
+                    this.categoryName = this.preference.value.category;
+                    this._lastStandardModeSelect = [];
+                    this._lastHeaders = [];
+
+                    // lifecycle UI
+                    this._queryCloneDialogForm = new QueryCloneDialogForm();
+                    this._queryCloneDialog =
+                        new dijit.Dialog({title: "Clone query", content: this._queryCloneDialogForm});
+                    this._queryCloneDialogForm.on("clone", lang.hitch(this, this._onQueryClone));
+                    this._queryCloneDialogForm.on("cancel", lang.hitch(this, this._onQueryCloneCancel));
+
+                    this._querySaveDialogForm = new QuerySaveDialogForm({management: this.management});
+                    this._querySaveDialog = new dijit.Dialog({title: "Save query", content: this._querySaveDialogForm});
+                    this._querySaveDialogForm.on("save", lang.hitch(this, this._onQuerySave));
+                    this._querySaveDialogForm.on("cancel", lang.hitch(this, this._onQuerySaveCancel));
+
+                    // lifecycle controls
+                    this.saveButton.on("click", lang.hitch(this, this._saveQuery));
+                    this.cloneButton.on("click", lang.hitch(this, this._cloneQuery));
+                    this.deleteButton.on("click", lang.hitch(this, this._deleteQuery));
 
                     // advanced mode widgets
                     this.advancedSelect.on("change", lang.hitch(this, this._toggleSearchButton));
@@ -149,30 +347,57 @@ define(["dojo/_base/declare",
 
                     // standard mode widgets
                     this.standardSelectChooser.on("change", lang.hitch(this, this._standardModeSelectChanged));
-                    this.standardSelectChooser.startup();
-                    this.standardWhereChooser.startup();
                     this.standardWhereExpressionBuilder.set("whereFieldsSelector", this.standardWhereChooser);
                     this.standardWhereExpressionBuilder.set("userPreferences", this.management.userPreferences);
-                    this.standardWhereExpressionBuilder.startup();
                     this.standardWhereExpressionBuilder.on("change", lang.hitch(this, this._standardModeWhereChanged));
 
                     // search & mode buttons
-                    this.searchButton.on("click", lang.hitch(this, this.search));
+                    this.advancedSearchButton.on("click", lang.hitch(this, this.search));
+                    this.standardSearchButton.on("click", lang.hitch(this, this.search));
                     this.modeButton.on("click", lang.hitch(this, this._showModeSwitchWarningIfRequired));
 
                     this._buildGrid();
-                    this._categoryChanged(this._categorySelector.value);
+                    var openingPreference = this.preference && this.preference.value && this.preference.value.select;
+                    this._initCategory(this.categoryName, !openingPreference);
                     this._toggleSearchButton();
+
+                    if (openingPreference)
+                    {
+                        this._modeChanged();
+                        this.advancedSelect.set("value", this.preference.value.select);
+                        this.advancedWhere.set("value", this.preference.value.where);
+                        this.advancedOrderBy.set("value", this.preference.value.orderBy);
+                        this._setSelectClause(this.advancedSelect.value);
+                        this._resultsGrid.setWhere(this.advancedWhere.value);
+                        this._resultsGrid.setOrderBy(this.advancedOrderBy.value);
+                    }
                 },
                 search: function ()
                 {
-                    var scope = this._searchScopeSelector.value;
-                    this._resultsGrid.setParentObject(this._scopeModelObjects[scope]);
                     this._resultsGrid.refresh();
                 },
-                getDefaultColumns: function(category)
+                getDefaultColumns: function (category)
                 {
                     return ["id", "name"];
+                },
+                destroyRecursive: function (arg)
+                {
+                    this.inherited(arguments);
+                    if (this._queryCloneDialog)
+                    {
+                        this._queryCloneDialog.destroyRecursive();
+                        this._queryCloneDialog = null;
+                    }
+                    if (this._querySaveDialog)
+                    {
+                        this._querySaveDialog.destroyRecursive();
+                        this._querySaveDialog = null;
+                    }
+                    if (this._switchModeWarningDialog)
+                    {
+                        this._switchModeWarningDialog.destroyRecursive();
+                        this._switchModeWarningDialog = null;
+                    }
                 },
                 _showModeSwitchWarningIfRequired: function ()
                 {
@@ -180,14 +405,14 @@ define(["dojo/_base/declare",
                     var displayWarning = (!userPreferences || !userPreferences.query
                                           || (userPreferences.query.displaySwitchModeWarning == undefined
                                           || userPreferences.query.displaySwitchModeWarning));
-                    if (this._standardMode && displayWarning && QueryBuilder.showWarningOnModeChange)
+                    if (this._standardMode && displayWarning && QueryWidget.showWarningOnModeChange)
                     {
                         if (!this._switchModeWarningDialog)
                         {
                             var formattedMessage = "<div>Copying of query settings is only supported on switching from Standard view into Advanced view!<br/>"
                                                    + "Switching back from Advanced view into Standard view will completely reset the query.<br/><br/>"
                                                    + "Are you sure you want to switch from Standard view into Advanced view?"
-                                                   "</div>";
+                            "</div>";
                             this._switchModeWarningDialog = new qpid.management.query.MessageDialog({
                                 title: "Warning!",
                                 message: formattedMessage
@@ -208,7 +433,7 @@ define(["dojo/_base/declare",
                                 }
                                 else
                                 {
-                                    QueryBuilder.showWarningOnModeChange = false;
+                                    QueryWidget.showWarningOnModeChange = false;
                                 }
                                 this._modeChanged();
                             }));
@@ -222,25 +447,32 @@ define(["dojo/_base/declare",
                 },
                 _setSelectClause: function (select)
                 {
+                    this._selectClause = select;
                     this._resultsGrid.setSelect(select ? select + ",id" : "");
                 },
                 _advancedModeSelectChanged: function ()
                 {
                     this._setSelectClause(this.advancedSelect.value);
+                    this._queryChanged();
                 },
                 _advancedModeWhereChanged: function ()
                 {
                     this._resultsGrid.setWhere(this.advancedWhere.value);
+                    this._queryChanged();
                 },
                 _advancedModeOrderByChanged: function ()
                 {
                     this._resultsGrid.setOrderBy(this.advancedOrderBy.value);
+                    this._queryChanged();
                 },
                 _toggleSearchButton: function (select)
                 {
                     var criteriaNotSet = !select;
-                    this.searchButton.set("disabled", criteriaNotSet);
-                    this.searchButton.set("title",
+                    this.advancedSearchButton.set("disabled", criteriaNotSet);
+                    this.advancedSearchButton.set("title",
+                        criteriaNotSet ? "Please, choose fields to display in order to enable search" : "Search");
+                    this.standardSearchButton.set("disabled", criteriaNotSet);
+                    this.standardSearchButton.set("title",
                         criteriaNotSet ? "Please, choose fields to display in order to enable search" : "Search");
                 },
                 _buildSelectExpression: function (value)
@@ -284,33 +516,36 @@ define(["dojo/_base/declare",
                     }
                     this._resultsGrid.setSort(newSort);
                 },
-                _processStandardModeSelectChange : function (selectedColumns)
+                _processStandardModeSelectChange: function (selectedColumns)
                 {
                     this._normalizeSorting(selectedColumns);
                     var selectClause = this._buildSelectExpression(selectedColumns);
                     this._setSelectClause(selectClause);
                     this._lastStandardModeSelect = lang.clone(selectedColumns);
                     this._toggleSearchButton(selectClause);
+                    this._queryChanged();
                 },
                 _standardModeSelectChanged: function (selectedColumns)
                 {
                     this._processStandardModeSelectChange(selectedColumns);
                     this.search();
+                    this._queryChanged();
                 },
-                _standardModeColumnOrderChanged: function(event)
+                _standardModeColumnOrderChanged: function (event)
                 {
                     if (this._standardMode)
                     {
                         var columnRow = event.subRow;
                         var selectedItems = this.standardSelectChooser.get("selectedItems");
                         var newSelectedItems = [];
-                        for(var i = 0; i < columnRow.length; i++)
+                        for (var i = 0; i < columnRow.length; i++)
                         {
                             var field = parseInt(columnRow[i].field) - 1;
                             newSelectedItems.push(selectedItems[field]);
                         }
                         this._processStandardModeSelectChange(newSelectedItems);
                         this.standardSelectChooser.set("data", {"selected": newSelectedItems});
+                        this._queryChanged();
                     }
                     else
                     {
@@ -318,12 +553,13 @@ define(["dojo/_base/declare",
                         event.stopPropagation();
                     }
                 },
-                _standardModeColumnStateChanged: function(event)
+                _standardModeColumnStateChanged: function (event)
                 {
                     if (event.hidden)
                     {
                         var checkNode = null;
-                        if (this._resultsGrid._columnHiderCheckboxes && this._resultsGrid._columnHiderCheckboxes[event.column.id])
+                        if (this._resultsGrid._columnHiderCheckboxes
+                            && this._resultsGrid._columnHiderCheckboxes[event.column.id])
                         {
                             checkNode = this._resultsGrid._columnHiderCheckboxes[event.column.id].parentNode;
                             checkNode.style.display = 'none';
@@ -336,6 +572,7 @@ define(["dojo/_base/declare",
                             this._processStandardModeSelectChange(newSelectedItems);
                             this.standardSelectChooser.set("data", {"selected": newSelectedItems});
                             this._resultsGrid.refresh();
+                            this._queryChanged();
                         }
                         finally
                         {
@@ -350,15 +587,26 @@ define(["dojo/_base/declare",
                 {
                     this._resultsGrid.setWhere(result);
                     this.search();
+                    this._queryChanged();
                 },
                 _buildGrid: function ()
                 {
-                    var grid = new (declare([QueryGrid,ColumnReorder,ColumnHider]))({
+                    var openingPreference = this.preference && this.preference.value && this.preference.value.select;
+                    var rowsPerPage = 100, currentPage = 1;
+                    if (openingPreference)
+                    {
+                        rowsPerPage = this.preference.value.limit || 100;
+                        var start = this.preference.value.offset || 0;
+                        currentPage = start/rowsPerPage + 1;
+                    }
+                    var grid = new (declare([QueryGrid, ColumnReorder, ColumnHider]))({
                         controller: this.controller,
                         management: this.management,
-                        category: this._categorySelector.value.toLowerCase(),
-                        parentObject: this._scopeModelObjects[this._searchScopeSelector.value],
+                        category: this.categoryName.toLowerCase(),
+                        parentObject: this.parentObject,
                         zeroBased: false,
+                        rowsPerPage: rowsPerPage,
+                        currentPage: currentPage,
                         transformer: function (data)
                         {
                             var dataResults = data.results;
@@ -389,12 +637,12 @@ define(["dojo/_base/declare",
                     grid.on('orderByChanged', lang.hitch(this, function (event)
                     {
                         this.advancedOrderBy.set("value", event.orderBy);
+                        this._queryChanged();
                     }));
                     grid.on('dgrid-columnreorder', lang.hitch(this, this._standardModeColumnOrderChanged));
-                    grid.on('dgrid-columnstatechange', lang.hitch(this, this._standardModeColumnStateChanged))
+                    grid.on('dgrid-columnstatechange', lang.hitch(this, this._standardModeColumnStateChanged));
                     grid.hiderToggleNode.title = "Remove columns";
                     this._resultsGrid = grid;
-                    this._resultsGrid.startup();
                 },
                 _buildColumnsIfHeadersChanged: function (event)
                 {
@@ -407,7 +655,8 @@ define(["dojo/_base/declare",
                     {
                         this._lastHeaders = headers;
                         this._resultsGrid.setUseCachedResults(true);
-                        this._resultsGrid.hiderToggleNode.style.display = this._standardMode && headers.length > 0 ? '' : 'none';
+                        this._resultsGrid.hiderToggleNode.style.display =
+                            this._standardMode && headers.length > 0 ? '' : 'none';
                         this._resultsGrid.set("columns", this._getColumns(headers));
                         this._resultsGrid.resize();
                     }
@@ -508,116 +757,21 @@ define(["dojo/_base/declare",
                     }
                     return columns;
                 },
-                _createScopeList: function ()
-                {
-                    var that = this;
-                    var result = this.management.query({
-                        select: "id, $parent.name as parentName, name",
-                        category: "virtualhost"
-                    });
-                    var deferred = new dojo.Deferred();
-                    result.then(function (data)
-                    {
-                        try
-                        {
-                            that._scopeDataReceived(data);
-                        }
-                        finally
-                        {
-                            deferred.resolve(that._searchScopeSelector);
-                        }
-                    }, function (error)
-                    {
-                        deferred.reject(null);
-                        console.error(error.message ? error.message : error);
-                    });
-                    return deferred.promise;
-                },
-                _scopeDataReceived: function (result)
-                {
-                    this._scopeModelObjects = {};
-                    var defaultValue = undefined;
-                    var items = [{
-                        id: undefined,
-                        name: "Broker"
-                    }];
-                    var data = result.results;
-                    for (var i = 0; i < data.length; i++)
-                    {
-                        var name = data[i][2];
-                        var parentName = data[i][1];
-                        items.push({
-                            id: data[i][0],
-                            name: "VH:" + parentName + "/" + name
-                        });
-                        this._scopeModelObjects[data[i][0]] = {
-                            name: name,
-                            type: "virtualhost",
-                            parent: {
-                                name: parentName,
-                                type: "virtualhostnode",
-                                parent: {type: "broker"}
-                            }
-                        };
-                        if (this.parentObject && this.parentObject.type == "virtualhost" && this.parentObject.name
-                                                                                            == name
-                            && this.parentObject.parent && this.parentObject.parent.name == parentName)
-                        {
-                            defaultValue = data[i][0];
-                        }
-                    }
-
-                    var scopeStore = new DstoreAdapter(new Memory({
-                        data: items,
-                        idProperty: 'id'
-                    }));
-                    this._searchScopeSelector = new dijit.form.FilteringSelect({
-                        name: "scope",
-                        placeHolder: "Select search scope",
-                        store: scopeStore,
-                        value: defaultValue,
-                        required: false
-                    }, this.scope);
-                    this._searchScopeSelector.startup();
-                },
-                _createCategoryList: function ()
-                {
-                    var categoryStore = new DstoreAdapter(new Memory({
-                        idProperty: "id",
-                        data: predefinedCategories
-                    }));
-                    var categoryList = new dijit.form.ComboBox({
-                        name: "category",
-                        placeHolder: "Select Category",
-                        store: categoryStore,
-                        value: this._category || "Queue",
-                        required: true,
-                        invalidMessage: "Invalid category specified"
-                    }, this.categoryName);
-                    categoryList.startup();
-                    categoryList.on("change", lang.hitch(this, this._categoryChanged));
-                    this._categorySelector = categoryList;
-                },
-                _categoryChanged: function (value)
+                _initCategory: function (value, newPreference)
                 {
                     var metadata = this._getCategoryMetadata(value);
                     var columns, items, selectedItems;
                     if (!metadata)
                     {
-                        dijit.showTooltip(this._categorySelector.get("invalidMessage"),
-                            this._categorySelector.domNode,
-                            this._categorySelector.get("tooltipPosition"),
-                            !this._categorySelector.isLeftToRight());
-                        columns = {};
-                        items = [];
-                        selectedItems = [];
+                        this.domNode.innerHTML = "<b>Invalid category " + entities.encode(String(value)) + "</b>";
+                        return;
                     }
                     else
                     {
                         var data = this._combineTypeAttributesAndStatistics(metadata);
                         columns = data.asObject;
                         items = data.asArray;
-                        selectedItems = this.getDefaultColumns(value);
+                        selectedItems = newPreference ?  this.getDefaultColumns(value) : [];
                     }
 
                     this.standardSelectChooser.set("data", {
@@ -632,27 +786,30 @@ define(["dojo/_base/declare",
                         idProperty: "id",
                         nameProperty: "attributeName"
                     });
-                    this.standardWhereExpressionBuilder.clearWhereCriteria();
-                    this.advancedWhere.set("value", "");
-                    this.advancedOrderBy.set("value", "");
                     this._columns = columns;
                     this._lastStandardModeSelect = this.standardSelectChooser.get("selectedItems");
-                    var select = this._buildSelectExpression(this._lastStandardModeSelect);
-                    this.advancedSelect.set("value", select);
-                    this._setSelectClause(select);
-                    this._resultsGrid.setWhere("");
-                    this._resultsGrid.setOrderBy("");
-                    this._resultsGrid.setSort([]);
-                    this._resultsGrid.setCategory(value);
-                    var disableMetadataDependant = !metadata;
-                    this.standardWhereChooser.set("disabled", disableMetadataDependant);
-                    this.standardSelectChooser.set("disabled", disableMetadataDependant);
-                    this.modeButton.set("disabled", disableMetadataDependant);
-                    this.advancedSelect.set("disabled", disableMetadataDependant);
-                    this.advancedWhere.set("disabled", disableMetadataDependant);
-                    this.advancedOrderBy.set("disabled", disableMetadataDependant);
-                    this.searchButton.set("disabled", disableMetadataDependant);
-                    this.search();
+                    if (newPreference)
+                    {
+                        this.standardWhereExpressionBuilder.clearWhereCriteria();
+
+                        this.advancedWhere.set("value", "");
+                        this.advancedOrderBy.set("value", "");
+                        var select = this._buildSelectExpression(this._lastStandardModeSelect);
+                        this.advancedSelect.set("value", select);
+                        this._setSelectClause(select);
+                        this._resultsGrid.setWhere("");
+                        this._resultsGrid.setOrderBy("");
+                        this._resultsGrid.setSort([]);
+                        this._resultsGrid.setCategory(value);
+                        var disableMetadataDependant = !metadata;
+                        this.standardWhereChooser.set("disabled", disableMetadataDependant);
+                        this.standardSelectChooser.set("disabled", disableMetadataDependant);
+                        this.modeButton.set("disabled", disableMetadataDependant);
+                        this.advancedSelect.set("disabled", disableMetadataDependant);
+                        this.advancedWhere.set("disabled", disableMetadataDependant);
+                        this.advancedOrderBy.set("disabled", disableMetadataDependant);
+                        this._toggleSearchButton();
+                    }
                 },
                 _advancedModeKeyPressed: function (evt)
                 {
@@ -665,6 +822,7 @@ define(["dojo/_base/declare",
                         this._resultsGrid.setWhere(this.advancedWhere.value);
                         this._resultsGrid.setOrderBy(this.advancedOrderBy.value);
                         this.search();
+                        this._queryChanged();
                     }
                 },
                 _modeChanged: function ()
@@ -672,8 +830,9 @@ define(["dojo/_base/declare",
                     this._standardMode = !this._standardMode;
                     if (!this._standardMode)
                     {
-                        this.modeButton.set("label", "Standard");
-                        this.modeButton.set("title", "Switch to 'Standard' search");
+                        this.modeButton.set("label", "Standard View");
+                        this.modeButton.set("title", "Switch to 'Standard View' search");
+                        this.modeButton.set("iconClass", "dijitIconApplication");
                         this.advancedSelect.set("disabled", false);
                         this.advancedWhere.set("disabled", false);
                         this.standardSearch.style.display = "none";
@@ -696,14 +855,15 @@ define(["dojo/_base/declare",
                     }
                     else
                     {
-                        this.modeButton.set("label", "Advanced");
-                        this.modeButton.set("title", "Switch to 'Advanced' search using SQL-like expressions");
+                        this.modeButton.set("label", "Advanced View");
+                        this.modeButton.set("title", "Switch to 'Advanced View' search using SQL-like expressions");
+                        this.modeButton.set("iconClass", "advancedViewIcon ui-icon");
                         this.advancedSelect.set("disabled", true);
                         this.advancedWhere.set("disabled", true);
                         this.standardSearch.style.display = "";
                         this.standardWhereExpressionBuilder.domNode.style.display = "";
                         this.advancedSearch.style.display = "none";
-                        var category = this._categorySelector.value;
+                        var category = this.categoryName;
                         var selectedItems = this.getDefaultColumns(category);
                         this.standardSelectChooser.set("data", {selected: selectedItems});
                         this.standardWhereChooser.set("data", {selected: []});
@@ -718,6 +878,7 @@ define(["dojo/_base/declare",
                         this._toggleSearchButton(select);
                         this._resultsGrid.hiderToggleNode.style.display = '';
                         this.search();
+                        this._queryChanged();
                     }
                 },
                 _getCategoryMetadata: function (value)
@@ -792,10 +953,148 @@ define(["dojo/_base/declare",
                         asArray: columnsArray,
                         asObject: columnsObject
                     };
+                },
+                _getQuery: function ()
+                {
+                    var query = this._resultsGrid.getQuery();
+                    query.select = this._selectClause;
+                    return query;
+                },
+                _saveQuery: function ()
+                {
+                    var queryParameters = this._getQuery();
+                    var preference = lang.clone(this.preference);
+                    preference.type = "query";
+                    preference.value = queryParameters;
+                    this._querySaveDialogForm.set("preference", preference);
+                    this._querySaveDialog.show();
+                },
+                _onQuerySave: function (e)
+                {
+                    var saveResponse = management.savePreference(this.parentObject, e.preference);
+                    saveResponse.then(lang.hitch(this, function ()
+                    {
+                        var responsePromise = this._loadPreference(e.preference.name);
+                        responsePromise.then(lang.hitch(this, function (preference)
+                        {
+                            this.preference = preference;
+                            this._querySaveDialog.hide();
+                            this.emit("save", {preference: preference});
+                        }));
+                    }));
+                },
+                _onQuerySaveCancel: function ()
+                {
+                    this._querySaveDialog.hide();
+                },
+                _cloneQuery: function ()
+                {
+                    var result = this.management.query({
+                        select: "id, $parent.name as parentName, name",
+                        category: "virtualhost"
+                    });
+                    var that = this;
+                    result.then(function (data)
+                        {
+                            that._scopeDataLoaded(data.results);
+                        },
+                        function (error)
+                        {
+                            that._scopeDataLoaded([]);
+                        });
+
+                },
+                // TODO eliminate duplication and avoid knowledge of management.
+                _scopeDataLoaded: function (data)
+                {
+                    var brokerItem = {type: "broker"};
+                    var items = [brokerItem];
+                    for (var i = 0; i < data.length; i++)
+                    {
+                        var id = data[i][0];
+                        var parentName = data[i][1];
+                        var name = data[i][2];
+                        var item = {
+                            id: id,
+                            name: name,
+                            type: "virtualhost",
+                            parent: {
+                                name: parentName,
+                                type: "virtualhostnode",
+                                parent: {type: "broker"}
+                            }
+                        };
+                        items.push(item);
+                    }
+
+                    this._queryCloneDialogForm.set("scopeItems", items);
+                    this._queryCloneDialogForm.set("defaultScopeItem", this.parentObject);
+                    this._queryCloneDialog.show();
+                },
+                _onQueryClone: function (e)
+                {
+                    var preference = lang.clone(this.preference);
+                    if (preference.visibilityList)
+                    {
+                        delete preference.visibilityList;
+                    }
+                    if (preference.name)
+                    {
+                        delete preference.name;
+                    }
+                    if (preference.id)
+                    {
+                        delete preference.id;
+                    }
+                    preference.value = this._getQuery();
+                    this._queryCloneDialog.hide();
+                    this.controller.show("queryTab", preference, e.parentObject);
+                },
+                _onQueryCloneCancel: function ()
+                {
+                    this._queryCloneDialog.hide();
+                },
+                _deleteQuery: function ()
+                {
+                    var message = "Are you sure you want to delete the query?";
+                    if (this.preference.id)
+                    {
+                        message = message + "\nQuery information will be removed from preferences.";
+                    }
+                    if (confirm(message))
+                    {
+                        if (this.preference.id)
+                        {
+                            var deletePromise = this.management.deletePreference(this.parentObject,
+                                this.preference.type,
+                                this.preference.name);
+                            deletePromise.then(lang.hitch(this, function (preference)
+                            {
+                                this.emit("delete");
+                            }));
+                        }
+                        else
+                        {
+                            this.emit("delete");
+                        }
+                    }
+                },
+
+                _loadPreference: function (name)
+                {
+                    return this.management.loadPreference(this.parentObject, "query", name)
+                },
+                _queryChanged: function()
+                {
+                    var queryParameters = this._getQuery();
+                    var value = this.preference.value;
+                    var pref = lang.clone(this.preference);
+                    pref.value = queryParameters;
+                    this.emit("change", {preference: pref});
                 }
             });
 
-        QueryBuilder.showWarningOnModeChange = true;
+        QueryWidget.showWarningOnModeChange = true;
 
-        return QueryBuilder;
+        return QueryWidget;
     });

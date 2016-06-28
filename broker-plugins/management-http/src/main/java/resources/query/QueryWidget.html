@@ -18,15 +18,26 @@
   -->
 
 <div>
+    <div data-dojo-type="dijit/Toolbar">
+        <div data-dojo-type="dijit/form/Button"
+             data-dojo-attach-point="saveButton"
+             data-dojo-props="iconClass: 'dijitIconSave'">Save</div>
+        <span data-dojo-attach-point="saveButtonNode"></span>
+        <div data-dojo-type="dijit/form/Button"
+             data-dojo-attach-point="cloneButton"
+             data-dojo-props="iconClass: 'dijitIconCopy'">Clone</div>
+        <div data-dojo-type="dijit/form/Button"
+             data-dojo-attach-point="deleteButton"
+             data-dojo-props="iconClass: 'trashIcon ui-icon'">Delete</div>
+        <div data-dojo-type="dijit/form/Button"
+             data-dojo-attach-point="modeButton"
+             data-dojo-props="iconClass: 'advancedViewIcon ui-icon', title:'Switch to \'Advanced View\' search using SQL-like expressions'"
+             class="alignRight">Advanced View</div>
+        <div class="clear"></div>
+    </div>
+
     <div class="dijit queryToolBar">
-        <div class="dijitInline">
-            <label class="searchLabel" for="queryScope_${id}">Scope: </label>
-            <span id="queryScope_${id}" data-dojo-attach-point="scope"></span>
-        </div>
-        <div class="dijitInline">
-            <label class="searchLabel" for="queryCategory_${id}">Category: </label>
-            <span id="queryCategory_${id}" data-dojo-attach-point="categoryName"></span>
-        </div>
+
         <span data-dojo-attach-point="standardSearch">
             <span data-dojo-type="qpid/management/query/DropDownSelect"
                  data-dojo-attach-point="standardSelectChooser"
@@ -37,25 +48,24 @@
                   data-dojo-attach-point="standardWhereChooser"
                   data-dojo-props="title: 'Specify Filtering Conditions',label:'Conditions'">
             </span>
+            <div data-dojo-type="dijit/form/Button"
+                 data-dojo-attach-point="standardSearchButton"
+                 data-dojo-props="title: 'Search'">Search</div>
+            <div data-dojo-attach-point="standardWhereExpressionBuilder"
+                 data-dojo-type="qpid/management/query/WhereExpression" class="dijitToolbar"></div>
         </span>
-        <div data-dojo-type="dijit/form/Button"
-             data-dojo-attach-point="searchButton"
-             data-dojo-props="title: 'Search'">Search</div>
-        <div data-dojo-type="dijit/form/Button"
-             data-dojo-attach-point="modeButton"
-             data-dojo-props="title:'Switch to \'Advanced\' search using SQL-like expressions'"
-             class="alignRight">Advanced</div>
-        <div class="clear"></div>
-        <div data-dojo-attach-point="standardWhereExpressionBuilder"
-             data-dojo-type="qpid/management/query/WhereExpression" class="dijitToolbar"></div>
+
+
+
         <table data-dojo-attach-point="advancedSearch"  class="advancedSearchItem" style="display:none">
             <colgroup>
                 <col span="1" class="searchLabel"/>
                 <col span="1" class="autoWidth"/>
+                <col span="1" class="searchLabel"/>
             </colgroup>
             <tr>
                 <td class="searchLabel" colspan="1">Select:</td>
-                <td class="advancedSearchField">
+                <td class="advancedSearchField" colspan="2">
                     <textarea id="advancedSelect_${id}"
                               data-dojo-attach-point="advancedSelect" type="text"
                               data-dojo-type="dijit/form/SimpleTextarea"
@@ -69,7 +79,7 @@
             </tr>
             <tr>
                 <td class="searchLabel" colspan="1">Where: </td>
-                <td class="advancedSearchField">
+                <td class="advancedSearchField" colspan="2">
                     <textarea id="advancedWhere_${id}"
                               data-dojo-attach-point="advancedWhere" type="text"
                               data-dojo-type="dijit/form/SimpleTextarea"
@@ -83,7 +93,7 @@
             </tr>
             <tr>
                 <td class="searchLabel" colspan="1">Order: </td>
-                <td class="advancedSearchField">
+                <td class="advancedSearchField" colspan="1">
                     <textarea id="advancedOrderBy_${id}"
                               data-dojo-attach-point="advancedOrderBy" type="text"
                               data-dojo-type="dijit/form/SimpleTextarea"
@@ -93,6 +103,11 @@
                                                 placeHolder: 'order expression',
                                                 title: 'Enter order by conditions using sql syntax',
                                                 promptMessage: 'Use JMS filter syntax to specify where conditions'" rows="1"></textarea>
+                </td>
+                <td colspan="1">
+                    <div data-dojo-type="dijit/form/Button"
+                         data-dojo-attach-point="advancedSearchButton"
+                         data-dojo-props="title: 'Search'">Search</div>
                 </td>
             </tr>
         </table>

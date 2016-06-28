@@ -102,6 +102,7 @@ define(["dojo/dom",
 
         controller.viewedObjects = {};
 
+        // TODO: find a better way how to pass business object into a tab instead of passing it as a name
         controller.show = function (objType, name, parent, objectId)
         {
 
@@ -120,8 +121,8 @@ define(["dojo/dom",
             }
 
             var that = this;
-            var objId = (parent ? generateName(parent) + "/" : "") + objType + ":" + (name ? name : "-"
-                        + dojox.uuid.generateRandomUuid());
+            var objId = (parent ? generateName(parent) + "/" : "") + objType + ":" +
+                         (name &&  typeof name === 'string' ? name : "-" + dojox.uuid.generateRandomUuid());
 
             var obj = this.viewedObjects[objId];
             if (obj)
@@ -153,7 +154,7 @@ define(["dojo/dom",
                     });
                     this.tabContainer.addChild(contentPane);
                     var userPreferences = this.management.userPreferences;
-                    if (objType != "broker" && name)
+                    if (objType != "broker" && name &&  typeof name === 'string')
                     {
                         var preferencesCheckBox = new dijit.form.CheckBox({
                             checked: userPreferences.isTabStored(obj.tabData),

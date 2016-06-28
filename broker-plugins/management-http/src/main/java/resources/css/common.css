@@ -163,8 +163,10 @@ div .messages {
 
 .formLabel-controlCell {
   padding: 1px;
-  float: left;
+  overflow: hidden;
+  text-align: left;
 }
+
 
 .columnDefDialogButtonIcon {
   background: url("../dojo/dojox/grid/enhanced/resources/images/sprite_icons.png") no-repeat;
@@ -457,10 +459,8 @@ td.advancedSearchField, col.autoWidth {
     width: auto;
 }
 
-.claro .advancedSearchField .dijitTextArea,
-.advancedSearchField textarea
-{
-    height: 1.6em;
+.claro.qpid .formLabel-controlCell textarea,
+.claro.qpid .advancedSearchField textarea {
     width: 100%;
     padding: 0px;
     box-sizing: border-box;
@@ -469,6 +469,11 @@ td.advancedSearchField, col.autoWidth {
     -ms-box-sizing: border-box;
     resize: vertical;
 }
+
+.claro.qpid .advancedSearchField textarea {
+    height: 1.6em;
+}
+
 .criteriaCondition
 {
   vertical-align: top;
@@ -536,4 +541,66 @@ td.advancedSearchField, col.autoWidth {
 
 .claro.qpid  .dgrid-hider-toggle {
       background-position: -32px -192px;
+}
+
+.claro #login.dijitToolbar {
+    padding-bottom: 5px;
+    padding-top: 4px;
+}
+
+.userIcon.ui-icon {
+    background-position: -146px -98px;
+}
+
+.advancedViewIcon.ui-icon {
+    background-position: -176px -112px;
+    width: 16px;
+    height: 16px;
+}
+
+.trashIcon.ui-icon {
+    background-position: -180px -98px;
+}
+
+.claro .searchBox {
+    padding-right: 16px;
+    padding-left: 16px;
+    position: relative;
+    width: 12.5em;
+}
+
+.claro .searchBox span.search.ui-icon {
+    width: 16px;
+    height: 16px;
+    z-index: 1000;
+    background-position: -160px -112px;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    -moz-transform: scaleX(-1);
+    -o-transform: scaleX(-1);
+    -webkit-transform: scaleX(-1);
+    transform: scaleX(-1);
+    filter: FlipH;
+    -ms-filter: "FlipH";
+}
+
+.claro .searchBox a.clear.ui-icon {
+    display: block;
+    overflow: hidden;
+    text-indent: -1000px;
+    position: absolute;
+    right: 0px;
+    top: 0px;
+    z-index: 1000;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    background-position: -80px -128px;
+}
+
+.claro .searchBox a.clear:hover {
+    background: url('../dojo/dgrid/css/images/ui-icons_ffffff_256x240.png')  no-repeat;
+    background-position: -80px -128px;
+    background-color: #D3D3D3;
 }

@@ -189,6 +189,15 @@ define(["dojo/_base/lang",
             return this.submit(requestOptions);
         };
 
+        Management.prototype.put = function (request, data)
+        {
+            var requestOptions = merge(request, {
+                method: "PUT",
+                data: data
+            });
+            return this.submit(requestOptions);
+        };
+
         Management.prototype.del = function (request)
         {
             var requestOptions = merge(request, {method: "DELETE"});
@@ -616,6 +625,32 @@ define(["dojo/_base/lang",
             };
             shallowCopy(query, request.query, ["parent", "category"]);
             return this.get(request);
+        };
+
+        Management.prototype.savePreference = function(parentObject, preference)
+        {
+           var url =  this.buildPreferenceUrl(parentObject, preference.type, preference.name);
+           return this.put({url: url}, preference);
+        };
+
+
+        Management.prototype.loadPreference = function(parentObject, type, name)
+        {
+           var url =  this.buildPreferenceUrl(parentObject, type, name);
+           return this.get({url: url});
+        };
+
+        Management.prototype.deletePreference = function(parentObject, type, name)
+        {
+           var url =  this.buildPreferenceUrl(parentObject, type, name);
+           return this.del({url: url});
+        };
+
+        Management.prototype.buildPreferenceUrl = function (parentObject, type, name)
+        {
+            return this.objectToURL(parentObject) + "/userpreferences/"
+                                       + encodeURIComponent(encodeURIComponent(type))
+                                       + "/" + encodeURIComponent(encodeURIComponent(name));
         };
 
         return Management;

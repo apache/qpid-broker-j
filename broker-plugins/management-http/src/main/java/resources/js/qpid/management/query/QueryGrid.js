@@ -33,7 +33,6 @@ define(["dojo/_base/declare",
         "dgrid/extensions/DijitRegistry",
         "qpid/management/query/QueryStore",
         "dojo/keys",
-        'dojo/promise/all',
         "qpid/common/util"],
     function (declare,
               lang,
@@ -50,7 +49,6 @@ define(["dojo/_base/declare",
               DijitRegistry,
               QueryStore,
               keys,
-              all,
               util)
     {
 
@@ -75,35 +73,16 @@ define(["dojo/_base/declare",
         }
 
         var TrackableQueryStore = declare(QueryStore,
-                                          {
-                                              /*
-                                                 adding method track
-                                                 enables tracking of add, update and delete events
-                                              */
-                                              track:      function()
-                                                          {
-                                                              return this;
-                                                          },
-                                              /*
-                                                 override fetchRange to emit 'fetchCompleted' event
-                                              */
-                                              fetchRange: function (kwArgs)
-                                                          {
-                                                              var queryResults = this.inherited(arguments);
-                                                              all({results: queryResults,
-                                                                   totalLength: queryResults.totalLength})
-                                                              .then(lang.hitch(this,
-                                                                               function(data)
-                                                                               {
-                                                                                  this.emit("fetchCompleted",
-                                                                                              {start: kwArgs.start,
-                                                                                               end: kwArgs.end,
-                                                                                               results: data.results,
-                                                                                               totalLength: data.totalLength});
-                                                                               }));
-                                                              return queryResults;
-                                                          }
-                                          });
+            {
+                /*
+                 adding method track
+                 enables tracking of add, update and delete events
+                 */
+                track: function ()
+                {
+                    return this;
+                }
+            });
 
         var QueryGrid = declare("qpid.management.query.QueryGrid",
             [Grid, Keyboard, Selection, Pagination, DijitRegistry, ColumnResizer],
@@ -164,18 +143,18 @@ define(["dojo/_base/declare",
                     {
                         on.emit(this.domNode, 'queryCompleted', event);
                     }));
-                    if (this.detectChanges)
+                    this._store.on('fetchCompleted', lang.hitch(this, function (event)
                     {
-                        /*
-                          Handle 'fetchCompleted' event
-                          and detect changes in row data.
-                          Emit 'add', 'delete', 'update' events
-                          for changed rows
-                        */
-                        this._store.on('fetchCompleted', lang.hitch(this, function (event)
+                        this._start = event.start;
+                        this._end = event.end;
+                        if (this.detectChanges)
                         {
-                            this._start = event.start;
-                            this._end = event.end;
+                            /*
+                             Handle 'fetchCompleted' event
+                             and detect changes in row data.
+                             Emit 'add', 'delete', 'update' events
+                             for changed rows
+                             */
                             if (this._updatingData)
                             {
                                 try
@@ -193,10 +172,10 @@ define(["dojo/_base/declare",
                                 this._currentResults = results;
                                 this._currentResultsIdToIndexMap = createIdToIndexMap(results, this._store.idProperty);
                             }
-                        }));
-                    }
+                        }
+                    }));
                 },
-                updateData: function()
+                updateData: function ()
                 {
                     if (this.detectChanges && this._end)
                     {
@@ -250,7 +229,18 @@ define(["dojo/_base/declare",
                 {
                     return lang.clone(this._sort);
                 },
-                _buildOrderBy: function(sort)
+                getQuery: function ()
+                {
+                    return {
+                        select: this._store.selectClause,
+                        where: this._store.where,
+                        orderBy: this._store.orderBy,
+                        category: this._store.category,
+                        offset: this._start,
+                        limit: this._end - this._start
+                    };
+                },
+                _buildOrderBy: function (sort)
                 {
                     var orderByExpression = "";
                     if (sort && sort.length)

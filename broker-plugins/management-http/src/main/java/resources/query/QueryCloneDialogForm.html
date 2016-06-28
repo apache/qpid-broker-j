@@ -16,29 +16,30 @@
   ~ specific language governing permissions and limitations
   ~ under the License.
   -->
-<div id="${id}_contentPanel"
-     data-dojo-type="dijit/layout/ContentPane">
-    <div class="dijitDialogPaneContentArea">
-        <input id="${id}_search"
-               data-dojo-attach-point="search"
-               data-dojo-type="qpid/management/query/SearchTextBox"
-               data-dojo-props="name: 'column',
-                                intermediateChanges: true,
-                                placeHolder: 'field name',
-                                title: 'Start typing field name'"  type="text"/>
-        <div data-dojo-attach-point="optionsGrid" class="selectGrid"></div>
+<div>
+<form data-dojo-attach-point="cloneQueryForm" data-dojo-type="dijit/form/Form" id="${id}_cloneQueryForm">
+    <div>
+        <div class="infoMessage infoPane">Note, group information is not cloned.</div>
+        <div class="clear">
+            <label class="formLabel-labelCell tableContainer-labelCell" for="${id}_queryScope">Scope*: </label>
+            <select id="${id}_queryScope" class="formLabel-controlCell tableContainer-valueCell"
+                   data-dojo-attach-point="scope"
+                   data-dojo-type='dijit/form/FilteringSelect'
+                   data-dojo-props="name: 'scope', placeHolder: 'Query scope', required: true, title: 'Select query scope', intermediateChanges: true">
+            </select>
+        </div>
+        <div class="clear"></div>
     </div>
-    <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar" data-dojo-attach-point="buttons">
+    <div class="dijitDialogPaneActionBar">
         <input id="${id}_cancelButton"
                data-dojo-attach-point="cancelButton"
                data-dojo-type="dijit/form/Button"
                type="button"
                label="Cancel"/>
-        <input id="${id}_doneButton"
-               data-dojo-attach-point="doneButton"
+        <input id="${id}_okButton"
+               data-dojo-attach-point="okButton"
                data-dojo-type="dijit/form/Button"
-               type="button" label="Done"/>
+               type="submit" label="Ok"/>
     </div>
+</form>
 </div>
-
-

@@ -18,22 +18,32 @@
  * under the License.
  *
  */
-define(["dojo/domReady!"], function ()
+define(["dojo/query",
+        "dijit/registry",
+        "dojox/html/entities",
+        "qpid/common/updater",
+        "qpid/management/Management",
+        "qpid/common/util",
+        "dijit/Dialog",
+        "dojo/domReady!"], function (query, registry, entities, updater, Management, util, Dialog)
 {
 
     var preferencesDialog = null;
     var helpURL = null;
+    var queryCreateDialog = null;
+    var queryCreateDialogForm = null;
 
     return {
         showPreferencesDialog: function ()
         {
             if (preferencesDialog == null)
             {
+                var management = this.management;
                 require(["qpid/management/Preferences", "dojo/ready"], function (PreferencesDialog, ready)
                 {
                     ready(function ()
                     {
-                        preferencesDialog = new PreferencesDialog(this.management);
+                        preferencesDialog = new PreferencesDialog(management);
                         preferencesDialog.showDialog();
                     });
                 });
@@ -95,6 +105,92 @@ define(["dojo/domReady!"], function ()
             }
 
             openWindow("/apidocs");
+        },
+        showQueryCreateDialog: function (e)
+        {
+            var management = this.management;
+            var controller = this.controller;
+            if (queryCreateDialog == null)
+            {
+                require(["qpid/management/query/QueryCreateDialogForm", "dojo/ready"],
+                    function (QueryCreateDialogForm, ready)
+                    {
+                        ready(function ()
+                        {
+                            queryCreateDialogForm = new QueryCreateDialogForm({management: management});
+                            queryCreateDialogForm.on("create", function (e)
+                            {
+                                queryCreateDialog.hide();
+                                controller.show("queryTab", e.preference, e.parentObject);
+                            });
+                            queryCreateDialogForm.on("cancel", function (e)
+                            {
+                                queryCreateDialog.hide();
+                            });
+                            queryCreateDialog = new Dialog({title: "Create query", content: queryCreateDialogForm});
+                            queryCreateDialogForm.loadScope(function ()
+                            {
+                                queryCreateDialog.show();
+                            });
+                        });
+                    });
+            }
+            else
+            {
+                queryCreateDialogForm.loadScope(function ()
+                {
+                    queryCreateDialog.show();
+                });
+            }
+        },
+        showQueryOpenDialog: function (e)
+        {
+
+        },
+        init: function (controller, treeView)
+        {
+            this.controller = controller;
+            this.management = new Management("", util.xhrErrorHandler);
+            var that = this;
+            var management = this.management;
+
+            var authenticationSuccessCallback = function (data)
+            {
+                if (data.user)
+                {
+                    var userName = entities.encode(String(data.user));
+                    var controlButton = registry.byId("authenticatedUserControls");
+                    if (controlButton)
+                    {
+                        controlButton.set("label", userName);
+                        controlButton.domNode.style.display = '';
+                    }
+                    registry.byId("login").domNode.style.display = "inline";
+                    management.init(function ()
+                    {
+                        updater.registerUpdateIntervalListener(management.userPreferences);
+                        controller.init(management);
+                        treeView.create(getContextPath() + 'service/structure',
+                            management,
+                            query('div[qpid-type="treeView"]')[0]);
+                        dijit.Tooltip.defaultPosition =
+                            ["after-centered",
+                             "below-centered"];
+                    });
+                }
+                else
+                {
+                    alert("User identifier is not found! Re-authenticate!");
+                    that.logout();
+                }
+            };
+
+            management.authenticate()
+                .then(authenticationSuccessCallback);
+        },
+        logout: function ()
+        {
+            window.location = "logout";
         }
 
     };
