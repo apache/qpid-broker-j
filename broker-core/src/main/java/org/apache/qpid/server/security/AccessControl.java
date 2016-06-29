@@ -18,24 +18,116 @@
  */
 package org.apache.qpid.server.security;
 
-import org.apache.qpid.server.security.access.ObjectProperties;
-import org.apache.qpid.server.security.access.ObjectType;
+import java.util.Map;
+
+import javax.security.auth.Subject;
+
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.security.access.Operation;
 
-/**
- * The method {@link #authorise(Operation, ObjectType, ObjectProperties)},
- * returns the {@link Result} of the security decision, which may be to {@link Result#ABSTAIN} if no decision is made.
- */
-public interface AccessControl
+public interface AccessControl<T extends SecurityToken>
 {
-	/**
-	 * Default result for {@link #authorise(Operation, ObjectType, ObjectProperties)}.
-	 */
 	Result getDefault();
 
-    /**
-     * Authorise an operation on an object defined by a set of properties.
-     */
-    Result authorise(Operation operation, ObjectType objectType, ObjectProperties properties);
+
+    T newToken();
+
+    T newToken(Subject subject);
+
+    Result authorise(Operation operation, ConfiguredObject<?> configuredObject);
+    Result authoriseMethod(ConfiguredObject<?> configuredObject, String methodName, Map<String,Object> arguments);
+    Result authoriseMethod(T token, ConfiguredObject<?> configuredObject, String methodName, Map<String,Object> arguments);
+
+
+
+    AccessControl ALWAYS_ALLOWED = new AccessControl<SecurityToken>()
+    {
+        @Override
+        public Result getDefault()
+        {
+            return Result.ALLOWED;
+        }
+
+        @Override
+        public SecurityToken newToken()
+        {
+            return null;
+        }
+
+        @Override
+        public SecurityToken newToken(final Subject subject)
+        {
+            return null;
+        }
+
+        @Override
+        public Result authorise(final Operation operation, final ConfiguredObject<?> configuredObject)
+        {
+            return Result.ALLOWED;
+        }
+
+        @Override
+        public Result authoriseMethod(final ConfiguredObject<?> configuredObject,
+                                      final String methodName,
+                                      final Map<String, Object> arguments)
+        {
+            return Result.ALLOWED;
+        }
+
+        @Override
+        public Result authoriseMethod(final SecurityToken token,
+                                      final ConfiguredObject configuredObject,
+                                      final String methodName,
+                                      final Map arguments)
+        {
+            return Result.ALLOWED;
+        }
+    };
+
+    AccessControl ALWAYS_DENIED = new AccessControl<SecurityToken>()
+    {
+        @Override
+        public Result getDefault()
+        {
+            return Result.DENIED;
+        }
+
+        @Override
+        public SecurityToken newToken()
+        {
+            return null;
+        }
+
+        @Override
+        public SecurityToken newToken(final Subject subject)
+        {
+            return null;
+        }
+
+        @Override
+        public Result authorise(final Operation operation, final ConfiguredObject<?> configuredObject)
+        {
+            return Result.DENIED;
+        }
+
+        @Override
+        public Result authoriseMethod(final ConfiguredObject<?> configuredObject,
+                                      final String methodName,
+                                      final Map<String, Object> arguments)
+        {
+            return Result.DENIED;
+        }
+
+        @Override
+        public Result authoriseMethod(final SecurityToken token,
+                                      final ConfiguredObject<?> configuredObject,
+                                      final String methodName,
+                                      final Map<String, Object> arguments)
+        {
+            return Result.DENIED;
+        }
+    };
+
+
 
 }

@@ -24,11 +24,13 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
+import java.security.AccessControlException;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.Set;
@@ -117,8 +119,6 @@ public class AMQChannelTest extends QpidTestCase
         when(_amqConnection.getMethodRegistry()).thenReturn(new MethodRegistry(ProtocolVersion.v0_9));
         when(_amqConnection.getContextProvider()).thenReturn(_virtualHost);
         when(_amqConnection.getEventLogger()).thenReturn(mock(EventLogger.class));
-        when(_amqConnection.isAuthorizedMessagePrincipal(eq(authenticatedPrincipal.getName()))).thenReturn(true);
-
         _messageDestination = mock(MessageDestination.class);
     }
 
@@ -171,6 +171,8 @@ public class AMQChannelTest extends QpidTestCase
 
     public void testPublishContentHeaderWhenMessageAuthorizationFails() throws Exception
     {
+        final String impostorId = "impostor";
+        doThrow(new AccessControlException("fail")).when(_amqConnection).checkAuthorizedMessagePrincipal(eq(impostorId));
         when(_virtualHost.getDefaultDestination()).thenReturn(mock(MessageDestination.class));
         when(_virtualHost.getMessageStore()).thenReturn(new NullMessageStore()
         {
@@ -187,7 +189,7 @@ public class AMQChannelTest extends QpidTestCase
         AMQChannel channel = new AMQChannel(_amqConnection, channelId, _virtualHost.getMessageStore());
 
         BasicContentHeaderProperties properties = new BasicContentHeaderProperties();
-        properties.setUserId("impostor");
+        properties.setUserId(impostorId);
         channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, AMQShortString.EMPTY_STRING, false, false);
         channel.receiveMessageHeader(properties, 0);
 

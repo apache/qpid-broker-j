@@ -16,7 +16,7 @@
  *  specific language governing permissions and limitations
  *  under the License.
  */
-package org.apache.qpid.server.security.access;
+package org.apache.qpid.server.security.access.config;
 
 import java.util.Collections;
 import java.util.EnumMap;

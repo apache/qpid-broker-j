@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -47,7 +46,6 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.PreferencesProvider;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.model.User;
 import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.model.port.AbstractPortWithAuthProvider;
 import org.apache.qpid.server.security.SubjectCreator;
@@ -131,12 +129,6 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     public void setPreferencesProvider(final PreferencesProvider<?> preferencesProvider)
     {
         _preferencesProvider = preferencesProvider;
-    }
-
-    @Override
-    public void recoverUser(final User user)
-    {
-        throw new IllegalConfigurationException("Cannot associate  " + user + " with authentication provider " + this);
     }
 
     @SuppressWarnings("unchecked")

@@ -157,8 +157,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
     public boolean authoriseCreateConnection(final AMQPConnection<?> connection)
     {
         SecurityManager securityManager = _broker.getSecurityManager();
-        securityManager.authoriseCreateConnection(connection);
-        securityManager.accessManagement();
+        securityManager.authoriseExecute(_broker, "manage", Collections.<String,Object>emptyMap());
         return true;
     }
 

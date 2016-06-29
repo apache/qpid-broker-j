@@ -16,7 +16,7 @@
  *  specific language governing permissions and limitations
  *  under the License.
  */
-package org.apache.qpid.server.security.access;
+package org.apache.qpid.server.security.access.config;
 
 import static org.apache.qpid.server.security.access.Operation.ACCESS;
 import static org.apache.qpid.server.security.access.Operation.ACCESS_LOGS;
@@ -33,6 +33,8 @@ import static org.apache.qpid.server.security.access.Operation.UPDATE;
 
 import java.util.EnumSet;
 import java.util.Set;
+
+import org.apache.qpid.server.security.access.Operation;
 
 /**
  * An enumeration of all possible object types that can form part of an access control v2 rule.

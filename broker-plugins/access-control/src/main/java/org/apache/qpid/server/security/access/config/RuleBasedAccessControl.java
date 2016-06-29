@@ -24,6 +24,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.AccessController;
+import java.util.Map;
 import java.util.Set;
 
 import javax.security.auth.Subject;
@@ -32,26 +33,39 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.connection.ConnectionPrincipal;
+import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.ObjectProperties;
-import org.apache.qpid.server.security.access.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
 
-public class RuleBasedAccessControl implements AccessControl
+public class RuleBasedAccessControl implements AccessControl<CachingSecurityToken>, LegacyAccessControl
 {
     private static final Logger _logger = LoggerFactory.getLogger(RuleBasedAccessControl.class);
+    private final LegacyAccessControlAdapter _adapter;
 
     private RuleSet _ruleSet;
 
-    public RuleBasedAccessControl(RuleSet rs)
+    public RuleBasedAccessControl(RuleSet rs, final Model model)
     {
         _ruleSet = rs;
+        _adapter = new LegacyAccessControlAdapter(this, model);
     }
 
     public Result getDefault()
     {
         return _ruleSet.getDefault();
+    }
+
+    @Override
+    public CachingSecurityToken newToken()
+    {
+        return newToken(Subject.getSubject(AccessController.getContext()));
+    }
+
+    @Override
+    public CachingSecurityToken newToken(final Subject subject)
+    {
+        return new CachingSecurityToken(subject, this);
     }
 
     /**
@@ -97,5 +111,34 @@ public class RuleBasedAccessControl implements AccessControl
             return Result.DENIED;
         }
     }
+
+    @Override
+    public Result authorise(final Operation operation, final ConfiguredObject<?> configuredObject)
+    {
+        return _adapter.authorise(operation, configuredObject);
+    }
+
+    @Override
+    public Result authoriseMethod(final ConfiguredObject<?> configuredObject,
+                                  final String methodName,
+                                  final Map<String, Object> arguments)
+    {
+        return _adapter.authoriseExecute(configuredObject, methodName, arguments);
+    }
+
+    @Override
+    public Result authoriseMethod(final CachingSecurityToken token,
+                                  final ConfiguredObject<?> configuredObject,
+                                  final String methodName,
+                                  final Map<String,Object> arguments)
+    {
+        if(token != null)
+        {
+            return token.authoriseMethod(this, configuredObject, methodName, arguments);
+
+        }
+        return authoriseMethod(configuredObject, methodName, arguments);
+    }
+
 
 }

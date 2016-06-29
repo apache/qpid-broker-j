@@ -76,7 +76,7 @@ public class ExternalACLTest extends AbstractACLTestCase
 
     private void assertAccessDeniedException(JMSException e)
     {
-        assertEquals("Unexpected exception message", "Error creating connection: Permission denied: test", e.getMessage());
+        assertEquals("Unexpected exception message", "Error creating connection: Permission denied on VirtualHost 'test' to perform 'connect' operation", e.getMessage());
 
         // JMSException -> linkedException -> cause = AMQException (403 or 320)
         Exception linkedException = e.getLinkedException();

@@ -20,8 +20,6 @@ package org.apache.qpid.server.security.access.config;
 
 import java.net.InetAddress;
 
-import org.apache.qpid.server.security.access.ObjectProperties;
-import org.apache.qpid.server.security.access.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.firewall.FirewallRule;
 

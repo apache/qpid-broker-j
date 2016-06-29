@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -1864,13 +1865,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public long clearQueue()
     {
-        return clear(0l);
-    }
-
-    private long clear(final long request)
-    {
         //Perform ACLs
-        getVirtualHost().getSecurityManager().authorisePurge(this);
+        getVirtualHost().getSecurityManager().authoriseExecute(this, "clearQueue", Collections.<String,Object>emptyMap());
 
         QueueEntryIterator queueListIterator = getEntries().iterator();
         long count = 0;
@@ -1892,10 +1888,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             if (acquired)
             {
                 dequeueEntry(node, txn);
-                if(++count == request)
-                {
-                    break;
-                }
             }
 
         }
@@ -3418,9 +3410,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public List<Long> moveMessages(Queue<?> destination, List<Long> messageIds, final String selector, final int limit)
     {
-        // FIXME: added temporary authorization check until we introduce management layer
-        // and review current ACL rules to have common rules for all management interfaces
-        authorizeMethod("moveMessages");
+        Map<String, Object> args = new HashMap<>();
+        args.put("destination", destination);
+        args.put("messageIds", messageIds);
+        args.put("selector", selector);
+        args.put("limit", limit);
+        getSecurityManager().authoriseExecute(this, "moveMessages", args);
 
         MoveMessagesTransaction transaction = new MoveMessagesTransaction(this,
                                                                           messageIds,
@@ -3435,9 +3430,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public List<Long> copyMessages(Queue<?> destination, List<Long> messageIds, final String selector, int limit)
     {
-        // FIXME: added temporary authorization check until we introduce management layer
-        // and review current ACL rules to have common rules for all management interfaces
-        authorizeMethod("copyMessages");
+
+        Map<String, Object> args = new HashMap<>();
+        args.put("destination", destination);
+        args.put("messageIds", messageIds);
+        args.put("selector", selector);
+        args.put("limit", limit);
+        getSecurityManager().authoriseExecute(this, "copyMessages", args);
 
         CopyMessagesTransaction transaction = new CopyMessagesTransaction(this,
                                                                           messageIds,
@@ -3453,9 +3452,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public List<Long> deleteMessages(final List<Long> messageIds, final String selector, int limit)
     {
 
-        // FIXME: added temporary authorization check until we introduce management layer
-        // and review current ACL rules to have common rules for all management interfaces
-        authorizeMethod("deleteMessages");
+        Map<String, Object> args = new HashMap<>();
+        args.put("messageIds", messageIds);
+        args.put("selector", selector);
+        args.put("limit", limit);
+        getSecurityManager().authoriseExecute(this, "deleteMessages", args);
+
         DeleteMessagesTransaction transaction = new DeleteMessagesTransaction(this,
                                                                               messageIds,
                                                                               parseSelector(selector),
@@ -3507,14 +3509,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         final MessageFinder messageFinder = new MessageFinder(messageId);
         visit(messageFinder);
         return messageFinder.getMessageInfo();
-    }
-
-    private void authorizeMethod(String methodName)
-    {
-        getSecurityManager().authoriseMethod(Operation.UPDATE,
-                                             "VirtualHost.Queue",
-                                             methodName,
-                                             getVirtualHost().getName());
     }
 
     private class MessageFinder implements QueueEntryVisitor

@@ -20,20 +20,18 @@
  */
 package org.apache.qpid.server.transport;
 
-import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.AccessControlContext;
+import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
-import java.security.Security;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -770,9 +768,18 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     }
 
     @Override
-    public final boolean isAuthorizedMessagePrincipal(final String userId)
+    public final void checkAuthorizedMessagePrincipal(final String userId)
     {
-        return !_messageAuthorizationRequired || getAuthorizedPrincipal().getName().equals(userId == null? "" : userId);
+        if(!(userId == null
+             || "".equals(userId.trim())
+             || !_messageAuthorizationRequired
+             || getAuthorizedPrincipal().getName().equals(userId)))
+        {
+            throw new AccessControlException("The user id of the message '"
+                                             + userId
+                                             + "' is not valid on a connection authenticated as  "
+                                             + getAuthorizedPrincipal().getName());
+        }
     }
 
     @Override

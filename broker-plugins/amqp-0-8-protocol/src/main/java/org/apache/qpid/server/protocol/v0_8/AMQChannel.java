@@ -100,6 +100,7 @@ import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
@@ -136,6 +137,7 @@ public class AMQChannel
     private final Pre0_10CreditManager _creditManager;
     private final FlowCreditManager _noAckCreditManager;
     private final AccessControlContext _accessControllerContext;
+    private final SecurityToken _token;
 
     /**
      * The delivery tag is unique per channel. This is pre-incremented before putting into the deliver frame so that
@@ -240,6 +242,7 @@ public class AMQChannel
         _subject.getPrincipals().add(new SessionPrincipal(this));
 
         _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(_subject);
+        _token = _connection.getBroker().getSecurityManager().newToken(_subject);
 
         _maxUncommittedInMemorySize = connection.getContextProvider().getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
         _logSubject = new ChannelLogSubject(this);
@@ -430,13 +433,19 @@ public class AMQChannel
             try
             {
                 ContentHeaderBody contentHeader = _currentMessage.getContentHeader();
-                securityManager.authorisePublish(info.isImmediate(),
-                                                 routingKey,
-                                                 _currentMessage.getDestination().getName(),
-                                                 virtualHost.getName(),
-                                                 _subject,
-                                                 AMQShortString.toString(contentHeader.getProperties().getUserId()),
-                                                 _connection);
+                _connection.checkAuthorizedMessagePrincipal(AMQShortString.toString(contentHeader.getProperties().getUserId()));
+
+                if(_currentMessage.getDestination() instanceof ConfiguredObject)
+                {
+                    Map<String,Object> args = new HashMap<>();
+                    args.put("routingKey", routingKey);
+                    args.put("immediate", info.isImmediate());
+
+                    securityManager
+                            .authoriseExecute(_token, (ConfiguredObject)_currentMessage.getDestination(), "publish", args );
+
+                };
+
 
                 if (_confirmOnPublish)
                 {
@@ -1377,11 +1386,6 @@ public class AMQChannel
         AMQMessage message = new AMQMessage(handle, _connection.getReference());
 
         return message;
-    }
-
-    private boolean checkMessageUserId(ContentHeaderBody header)
-    {
-        return _connection.isAuthorizedMessagePrincipal(AMQShortString.toString(header.getProperties().getUserId()));
     }
 
     @Override

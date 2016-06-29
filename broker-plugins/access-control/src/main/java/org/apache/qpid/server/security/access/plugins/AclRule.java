@@ -24,8 +24,8 @@ import java.util.Map;
 
 import org.apache.qpid.server.model.ManagedAttributeValue;
 import org.apache.qpid.server.model.ManagedAttributeValueType;
-import org.apache.qpid.server.security.access.ObjectProperties;
-import org.apache.qpid.server.security.access.ObjectType;
+import org.apache.qpid.server.security.access.config.ObjectProperties;
+import org.apache.qpid.server.security.access.config.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.RuleOutcome;
 

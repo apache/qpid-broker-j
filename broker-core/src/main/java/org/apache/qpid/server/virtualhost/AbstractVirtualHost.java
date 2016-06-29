@@ -610,7 +610,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public boolean authoriseCreateConnection(final AMQPConnection<?> connection)
     {
-        getSecurityManager().authoriseCreateConnection(connection);
+        getSecurityManager().authoriseExecute(this, "connect", Collections.<String,Object>emptyMap());
         for(ConnectionValidator validator : _connectionValidators)
         {
             if(!validator.validateConnectionCreation(connection, this))

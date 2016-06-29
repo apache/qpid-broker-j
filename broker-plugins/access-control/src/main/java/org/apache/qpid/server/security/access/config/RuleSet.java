@@ -30,7 +30,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.WeakHashMap;
 
 import javax.security.auth.Subject;
@@ -42,8 +41,6 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.messages.AccessControlMessages;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.ObjectProperties;
-import org.apache.qpid.server.security.access.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.RuleOutcome;
 
@@ -66,13 +63,6 @@ public class RuleSet implements EventLoggerProvider
     private final EventLoggerProvider _eventLogger;
     private Result _defaultResult = Result.DENIED;
 
-    public RuleSet(EventLoggerProvider eventLogger)
-    {
-        _eventLogger = eventLogger;
-        // set some default configuration properties
-        _rules = new ArrayList<>();
-    }
-
     public RuleSet(final EventLoggerProvider eventLogger,
                    final Collection<Rule> rules,
                    final Result defaultResult)
@@ -82,16 +72,7 @@ public class RuleSet implements EventLoggerProvider
         _defaultResult = defaultResult;
     }
 
-    /**
-     * Clear the contents, including acl rules and configuration.
-     */
-    public void clear()
-    {
-        _rules.clear();
-        _cache.clear();
-    }
-
-    public int getRuleCount()
+    int getRuleCount()
     {
         return _rules.size();
     }
@@ -102,7 +83,7 @@ public class RuleSet implements EventLoggerProvider
      * Allows only enabled rules with identity equal to all, the same, or a group with identity as a member,
      * and operation is either all or the same operation.
      */
-    public List<Rule> getRules(final Subject subject, final Operation operation, final ObjectType objectType)
+    private List<Rule> getRules(final Subject subject, final Operation operation, final ObjectType objectType)
     {
         final Map<ObjectType, List<Rule>> objects = getObjectToRuleCache(subject, operation);
 
@@ -128,7 +109,7 @@ public class RuleSet implements EventLoggerProvider
             }
 
             // Return null if there are no rules at all for this operation and object type
-            if (filtered.isEmpty() && controlled == false)
+            if (filtered.isEmpty() && !controlled)
             {
                 filtered = null;
             }
@@ -240,7 +221,7 @@ public class RuleSet implements EventLoggerProvider
       * Returns all rules in the {@link RuleSet}.   Primarily intended to support unit-testing.
       * @return map of rules
       */
-     public List<Rule> getAllRules()
+    public List<Rule> getAllRules()
      {
          return Collections.unmodifiableList(_rules);
      }

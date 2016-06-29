@@ -22,21 +22,15 @@ package org.apache.qpid.server.security.access.plugins;
 
 import java.util.Map;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.AccessControlMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.access.config.AclFileParser;
 import org.apache.qpid.server.security.access.config.RuleBasedAccessControl;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
@@ -64,7 +58,7 @@ public class ACLFileAccessControlProviderImpl
     @Override
     protected RuleBasedAccessControl createRuleBasedAccessController()
     {
-        return new RuleBasedAccessControl(AclFileParser.parse(getPath(), getBroker()));
+        return new RuleBasedAccessControl(AclFileParser.parse(getPath(), getBroker()), getBroker().getModel());
     }
 
     @Override

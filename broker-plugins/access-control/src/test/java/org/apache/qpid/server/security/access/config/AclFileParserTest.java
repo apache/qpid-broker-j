@@ -25,13 +25,10 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLoggerProvider;
-import org.apache.qpid.server.security.access.ObjectProperties;
-import org.apache.qpid.server.security.access.ObjectProperties.Property;
-import org.apache.qpid.server.security.access.ObjectType;
+import org.apache.qpid.server.security.access.config.ObjectProperties.Property;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.test.utils.QpidTestCase;
 

@@ -23,8 +23,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.security.access.ObjectProperties;
-import org.apache.qpid.server.security.access.ObjectProperties.Property;
+import org.apache.qpid.server.security.access.config.ObjectProperties.Property;
 import org.apache.qpid.server.security.access.firewall.FirewallRule;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 

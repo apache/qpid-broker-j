@@ -20,10 +20,15 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import java.util.Collections;
+
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.txn.ServerTransaction;
 
@@ -32,11 +37,13 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
     private static final Accepted ACCEPTED = new Accepted();
     private static final Outcome[] OUTCOMES = new Outcome[] { ACCEPTED };
     private final String _address;
+    private final Queue<?> _queue;
 
 
     public QueueDestination(Queue<?> queue, final String address)
     {
         super(queue);
+        _queue = queue;
         _address = address;
     }
 
@@ -90,6 +97,20 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
     public String getRoutingAddress(Message_1_0 message)
     {
         return "";
+    }
+
+    @Override
+    public void authorizePublish(final SecurityToken securityToken, final Message_1_0 message)
+    {
+
+        final SecurityManager securityManager =
+                _queue.getParent(VirtualHost.class).getBroker().getSecurityManager();
+
+        securityManager
+                .authoriseExecute(securityToken, _queue, "publish",
+                                  Collections.<String,Object>singletonMap("routingKey", getRoutingAddress(message)));
+
+
     }
 
     @Override

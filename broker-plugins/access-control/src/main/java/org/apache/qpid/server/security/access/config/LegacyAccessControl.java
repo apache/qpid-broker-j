@@ -18,25 +18,12 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.protocol.v1_0;
+package org.apache.qpid.server.security.access.config;
 
-import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.security.Result;
+import org.apache.qpid.server.security.access.Operation;
 
-import org.apache.qpid.server.security.SecurityToken;
-import org.apache.qpid.server.txn.ServerTransaction;
-
-public interface ReceivingDestination extends Destination
+interface LegacyAccessControl
 {
-
-    Outcome[] getOutcomes();
-
-    Outcome send(Message_1_0 message, ServerTransaction txn);
-
-    int getCredit();
-
-    String getRoutingAddress(Message_1_0 message);
-
-    String getAddress();
-
-    void authorizePublish(SecurityToken securityToken, final Message_1_0 message);
+    Result authorise(Operation authoriseOperation, ObjectType objectType, ObjectProperties properties);
 }

@@ -23,6 +23,7 @@ package org.apache.qpid.server.logging;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -105,7 +106,7 @@ public class BrokerMemoryLoggerImpl extends AbstractBrokerLogger<BrokerMemoryLog
     @Override
     public Collection<LogRecord> getLogEntries(long lastLogId)
     {
-        getSecurityManager().authoriseLogsAccess(this);
+        getSecurityManager().authoriseExecute(this, "getLogEntries", Collections.<String,Object>emptyMap());
 
         List<LogRecord> logRecords = new ArrayList<>();
         for(LogRecord record : _logRecorder)

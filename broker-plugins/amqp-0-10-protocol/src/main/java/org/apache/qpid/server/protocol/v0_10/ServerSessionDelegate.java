@@ -40,6 +40,7 @@ import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.transport.ProtocolEngine;
@@ -419,14 +420,17 @@ public class ServerSessionDelegate extends SessionDelegate
                 final NamedAddressSpace virtualHost = getAddressSpace(ssn);
                 try
                 {
-                    getServerConnection(ssn).getAmqpConnection().getBroker().getSecurityManager()
-                            .authorisePublish(messageMetaData.isImmediate(),
-                                              messageMetaData.getRoutingKey(),
-                                              destination.getName(),
-                                              virtualHost.getName(),
-                                              serverSession.getAuthorizedSubject(),
-                                              getMessageUserId(xfr),
-                                              serverSession.getAMQPConnection());
+                    serverSession.getAMQPConnection().checkAuthorizedMessagePrincipal(getMessageUserId(xfr));
+                    if(destination instanceof ConfiguredObject)
+                    {
+                        Map<String,Object> args = new HashMap<>();
+                        args.put("routingKey", messageMetaData.getRoutingKey());
+                        args.put("immediate", messageMetaData.isImmediate());
+
+                        getServerConnection(ssn).getAmqpConnection().getBroker().getSecurityManager()
+                            .authoriseExecute(serverSession.getToken(), (ConfiguredObject)destination, "publish", args );
+
+                    };
                 }
                 catch (AccessControlException e)
                 {

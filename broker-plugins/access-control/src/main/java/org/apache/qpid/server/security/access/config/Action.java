@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import org.apache.qpid.server.security.access.ObjectProperties;
-import org.apache.qpid.server.security.access.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
 
 /**

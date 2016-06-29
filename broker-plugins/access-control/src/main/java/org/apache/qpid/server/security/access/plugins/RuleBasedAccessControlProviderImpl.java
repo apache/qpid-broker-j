@@ -31,18 +31,15 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.logging.messages.AccessControlMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.CustomRestHeaders;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.model.RestContentHeader;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.ObjectProperties;
-import org.apache.qpid.server.security.access.ObjectType;
+import org.apache.qpid.server.security.access.config.ObjectProperties;
+import org.apache.qpid.server.security.access.config.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.RuleOutcome;
 import org.apache.qpid.server.security.access.config.AclAction;
@@ -99,7 +96,7 @@ public class RuleBasedAccessControlProviderImpl
                                              new AclRulePredicates(configuredRule.getAttributes())),
                                configuredRule.getOutcome()));
         }
-        return new RuleBasedAccessControl(new RuleSet(getBroker(), rules, _defaultResult));
+        return new RuleBasedAccessControl(new RuleSet(getBroker(), rules, _defaultResult), getModel());
     }
 
     @Override

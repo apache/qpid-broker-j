@@ -91,6 +91,7 @@ import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.LinkRegistry;
+import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -104,6 +105,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     private static final Logger _logger = LoggerFactory.getLogger(Session_1_0.class);
     private static final Symbol LIFETIME_POLICY = Symbol.valueOf("lifetime-policy");
     private final AccessControlContext _accessControllerContext;
+    private final SecurityToken _securityToken;
     private AutoCommitTransaction _transaction;
 
     private final LinkedHashMap<Integer, ServerTransaction> _openTransactions =
@@ -180,6 +182,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         _subject.getPrincipals().addAll(connection.getSubject().getPrincipals());
         _subject.getPrincipals().add(new SessionPrincipal(this));
         _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(_subject);
+        _securityToken = connection.getBroker().getSecurityManager().newToken(_subject);
     }
 
     public void setReceivingChannel(final short receivingChannel)
@@ -1385,6 +1388,11 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     private NamedAddressSpace getAddressSpace()
     {
         return _connection.getAddressSpace();
+    }
+
+    public SecurityToken getSecurityToken()
+    {
+        return _securityToken;
     }
 
 

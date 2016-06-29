@@ -113,7 +113,7 @@ public class HttpManagementUtil
 
             subject = createServletConnectionSubject(request, subject);
 
-            assertManagementAccess(broker.getSecurityManager(), subject);
+            assertManagementAccess(broker, subject);
 
             saveAuthorisedSubject(request, subject);
         }
@@ -130,14 +130,14 @@ public class HttpManagementUtil
         return subject;
     }
 
-    public static void assertManagementAccess(final SecurityManager securityManager, Subject subject)
+    public static void assertManagementAccess(final Broker<?> broker, Subject subject)
     {
         Subject.doAs(subject, new PrivilegedAction<Void>()
         {
             @Override
             public Void run()
             {
-                securityManager.accessManagement();
+                broker.getSecurityManager().authoriseExecute(broker,"manage",Collections.<String,Object>emptyMap());
                 return null;
             }
         });

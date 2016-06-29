@@ -166,12 +166,6 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
     }
 
     @Override
-    public void recoverUser(final User user)
-    {
-        _users.put(user.getName(), (ManagedUser) user);
-    }
-
-    @Override
     public void setPassword(final String username, final String password) throws AccountNotFoundException
     {
         runTask(new Task<Object, AccountNotFoundException>()

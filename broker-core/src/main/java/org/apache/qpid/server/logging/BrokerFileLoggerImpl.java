@@ -158,7 +158,7 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     @Override
     public Content getFile(final String fileName)
     {
-        getSecurityManager().authoriseLogsAccess(this);
+        getSecurityManager().authoriseExecute(this, "getFile", Collections.singletonMap("fileName", (Object)fileName));
 
         return _rolloverWatcher == null ? null : _rolloverWatcher.getFileContent(fileName);
     }
@@ -166,7 +166,7 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     @Override
     public Content getFiles(@Param(name = "fileName") Set<String> fileName)
     {
-        getSecurityManager().authoriseLogsAccess(this);
+        getSecurityManager().authoriseExecute(this, "getFiles", Collections.singletonMap("fileName", (Object)fileName));
 
         return _rolloverWatcher == null ? null :_rolloverWatcher.getFilesAsZippedContent(fileName);
     }
@@ -174,7 +174,7 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     @Override
     public Content getAllFiles()
     {
-        getSecurityManager().authoriseLogsAccess(this);
+        getSecurityManager().authoriseExecute(this, "getAllFiles", Collections.<String,Object>emptyMap());
 
         return _rolloverWatcher == null ? null : _rolloverWatcher.getAllFilesAsZippedContent();
     }

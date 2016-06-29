@@ -35,9 +35,8 @@ import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.UnitTestMessageLogger;
+import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.ObjectProperties;
-import org.apache.qpid.server.security.access.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.RuleOutcome;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
@@ -73,7 +72,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
 
     private void configureAccessControl(final RuleSet rs)
     {
-        _plugin = new RuleBasedAccessControl(rs);
+        _plugin = new RuleBasedAccessControl(rs, BrokerModel.getInstance());
     }
 
     private RuleSet createGroupRuleSet()
@@ -249,7 +248,8 @@ public class RuleBasedAccessControlTest extends QpidTestCase
             {
                 RuleSet mockRuleSet = mock(RuleSet.class);
 
-                RuleBasedAccessControl accessControl = new RuleBasedAccessControl(mockRuleSet);
+                RuleBasedAccessControl accessControl = new RuleBasedAccessControl(mockRuleSet,
+                                                                                  BrokerModel.getInstance());
 
                 ObjectProperties properties = new ObjectProperties(testVirtualHost);
                 accessControl.authorise(Operation.ACCESS, ObjectType.VIRTUALHOST, properties);
@@ -287,7 +287,8 @@ public class RuleBasedAccessControlTest extends QpidTestCase
                         ObjectProperties.EMPTY,
                         inetAddress)).thenThrow(new RuntimeException());
 
-                RuleBasedAccessControl accessControl = new RuleBasedAccessControl(mockRuleSet);
+                RuleBasedAccessControl accessControl = new RuleBasedAccessControl(mockRuleSet,
+                                                                                  BrokerModel.getInstance());
                 Result result = accessControl.authorise(Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
 
                 assertEquals(Result.DENIED, result);

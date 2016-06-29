@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.security.access;
+package org.apache.qpid.server.security.access.config;
 
 
 public class OperationLoggingDetails extends ObjectProperties

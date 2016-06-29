@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import java.util.Collections;
+
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
@@ -27,6 +30,8 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.txn.ServerTransaction;
 
 public class ExchangeDestination implements ReceivingDestination, SendingDestination
@@ -93,6 +98,19 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
     public String getAddress()
     {
         return _address;
+    }
+
+    @Override
+    public void authorizePublish(final SecurityToken securityToken, final Message_1_0 message)
+    {
+        final SecurityManager securityManager =
+                _exchange.getParent(VirtualHost.class).getBroker().getSecurityManager();
+
+        securityManager
+                .authoriseExecute(securityToken, _exchange, "publish",
+                                  Collections.<String,Object>singletonMap("routingKey", getRoutingAddress(message)));
+
+
     }
 
     @Override

@@ -22,6 +22,7 @@ package org.apache.qpid.server.management.plugin.auth;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -307,7 +308,7 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
                 }
                 return null;
             }
-        }).when(mockSecurityManager).accessManagement();
+        }).when(mockSecurityManager).authoriseExecute(eq(mockBroker), eq("manage"), anyMap());
         when(mockBroker.getSecurityManager()).thenReturn(mockSecurityManager);
 
         when(authenticationProvider.getAuthorizationEndpointURI()).thenReturn(new URI(TEST_AUTHORIZATION_ENDPOINT));

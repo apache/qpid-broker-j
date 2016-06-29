@@ -73,7 +73,7 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
 
     boolean isIOThread();
 
-    boolean isAuthorizedMessagePrincipal(String messageUserId);
+    void checkAuthorizedMessagePrincipal(String messageUserId);
 
     void stopConnection();
 

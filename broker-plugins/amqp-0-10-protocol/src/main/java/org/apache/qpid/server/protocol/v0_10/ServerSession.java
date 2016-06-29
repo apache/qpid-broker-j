@@ -76,6 +76,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
+import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -128,6 +129,7 @@ public class ServerSession extends Session
     private final UUID _id = UUID.randomUUID();
     private final Subject _subject = new Subject();
     private final AccessControlContext _accessControllerContext;
+    private final SecurityToken _token;
     private long _createTime = System.currentTimeMillis();
 
     private final Set<Object> _blockingEntities = Collections.synchronizedSet(new HashSet<Object>());
@@ -143,6 +145,11 @@ public class ServerSession extends Session
     private long _blockingTimeout;
     private boolean _wireBlockingState;
     private final List<ConsumerTarget> _consumersWithPendingWork = new ArrayList<>();
+
+    public SecurityToken getToken()
+    {
+        return _token;
+    }
 
     public static interface MessageDispositionChangeListener
     {
@@ -190,7 +197,7 @@ public class ServerSession extends Session
         _subject.getPrincipals().addAll(((ServerConnection) connection).getAuthorizedSubject().getPrincipals());
         _subject.getPrincipals().add(new SessionPrincipal(this));
         _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(_subject);
-
+        _token = ((ServerConnection) connection).getBroker().getSecurityManager().newToken(_subject);
         _transactionTimeoutHelper = new TransactionTimeoutHelper(_logSubject, new CloseAction()
         {
             @Override

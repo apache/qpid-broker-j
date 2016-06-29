@@ -18,7 +18,7 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import static org.apache.qpid.server.security.access.ObjectProperties.Property.*;
+import static org.apache.qpid.server.security.access.config.ObjectProperties.Property.*;
 
 import org.apache.qpid.server.security.access.firewall.FirewallRule;
 import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;

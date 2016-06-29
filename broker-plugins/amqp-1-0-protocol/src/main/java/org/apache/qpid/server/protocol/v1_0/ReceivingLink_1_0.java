@@ -199,13 +199,11 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
                 final SecurityManager securityManager = getSession().getConnection().getBroker().getSecurityManager();
                 try
                 {
-                    securityManager.authorisePublish(false,
-                                                     _destination.getRoutingAddress(message),
-                                                     _destination.getAddress(),
-                                                     _addressSpace.getName(),
-                                                     _attachment.getSession().getSubject(),
-                                                     message.getMessageHeader().getUserId(),
-                                                     _attachment.getSession().getAMQPConnection());
+                    Session_1_0 session = getSession();
+
+                    session.getAMQPConnection()
+                            .checkAuthorizedMessagePrincipal(message.getMessageHeader().getUserId());
+                    _destination.authorizePublish(session.getSecurityToken(), message);
 
                     Outcome outcome = _destination.send(message, transaction);
 

@@ -56,8 +56,6 @@ public interface AuthenticationProvider<X extends AuthenticationProvider<X>> ext
      */
     void setPreferencesProvider(PreferencesProvider<?> preferencesProvider);
 
-    void recoverUser(User user);
-
     /**
      * Gets the SASL mechanisms known to this manager.
      *

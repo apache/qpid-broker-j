@@ -45,7 +45,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -226,7 +225,7 @@ public class FileSystemPreferencesProviderImpl
     @Override
     public Map<String, Object> getPreferences(String userId)
     {
-        getSecurityManager().authoriseUserUpdate(userId);
+        getSecurityManager().authoriseExecute(_authenticationProvider, "getPreferences", Collections.singletonMap("userId", (Object)userId));
         return _store == null? Collections.<String, Object>emptyMap() : _store.getPreferences(userId);
     }
 
@@ -251,7 +250,7 @@ public class FileSystemPreferencesProviderImpl
 
         for (String userId: userIDs)
         {
-            getSecurityManager().authoriseUserUpdate(userId);
+            getSecurityManager().authoriseExecute(_authenticationProvider, "deletePreferences", Collections.singletonMap("userId", (Object)userId));
         }
         return _store.deletePreferences(userIDs);
     }
