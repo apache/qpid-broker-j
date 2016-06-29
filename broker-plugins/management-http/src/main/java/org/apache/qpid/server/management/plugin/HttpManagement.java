@@ -277,11 +277,11 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
         ServletHolder queryServlet = new ServletHolder(new BrokerQueryServlet());
         root.addServlet(queryServlet, "/api/latest/querybroker/*");
-        root.addServlet(queryServlet, "/api/v" + BrokerModel.MODEL_MAJOR_VERSION + "/querybroker/*");
+        root.addServlet(queryServlet, "/api/v" + BrokerModel.MODEL_VERSION + "/querybroker/*");
 
         ServletHolder vhQueryServlet = new ServletHolder(new VirtualHostQueryServlet());
         root.addServlet(vhQueryServlet, "/api/latest/queryvhost/*");
-        root.addServlet(vhQueryServlet, "/api/v" + BrokerModel.MODEL_MAJOR_VERSION + "/queryvhost/*");
+        root.addServlet(vhQueryServlet, "/api/v" + BrokerModel.MODEL_VERSION + "/queryvhost/*");
 
 
         ServletHolder apiDocsServlet = new ServletHolder(new ApiDocsServlet(getModel()));
@@ -599,7 +599,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                                                                    MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME)));
 
                 List<String> paths = Arrays.asList("/api/latest/" + name,
-                                                   "/api/v" + BrokerModel.MODEL_MAJOR_VERSION + "/" + name);
+                                                   "/api/v" + BrokerModel.MODEL_VERSION + "/" + name);
 
                 for (String path : paths)
                 {
@@ -609,9 +609,9 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                                                                                                      paths,
                                                                                                      hierarchyArray));
                 root.addServlet(docServletHolder, "/apidocs/latest/" + name + "/");
-                root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_MAJOR_VERSION + "/" + name + "/");
+                root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_VERSION + "/" + name + "/");
                 root.addServlet(docServletHolder, "/apidocs/latest/" + name);
-                root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_MAJOR_VERSION + "/" + name);
+                root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_VERSION + "/" + name);
 
 
         }
@@ -635,7 +635,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
     private String getLatestSupportedVersion()
     {
-        return "v"+String.valueOf(BrokerModel.MODEL_MAJOR_VERSION);
+        return "v"+String.valueOf(BrokerModel.MODEL_VERSION);
     }
 
     private void logOperationalListenMessages()

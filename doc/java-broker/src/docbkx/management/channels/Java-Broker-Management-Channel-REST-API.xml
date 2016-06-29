@@ -34,11 +34,11 @@
         <literal>DELETE</literal> method requests the removal of one, and the <literal>PUT</literal>
       or <literal>POST</literal> methods perform updates or create new objects. The
         <literal>POST</literal> method is also used to invoke operations.</para>
-    <para>The REST API is versioned with the version number embedded withinthe URI. The general form
-      of the URI is <literal>/api/&lt;version&gt;</literal> where &lt;version&gt; is a major model
-      version prefixed with "v", for example, v3. For convenience the alias
-        <literal>latest</literal> (<literal>/api/latest</literal>) signifies the latest supported
-      version.</para>
+    <para>The REST API is versioned with the version number embedded within the URI. The general form
+      of the URI is <literal>/api/&lt;version&gt;</literal> where &lt;version&gt; is a dot separated
+      major and minor model version prefixed with "v", for example, "v6.1" (without the quotation marks).
+      For convenience the alias <literal>latest</literal> (<literal>/api/latest</literal>) signifies the
+      latest supported version.</para>
     <para>There are also some ancillary services under URI <literal>/service</literal> used for
       authentication and logout.</para>
   </section>
