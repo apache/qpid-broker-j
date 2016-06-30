@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -480,6 +481,10 @@ public class BrokerStoreUpgraderAndRecoverer
 
                 getNextUpgrader().configuredObject(record);
             }
+            else if (record.getType().equals("TrustStore"))
+            {
+                upgradeTrustStore(record);
+            }
             else
             {
                 Map<String, Object> attributes = record.getAttributes();
@@ -507,6 +512,41 @@ public class BrokerStoreUpgraderAndRecoverer
                 {
                     getNextUpgrader().configuredObject(record);
                 }
+            }
+        }
+
+        private void upgradeTrustStore(ConfiguredObjectRecord record)
+        {
+            Map<String, Object> updatedAttributes = new LinkedHashMap<>(record.getAttributes());
+            if (updatedAttributes.containsKey("includedVirtualHostMessageSources")
+                || updatedAttributes.containsKey("excludedVirtualHostMessageSources"))
+            {
+                if (updatedAttributes.containsKey("includedVirtualHostMessageSources"))
+                {
+                    LOGGER.warn("Detected 'includedVirtualHostMessageSources' attribute during upgrade."
+                                + " Starting with version 6.1 this attribute has been replaced with"
+                                + " 'includedVirtualHostNodeMessageSources'. The upgrade is automatic but"
+                                + " assumes that the VirtualHostNode has the same name as the VirtualHost."
+                                + " Assumed name: '{}'", updatedAttributes.get("includedVirtualHostMessageSources"));
+                    updatedAttributes.put("includedVirtualHostNodeMessageSources",
+                                          updatedAttributes.get("includedVirtualHostMessageSources"));
+                    updatedAttributes.remove("includedVirtualHostMessageSources");
+
+                }
+                if (updatedAttributes.containsKey("excludedVirtualHostMessageSources"))
+                {
+                    LOGGER.warn("Detected 'excludedVirtualHostMessageSources' attribute during upgrade."
+                                + " Starting with version 6.1 this attribute has been replaced with"
+                                + " 'excludedVirtualHostNodeMessageSources'. The upgrade is automatic but"
+                                + " assumes that the VirtualHostNode has the same name as the VirtualHost."
+                                + " Assumed name: '{}'", updatedAttributes.get("excludedVirtualHostMessageSources"));
+                    updatedAttributes.put("excludedVirtualHostNodeMessageSources",
+                                          updatedAttributes.get("excludedVirtualHostMessageSources"));
+                    updatedAttributes.remove("excludedVirtualHostMessageSources");
+                }
+                record = new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
+                getUpdateMap().put(record.getId(), record);
+                getNextUpgrader().configuredObject(record);
             }
         }
 

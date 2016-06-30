@@ -1300,6 +1300,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
 
         @Override
+        public VirtualHostNode<?> getVirtualHostNode()
+        {
+            return AbstractVirtualHost.this.getParent(VirtualHostNode.class);
+        }
+
+        @Override
         public VirtualHost<?> getVirtualHost()
         {
             return AbstractVirtualHost.this;

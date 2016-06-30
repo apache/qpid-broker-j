@@ -62,7 +62,7 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.TrustStore;
-import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.transport.util.Functions;
@@ -81,9 +81,9 @@ public class SiteSpecificTrustStoreImpl
     @ManagedAttributeField
     private boolean _exposedAsMessageSource;
     @ManagedAttributeField
-    private List<VirtualHost> _includedVirtualHostMessageSources;
+    private List<VirtualHostNode<?>> _includedVirtualHostNodeMessageSources;
     @ManagedAttributeField
-    private List<VirtualHost> _excludedVirtualHostMessageSources;
+    private List<VirtualHostNode<?>> _excludedVirtualHostNodeMessageSources;
 
     private volatile TrustManager[] _trustManagers = new TrustManager[0];
 
@@ -295,15 +295,15 @@ public class SiteSpecificTrustStoreImpl
     }
 
     @Override
-    public List<VirtualHost> getIncludedVirtualHostMessageSources()
+    public List<VirtualHostNode<?>> getIncludedVirtualHostNodeMessageSources()
     {
-        return _includedVirtualHostMessageSources;
+        return _includedVirtualHostNodeMessageSources;
     }
 
     @Override
-    public List<VirtualHost> getExcludedVirtualHostMessageSources()
+    public List<VirtualHostNode<?>> getExcludedVirtualHostNodeMessageSources()
     {
-        return _excludedVirtualHostMessageSources;
+        return _excludedVirtualHostNodeMessageSources;
     }
 
     @Override

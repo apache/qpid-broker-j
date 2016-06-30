@@ -21,6 +21,8 @@
 package org.apache.qpid.systest.messageencryption;
 
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,6 +35,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
+import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.client.message.JMSBytesMessage;
 import org.apache.qpid.client.message.JMSTextMessage;
 import org.apache.qpid.server.model.TrustStore;
@@ -43,6 +46,8 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
 {
 
     public static final String TEST_MESSAGE_TEXT = "test message";
+    public static final String EXCLUDED_VIRTUAL_HOST_NODE_NAME = "excludedVirtualHostNode";
+    public static final String INCLUDED_VIRTUAL_HOST_NODE_NAME = "includedVirtualHostNode";
 
     @Override
     public void setUp() throws Exception
@@ -213,6 +218,89 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
         }
     }
 
+    public void testBrokerStoreProviderWithExcludedVirtualHostNode() throws Exception
+    {
+        if(isStrongEncryptionEnabled() && !isCppBroker())
+        {
+            createTestVirtualHostNode(EXCLUDED_VIRTUAL_HOST_NODE_NAME);
+            addPeerStoreToBroker(Collections.<String, Object>singletonMap("excludedVirtualHostNodeMessageSources",
+                                                                          EXCLUDED_VIRTUAL_HOST_NODE_NAME));
+            super.setUp();
+
+            String connectionUrlString = "amqp://guest:guest@clientId/" + EXCLUDED_VIRTUAL_HOST_NODE_NAME
+                                         + "?brokerlist='tcp://localhost:" + getDefaultAmqpPort() + "'"
+                                         + "&encryption_remote_trust_store='$certificates%5c/peerstore'";
+            final AMQConnectionURL connectionUrl = new AMQConnectionURL(connectionUrlString);
+            Connection producerConnection = getConnection(connectionUrl);
+
+            Queue queue = getTestQueue();
+            final Session prodSession = producerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final MessageProducer producer = prodSession.createProducer(queue);
+
+            Message message = prodSession.createTextMessage(TEST_MESSAGE_TEXT);
+            message.setBooleanProperty("x-qpid-encrypt", true);
+            message.setStringProperty("x-qpid-encrypt-recipients",
+                                      "cn=app1@acme.org,ou=art,o=acme,l=toronto,st=on,c=ca");
+
+            try
+            {
+                producer.send(message);
+                fail("Should not be able to send message");
+            }
+            catch (JMSException e)
+            {
+                assertTrue("Wrong exception cause: " + e.getCause(), e.getCause() instanceof CertificateException);
+            }
+        }
+    }
+
+    public void testBrokerStoreProviderWithIncludedVirtualHostNode() throws Exception
+    {
+        if(isStrongEncryptionEnabled() && !isCppBroker())
+        {
+            createTestVirtualHostNode(INCLUDED_VIRTUAL_HOST_NODE_NAME);
+            final Map<String, Object> additionalPeerStoreAttributes = new HashMap<>();
+            additionalPeerStoreAttributes.put("includedVirtualHostNodeMessageSources", INCLUDED_VIRTUAL_HOST_NODE_NAME);
+            // this is deliberate to test that the include list takes precedence
+            additionalPeerStoreAttributes.put("excludedVirtualHostNodeMessageSources", INCLUDED_VIRTUAL_HOST_NODE_NAME);
+            addPeerStoreToBroker(additionalPeerStoreAttributes);
+            super.setUp();
+
+            String connectionUrlString;
+
+            connectionUrlString = "amqp://guest:guest@clientId/" + INCLUDED_VIRTUAL_HOST_NODE_NAME
+                                  + "?brokerlist='tcp://localhost:" + getDefaultAmqpPort() + "'"
+                                  + "&encryption_remote_trust_store='$certificates%5c/peerstore'";
+            final AMQConnectionURL connectionUrl = new AMQConnectionURL(connectionUrlString);
+            Connection successfulProducerConnection = getConnection(connectionUrl);
+
+            Connection failingProducerConnection = getConnectionWithOptions(Collections.singletonMap("encryption_remote_trust_store",
+                                                                                                     "$certificates%5c/peerstore"));
+
+            Queue queue = getTestQueue();
+            final Session successfulSession = successfulProducerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final MessageProducer successfulProducer = successfulSession.createProducer(queue);
+            final Session failingSession = failingProducerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            final MessageProducer failingProducer = failingSession.createProducer(queue);
+
+            Message message = successfulSession.createTextMessage(TEST_MESSAGE_TEXT);
+            message.setBooleanProperty("x-qpid-encrypt", true);
+            message.setStringProperty("x-qpid-encrypt-recipients",
+                                      "cn=app1@acme.org,ou=art,o=acme,l=toronto,st=on,c=ca");
+
+            try
+            {
+                failingProducer.send(message);
+                fail("Should not be able to send message");
+            }
+            catch (JMSException e)
+            {
+                assertTrue("Wrong exception cause: " + e.getCause(), e.getCause() instanceof CertificateException);
+            }
+
+            successfulProducer.send(message);
+        }
+    }
 
     public void testUnknownRecipient() throws Exception
     {
@@ -297,15 +385,19 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
 
     private void addPeerStoreToBroker()
     {
+        addPeerStoreToBroker(Collections.<String, Object>emptyMap());
+    }
+
+    private void addPeerStoreToBroker(Map<String, Object> additionalAttributes)
+    {
         Map<String, Object> peerStoreAttributes = new HashMap<>();
         peerStoreAttributes.put("name" , "peerstore");
         peerStoreAttributes.put("storeUrl" , "${QPID_HOME}${file.separator}..${file.separator}test-profiles${file.separator}test_resources${file.separator}ssl${file.separator}java_broker_peerstore.jks");
         peerStoreAttributes.put("password" , "password");
         peerStoreAttributes.put("type", "FileTrustStore");
         peerStoreAttributes.put("exposedAsMessageSource", true);
+        peerStoreAttributes.putAll(additionalAttributes);
         getDefaultBrokerConfiguration().addObjectConfiguration(TrustStore.class, peerStoreAttributes);
-
-
     }
 
 

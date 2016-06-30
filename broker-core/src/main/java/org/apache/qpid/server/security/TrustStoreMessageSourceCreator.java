@@ -114,19 +114,19 @@ public class TrustStoreMessageSourceCreator implements SystemNodeCreator
     }
 
 
-    private boolean isTrustStoreExposedAsMessageSource(VirtualHost<?> virtualHost, final TrustStore trustStore)
+    private boolean isTrustStoreExposedAsMessageSource(VirtualHostNode<?> virtualHostNode, final TrustStore trustStore)
     {
         return trustStore.getState() == State.ACTIVE && trustStore.isExposedAsMessageSource()
-               && (trustStore.getIncludedVirtualHostMessageSources().contains(virtualHost)
-                   || (trustStore.getIncludedVirtualHostMessageSources().isEmpty()
-                       && !trustStore.getExcludedVirtualHostMessageSources().contains(virtualHost)));
+               && (trustStore.getIncludedVirtualHostNodeMessageSources().contains(virtualHostNode)
+                   || (trustStore.getIncludedVirtualHostNodeMessageSources().isEmpty()
+                       && !trustStore.getExcludedVirtualHostNodeMessageSources().contains(virtualHostNode)));
     }
 
 
     private void updateTrustStoreSourceRegistration(SystemNodeRegistry registry, TrustStore<?> trustStore)
     {
         final String sourceName = TrustStoreMessageSource.getSourceNameFromTrustStore(trustStore);
-        if(isTrustStoreExposedAsMessageSource(registry.getVirtualHost(), trustStore) )
+        if (isTrustStoreExposedAsMessageSource(registry.getVirtualHostNode(), trustStore))
         {
             if(!registry.hasSystemNode(sourceName))
             {

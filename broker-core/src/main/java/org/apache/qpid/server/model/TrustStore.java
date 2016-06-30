@@ -32,15 +32,14 @@ public interface TrustStore<X extends TrustStore<X>> extends ConfiguredObject<X>
     @ManagedAttribute( defaultValue = "false", description = "If true the Trust Store will expose its certificates as a special artificial message source.")
     boolean isExposedAsMessageSource();
 
-    @ManagedAttribute( defaultValue = "[]" )
-    List<VirtualHost> getIncludedVirtualHostMessageSources();
+    @ManagedAttribute( defaultValue = "[]", description = "If 'exposedAsMessageSource' is true, the trust store will expose its certificates only to VirtualHostNodes in this list or if this list is empty to all VirtualHostNodes who are not in the 'excludedVirtualHostNodeMessageSources' list." )
+    List<VirtualHostNode<?>> getIncludedVirtualHostNodeMessageSources();
 
-    @ManagedAttribute( defaultValue = "[]" )
-    List<VirtualHost> getExcludedVirtualHostMessageSources();
+    @ManagedAttribute( defaultValue = "[]", description = "If 'exposedAsMessageSource' is true and 'includedVirtualHostNodeMessageSources' is empty, the trust store will expose its certificates only to VirtualHostNodes who are not in this list." )
+    List<VirtualHostNode<?>> getExcludedVirtualHostNodeMessageSources();
 
+    TrustManager[] getTrustManagers() throws GeneralSecurityException;
 
-    public TrustManager[] getTrustManagers() throws GeneralSecurityException;
-
-    public Certificate[] getCertificates() throws GeneralSecurityException;
+    Certificate[] getCertificates() throws GeneralSecurityException;
 
 }
