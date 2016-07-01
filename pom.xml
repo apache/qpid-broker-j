@@ -283,6 +283,13 @@
           <artifactId>docbkx-maven-plugin</artifactId>
           <version>${maven-docbx-plugin-version}</version>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <configuration>
+            <tagNameFormat>@{project.version}</tagNameFormat>
+          </configuration>
+        </plugin>
         <!-- REMOVE 2 PLUGINS BELOW AFTER CHANGING APACHE PARENT TO V 17 -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
