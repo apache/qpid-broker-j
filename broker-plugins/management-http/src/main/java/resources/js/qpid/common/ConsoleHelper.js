@@ -121,7 +121,7 @@ define(["dojo/query",
                             queryCreateDialogForm.on("create", function (e)
                             {
                                 queryCreateDialog.hide();
-                                controller.show("queryTab", e.preference, e.parentObject);
+                                controller.show("query", e.preference, e.parentObject);
                             });
                             queryCreateDialogForm.on("cancel", function (e)
                             {
@@ -143,9 +143,9 @@ define(["dojo/query",
                 });
             }
         },
-        showQueryOpenDialog: function (e)
+        showQueryBrowser: function (e)
         {
-
+            this.controller.show("queryBrowser", "QueueBrowser");
         },
         init: function (controller, treeView)
         {

@@ -48,20 +48,7 @@ function (lang, declare, Evented, json, Store, QueryResults, all, Deferred)
 
         fetchRange: function (kwArgs)
         {
-            var queryResults = this._request(kwArgs);
-            all({results: queryResults, totalLength: queryResults.totalLength})
-                .then(lang.hitch(this,
-                    function (data)
-                    {
-                        this.emit("fetchCompleted",
-                            {
-                                start: kwArgs.start,
-                                end: kwArgs.end,
-                                results: data.results,
-                                totalLength: data.totalLength
-                            });
-                    }));
-            return queryResults;
+            return this._request(kwArgs);
         },
 
         _request: function (kwArgs)
@@ -69,6 +56,31 @@ function (lang, declare, Evented, json, Store, QueryResults, all, Deferred)
             if (this.useCachedResults && this._lastResponsePromise)
             {
                 return this._createQueryResults(this._lastResponsePromise);
+            }
+
+            var query = {
+                category: this.category,
+                select: this.selectClause
+            };
+
+            if (this.where)
+            {
+                query.where = this.where;
+            }
+
+            if (this.orderBy)
+            {
+                query.orderBy = this.orderBy;
+            }
+
+            if (kwArgs && kwArgs.hasOwnProperty("start"))
+            {
+                query.offset = kwArgs.start;
+            }
+
+            if (kwArgs && kwArgs.hasOwnProperty("end"))
+            {
+                query.limit = kwArgs.end - (query.offset ? query.offset : 0);
             }
 
             if (!this.selectClause)
@@ -83,48 +95,28 @@ function (lang, declare, Evented, json, Store, QueryResults, all, Deferred)
             }
             else
             {
-                var queryRequest = {
-                    category: this.category,
-                    select: this.selectClause
-                };
-
+                var queryRequest = lang.clone(query);
                 if (this.parentObject)
                 {
                     queryRequest.parent = this.parentObject;
                 }
-
-                if (this.where)
-                {
-                    queryRequest.where = this.where;
-                }
-
-                if ("start" in kwArgs)
-                {
-                    queryRequest.offset = kwArgs.start;
-                }
-
-                if ("end" in kwArgs)
-                {
-                    queryRequest.limit = kwArgs.end - (queryRequest.offset ? queryRequest.offset : 0);
-                }
-
-                if (this.orderBy)
-                {
-                    queryRequest.orderBy = this.orderBy;
-                }
-
                 this._lastResponsePromise = this.management.query(queryRequest);
             }
             this._lastResponsePromise.then(lang.hitch(this, function (data)
             {
-                this.emit("queryCompleted", data);
+                this.emit("queryCompleted", {data: data, query: query, parentObject: this.parentObject});
             }), lang.hitch(this, function (error)
             {
                 this.emit("queryCompleted",
                     {
-                        headers: [],
-                        results: [],
-                        total: 0
+                        data: {
+                            headers: [],
+                            results: [],
+                            total: 0
+                        },
+                        query: query,
+                        parentObject: this.parentObject,
+                        error: error
                     });
             }));
             return this._createQueryResults(this._lastResponsePromise);

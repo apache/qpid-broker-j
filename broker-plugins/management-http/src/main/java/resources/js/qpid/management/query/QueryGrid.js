@@ -32,6 +32,7 @@ define(["dojo/_base/declare",
         "dgrid/extensions/ColumnResizer",
         "dgrid/extensions/DijitRegistry",
         "qpid/management/query/QueryStore",
+        "qpid/management/query/StoreUpdater",
         "dojo/keys",
         "qpid/common/util"],
     function (declare,
@@ -48,43 +49,12 @@ define(["dojo/_base/declare",
               ColumnResizer,
               DijitRegistry,
               QueryStore,
+              StoreUpdater,
               keys,
               util)
     {
 
-        var createIdToIndexMap = function(results, idProperty)
-        {
-            var map = {};
-            for(var i = 0; i < results.length; i++)
-            {
-                var id = results[i][idProperty];
-                map[id] = i;
-            }
-            return map;
-        }
-
-        var updateIdToIndexMap = function(results, idProperty, idToIndexMap, startIndex)
-        {
-            for(var i = startIndex; i < results.length; i++)
-            {
-                 var id = results[i][idProperty];
-                 idToIndexMap[id] = i;
-            }
-        }
-
-        var TrackableQueryStore = declare(QueryStore,
-            {
-                /*
-                 adding method track
-                 enables tracking of add, update and delete events
-                 */
-                track: function ()
-                {
-                    return this;
-                }
-            });
-
-        var QueryGrid = declare("qpid.management.query.QueryGrid",
+        return declare("qpid.management.query.QueryGrid",
             [Grid, Keyboard, Selection, Pagination, DijitRegistry, ColumnResizer],
             {
                 management: null,
@@ -96,7 +66,22 @@ define(["dojo/_base/declare",
 
                 postscript: function (args)
                 {
-                    this._store = !!args.detectChanges ? new TrackableQueryStore(args) : new QueryStore(args);
+                    if (args.detectChanges)
+                    {
+                        var Store = declare([QueryStore, StoreUpdater],
+                            {
+                                track: function ()
+                                {
+                                    return this;
+                                }
+                            });
+                        this._store = new Store(args);
+                        this._store.on("updateCompleted", lang.hitch(this, this._onFetchCompleted));
+                    }
+                    else
+                    {
+                        this._store = new QueryStore(args);
+                    }
 
                     var settings = lang.mixin({
                         collection: this._store,
@@ -113,12 +98,12 @@ define(["dojo/_base/declare",
                 postCreate: function ()
                 {
                     this.inherited(arguments);
-                    this.on('.dgrid-row:dblclick', lang.hitch(this, this._onRowClick));
+                    this.on('.dgrid-row:dblclick', lang.hitch(this, this._openObjectTab));
                     this.on('.dgrid-row:keypress', lang.hitch(this, function (event)
                     {
                         if (event.keyCode === keys.ENTER)
                         {
-                            this._onRowClick(event);
+                            this._openObjectTab(event);
                         }
                     }));
 
@@ -141,46 +126,16 @@ define(["dojo/_base/declare",
                     }));
                     this._store.on('queryCompleted', lang.hitch(this, function (event)
                     {
+                        this._start = event.query.offset;
+                        this._end = event.query.offset + event.query.limit;
                         on.emit(this.domNode, 'queryCompleted', event);
-                    }));
-                    this._store.on('fetchCompleted', lang.hitch(this, function (event)
-                    {
-                        this._start = event.start;
-                        this._end = event.end;
-                        if (this.detectChanges)
-                        {
-                            /*
-                             Handle 'fetchCompleted' event
-                             and detect changes in row data.
-                             Emit 'add', 'delete', 'update' events
-                             for changed rows
-                             */
-                            if (this._updatingData)
-                            {
-                                try
-                                {
-                                    this._compareResultsAndEmitEventsOnChanges(event);
-                                }
-                                finally
-                                {
-                                    this._updatingData = false;
-                                }
-                            }
-                            else
-                            {
-                                var results = event.results.slice(0);
-                                this._currentResults = results;
-                                this._currentResultsIdToIndexMap = createIdToIndexMap(results, this._store.idProperty);
-                            }
-                        }
                     }));
                 },
                 updateData: function ()
                 {
-                    if (this.detectChanges && this._end)
+                    if (this.detectChanges)
                     {
-                        this._updatingData = true;
-                        this._store.fetchRange({start: this._start, end: this._end});
+                        this._store.updateRange();
                     }
                 },
                 setCategory: function (category)
@@ -260,7 +215,7 @@ define(["dojo/_base/declare",
                     this._store.orderBy = orderByExpression;
                     on.emit(this.domNode, "orderByChanged", {orderBy: orderByExpression});
                 },
-                _onRowClick: function (event)
+                _openObjectTab: function (event)
                 {
                     var row = this.row(event);
                     var promise = this.management.get({url: "service/structure"});
@@ -308,86 +263,6 @@ define(["dojo/_base/declare",
                         }
                     }));
                 },
-                _compareResultsAndEmitEventsOnChanges: function (evt)
-                {
-                    var results = evt.results;
-                    if (results)
-                    {
-                        var newResults = results.slice(0);
-                        var store = this._store;
-                        var idProperty = store.idProperty;
-                        var newResultsIdToIndexMap = createIdToIndexMap(newResults, idProperty);
-                        if (this._currentResults)
-                        {
-                            var currentResults = this._currentResults.slice(0);
-                            for (var i = currentResults.length - 1; i >= 0; i--)
-                            {
-                                var currentResult = currentResults[i];
-                                var id = currentResult[idProperty];
-                                var newResultIndex = newResultsIdToIndexMap[id];
-                                if (newResultIndex === undefined)
-                                {
-                                    var event = {"target": currentResult,
-                                                 "previousIndex": evt.start + i,
-                                                 "index": evt.start + i};
-                                    store.emit("delete", event);
-                                    currentResults.splice(i, 1);
-                                    updateIdToIndexMap(currentResults,
-                                                       idProperty,
-                                                       this._currentResultsIdToIndexMap,
-                                                       i);
-                                    delete this._currentResultsIdToIndexMap[id];
-                                }
-                            }
-
-                            for (var j = 0; j < newResults.length; j++)
-                            {
-                                var newResult = newResults[j];
-                                var id = newResult[idProperty];
-                                var previousIndex = this._currentResultsIdToIndexMap[id];
-
-                                if (previousIndex === undefined)
-                                {
-                                    var event = {"target": newResult, "index": j + evt.start};
-                                    store.emit("add", event);
-                                    currentResults.splice(j, 0, newResult);
-                                    updateIdToIndexMap(currentResults,
-                                                       idProperty,
-                                                       this._currentResultsIdToIndexMap,
-                                                       j);
-                                }
-                                else
-                                {
-                                    var currentResult = currentResults[previousIndex];
-                                    var event = {"target": newResult,
-                                                 "previousIndex": previousIndex + evt.start,
-                                                 "index": j + evt.start};
-                                    if (previousIndex === j)
-                                    {
-                                        currentResults[j] = newResult;
-                                        if (!util.equals(newResult, currentResult))
-                                        {
-                                            store.emit("update", event);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        currentResults.splice(previousIndex, 1);
-                                        currentResults.splice(j, 0, currentResult);
-                                        updateIdToIndexMap(currentResults,
-                                                           idProperty,
-                                                           this._currentResultsIdToIndexMap,
-                                                           Math.min(previousIndex, j));
-                                        store.emit("update", event);
-                                    }
-                                }
-                            }
-                        }
-                        this._currentResults = newResults;
-                        this._currentResultsIdToIndexMap = newResultsIdToIndexMap
-                        this._onFetchCompleted(evt)
-                    }
-                },
                 _onFetchCompleted: function (event)
                  {
                     var rowsPerPage = this.rowsPerPage;
@@ -412,5 +287,4 @@ define(["dojo/_base/declare",
                 }
             });
 
-        return QueryGrid;
     });

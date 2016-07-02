@@ -315,7 +315,9 @@ define(["dojo/_base/declare",
                 },
                 _postCreate: function ()
                 {
-                    this.categoryName = this.preference.value.category;
+                    var valuePresent = this.preference && this.preference.value;
+                    var selectPresent = valuePresent && this.preference.value.select;
+                    this.categoryName = valuePresent && this.preference.value.category ? this.preference.value.category : "Queue";
                     this._lastStandardModeSelect = [];
                     this._lastHeaders = [];
 
@@ -356,12 +358,14 @@ define(["dojo/_base/declare",
                     this.standardSearchButton.on("click", lang.hitch(this, this.search));
                     this.modeButton.on("click", lang.hitch(this, this._showModeSwitchWarningIfRequired));
 
-                    this._buildGrid();
+                    var rowsPerPage = valuePresent && this.preference.value.limit ? this.preference.value.limit  : 100;
+                    var currentPage = valuePresent && this.preference.value.offset ?  this.preference.value.offset/rowsPerPage + 1: 1;
+                    this._buildGrid(currentPage, rowsPerPage);
                     var openingPreference = this.preference && this.preference.value && this.preference.value.select;
                     this._initCategory(this.categoryName, !openingPreference);
                     this._toggleSearchButton();
 
-                    if (openingPreference)
+                    if (selectPresent)
                     {
                         this._modeChanged();
                         this.advancedSelect.set("value", this.preference.value.select);
@@ -523,13 +527,11 @@ define(["dojo/_base/declare",
                     this._setSelectClause(selectClause);
                     this._lastStandardModeSelect = lang.clone(selectedColumns);
                     this._toggleSearchButton(selectClause);
-                    this._queryChanged();
                 },
                 _standardModeSelectChanged: function (selectedColumns)
                 {
                     this._processStandardModeSelectChange(selectedColumns);
                     this.search();
-                    this._queryChanged();
                 },
                 _standardModeColumnOrderChanged: function (event)
                 {
@@ -545,7 +547,6 @@ define(["dojo/_base/declare",
                         }
                         this._processStandardModeSelectChange(newSelectedItems);
                         this.standardSelectChooser.set("data", {"selected": newSelectedItems});
-                        this._queryChanged();
                     }
                     else
                     {
@@ -572,7 +573,6 @@ define(["dojo/_base/declare",
                             this._processStandardModeSelectChange(newSelectedItems);
                             this.standardSelectChooser.set("data", {"selected": newSelectedItems});
                             this._resultsGrid.refresh();
-                            this._queryChanged();
                         }
                         finally
                         {
@@ -587,26 +587,32 @@ define(["dojo/_base/declare",
                 {
                     this._resultsGrid.setWhere(result);
                     this.search();
-                    this._queryChanged();
                 },
-                _buildGrid: function ()
+                _buildGrid: function (currentPage, rowsPerPage)
                 {
-                    var openingPreference = this.preference && this.preference.value && this.preference.value.select;
-                    var rowsPerPage = 100, currentPage = 1;
-                    if (openingPreference)
-                    {
-                        rowsPerPage = this.preference.value.limit || 100;
-                        var start = this.preference.value.offset || 0;
-                        currentPage = start/rowsPerPage + 1;
-                    }
-                    var grid = new (declare([QueryGrid, ColumnReorder, ColumnHider]))({
+                    var Grid = declare([QueryGrid, ColumnReorder, ColumnHider],
+                                      {
+                                            _restoreCurrentPage : currentPage > 1,
+                                            gotoPage:function (page)
+                                            {
+                                                if (this._restoreCurrentPage)
+                                                {
+                                                    return this.inherited(arguments, [currentPage]);
+                                                }
+                                                else
+                                                {
+                                                    return this.inherited(arguments);
+                                                }
+                                            }
+                                      });
+                    var grid = new Grid({
                         controller: this.controller,
                         management: this.management,
                         category: this.categoryName.toLowerCase(),
                         parentObject: this.parentObject,
                         zeroBased: false,
                         rowsPerPage: rowsPerPage,
-                        currentPage: currentPage,
+                        _currentPage: currentPage,
                         transformer: function (data)
                         {
                             var dataResults = data.results;
@@ -633,20 +639,24 @@ define(["dojo/_base/declare",
                     {
                         this._resultsGrid.setUseCachedResults(false);
                     }));
-                    grid.on('queryCompleted', lang.hitch(this, this._buildColumnsIfHeadersChanged));
+                    grid.on('queryCompleted', lang.hitch(this, this._queryCompleted));
                     grid.on('orderByChanged', lang.hitch(this, function (event)
                     {
                         this.advancedOrderBy.set("value", event.orderBy);
-                        this._queryChanged();
                     }));
                     grid.on('dgrid-columnreorder', lang.hitch(this, this._standardModeColumnOrderChanged));
                     grid.on('dgrid-columnstatechange', lang.hitch(this, this._standardModeColumnStateChanged));
                     grid.hiderToggleNode.title = "Remove columns";
                     this._resultsGrid = grid;
                 },
-                _buildColumnsIfHeadersChanged: function (event)
+                _queryCompleted: function (e)
                 {
-                    var headers = lang.clone(event.headers);
+                    this._buildColumnsIfHeadersChanged(e.data);
+                    this._queryChanged(e.query);
+                },
+                _buildColumnsIfHeadersChanged: function (data)
+                {
+                    var headers = lang.clone(data.headers);
                     if (headers.length > 0)
                     {
                         headers.pop();
@@ -659,6 +669,7 @@ define(["dojo/_base/declare",
                             this._standardMode && headers.length > 0 ? '' : 'none';
                         this._resultsGrid.set("columns", this._getColumns(headers));
                         this._resultsGrid.resize();
+                        this._resultsGrid._restoreCurrentPage = false;
                     }
                 },
                 _equalStringArrays: function (a, b)
@@ -822,7 +833,6 @@ define(["dojo/_base/declare",
                         this._resultsGrid.setWhere(this.advancedWhere.value);
                         this._resultsGrid.setOrderBy(this.advancedOrderBy.value);
                         this.search();
-                        this._queryChanged();
                     }
                 },
                 _modeChanged: function ()
@@ -878,7 +888,6 @@ define(["dojo/_base/declare",
                         this._toggleSearchButton(select);
                         this._resultsGrid.hiderToggleNode.style.display = '';
                         this.search();
-                        this._queryChanged();
                     }
                 },
                 _getCategoryMetadata: function (value)
@@ -954,10 +963,17 @@ define(["dojo/_base/declare",
                         asObject: columnsObject
                     };
                 },
-                _getQuery: function ()
+                _getQuery: function (queryObject)
                 {
-                    var query = this._resultsGrid.getQuery();
+                    var query = {
+                        where: "",
+                        orderBy: ""
+                    };
+
+                    lang.mixin(query, queryObject || this._resultsGrid.getQuery());
+
                     query.select = this._selectClause;
+                    query.category = this.categoryName;
                     return query;
                 },
                 _saveQuery: function ()
@@ -1048,7 +1064,7 @@ define(["dojo/_base/declare",
                     }
                     preference.value = this._getQuery();
                     this._queryCloneDialog.hide();
-                    this.controller.show("queryTab", preference, e.parentObject);
+                    this.emit("clone", {preference: preference, parentObject: e.parentObject});
                 },
                 _onQueryCloneCancel: function ()
                 {
@@ -1082,12 +1098,11 @@ define(["dojo/_base/declare",
 
                 _loadPreference: function (name)
                 {
-                    return this.management.loadPreference(this.parentObject, "query", name)
+                    return this.management.getPreference(this.parentObject, "query", name)
                 },
-                _queryChanged: function()
+                _queryChanged: function(query)
                 {
-                    var queryParameters = this._getQuery();
-                    var value = this.preference.value;
+                    var queryParameters = this._getQuery(query);
                     var pref = lang.clone(this.preference);
                     pref.value = queryParameters;
                     this.emit("change", {preference: pref});

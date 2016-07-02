@@ -634,10 +634,22 @@ define(["dojo/_base/lang",
         };
 
 
-        Management.prototype.loadPreference = function(parentObject, type, name)
+        Management.prototype.getPreference = function(parentObject, type, name)
         {
            var url =  this.buildPreferenceUrl(parentObject, type, name);
            return this.get({url: url});
+        };
+
+        Management.prototype.getUserPreferences = function(parentObject, type)
+        {
+            var url =  this.buildPreferenceUrl(parentObject, type);
+            return this.get({url: url});
+        };
+
+        Management.prototype.getVisiblePreferences = function(parentObject, type)
+        {
+            var url =  this.buildPreferenceUrl(parentObject, type, null, true);
+            return this.get({url: url});
         };
 
         Management.prototype.deletePreference = function(parentObject, type, name)
@@ -646,11 +658,12 @@ define(["dojo/_base/lang",
            return this.del({url: url});
         };
 
-        Management.prototype.buildPreferenceUrl = function (parentObject, type, name)
+        Management.prototype.buildPreferenceUrl = function (parentObject, type, name, visiblePreferences)
         {
-            return this.objectToURL(parentObject) + "/userpreferences/"
-                                       + encodeURIComponent(encodeURIComponent(type))
-                                       + "/" + encodeURIComponent(encodeURIComponent(name));
+            return this.objectToURL(parentObject)
+                   + (visiblePreferences ? "/visiblepreferences/" : "/userpreferences/")
+                   + encodeURIComponent(encodeURIComponent(type))
+                   + (name ? "/" + encodeURIComponent(encodeURIComponent(name)) : "" );
         };
 
         return Management;

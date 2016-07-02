@@ -41,6 +41,7 @@ define(["dojo/dom",
         "qpid/management/VirtualHostNode",
         "qpid/management/Logger",
         "qpid/management/QueryTab",
+        "qpid/management/QueryBrowserTab",
         "dojo/ready",
         "dojox/uuid/generateRandomUuid",
         "dojo/domReady!"],
@@ -67,6 +68,7 @@ define(["dojo/dom",
               VirtualHostNode,
               Logger,
               QueryTab,
+              QueryBrowserTab,
               ready)
     {
         var controller = {};
@@ -89,7 +91,8 @@ define(["dojo/dom",
             virtualhostnode: VirtualHostNode,
             brokerlogger: Logger,
             virtualhostlogger: Logger,
-            queryTab: QueryTab
+            query: QueryTab,
+            queryBrowser: QueryBrowserTab
         };
 
         ready(function ()
@@ -102,27 +105,44 @@ define(["dojo/dom",
 
         controller.viewedObjects = {};
 
-        // TODO: find a better way how to pass business object into a tab instead of passing it as a name
-        controller.show = function (objType, name, parent, objectId)
+        var generateName = function (obj)
         {
-
-            function generateName(obj)
+            if (obj)
             {
-                if (obj)
+                var name = obj.type + (obj.type == "broker" ? "" : ":" + obj.name);
+                if (obj.parent)
                 {
-                    var name = obj.type + (obj.type == "broker" ? "" : ":" + obj.name);
-                    if (obj.parent)
-                    {
-                        name = generateName(obj.parent) + "/" + name;
-                    }
-                    return name;
+                    name = generateName(obj.parent) + "/" + name;
                 }
-                return "";
+                return name;
             }
+            return "";
+        };
 
+        var generateTabObjId = function(objType, name, parent)
+        {
+            var parentPart = (parent ? generateName(parent) + "/" : "");
+            var namePart = null;
+            if (typeof name === 'string')
+            {
+                namePart = name;
+            }
+            else if (name &&  typeof name === 'object' && name.hasOwnProperty("name"))
+            {
+                namePart = name.name;
+            }
+            else
+            {
+                namePart = "new-" + dojox.uuid.generateRandomUuid();
+            }
+            return parentPart + objType + ":" + namePart;
+        };
+
+        // TODO: find a better way how to pass business object into a tab instead of passing it as a name
+        controller.show = function (objType, nameOrObject, parent, objectId)
+        {
             var that = this;
-            var objId = (parent ? generateName(parent) + "/" : "") + objType + ":" +
-                         (name &&  typeof name === 'string' ? name : "-" + dojox.uuid.generateRandomUuid());
+            var objId = generateTabObjId(objType, nameOrObject, parent);
 
             var obj = this.viewedObjects[objId];
             if (obj)
@@ -134,7 +154,8 @@ define(["dojo/dom",
                 var Constructor = constructors[objType];
                 if (Constructor)
                 {
-                    obj = new Constructor(name, parent, this);
+                    obj = new Constructor(nameOrObject, parent, this);
+                    obj.tabId = objId;
                     obj.tabData = {
                         objectId: objectId,
                         objectType: objType
@@ -148,13 +169,13 @@ define(["dojo/dom",
                         onClose: function ()
                         {
                             obj.close();
-                            delete that.viewedObjects[objId];
+                            delete that.viewedObjects[obj.tabId];
                             return true;
                         }
                     });
                     this.tabContainer.addChild(contentPane);
                     var userPreferences = this.management.userPreferences;
-                    if (objType != "broker" && name &&  typeof name === 'string')
+                    if (objType != "broker" && nameOrObject &&  typeof nameOrObject === 'string')
                     {
                         var preferencesCheckBox = new dijit.form.CheckBox({
                             checked: userPreferences.isTabStored(obj.tabData),
@@ -190,7 +211,18 @@ define(["dojo/dom",
         controller.init = function (management)
         {
             controller.management = management;
-        }
+        };
+
+        controller.update = function(tabObject, name, parent, objectId)
+        {
+            var objType = tabObject.tabData.objectType;
+            var tabId = tabObject.tabId;
+            delete this.viewedObjects[tabId];
+            var newTabId = generateTabObjId(objType, name, parent);
+            this.viewedObjects[newTabId] = tabObject;
+            tabObject.tabData.objectId = objectId;
+            tabObject.tabId = newTabId;
+        };
 
         return controller;
     });

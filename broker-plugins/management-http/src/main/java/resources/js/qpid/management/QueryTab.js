@@ -20,16 +20,12 @@
  */
 define(["dojo/parser",
         "dojo/query",
-        "dijit/registry",
-        "dojox/html/entities",
-        "qpid/common/properties",
+        "dojo/json",
         "qpid/common/util",
-        "qpid/common/formatter",
         "dojo/text!showQueryTab.html",
         "qpid/management/query/QueryWidget",
-        "dojo/dom-construct",
         "dojo/domReady!"],
-    function (parser, query, registry, entities, properties, util, formatter, template, QueryWidget, domConstruct)
+    function (parser, query, json, util, template, QueryWidget)
     {
         function getPath(parentObject)
         {
@@ -95,13 +91,17 @@ define(["dojo/parser",
             var that = this;
             this.queryWidget.on("save", function(e)
             {
+                if (that.preference.name != e.preference.name)
+                {
+                    that.controller.update(that, e.preference.name, that.parent, e.preference.id);
+                }
                 that.preference = e.preference;
                 var title = that.getTitle();
                 that.contentPane.set("title", title);
             });
             this.queryWidget.on("change", function(e)
             {
-                var changed = !util.equals(this.preference, e.preference);
+                var changed = !util.equals(that.preference, e.preference);
                 var title = that.getTitle(changed);
                 that.contentPane.set("title", title);
             });
@@ -109,12 +109,20 @@ define(["dojo/parser",
             {
                 that.destroy();
             });
+            this.queryWidget.on("clone", function(e)
+            {
+                that.controller.show("query", e.preference, e.parentObject);
+            });
             this.queryWidget.startup();
         };
 
         QueryTab.prototype.close = function ()
         {
-
+            if (this.queryWidget != null)
+            {
+                this.queryWidget.destroyRecursive();
+                this.queryWidget = null;
+            }
         };
 
         QueryTab.prototype.destroy = function ()
@@ -122,7 +130,6 @@ define(["dojo/parser",
             this.close();
             this.contentPane.onClose();
             this.controller.tabContainer.removeChild(this.contentPane);
-            this.queryWidget.destroyRecursive();
             this.contentPane.destroyRecursive();
         };
 
