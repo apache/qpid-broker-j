@@ -94,14 +94,13 @@ public class HttpManagementUtil
 
     public static Subject getAuthorisedSubject(HttpServletRequest request)
     {
-        HttpSession session = request.getSession();
-        return (Subject) session.getAttribute(getRequestSpecificAttributeName(ATTR_SUBJECT,request));
+        HttpSession session = request.getSession(false);
+        return (session == null ? null : (Subject) session.getAttribute(getRequestSpecificAttributeName(ATTR_SUBJECT,request)));
     }
 
     public static void checkRequestAuthenticatedAndAccessAuthorized(HttpServletRequest request, Broker broker,
             HttpManagementConfiguration managementConfig)
     {
-        HttpSession session = request.getSession();
         Subject subject = getAuthorisedSubject(request);
         if (subject == null)
         {

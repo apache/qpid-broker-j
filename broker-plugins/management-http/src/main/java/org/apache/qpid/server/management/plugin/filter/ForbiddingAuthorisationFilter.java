@@ -32,6 +32,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
@@ -70,6 +71,8 @@ public class ForbiddingAuthorisationFilter implements Filter
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         String servletPath = httpRequest.getServletPath();
+        final boolean hasPreexistingSession = (httpRequest.getSession(false) != null);
+
         if (_allowed == null || "".equals(_allowed) || servletPath.indexOf(_allowed) == -1)
         {
             try
@@ -79,15 +82,31 @@ public class ForbiddingAuthorisationFilter implements Filter
             catch(AccessControlException e)
             {
                 httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN);
+                invalidateSession(httpRequest);
                 return;
             }
             catch(SecurityException e)
             {
                 httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                invalidateSession(httpRequest);
                 return;
             }
         }
+
         chain.doFilter(request, response);
+
+        if (!hasPreexistingSession && httpRequest.getServletPath().startsWith("/api/"))
+        {
+            invalidateSession(httpRequest);
+        }
     }
 
+    private void invalidateSession(final HttpServletRequest httpRequest)
+    {
+        HttpSession session = httpRequest.getSession(false);
+        if (session != null)
+        {
+            session.invalidate();
+        }
+    }
 }
