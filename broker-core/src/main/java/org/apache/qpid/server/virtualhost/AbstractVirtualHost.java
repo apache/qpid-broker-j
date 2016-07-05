@@ -26,6 +26,7 @@ import java.io.File;
 import java.security.AccessControlContext;
 import java.security.Principal;
 import java.security.PrivilegedAction;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -764,19 +765,31 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 }
                 if (sourceClass != null)
                 {
-                    Map<String, Object> attributes = new HashMap<>(policy.getAttributes());
+                    final Map<String, Object> attributes = new HashMap<>(policy.getAttributes());
                     attributes.remove(ConfiguredObject.ID);
                     attributes.put(ConfiguredObject.NAME, name);
-
+                    final Class<? extends ConfiguredObject> childClass = sourceClass;
                     try
                     {
 
-                        final T node =
-                                (T) doSync(createChildAsync(sourceClass, attributes));
+                        final T node =  Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(),
+                                                     new PrivilegedAction<T>()
+                                                     {
+                                                         @Override
+                                                         public T run()
+                                                         {
+                                                             return (T) doSync(createChildAsync(childClass,
+                                                                                                attributes));
+
+                                                         }
+                                                     }
+                                                    );
+
                         if (node != null)
                         {
                             return node;
                         }
+
                     }
                     catch (RuntimeException e)
                     {
