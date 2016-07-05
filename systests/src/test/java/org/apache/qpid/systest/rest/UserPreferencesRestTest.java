@@ -19,6 +19,7 @@
 
 package org.apache.qpid.systest.rest;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,6 +28,10 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletResponse;
+
+import com.google.common.base.Predicate;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import org.apache.qpid.server.management.plugin.preferences.QueryPreferenceValue;
 import org.apache.qpid.server.model.preferences.Preference;
@@ -322,6 +327,135 @@ public class UserPreferencesRestTest extends QpidRestTestCase
         catch (Exception e)
         {
             // pass
+        }
+    }
+
+    public void testWildcards() throws Exception
+    {
+        final String pref1Name = "pref1Name";
+        final String pref2Name = "pref2Name";
+        final String pref3Name = "pref3Name";
+        final String prefType1 = "X-prefType1";
+        final String prefType2 = "X-prefType2";
+
+        Map<String, Object> vh1Pref1Attributes = new HashMap<>();
+        vh1Pref1Attributes.put(Preference.NAME_ATTRIBUTE, pref1Name);
+        vh1Pref1Attributes.put(Preference.TYPE_ATTRIBUTE, prefType1);
+        vh1Pref1Attributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+
+        Map<String, Object> vh2Pref1Attributes = new HashMap<>();
+        vh2Pref1Attributes.put(Preference.NAME_ATTRIBUTE, pref2Name);
+        vh2Pref1Attributes.put(Preference.TYPE_ATTRIBUTE, prefType1);
+        vh2Pref1Attributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+
+        Map<String, Object> vh2Pref2Attributes = new HashMap<>();
+        vh2Pref2Attributes.put(Preference.NAME_ATTRIBUTE, pref3Name);
+        vh2Pref2Attributes.put(Preference.TYPE_ATTRIBUTE, prefType2);
+        vh2Pref2Attributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+
+        Map<String, Object> vh3Pref1Attributes = new HashMap<>();
+        vh3Pref1Attributes.put(Preference.NAME_ATTRIBUTE, pref1Name);
+        vh3Pref1Attributes.put(Preference.TYPE_ATTRIBUTE, prefType1);
+        vh3Pref1Attributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+
+        String vh1PostUrl = String.format("virtualhost/%s/%s/userpreferences", QpidRestTestCase.TEST1_VIRTUALHOST, QpidRestTestCase.TEST1_VIRTUALHOST);
+        String vh2PostUrl = String.format("virtualhost/%s/%s/userpreferences", QpidRestTestCase.TEST2_VIRTUALHOST, QpidRestTestCase.TEST2_VIRTUALHOST);
+        String vh3PostUrl = String.format("virtualhost/%s/%s/userpreferences", QpidRestTestCase.TEST3_VIRTUALHOST, QpidRestTestCase.TEST3_VIRTUALHOST);
+
+        Map<String, Object> payloadVh1 = new HashMap<>();
+        payloadVh1.put(prefType1, Collections.singletonList(vh1Pref1Attributes));
+        getRestTestHelper().submitRequest(vh1PostUrl, "POST", payloadVh1, HttpServletResponse.SC_OK);
+
+        Map<String, Object> payloadVh2 = new HashMap<>();
+        payloadVh2.put(prefType1, Lists.newArrayList(vh2Pref1Attributes));
+        payloadVh2.put(prefType2, Lists.newArrayList(vh2Pref2Attributes));
+        getRestTestHelper().submitRequest(vh2PostUrl, "POST", payloadVh2, HttpServletResponse.SC_OK);
+
+        Map<String, Object> payloadVh3 = new HashMap<>();
+        payloadVh3.put(prefType1, Lists.newArrayList(vh3Pref1Attributes));
+        getRestTestHelper().submitRequest(vh3PostUrl, "POST", payloadVh3, HttpServletResponse.SC_OK);
+
+        {
+            String wildGetUrlAll = "virtualhost/*/*/userpreferences";
+            final List<Map<String, List<Map<String, Object>>>> vhTypeMaps =
+                    getRestTestHelper().getJson(wildGetUrlAll, List.class);
+            assertEquals("Unexpected number of virtualhost preference type maps", 3, vhTypeMaps.size());
+
+            Set<Map<String, Object>> allPrefs = new HashSet<>();
+            for (Map<String, List<Map<String, Object>>> vhTypeMap : vhTypeMaps)
+            {
+                for (List<Map<String, Object>> prefList : vhTypeMap.values())
+                {
+                    allPrefs.addAll(prefList);
+                }
+            }
+
+            assertEquals("Unexpected number of preferences in response", 4, allPrefs.size());
+
+            assertContainsPreference(Preference.NAME_ATTRIBUTE, pref1Name, allPrefs, 2);
+            assertContainsPreference(Preference.NAME_ATTRIBUTE, pref2Name, allPrefs, 1);
+            assertContainsPreference(Preference.NAME_ATTRIBUTE, pref3Name, allPrefs, 1);
+        }
+
+        {
+            String wildGetUrlByType = String.format("virtualhost/*/*/userpreferences/%s", prefType1);
+
+            final List<List<Map<String, Object>>> vhListPrefs = getRestTestHelper().getJson(wildGetUrlByType, List.class);
+            assertEquals("Unexpected number of virtualhost preference lists", 3, vhListPrefs.size());
+
+            Set<Map<String, Object>> allPrefs = new HashSet<>();
+            for (List<Map<String, Object>> prefList : vhListPrefs)
+            {
+                allPrefs.addAll(prefList);
+            }
+
+            assertEquals("Unexpected number of preferences in response", 3, allPrefs.size());
+
+            assertContainsPreference(Preference.NAME_ATTRIBUTE, pref1Name, allPrefs, 2);
+            assertContainsPreference(Preference.NAME_ATTRIBUTE, pref2Name, allPrefs, 1);
+        }
+
+        {
+            String wildGetUrlByTypeAndName = String.format("virtualhost/*/*/userpreferences/%s/%s", prefType1, pref1Name);
+
+            final List<Map<String, Object>> vhPrefs = getRestTestHelper().getJson(wildGetUrlByTypeAndName, List.class);
+            assertEquals("Unexpected number of virtualhost preference lists", 2, vhPrefs.size());
+
+            Set<Map<String, Object>> allPrefs = new HashSet<>();
+            for (Map<String, Object> prefs : vhPrefs)
+            {
+                allPrefs.add(prefs);
+            }
+
+            assertEquals("Unexpected number of preferences in response", 2, allPrefs.size());
+
+            assertContainsPreference(Preference.NAME_ATTRIBUTE, pref1Name, allPrefs, 2);
+        }
+    }
+
+    private void assertContainsPreference(final String attribute, final String expected,
+                                          final Set<Map<String, Object>> preferences, final int expectedCount)
+    {
+        Set<Map<String, Object>> found = Sets.filter(preferences, new AttributeMatchingPredicate(attribute, expected));
+        assertEquals(String.format("Cannot find expected preference with attribute %s : %s", attribute, expected),
+                     expectedCount, found.size());
+    }
+
+    private static class AttributeMatchingPredicate implements Predicate<Map<String, Object>>
+    {
+        private final String _expectedName;
+        private final String _attribute;
+
+        public AttributeMatchingPredicate(String attribute, String expectedName)
+        {
+            _expectedName = expectedName;
+            _attribute = attribute;
+        }
+
+        @Override
+        public boolean apply(final Map<String, Object> input)
+        {
+            return _expectedName.equals(input.get(_attribute));
         }
     }
 }

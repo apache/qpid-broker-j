@@ -45,6 +45,7 @@ import javax.servlet.http.Part;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
+import com.google.common.base.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,7 +170,8 @@ public class RestServlet extends AbstractServlet
         }
     }
 
-    private Collection<ConfiguredObject<?>> getObjects(HttpServletRequest request, RequestInfo requestInfo)
+    private Collection<ConfiguredObject<?>> getTargetObjects(RequestInfo requestInfo,
+                                                             List<Predicate<ConfiguredObject<?>>> filterPredicateList)
     {
         List<String> names = requestInfo.getModelParts();
 
@@ -270,47 +272,56 @@ public class RestServlet extends AbstractServlet
             }
         }
 
-        return parents.isEmpty() && !wildcard ? null : filter(parents, request);
-    }
-
-    private Collection<ConfiguredObject<?>> filter(Collection<ConfiguredObject<?>> objects, HttpServletRequest request)
-    {
-
-
-        Map<String, Collection<String>> filters = new HashMap<>();
-
-        for(String param : Collections.list(request.getParameterNames()))
+        if (parents.isEmpty() && !wildcard)
         {
-            if(!RESERVED_PARAMS.contains(param))
-            {
-                filters.put(param, Arrays.asList(request.getParameterValues(param)));
-            }
+            return null;
         }
-
-        if(filters.isEmpty())
+        else if (filterPredicateList.isEmpty())
         {
-            return objects;
+            return parents;
         }
-
-        Collection<ConfiguredObject<?>> filteredObj = new ArrayList<>(objects);
-
-        Iterator<ConfiguredObject<?>> iter = filteredObj.iterator();
-
-        while(iter.hasNext())
+        else
         {
-            ConfiguredObject obj = iter.next();
-            for(Map.Entry<String, Collection<String>> entry : filters.entrySet())
+            Iterator<ConfiguredObject<?>> iter = parents.iterator();
+            while(iter.hasNext())
             {
-                Object value = obj.getAttribute(entry.getKey());
-                if(!entry.getValue().contains(String.valueOf(value)))
+                ConfiguredObject obj = iter.next();
+                for (Predicate<ConfiguredObject<?>> predicate : filterPredicateList)
                 {
-                    iter.remove();
+                    if (!predicate.apply(obj))
+                    {
+                        iter.remove();
+                        break;
+                    }
                 }
             }
 
+            return parents;
         }
+    }
 
-        return filteredObj;
+    private List<Predicate<ConfiguredObject<?>>> buildFilterPredicates(final HttpServletRequest request)
+    {
+       List<Predicate<ConfiguredObject<?>>> predicates = new ArrayList<>();
+
+        for(final String paramName : Collections.list(request.getParameterNames()))
+        {
+            if(!RESERVED_PARAMS.contains(paramName))
+            {
+                final List<String> allowedValues = Arrays.asList(request.getParameterValues(paramName));
+
+                predicates.add(new Predicate<ConfiguredObject<?>>()
+                {
+                    @Override
+                    public boolean apply(final ConfiguredObject<?> obj)
+                    {
+                        Object value = obj.getAttribute(paramName);
+                        return allowedValues.contains(String.valueOf(value));
+                    }
+                });
+            }
+        }
+        return Collections.unmodifiableList(predicates);
     }
 
     private Collection<? extends ConfiguredObject> getAncestors(Class<? extends ConfiguredObject> childType,
@@ -366,7 +377,7 @@ public class RestServlet extends AbstractServlet
                     setContentDispositionHeaderIfNecessary(response, attachmentFilename);
                 }
 
-                Collection<ConfiguredObject<?>> allObjects = getObjects(request, requestInfo);
+                Collection<ConfiguredObject<?>> allObjects = getTargetObjects(requestInfo, buildFilterPredicates(request));
 
                 if (allObjects == null || (allObjects.isEmpty() && isSingleObjectRequest(requestInfo)))
                 {
@@ -633,19 +644,56 @@ public class RestServlet extends AbstractServlet
                                       final HttpServletRequest request,
                                       final HttpServletResponse response) throws IOException, ServletException
     {
-        ConfiguredObject<?> target = getTarget(requestInfo, request, response);
-        final UserPreferences userPreferences = target.getUserPreferences();
+        Collection<ConfiguredObject<?>> allObjects = getTargetObjects(requestInfo,
+                                                                      Collections.<Predicate<ConfiguredObject<?>>>emptyList());
 
-        Object responseObject = new RestUserPreferenceHandler().handleGET(userPreferences, requestInfo);
+        if (allObjects == null || (allObjects.isEmpty() && isSingleObjectRequest(requestInfo)))
+        {
+            sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
+            return;
+        }
+
+        final Object responseObject;
+        if (requestInfo.isWild())
+        {
+            responseObject = new ArrayList<>(allObjects.size());
+            for(ConfiguredObject<?> target : allObjects)
+            {
+                final UserPreferences userPreferences = target.getUserPreferences();
+                try
+                {
+                    final Object preferences = new RestUserPreferenceHandler().handleGET(userPreferences, requestInfo);
+                    if (preferences == null ||
+                        (preferences instanceof Collection && ((Collection) preferences).isEmpty()) ||
+                        (preferences instanceof Map && ((Map) preferences).isEmpty()))
+                    {
+                        continue;
+                    }
+                    ((List<Object>)responseObject).add(preferences);
+                }
+                catch (NotFoundException e)
+                {
+                    // The case where the preference's type and name is provided, but this particular object does not
+                    // have a macthing preference.
+                }
+            }
+        }
+        else
+        {
+            ConfiguredObject<?> target = allObjects.iterator().next();
+            final UserPreferences userPreferences = target.getUserPreferences();
+
+            responseObject = new RestUserPreferenceHandler().handleGET(userPreferences, requestInfo);
+
+        }
         sendJsonResponse(responseObject, request, response);
-
     }
 
     private void doPostOrPutUserPreference(final RequestInfo requestInfo,
                                            final HttpServletRequest request,
                                            final HttpServletResponse response) throws IOException, ServletException
     {
-        ConfiguredObject<?> target = getTarget(requestInfo, request, response);
+        ConfiguredObject<?> target = getTarget(requestInfo);
 
         final UserPreferences userPreferences = target.getUserPreferences();
         final RestUserPreferenceHandler restUserPreferenceHandler = new RestUserPreferenceHandler();
@@ -686,7 +734,7 @@ public class RestServlet extends AbstractServlet
     private void doOperation(final RequestInfo requestInfo, final HttpServletRequest request,
                              final HttpServletResponse response) throws IOException, ServletException
     {
-        ConfiguredObject<?> target = getTarget(requestInfo, request, response);
+        ConfiguredObject<?> target = getTarget(requestInfo);
         if (target == null)
         {
             return;
@@ -789,9 +837,7 @@ public class RestServlet extends AbstractServlet
         }
     }
 
-    private ConfiguredObject<?> getTarget(final RequestInfo requestInfo,
-                                          final HttpServletRequest request,
-                                          final HttpServletResponse response) throws IOException
+    private ConfiguredObject<?> getTarget(final RequestInfo requestInfo) throws IOException
     {
         final ConfiguredObject<?> target;
         final List<String> names = requestInfo.getModelParts();
@@ -1120,7 +1166,7 @@ public class RestServlet extends AbstractServlet
     protected void doDeleteWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         RequestInfo requestInfo = _requestInfoParser.parse(request);
-        Collection<ConfiguredObject<?>> allObjects = getObjects(request, requestInfo);
+        Collection<ConfiguredObject<?>> allObjects = getTargetObjects(requestInfo, buildFilterPredicates(request));
         if (allObjects == null)
         {
             throw new NotFoundException("Not Found");

@@ -298,6 +298,20 @@ public class RequestInfoParserTest extends QpidTestCase
         assertEquals("Unexpected model parts", Arrays.asList(vhnName), info.getModelParts());
     }
 
+    public void testWildHierarchy()
+    {
+        RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class, VirtualHost.class);
+
+        configureRequest("GET", "servletPath", "/*/*");
+        assertTrue("Fully wildcard path should be wild", parser.parse(_request).isWild());
+
+        configureRequest("GET", "servletPath", "/myvhn/*");
+        assertTrue("Partially wildcarded path should be wild too", parser.parse(_request).isWild());
+
+        configureRequest("GET", "servletPath", "/myvhn/myvh");
+        assertFalse("Path with no wildcards should not be wild", parser.parse(_request).isWild());
+    }
+
     private void configureRequest(final String method,
                                   final String servletPath,
                                   final String pathInfo)
