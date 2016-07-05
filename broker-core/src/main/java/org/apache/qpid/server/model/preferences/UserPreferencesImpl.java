@@ -39,20 +39,26 @@ import javax.security.auth.Subject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.store.preferences.PreferenceRecord;
+import org.apache.qpid.server.store.preferences.PreferenceRecordImpl;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 
 public class UserPreferencesImpl implements UserPreferences
 {
     private final ConfiguredObject<?> _associatedObject;
     private final Map<UUID, Preference> _preferences;
     private final Map<String, List<Preference>> _preferencesByName;
+    private final PreferenceStore _preferenceStore;
 
     public UserPreferencesImpl(final ConfiguredObject<?> associatedObject,
                                final Map<UUID, Preference> userPreferences,
-                               final Map<String, List<Preference>> userPreferencesByName)
+                               final Map<String, List<Preference>> userPreferencesByName,
+                               final PreferenceStore preferenceStore)
     {
         _preferences = userPreferences;
         _associatedObject = associatedObject;
         _preferencesByName = userPreferencesByName;
+        _preferenceStore = preferenceStore;
     }
 
     @Override
@@ -97,6 +103,13 @@ public class UserPreferencesImpl implements UserPreferences
     public void updateOrAppend(final Collection<Preference> preferences)
     {
         validateNewPreferencesForUpdate(preferences);
+
+        Collection<PreferenceRecord> preferenceRecords = new HashSet<>();
+        for (Preference preference : preferences)
+        {
+            preferenceRecords.add(PreferenceRecordImpl.fromPreference(preference));
+        }
+        _preferenceStore.updateOrCreate(preferenceRecords);
 
         for (Preference preference : preferences)
         {
@@ -145,17 +158,27 @@ public class UserPreferencesImpl implements UserPreferences
 
         validateNewPreferencesForReplaceByType(type, preferences);
 
-        Iterator<Map.Entry<UUID, Preference>> preferencesIt = _preferences.entrySet().iterator();
-        while (preferencesIt.hasNext())
+        Collection<UUID> preferenceRecordsToRemove = new HashSet<>();
+        Collection<PreferenceRecord> preferenceRecordsToAdd = new HashSet<>();
+        for (Preference preference : _preferences.values())
         {
-            Preference preference = preferencesIt.next().getValue();
-            if (Objects.equals(preference.getOwner(), currentPrincipal) && (type == null
-                                                                            || Objects.equals(preference.getType(),
-                                                                                              type)))
+            if (Objects.equals(preference.getOwner(), currentPrincipal)
+                && (type == null || Objects.equals(preference.getType(), type)))
             {
-                _preferencesByName.get(preference.getName()).remove(preference);
-                preferencesIt.remove();
+                preferenceRecordsToRemove.add(preference.getId());
             }
+        }
+
+        for (Preference preference : preferences)
+        {
+            preferenceRecordsToAdd.add(PreferenceRecordImpl.fromPreference(preference));
+        }
+        _preferenceStore.replace(preferenceRecordsToRemove, preferenceRecordsToAdd);
+
+        for (UUID id : preferenceRecordsToRemove)
+        {
+            Preference preference = _preferences.remove(id);
+            _preferencesByName.get(preference.getName()).remove(preference);
         }
 
         for (Preference preference : preferences)
@@ -178,21 +201,34 @@ public class UserPreferencesImpl implements UserPreferences
 
         validateNewPreferencesForReplaceByTypeAndName(type, name, newPreference);
 
+        UUID existingPreferenceId = null;
+        Iterator<Preference> preferenceIterator = null;
         List<Preference> preferencesWithSameName = _preferencesByName.get(name);
         if (preferencesWithSameName != null)
         {
-            Iterator<Preference> preferenceIterator = preferencesWithSameName.iterator();
+            preferenceIterator = preferencesWithSameName.iterator();
             while (preferenceIterator.hasNext())
             {
                 Preference preference = preferenceIterator.next();
                 if (Objects.equals(preference.getOwner(), currentPrincipal)
                     && Objects.equals(preference.getType(), type))
                 {
-                    _preferences.remove(preference.getId());
-                    preferenceIterator.remove();
+                    existingPreferenceId = preference.getId();
                     break;
                 }
             }
+        }
+
+        _preferenceStore.replace(Collections.singleton(existingPreferenceId),
+                                 newPreference == null
+                                         ? Collections.<PreferenceRecord>emptyList()
+                                         : Collections.singleton(PreferenceRecordImpl.fromPreference(newPreference)));
+
+
+        if (existingPreferenceId != null)
+        {
+            _preferences.remove(existingPreferenceId);
+            preferenceIterator.remove();
         }
 
         if (newPreference != null)

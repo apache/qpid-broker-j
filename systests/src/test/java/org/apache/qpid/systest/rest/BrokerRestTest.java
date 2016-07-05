@@ -179,7 +179,8 @@ public class BrokerRestTest extends QpidRestTestCase
                 ConfiguredObject.LAST_UPDATED_TIME,
                 ConfiguredObject.DESCRIPTION,
                 ConfiguredObject.CONTEXT,
-                ConfiguredObject.DESIRED_STATE);
+                ConfiguredObject.DESIRED_STATE,
+                Broker.PREFERENCE_STORE_ATTRIBUTES);
 
         assertEquals("Unexpected value of attribute " + Broker.BUILD_VERSION, CommonProperties.getBuildVersion(),
                 brokerDetails.get(Broker.BUILD_VERSION));

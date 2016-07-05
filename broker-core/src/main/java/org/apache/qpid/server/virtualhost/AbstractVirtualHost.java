@@ -91,6 +91,10 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreProvider;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
+import org.apache.qpid.server.store.preferences.NoopPreferenceStoreFactoryService;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
+import org.apache.qpid.server.store.preferences.PreferenceStoreFactoryService;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
@@ -198,6 +202,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @ManagedAttributeField
     private List<NodeAutoCreationPolicy> _nodeAutoCreationPolicies;
 
+    @ManagedAttributeField
+    private PreferenceStoreAttributes _preferenceStoreAttributes;
+
     private boolean _useAsyncRecoverer;
 
     private MessageDestination _defaultDestination;
@@ -207,6 +214,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final FileSystemSpaceChecker _fileSystemSpaceChecker;
     private int _fileSystemMaxUsagePercent;
     private Collection<VirtualHostLogger> _virtualHostLoggersToClose;
+    private PreferenceStore _preferenceStore;
 
     public AbstractVirtualHost(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
@@ -461,6 +469,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             }
 
         }
+
+        _preferenceStore = createPreferenceStore();
     }
 
     private void checkVHostStateIsActive()
@@ -489,6 +499,32 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     protected abstract MessageStore createMessageStore();
+
+    protected PreferenceStore createPreferenceStore()
+    {
+        final Map<String, PreferenceStoreFactoryService> preferenceStoreFactories =
+                new QpidServiceLoader().getInstancesByType(PreferenceStoreFactoryService.class);
+        String preferenceStoreType;
+        Map<String, Object> preferenceStoreAttributes;
+        if (_preferenceStoreAttributes == null)
+        {
+            preferenceStoreType = NoopPreferenceStoreFactoryService.TYPE;
+            preferenceStoreAttributes = Collections.emptyMap();
+        }
+        else
+        {
+            preferenceStoreType = _preferenceStoreAttributes.getType();
+            preferenceStoreAttributes = _preferenceStoreAttributes.getAttributes();
+        }
+        final PreferenceStoreFactoryService preferenceStoreFactory = preferenceStoreFactories.get(preferenceStoreType);
+        return preferenceStoreFactory.createInstance(preferenceStoreAttributes);
+    }
+
+    @Override
+    protected PreferenceStore getPreferencesStore()
+    {
+        return _preferenceStore;
+    }
 
     protected boolean isStoreEmpty()
     {
@@ -961,6 +997,11 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     protected void onClose()
     {
+        if (_preferenceStore != null)
+        {
+            _preferenceStore.close();
+        }
+
         _dtxRegistry.close();
         closeMessageStore();
         shutdownHouseKeeping();
@@ -1522,6 +1563,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public int getNumberOfSelectors()
     {
         return _numberOfSelectors;
+    }
+
+    @Override
+    public PreferenceStoreAttributes getPreferenceStoreAttributes()
+    {
+        return _preferenceStoreAttributes;
     }
 
     @StateTransition( currentState = { State.UNINITIALIZED, State.ACTIVE, State.ERRORED }, desiredState = State.STOPPED )

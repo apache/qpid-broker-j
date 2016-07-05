@@ -41,6 +41,7 @@ import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.virtualhost.HouseKeepingTask;
@@ -74,11 +75,12 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     String NUMBER_OF_SELECTORS                  = "numberOfSelectors";
     String CONNECTION_THREAD_POOL_SIZE          = "connectionThreadPoolSize";
     String CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT = "connectionThreadPoolKeepAliveTimeout";
+    String PREFERENCE_STORE_ATTRIBUTES          = "preferenceStoreAttributes";
+
     String NODE_AUTO_CREATION_POLICIES = "nodeAutoCreationPolicies";
 
     @ManagedContextDefault( name = VIRTUALHOST_WORK_DIR_VAR)
     public static final String VIRTUALHOST_WORK_DIR = VIRTUALHOST_WORK_DIR_VAR_EXPRESSION;
-
     @ManagedContextDefault( name = "queue.deadLetterQueueEnabled")
     public static final boolean DEFAULT_DEAD_LETTER_QUEUE_ENABLED = false;
     String DEFAULT_DLE_NAME_SUFFIX = "_DLE";
@@ -169,6 +171,9 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     @ManagedAttribute( defaultValue = "[]")
     List<String> getGlobalAddressDomains();
+
+    @ManagedAttribute(description = "Configuration for the preference store, e.g. type, path, etc.")
+    PreferenceStoreAttributes getPreferenceStoreAttributes();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Queues")
     long getQueueCount();

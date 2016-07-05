@@ -77,6 +77,7 @@ import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.encryption.ConfigurationSecretEncrypter;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.util.Strings;
@@ -2880,7 +2881,12 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     @Override
     public UserPreferences getUserPreferences()
     {
-        return new UserPreferencesImpl(this, _userPreferences, _userPreferencesByName);
+        return new UserPreferencesImpl(this, _userPreferences, _userPreferencesByName, getPreferencesStore());
+    }
+
+    protected PreferenceStore getPreferencesStore()
+    {
+        return null;//TODO: temporary change
     }
 
     //=========================================================================================

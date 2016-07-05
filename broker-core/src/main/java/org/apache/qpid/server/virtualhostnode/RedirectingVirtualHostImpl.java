@@ -52,6 +52,7 @@ import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.virtualhost.*;
@@ -103,6 +104,9 @@ class RedirectingVirtualHostImpl
 
     @ManagedAttributeField
     private List<NodeAutoCreationPolicy> _nodeAutoCreationPolicies;
+
+    @ManagedAttributeField
+    private PreferenceStoreAttributes _preferenceStoreAttributes;
 
     @ManagedObjectFactoryConstructor
     public RedirectingVirtualHostImpl(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
@@ -467,6 +471,12 @@ class RedirectingVirtualHostImpl
     public List<String> getGlobalAddressDomains()
     {
         return _globalAddressDomains;
+    }
+
+    @Override
+    public PreferenceStoreAttributes getPreferenceStoreAttributes()
+    {
+        return _preferenceStoreAttributes;
     }
 
     @Override

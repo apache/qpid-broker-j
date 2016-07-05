@@ -43,6 +43,7 @@ import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.server.security.group.GroupPrincipal;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class RestUserPreferenceHandlerTest extends QpidTestCase
@@ -56,15 +57,18 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
     private UserPreferences _userPreferences;
     private Subject _subject;
     private GroupPrincipal _groupPrincipal;
+    private PreferenceStore _preferenceStore;
 
     @Override
     public void setUp() throws Exception
     {
         super.setUp();
         _configuredObject = mock(ConfiguredObject.class);
+        _preferenceStore = mock(PreferenceStore.class);
         _userPreferences = new UserPreferencesImpl(_configuredObject,
                                                    new HashMap<UUID, Preference>(),
-                                                   new HashMap<String, List<Preference>>());
+                                                   new HashMap<String, List<Preference>>(),
+                                                   _preferenceStore);
         _groupPrincipal = new GroupPrincipal(MYGROUP);
         _subject = new Subject(true,
                                Sets.newHashSet(new AuthenticatedPrincipal(MYUSER), _groupPrincipal),

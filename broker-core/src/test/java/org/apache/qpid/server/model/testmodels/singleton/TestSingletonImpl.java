@@ -18,6 +18,7 @@
  */
 package org.apache.qpid.server.model.testmodels.singleton;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,8 @@ import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.testmodels.TestSecurityManager;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.store.preferences.NoopPreferenceStoreFactoryService;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 
 @ManagedObject( category = false, type = TestSingletonImpl.TEST_SINGLETON_TYPE)
 public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImpl>
@@ -40,6 +43,8 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
 
     public static final int DERIVED_VALUE = -100;
     private final SecurityManager _securityManager;
+    private final PreferenceStore _preferenceStore =
+            new NoopPreferenceStoreFactoryService().createInstance(Collections.<String, Object>emptyMap());
 
     @ManagedAttributeField
     private String _automatedPersistedValue;
@@ -232,5 +237,11 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     public String getAttrWithDefaultFromContextMaterializeInit()
     {
         return _attrWithDefaultFromContextMaterializeInit;
+    }
+
+    @Override
+    protected PreferenceStore getPreferencesStore()
+    {
+        return _preferenceStore;
     }
 }
