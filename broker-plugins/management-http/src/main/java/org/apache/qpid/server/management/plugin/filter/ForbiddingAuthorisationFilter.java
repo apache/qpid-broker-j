@@ -39,7 +39,7 @@ import org.apache.qpid.server.model.Broker;
 
 public class ForbiddingAuthorisationFilter implements Filter
 {
-    public static String INIT_PARAM_ALLOWED = "allowed";
+    public static final String INIT_PARAM_ALLOWED = "allowed";
     private String _allowed = null;
 
     private Broker _broker;
@@ -54,7 +54,7 @@ public class ForbiddingAuthorisationFilter implements Filter
     public void init(FilterConfig config) throws ServletException
     {
         String allowed = config.getInitParameter(INIT_PARAM_ALLOWED);
-        if (allowed != null)
+        if (allowed != null && !"".equals(allowed))
         {
             _allowed = allowed;
         }
@@ -70,7 +70,7 @@ public class ForbiddingAuthorisationFilter implements Filter
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         String servletPath = httpRequest.getServletPath();
-        if (_allowed == null || "".equals(_allowed) || servletPath.indexOf(_allowed) == -1)
+        if (_allowed == null || !servletPath.startsWith(_allowed))
         {
             try
             {
