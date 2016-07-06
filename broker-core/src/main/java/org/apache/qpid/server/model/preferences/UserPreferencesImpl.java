@@ -253,6 +253,7 @@ public class UserPreferencesImpl implements UserPreferences
         {
             if (currentPrincipals.contains(preference.getOwner()))
             {
+                visiblePreferences.add(preference);
                 continue;
             }
             final Set<Principal> visibilityList = preference.getVisibilityList();

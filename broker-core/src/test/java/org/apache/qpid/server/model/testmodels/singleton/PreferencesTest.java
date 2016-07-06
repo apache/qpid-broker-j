@@ -33,6 +33,8 @@ import java.util.UUID;
 
 import javax.security.auth.Subject;
 
+import com.google.common.collect.Sets;
+
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.preferences.Preference;
@@ -848,22 +850,38 @@ public class PreferencesTest extends QpidTestCase
     public void testGetVisiblePreferences()
     {
         final Principal testPrincipal = _testSubject.getPrincipals().iterator().next();
-        Subject testSubject2 = TestPrincipalUtils.createTestSubject("testUser2");
-        final Preference p1 = Subject.doAs(testSubject2, new PrivilegedAction<Preference>()
+
+        Subject peerSubject = TestPrincipalUtils.createTestSubject("peer");
+        final Preference sharedPreference = Subject.doAs(peerSubject, new PrivilegedAction<Preference>()
         {
             @Override
             public Preference run()
             {
-                Set<Preference> preferences;
-                Preference p1 = _testObject.getUserPreferences().createPreference(null,
+                Preference p = _testObject.getUserPreferences().createPreference(null,
                                                                                   "X-testType",
                                                                                   "propName1",
-                                                                                  null,
+                                                                                  "shared with colleague testUser",
                                                                                   Collections.singleton(testPrincipal),
                                                                                   Collections.<String, Object>emptyMap());
-                preferences = Collections.singleton(p1);
-                _testObject.getUserPreferences().updateOrAppend(preferences);
-                return p1;
+                _testObject.getUserPreferences().updateOrAppend(Sets.newHashSet(p));
+                return p;
+            }
+        });
+
+        Subject anotherSubject = TestPrincipalUtils.createTestSubject("anotherUser");
+        final Preference notSharedPreference = Subject.doAs(anotherSubject, new PrivilegedAction<Preference>()
+        {
+            @Override
+            public Preference run()
+            {
+                Preference p = _testObject.getUserPreferences().createPreference(null,
+                                                                                  "X-testType",
+                                                                                  "propName2",
+                                                                                  null,
+                                                                                  null,
+                                                                                  Collections.<String, Object>emptyMap());
+                _testObject.getUserPreferences().updateOrAppend(Sets.newHashSet(p));
+                return p;
             }
         });
 
@@ -872,19 +890,19 @@ public class PreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                Set<Preference> preferences = new HashSet<>();
-                Preference p2 = _testObject.getUserPreferences().createPreference(null,
+                Preference p = _testObject.getUserPreferences().createPreference(null,
                                                                                   "X-testType",
                                                                                   "propName",
                                                                                   null,
                                                                                   null,
                                                                                   Collections.<String, Object>emptyMap());
-                preferences.add(p2);
-                _testObject.getUserPreferences().updateOrAppend(preferences);
+                _testObject.getUserPreferences().updateOrAppend(Sets.newHashSet(p));
 
                 Set<Preference> retrievedPreferences = _testObject.getUserPreferences().getVisiblePreferences();
-                assertEquals("Unexpected number of preferences", 1, retrievedPreferences.size());
-                assertTrue("Preference of different type was replaced", retrievedPreferences.contains(p1));
+                assertEquals("Unexpected number of preferences", 2, retrievedPreferences.size());
+                assertTrue("Preference of my peer did not exist in visible set", retrievedPreferences.contains(sharedPreference));
+                assertTrue("My preference did not exist in visible set", retrievedPreferences.contains(p));
+                assertFalse("Preference of the other user unexpectedly exists in visible set", retrievedPreferences.contains(notSharedPreference));
                 return null;
             }
         });
@@ -905,22 +923,20 @@ public class PreferencesTest extends QpidTestCase
         }
         final Principal groupPrincipal = tempGroupPrincipal;
 
-        Subject testSubject2 = TestPrincipalUtils.createTestSubject("testUser2");
-        final Preference p1 = Subject.doAs(testSubject2, new PrivilegedAction<Preference>()
+        Subject peerSubject = TestPrincipalUtils.createTestSubject("peer");
+        final Preference sharedPreference = Subject.doAs(peerSubject, new PrivilegedAction<Preference>()
         {
             @Override
             public Preference run()
             {
-                Set<Preference> preferences;
-                Preference p1 = _testObject.getUserPreferences().createPreference(null,
+                Preference p = _testObject.getUserPreferences().createPreference(null,
                                                                                   "X-testType",
                                                                                   "propName1",
                                                                                   null,
                                                                                   Collections.singleton(groupPrincipal),
                                                                                   Collections.<String, Object>emptyMap());
-                preferences = Collections.singleton(p1);
-                _testObject.getUserPreferences().updateOrAppend(preferences);
-                return p1;
+                _testObject.getUserPreferences().updateOrAppend(Sets.newHashSet(p));
+                return p;
             }
         });
 
@@ -929,19 +945,18 @@ public class PreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                Set<Preference> preferences = new HashSet<>();
-                Preference p2 = _testObject.getUserPreferences().createPreference(null,
+                Preference p = _testObject.getUserPreferences().createPreference(null,
                                                                                   "X-testType",
                                                                                   "propName",
                                                                                   null,
                                                                                   null,
                                                                                   Collections.<String, Object>emptyMap());
-                preferences.add(p2);
-                _testObject.getUserPreferences().updateOrAppend(preferences);
+                _testObject.getUserPreferences().updateOrAppend(Sets.newHashSet(p));
 
                 Set<Preference> retrievedPreferences = _testObject.getUserPreferences().getVisiblePreferences();
-                assertEquals("Unexpected number of preferences", 1, retrievedPreferences.size());
-                assertTrue("Preference of different type was replaced", retrievedPreferences.contains(p1));
+                assertEquals("Unexpected number of preferences", 2, retrievedPreferences.size());
+                assertTrue("Preference of my peer did not exist in visible set", retrievedPreferences.contains(sharedPreference));
+                assertTrue("My preference did not exist in visible set", retrievedPreferences.contains(p));
                 return null;
             }
         });
