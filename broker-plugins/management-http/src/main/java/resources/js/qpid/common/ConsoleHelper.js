@@ -21,11 +21,12 @@
 define(["dojo/query",
         "dijit/registry",
         "dojox/html/entities",
+        "qpid/common/Structure",
         "qpid/common/updater",
         "qpid/management/Management",
         "qpid/common/util",
         "dijit/Dialog",
-        "dojo/domReady!"], function (query, registry, entities, updater, Management, util, Dialog)
+        "dojo/domReady!"], function (query, registry, entities, Structure, updater, Management, util, Dialog)
 {
 
     var preferencesDialog = null;
@@ -151,8 +152,11 @@ define(["dojo/query",
         {
             this.controller = controller;
             this.management = new Management("", util.xhrErrorHandler);
+            this.structure = new Structure();
+
             var that = this;
             var management = this.management;
+            var structure = this.structure;
 
             var authenticationSuccessCallback = function (data)
             {
@@ -169,7 +173,7 @@ define(["dojo/query",
                     management.init(function ()
                     {
                         updater.registerUpdateIntervalListener(management.userPreferences);
-                        controller.init(management);
+                        controller.init(management, structure);
                         treeView.create(getContextPath() + 'service/structure',
                             management,
                             query('div[qpid-type="treeView"]')[0]);
@@ -177,6 +181,7 @@ define(["dojo/query",
                             ["after-centered",
                              "below-centered"];
                     });
+                    management.userName = userName; // TODO Temporary - will be repolaced by whoami
                 }
                 else
                 {

@@ -33,8 +33,7 @@ define(["dojo/_base/declare",
         "dgrid/extensions/DijitRegistry",
         "qpid/management/query/QueryStore",
         "qpid/management/query/StoreUpdater",
-        "dojo/keys",
-        "qpid/common/util"],
+        "dojo/keys"],
     function (declare,
               lang,
               domConstruct,
@@ -50,8 +49,7 @@ define(["dojo/_base/declare",
               DijitRegistry,
               QueryStore,
               StoreUpdater,
-              keys,
-              util)
+              keys)
     {
 
         return declare("qpid.management.query.QueryGrid",
@@ -218,50 +216,11 @@ define(["dojo/_base/declare",
                 _openObjectTab: function (event)
                 {
                     var row = this.row(event);
-                    var promise = this.management.get({url: "service/structure"});
-                    promise.then(lang.hitch(this, function (data)
+                    var item = this.controller.structure.findById(row.id, null, "broker");
+                    if (item != null)
                     {
-                        var findObject = function findObject(structure, parent, type)
-                        {
-                            var item = {
-                                id: structure.id,
-                                name: structure.name,
-                                type: type,
-                                parent: parent
-                            };
-                            if (item.id == row.id)
-                            {
-                                return item;
-                            }
-                            else
-                            {
-                                for (var fieldName in structure)
-                                {
-                                    var fieldValue = structure[fieldName];
-                                    if (lang.isArray(fieldValue))
-                                    {
-                                        var fieldType = fieldName.substring(0, fieldName.length - 1);
-                                        for (var i = 0; i < fieldValue.length; i++)
-                                        {
-                                            var object = fieldValue[i];
-                                            var result = findObject(object, item, fieldType);
-                                            if (result != null)
-                                            {
-                                                return result;
-                                            }
-                                        }
-                                    }
-                                }
-                                return null;
-                            }
-                        };
-
-                        var item = findObject(data, null, "broker");
-                        if (item != null)
-                        {
-                            this.controller.show(item.type, item.name, item.parent, item.id);
-                        }
-                    }));
+                        this.controller.show(item.type, item.name, item.parent, item.id);
+                    }
                 },
                 _onFetchCompleted: function (event)
                  {

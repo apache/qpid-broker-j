@@ -55,7 +55,10 @@ define(["dojo/parser",
         {
             var that = this;
             var queryBrowserWidgetNode = query(".queryBrowserWidgetNode", containerNode)[0];
-            this.queryBrowserWidget = new QueryBrowserWidget({management: this.management}, queryBrowserWidgetNode);
+            this.queryBrowserWidget = new QueryBrowserWidget({
+                management: this.management,
+                structure: this.controller.structure
+            }, queryBrowserWidgetNode);
             this.queryBrowserWidget.on("openQuery",
                 function (event)
                 {

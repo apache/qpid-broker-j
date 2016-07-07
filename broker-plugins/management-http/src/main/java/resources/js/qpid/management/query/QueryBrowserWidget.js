@@ -73,33 +73,23 @@ define(["dojo/_base/declare",
                 filter: "all",
                 fetch: function ()
                 {
-                    var filter = this.filter;
-                    var userPreferencesPromise = filter === "all" || filter === "myQueries"
-                        ? this.management.getUserPreferences({type: "broker"}, "query")
-                        : empty.promise;
-                    var visiblePreferencesPromise = filter === "all" || filter === "sharedWithMe"
-                        ? this.management.getVisiblePreferences({type: "broker"}, "query")
-                        : empty.promise;
+                    var brokerPreferencesPromise = this.management.getVisiblePreferences({type: "broker"}, "query");
+                    var virtualHostsPreferencesPromise = this.management.getVisiblePreferences({
+                        type: "virtualhost",
+                        name: "*",
+                        parent: {
+                            type: "virtualhostnode",
+                            name: "*",
+                            parent: {type: "broker"}
+                        }
+                    }, "query");
 
                     var deferred = new Deferred();
 
-                    var successHandler = lang.hitch(this, function (allPreferences)
+                    var successHandler = lang.hitch(this, function (preferences)
                     {
-                        var items = [];
-                        for (var i = 0; i < allPreferences.length; i++)
-                        {
-                            var prefs = allPreferences[i];
-                            for (var j = 0; j < prefs.length; j++)
-                            {
-                                items.push(prefs[j]);
-                                prefs[j].visible = (i === 1);
-                            }
-                        }
-                        if (this.transformer)
-                        {
-                            items = this.transformer(items);
-                        }
-                        deferred.resolve(items);
+                        var transformedItems = this.transformer(preferences);
+                        deferred.resolve(transformedItems);
                     });
                     var failureHandler = lang.hitch(this, function (error)
                     {
@@ -110,7 +100,11 @@ define(["dojo/_base/declare",
                         deferred.resolve([]);
                     });
 
-                    all([userPreferencesPromise, visiblePreferencesPromise]).then(successHandler, failureHandler);
+                    all({
+                        brokerPreferences: brokerPreferencesPromise,
+                        virtualHostsPreferences: virtualHostsPreferencesPromise
+                    })
+                        .then(successHandler, failureHandler);
 
                     return new QueryResults(deferred.promise, {
                         totalLength: deferred.promise.then(function (data)
@@ -132,6 +126,8 @@ define(["dojo/_base/declare",
         return declare("qpid.management.query.QueryBrowserWidget",
             [dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
             {
+                management: null,
+                structure: null,
                 //Strip out the apache comment header from the template html as comments unsupported.
                 templateString: template.replace(/<!--[\s\S]*?-->/g, ""),
                 // attached automatically from template fields
@@ -152,7 +148,7 @@ define(["dojo/_base/declare",
                 {
                     this.inherited(arguments);
                     this._gridStore = new (declare([Memory, TreeStoreMixin, Trackable]))();
-                    this._preferenceStore  = this._createPreferencesStore(this._gridStore);
+                    this._preferenceStore = this._createPreferencesStore(this._gridStore);
                     this._buildGrid();
                     this._initFilter();
                 },
@@ -165,10 +161,23 @@ define(["dojo/_base/declare",
                 _buildGrid: function ()
                 {
                     var columns = {
-                        name: {label: "Query", renderExpando: true, sortable: false},
-                        description: {label: "Description", sortable: false},
-                        owner: {label: "Owner", sortable: false},
-                        visibilityList: {label: "Shared with", sortable: false}
+                        name: {
+                            label: "Query",
+                            renderExpando: true,
+                            sortable: false
+                        },
+                        description: {
+                            label: "Description",
+                            sortable: false
+                        },
+                        owner: {
+                            label: "Owner",
+                            sortable: false
+                        },
+                        visibilityList: {
+                            label: "Shared with",
+                            sortable: false
+                        }
                     };
 
                     var Grid = declare([OnDemandGrid, Keyboard, Selection, Tree, DijitRegistry, ColumnResizer]);
@@ -206,27 +215,92 @@ define(["dojo/_base/declare",
                     var preferencesStore = new UpdatableStore({
                         targetStore: targetStore,
                         management: this.management,
+                        structure: this.structure,
                         transformer: function (preferences)
                         {
                             var items = [];
-                            var rootItem = {id: "broker", name: "Broker"};
-                            items.push(rootItem);
-                            var rootItemCategories = {};
-                            for (var i = 0; i < preferences.length; i++)
+                            for (var propName in preferences)
                             {
-                                var preferenceItem = preferences[i];
-                                var categoryName = preferenceItem.value.category;
-                                var categoryItem = rootItemCategories[categoryName];
+                                // Will be either a array of preferences, or a array of array of preferences
+                                var container = preferences[propName];
+
+                                if (container.length != 0 && Array.isArray(container[0]))
+                                {
+                                    for (var i = 0; i < container.length; i++)
+                                    {
+                                        items = items.concat(this.processPreferencesForObject(container[i]));
+                                    }
+                                }
+                                else
+                                {
+                                    // Ugly
+                                    items = this.processPreferencesForObject(container)
+                                        .concat(items);
+                                }
+                            }
+
+                            return items;
+                        },
+                        processPreferencesForObject: function (preferenceList)
+                        {
+                            if (this.filter != "all")
+                            {
+                                for (var i = preferenceList.length - 1; i >= 0; i--)
+                                {
+                                    var item = preferenceList[i];
+                                    if (this.filter == "myQueries" && item.owner != this.management.userName)
+                                    {
+                                        preferenceList.splice(i, 1);
+                                    }
+                                    else if (this.filter == "sharedWithMe" && item.owner == this.management.userName)
+                                    {
+                                        preferenceList.splice(i, 1);
+                                    }
+                                }
+                            }
+
+                            if (preferenceList.length == 0)
+                            {
+                                return [];
+                            }
+
+                            // We know all the preferences will be associated with the same object, so we take the first
+                            var root = this.structure.findById(preferenceList[0].associatedObject);
+                            if (!root)
+                            {
+                                return [];
+                            }
+
+                            var items = [];
+                            var rootItem = {
+                                id: root.id,
+                                name: root.type + ":" + root.name
+                            };
+
+                            items.push(rootItem);
+
+                            var rootItemCategories = {};
+                            for (var i = 0; i < preferenceList.length; i++)
+                            {
+                                var preferenceItem = preferenceList[i];
+
+                                var categoryId = rootItem.id + preferenceItem.value.category;
+                                var categoryItem = rootItemCategories[categoryId];
                                 if (!categoryItem)
                                 {
-                                    categoryItem = {id: categoryName, name: categoryName, parent: rootItem.id};
+                                    categoryItem = {
+                                        id: categoryId,
+                                        name: preferenceItem.value.category,
+                                        parent: rootItem.id
+                                    };
                                     items.push(categoryItem);
-                                    rootItemCategories[categoryName] = categoryItem;
+                                    rootItemCategories[categoryId] = categoryItem;
                                 }
                                 preferenceItem.hasChildren = false;
                                 preferenceItem.parent = categoryItem.id;
                                 items.push(preferenceItem);
                             }
+
                             return items;
                         }
                     });
@@ -235,10 +309,14 @@ define(["dojo/_base/declare",
                 _openQuery: function (event)
                 {
                     var row = this.queryBrowserGrid.row(event);
-                    //TODO: we need the associated object hierarchy path
                     if (row.data.value)
                     {
-                        this.emit("openQuery", {preference: row.data, parentObject: {type: "broker"}});
+                        var item = this.structure.findById(row.data.associatedObject);
+                        this.emit("openQuery",
+                            {
+                                preference: row.data,
+                                parentObject: item
+                            });
                     }
                 },
                 _initFilter: function ()

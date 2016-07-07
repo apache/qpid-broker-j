@@ -486,7 +486,7 @@ define(["dojo/_base/lang",
             {
                 that.loadTimezones(function ()
                 {
-                    that.loadUserPreferences(callback)
+                    that.loadUserPreferences(callback);
                 });
             });
         };
