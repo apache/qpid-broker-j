@@ -196,12 +196,6 @@ define(["dojo/parser",
                         editVirtualHost.show(that.management, that.modelObj);
                     });
 
-                    that.addQueryButton = registry.byNode(query(".addQuery", containerNode)[0]);
-                    that.addQueryButton.on("click", function (e)
-                    {
-                        that.controller.show('queryTab', '', that.modelObj);
-                    });
-
                     that.vhostUpdater.update(function ()
                     {
                         updater.add(that.vhostUpdater);
@@ -217,10 +211,10 @@ define(["dojo/parser",
         VirtualHost.prototype.destroy = function ()
         {
             this.close();
-            this.contentPane.onClose()
+            this.contentPane.onClose();
             this.controller.tabContainer.removeChild(this.contentPane);
             this.contentPane.destroyRecursive();
-        }
+        };
 
         function Updater(virtualHost)
         {
