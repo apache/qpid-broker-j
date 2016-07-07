@@ -217,13 +217,10 @@ define(["dojo/dom",
 
             updater.add({update : function()
             {
-                console.log("Hello structure updater");
-
                 var promise = management.get({url: "service/structure"});
                 promise.then(lang.hitch(this, function (data)
                 {
                     structure.update(data);
-                    console.log("Hello structure updater" + data);
                 }));
             }});
         };
