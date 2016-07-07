@@ -58,6 +58,7 @@ define(["dojo/_base/declare",
                 management: null,
                 controller: null,
                 detectChanges: false,
+                highlightUpdatedRows : false,
                 _store: null,
                 _sort: [],
                 _lastHeaders: [],
@@ -240,6 +241,13 @@ define(["dojo/_base/declare",
                  {
                     // suppress notification in detecting changes mode
                     if (!this.detectChanges)
+                    {
+                        this.inherited(arguments);
+                    }
+                },
+                highlightRow: function ()
+                {
+                    if (this.highlightUpdatedRows)
                     {
                         this.inherited(arguments);
                     }
