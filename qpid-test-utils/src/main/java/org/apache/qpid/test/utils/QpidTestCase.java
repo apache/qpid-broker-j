@@ -22,8 +22,10 @@ package org.apache.qpid.test.utils;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 import ch.qos.logback.classic.ClassicConstants;
@@ -40,6 +42,7 @@ public class QpidTestCase extends TestCase
     private static final String TEST_EXCLUDEFILES = "test.excludefiles";
     private static final String VIRTUAL_HOST_NODE_TYPE = "virtualhostnode.type";
     private static final String VIRTUAL_HOST_NODE_CONTEXT_BLUEPRINT = "virtualhostnode.context.blueprint";
+    private static final String TEST_OVERRIDDEN_PROPERTIES = "test.overridden.properties";
 
     public static final String QPID_HOME = System.getProperty("QPID_HOME");
     public static final String TEST_PROFILES_DIR = QPID_HOME + File.separator + ".." + File.separator + "test-profiles" + File.separator;
@@ -131,10 +134,12 @@ public class QpidTestCase extends TestCase
     }
 
     private static final List<String> _exclusionList;
+    private final Properties _overriddenProperties;
 
     public QpidTestCase()
     {
         super();
+        _overriddenProperties = loadOverriddenTestSystemProperties();
     }
 
     public void run(TestResult testResult)
@@ -281,6 +286,7 @@ public class QpidTestCase extends TestCase
     {
         _logger.info("========== start " + getTestName() + " ==========");
         super.setUp();
+        overrideTestSystemProperties();
     }
 
     protected void tearDown() throws Exception
@@ -292,5 +298,52 @@ public class QpidTestCase extends TestCase
             runnable.run();
         }
         _tearDownRegistry.clear();
+    }
+
+    protected void overrideTestSystemProperties()
+    {
+        setTestOverriddenProperties(_overriddenProperties);
+    }
+
+    protected void setTestOverriddenProperties(Properties properties)
+    {
+        for (String propertyName : properties.stringPropertyNames())
+        {
+            setTestSystemProperty(propertyName, properties.getProperty(propertyName));
+        }
+    }
+
+    private Properties loadOverriddenTestSystemProperties()
+    {
+        Properties properties = new Properties();
+        String pathToFileWithOverriddenClientAndBrokerProperties = System.getProperty(TEST_OVERRIDDEN_PROPERTIES);
+        if (pathToFileWithOverriddenClientAndBrokerProperties != null)
+        {
+            File file = new File(pathToFileWithOverriddenClientAndBrokerProperties);
+            if (file.exists())
+            {
+                _logger.info("Loading overridden system properties from {}", file.getAbsolutePath());
+                try (InputStream propertiesStream = new FileInputStream(file))
+                {
+
+                    properties.load(propertiesStream);
+                }
+                catch (IOException e)
+                {
+                    throw new RuntimeException(String.format(
+                            "Cannot load overridden properties from '%s'. Verify value provided with system property '%s'",
+                            file.getAbsolutePath(),
+                            TEST_OVERRIDDEN_PROPERTIES), e);
+                }
+            }
+            else
+            {
+                throw new RuntimeException(String.format(
+                        "File with overridden properties at '%s' does not exists. Verify value provided with system property '%s'",
+                        file.getAbsolutePath(),
+                        TEST_OVERRIDDEN_PROPERTIES));
+            }
+        }
+        return properties;
     }
 }
