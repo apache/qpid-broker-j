@@ -604,3 +604,11 @@ td.advancedSearchField, col.autoWidth {
     background-position: -80px -128px;
     background-color: #D3D3D3;
 }
+
+.dgrid-no-data,
+.dgrid-loading {
+    color: #aaa;
+    font-size: 3em;
+    padding: 3em;
+    text-align: center;
+}

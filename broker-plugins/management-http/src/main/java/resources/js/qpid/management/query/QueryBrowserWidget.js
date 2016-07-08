@@ -185,7 +185,13 @@ define(["dojo/_base/declare",
                     this.queryBrowserGrid = new Grid({
                         minRowsPerPage: Math.pow(2, 53) - 1,
                         columns: columns,
-                        collection: store
+                        collection: store,
+                        noDataMessage: 'No queries',
+                        noDataMessages: {
+                            all: "No queries",
+                            sharedWithMe: "No one has shared queries with you",
+                            myQueries: "You have no queries"
+                        }
                     }, this.queryBrowserGridNode);
 
                     this.queryBrowserGrid.on('.dgrid-row:dblclick', lang.hitch(this, this._openQuery));
@@ -337,8 +343,14 @@ define(["dojo/_base/declare",
                 },
                 _modifyFilter: function (event, targetWidget)
                 {
-                    this._preferenceStore.filter = targetWidget.get("value");
+                    var value = targetWidget.get("value");
+                    this._preferenceStore.filter = value;
+                    if (this.queryBrowserGrid.noDataMessages[value])
+                    {
+                        this.queryBrowserGrid.noDataMessage = this.queryBrowserGrid.noDataMessages[value];
+                    }
                     this.update();
+                    this.queryBrowserGrid.refresh();
                 }
             });
     });
