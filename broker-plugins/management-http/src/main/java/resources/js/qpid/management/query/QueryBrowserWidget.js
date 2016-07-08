@@ -227,26 +227,18 @@ define(["dojo/_base/declare",
                         transformer: function (preferences)
                         {
                             var items = [];
-                            for (var propName in preferences)
+                            if (preferences.brokerPreferences)
                             {
-                                // Will be either a array of preferences, or a array of array of preferences
-                                var container = preferences[propName];
-
-                                if (container.length != 0 && Array.isArray(container[0]))
+                                items = this.processPreferencesForObject(preferences.brokerPreferences);
+                            }
+                            if (preferences.virtualHostsPreferences)
+                            {
+                                for (var i = 0; i < preferences.virtualHostsPreferences.length; i++)
                                 {
-                                    for (var i = 0; i < container.length; i++)
-                                    {
-                                        items = items.concat(this.processPreferencesForObject(container[i]));
-                                    }
-                                }
-                                else
-                                {
-                                    // Ugly
-                                    items = this.processPreferencesForObject(container)
-                                        .concat(items);
+                                    var virtualHostPreference = preferences.virtualHostsPreferences[i];
+                                    items = items.concat(this.processPreferencesForObject(virtualHostPreference));
                                 }
                             }
-
                             return items;
                         },
                         processPreferencesForObject: function (preferenceList)

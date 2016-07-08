@@ -605,8 +605,7 @@ td.advancedSearchField, col.autoWidth {
     background-color: #D3D3D3;
 }
 
-.dgrid-no-data,
-.dgrid-loading {
+.includeNoDataWarning .dgrid-no-data {
     color: #aaa;
     font-size: 3em;
     padding: 3em;
