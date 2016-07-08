@@ -19,9 +19,9 @@
 
 package org.apache.qpid.server.management.plugin.preferences;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
 
 import org.apache.qpid.server.management.plugin.servlet.query.ConfiguredObjectQuery;
 import org.apache.qpid.server.model.preferences.PreferenceValue;
@@ -71,7 +71,7 @@ public class QueryPreferenceValue implements PreferenceValue
             _pageSize = getValue(preferenceValueAttributes, PAGE_SIZE_ATTRIBUTE, DEFAULT_PAGE_SIZE);
             _currentPage = getValue(preferenceValueAttributes, CURRENT_PAGE_ATTRIBUTE, 0);
             _refreshInterval = getValue(preferenceValueAttributes, REFRESH_INTERVAL_ATTRIBUTE, DEFAULT_REFRESH_INTERVAL);
-            _originalAttributeMap = ImmutableMap.copyOf(preferenceValueAttributes);
+            _originalAttributeMap = Collections.unmodifiableMap(new LinkedHashMap<>(preferenceValueAttributes));
         }
         catch (ClassCastException e)
         {

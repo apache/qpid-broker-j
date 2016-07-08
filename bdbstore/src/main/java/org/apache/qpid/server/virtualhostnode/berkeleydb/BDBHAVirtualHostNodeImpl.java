@@ -91,6 +91,9 @@ import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironment
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacadeFactory;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicationGroupListener;
 import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
+import org.apache.qpid.server.store.preferences.ProvidedPreferenceStoreFactoryService;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.PortUtil;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -541,6 +544,19 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         if (!isFirstNodeInAGroup())
         {
             getPermittedNodesFromHelper();
+        }
+    }
+
+    @Override
+    public void onValidate()
+    {
+        super.onValidate();
+
+        PreferenceStoreAttributes preferenceStoreAttributes = getPreferenceStoreAttributes();
+        if (!preferenceStoreAttributes.getType().equals(ProvidedPreferenceStoreFactoryService.TYPE))
+        {
+            throw new IllegalConfigurationException(String.format(
+                    "BDBHAVirtualHostNode only supports Provided preference store but configured '%s'", preferenceStoreAttributes.getType()));
         }
     }
 

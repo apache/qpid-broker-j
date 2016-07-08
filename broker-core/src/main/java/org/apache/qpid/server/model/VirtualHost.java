@@ -23,27 +23,20 @@ package org.apache.qpid.server.model;
 import static org.apache.qpid.server.model.Initialization.materialize;
 
 import java.security.AccessControlContext;
-import java.security.AccessControlException;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.message.MessageDestination;
-import org.apache.qpid.server.message.MessageSource;
-import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
-import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.virtualhost.HouseKeepingTask;
 import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
 
@@ -171,9 +164,6 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     @ManagedAttribute( defaultValue = "[]")
     List<String> getGlobalAddressDomains();
-
-    @ManagedAttribute(description = "Configuration for the preference store, e.g. type, path, etc.")
-    PreferenceStoreAttributes getPreferenceStoreAttributes();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Queues")
     long getQueueCount();

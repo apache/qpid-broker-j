@@ -19,52 +19,31 @@
 
 package org.apache.qpid.server.store.preferences;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
-import java.util.UUID;
 
+import org.apache.qpid.server.configuration.BrokerProperties;
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.plugin.PluggableService;
 
 @SuppressWarnings("unused")
 @PluggableService
-public class NoopPreferenceStoreFactoryService implements PreferenceStoreFactoryService
+public class JsonFilePreferenceStoreFactoryService implements PreferenceStoreFactoryService
 {
-
-    public static final String TYPE = "Noop";
+    private static final String TYPE = "JSON";
+    private static final String PATH = "path";
 
     @Override
     public PreferenceStore createInstance(final ConfiguredObject<?> parent,
                                           final Map<String, Object> preferenceStoreAttributes)
     {
-        return new PreferenceStore()
+        final Object path = preferenceStoreAttributes.get(PATH);
+        if (path == null || !(path instanceof String))
         {
-            @Override
-            public Collection<PreferenceRecord> openAndLoad(final PreferenceStoreUpdater updater)
-            {
-                return Collections.emptyList();
-            }
-
-            @Override
-            public void close()
-            {
-
-            }
-
-            @Override
-            public void updateOrCreate(final Collection<PreferenceRecord> preferenceRecords)
-            {
-
-            }
-
-            @Override
-            public void replace(final Collection<UUID> preferenceRecordsToRemove,
-                                final Collection<PreferenceRecord> preferenceRecordsToAdd)
-            {
-
-            }
-        };
+            throw new IllegalConfigurationException("JsonFilePreferenceStore requires path");
+        }
+        final String posixFilePermissions = parent.getContextValue(String.class, BrokerProperties.POSIX_FILE_PERMISSIONS);
+        return new JsonFilePreferenceStore((String) path, posixFilePermissions);
     }
 
     @Override

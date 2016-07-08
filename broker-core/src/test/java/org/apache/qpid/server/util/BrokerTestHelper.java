@@ -45,6 +45,7 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
@@ -103,6 +104,7 @@ public class BrokerTestHelper
         when(systemConfig.getTaskExecutor()).thenReturn(TASK_EXECUTOR);
         when(broker.getChildExecutor()).thenReturn(TASK_EXECUTOR);
         when(systemConfig.getChildExecutor()).thenReturn(TASK_EXECUTOR);
+        when(systemConfig.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
 
         return broker;
     }
@@ -149,6 +151,7 @@ public class BrokerTestHelper
         when(virtualHostNode.getCategoryClass()).thenReturn(VirtualHostNode.class);
         when(virtualHostNode.getTaskExecutor()).thenReturn(TASK_EXECUTOR);
         when(virtualHostNode.getChildExecutor()).thenReturn(TASK_EXECUTOR);
+        when(virtualHostNode.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
 
         AbstractVirtualHost
                 host = (AbstractVirtualHost) objectFactory.create(VirtualHost.class, attributes, virtualHostNode );

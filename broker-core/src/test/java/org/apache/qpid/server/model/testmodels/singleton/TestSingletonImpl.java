@@ -44,7 +44,7 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     public static final int DERIVED_VALUE = -100;
     private final SecurityManager _securityManager;
     private final PreferenceStore _preferenceStore =
-            new NoopPreferenceStoreFactoryService().createInstance(Collections.<String, Object>emptyMap());
+            new NoopPreferenceStoreFactoryService().createInstance(null, Collections.<String, Object>emptyMap());
 
     @ManagedAttributeField
     private String _automatedPersistedValue;

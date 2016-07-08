@@ -31,7 +31,6 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.adapter.BrokerAdapter;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.stats.StatisticsGatherer;
-import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 
 @ManagedObject( defaultType = "Broker" )
 public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventLoggerProvider, StatisticsGatherer
@@ -145,9 +144,6 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     @ManagedAttribute( defaultValue = "${broker.housekeepingThreadCount}")
     int getHousekeepingThreadCount();
-
-    @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc." )
-    PreferenceStoreAttributes getPreferenceStoreAttributes();
 
     String BROKER_MESSAGE_COMPRESSION_ENABLED = "broker.messageCompressionEnabled";
     @ManagedContextDefault(name = BROKER_MESSAGE_COMPRESSION_ENABLED)

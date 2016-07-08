@@ -47,6 +47,7 @@ import org.apache.qpid.server.queue.PriorityQueueImpl;
 import org.apache.qpid.server.queue.StandardQueueImpl;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class VirtualHostQueueCreationTest extends QpidTestCase
@@ -70,6 +71,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
 
         SystemConfig<?> context = mock(SystemConfig.class);
         when(context.getEventLogger()).thenReturn(eventLogger);
+        when(context.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
 
         Broker broker = mock(Broker.class);
         when(broker.getObjectFactory()).thenReturn(objectFactory);
@@ -88,6 +90,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         when(_virtualHostNode.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_virtualHostNode.getChildExecutor()).thenReturn(_taskExecutor);
         when(((VirtualHostNode)_virtualHostNode).getCategoryClass()).thenReturn(VirtualHostNode.class);
+        when(_virtualHostNode.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
         _virtualHost = createHost();
     }
 

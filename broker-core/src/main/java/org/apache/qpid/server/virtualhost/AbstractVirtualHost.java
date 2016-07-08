@@ -26,7 +26,6 @@ import java.io.File;
 import java.security.AccessControlContext;
 import java.security.Principal;
 import java.security.PrivilegedAction;
-import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -91,10 +90,10 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreProvider;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
-import org.apache.qpid.server.store.preferences.NoopPreferenceStoreFactoryService;
+import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
-import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
-import org.apache.qpid.server.store.preferences.PreferenceStoreFactoryService;
+import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
+import org.apache.qpid.server.store.preferences.PreferenceStoreUpdaterImpl;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
@@ -201,9 +200,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     @ManagedAttributeField
     private List<NodeAutoCreationPolicy> _nodeAutoCreationPolicies;
-
-    @ManagedAttributeField
-    private PreferenceStoreAttributes _preferenceStoreAttributes;
 
     private boolean _useAsyncRecoverer;
 
@@ -470,7 +466,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         }
 
-        _preferenceStore = createPreferenceStore();
+        VirtualHostNode<?> parent = getParent(VirtualHostNode.class);
+        _preferenceStore = parent.createPreferenceStore();
     }
 
     private void checkVHostStateIsActive()
@@ -499,26 +496,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     protected abstract MessageStore createMessageStore();
-
-    protected PreferenceStore createPreferenceStore()
-    {
-        final Map<String, PreferenceStoreFactoryService> preferenceStoreFactories =
-                new QpidServiceLoader().getInstancesByType(PreferenceStoreFactoryService.class);
-        String preferenceStoreType;
-        Map<String, Object> preferenceStoreAttributes;
-        if (_preferenceStoreAttributes == null)
-        {
-            preferenceStoreType = NoopPreferenceStoreFactoryService.TYPE;
-            preferenceStoreAttributes = Collections.emptyMap();
-        }
-        else
-        {
-            preferenceStoreType = _preferenceStoreAttributes.getType();
-            preferenceStoreAttributes = _preferenceStoreAttributes.getAttributes();
-        }
-        final PreferenceStoreFactoryService preferenceStoreFactory = preferenceStoreFactories.get(preferenceStoreType);
-        return preferenceStoreFactory.createInstance(preferenceStoreAttributes);
-    }
 
     @Override
     protected PreferenceStore getPreferencesStore()
@@ -1565,12 +1542,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return _numberOfSelectors;
     }
 
-    @Override
-    public PreferenceStoreAttributes getPreferenceStoreAttributes()
-    {
-        return _preferenceStoreAttributes;
-    }
-
     @StateTransition( currentState = { State.UNINITIALIZED, State.ACTIVE, State.ERRORED }, desiredState = State.STOPPED )
     protected ListenableFuture<Void> doStop()
     {
@@ -1999,6 +1970,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         State finalState = State.ERRORED;
         try
         {
+            final PreferenceStoreUpdater updater = new PreferenceStoreUpdaterImpl();
+            Collection<PreferenceRecord> records = _preferenceStore.openAndLoad(updater);
+            recoverPreferences(records);
+
             initialiseHouseKeeping(getHousekeepingCheckPeriod());
             finalState = State.ACTIVE;
             _acceptsConnections.set(true);
@@ -2008,6 +1983,11 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             setState(finalState);
             reportIfError(getState());
         }
+    }
+
+    protected void recoverPreferences(final Collection<PreferenceRecord> records)
+    {
+        //TODO
     }
 
     protected void startFileSystemSpaceChecking()

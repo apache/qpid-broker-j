@@ -29,15 +29,16 @@ import org.apache.qpid.server.plugin.PluggableService;
 
 @SuppressWarnings("unused")
 @PluggableService
-public class NoopPreferenceStoreFactoryService implements PreferenceStoreFactoryService
+public class ProvidedPreferenceStoreFactoryService implements PreferenceStoreFactoryService
 {
 
-    public static final String TYPE = "Noop";
+    public static final String TYPE = "Provided";
 
     @Override
     public PreferenceStore createInstance(final ConfiguredObject<?> parent,
                                           final Map<String, Object> preferenceStoreAttributes)
     {
+        // TODO: Implement real ProvidedPreferenceStore
         return new PreferenceStore()
         {
             @Override

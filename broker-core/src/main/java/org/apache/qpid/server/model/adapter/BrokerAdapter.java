@@ -37,7 +37,6 @@ import java.security.AccessControlException;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,12 +62,8 @@ import org.apache.qpid.server.logging.QpidLoggerTurboFilter;
 import org.apache.qpid.server.logging.StartupAppender;
 import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
 import org.apache.qpid.server.security.access.Operation;
-import org.apache.qpid.server.store.preferences.NoopPreferenceStoreFactoryService;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
-import org.apache.qpid.server.store.preferences.PreferenceStoreFactoryService;
-import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
-import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdaterImpl;
 import org.apache.qpid.server.util.HousekeepingExecutor;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -139,9 +134,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private boolean _messageCompressionEnabled;
     @ManagedAttributeField
     private int _housekeepingThreadCount;
-
-    @ManagedAttributeField
-    private PreferenceStoreAttributes _preferenceStoreAttributes;
 
     private PreferenceStore _preferenceStore;
 
@@ -423,7 +415,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
         final PreferenceStoreUpdaterImpl updater = new PreferenceStoreUpdaterImpl();
         final Collection<PreferenceRecord> preferenceRecords = _preferenceStore.openAndLoad(updater);
-        recover(preferenceRecords);
+        recoverPreferences(preferenceRecords);
 
         if (isManagementMode())
         {
@@ -433,7 +425,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         setState(State.ACTIVE);
     }
 
-    private void recover(final Collection<PreferenceRecord> preferenceRecords)
+    private void recoverPreferences(final Collection<PreferenceRecord> preferenceRecords)
     {
         /* TODO */
     }
@@ -539,11 +531,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         return _housekeepingThreadCount;
     }
 
-    public PreferenceStoreAttributes getPreferenceStoreAttributes()
-    {
-        return _preferenceStoreAttributes;
-    }
-
     @Override
     public String getModelVersion()
     {
@@ -629,7 +616,8 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     {
         super.onOpen();
 
-        _preferenceStore = createPreferenceStore();
+        SystemConfig<?> systemConfig = getParent(SystemConfig.class);
+        _preferenceStore = systemConfig.createPreferenceStore();
 
         getEventLogger().message(BrokerMessages.STARTUP(CommonProperties.getReleaseVersion(),
                                                         CommonProperties.getBuildVersion()));
@@ -654,26 +642,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         registerSystemAddressSpaces();
 
         assignTargetSizes();
-    }
-
-    private PreferenceStore createPreferenceStore()
-    {
-        final Map<String, PreferenceStoreFactoryService> preferenceStoreFactories =
-                new QpidServiceLoader().getInstancesByType(PreferenceStoreFactoryService.class);
-        String preferenceStoreType;
-        Map<String, Object> preferenceStoreAttributes;
-        if (_preferenceStoreAttributes == null)
-        {
-            preferenceStoreType = NoopPreferenceStoreFactoryService.TYPE;
-            preferenceStoreAttributes = Collections.emptyMap();
-        }
-        else
-        {
-            preferenceStoreType = _preferenceStoreAttributes.getType();
-            preferenceStoreAttributes = _preferenceStoreAttributes.getAttributes();
-        }
-        final PreferenceStoreFactoryService preferenceStoreFactory = preferenceStoreFactories.get(preferenceStoreType);
-        return preferenceStoreFactory.createInstance(preferenceStoreAttributes);
     }
 
     @Override

@@ -56,6 +56,7 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.util.FileUtils;
@@ -73,6 +74,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
 
         SystemConfig systemConfig = mock(SystemConfig.class);
         when(systemConfig.getEventLogger()).thenReturn(mock(EventLogger.class));
+        when(systemConfig.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
         Broker<?> broker = mock(Broker.class);
         when(broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
         when(broker.getModel()).thenReturn(BrokerModel.getInstance());
@@ -90,6 +92,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
         when(_node.getChildExecutor()).thenReturn(_taskExecutor);
         when(_node.getConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));
         when(_node.getCategoryClass()).thenReturn(VirtualHostNode.class);
+        when(_node.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
 
         _failingStore = mock(MessageStore.class);
         doThrow(new RuntimeException("Cannot open store")).when(_failingStore).openMessageStore(any(ConfiguredObject.class));

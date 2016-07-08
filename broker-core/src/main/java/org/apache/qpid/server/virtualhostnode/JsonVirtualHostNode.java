@@ -20,6 +20,7 @@
 package org.apache.qpid.server.virtualhostnode;
 
 import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 
 public interface JsonVirtualHostNode<X extends JsonVirtualHostNode<X>> extends org.apache.qpid.server.model.VirtualHostNode<X>, org.apache.qpid.server.store.FileBasedSettings
 {
@@ -28,4 +29,8 @@ public interface JsonVirtualHostNode<X extends JsonVirtualHostNode<X>> extends o
 
     @ManagedAttribute(mandatory = true, defaultValue = "${qpid.work_dir}${file.separator}${this:name}${file.separator}config${file.separator}")
     String getStorePath();
+
+    @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
+            defaultValue = "{\"type\": \"JSON\", \"attributes\":{\"path\": \"${qpid.work_dir}${file.separator}${this:name}${file.separator}preferences.json\"}}")
+    PreferenceStoreAttributes getPreferenceStoreAttributes();
 }

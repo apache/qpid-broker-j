@@ -72,6 +72,10 @@ import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordConverter;
 import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.preferences.NoopPreferenceStoreFactoryService;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
+import org.apache.qpid.server.store.preferences.PreferenceStoreFactoryService;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 import org.apache.qpid.server.virtualhost.NonStandardVirtualHost;
 import org.apache.qpid.server.virtualhost.ProvidedStoreVirtualHostImpl;
@@ -101,6 +105,9 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
 
     @ManagedAttributeField
     private String _virtualHostInitialConfiguration;
+
+    @ManagedAttributeField
+    private PreferenceStoreAttributes _preferenceStoreAttributes;
 
     public AbstractVirtualHostNode(Broker<?> parent, Map<String, Object> attributes)
     {
@@ -436,6 +443,34 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
     public boolean isDefaultVirtualHostNode()
     {
         return _defaultVirtualHostNode;
+    }
+
+    @Override
+    public PreferenceStoreAttributes getPreferenceStoreAttributes()
+    {
+        return _preferenceStoreAttributes;
+    }
+
+    @Override
+    public PreferenceStore createPreferenceStore()
+    {
+        final Map<String, PreferenceStoreFactoryService> preferenceStoreFactories =
+                new QpidServiceLoader().getInstancesByType(PreferenceStoreFactoryService.class);
+        String preferenceStoreType;
+        PreferenceStoreAttributes preferenceStoreAttributes = getPreferenceStoreAttributes();
+        Map<String, Object> attributes;
+        if (preferenceStoreAttributes == null)
+        {
+            preferenceStoreType = NoopPreferenceStoreFactoryService.TYPE;
+            attributes = Collections.emptyMap();
+        }
+        else
+        {
+            preferenceStoreType = preferenceStoreAttributes.getType();
+            attributes = preferenceStoreAttributes.getAttributes();
+        }
+        final PreferenceStoreFactoryService preferenceStoreFactory = preferenceStoreFactories.get(preferenceStoreType);
+        return preferenceStoreFactory.createInstance(this, attributes);
     }
 
     protected abstract DurableConfigurationStore createConfigurationStore();

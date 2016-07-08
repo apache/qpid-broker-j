@@ -23,6 +23,8 @@ package org.apache.qpid.server.model;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 
 @ManagedObject (creatable = false)
 public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObject<X>, ModelRoot
@@ -34,6 +36,9 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
     String MANAGEMENT_MODE_PASSWORD = "managementModePassword";
     String INITIAL_CONFIGURATION_LOCATION = "initialConfigurationLocation";
     String STARTUP_LOGGED_TO_SYSTEM_OUT = "startupLoggedToSystemOut";
+
+    @ManagedContextDefault(name="qpid.broker.defaultPreferenceStoreAttributes")
+    String DEFAULT_PREFERENCE_STORE_ATTRIBUTES = "{\"type\": \"JSON\", \"attributes\":{\"path\": \"${qpid.work_dir}${file.separator}preferences.json\"}}";
 
     @ManagedContextDefault(name = BrokerProperties.POSIX_FILE_PERMISSIONS)
     String DEFAULT_POSIX_FILE_PERMISSIONS = "rw-r-----";
@@ -56,10 +61,16 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
     @ManagedAttribute(defaultValue = "true")
     boolean isStartupLoggedToSystemOut();
 
+    @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
+            defaultValue = "${qpid.broker.defaultPreferenceStoreAttributes}")
+    PreferenceStoreAttributes getPreferenceStoreAttributes();
+
     EventLogger getEventLogger();
 
     Broker getBroker();
 
     DurableConfigurationStore getConfigurationStore();
+
+    PreferenceStore createPreferenceStore();
 
 }

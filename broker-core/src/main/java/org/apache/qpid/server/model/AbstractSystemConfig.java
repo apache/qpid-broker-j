@@ -28,6 +28,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.PrivilegedAction;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -52,10 +53,15 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.MessageLogger;
 import org.apache.qpid.server.logging.SystemOutMessageLogger;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
+import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.store.BrokerStoreUpgraderAndRecoverer;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordConverter;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.preferences.NoopPreferenceStoreFactoryService;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
+import org.apache.qpid.server.store.preferences.PreferenceStoreFactoryService;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
@@ -86,6 +92,9 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
     @ManagedAttributeField
     private boolean _startupLoggedToSystemOut;
+
+    @ManagedAttributeField
+    private PreferenceStoreAttributes _preferenceStoreAttributes;
 
     private final Thread _shutdownHook = new Thread(new ShutdownService(), "QpidBrokerShutdownHook");
 
@@ -344,6 +353,34 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     public boolean isStartupLoggedToSystemOut()
     {
         return _startupLoggedToSystemOut;
+    }
+
+
+    @Override
+    public PreferenceStoreAttributes getPreferenceStoreAttributes()
+    {
+        return _preferenceStoreAttributes;
+    }
+
+    @Override
+    public PreferenceStore createPreferenceStore()
+    {
+        PreferenceStoreAttributes preferenceStoreAttributes = getPreferenceStoreAttributes();
+        final Map<String, PreferenceStoreFactoryService> preferenceStoreFactories = new QpidServiceLoader().getInstancesByType(PreferenceStoreFactoryService.class);
+        String preferenceStoreType;
+        Map<String, Object> attributes;
+        if (preferenceStoreAttributes == null)
+        {
+            preferenceStoreType = NoopPreferenceStoreFactoryService.TYPE;
+            attributes = Collections.emptyMap();
+        }
+        else
+        {
+            preferenceStoreType = preferenceStoreAttributes.getType();
+            attributes = preferenceStoreAttributes.getAttributes();
+        }
+        final PreferenceStoreFactoryService preferenceStoreFactory = preferenceStoreFactories.get(preferenceStoreType);
+        return preferenceStoreFactory.createInstance(this, attributes);
     }
 
     private class ShutdownService implements Runnable

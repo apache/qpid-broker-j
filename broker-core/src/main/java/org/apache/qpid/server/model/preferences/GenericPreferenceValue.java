@@ -19,9 +19,9 @@
 
 package org.apache.qpid.server.model.preferences;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
 
 public class GenericPreferenceValue implements PreferenceValue
 {
@@ -29,7 +29,7 @@ public class GenericPreferenceValue implements PreferenceValue
 
     public GenericPreferenceValue(final Map<String, Object> preferenceValueAttributes)
     {
-        _preferenceValueAttributes = ImmutableMap.copyOf(preferenceValueAttributes);
+        _preferenceValueAttributes = Collections.unmodifiableMap(new LinkedHashMap<>(preferenceValueAttributes));
     }
 
     @Override

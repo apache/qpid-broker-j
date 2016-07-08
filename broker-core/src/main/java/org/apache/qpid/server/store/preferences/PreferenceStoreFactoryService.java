@@ -21,9 +21,11 @@ package org.apache.qpid.server.store.preferences;
 
 import java.util.Map;
 
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.plugin.Pluggable;
 
 public interface PreferenceStoreFactoryService extends Pluggable
 {
-    PreferenceStore createInstance(Map<String, Object> preferenceStoreAttributes);
+    PreferenceStore createInstance(ConfiguredObject<?> parent,
+                                   Map<String, Object> preferenceStoreAttributes);
 }

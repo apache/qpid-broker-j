@@ -22,6 +22,7 @@ package org.apache.qpid.server.store.jdbc;
 
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 
 public interface JDBCSystemConfig<X extends JDBCSystemConfig<X>> extends SystemConfig<X>, JDBCSettings
 {
@@ -36,4 +37,8 @@ public interface JDBCSystemConfig<X extends JDBCSystemConfig<X>> extends SystemC
 
     @ManagedAttribute(secure=true, defaultValue = "${systemConfig.password}")
     String getPassword();
+
+    @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
+            defaultValue = "{\"type\": \"Provided\"}")
+    PreferenceStoreAttributes getPreferenceStoreAttributes();
 }

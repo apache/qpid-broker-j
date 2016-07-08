@@ -43,6 +43,8 @@ import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 
 
 public class RedirectingVirtualHostNodeImpl
@@ -124,6 +126,18 @@ public class RedirectingVirtualHostNodeImpl
     public Collection<? extends RemoteReplicationNode> getRemoteReplicationNodes()
     {
         return Collections.emptySet();
+    }
+
+    @Override
+    public PreferenceStore createPreferenceStore()
+    {
+        return null;
+    }
+
+    @Override
+    public PreferenceStoreAttributes getPreferenceStoreAttributes()
+    {
+        return null;
     }
 
     @Override

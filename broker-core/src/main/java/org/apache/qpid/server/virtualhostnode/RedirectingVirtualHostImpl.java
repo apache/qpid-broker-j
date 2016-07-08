@@ -105,9 +105,6 @@ class RedirectingVirtualHostImpl
     @ManagedAttributeField
     private List<NodeAutoCreationPolicy> _nodeAutoCreationPolicies;
 
-    @ManagedAttributeField
-    private PreferenceStoreAttributes _preferenceStoreAttributes;
-
     @ManagedObjectFactoryConstructor
     public RedirectingVirtualHostImpl(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
@@ -471,12 +468,6 @@ class RedirectingVirtualHostImpl
     public List<String> getGlobalAddressDomains()
     {
         return _globalAddressDomains;
-    }
-
-    @Override
-    public PreferenceStoreAttributes getPreferenceStoreAttributes()
-    {
-        return _preferenceStoreAttributes;
     }
 
     @Override

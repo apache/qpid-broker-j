@@ -23,6 +23,8 @@ package org.apache.qpid.server.model;
 import java.util.Collection;
 
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 
 @ManagedObject(category=true, managesChildren=true)
 public interface VirtualHostNode<X extends VirtualHostNode<X>> extends ConfiguredObject<X>
@@ -46,6 +48,10 @@ public interface VirtualHostNode<X extends VirtualHostNode<X>> extends Configure
     @ManagedAttribute( defaultValue = "${" + VIRTUALHOST_BLUEPRINT_CONTEXT_VAR + "}")
     String getVirtualHostInitialConfiguration();
 
+    @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
+            defaultValue = "{\"type\": \"Noop\"}")
+    PreferenceStoreAttributes getPreferenceStoreAttributes();
+
     VirtualHost<?> getVirtualHost();
 
     DurableConfigurationStore getConfigurationStore();
@@ -57,4 +63,5 @@ public interface VirtualHostNode<X extends VirtualHostNode<X>> extends Configure
 
     void start();
 
+    PreferenceStore createPreferenceStore();
 }

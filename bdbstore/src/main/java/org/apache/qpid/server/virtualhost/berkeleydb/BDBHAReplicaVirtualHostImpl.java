@@ -105,9 +105,6 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     @ManagedAttributeField
     private List<NodeAutoCreationPolicy> _nodeAutoCreationPolicies;
 
-    @ManagedAttributeField
-    private PreferenceStoreAttributes _preferenceStoreAttributes;
-
     @ManagedObjectFactoryConstructor
     public BDBHAReplicaVirtualHostImpl(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
@@ -470,12 +467,6 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     public List<String> getGlobalAddressDomains()
     {
         return _globalAddressDomains;
-    }
-
-    @Override
-    public PreferenceStoreAttributes getPreferenceStoreAttributes()
-    {
-        return _preferenceStoreAttributes;
     }
 
     @Override

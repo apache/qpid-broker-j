@@ -24,6 +24,7 @@ import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory;
 import org.apache.qpid.server.store.jdbc.JDBCSettings;
+import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 
 public interface JDBCVirtualHostNode<X extends JDBCVirtualHostNode<X>> extends VirtualHostNode<X>, JDBCSettings
 {
@@ -39,4 +40,8 @@ public interface JDBCVirtualHostNode<X extends JDBCVirtualHostNode<X>> extends V
 
     @ManagedAttribute(secure=true)
     String getPassword();
+
+    @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
+            defaultValue = "{\"type\": \"Provided\"}")
+    PreferenceStoreAttributes getPreferenceStoreAttributes();
 }

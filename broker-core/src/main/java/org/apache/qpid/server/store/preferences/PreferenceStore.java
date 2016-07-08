@@ -22,9 +22,11 @@ package org.apache.qpid.server.store.preferences;
 import java.util.Collection;
 import java.util.UUID;
 
+import org.apache.qpid.server.store.StoreException;
+
 public interface PreferenceStore
 {
-    Collection<PreferenceRecord> openAndLoad(PreferenceStoreUpdater updater);
+    Collection<PreferenceRecord> openAndLoad(PreferenceStoreUpdater updater) throws StoreException;
 
     void close();
 

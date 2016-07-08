@@ -61,6 +61,7 @@ import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.Event;
 import org.apache.qpid.server.store.EventListener;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.util.Action;
@@ -108,7 +109,7 @@ public class VirtualHostTest extends QpidTestCase
         when(_virtualHostNode.getModel()).thenReturn(objectFactory.getModel());
         when(_virtualHostNode.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_virtualHostNode.getChildExecutor()).thenReturn(_taskExecutor);
-
+        when(_virtualHostNode.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
     }
 
     @Override

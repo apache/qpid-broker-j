@@ -24,6 +24,7 @@ import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.store.FileBasedSettings;
 import org.apache.qpid.server.store.SizeMonitoringSettings;
+import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 
 public interface BDBSystemConfig<X extends BDBSystemConfig<X>> extends SystemConfig<X>, FileBasedSettings,
                                                                        SizeMonitoringSettings
@@ -36,4 +37,8 @@ public interface BDBSystemConfig<X extends BDBSystemConfig<X>> extends SystemCon
 
     @ManagedAttribute(mandatory = true, defaultValue = "0")
     Long getStoreOverfullSize();
+
+    @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
+            defaultValue = "{\"type\": \"Provided\"}")
+    PreferenceStoreAttributes getPreferenceStoreAttributes();
 }

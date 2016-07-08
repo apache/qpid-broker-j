@@ -21,14 +21,8 @@
 package org.apache.qpid.server.store;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,21 +37,16 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
-import org.apache.qpid.server.util.BaseAction;
-import org.apache.qpid.server.util.FileHelper;
-import org.apache.qpid.util.FileUtils;
 
-public class JsonFileConfigStore implements DurableConfigurationStore
+public class JsonFileConfigStore extends AbstractJsonFileStore implements DurableConfigurationStore
 {
-    private static final Logger _logger = LoggerFactory.getLogger(JsonFileConfigStore.class);
+
 
     private static final Comparator<Class<? extends ConfiguredObject>> CATEGORY_CLASS_COMPARATOR =
             new Comparator<Class<? extends ConfiguredObject>>()
@@ -83,28 +72,17 @@ public class JsonFileConfigStore implements DurableConfigurationStore
 
     private final Map<UUID, ConfiguredObjectRecord> _objectsById = new HashMap<UUID, ConfiguredObjectRecord>();
     private final Map<String, List<UUID>> _idsByType = new HashMap<String, List<UUID>>();
-    private final ObjectMapper _objectMapper;
     private final Class<? extends ConfiguredObject> _rootClass;
-    private final FileHelper _fileHelper;
-
+    private final ObjectMapper _objectMapper;
     private Map<String,Class<? extends ConfiguredObject>> _classNameMapping;
-    private String _directoryName;
-    private String _name;
-    private FileLock _fileLock;
-    private String _configFileName;
-    private String _backupFileName;
-    private String _tempFileName;
-    private String _lockFileName;
 
     private ConfiguredObject<?> _parent;
 
     public JsonFileConfigStore(Class<? extends ConfiguredObject> rootClass)
     {
-
-        _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
-        _objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+        super();
+        _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
         _rootClass = rootClass;
-        _fileHelper = new FileHelper();
     }
 
     @Override
@@ -119,10 +97,10 @@ public class JsonFileConfigStore implements DurableConfigurationStore
                                        final ConfiguredObjectRecord... initialRecords)
     {
         _parent = parent;
-        _name = parent.getName();
         _classNameMapping = generateClassNameMap(_parent.getModel(), _rootClass);
         FileBasedSettings fileBasedSettings = (FileBasedSettings)_parent;
-        setup(fileBasedSettings);
+        setup(parent.getName(), fileBasedSettings.getStorePath(), parent.getContextValue(String.class, BrokerProperties.POSIX_FILE_PERMISSIONS),
+              Collections.emptyMap());
         load(overwrite, initialRecords);
     }
 
@@ -142,154 +120,9 @@ public class JsonFileConfigStore implements DurableConfigurationStore
         handler.end();
     }
 
-
-    private void setup(final FileBasedSettings configurationStoreSettings)
-    {
-        if(configurationStoreSettings.getStorePath() == null)
-        {
-            throw new StoreException("Cannot determine path for configuration storage");
-        }
-        File fileFromSettings = new File(configurationStoreSettings.getStorePath());
-        File parentFromSettings = fileFromSettings.getAbsoluteFile().getParentFile();
-        boolean isFile = fileFromSettings.exists() && fileFromSettings.isFile();
-        if(!isFile)
-        {
-            if(fileFromSettings.exists())
-            {
-                isFile = false;
-            }
-            else if(fileFromSettings.getName().endsWith(File.separator))
-            {
-                isFile = false;
-            }
-            else if(fileFromSettings.getName().endsWith(".json"))
-            {
-                isFile = true;
-            }
-            else if(parentFromSettings.isDirectory() && fileFromSettings.getName().contains("."))
-            {
-                isFile = true;
-            }
-        }
-        if(isFile)
-        {
-            _directoryName = parentFromSettings.getAbsolutePath();
-            _configFileName = fileFromSettings.getName();
-            _backupFileName = fileFromSettings.getName() + ".bak";
-            _tempFileName = fileFromSettings.getName() + ".tmp";
-
-            _lockFileName = fileFromSettings.getName() + ".lck";
-        }
-        else
-        {
-            _directoryName = configurationStoreSettings.getStorePath();
-            _configFileName = _name + ".json";
-            _backupFileName = _name + ".bak";
-            _tempFileName = _name + ".tmp";
-
-            _lockFileName = _name + ".lck";
-        }
-
-
-        checkDirectoryIsWritable(_directoryName);
-        getFileLock();
-
-        Path storeFile = new File(_directoryName, _configFileName).toPath();
-        Path backupFile = new File(_directoryName, _backupFileName).toPath();
-        if(!Files.exists(storeFile))
-        {
-            if(!Files.exists(backupFile))
-            {
-                try
-                {
-                    String posixFileAttributes = _parent.getContextValue(String.class, BrokerProperties.POSIX_FILE_PERMISSIONS);
-                    storeFile = _fileHelper.createNewFile(storeFile, posixFileAttributes);
-                    _objectMapper.writeValue(storeFile.toFile(), Collections.emptyMap());
-                }
-                catch (IOException e)
-                {
-                    throw new StoreException("Could not write configuration file " + storeFile, e);
-                }
-            }
-            else
-            {
-                try
-                {
-                    _fileHelper.atomicFileMoveOrReplace(backupFile, storeFile);
-                }
-                catch (IOException e)
-                {
-                    throw new StoreException("Could not move backup to configuration file " + storeFile, e);
-                }
-            }
-        }
-
-        try
-        {
-            Files.deleteIfExists(backupFile);
-        }
-        catch (IOException e)
-        {
-            throw new StoreException("Could not delete backup file " + backupFile, e);
-        }
-
-    }
-
-    private void getFileLock()
-    {
-        File lockFile = new File(_directoryName, _lockFileName);
-        try
-        {
-            lockFile.createNewFile();
-            lockFile.deleteOnExit();
-
-            @SuppressWarnings("resource")
-            FileOutputStream out = new FileOutputStream(lockFile);
-            FileChannel channel = out.getChannel();
-            _fileLock = channel.tryLock();
-        }
-        catch (IOException ioe)
-        {
-            throw new StoreException("Cannot create the lock file " + lockFile.getName(), ioe);
-        }
-        catch(OverlappingFileLockException e)
-        {
-            _fileLock = null;
-        }
-
-        if(_fileLock == null)
-        {
-            throw new StoreException("Cannot get lock on file " + lockFile.getAbsolutePath() + ". Is another instance running?");
-        }
-    }
-
-    private void checkDirectoryIsWritable(String directoryName)
-    {
-        File dir = new File(directoryName);
-        if(dir.exists())
-        {
-            if(dir.isDirectory())
-            {
-                if(!dir.canWrite())
-                {
-                    throw new StoreException("Configuration path " + directoryName + " exists, but is not writable");
-                }
-
-            }
-            else
-            {
-                throw new StoreException("Configuration path " + directoryName + " exists, but is not a directory");
-            }
-        }
-        else if(!dir.mkdirs())
-        {
-            throw new StoreException("Cannot create directory " + directoryName);
-        }
-    }
-
     protected void load(final boolean overwrite, final ConfiguredObjectRecord[] initialRecords)
     {
-        final File configFile = new File(_directoryName, _configFileName);
+        final File configFile = getConfigFile();
         try
         {
             boolean updated = false;
@@ -399,25 +232,7 @@ public class JsonFileConfigStore implements DurableConfigurationStore
             data = build(_rootClass, rootId);
         }
 
-        try
-        {
-            Path tmpFile = new File(_directoryName, _tempFileName).toPath();
-            _fileHelper.writeFileSafely( new File(_directoryName, _configFileName).toPath(),
-                    new File(_directoryName, _backupFileName).toPath(),
-                    tmpFile,
-                    new BaseAction<File, IOException>()
-                    {
-                        @Override
-                        public void performAction(File file) throws IOException
-                        {
-                            _objectMapper.writeValue(file, data);
-                        }
-                    });
-        }
-        catch (IOException e)
-        {
-            throw new StoreException("Cannot save to store", e);
-        }
+        save(data);
     }
 
     private Map<String, Object> build(final Class<? extends ConfiguredObject> type, final UUID id)
@@ -578,7 +393,7 @@ public class JsonFileConfigStore implements DurableConfigurationStore
     {
         try
         {
-            releaseFileLock();
+            cleanup();
         }
         finally
         {
@@ -591,44 +406,8 @@ public class JsonFileConfigStore implements DurableConfigurationStore
     public void onDelete(ConfiguredObject<?> parent)
     {
         FileBasedSettings fileBasedSettings = (FileBasedSettings)parent;
-        String storePath = fileBasedSettings.getStorePath();
 
-        if (storePath != null)
-        {
-            if (_logger.isDebugEnabled())
-            {
-                _logger.debug("Deleting store " + storePath);
-            }
-
-            File configFile = new File(storePath);
-            if (!FileUtils.delete(configFile, true))
-            {
-                _logger.info("Failed to delete the store at location " + storePath);
-            }
-        }
-
-        _configFileName = null;
-        _directoryName = null;
-    }
-
-    private void releaseFileLock()
-    {
-        if (_fileLock != null)
-        {
-            try
-            {
-                _fileLock.release();
-                _fileLock.channel().close();
-            }
-            catch (IOException e)
-            {
-                throw new StoreException("Failed to release lock " + _fileLock, e);
-            }
-            finally
-            {
-                _fileLock = null;
-            }
-        }
+        delete(fileBasedSettings.getStorePath());
     }
 
     private static Map<String,Class<? extends ConfiguredObject>> generateClassNameMap(final Model model,
@@ -645,5 +424,11 @@ public class JsonFileConfigStore implements DurableConfigurationStore
             }
         }
         return map;
+    }
+
+    @Override
+    protected ObjectMapper getSerialisationObjectMapper()
+    {
+        return _objectMapper;
     }
 }

@@ -33,6 +33,7 @@ import java.util.Map;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,6 +76,7 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         when(systemConfig.getModel()).thenReturn(model);
         when(systemConfig.getChildExecutor()).thenReturn(_taskExecutor);
         when(systemConfig.getEventLogger()).thenReturn(eventLogger);
+        when(systemConfig.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
         doReturn(SystemConfig.class).when(systemConfig).getCategoryClass();
 
         Broker<?> broker = mock(Broker.class);
@@ -90,6 +92,7 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         when(node.getParent(Broker.class)).thenReturn(broker);
         when(node.getConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));
         doReturn(VirtualHostNode.class).when(node).getCategoryClass();
+        when(node.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
 
         // use real VH object rather then mock in order to test create/start/stop functionality
         Map<String, Object> attributes = new HashMap<>();

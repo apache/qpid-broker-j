@@ -37,6 +37,7 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.NoopPreferenceStoreFactoryService;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.server.virtualhostnode.TestVirtualHostNode;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -63,6 +64,7 @@ public class BrokerAdapterTest extends QpidTestCase
         when(_systemConfig.getModel()).thenReturn(BrokerModel.getInstance());
         when(_systemConfig.getEventLogger()).thenReturn(new EventLogger());
         when(_systemConfig.getCategoryClass()).thenReturn(SystemConfig.class);
+        when(_systemConfig.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
     }
 
     @Override
@@ -182,31 +184,5 @@ public class BrokerAdapterTest extends QpidTestCase
             }
         };
         vh.create();
-    }
-
-    public void testPreferenceStoreDetails()
-    {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put("name", "Broker");
-        attributes.put(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
-        attributes.put(Broker.DURABLE, true);
-
-        final Map<String, Object> settings = new HashMap<>();
-        settings.put("type", NoopPreferenceStoreFactoryService.TYPE);
-        Map<String, Object> additionalSettings = new HashMap<>();
-        additionalSettings.put("path", "testPath");
-        settings.put("attributes", additionalSettings);
-
-        attributes.put("preferenceStoreAttributes", settings);
-        _brokerAdapter = new BrokerAdapter(attributes, _systemConfig);
-        _brokerAdapter.open();
-
-        assertEquals("preference store has unexpected type",
-                     NoopPreferenceStoreFactoryService.TYPE,
-                     _brokerAdapter.getPreferenceStoreAttributes().getType());
-        Map<String, Object> retrievedAdditionalSettings =
-                new HashMap<>(_brokerAdapter.getPreferenceStoreAttributes().getAttributes());
-        assertEquals("unexpected additional settings", additionalSettings, retrievedAdditionalSettings);
-        assertEquals("unexpected path", "testPath", retrievedAdditionalSettings.get("path"));
     }
 }
