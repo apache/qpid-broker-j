@@ -25,6 +25,7 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -32,9 +33,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 
 import javax.security.auth.Subject;
+
+import com.google.common.collect.Ordering;
+
+
+
 
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
@@ -43,6 +50,16 @@ import org.apache.qpid.server.store.preferences.PreferenceStore;
 
 public class UserPreferencesImpl implements UserPreferences
 {
+    private final static Comparator<Preference> PREFERENCE_COMPARATOR = new Comparator<Preference>()
+    {
+        private final Ordering<Comparable> _ordering = Ordering.natural().nullsFirst();
+        @Override
+        public int compare(final Preference o1, final Preference o2)
+        {
+            return _ordering.compare(o1.getName(), o2.getName());
+        }
+    };
+
     private final Map<UUID, Preference> _preferences;
     private final Map<String, List<Preference>> _preferencesByName;
     private final PreferenceStore _preferenceStore;
@@ -88,7 +105,7 @@ public class UserPreferencesImpl implements UserPreferences
     {
         Principal currentPrincipal = getMainPrincipalOrThrow();
 
-        Set<Preference> preferences = new HashSet<>();
+        Set<Preference> preferences = new TreeSet<>(PREFERENCE_COMPARATOR);
         for (Preference preference : _preferences.values())
         {
             if (principalsEqual(currentPrincipal, preference.getOwner()))
@@ -189,7 +206,7 @@ public class UserPreferencesImpl implements UserPreferences
     {
         Set<Principal> currentPrincipals = getPrincipalsOrThrow();
 
-        Set<Preference> visiblePreferences = new HashSet<>();
+        Set<Preference> visiblePreferences = new TreeSet<>(PREFERENCE_COMPARATOR);
         for (Preference preference : _preferences.values())
         {
             if (principalsContain(currentPrincipals, preference.getOwner()))
