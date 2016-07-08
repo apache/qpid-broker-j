@@ -140,7 +140,6 @@ define(["dojo/_base/declare",
                 _onChange: function (e)
                 {
                     var invalid = !this.queryName.value;
-                    this.saveButton.set("disabled", invalid);
                 },
                 _onFormSubmit: function (e)
                 {
@@ -376,7 +375,6 @@ define(["dojo/_base/declare",
                         this._resultsGrid.setOrderBy(this.advancedOrderBy.value);
                     }
 
-                    this.saveButton.set("disabled", true);
                     // if the preference has an id, then we know it is in the store
                     this.deleteButton.set("disabled", this.preference != null && this.preference.id != null ? false : true);
                 },
@@ -1005,7 +1003,6 @@ define(["dojo/_base/declare",
                             this.preference = preference;
                             this._querySaveDialog.hide();
                             this.emit("save", {preference: preference});
-                            this.saveButton.set("disabled", true);
                             this.deleteButton.set("disabled", false);
                         }));
                     }));
@@ -1117,7 +1114,6 @@ define(["dojo/_base/declare",
                     var pref = lang.clone(this.preference);
                     pref.value = queryParameters;
                     this.emit("change", {preference: pref});
-                    this.saveButton.set("disabled", false);
                 }
             });
 

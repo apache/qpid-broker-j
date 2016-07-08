@@ -43,6 +43,7 @@ define(["dojo/dom",
         "qpid/management/Logger",
         "qpid/management/QueryTab",
         "qpid/management/QueryBrowserTab",
+        "qpid/common/util",
         "dojo/ready",
         "dojox/uuid/generateRandomUuid",
         "dojo/domReady!"],
@@ -71,6 +72,7 @@ define(["dojo/dom",
               Logger,
               QueryTab,
               QueryBrowserTab,
+              util,
               ready)
     {
         var controller = {};
@@ -107,23 +109,9 @@ define(["dojo/dom",
 
         controller.viewedObjects = {};
 
-        var generateName = function (obj)
-        {
-            if (obj)
-            {
-                var name = obj.type + (obj.type == "broker" ? "" : ":" + obj.name);
-                if (obj.parent)
-                {
-                    name = generateName(obj.parent) + "/" + name;
-                }
-                return name;
-            }
-            return "";
-        };
-
         var generateTabObjId = function(objType, name, parent)
         {
-            var parentPart = (parent ? generateName(parent) + "/" : "");
+            var parentPart = (parent ? util.generateName(parent) + "/" : "");
             var namePart = null;
             if (typeof name === 'string')
             {

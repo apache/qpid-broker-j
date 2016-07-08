@@ -35,6 +35,7 @@ define(["dojo/_base/declare",
         "dgrid/extensions/DijitRegistry",
         "dgrid/extensions/ColumnResizer",
         "qpid/management/query/StoreUpdater",
+        "qpid/common/util",
         "dojo/text!query/QueryBrowserWidget.html",
         "dijit/_WidgetBase",
         "dijit/_TemplatedMixin",
@@ -60,6 +61,7 @@ define(["dojo/_base/declare",
               DijitRegistry,
               ColumnResizer,
               StoreUpdater,
+              util,
               template)
     {
         var empty = new Deferred();
@@ -278,9 +280,10 @@ define(["dojo/_base/declare",
                             }
 
                             var items = [];
+                            var rootName =  util.generateName(root);
                             var rootItem = {
                                 id: root.id,
-                                name: root.type + ":" + root.name
+                                name: rootName
                             };
 
                             items.push(rootItem);

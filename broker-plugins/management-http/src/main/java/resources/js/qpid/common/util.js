@@ -927,7 +927,7 @@ define(["dojo/_base/xhr",
                     }
                 }
             });
-        }
+        };
 
         util.abortReaderSafely = function (reader)
         {
@@ -942,19 +942,19 @@ define(["dojo/_base/xhr",
                     // Ignore - read no longer in progress
                 }
             }
-        }
+        };
 
         util.buildCheckboxMarkup = function (val)
         {
             return "<input type='checkbox' disabled='disabled' " + (val ? "checked='checked'" : "") + " />";
-        }
+        };
 
         util.makeTypeStoreFromMetadataByCategory = function (metadata, category)
         {
             var supportedTypes = metadata.getTypesForCategory(category);
             supportedTypes.sort();
             return this.makeTypeStore(supportedTypes);
-        }
+        };
 
         util.extend = function (childConstructor, parentConstructor)
         {
@@ -962,7 +962,22 @@ define(["dojo/_base/xhr",
             childPrototype.constructor = childConstructor;
             childConstructor.prototype = childPrototype;
             return childConstructor;
-        }
+        };
+
+        util.generateName = function (obj)
+        {
+            if (obj)
+            {
+                var name = obj.type + (obj.type == "broker" ? "" : ":" + obj.name);
+                if (obj.parent)
+                {
+                    name = this.generateName(obj.parent) + "/" + name;
+                }
+                return name;
+            }
+            return "";
+        };
+
 
         return util;
     });
