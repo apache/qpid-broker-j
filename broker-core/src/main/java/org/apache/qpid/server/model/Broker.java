@@ -253,12 +253,6 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     Collection<GroupProvider<?>> getGroupProviders();
 
-    /**
-     * A temporary hack to expose security manager via broker instance.
-     * TODO We need to add and implement an authorization provider configured object instead
-     */
-    SecurityManager getSecurityManager();
-
     VirtualHost<?> findVirtualHostByName(String name);
 
     VirtualHostNode findDefautVirtualHostNode();

@@ -101,6 +101,7 @@ import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
@@ -242,7 +243,9 @@ public class AMQChannel
         _subject.getPrincipals().add(new SessionPrincipal(this));
 
         _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(_subject);
-        _token = _connection.getBroker().getSecurityManager().newToken(_subject);
+        _token = (_connection.getAddressSpace() instanceof ConfiguredObject)
+                ? ((ConfiguredObject)_connection.getAddressSpace()).newToken(_subject)
+                :_connection.getBroker().newToken(_subject);
 
         _maxUncommittedInMemorySize = connection.getContextProvider().getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
         _logSubject = new ChannelLogSubject(this);
@@ -429,7 +432,6 @@ public class AMQChannel
             String routingKey = AMQShortString.toString(info.getRoutingKey());
             NamedAddressSpace virtualHost = getAddressSpace();
 
-            SecurityManager securityManager = getConnection().getBroker().getSecurityManager();
             try
             {
                 ContentHeaderBody contentHeader = _currentMessage.getContentHeader();
@@ -440,9 +442,9 @@ public class AMQChannel
                     Map<String,Object> args = new HashMap<>();
                     args.put("routingKey", routingKey);
                     args.put("immediate", info.isImmediate());
-
-                    securityManager
-                            .authoriseExecute(_token, (ConfiguredObject)_currentMessage.getDestination(), "publish", args );
+                    ((ConfiguredObject)_currentMessage.getDestination()).authorise(_token,
+                                              Operation.ACTION("publish"),
+                                              args);
 
                 };
 

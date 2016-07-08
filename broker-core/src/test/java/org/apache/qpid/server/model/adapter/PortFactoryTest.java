@@ -42,7 +42,6 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
-import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
@@ -51,6 +50,7 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.model.port.PortFactory;
+import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -87,8 +87,6 @@ public class PortFactoryTest extends QpidTestCase
         ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(_broker.getObjectFactory()).thenReturn(objectFactory);
         when(_broker.getModel()).thenReturn(objectFactory.getModel());
-        SecurityManager securityManager = new SecurityManager(_broker, false);
-        when(_broker.getSecurityManager()).thenReturn(securityManager);
         when(_authProvider.getModel()).thenReturn(objectFactory.getModel());
         when(_authProvider.getObjectFactory()).thenReturn(objectFactory);
         when(_authProvider.getCategoryClass()).thenReturn(AuthenticationProvider.class);

@@ -18,11 +18,15 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.security.access.config;
+package org.apache.qpid.server.security.access;
 
-import org.apache.qpid.server.security.Result;
-
-interface LegacyAccessControl
+public enum OperationType
 {
-    Result authorise(LegacyOperation authoriseOperation, ObjectType objectType, ObjectProperties properties);
+    CREATE,
+    UPDATE,
+    DELETE,
+    DISCOVER,
+    READ,
+    METHOD,
+    ACTION
 }

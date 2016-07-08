@@ -80,6 +80,7 @@ import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
@@ -1394,7 +1395,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     @Override
     public void updateMutableConfig()
     {
-        getSecurityManager().authoriseUpdate(getBroker());
+        authorise(Operation.METHOD("updateMutableConfig"));
         ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
         if (environmentFacade != null)
         {
@@ -1405,7 +1406,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     @Override
     public int cleanLog()
     {
-        getSecurityManager().authoriseUpdate(getBroker());
+        authorise(Operation.METHOD("cleanLog"));
         ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
         if (environmentFacade != null)
         {
@@ -1417,7 +1418,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     @Override
     public void checkpoint(final boolean force)
     {
-        getSecurityManager().authoriseUpdate(getBroker());
+        authorise(Operation.METHOD("checkpoint"), Collections.<String,Object>singletonMap("force", force));
         ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
         if (environmentFacade != null)
         {

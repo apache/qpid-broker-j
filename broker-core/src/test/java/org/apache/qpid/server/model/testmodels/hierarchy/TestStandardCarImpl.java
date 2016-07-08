@@ -33,8 +33,6 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.testmodels.TestSecurityManager;
-import org.apache.qpid.server.security.SecurityManager;
 
 @ManagedObject( category = false,
                 type = TestStandardCarImpl.TEST_STANDARD_CAR_TYPE,
@@ -43,7 +41,6 @@ public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCa
         implements TestStandardCar<TestStandardCarImpl>
 {
     public static final String TEST_STANDARD_CAR_TYPE = "testpertrolcar";
-    private final SecurityManager _securityManager;
 
     @ManagedAttributeField
     private Colour _bodyColour;
@@ -55,13 +52,11 @@ public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCa
     public TestStandardCarImpl(final Map<String, Object> attributes)
     {
         super(parentsMap(), attributes, newTaskExecutor(), TestModel.getInstance());
-        _securityManager = new TestSecurityManager(this);
     }
 
     public TestStandardCarImpl(final Map<String, Object> attributes, TestModel model)
     {
         super(parentsMap(), attributes, newTaskExecutor(), model);
-        _securityManager = new TestSecurityManager(this);
     }
 
 
@@ -85,12 +80,6 @@ public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCa
     {
         Collection<String> types = Arrays.asList(TestPetrolEngineImpl.TEST_PETROL_ENGINE_TYPE, TestHybridEngineImpl.TEST_HYBRID_ENGINE_TYPE);
         return Collections.singletonMap(TestEngine.class.getSimpleName(), types);
-    }
-
-    @Override
-    protected SecurityManager getSecurityManager()
-    {
-        return _securityManager;
     }
 
     @Override

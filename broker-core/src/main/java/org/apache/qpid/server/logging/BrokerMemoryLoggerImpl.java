@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.logging;
 
-import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
@@ -38,6 +36,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.security.access.Operation;
 
 public class BrokerMemoryLoggerImpl extends AbstractBrokerLogger<BrokerMemoryLoggerImpl> implements BrokerMemoryLogger<BrokerMemoryLoggerImpl>
 {
@@ -106,7 +105,7 @@ public class BrokerMemoryLoggerImpl extends AbstractBrokerLogger<BrokerMemoryLog
     @Override
     public Collection<LogRecord> getLogEntries(long lastLogId)
     {
-        getSecurityManager().authoriseExecute(this, "getLogEntries", Collections.<String,Object>emptyMap());
+        authorise(Operation.METHOD("getLogEntries"));
 
         List<LogRecord> logRecords = new ArrayList<>();
         for(LogRecord record : _logRecorder)

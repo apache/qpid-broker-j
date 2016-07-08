@@ -48,7 +48,6 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.group.FileGroupDatabase;
 import org.apache.qpid.server.security.group.GroupPrincipal;
@@ -252,12 +251,6 @@ public class FileBasedGroupProviderImpl
             }
             return principals;
         }
-    }
-
-    @Override
-    protected SecurityManager getSecurityManager()
-    {
-        return _broker.getSecurityManager();
     }
 
     @StateTransition( currentState = { State.UNINITIALIZED, State.QUIESCED, State.ERRORED }, desiredState = State.ACTIVE )

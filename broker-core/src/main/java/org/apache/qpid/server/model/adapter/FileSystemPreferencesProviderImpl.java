@@ -58,6 +58,7 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.util.BaseAction;
 import org.apache.qpid.server.util.FileHelper;
 
@@ -225,7 +226,8 @@ public class FileSystemPreferencesProviderImpl
     @Override
     public Map<String, Object> getPreferences(String userId)
     {
-        getSecurityManager().authoriseExecute(_authenticationProvider, "getPreferences", Collections.singletonMap("userId", (Object)userId));
+        _authenticationProvider.authorise(Operation.METHOD("getPreferences"),
+                                          Collections.singletonMap("userId", (Object)userId));
         return _store == null? Collections.<String, Object>emptyMap() : _store.getPreferences(userId);
     }
 
@@ -250,7 +252,8 @@ public class FileSystemPreferencesProviderImpl
 
         for (String userId: userIDs)
         {
-            getSecurityManager().authoriseExecute(_authenticationProvider, "deletePreferences", Collections.singletonMap("userId", (Object)userId));
+            _authenticationProvider.authorise(Operation.METHOD("deletePreferences"),
+                                              Collections.singletonMap("userId", (Object)userId));
         }
         return _store.deletePreferences(userIDs);
     }

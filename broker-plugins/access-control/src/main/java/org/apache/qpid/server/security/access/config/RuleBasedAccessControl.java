@@ -24,6 +24,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.AccessController;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -73,7 +74,7 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
      * control rules granted to the current thread's {@link Subject}. If there is no current
      * user the plugin will abstain.
      */
-    public Result authorise(Operation operation, ObjectType objectType, ObjectProperties properties)
+    public Result authorise(LegacyOperation operation, ObjectType objectType, ObjectProperties properties)
     {
         InetAddress addressOfClient = null;
         final Subject subject = Subject.getSubject(AccessController.getContext());
@@ -81,7 +82,7 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
         // Abstain if there is no subject/principal associated with this thread
         if (subject == null  || subject.getPrincipals().size() == 0)
         {
-            return Result.ABSTAIN;
+            return Result.DEFER;
         }
 
         Set<ConnectionPrincipal> principals = subject.getPrincipals(ConnectionPrincipal.class);
@@ -112,13 +113,6 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
         }
     }
 
-    @Override
-    public Result authorise(final Operation operation, final ConfiguredObject<?> configuredObject)
-    {
-        return _adapter.authorise(operation, configuredObject);
-    }
-
-    @Override
     public Result authoriseMethod(final ConfiguredObject<?> configuredObject,
                                   final String methodName,
                                   final Map<String, Object> arguments)
@@ -127,17 +121,34 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
     }
 
     @Override
-    public Result authoriseMethod(final CachingSecurityToken token,
-                                  final ConfiguredObject<?> configuredObject,
-                                  final String methodName,
-                                  final Map<String,Object> arguments)
+    public Result authorise(final CachingSecurityToken token,
+                            final Operation operation,
+                            final ConfiguredObject<?> configuredObject)
+    {
+        return authorise(token, operation, configuredObject, Collections.<String,Object>emptyMap());
+    }
+
+    @Override
+    public Result authorise(final CachingSecurityToken token,
+                            final Operation operation,
+                            final ConfiguredObject<?> configuredObject,
+                            final Map<String, Object> arguments)
     {
         if(token != null)
         {
-            return token.authoriseMethod(this, configuredObject, methodName, arguments);
-
+            return token.authorise(this, operation, configuredObject, arguments);
         }
-        return authoriseMethod(configuredObject, methodName, arguments);
+        else
+        {
+            return authorise(operation, configuredObject, arguments);
+        }
+    }
+
+    Result authorise(final Operation operation,
+                     final ConfiguredObject<?> configuredObject,
+                     final Map<String, Object> arguments)
+    {
+        return _adapter.authorise(operation, configuredObject, arguments);
     }
 
 

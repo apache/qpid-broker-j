@@ -44,6 +44,7 @@ import org.apache.qpid.server.management.plugin.session.LoginLogoutReporter;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.access.Operation;
 
 public class HttpManagementUtil
 {
@@ -67,6 +68,8 @@ public class HttpManagementUtil
     private static final String GZIP_CONTENT_ENCODING = "gzip";
 
     private static final Collection<HttpRequestPreemptiveAuthenticator> AUTHENTICATORS;
+    private static final Operation MANAGE_ACTION = Operation.ACTION("manage");
+
     static
     {
         List<HttpRequestPreemptiveAuthenticator> authenticators = new ArrayList<>();
@@ -136,7 +139,7 @@ public class HttpManagementUtil
             @Override
             public Void run()
             {
-                broker.getSecurityManager().authoriseExecute(broker,"manage",Collections.<String,Object>emptyMap());
+                broker.authorise(MANAGE_ACTION);
                 return null;
             }
         });

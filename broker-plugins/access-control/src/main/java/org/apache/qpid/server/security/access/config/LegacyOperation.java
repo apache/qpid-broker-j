@@ -16,38 +16,30 @@
  *  specific language governing permissions and limitations
  *  under the License.
  */
-package org.apache.qpid.server.security;
+package org.apache.qpid.server.security.access.config;
 
 /**
- * The result of a security plugin decision, normally {@link #ALLOWED} or {@link #DENIED}.
+ * An enumeration of all possible actions that can form part of an access control v2 rule.
  */
-public enum Result
+public enum LegacyOperation
 {
-    /**
-     * The request is allowed.
-     */
-    ALLOWED(true),
-    
-    /**
-     * The request is denied.
-     */
-    DENIED(true),
-    
-    /**
-     * A plugin instance cannot make a decision on a request it is able to handle,
-     * and another instance of the plugin should be checked.
-     */
-    DEFER(false);
+    ALL,
+    CONSUME,
+    PUBLISH,
+    CREATE,
+    ACCESS,
+    BIND,
+    UNBIND,
+    DELETE,
+    PURGE,
+    UPDATE,
+    CONFIGURE,
+    ACCESS_LOGS,
+    SHUTDOWN;
 
-    private final boolean _final;
-
-    Result(final boolean isfinal)
+    public String toString()
     {
-        _final = isfinal;
-    }
-
-    public boolean isFinal()
-    {
-        return _final;
+        String name = name();
+        return name.charAt(0) + name.substring(1).toLowerCase();
     }
 }

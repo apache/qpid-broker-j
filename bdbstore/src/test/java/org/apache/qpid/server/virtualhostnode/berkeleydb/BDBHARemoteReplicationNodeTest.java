@@ -21,6 +21,9 @@ package org.apache.qpid.server.virtualhostnode.berkeleydb;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -37,11 +40,16 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.model.AccessControlSource;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade;
 import org.apache.qpid.server.util.BrokerTestHelper;
@@ -51,13 +59,20 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class BDBHARemoteReplicationNodeTest extends QpidTestCase
 {
-    private final org.apache.qpid.server.security.SecurityManager _mockSecurityManager = mock(SecurityManager.class);
+    private final AccessControl _mockAccessControl = mock(AccessControl.class);
 
     private Broker _broker;
     private TaskExecutor _taskExecutor;
-    private BDBHAVirtualHostNode<?> _virtualHostNode;
+    private BDBHAVirtualHostNodeTest<?> _virtualHostNode;
     private DurableConfigurationStore _configStore;
     private ReplicatedEnvironmentFacade _facade;
+
+    private interface BDBHAVirtualHostNodeTest<X extends BDBHAVirtualHostNodeTest<X>> extends BDBHAVirtualHostNode<X>,
+                                                                                              AccessControlSource
+    {
+
+    }
+
 
     @Override
     protected void setUp() throws Exception
@@ -73,7 +88,8 @@ public class BDBHARemoteReplicationNodeTest extends QpidTestCase
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
 
-        _virtualHostNode = mock(BDBHAVirtualHostNode.class);
+        _virtualHostNode = mock(BDBHAVirtualHostNodeTest.class);
+        when(_virtualHostNode.getAccessControl()).thenReturn(_mockAccessControl);
         _configStore = mock(DurableConfigurationStore.class);
         when(_virtualHostNode.getConfigurationStore()).thenReturn(_configStore);
 
@@ -146,12 +162,9 @@ public class BDBHARemoteReplicationNodeTest extends QpidTestCase
 
     public void testUpdateDeniedByACL()
     {
-        when(_broker.getSecurityManager()).thenReturn(_mockSecurityManager);
-
         String remoteReplicationName = getName();
         BDBHARemoteReplicationNode remoteReplicationNode = createRemoteReplicationNode(remoteReplicationName);
-
-        doThrow(new AccessControlException("mocked ACL exception")).when(_mockSecurityManager).authoriseUpdate(remoteReplicationNode);
+        when(_mockAccessControl.authorise(any(SecurityToken.class), eq(Operation.UPDATE), eq(remoteReplicationNode), anyMap())).thenReturn(Result.DENIED);
 
         assertNull(remoteReplicationNode.getDescription());
 
@@ -168,13 +181,10 @@ public class BDBHARemoteReplicationNodeTest extends QpidTestCase
 
     public void testDeleteDeniedByACL()
     {
-        when(_broker.getSecurityManager()).thenReturn(_mockSecurityManager);
-
         String remoteReplicationName = getName();
         BDBHARemoteReplicationNode remoteReplicationNode = createRemoteReplicationNode(remoteReplicationName);
 
-        doThrow(new AccessControlException("mocked ACL exception")).when(_mockSecurityManager).authoriseDelete(remoteReplicationNode);
-
+        when(_mockAccessControl.authorise(any(SecurityToken.class), eq(Operation.DELETE), eq(remoteReplicationNode), anyMap())).thenReturn(Result.DENIED);
         assertNull(remoteReplicationNode.getDescription());
 
         try

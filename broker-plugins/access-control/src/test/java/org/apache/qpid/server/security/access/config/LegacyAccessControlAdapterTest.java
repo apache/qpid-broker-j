@@ -22,7 +22,7 @@ package org.apache.qpid.server.security.access.config;
 
 import static org.apache.qpid.server.security.access.config.ObjectType.BROKER;
 import static org.apache.qpid.server.security.access.config.ObjectType.VIRTUALHOST;
-import static org.apache.qpid.server.security.access.Operation.ACCESS_LOGS;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.ACCESS_LOGS;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -35,7 +35,6 @@ import java.util.Map;
 
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.queue.QueueConsumer;
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class LegacyAccessControlAdapterTest extends QpidTestCase
@@ -141,7 +140,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(binding.getAttribute(Binding.NAME)).thenReturn("bindingKey");
         when(binding.getCategoryClass()).thenReturn(Binding.class);
 
-        assertCreateAuthorization(binding, Operation.BIND, ObjectType.EXCHANGE, properties, exchange, queue);
+        assertCreateAuthorization(binding, LegacyOperation.BIND, ObjectType.EXCHANGE, properties, exchange, queue);
     }
 
 
@@ -173,7 +172,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         properties.put(ObjectProperties.Property.DURABLE, true);
         properties.put(ObjectProperties.Property.EXCLUSIVE, false);
 
-        assertAuthorization(Operation.CREATE, consumer, Operation.CONSUME, ObjectType.QUEUE, properties, queue, session);
+        assertAuthorization(LegacyOperation.CREATE, consumer, LegacyOperation.CONSUME, ObjectType.QUEUE, properties, queue, session);
     }
 
 
@@ -196,7 +195,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(mock.getCategoryClass()).thenReturn(User.class);
         when(mock.getParent(AuthenticationProvider.class)).thenReturn(authenticationProvider);
         ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
-        assertUpdateAuthorization(mock, Operation.UPDATE, ObjectType.USER, properties, authenticationProvider);
+        assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.USER, properties, authenticationProvider);
     }
 
 
@@ -209,7 +208,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(mock.getCategoryClass()).thenReturn(VirtualHost.class);
         when(mock.getParent(VirtualHostNode.class)).thenReturn(vhn);
         ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
-        assertDeleteAuthorization(mock, Operation.DELETE, ObjectType.VIRTUALHOST, properties, vhn);
+        assertDeleteAuthorization(mock, LegacyOperation.DELETE, ObjectType.VIRTUALHOST, properties, vhn);
     }
 
     public void testAuthoriseDeleteBinding()
@@ -240,7 +239,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         properties.put(ObjectProperties.Property.TEMPORARY, false);
         properties.put(ObjectProperties.Property.DURABLE, true);
 
-        assertDeleteAuthorization(binding, Operation.UNBIND, ObjectType.EXCHANGE, properties, exchange, queue);
+        assertDeleteAuthorization(binding, LegacyOperation.UNBIND, ObjectType.EXCHANGE, properties, exchange, queue);
     }
 
 
@@ -272,7 +271,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(mock.getCategoryClass()).thenReturn(Group.class);
         when(mock.getParent(GroupProvider.class)).thenReturn(groupProvider);
         ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
-        assertDeleteAuthorization(mock, Operation.DELETE, ObjectType.GROUP, properties, groupProvider);
+        assertDeleteAuthorization(mock, LegacyOperation.DELETE, ObjectType.GROUP, properties, groupProvider);
     }
 
     public void testAuthoriseDeleteGroupMember()
@@ -285,7 +284,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(mock.getCategoryClass()).thenReturn(GroupMember.class);
         when(mock.getParent(Group.class)).thenReturn(group);
         ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
-        assertDeleteAuthorization(mock, Operation.UPDATE, ObjectType.GROUP, properties, group);
+        assertDeleteAuthorization(mock, LegacyOperation.UPDATE, ObjectType.GROUP, properties, group);
     }
 
     public void testAuthoriseDeleteUser()
@@ -298,7 +297,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(mock.getCategoryClass()).thenReturn(User.class);
         when(mock.getParent(AuthenticationProvider.class)).thenReturn(authenticationProvider);
         ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
-        assertDeleteAuthorization(mock, Operation.DELETE, ObjectType.USER, properties, authenticationProvider);
+        assertDeleteAuthorization(mock, LegacyOperation.DELETE, ObjectType.USER, properties, authenticationProvider);
     }
 
     public void testAuthoriseCreateExchange()
@@ -314,7 +313,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(exchange.getCategoryClass()).thenReturn(Exchange.class);
         when(exchange.getParent(VirtualHost.class)).thenReturn(vh);
 
-        assertCreateAuthorization(exchange, Operation.CREATE, ObjectType.EXCHANGE, expectedProperties, vh);
+        assertCreateAuthorization(exchange, LegacyOperation.CREATE, ObjectType.EXCHANGE, expectedProperties, vh);
     }
 
     public void testAuthoriseCreateQueue()
@@ -332,7 +331,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(queue.getCategoryClass()).thenReturn(Queue.class);
         when(queue.getParent(VirtualHost.class)).thenReturn(vh);
 
-        assertCreateAuthorization(queue, Operation.CREATE, ObjectType.QUEUE, expectedProperties, vh);
+        assertCreateAuthorization(queue, LegacyOperation.CREATE, ObjectType.QUEUE, expectedProperties, vh);
     }
 
     public void testAuthoriseDeleteQueue()
@@ -349,7 +348,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(queueObject.getParent(VirtualHost.class)).thenReturn(vh);
         when(queueObject.getCategoryClass()).thenReturn(Queue.class);
 
-        assertDeleteAuthorization(queueObject, Operation.DELETE, ObjectType.QUEUE, expectedProperties, vh);
+        assertDeleteAuthorization(queueObject, LegacyOperation.DELETE, ObjectType.QUEUE, expectedProperties, vh);
     }
 
     public void testAuthoriseUpdateQueue()
@@ -366,7 +365,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(queueObject.getParent(VirtualHost.class)).thenReturn(vh);
         when(queueObject.getCategoryClass()).thenReturn(Queue.class);
 
-        assertUpdateAuthorization(queueObject, Operation.UPDATE, ObjectType.QUEUE, expectedProperties, vh);
+        assertUpdateAuthorization(queueObject, LegacyOperation.UPDATE, ObjectType.QUEUE, expectedProperties, vh);
     }
 
     public void testAuthoriseUpdateExchange()
@@ -382,7 +381,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(exchange.getParent(VirtualHost.class)).thenReturn(vh);
         when(exchange.getCategoryClass()).thenReturn(Exchange.class);
 
-        assertUpdateAuthorization(exchange, Operation.UPDATE, ObjectType.EXCHANGE, expectedProperties, vh);
+        assertUpdateAuthorization(exchange, LegacyOperation.UPDATE, ObjectType.EXCHANGE, expectedProperties, vh);
     }
 
     public void testAuthoriseDeleteExchange()
@@ -398,7 +397,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(exchange.getParent(VirtualHost.class)).thenReturn(vh);
         when(exchange.getCategoryClass()).thenReturn(Exchange.class);
 
-        assertDeleteAuthorization(exchange, Operation.DELETE, ObjectType.EXCHANGE, expectedProperties, vh);
+        assertDeleteAuthorization(exchange, LegacyOperation.DELETE, ObjectType.EXCHANGE, expectedProperties, vh);
     }
 
     public void testAuthoriseUnbind()
@@ -429,13 +428,13 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         properties.put(ObjectProperties.Property.TEMPORARY, false);
         properties.put(ObjectProperties.Property.DURABLE, true);
 
-        assertDeleteAuthorization(binding, Operation.UNBIND, ObjectType.EXCHANGE, properties, exchange, queue);
+        assertDeleteAuthorization(binding, LegacyOperation.UNBIND, ObjectType.EXCHANGE, properties, exchange, queue);
     }
 
     public void testAuthoriseCreateVirtualHostNode()
     {
         VirtualHostNode vhn = getMockVirtualHostNode();
-        assertCreateAuthorization(vhn, Operation.CREATE, ObjectType.VIRTUALHOSTNODE, new ObjectProperties("testVHN"), _broker);
+        assertCreateAuthorization(vhn, LegacyOperation.CREATE, ObjectType.VIRTUALHOSTNODE, new ObjectProperties("testVHN"), _broker);
     }
 
     public void testAuthoriseCreatePort()
@@ -501,7 +500,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(group.getParent(GroupProvider.class)).thenReturn(groupProvider);
         when(group.getAttribute(Group.NAME)).thenReturn("test");
 
-        assertCreateAuthorization(group, Operation.CREATE, ObjectType.GROUP, new ObjectProperties("test"), groupProvider);
+        assertCreateAuthorization(group, LegacyOperation.CREATE, ObjectType.GROUP, new ObjectProperties("test"), groupProvider);
     }
 
     public void testAuthoriseCreateGroupMember()
@@ -516,7 +515,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(groupMember.getParent(Group.class)).thenReturn(group);
         when(groupMember.getAttribute(Group.NAME)).thenReturn("test");
 
-        assertCreateAuthorization(groupMember, Operation.UPDATE, ObjectType.GROUP, new ObjectProperties("test"), group);
+        assertCreateAuthorization(groupMember, LegacyOperation.UPDATE, ObjectType.GROUP, new ObjectProperties("test"), group);
     }
 
     public void testAuthoriseCreateUser()
@@ -532,19 +531,19 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(user.getParent(AuthenticationProvider.class)).thenReturn(authenticationProvider);
         when(user.getModel()).thenReturn(BrokerModel.getInstance());
 
-        assertCreateAuthorization(user, Operation.CREATE, ObjectType.USER, new ObjectProperties("test"), authenticationProvider);
+        assertCreateAuthorization(user, LegacyOperation.CREATE, ObjectType.USER, new ObjectProperties("test"), authenticationProvider);
     }
 
     public void testAuthoriseCreateVirtualHost()
     {
         VirtualHost vh = getMockVirtualHost();
-        assertCreateAuthorization(vh, Operation.CREATE, ObjectType.VIRTUALHOST, new ObjectProperties(TEST_VIRTUAL_HOST), _virtualHostNode);
+        assertCreateAuthorization(vh, LegacyOperation.CREATE, ObjectType.VIRTUALHOST, new ObjectProperties(TEST_VIRTUAL_HOST), _virtualHostNode);
     }
 
     public void testAuthoriseUpdateVirtualHostNode()
     {
         VirtualHostNode vhn = getMockVirtualHostNode();
-        assertUpdateAuthorization(vhn, Operation.UPDATE, ObjectType.VIRTUALHOSTNODE, new ObjectProperties(vhn.getName()), vhn);
+        assertUpdateAuthorization(vhn, LegacyOperation.UPDATE, ObjectType.VIRTUALHOSTNODE, new ObjectProperties(vhn.getName()), vhn);
     }
 
 
@@ -603,7 +602,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(mock.getCategoryClass()).thenReturn(Group.class);
         when(mock.getParent(GroupProvider.class)).thenReturn(groupProvider);
         ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
-        assertUpdateAuthorization(mock, Operation.UPDATE, ObjectType.GROUP, properties, groupProvider);
+        assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.GROUP, properties, groupProvider);
     }
 
     public void testAuthoriseUpdateGroupMember()
@@ -616,7 +615,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(mock.getCategoryClass()).thenReturn(GroupMember.class);
         when(mock.getParent(Group.class)).thenReturn(group);
         ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
-        assertUpdateAuthorization(mock, Operation.UPDATE, ObjectType.GROUP, properties, group);
+        assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.GROUP, properties, group);
     }
 
     public void testAuthoriseUpdateVirtualHost()
@@ -628,13 +627,13 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(mock.getCategoryClass()).thenReturn(VirtualHost.class);
         when(mock.getParent(VirtualHostNode.class)).thenReturn(vhn);
         ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
-        assertUpdateAuthorization(mock, Operation.UPDATE, ObjectType.VIRTUALHOST, properties, vhn);
+        assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, properties, vhn);
     }
 
     public void testAuthoriseDeleteVirtualHostNode()
     {
         VirtualHostNode vhn = getMockVirtualHostNode();
-        assertDeleteAuthorization(vhn, Operation.DELETE, ObjectType.VIRTUALHOSTNODE, new ObjectProperties(vhn.getName()), vhn);
+        assertDeleteAuthorization(vhn, LegacyOperation.DELETE, ObjectType.VIRTUALHOSTNODE, new ObjectProperties(vhn.getName()), vhn);
     }
 
     public void testAuthoriseDeletePort()
@@ -716,12 +715,12 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(mock.getParent(VirtualHost.class)).thenReturn(_virtualHost);
         when(mock.getModel()).thenReturn(BrokerModel.getInstance());
 
-        assertCreateAuthorization(mock, Operation.CREATE, ObjectType.VIRTUALHOST, properties, _virtualHost);
+        assertCreateAuthorization(mock, LegacyOperation.CREATE, ObjectType.VIRTUALHOST, properties, _virtualHost);
 
         when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
 
-        assertUpdateAuthorization(mock, Operation.UPDATE, ObjectType.VIRTUALHOST, properties, _virtualHost);
-        assertDeleteAuthorization(mock, Operation.DELETE, ObjectType.VIRTUALHOST, properties, _virtualHost);
+        assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, properties, _virtualHost);
+        assertDeleteAuthorization(mock, LegacyOperation.DELETE, ObjectType.VIRTUALHOST, properties, _virtualHost);
     }
 
     public void testAuthoriseVirtualHostLogInclusionRuleOperations()
@@ -740,12 +739,12 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(mock.getParent(VirtualHostLogger.class)).thenReturn(vhl);
         when(mock.getModel()).thenReturn(BrokerModel.getInstance());
 
-        assertCreateAuthorization(mock, Operation.CREATE, ObjectType.VIRTUALHOST, properties, vhl);
+        assertCreateAuthorization(mock, LegacyOperation.CREATE, ObjectType.VIRTUALHOST, properties, vhl);
 
         when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
 
-        assertUpdateAuthorization(mock, Operation.UPDATE, ObjectType.VIRTUALHOST, properties, vhl);
-        assertDeleteAuthorization(mock, Operation.DELETE, ObjectType.VIRTUALHOST, properties, vhl);
+        assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, properties, vhl);
+        assertDeleteAuthorization(mock, LegacyOperation.DELETE, ObjectType.VIRTUALHOST, properties, vhl);
     }
 
     public void testAuthorisePurge()
@@ -761,7 +760,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         ObjectProperties properties = createExpectedQueueObjectProperties();
 
         _adapter.authoriseExecute(queue, "clearQueue", Collections.<String,Object>emptyMap());
-        verify(_accessControl).authorise(eq(Operation.PURGE), eq(ObjectType.QUEUE), eq(properties));
+        verify(_accessControl).authorise(eq(LegacyOperation.PURGE), eq(ObjectType.QUEUE), eq(properties));
 
     }
 
@@ -805,7 +804,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
 
 
         _adapter.authoriseExecute(queue, "deleteMessages", Collections.<String,Object>emptyMap());
-        verify(_accessControl).authorise(eq(Operation.UPDATE), eq(ObjectType.METHOD), eq(properties));
+        verify(_accessControl).authorise(eq(LegacyOperation.UPDATE), eq(ObjectType.METHOD), eq(properties));
 
     }
 
@@ -820,7 +819,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         ObjectProperties properties = new ObjectProperties("testUser");
 
         _adapter.authoriseExecute(authenticationProvider, "getPreferences", Collections.<String,Object>singletonMap("userId","testUser"));
-        verify(_accessControl).authorise(eq(Operation.UPDATE), eq(ObjectType.USER), eq(properties));
+        verify(_accessControl).authorise(eq(LegacyOperation.UPDATE), eq(ObjectType.USER), eq(properties));
 
     }
 
@@ -828,7 +827,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     public void testAccessManagement()
     {
         _adapter.authoriseExecute(_broker, "manage", Collections.<String,Object>emptyMap());
-        verify(_accessControl).authorise(Operation.ACCESS, ObjectType.MANAGEMENT, ObjectProperties.EMPTY);
+        verify(_accessControl).authorise(LegacyOperation.ACCESS, ObjectType.MANAGEMENT, ObjectProperties.EMPTY);
 
     }
 
@@ -848,7 +847,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         args.put("immediate", true);
         _adapter.authoriseExecute(exchange, "publish", args);
 
-        verify(_accessControl).authorise(eq(Operation.PUBLISH), eq(ObjectType.EXCHANGE), eq(properties));
+        verify(_accessControl).authorise(eq(LegacyOperation.PUBLISH), eq(ObjectType.EXCHANGE), eq(properties));
 
     }
 
@@ -861,7 +860,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
 
         _adapter.authoriseExecute(_virtualHost, "connect", Collections.<String,Object>emptyMap());
 
-        verify(_accessControl).authorise(eq(Operation.ACCESS), eq(ObjectType.VIRTUALHOST), eq(properties));
+        verify(_accessControl).authorise(eq(LegacyOperation.ACCESS), eq(ObjectType.VIRTUALHOST), eq(properties));
 
     }
 
@@ -898,17 +897,17 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     private void assertBrokerChildCreateAuthorization(ConfiguredObject object, ConfiguredObject parent)
     {
         String description = String.format("%s %s '%s'",
-                                           Operation.CREATE.name().toLowerCase(),
+                                           LegacyOperation.CREATE.name().toLowerCase(),
                                            object.getCategoryClass().getSimpleName().toLowerCase(),
                                            "TEST");
         ObjectProperties properties = new OperationLoggingDetails(description);
-        assertCreateAuthorization(object, Operation.CONFIGURE, ObjectType.BROKER, properties, parent);
+        assertCreateAuthorization(object, LegacyOperation.CONFIGURE, ObjectType.BROKER, properties, parent);
     }
 
 
-    private void assertCreateAuthorization(ConfiguredObject<?> configuredObject, Operation aclOperation, ObjectType aclObjectType, ObjectProperties expectedProperties, ConfiguredObject<?>... parents)
+    private void assertCreateAuthorization(ConfiguredObject<?> configuredObject, LegacyOperation aclOperation, ObjectType aclObjectType, ObjectProperties expectedProperties, ConfiguredObject<?>... parents)
     {
-        _adapter.authorise(Operation.CREATE, configuredObject);
+        _adapter.authorise(LegacyOperation.CREATE, configuredObject);
         verify(_accessControl).authorise(eq(aclOperation), eq(aclObjectType), eq(expectedProperties));
     }
 
@@ -921,18 +920,18 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     private void assertBrokerChildUpdateAuthorization(ConfiguredObject configuredObject, ConfiguredObject parent)
     {
         String description = String.format("%s %s '%s'",
-                                           Operation.UPDATE.name().toLowerCase(),
+                                           LegacyOperation.UPDATE.name().toLowerCase(),
                                            configuredObject.getCategoryClass().getSimpleName().toLowerCase(),
                                            configuredObject.getAttribute(ConfiguredObject.NAME));
         ObjectProperties properties = new OperationLoggingDetails(description);
 
-        assertUpdateAuthorization(configuredObject, Operation.CONFIGURE, ObjectType.BROKER,
+        assertUpdateAuthorization(configuredObject, LegacyOperation.CONFIGURE, ObjectType.BROKER,
                                   properties, parent);
     }
 
-    private void assertUpdateAuthorization(ConfiguredObject<?> configuredObject, Operation aclOperation, ObjectType aclObjectType, ObjectProperties expectedProperties, ConfiguredObject... objects)
+    private void assertUpdateAuthorization(ConfiguredObject<?> configuredObject, LegacyOperation aclOperation, ObjectType aclObjectType, ObjectProperties expectedProperties, ConfiguredObject... objects)
     {
-        assertAuthorization(Operation.UPDATE, configuredObject, aclOperation, aclObjectType, expectedProperties, objects);
+        assertAuthorization(LegacyOperation.UPDATE, configuredObject, aclOperation, aclObjectType, expectedProperties, objects);
     }
 
     private void assertBrokerChildDeleteAuthorization(ConfiguredObject configuredObject)
@@ -943,22 +942,22 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     private void assertBrokerChildDeleteAuthorization(ConfiguredObject configuredObject, ConfiguredObject parent)
     {
         String description = String.format("%s %s '%s'",
-                                           Operation.DELETE.name().toLowerCase(),
+                                           LegacyOperation.DELETE.name().toLowerCase(),
                                            configuredObject.getCategoryClass().getSimpleName().toLowerCase(),
                                            configuredObject.getAttribute(ConfiguredObject.NAME));
         ObjectProperties properties = new OperationLoggingDetails(description);
 
-        assertDeleteAuthorization(configuredObject, Operation.CONFIGURE, ObjectType.BROKER,
+        assertDeleteAuthorization(configuredObject, LegacyOperation.CONFIGURE, ObjectType.BROKER,
                                   properties, parent);
     }
 
 
-    private void assertDeleteAuthorization(ConfiguredObject<?> configuredObject, Operation aclOperation, ObjectType aclObjectType, ObjectProperties expectedProperties, ConfiguredObject... objects)
+    private void assertDeleteAuthorization(ConfiguredObject<?> configuredObject, LegacyOperation aclOperation, ObjectType aclObjectType, ObjectProperties expectedProperties, ConfiguredObject... objects)
     {
-        assertAuthorization(Operation.DELETE, configuredObject, aclOperation, aclObjectType, expectedProperties, objects);
+        assertAuthorization(LegacyOperation.DELETE, configuredObject, aclOperation, aclObjectType, expectedProperties, objects);
     }
 
-    private void assertAuthorization(Operation operation, ConfiguredObject<?> configuredObject, Operation aclOperation, ObjectType aclObjectType, ObjectProperties expectedProperties, ConfiguredObject... objects)
+    private void assertAuthorization(LegacyOperation operation, ConfiguredObject<?> configuredObject, LegacyOperation aclOperation, ObjectType aclObjectType, ObjectProperties expectedProperties, ConfiguredObject... objects)
     {
         _adapter.authorise(operation, configuredObject);
         verify(_accessControl).authorise(eq(aclOperation), eq(aclObjectType), eq(expectedProperties));

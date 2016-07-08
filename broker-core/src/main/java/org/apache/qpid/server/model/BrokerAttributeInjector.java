@@ -45,6 +45,7 @@ import org.apache.qpid.server.util.ParameterizedTypes;
 public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjector
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BrokerAttributeInjector.class);
+    private static final Operation CONFIGURE_ACTION = Operation.ACTION("CONFIGURE");
 
     private final InjectedAttributeOrStatistic.TypeValidator _typeValidator =
             new InjectedAttributeOrStatistic.TypeValidator()
@@ -328,7 +329,7 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                                      Method setVMOption,
                                      Map<String, String> options)
     {
-        broker.getSecurityManager().authorise(Operation.CONFIGURE, broker);
+        broker.authorise(CONFIGURE_ACTION);
         broker.getEventLogger().message(BrokerMessages.OPERATION("setJVMOptions"));
         StringBuilder exceptionMessages = new StringBuilder();
         for (Map.Entry<String, String> entry : options.entrySet())
@@ -368,7 +369,7 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                                 String outputFile,
                                 boolean live)
     {
-        broker.getSecurityManager().authorise(Operation.CONFIGURE, broker);
+        broker.authorise(CONFIGURE_ACTION);
         broker.getEventLogger().message(BrokerMessages.OPERATION("dumpHeap"));
         try
         {

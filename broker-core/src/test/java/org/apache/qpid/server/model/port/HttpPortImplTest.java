@@ -36,6 +36,7 @@ import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -59,7 +60,6 @@ public class HttpPortImplTest extends QpidTestCase
         when(_broker.getModel()).thenReturn(model);
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
-        when(_broker.getSecurityManager()).thenReturn(new SecurityManager(_broker, false));
 
         AuthenticationProvider<?> provider = mock(AuthenticationProvider.class);
         when(provider.getName()).thenReturn(AUTHENTICATION_PROVIDER_NAME);

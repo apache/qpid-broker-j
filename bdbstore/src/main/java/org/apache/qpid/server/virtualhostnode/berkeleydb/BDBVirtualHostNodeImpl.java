@@ -30,6 +30,7 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.berkeleydb.BDBConfigurationStore;
 import org.apache.qpid.server.store.berkeleydb.BDBMessageStore;
@@ -99,7 +100,7 @@ public class BDBVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<BDBV
     @Override
     public void updateMutableConfig()
     {
-        getSecurityManager().authoriseUpdate(getBroker());
+        authorise(Operation.METHOD("updateMutableConfig"));
         BDBConfigurationStore bdbConfigurationStore = (BDBConfigurationStore) getConfigurationStore();
         if (bdbConfigurationStore != null)
         {
@@ -114,7 +115,7 @@ public class BDBVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<BDBV
     @Override
     public int cleanLog()
     {
-        getSecurityManager().authoriseUpdate(getBroker());
+        authorise(Operation.METHOD("cleanLog"));
         BDBConfigurationStore bdbConfigurationStore = (BDBConfigurationStore) getConfigurationStore();
         if (bdbConfigurationStore != null)
         {
@@ -130,7 +131,7 @@ public class BDBVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<BDBV
     @Override
     public void checkpoint(final boolean force)
     {
-        getSecurityManager().authoriseUpdate(getBroker());
+        authorise(Operation.METHOD("checkpoint"), Collections.<String,Object>singletonMap("force", force));
         BDBConfigurationStore bdbConfigurationStore = (BDBConfigurationStore) getConfigurationStore();
         if (bdbConfigurationStore != null)
         {

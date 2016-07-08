@@ -65,6 +65,8 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -124,7 +126,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     {
         super.onValidate();
 
-        if(!_virtualHost.getSecurityManager().isSystemProcess())
+        if(!SecurityManager.isSystemProcess())
         {
             if (isReservedExchangeName(getName()))
             {
@@ -626,7 +628,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         }
 
         // Check access
-        authoriseDelete(binding);
+        binding.authorise(Operation.DELETE);
 
         Binding<?> b = _bindingsMap.remove(new BindingIdentifier(bindingKey,queue));
 

@@ -92,7 +92,6 @@ public class SortedQueueEntryListTest extends QueueEntryListTestBase
 
         // Create test list
         final VirtualHost virtualHost = mock(VirtualHost.class);
-        when(virtualHost.getSecurityManager()).thenReturn(mock(SecurityManager.class));
         when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
         ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(virtualHost.getObjectFactory()).thenReturn(factory);

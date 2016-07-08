@@ -20,7 +20,6 @@ package org.apache.qpid.server.security.access.config;
 
 import static org.mockito.Mockito.*;
 
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.firewall.FirewallRule;
 
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -31,7 +30,7 @@ public class AclActionTest extends QpidTestCase
     {
         AclRulePredicates predicates = createAclRulePredicates();
         ObjectType objectType = ObjectType.EXCHANGE;
-        Operation operation = Operation.ACCESS;
+        LegacyOperation operation = LegacyOperation.ACCESS;
 
         AclAction aclAction = new AclAction(operation, objectType, predicates);
         AclAction equalAclAction = new AclAction(operation, objectType, predicates);
@@ -43,7 +42,7 @@ public class AclActionTest extends QpidTestCase
         assertTrue(aclAction.hashCode() == equalAclAction.hashCode());
 
         assertFalse("Different operation should cause aclActions to be unequal",
-                aclAction.equals(new AclAction(Operation.BIND, objectType, predicates)));
+                aclAction.equals(new AclAction(LegacyOperation.BIND, objectType, predicates)));
 
         assertFalse("Different operation type should cause aclActions to be unequal",
                 aclAction.equals(new AclAction(operation, ObjectType.GROUP, predicates)));

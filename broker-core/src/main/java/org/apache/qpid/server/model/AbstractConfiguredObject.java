@@ -73,7 +73,11 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
+import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.encryption.ConfigurationSecretEncrypter;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
@@ -107,6 +111,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     private ConfigurationSecretEncrypter _encrypter;
     private final Map<UUID, Preference> _userPreferences = new HashMap<>();
     private final Map<String, List<Preference>> _userPreferencesByName = new HashMap<>();
+    private AccessControl _parentAccessControl;
 
     private enum DynamicState { UNINIT, OPENED, CLOSED };
     private final AtomicReference<DynamicState> _dynamicState = new AtomicReference<>(DynamicState.UNINIT);
@@ -243,6 +248,20 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 break;
             }
         }
+
+        for(ConfiguredObject<?> parent : parents.values())
+        {
+            if(parent instanceof AbstractConfiguredObject && ((AbstractConfiguredObject)parent).getAccessControl() != null)
+            {
+                _parentAccessControl = ((AbstractConfiguredObject)parent).getAccessControl();
+                break;
+            }
+            else if(parent instanceof AccessControlSource && ((AccessControlSource)parent).getAccessControl()!=null)
+            {
+                _parentAccessControl = ((AccessControlSource)parent).getAccessControl();
+            }
+        }
+
 
         Object idObj = attributes.get(ID);
 
@@ -1547,6 +1566,14 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                         // The state transition should be disallowed.
                         if (desiredState != currentDesiredState)
                         {
+                            for(ConfiguredObject<?> parent : _parents.values())
+                            {
+                                if(parent instanceof AbstractConfiguredObject)
+                                {
+                                    ((AbstractConfiguredObject<?>)parent).validateChildDelete(AbstractConfiguredObject.this);
+                                }
+                            }
+
                             return doAfter(attainState(desiredState), new Runnable()
                             {
                                 @Override
@@ -1598,6 +1625,11 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 return String.valueOf(desiredState);
             }
         });
+    }
+
+    protected void validateChildDelete(final ConfiguredObject<?> child)
+    {
+
     }
 
     @Override
@@ -2677,32 +2709,99 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     protected final <C extends ConfiguredObject<?>> void authoriseCreateChild(Class<C> childClass, Map<String, Object> attributes, ConfiguredObject... otherParents) throws AccessControlException
     {
         ConfiguredObject<?> configuredObject = createProxyForAuthorisation(childClass, attributes, this, otherParents);
-        getSecurityManager().authoriseCreate(configuredObject);
+        authorise(configuredObject, null, Operation.CREATE, Collections.<String,Object>emptyMap());
     }
 
-    protected final void authoriseCreate(ConfiguredObject<?> object) throws AccessControlException
+    @Override
+    public final void authorise(Operation operation) throws AccessControlException
     {
-        getSecurityManager().authoriseCreate(object);
+        authorise(this, null, operation, Collections.<String,Object>emptyMap());
     }
+
+    @Override
+    public final void authorise(Operation operation, Map<String, Object> arguments) throws AccessControlException
+    {
+        authorise(this, null, operation, arguments);
+    }
+
+    @Override
+    public final void authorise(SecurityToken token, Operation operation, Map<String, Object> arguments) throws AccessControlException
+    {
+        authorise(this, token, operation, arguments);
+    }
+
+    @Override
+    public final SecurityToken newToken(final Subject subject)
+    {
+        AccessControl accessControl = getAccessControl();
+        return accessControl == null ? null : accessControl.newToken(subject);
+    }
+
+    private void authorise(final ConfiguredObject<?> configuredObject,
+                           SecurityToken token,
+                           final Operation operation,
+                           Map<String, Object> arguments)
+    {
+
+        AccessControl accessControl = getAccessControl();
+        if(accessControl != null)
+        {
+            Result result = accessControl.authorise(token, operation, configuredObject, arguments);
+            LOGGER.debug("authorise returned {}", result);
+            if (result == Result.DEFER)
+            {
+                LOGGER.debug("authorise returned DEFER, returing default: {}", accessControl.getDefault());
+                result = accessControl.getDefault();
+            }
+
+            if (result == Result.DENIED)
+            {
+                Class<? extends ConfiguredObject> categoryClass = configuredObject.getCategoryClass();
+                String objectName = (String) configuredObject.getAttribute(ConfiguredObject.NAME);
+                String operationName = operation.getName().equals(operation.getType().name())
+                        ? operation.getName()
+                        : (operation.getType().name() + "(" + operation.getName() + ")");
+                StringBuilder exceptionMessage =
+                        new StringBuilder(String.format("Permission %s is denied for : %s '%s'",
+                                                        operationName, categoryClass.getSimpleName(), objectName));
+                Model model = configuredObject.getModel();
+
+                Collection<Class<? extends ConfiguredObject>> parentClasses = model.getParentTypes(categoryClass);
+                if (parentClasses != null)
+                {
+                    exceptionMessage.append(" on");
+                    for (Class<? extends ConfiguredObject> parentClass : parentClasses)
+                    {
+                        String objectCategory = parentClass.getSimpleName();
+                        ConfiguredObject<?> parent = configuredObject.getParent(parentClass);
+                        exceptionMessage.append(" ").append(objectCategory);
+                        if (parent != null)
+                        {
+                            exceptionMessage.append(" '")
+                                    .append(parent.getAttribute(ConfiguredObject.NAME))
+                                    .append("'");
+                        }
+                    }
+                }
+                throw new AccessControlException(exceptionMessage.toString());
+            }
+        }
+    }
+
 
     protected final void authoriseSetAttributes(final ConfiguredObject<?> proxyForValidation,
                                                                final Set<String> modifiedAttributes)
     {
         if (modifiedAttributes.contains(DESIRED_STATE) && State.DELETED.equals(proxyForValidation.getDesiredState()))
         {
-            authoriseDelete(this);
+            authorise(Operation.DELETE);
             if (modifiedAttributes.size() == 1)
             {
                 // nothing left to authorize
                 return;
             }
         }
-        getSecurityManager().authoriseUpdate(this);
-    }
-
-    protected final void authoriseDelete(ConfiguredObject<?> object)
-    {
-        getSecurityManager().authoriseDelete(object);
+        authorise(Operation.UPDATE);
     }
 
     private int getAwaitAttainmentTimeout()
@@ -2747,15 +2846,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
-    protected SecurityManager getSecurityManager()
+    protected AccessControl getAccessControl()
     {
-        Broker broker = getModel().getAncestor(Broker.class, getCategoryClass(), this);
-        if (broker != null )
-        {
-            return broker.getSecurityManager();
-        }
-        LOGGER.warn("Broker parent is not found for " + getName() + " of type " + getClass());
-        return null;
+        return _parentAccessControl;
     }
 
     @Override
@@ -3008,6 +3101,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             {
                 return "ValidationProxy{" + getCategoryClass().getSimpleName() + "/" + getType() + "}";
             }
+            else if(method.getName().equals("getModel") && (args == null || args.length == 0))
+            {
+                return _configuredObject.getModel();
+            }
             else
             {
                 throw new UnsupportedOperationException(
@@ -3145,6 +3242,11 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             {
                 return _category;
             }
+            else if(method.getName().equals("getModel") && (args == null || args.length == 0))
+            {
+                return _parent.getModel();
+            }
+
             return super.invoke(proxy, method, args);
         }
 

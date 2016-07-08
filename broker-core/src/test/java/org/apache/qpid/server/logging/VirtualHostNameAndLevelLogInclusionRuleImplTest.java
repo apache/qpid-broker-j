@@ -59,10 +59,8 @@ public class VirtualHostNameAndLevelLogInclusionRuleImplTest extends QpidTestCas
         _taskExecutor.start();
 
         Model model = BrokerModel.getInstance();
-        org.apache.qpid.server.security.SecurityManager securityManager = mock(SecurityManager.class);
 
         Broker broker = mock(Broker.class);
-        when(broker.getSecurityManager()).thenReturn(securityManager);
         when(broker.getModel()).thenReturn(model);
         when(broker.getChildExecutor()).thenReturn(_taskExecutor);
         doReturn(Broker.class).when(broker).getCategoryClass();

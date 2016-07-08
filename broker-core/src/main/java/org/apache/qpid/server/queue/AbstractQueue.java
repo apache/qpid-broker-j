@@ -1866,7 +1866,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public long clearQueue()
     {
         //Perform ACLs
-        getVirtualHost().getSecurityManager().authoriseExecute(this, "clearQueue", Collections.<String,Object>emptyMap());
+        authorise(Operation.METHOD("clearQueue"));
 
         QueueEntryIterator queueListIterator = getEntries().iterator();
         long count = 0;
@@ -1943,7 +1943,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public ListenableFuture<Integer> deleteAndReturnCountAsync()
     {
         // Check access
-        _virtualHost.getSecurityManager().authoriseDelete(this);
+        authorise(Operation.DELETE);
 
         if (_deleted.compareAndSet(false, true))
         {
@@ -3415,7 +3415,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         args.put("messageIds", messageIds);
         args.put("selector", selector);
         args.put("limit", limit);
-        getSecurityManager().authoriseExecute(this, "moveMessages", args);
+        authorise(Operation.METHOD("moveMessages"), args);
 
         MoveMessagesTransaction transaction = new MoveMessagesTransaction(this,
                                                                           messageIds,
@@ -3436,7 +3436,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         args.put("messageIds", messageIds);
         args.put("selector", selector);
         args.put("limit", limit);
-        getSecurityManager().authoriseExecute(this, "copyMessages", args);
+        authorise(Operation.METHOD("copyMessages"), args);
 
         CopyMessagesTransaction transaction = new CopyMessagesTransaction(this,
                                                                           messageIds,
@@ -3456,7 +3456,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         args.put("messageIds", messageIds);
         args.put("selector", selector);
         args.put("limit", limit);
-        getSecurityManager().authoriseExecute(this, "deleteMessages", args);
+        authorise(Operation.METHOD("deleteMessages"), args);
 
         DeleteMessagesTransaction transaction = new DeleteMessagesTransaction(this,
                                                                               messageIds,

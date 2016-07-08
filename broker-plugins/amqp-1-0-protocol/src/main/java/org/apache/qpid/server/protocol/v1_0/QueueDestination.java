@@ -29,6 +29,7 @@ import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.txn.ServerTransaction;
 
@@ -103,12 +104,9 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
     public void authorizePublish(final SecurityToken securityToken, final Message_1_0 message)
     {
 
-        final SecurityManager securityManager =
-                _queue.getParent(VirtualHost.class).getBroker().getSecurityManager();
-
-        securityManager
-                .authoriseExecute(securityToken, _queue, "publish",
-                                  Collections.<String,Object>singletonMap("routingKey", getRoutingAddress(message)));
+        _queue.authorise(securityToken,
+                         Operation.ACTION("publish"),
+                         Collections.<String,Object>singletonMap("routingKey", getRoutingAddress(message)));
 
 
     }

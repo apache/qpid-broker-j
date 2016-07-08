@@ -20,8 +20,6 @@ package org.apache.qpid.server.security.access.config;
 
 import static org.mockito.Mockito.*;
 
-import org.apache.qpid.server.security.access.Operation;
-
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class ActionTest extends QpidTestCase
@@ -34,50 +32,50 @@ public class ActionTest extends QpidTestCase
         when(_properties1.matches(_properties2)).thenReturn(true);
 
         assertMatches(
-                new Action(Operation.CONSUME, ObjectType.QUEUE, _properties1),
-                new Action(Operation.CONSUME, ObjectType.QUEUE, _properties2));
+                new Action(LegacyOperation.CONSUME, ObjectType.QUEUE, _properties1),
+                new Action(LegacyOperation.CONSUME, ObjectType.QUEUE, _properties2));
     }
 
     public void testMatchesReturnsFalseWhenOperationsDiffer()
     {
         assertDoesntMatch(
-                new Action(Operation.CONSUME, ObjectType.QUEUE, _properties1),
-                new Action(Operation.CREATE, ObjectType.QUEUE, _properties1));
+                new Action(LegacyOperation.CONSUME, ObjectType.QUEUE, _properties1),
+                new Action(LegacyOperation.CREATE, ObjectType.QUEUE, _properties1));
     }
 
     public void testMatchesReturnsFalseWhenOperationTypesDiffer()
     {
         assertDoesntMatch(
-                new Action(Operation.CREATE, ObjectType.QUEUE, _properties1),
-                new Action(Operation.CREATE, ObjectType.EXCHANGE, _properties1));
+                new Action(LegacyOperation.CREATE, ObjectType.QUEUE, _properties1),
+                new Action(LegacyOperation.CREATE, ObjectType.EXCHANGE, _properties1));
     }
 
     public void testMatchesReturnsFalseWhenOperationPropertiesDiffer()
     {
         assertDoesntMatch(
-                new Action(Operation.CREATE, ObjectType.QUEUE, _properties1),
-                new Action(Operation.CREATE, ObjectType.QUEUE, _properties2));
+                new Action(LegacyOperation.CREATE, ObjectType.QUEUE, _properties1),
+                new Action(LegacyOperation.CREATE, ObjectType.QUEUE, _properties2));
     }
 
     public void testMatchesReturnsFalseWhenMyOperationPropertiesIsNull()
     {
         assertDoesntMatch(
-                new Action(Operation.CREATE, ObjectType.QUEUE, (ObjectProperties)null),
-                new Action(Operation.CREATE, ObjectType.QUEUE, _properties1));
+                new Action(LegacyOperation.CREATE, ObjectType.QUEUE, (ObjectProperties)null),
+                new Action(LegacyOperation.CREATE, ObjectType.QUEUE, _properties1));
     }
 
     public void testMatchesReturnsFalseWhenOtherOperationPropertiesIsNull()
     {
         assertDoesntMatch(
-                new Action(Operation.CREATE, ObjectType.QUEUE, _properties1),
-                new Action(Operation.CREATE, ObjectType.QUEUE, (ObjectProperties)null));
+                new Action(LegacyOperation.CREATE, ObjectType.QUEUE, _properties1),
+                new Action(LegacyOperation.CREATE, ObjectType.QUEUE, (ObjectProperties)null));
     }
 
     public void testMatchesReturnsTrueWhenBothOperationPropertiesAreNull()
     {
         assertMatches(
-                new Action(Operation.CREATE, ObjectType.QUEUE, (ObjectProperties)null),
-                new Action(Operation.CREATE, ObjectType.QUEUE, (ObjectProperties)null));
+                new Action(LegacyOperation.CREATE, ObjectType.QUEUE, (ObjectProperties)null),
+                new Action(LegacyOperation.CREATE, ObjectType.QUEUE, (ObjectProperties)null));
     }
 
     private void assertMatches(Action action1, Action action2)

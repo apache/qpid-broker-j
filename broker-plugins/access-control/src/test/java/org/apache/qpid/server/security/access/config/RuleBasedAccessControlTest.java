@@ -37,7 +37,6 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.UnitTestMessageLogger;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.RuleOutcome;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -82,24 +81,24 @@ public class RuleBasedAccessControlTest extends QpidTestCase
         RuleSetCreator rsc = new RuleSetCreator();
 
         // Rule expressed with username
-        rsc.grant(0, "user1", RuleOutcome.ALLOW, Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+        rsc.grant(0, "user1", RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
         // Rules expressed with groups
-        rsc.grant(1, ALLOWED_GROUP, RuleOutcome.ALLOW, Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
-        rsc.grant(2, DENIED_GROUP, RuleOutcome.DENY, Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+        rsc.grant(1, ALLOWED_GROUP, RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+        rsc.grant(2, DENIED_GROUP, RuleOutcome.DENY, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
         // Catch all rule
-        rsc.grant(3, Rule.ALL, RuleOutcome.DENY_LOG, Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+        rsc.grant(3, Rule.ALL, RuleOutcome.DENY_LOG, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
 
         return rsc.createRuleSet(provider);
     }
 
     /**
-     * ACL plugin must always abstain if there is no  subject attached to the thread.
+     * ACL plugin must always defer if there is no  subject attached to the thread.
      */
-    public void testNoSubjectAlwaysAbstains()
+    public void testNoSubjectAlwaysDefers()
     {
         setUpGroupAccessControl();
-        final Result result = _plugin.authorise(Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
-        assertEquals(Result.ABSTAIN, result);
+        final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+        assertEquals(Result.DEFER, result);
     }
 
     /**
@@ -114,7 +113,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
             @Override
             public Object run()
             {
-                final Result result = _plugin.authorise(Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+                final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
                 assertEquals(Result.ALLOWED, result);
                 return null;
             }
@@ -159,7 +158,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
                              assertEquals("Expecting zero messages before test",
                                           0,
                                           _messageLogger.getLogMessages().size());
-                             final Result result = _plugin.authorise(Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+                             final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
                              assertEquals(Result.DENIED, result);
 
                              assertEquals("Expecting one message before test", 1, _messageLogger.getLogMessages().size());
@@ -179,7 +178,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
         final RuleSetCreator rs = new RuleSetCreator();
 
         // grant user4 access right on any method in any component
-        rs.grant(1, "user4", RuleOutcome.ALLOW, Operation.ACCESS, ObjectType.METHOD, new ObjectProperties(ObjectProperties.WILD_CARD));
+        rs.grant(1, "user4", RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.METHOD, new ObjectProperties(ObjectProperties.WILD_CARD));
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user4"), new PrivilegedAction<Object>()
         {
@@ -189,7 +188,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
                 ObjectProperties actionProperties = new ObjectProperties("getName");
                 actionProperties.put(ObjectProperties.Property.COMPONENT, "Test");
 
-                final Result result = _plugin.authorise(Operation.ACCESS, ObjectType.METHOD, actionProperties);
+                final Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, actionProperties);
                 assertEquals(Result.ALLOWED, result);
                 return null;
             }
@@ -207,7 +206,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
         // grant user5 access right on any methods in "Test" component
         ObjectProperties ruleProperties = new ObjectProperties(ObjectProperties.WILD_CARD);
         ruleProperties.put(ObjectProperties.Property.COMPONENT, "Test");
-        rs.grant(1, "user5", RuleOutcome.ALLOW, Operation.ACCESS, ObjectType.METHOD, ruleProperties);
+        rs.grant(1, "user5", RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.METHOD, ruleProperties);
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user5"), new PrivilegedAction<Object>()
         {
@@ -216,11 +215,11 @@ public class RuleBasedAccessControlTest extends QpidTestCase
             {
                 ObjectProperties actionProperties = new ObjectProperties("getName");
                 actionProperties.put(ObjectProperties.Property.COMPONENT, "Test");
-                Result result = _plugin.authorise(Operation.ACCESS, ObjectType.METHOD, actionProperties);
+                Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, actionProperties);
                 assertEquals(Result.ALLOWED, result);
 
                 actionProperties.put(ObjectProperties.Property.COMPONENT, "Test2");
-                result = _plugin.authorise(Operation.ACCESS, ObjectType.METHOD, actionProperties);
+                result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, actionProperties);
                 assertEquals(Result.DEFER, result);
                 return null;
             }
@@ -252,9 +251,9 @@ public class RuleBasedAccessControlTest extends QpidTestCase
                                                                                   BrokerModel.getInstance());
 
                 ObjectProperties properties = new ObjectProperties(testVirtualHost);
-                accessControl.authorise(Operation.ACCESS, ObjectType.VIRTUALHOST, properties);
+                accessControl.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties);
 
-                verify(mockRuleSet).check(subject, Operation.ACCESS, ObjectType.VIRTUALHOST, properties, inetAddress);
+                verify(mockRuleSet).check(subject, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties, inetAddress);
                 return null;
             }
         });
@@ -282,14 +281,14 @@ public class RuleBasedAccessControlTest extends QpidTestCase
                 RuleSet mockRuleSet = mock(RuleSet.class);
                 when(mockRuleSet.check(
                         subject,
-                        Operation.ACCESS,
+                        LegacyOperation.ACCESS,
                         ObjectType.VIRTUALHOST,
                         ObjectProperties.EMPTY,
                         inetAddress)).thenThrow(new RuntimeException());
 
                 RuleBasedAccessControl accessControl = new RuleBasedAccessControl(mockRuleSet,
                                                                                   BrokerModel.getInstance());
-                Result result = accessControl.authorise(Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+                Result result = accessControl.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
 
                 assertEquals(Result.DENIED, result);
                 return null;
@@ -309,7 +308,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
         // grant user6 access right on "getAttribute" method in "Test" component
         ObjectProperties ruleProperties = new ObjectProperties("getAttribute");
         ruleProperties.put(ObjectProperties.Property.COMPONENT, "Test");
-        rs.grant(1, "user6", RuleOutcome.ALLOW, Operation.ACCESS, ObjectType.METHOD, ruleProperties);
+        rs.grant(1, "user6", RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.METHOD, ruleProperties);
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user6"), new PrivilegedAction<Object>()
         {
@@ -318,16 +317,16 @@ public class RuleBasedAccessControlTest extends QpidTestCase
             {
                 ObjectProperties properties = new ObjectProperties("getAttribute");
                 properties.put(ObjectProperties.Property.COMPONENT, "Test");
-                Result result = _plugin.authorise(Operation.ACCESS, ObjectType.METHOD, properties);
+                Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
                 assertEquals(Result.ALLOWED, result);
 
                 properties.put(ObjectProperties.Property.COMPONENT, "Test2");
-                result = _plugin.authorise(Operation.ACCESS, ObjectType.METHOD, properties);
+                result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
                 assertEquals(Result.DEFER, result);
 
                 properties = new ObjectProperties("getAttribute2");
                 properties.put(ObjectProperties.Property.COMPONENT, "Test");
-                result = _plugin.authorise(Operation.ACCESS, ObjectType.METHOD, properties);
+                result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
                 assertEquals(Result.DEFER, result);
 
                 return null;
@@ -344,7 +343,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
         final RuleSetCreator rs = new RuleSetCreator();
 
         // grant user8 all rights on method queryNames in all component
-        rs.grant(1, "user8", RuleOutcome.ALLOW, Operation.ALL, ObjectType.METHOD, new ObjectProperties("queryNames"));
+        rs.grant(1, "user8", RuleOutcome.ALLOW, LegacyOperation.ALL, ObjectType.METHOD, new ObjectProperties("queryNames"));
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user8"), new PrivilegedAction<Object>()
         {
@@ -355,18 +354,18 @@ public class RuleBasedAccessControlTest extends QpidTestCase
                 properties.put(ObjectProperties.Property.COMPONENT, "Test");
                 properties.put(ObjectProperties.Property.NAME, "queryNames");
 
-                Result result = _plugin.authorise(Operation.ACCESS, ObjectType.METHOD, properties);
+                Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
                 assertEquals(Result.ALLOWED, result);
 
-                result = _plugin.authorise(Operation.UPDATE, ObjectType.METHOD, properties);
+                result = _plugin.authorise(LegacyOperation.UPDATE, ObjectType.METHOD, properties);
                 assertEquals(Result.ALLOWED, result);
 
                 properties = new ObjectProperties("getAttribute");
                 properties.put(ObjectProperties.Property.COMPONENT, "Test");
-                result = _plugin.authorise(Operation.UPDATE, ObjectType.METHOD, properties);
+                result = _plugin.authorise(LegacyOperation.UPDATE, ObjectType.METHOD, properties);
                 assertEquals(Result.DEFER, result);
 
-                result = _plugin.authorise(Operation.ACCESS, ObjectType.METHOD, properties);
+                result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
                 assertEquals(Result.DEFER, result);
                 return null;
             }
@@ -383,7 +382,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
         final RuleSetCreator rs = new RuleSetCreator();
 
         // grant user9 all rights on any method in all component
-        rs.grant(1, "user9", RuleOutcome.ALLOW, Operation.ALL, ObjectType.METHOD, new ObjectProperties());
+        rs.grant(1, "user9", RuleOutcome.ALLOW, LegacyOperation.ALL, ObjectType.METHOD, new ObjectProperties());
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user9"), new PrivilegedAction<Object>()
         {
@@ -393,18 +392,18 @@ public class RuleBasedAccessControlTest extends QpidTestCase
                 ObjectProperties properties = new ObjectProperties("queryNames");
                 properties.put(ObjectProperties.Property.COMPONENT, "Test");
 
-                Result result = _plugin.authorise(Operation.ACCESS, ObjectType.METHOD, properties);
+                Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
                 assertEquals(Result.ALLOWED, result);
 
-                result = _plugin.authorise(Operation.UPDATE, ObjectType.METHOD, properties);
+                result = _plugin.authorise(LegacyOperation.UPDATE, ObjectType.METHOD, properties);
                 assertEquals(Result.ALLOWED, result);
 
                 properties = new ObjectProperties("getAttribute");
                 properties.put(ObjectProperties.Property.COMPONENT, "Test");
-                result = _plugin.authorise(Operation.UPDATE, ObjectType.METHOD, properties);
+                result = _plugin.authorise(LegacyOperation.UPDATE, ObjectType.METHOD, properties);
                 assertEquals(Result.ALLOWED, result);
 
-                result = _plugin.authorise(Operation.ACCESS, ObjectType.METHOD, properties);
+                result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
                 assertEquals(Result.ALLOWED, result);
                 return null;
             }
@@ -425,7 +424,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
         ruleProperties.put(ObjectProperties.Property.COMPONENT, "Test");
         ruleProperties.put(ObjectProperties.Property.NAME, "getAttribute*");
 
-        rs.grant(1, "user9", RuleOutcome.ALLOW, Operation.ACCESS, ObjectType.METHOD, ruleProperties);
+        rs.grant(1, "user9", RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.METHOD, ruleProperties);
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user9"), new PrivilegedAction<Object>()
         {
@@ -434,17 +433,17 @@ public class RuleBasedAccessControlTest extends QpidTestCase
             {
                 ObjectProperties properties = new ObjectProperties("getAttributes");
                 properties.put(ObjectProperties.Property.COMPONENT, "Test");
-                Result result = _plugin.authorise(Operation.ACCESS, ObjectType.METHOD, properties);
+                Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
                 assertEquals(Result.ALLOWED, result);
 
                 properties = new ObjectProperties("getAttribute");
                 properties.put(ObjectProperties.Property.COMPONENT, "Test");
-                result = _plugin.authorise(Operation.ACCESS, ObjectType.METHOD, properties);
+                result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
                 assertEquals(Result.ALLOWED, result);
 
                 properties = new ObjectProperties("getAttribut");
                 properties.put(ObjectProperties.Property.COMPONENT, "Test");
-                result = _plugin.authorise(Operation.ACCESS, ObjectType.METHOD, properties);
+                result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.METHOD, properties);
                 assertEquals(Result.DEFER, result);
                 return null;
             }
@@ -459,7 +458,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
             @Override
             public Object run()
             {
-                Result result = _plugin.authorise(Operation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+                Result result = _plugin.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
                 assertEquals(expectedResult, result);
                 return null;
             }

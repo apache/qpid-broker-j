@@ -23,7 +23,6 @@ package org.apache.qpid.server.logging;
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
-import java.security.AccessControlException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +48,7 @@ import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.util.DaemonThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,7 +158,7 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     @Override
     public Content getFile(final String fileName)
     {
-        getSecurityManager().authoriseExecute(this, "getFile", Collections.singletonMap("fileName", (Object)fileName));
+        authorise(Operation.METHOD("getFile"), Collections.singletonMap("fileName", (Object)fileName));
 
         return _rolloverWatcher == null ? null : _rolloverWatcher.getFileContent(fileName);
     }
@@ -166,7 +166,7 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     @Override
     public Content getFiles(@Param(name = "fileName") Set<String> fileName)
     {
-        getSecurityManager().authoriseExecute(this, "getFiles", Collections.singletonMap("fileName", (Object)fileName));
+        authorise(Operation.METHOD("getFiles"), Collections.singletonMap("fileName", (Object)fileName));
 
         return _rolloverWatcher == null ? null :_rolloverWatcher.getFilesAsZippedContent(fileName);
     }
@@ -174,7 +174,7 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     @Override
     public Content getAllFiles()
     {
-        getSecurityManager().authoriseExecute(this, "getAllFiles", Collections.<String,Object>emptyMap());
+        authorise(Operation.METHOD("getAllFiles"));
 
         return _rolloverWatcher == null ? null : _rolloverWatcher.getAllFilesAsZippedContent();
     }

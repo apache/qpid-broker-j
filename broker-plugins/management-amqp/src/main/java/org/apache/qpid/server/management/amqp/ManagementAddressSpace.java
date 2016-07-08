@@ -41,6 +41,7 @@ import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
 import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.MemoryMessageStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -156,8 +157,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
     @Override
     public boolean authoriseCreateConnection(final AMQPConnection<?> connection)
     {
-        SecurityManager securityManager = _broker.getSecurityManager();
-        securityManager.authoriseExecute(_broker, "manage", Collections.<String,Object>emptyMap());
+        _broker.authorise(Operation.ACTION("manage"));
         return true;
     }
 

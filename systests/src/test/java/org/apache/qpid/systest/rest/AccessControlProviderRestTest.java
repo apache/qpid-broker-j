@@ -30,7 +30,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
 import org.apache.qpid.server.model.AccessControlProvider;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.security.AllowAllAccessControlProvider;
 import org.apache.qpid.server.security.access.plugins.ACLFileAccessControlProvider;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.test.utils.TestFileUtils;
@@ -102,6 +104,16 @@ public class AccessControlProviderRestTest extends QpidRestTestCase
         //verify it exists with the 'allowed' user
         assertAccessControlProviderExistence(accessControlProviderName, true);
 
+        // add a second, low priority AllowAll provider
+        Map<String,Object> attributes = new HashMap<>();
+        final String secondProviderName = "AllowAll";
+        attributes.put(ConfiguredObject.NAME, secondProviderName);
+        attributes.put(ConfiguredObject.TYPE, AllowAllAccessControlProvider.ALLOW_ALL);
+        attributes.put(AccessControlProvider.PRIORITY, 9999);
+        responseCode = getRestTestHelper().submitRequest("accesscontrolprovider/" + secondProviderName, "PUT", attributes);
+        assertEquals("Access control provider creation should be allowed", 201, responseCode);
+
+
         //verify the 'denied' user can no longer access the management interface
         //due to the just-created ACL file now preventing it
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
@@ -168,6 +180,13 @@ public class AccessControlProviderRestTest extends QpidRestTestCase
         assertFalse("ACL file should not exist", file.exists());
         TestBrokerConfiguration configuration = getDefaultBrokerConfiguration();
         UUID id = configuration.addAclFileConfiguration(file.getAbsolutePath());
+
+        Map<String,Object> attributes = new HashMap<>();
+        final String secondProviderName = "AllowAll";
+        attributes.put(ConfiguredObject.NAME, secondProviderName);
+        attributes.put(ConfiguredObject.TYPE, AllowAllAccessControlProvider.ALLOW_ALL);
+        attributes.put(AccessControlProvider.PRIORITY, 9999);
+        configuration.addObjectConfiguration(AccessControlProvider.class, attributes);
         configuration.setSaved(false);
         startDefaultBroker(true);
 

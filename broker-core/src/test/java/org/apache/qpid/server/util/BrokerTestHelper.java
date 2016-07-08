@@ -43,6 +43,7 @@ import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
@@ -91,7 +92,6 @@ public class BrokerTestHelper
         when(broker.getConnection_sessionCountLimit()).thenReturn(1);
         when(broker.getConnection_closeWhenNoRoute()).thenReturn(false);
         when(broker.getId()).thenReturn(UUID.randomUUID());
-        when(broker.getSecurityManager()).thenReturn(new SecurityManager(broker, false));
         when(broker.getObjectFactory()).thenReturn(objectFactory);
         when(broker.getModel()).thenReturn(objectFactory.getModel());
         when(broker.getModelVersion()).thenReturn(BrokerModel.MODEL_VERSION);
@@ -212,10 +212,8 @@ public class BrokerTestHelper
         Broker broker = mock(Broker.class);
         when(broker.getModel()).thenReturn(BrokerModel.getInstance());
         when(broker.getCategoryClass()).thenReturn(Broker.class);
-        SecurityManager securityManager = new SecurityManager(broker, false);
         final VirtualHost<?> virtualHost = mock(VirtualHost.class);
         when(virtualHost.getName()).thenReturn(hostName);
-        when(virtualHost.getSecurityManager()).thenReturn(securityManager);
         when(virtualHost.getEventLogger()).thenReturn(eventLogger);
         when(virtualHost.getDurableConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));
         final ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());

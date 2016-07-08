@@ -164,7 +164,6 @@ public class HeadersBindingTest extends QpidTestCase
         when(_queue.getTaskExecutor()).thenReturn(executor);
         when(_queue.getChildExecutor()).thenReturn(executor);
 
-        when(vhost.getSecurityManager()).thenReturn(mock(org.apache.qpid.server.security.SecurityManager.class));
         final EventLogger eventLogger = new EventLogger();
         when(vhost.getEventLogger()).thenReturn(eventLogger);
         when(vhost.getTaskExecutor()).thenReturn(executor);

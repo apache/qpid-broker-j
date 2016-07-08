@@ -52,7 +52,10 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.NullMessageStore;
@@ -68,7 +71,6 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
     private static final String TEST_VIRTUAL_HOST_NAME = "testVirtualHost";
 
     private final UUID _nodeId = UUID.randomUUID();
-    private final SecurityManager _mockSecurityManager = mock(SecurityManager.class);
     private Broker<?> _broker;
     private TaskExecutor _taskExecutor;
 
@@ -274,19 +276,19 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
 
     public void testUpdateVHNDeniedByACL() throws Exception
     {
-        when(_broker.getSecurityManager()).thenReturn(_mockSecurityManager);
-
+        AccessControl mockAccessControl = mock(AccessControl.class);
         DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
 
         Map<String, Object> nodeAttributes = new HashMap<>();
         nodeAttributes.put(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME);
         nodeAttributes.put(VirtualHostNode.ID, _nodeId);
 
-        VirtualHostNode<?> node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
+        TestVirtualHostNode node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
+        node.setAccessControl(mockAccessControl);
         node.open();
         node.start();
 
-        doThrow(new AccessControlException("mocked ACL exception")).when(_mockSecurityManager).authoriseUpdate(node);
+        when(mockAccessControl.authorise(null, Operation.UPDATE, node, Collections.<String,Object>emptyMap())).thenReturn(Result.DENIED);
 
         assertNull(node.getDescription());
         try
@@ -304,8 +306,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
 
     public void testDeleteVHNDeniedByACL() throws Exception
     {
-        SecurityManager mockSecurityManager = mock(SecurityManager.class);
-        when(_broker.getSecurityManager()).thenReturn(mockSecurityManager);
+        AccessControl mockAccessControl = mock(AccessControl.class);
 
         DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
 
@@ -313,11 +314,12 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         nodeAttributes.put(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME);
         nodeAttributes.put(VirtualHostNode.ID, _nodeId);
 
-        VirtualHostNode<?> node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
+        TestVirtualHostNode node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
+        node.setAccessControl(mockAccessControl);
+
         node.open();
         node.start();
-
-        doThrow(new AccessControlException("mocked ACL exception")).when(mockSecurityManager).authoriseDelete(node);
+        when(mockAccessControl.authorise(null, Operation.DELETE, node, Collections.<String,Object>emptyMap())).thenReturn(Result.DENIED);
 
         try
         {
@@ -335,8 +337,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
 
     public void testStopVHNDeniedByACL() throws Exception
     {
-        SecurityManager mockSecurityManager = mock(SecurityManager.class);
-        when(_broker.getSecurityManager()).thenReturn(mockSecurityManager);
+        AccessControl mockAccessControl = mock(AccessControl.class);
 
         DurableConfigurationStore configStore = configStoreThatProducesNoRecords();
 
@@ -344,11 +345,13 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         nodeAttributes.put(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE_NAME);
         nodeAttributes.put(VirtualHostNode.ID, _nodeId);
 
-        VirtualHostNode<?> node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
+        TestVirtualHostNode node = new TestVirtualHostNode(_broker, nodeAttributes, configStore);
+        node.setAccessControl(mockAccessControl);
+
         node.open();
         node.start();
 
-        doThrow(new AccessControlException("mocked ACL exception")).when(mockSecurityManager).authoriseUpdate(node);
+        when(mockAccessControl.authorise(null, Operation.UPDATE, node, Collections.<String,Object>emptyMap())).thenReturn(Result.DENIED);
 
         try
         {

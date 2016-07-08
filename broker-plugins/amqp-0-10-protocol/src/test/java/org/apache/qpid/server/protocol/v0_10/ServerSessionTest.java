@@ -78,8 +78,6 @@ public class ServerSessionTest extends QpidTestCase
     public void testOverlargeMessageTest() throws Exception
     {
         final Broker<?> broker = mock(Broker.class);
-        SecurityManager securityManager = new SecurityManager(broker, true);
-        when(broker.getSecurityManager()).thenReturn(securityManager);
         when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0l);
 
         AmqpPort port = createMockPort();

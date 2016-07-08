@@ -62,7 +62,6 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
         queueAttributes.put(Queue.ID, UUID.randomUUID());
         queueAttributes.put(Queue.NAME, getName());
         final VirtualHost virtualHost = mock(VirtualHost.class);
-        when(virtualHost.getSecurityManager()).thenReturn(mock(SecurityManager.class));
         when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
         _factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(virtualHost.getObjectFactory()).thenReturn(_factory);
@@ -116,7 +115,6 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
             queueAttributes.put(Queue.ID, UUID.randomUUID());
             queueAttributes.put(Queue.NAME, getName());
             final VirtualHost virtualHost = mock(VirtualHost.class);
-            when(virtualHost.getSecurityManager()).thenReturn(mock(SecurityManager.class));
             when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
             when(virtualHost.getObjectFactory()).thenReturn(_factory);
             when(virtualHost.getModel()).thenReturn(_factory.getModel());

@@ -20,13 +20,11 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import org.apache.qpid.server.security.access.Operation;
-
 /**
  * An access control v2 rule action.
  *
- * An action consists of an {@link Operation} on an {@link ObjectType} with certain properties, stored in a {@link java.util.Map}.
- * The operation and object should be an allowable combination, based on the {@link ObjectType#isSupported(Operation)}
+ * An action consists of an {@link LegacyOperation} on an {@link ObjectType} with certain properties, stored in a {@link java.util.Map}.
+ * The operation and object should be an allowable combination, based on the {@link ObjectType#isSupported(LegacyOperation)}
  * method of the object, which is exposed as the {@link #isSupported()} method here. The internal #propertiesMatch(Map)
  * and #valueMatches(String, String) methods are used to determine wildcarded matching of properties, with
  * the empty string or "*" matching all values, and "*" at the end of a rule value indicating prefix matching.
@@ -37,33 +35,33 @@ import org.apache.qpid.server.security.access.Operation;
  */
 public class Action
 {
-    private final Operation _operation;
+    private final LegacyOperation _operation;
     private final ObjectType _object;
     private final ObjectProperties _properties;
 
-    public Action(Operation operation)
+    public Action(LegacyOperation operation)
     {
         this(operation, ObjectType.ALL);
     }
 
-    public Action(Operation operation, ObjectType object, String name)
+    public Action(LegacyOperation operation, ObjectType object, String name)
     {
         this(operation, object, new ObjectProperties(name));
     }
 
-    public Action(Operation operation, ObjectType object)
+    public Action(LegacyOperation operation, ObjectType object)
     {
         this(operation, object, ObjectProperties.EMPTY);
     }
 
-    public Action(Operation operation, ObjectType object, ObjectProperties properties)
+    public Action(LegacyOperation operation, ObjectType object, ObjectProperties properties)
     {
         _operation = operation;
         _object = object;
         _properties = properties;
     }
 
-    public Operation getOperation()
+    public LegacyOperation getOperation()
     {
         return _operation;
     }
@@ -90,7 +88,7 @@ public class Action
 
     private boolean operationsMatch(Action a)
     {
-        return Operation.ALL == a.getOperation() || getOperation() == a.getOperation();
+        return LegacyOperation.ALL == a.getOperation() || getOperation() == a.getOperation();
     }
 
     private boolean objectTypesMatch(Action a)

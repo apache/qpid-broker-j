@@ -69,7 +69,6 @@ public class VirtualHostLoggerTest  extends QpidTestCase
 
         Model model = BrokerModel.getInstance();
 
-        SecurityManager securityManager = mock(SecurityManager.class);
         EventLogger eventLogger = mock(EventLogger.class);
 
         SystemConfig<?> systemConfig = mock(SystemConfig.class);
@@ -80,7 +79,6 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         doReturn(SystemConfig.class).when(systemConfig).getCategoryClass();
 
         Broker<?> broker = mock(Broker.class);
-        when(broker.getSecurityManager()).thenReturn(securityManager);
         when(broker.getModel()).thenReturn(model);
         when(broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(broker.getParent(SystemConfig.class)).thenReturn(systemConfig);

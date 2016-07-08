@@ -29,7 +29,6 @@ import java.util.List;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.access.config.ObjectProperties.Property;
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AclFileParserTest extends QpidTestCase
@@ -171,7 +170,7 @@ public class AclFileParserTest extends QpidTestCase
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", Operation.ACCESS, rule.getAction().getOperation());
+        assertEquals("Rule has unexpected operation", LegacyOperation.ACCESS, rule.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.VIRTUALHOST, rule.getAction().getObjectType());
         assertEquals("Rule has unexpected object properties", ObjectProperties.EMPTY, rule.getAction().getProperties());
     }
@@ -188,7 +187,7 @@ public class AclFileParserTest extends QpidTestCase
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "all", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", Operation.CREATE, rule.getAction().getOperation());
+        assertEquals("Rule has unexpected operation", LegacyOperation.CREATE, rule.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.EXCHANGE, rule.getAction().getObjectType());
         final ObjectProperties expectedProperties = new ObjectProperties();
         expectedProperties.setName("value");
@@ -207,7 +206,7 @@ public class AclFileParserTest extends QpidTestCase
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "all", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", Operation.CREATE, rule.getAction().getOperation());
+        assertEquals("Rule has unexpected operation", LegacyOperation.CREATE, rule.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.EXCHANGE, rule.getAction().getObjectType());
         final ObjectProperties expectedProperties = new ObjectProperties();
         expectedProperties.setName("value");
@@ -226,7 +225,7 @@ public class AclFileParserTest extends QpidTestCase
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "admin", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", Operation.DELETE, rule.getAction().getOperation());
+        assertEquals("Rule has unexpected operation", LegacyOperation.DELETE, rule.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.QUEUE, rule.getAction().getObjectType());
         final ObjectProperties expectedProperties = new ObjectProperties();
         expectedProperties.setName("name1");
@@ -249,7 +248,7 @@ public class AclFileParserTest extends QpidTestCase
         assertEquals(3, rules.size());
         final Rule rule1 = rules.get(0);
         assertEquals("Rule has unexpected identity", "all", rule1.getIdentity());
-        assertEquals("Rule has unexpected operation", Operation.CREATE, rule1.getAction().getOperation());
+        assertEquals("Rule has unexpected operation", LegacyOperation.CREATE, rule1.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.EXCHANGE, rule1.getAction().getObjectType());
         final ObjectProperties expectedProperties1 = new ObjectProperties();
         expectedProperties1.put(Property.ROUTING_KEY,"news.#");
@@ -278,7 +277,7 @@ public class AclFileParserTest extends QpidTestCase
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "User1", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", Operation.BIND, rule.getAction().getOperation());
+        assertEquals("Rule has unexpected operation", LegacyOperation.BIND, rule.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.EXCHANGE, rule.getAction().getObjectType());
         final ObjectProperties expectedProperties = new ObjectProperties("AmQ.dIrect");
         assertEquals("Rule has unexpected object properties", expectedProperties, rule.getAction().getProperties());
@@ -300,7 +299,7 @@ public class AclFileParserTest extends QpidTestCase
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", Operation.ACCESS, rule.getAction().getOperation());
+        assertEquals("Rule has unexpected operation", LegacyOperation.ACCESS, rule.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.VIRTUALHOST, rule.getAction().getObjectType());
         assertEquals("Rule has unexpected object properties", ObjectProperties.EMPTY, rule.getAction().getProperties());
     }
@@ -318,7 +317,7 @@ public class AclFileParserTest extends QpidTestCase
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", Operation.ACCESS, rule.getAction().getOperation());
+        assertEquals("Rule has unexpected operation", LegacyOperation.ACCESS, rule.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.VIRTUALHOST, rule.getAction().getObjectType());
         assertEquals("Rule has unexpected object properties", ObjectProperties.EMPTY, rule.getAction().getProperties());
     }
@@ -336,7 +335,7 @@ public class AclFileParserTest extends QpidTestCase
         assertEquals(1, rules.size());
         final Rule rule = rules.get(0);
         assertEquals("Rule has unexpected identity", "user1", rule.getIdentity());
-        assertEquals("Rule has unexpected operation", Operation.ACCESS, rule.getAction().getOperation());
+        assertEquals("Rule has unexpected operation", LegacyOperation.ACCESS, rule.getAction().getOperation());
         assertEquals("Rule has unexpected operation", ObjectType.VIRTUALHOST, rule.getAction().getObjectType());
         assertEquals("Rule has unexpected object properties", ObjectProperties.EMPTY, rule.getAction().getProperties());
     }
@@ -344,47 +343,47 @@ public class AclFileParserTest extends QpidTestCase
     public void testUserRuleParsing() throws Exception
     {
         validateRule(writeACLConfig("ACL ALLOW user1 CREATE USER"),
-                "user1", Operation.CREATE, ObjectType.USER, ObjectProperties.EMPTY);
+                     "user1", LegacyOperation.CREATE, ObjectType.USER, ObjectProperties.EMPTY);
         validateRule(writeACLConfig("ACL ALLOW user1 CREATE USER name=\"otherUser\""),
-                "user1", Operation.CREATE, ObjectType.USER, new ObjectProperties("otherUser"));
+                     "user1", LegacyOperation.CREATE, ObjectType.USER, new ObjectProperties("otherUser"));
 
         validateRule(writeACLConfig("ACL ALLOW user1 DELETE USER"),
-                "user1", Operation.DELETE, ObjectType.USER, ObjectProperties.EMPTY);
+                     "user1", LegacyOperation.DELETE, ObjectType.USER, ObjectProperties.EMPTY);
         validateRule(writeACLConfig("ACL ALLOW user1 DELETE USER name=\"otherUser\""),
-                "user1", Operation.DELETE, ObjectType.USER, new ObjectProperties("otherUser"));
+                     "user1", LegacyOperation.DELETE, ObjectType.USER, new ObjectProperties("otherUser"));
 
         validateRule(writeACLConfig("ACL ALLOW user1 UPDATE USER"),
-                "user1", Operation.UPDATE, ObjectType.USER, ObjectProperties.EMPTY);
+                     "user1", LegacyOperation.UPDATE, ObjectType.USER, ObjectProperties.EMPTY);
         validateRule(writeACLConfig("ACL ALLOW user1 UPDATE USER name=\"otherUser\""),
-                "user1", Operation.UPDATE, ObjectType.USER, new ObjectProperties("otherUser"));
+                     "user1", LegacyOperation.UPDATE, ObjectType.USER, new ObjectProperties("otherUser"));
 
         validateRule(writeACLConfig("ACL ALLOW user1 ALL USER"),
-                "user1", Operation.ALL, ObjectType.USER, ObjectProperties.EMPTY);
+                     "user1", LegacyOperation.ALL, ObjectType.USER, ObjectProperties.EMPTY);
         validateRule(writeACLConfig("ACL ALLOW user1 ALL USER name=\"otherUser\""),
-                "user1", Operation.ALL, ObjectType.USER, new ObjectProperties("otherUser"));
+                     "user1", LegacyOperation.ALL, ObjectType.USER, new ObjectProperties("otherUser"));
     }
 
     public void testGroupRuleParsing() throws Exception
     {
         validateRule(writeACLConfig("ACL ALLOW user1 CREATE GROUP"),
-                "user1", Operation.CREATE, ObjectType.GROUP, ObjectProperties.EMPTY);
+                     "user1", LegacyOperation.CREATE, ObjectType.GROUP, ObjectProperties.EMPTY);
         validateRule(writeACLConfig("ACL ALLOW user1 CREATE GROUP name=\"groupName\""),
-                "user1", Operation.CREATE, ObjectType.GROUP, new ObjectProperties("groupName"));
+                     "user1", LegacyOperation.CREATE, ObjectType.GROUP, new ObjectProperties("groupName"));
 
         validateRule(writeACLConfig("ACL ALLOW user1 DELETE GROUP"),
-                "user1", Operation.DELETE, ObjectType.GROUP, ObjectProperties.EMPTY);
+                     "user1", LegacyOperation.DELETE, ObjectType.GROUP, ObjectProperties.EMPTY);
         validateRule(writeACLConfig("ACL ALLOW user1 DELETE GROUP name=\"groupName\""),
-                "user1", Operation.DELETE, ObjectType.GROUP, new ObjectProperties("groupName"));
+                     "user1", LegacyOperation.DELETE, ObjectType.GROUP, new ObjectProperties("groupName"));
 
         validateRule(writeACLConfig("ACL ALLOW user1 UPDATE GROUP"),
-                "user1", Operation.UPDATE, ObjectType.GROUP, ObjectProperties.EMPTY);
+                     "user1", LegacyOperation.UPDATE, ObjectType.GROUP, ObjectProperties.EMPTY);
         validateRule(writeACLConfig("ACL ALLOW user1 UPDATE GROUP name=\"groupName\""),
-                "user1", Operation.UPDATE, ObjectType.GROUP, new ObjectProperties("groupName"));
+                     "user1", LegacyOperation.UPDATE, ObjectType.GROUP, new ObjectProperties("groupName"));
 
         validateRule(writeACLConfig("ACL ALLOW user1 ALL GROUP"),
-                "user1", Operation.ALL, ObjectType.GROUP, ObjectProperties.EMPTY);
+                     "user1", LegacyOperation.ALL, ObjectType.GROUP, ObjectProperties.EMPTY);
         validateRule(writeACLConfig("ACL ALLOW user1 ALL GROUP name=\"groupName\""),
-                "user1", Operation.ALL, ObjectType.GROUP, new ObjectProperties("groupName"));
+                     "user1", LegacyOperation.ALL, ObjectType.GROUP, new ObjectProperties("groupName"));
     }
 
     /** explicitly test for exception indicating that this functionality has been moved to Group Providers */
@@ -404,20 +403,20 @@ public class AclFileParserTest extends QpidTestCase
     public void testManagementRuleParsing() throws Exception
     {
         validateRule(writeACLConfig("ACL ALLOW user1 ALL MANAGEMENT"),
-                "user1", Operation.ALL, ObjectType.MANAGEMENT, ObjectProperties.EMPTY);
+                     "user1", LegacyOperation.ALL, ObjectType.MANAGEMENT, ObjectProperties.EMPTY);
 
         validateRule(writeACLConfig("ACL ALLOW user1 ACCESS MANAGEMENT"),
-                "user1", Operation.ACCESS, ObjectType.MANAGEMENT, ObjectProperties.EMPTY);
+                     "user1", LegacyOperation.ACCESS, ObjectType.MANAGEMENT, ObjectProperties.EMPTY);
     }
 
     public void testBrokerRuleParsing() throws Exception
     {
-        validateRule(writeACLConfig("ACL ALLOW user1 CONFIGURE BROKER"), "user1", Operation.CONFIGURE, ObjectType.BROKER,
-                ObjectProperties.EMPTY);
-        validateRule(writeACLConfig("ACL ALLOW user1 ALL BROKER"), "user1", Operation.ALL, ObjectType.BROKER, ObjectProperties.EMPTY);
+        validateRule(writeACLConfig("ACL ALLOW user1 CONFIGURE BROKER"), "user1", LegacyOperation.CONFIGURE, ObjectType.BROKER,
+                     ObjectProperties.EMPTY);
+        validateRule(writeACLConfig("ACL ALLOW user1 ALL BROKER"), "user1", LegacyOperation.ALL, ObjectType.BROKER, ObjectProperties.EMPTY);
     }
 
-    private void validateRule(final RuleSet rs, String username, Operation operation, ObjectType objectType, ObjectProperties objectProperties)
+    private void validateRule(final RuleSet rs, String username, LegacyOperation operation, ObjectType objectType, ObjectProperties objectProperties)
     {
         assertEquals(1, rs.getRuleCount());
 

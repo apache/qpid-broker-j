@@ -59,6 +59,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.StateChangeListener;
 
@@ -135,7 +136,7 @@ class QueueConsumerImpl
         _queue = queue;
 
         // Access control
-        authoriseCreate(this);
+        authorise(Operation.CREATE);
 
         open();
 
@@ -161,12 +162,6 @@ class QueueConsumerImpl
                 getEventLogger().message(getLogSubject(), SubscriptionMessages.STATE(period));
             }
         };
-    }
-
-    @Override
-    protected SecurityManager getSecurityManager()
-    {
-        return _queue.getVirtualHost().getSecurityManager();
     }
 
     private static Map<String, Object> createAttributeMap(String name, FilterManager filters, EnumSet<Option> optionSet)

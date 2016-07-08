@@ -33,6 +33,7 @@ import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
@@ -54,7 +55,6 @@ public class FileBasedGroupProviderImplTest extends QpidTestCase
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getModel()).thenReturn(BrokerModel.getInstance());
         when(_broker.getId()).thenReturn(UUID.randomUUID());
-        when(_broker.getSecurityManager()).thenReturn(new SecurityManager(_broker, false));
     }
 
     @Override

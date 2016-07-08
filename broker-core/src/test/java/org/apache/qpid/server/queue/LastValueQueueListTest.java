@@ -63,7 +63,6 @@ public class LastValueQueueListTest extends QpidTestCase
         queueAttributes.put(Queue.NAME, getName());
         queueAttributes.put(LastValueQueue.LVQ_KEY, CONFLATION_KEY);
         final VirtualHost virtualHost = mock(VirtualHost.class);
-        when(virtualHost.getSecurityManager()).thenReturn(mock(SecurityManager.class));
         when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
         ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(virtualHost.getObjectFactory()).thenReturn(factory);

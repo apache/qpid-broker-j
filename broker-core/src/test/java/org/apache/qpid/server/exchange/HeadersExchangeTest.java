@@ -72,17 +72,14 @@ public class HeadersExchangeTest extends QpidTestCase
         _virtualHost = mock(VirtualHost.class);
 
         Broker broker = mock(Broker.class);
-        SecurityManager securityManager = new SecurityManager(broker, false);
         when(broker.getCategoryClass()).thenReturn(Broker.class);
         when(broker.getModel()).thenReturn(BrokerModel.getInstance());
-        when(broker.getSecurityManager()).thenReturn(securityManager);
 
         VirtualHostNode virtualHostNode = mock(VirtualHostNode.class);
         when(virtualHostNode.getCategoryClass()).thenReturn(VirtualHostNode.class);
         when(virtualHostNode.getParent(Broker.class)).thenReturn(broker);
         when(virtualHostNode.getModel()).thenReturn(BrokerModel.getInstance());
 
-        when(_virtualHost.getSecurityManager()).thenReturn(securityManager);
         when(_virtualHost.getEventLogger()).thenReturn(new EventLogger());
         when(_virtualHost.getCategoryClass()).thenReturn(VirtualHost.class);
         when(_virtualHost.getTaskExecutor()).thenReturn(_taskExecutor);

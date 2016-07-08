@@ -34,6 +34,7 @@ import java.util.UUID;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -65,10 +66,8 @@ public class FanoutExchangeTest extends QpidTestCase
         attributes.put(Exchange.DURABLE, false);
 
         Broker broker = mock(Broker.class);
-        SecurityManager securityManager = new SecurityManager(broker, false);
         when(broker.getCategoryClass()).thenReturn(Broker.class);
         when(broker.getModel()).thenReturn(BrokerModel.getInstance());
-        when(broker.getSecurityManager()).thenReturn(securityManager);
 
         VirtualHostNode virtualHostNode = mock(VirtualHostNode.class);
         when(virtualHostNode.getCategoryClass()).thenReturn(VirtualHostNode.class);
@@ -79,7 +78,6 @@ public class FanoutExchangeTest extends QpidTestCase
         _taskExecutor.start();
         _virtualHost = mock(VirtualHost.class);
 
-        when(_virtualHost.getSecurityManager()).thenReturn(securityManager);
         when(_virtualHost.getEventLogger()).thenReturn(new EventLogger());
         when(_virtualHost.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_virtualHost.getChildExecutor()).thenReturn(_taskExecutor);

@@ -57,8 +57,6 @@ public class BrokerNameAndLevelLogInclusionRuleTest extends QpidTestCase
 
         Model model = BrokerModel.getInstance();
 
-        SecurityManager securityManager = mock(SecurityManager.class);
-        when(_broker.getSecurityManager()).thenReturn(securityManager);
         when(_broker.getModel()).thenReturn(model);
         doReturn(Broker.class).when(_broker).getCategoryClass();
 

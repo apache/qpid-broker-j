@@ -458,7 +458,6 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         when(queue.getChildExecutor()).thenReturn(taskExecutor);
 
         final VirtualHost vh = mock(VirtualHost.class);
-        when(vh.getSecurityManager()).thenReturn(mock(SecurityManager.class));
         when(queue.getVirtualHost()).thenReturn(vh);
         final Map<String,Object> attributes = arguments == null ? new LinkedHashMap<String, Object>() : new LinkedHashMap<String, Object>(arguments);
         attributes.put(Queue.NAME, queueName);

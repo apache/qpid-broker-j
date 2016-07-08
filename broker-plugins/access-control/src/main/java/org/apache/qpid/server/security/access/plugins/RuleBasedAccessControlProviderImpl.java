@@ -40,7 +40,7 @@ import org.apache.qpid.server.model.RestContentHeader;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.config.ObjectProperties;
 import org.apache.qpid.server.security.access.config.ObjectType;
-import org.apache.qpid.server.security.access.Operation;
+import org.apache.qpid.server.security.access.config.LegacyOperation;
 import org.apache.qpid.server.security.access.RuleOutcome;
 import org.apache.qpid.server.security.access.config.AclAction;
 import org.apache.qpid.server.security.access.config.AclFileParser;
@@ -148,7 +148,7 @@ public class RuleBasedAccessControlProviderImpl
         }
 
         @Override
-        public Operation getOperation()
+        public LegacyOperation getOperation()
         {
             return _rule.getAction().getOperation();
         }

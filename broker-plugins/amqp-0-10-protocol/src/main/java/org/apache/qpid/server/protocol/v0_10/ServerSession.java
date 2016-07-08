@@ -197,7 +197,16 @@ public class ServerSession extends Session
         _subject.getPrincipals().addAll(((ServerConnection) connection).getAuthorizedSubject().getPrincipals());
         _subject.getPrincipals().add(new SessionPrincipal(this));
         _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(_subject);
-        _token = ((ServerConnection) connection).getBroker().getSecurityManager().newToken(_subject);
+        final NamedAddressSpace addressSpace = ((ServerConnection) connection).getAddressSpace();
+
+        if(addressSpace instanceof ConfiguredObject)
+        {
+            _token = ((ConfiguredObject)addressSpace).newToken(_subject);
+        }
+        else
+        {
+            _token = ((ServerConnection) connection).getAmqpConnection().getBroker().newToken(_subject);
+        }
         _transactionTimeoutHelper = new TransactionTimeoutHelper(_logSubject, new CloseAction()
         {
             @Override

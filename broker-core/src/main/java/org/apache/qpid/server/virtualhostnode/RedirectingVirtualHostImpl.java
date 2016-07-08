@@ -48,11 +48,9 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.LinkRegistry;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
-import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.virtualhost.*;
@@ -367,12 +365,6 @@ class RedirectingVirtualHostImpl
     public long getTotalQueueDepthBytes()
     {
         return 0l;
-    }
-
-    @Override
-    public SecurityManager getSecurityManager()
-    {
-        return super.getSecurityManager();
     }
 
     @Override

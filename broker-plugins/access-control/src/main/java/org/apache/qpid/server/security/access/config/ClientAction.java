@@ -20,7 +20,6 @@ package org.apache.qpid.server.security.access.config;
 
 import java.net.InetAddress;
 
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.firewall.FirewallRule;
 
 /**
@@ -36,7 +35,7 @@ public class ClientAction
         _clientAction = clientAction;
     }
 
-    public ClientAction(Operation operation, ObjectType objectType, ObjectProperties properties)
+    public ClientAction(LegacyOperation operation, ObjectType objectType, ObjectProperties properties)
     {
         _clientAction = new Action(operation, objectType, properties);
     }
@@ -60,7 +59,7 @@ public class ClientAction
         }
     }
 
-    public Operation getOperation()
+    public LegacyOperation getOperation()
     {
         return _clientAction.getOperation();
     }

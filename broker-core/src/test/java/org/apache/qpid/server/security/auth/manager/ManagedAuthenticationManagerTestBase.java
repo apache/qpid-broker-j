@@ -50,7 +50,6 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
 
 
     private Broker _broker;
-    private SecurityManager _securityManager;
     private TaskExecutor _executor;
 
     @Override
@@ -60,10 +59,8 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
         _executor = new CurrentThreadTaskExecutor();
         _executor.start();
         _broker = BrokerTestHelper.createBrokerMock();
-        _securityManager = mock(SecurityManager.class);
         when(_broker.getTaskExecutor()).thenReturn(_executor);
         when(_broker.getChildExecutor()).thenReturn(_executor);
-        when(_broker.getSecurityManager()).thenReturn(_securityManager);
         final Map<String, Object> attributesMap = new HashMap<String, Object>();
         attributesMap.put(AuthenticationProvider.NAME, getTestName());
         attributesMap.put(AuthenticationProvider.ID, UUID.randomUUID());

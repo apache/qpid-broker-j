@@ -34,18 +34,23 @@ public interface AccessControl<T extends SecurityToken>
 
     T newToken(Subject subject);
 
-    Result authorise(Operation operation, ConfiguredObject<?> configuredObject);
-    Result authoriseMethod(ConfiguredObject<?> configuredObject, String methodName, Map<String,Object> arguments);
-    Result authoriseMethod(T token, ConfiguredObject<?> configuredObject, String methodName, Map<String,Object> arguments);
+    Result authorise(T token, Operation operation, ConfiguredObject<?> configuredObject);
 
+    Result authorise(T token, Operation operation, ConfiguredObject<?> configuredObject, Map<String,Object> arguments);
 
-
-    AccessControl ALWAYS_ALLOWED = new AccessControl<SecurityToken>()
+    final class FixedResultAccessControl implements AccessControl<SecurityToken>
     {
+        private final Result _result;
+
+        private FixedResultAccessControl(final Result result)
+        {
+            _result = result;
+        }
+
         @Override
         public Result getDefault()
         {
-            return Result.ALLOWED;
+            return _result;
         }
 
         @Override
@@ -61,73 +66,23 @@ public interface AccessControl<T extends SecurityToken>
         }
 
         @Override
-        public Result authorise(final Operation operation, final ConfiguredObject<?> configuredObject)
+        public Result authorise(final SecurityToken token,
+                                final Operation operation,
+                                final ConfiguredObject<?> configuredObject)
         {
-            return Result.ALLOWED;
+            return _result;
         }
 
         @Override
-        public Result authoriseMethod(final ConfiguredObject<?> configuredObject,
-                                      final String methodName,
-                                      final Map<String, Object> arguments)
+        public Result authorise(final SecurityToken token,
+                                final Operation operation,
+                                final ConfiguredObject<?> configuredObject,
+                                final Map<String, Object> arguments)
         {
-            return Result.ALLOWED;
+            return _result;
         }
+    }
 
-        @Override
-        public Result authoriseMethod(final SecurityToken token,
-                                      final ConfiguredObject configuredObject,
-                                      final String methodName,
-                                      final Map arguments)
-        {
-            return Result.ALLOWED;
-        }
-    };
-
-    AccessControl ALWAYS_DENIED = new AccessControl<SecurityToken>()
-    {
-        @Override
-        public Result getDefault()
-        {
-            return Result.DENIED;
-        }
-
-        @Override
-        public SecurityToken newToken()
-        {
-            return null;
-        }
-
-        @Override
-        public SecurityToken newToken(final Subject subject)
-        {
-            return null;
-        }
-
-        @Override
-        public Result authorise(final Operation operation, final ConfiguredObject<?> configuredObject)
-        {
-            return Result.DENIED;
-        }
-
-        @Override
-        public Result authoriseMethod(final ConfiguredObject<?> configuredObject,
-                                      final String methodName,
-                                      final Map<String, Object> arguments)
-        {
-            return Result.DENIED;
-        }
-
-        @Override
-        public Result authoriseMethod(final SecurityToken token,
-                                      final ConfiguredObject<?> configuredObject,
-                                      final String methodName,
-                                      final Map<String, Object> arguments)
-        {
-            return Result.DENIED;
-        }
-    };
-
-
-
+    AccessControl ALWAYS_ALLOWED = new FixedResultAccessControl(Result.ALLOWED);
+    AccessControl ALWAYS_DENIED = new FixedResultAccessControl(Result.DENIED);
 }

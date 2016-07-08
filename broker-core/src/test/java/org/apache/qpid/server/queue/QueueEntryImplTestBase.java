@@ -260,7 +260,6 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
         queueAttributes.put(Queue.ID, UUID.randomUUID());
         queueAttributes.put(Queue.NAME, getName());
         final VirtualHost virtualHost = mock(VirtualHost.class);
-        when(virtualHost.getSecurityManager()).thenReturn(mock(org.apache.qpid.server.security.SecurityManager.class));
         when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
 
         ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());

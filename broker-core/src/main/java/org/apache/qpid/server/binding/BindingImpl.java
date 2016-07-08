@@ -46,6 +46,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.access.Operation;
 
 public class BindingImpl
         extends AbstractConfiguredObject<BindingImpl>
@@ -252,7 +253,7 @@ public class BindingImpl
     @Override
     public void validateOnCreate()
     {
-        authoriseCreate(this);
+        authorise(Operation.CREATE);
 
         Queue<?> queue = getQueue();
         Map<String, Object> arguments = getArguments();
@@ -269,10 +270,5 @@ public class BindingImpl
         }
     }
 
-    @Override
-    protected SecurityManager getSecurityManager()
-    {
-        return _queue.getVirtualHost().getSecurityManager();
-    }
 
 }

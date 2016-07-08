@@ -32,6 +32,7 @@ import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.txn.ServerTransaction;
 
 public class ExchangeDestination implements ReceivingDestination, SendingDestination
@@ -103,12 +104,9 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
     @Override
     public void authorizePublish(final SecurityToken securityToken, final Message_1_0 message)
     {
-        final SecurityManager securityManager =
-                _exchange.getParent(VirtualHost.class).getBroker().getSecurityManager();
-
-        securityManager
-                .authoriseExecute(securityToken, _exchange, "publish",
-                                  Collections.<String,Object>singletonMap("routingKey", getRoutingAddress(message)));
+        _exchange.authorise(securityToken,
+                            Operation.ACTION("publish"),
+                            Collections.<String,Object>singletonMap("routingKey", getRoutingAddress(message)));
 
 
     }

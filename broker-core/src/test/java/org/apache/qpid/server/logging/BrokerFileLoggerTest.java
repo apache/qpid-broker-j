@@ -59,7 +59,6 @@ public class BrokerFileLoggerTest extends QpidTestCase
 
         Model model = BrokerModel.getInstance();
 
-        org.apache.qpid.server.security.SecurityManager securityManager = mock(SecurityManager.class);
         EventLogger eventLogger = mock(EventLogger.class);
 
         SystemConfig<?> systemConfig = mock(SystemConfig.class);
@@ -69,7 +68,6 @@ public class BrokerFileLoggerTest extends QpidTestCase
         doReturn(SystemConfig.class).when(systemConfig).getCategoryClass();
 
         _broker = mock(Broker.class);
-        when(_broker.getSecurityManager()).thenReturn(securityManager);
         when(_broker.getModel()).thenReturn(model);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getParent(SystemConfig.class)).thenReturn(systemConfig);

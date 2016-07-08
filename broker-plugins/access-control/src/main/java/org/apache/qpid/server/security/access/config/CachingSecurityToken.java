@@ -21,6 +21,7 @@
 package org.apache.qpid.server.security.access.config;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -30,6 +31,7 @@ import javax.security.auth.Subject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.access.Operation;
 
 class CachingSecurityToken implements SecurityToken
 {
@@ -60,7 +62,7 @@ class CachingSecurityToken implements SecurityToken
         {
             CACHE_UPDATE.compareAndSet(this, cache, new AccessControlCache(ruleBasedAccessControl));
         }
-        final CachedMethodAuthKey key = new CachedMethodAuthKey(configuredObject, methodName, arguments);
+        final CachedMethodAuthKey key = new CachedMethodAuthKey(configuredObject, Operation.METHOD(methodName), arguments);
         Result result = cache.getCache().get(key);
         if(result == null)
         {
@@ -70,22 +72,40 @@ class CachingSecurityToken implements SecurityToken
         return result;
     }
 
+    Result authorise(final RuleBasedAccessControl ruleBasedAccessControl, final Operation operation,
+                     final ConfiguredObject<?> configuredObject,
+                     final Map<String, Object> arguments)
+    {
+        AccessControlCache cache = CACHE_UPDATE.get(this);
+        while(cache.getAccessControl() != ruleBasedAccessControl)
+        {
+            CACHE_UPDATE.compareAndSet(this, cache, new AccessControlCache(ruleBasedAccessControl));
+        }
+        final CachedMethodAuthKey key = new CachedMethodAuthKey(configuredObject, operation, arguments);
+        Result result = cache.getCache().get(key);
+        if(result == null)
+        {
+            result = ruleBasedAccessControl.authorise(operation, configuredObject, arguments);
+            cache.getCache().putIfAbsent(key, result);
+        }
+        return result;    }
+
     private static final class CachedMethodAuthKey
     {
         private final ConfiguredObject<?> _configuredObject;
-        private final String _methodName;
+        private final Operation _operation;
         private final Map<String, Object> _arguments;
         private final int _hashCode;
 
         public CachedMethodAuthKey(final ConfiguredObject<?> configuredObject,
-                                   final String methodName,
+                                   final Operation operation,
                                    final Map<String, Object> arguments)
         {
             _configuredObject = configuredObject;
-            _methodName = methodName;
+            _operation = operation;
             _arguments = arguments;
             int result = _configuredObject != null ? _configuredObject.hashCode() : 0;
-            result = 31 * result + (_methodName != null ? _methodName.hashCode() : 0);
+            result = 31 * result + (operation != null ? operation.hashCode() : 0);
             result = 31 * result + (_arguments != null ? _arguments.hashCode() : 0);
             _hashCode = result;
         }
@@ -104,13 +124,9 @@ class CachingSecurityToken implements SecurityToken
 
             final CachedMethodAuthKey that = (CachedMethodAuthKey) o;
 
-            return _configuredObject != null
-                    ? _configuredObject.equals(that._configuredObject)
-                    : that._configuredObject == null && (_methodName != null
-                            ? _methodName.equals(that._methodName)
-                            : that._methodName == null && (_arguments != null
-                                    ? _arguments.equals(that._arguments)
-                                    : that._arguments == null));
+            return Objects.equals(_configuredObject, that._configuredObject)
+                   && Objects.equals(_operation, that._operation)
+                   && Objects.equals(_arguments, that._arguments);
 
         }
 

@@ -20,7 +20,6 @@ package org.apache.qpid.server.security.access.config;
 
 import static org.mockito.Mockito.*;
 
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.RuleOutcome;
 
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -46,8 +45,8 @@ public class RuleTest extends QpidTestCase
                     rule.equals(new Rule("identity2", aclAction, allow)));
 
         final AclAction differentAclAction = mock(AclAction.class);
-        Action action = new Action(Operation.PURGE);
-        Action differentAction = new Action(Operation.ACCESS);
+        Action action = new Action(LegacyOperation.PURGE);
+        Action differentAction = new Action(LegacyOperation.ACCESS);
         when(aclAction.getAction()).thenReturn(action);
         when(differentAclAction.getAction()).thenReturn(differentAction);
         assertFalse("Different action should cause rules to be unequal",

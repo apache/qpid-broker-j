@@ -66,6 +66,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.SubjectCreator;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
@@ -282,7 +283,6 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
     {
         OAuth2AuthenticationProvider authenticationProvider = mock(OAuth2AuthenticationProvider.class);
         Broker mockBroker = mock(Broker.class);
-        SecurityManager mockSecurityManager = mock(SecurityManager.class);
         SubjectCreator mockSubjectCreator = mock(SubjectCreator.class);
         SubjectAuthenticationResult mockSuccessfulSubjectAuthenticationResult = mock(SubjectAuthenticationResult.class);
         SubjectAuthenticationResult mockUnauthorizedSubjectAuthenticationResult = mock(SubjectAuthenticationResult.class);
@@ -308,8 +308,7 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
                 }
                 return null;
             }
-        }).when(mockSecurityManager).authoriseExecute(eq(mockBroker), eq("manage"), anyMap());
-        when(mockBroker.getSecurityManager()).thenReturn(mockSecurityManager);
+        }).when(mockBroker).authorise(eq(Operation.ACTION("manage")));
 
         when(authenticationProvider.getAuthorizationEndpointURI()).thenReturn(new URI(TEST_AUTHORIZATION_ENDPOINT));
         when(authenticationProvider.getClientId()).thenReturn(TEST_CLIENT_ID);

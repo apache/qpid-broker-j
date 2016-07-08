@@ -41,7 +41,6 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.messages.AccessControlMessages;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.RuleOutcome;
 
 /**
@@ -57,8 +56,8 @@ public class RuleSet implements EventLoggerProvider
     private static final Integer _increment = 10;
 
     private final List<Rule> _rules;
-    private final Map<Subject, Map<Operation, Map<ObjectType, List<Rule>>>> _cache =
-                        Collections.synchronizedMap(new WeakHashMap<Subject, Map<Operation, Map<ObjectType, List<Rule>>>>());
+    private final Map<Subject, Map<LegacyOperation, Map<ObjectType, List<Rule>>>> _cache =
+                        Collections.synchronizedMap(new WeakHashMap<Subject, Map<LegacyOperation, Map<ObjectType, List<Rule>>>>());
     private final Map<String, Boolean> _config = new HashMap<String, Boolean>();
     private final EventLoggerProvider _eventLogger;
     private Result _defaultResult = Result.DENIED;
@@ -83,7 +82,7 @@ public class RuleSet implements EventLoggerProvider
      * Allows only enabled rules with identity equal to all, the same, or a group with identity as a member,
      * and operation is either all or the same operation.
      */
-    private List<Rule> getRules(final Subject subject, final Operation operation, final ObjectType objectType)
+    private List<Rule> getRules(final Subject subject, final LegacyOperation operation, final ObjectType objectType)
     {
         final Map<ObjectType, List<Rule>> objects = getObjectToRuleCache(subject, operation);
 
@@ -96,7 +95,7 @@ public class RuleSet implements EventLoggerProvider
             for (Rule rule : _rules)
             {
                 final Action ruleAction = rule.getAction();
-                if ((ruleAction.getOperation() == Operation.ALL || ruleAction.getOperation() == operation)
+                if ((ruleAction.getOperation() == LegacyOperation.ALL || ruleAction.getOperation() == operation)
                     && (ruleAction.getObjectType() == ObjectType.ALL || ruleAction.getObjectType() == objectType))
                 {
                     controlled = true;
@@ -131,9 +130,9 @@ public class RuleSet implements EventLoggerProvider
     /**
      * Checks for the case when the client's address is not known.
      *
-     * @see #check(Subject, Operation, ObjectType, ObjectProperties, InetAddress)
+     * @see #check(Subject, LegacyOperation, ObjectType, ObjectProperties, InetAddress)
      */
-    public Result check(Subject subject, Operation operation, ObjectType objectType, ObjectProperties properties)
+    public Result check(Subject subject, LegacyOperation operation, ObjectType objectType, ObjectProperties properties)
     {
         return check(subject, operation, objectType, properties, null);
     }
@@ -147,7 +146,7 @@ public class RuleSet implements EventLoggerProvider
      * the first match found, or denies access if there are no matching rules. Normally, it would be expected
      * to have a default deny or allow rule at the end of an access configuration however.
      */
-    public Result check(Subject subject, Operation operation, ObjectType objectType, ObjectProperties properties, InetAddress addressOfClient)
+    public Result check(Subject subject, LegacyOperation operation, ObjectType objectType, ObjectProperties properties, InetAddress addressOfClient)
     {
         ClientAction action = new ClientAction(operation, objectType, properties);
 
@@ -172,6 +171,7 @@ public class RuleSet implements EventLoggerProvider
             if (action.matches(rule.getAclAction(), addressOfClient))
             {
                 RuleOutcome ruleOutcome = rule.getRuleOutcome();
+                _logger.debug("Action matches.  Result: {}", ruleOutcome);
                 boolean allowed = ruleOutcome.isAllowed();
                 if(ruleOutcome.isLogged())
                 {
@@ -195,7 +195,7 @@ public class RuleSet implements EventLoggerProvider
                 return allowed ? Result.ALLOWED : Result.DENIED;
             }
         }
-
+        _logger.debug("Deferring result of ACL check");
         // Defer to the next plugin of this type, if it exists
         return Result.DEFER;
     }
@@ -248,13 +248,13 @@ public class RuleSet implements EventLoggerProvider
         return false;
     }
 
-    private Map<ObjectType, List<Rule>> getObjectToRuleCache(final Subject subject, final Operation operation)
+    private Map<ObjectType, List<Rule>> getObjectToRuleCache(final Subject subject, final LegacyOperation operation)
     {
         // Lookup identity in cache and create empty operation map if required
-        Map<Operation, Map<ObjectType, List<Rule>>> operations = _cache.get(subject);
+        Map<LegacyOperation, Map<ObjectType, List<Rule>>> operations = _cache.get(subject);
         if (operations == null)
         {
-            operations = Collections.synchronizedMap(new EnumMap<Operation, Map<ObjectType, List<Rule>>>(Operation.class));
+            operations = Collections.synchronizedMap(new EnumMap<LegacyOperation, Map<ObjectType, List<Rule>>>(LegacyOperation.class));
             _cache.put(subject, operations);
         }
 

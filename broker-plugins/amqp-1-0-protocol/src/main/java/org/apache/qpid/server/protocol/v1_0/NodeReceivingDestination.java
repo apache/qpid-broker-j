@@ -34,6 +34,7 @@ import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.txn.ServerTransaction;
 
 public class NodeReceivingDestination implements ReceivingDestination
@@ -109,13 +110,10 @@ public class NodeReceivingDestination implements ReceivingDestination
         if(_destination instanceof ConfiguredObject)
         {
             ConfiguredObject<?> object = (ConfiguredObject)_destination;
-            final SecurityManager securityManager =
-                    object.getModel().getAncestor(Broker.class, object).getSecurityManager();
 
-            securityManager
-                    .authoriseExecute(securityToken, object, "publish",
-                                      Collections.<String, Object>singletonMap("routingKey",
-                                                                               getRoutingAddress(message)));
+            object.authorise(securityToken,
+                             Operation.ACTION("publish"),
+                             Collections.<String, Object>singletonMap("routingKey", getRoutingAddress(message)));
         }
 
 

@@ -31,18 +31,18 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.AccessControlMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.security.AccessControl;
-import org.apache.qpid.server.security.access.config.AclFileParser;
 import org.apache.qpid.server.security.access.config.RuleBasedAccessControl;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
 public abstract class AbstractRuleBasedAccessControlProvider<X extends AbstractRuleBasedAccessControlProvider<X>>
-        extends AbstractConfiguredObject<X>
+        extends AbstractConfiguredObject<X> implements AccessControlProvider<X>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRuleBasedAccessControlProvider.class);
 
@@ -54,6 +54,9 @@ public abstract class AbstractRuleBasedAccessControlProvider<X extends AbstractR
     private volatile RuleBasedAccessControl _accessControl;
     private final Broker _broker;
     private final EventLogger _eventLogger;
+
+    @ManagedAttributeField
+    private int _priority;
 
     public AbstractRuleBasedAccessControlProvider(Map<String, Object> attributes, Broker broker)
     {
@@ -174,5 +177,11 @@ public abstract class AbstractRuleBasedAccessControlProvider<X extends AbstractR
     public final AccessControl getAccessControl()
     {
         return _accessControl;
+    }
+
+    @Override
+    public final int getPriority()
+    {
+        return _priority;
     }
 }

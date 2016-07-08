@@ -55,7 +55,11 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.store.StoreConfigurationChangeListener;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.Event;
@@ -72,13 +76,18 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class VirtualHostTest extends QpidTestCase
 {
-    private final SecurityManager _mockSecurityManager = mock(SecurityManager.class);
+    private final AccessControl _mockAccessControl = mock(AccessControl.class);
     private Broker _broker;
     private TaskExecutor _taskExecutor;
-    private VirtualHostNode _virtualHostNode;
+    private TestableVirtualHostNode _virtualHostNode;
     private DurableConfigurationStore _configStore;
     private VirtualHost<?> _virtualHost;
     private StoreConfigurationChangeListener _storeConfigurationChangeListener;
+
+    private interface TestableVirtualHostNode extends VirtualHostNode, AccessControlSource
+    {
+
+    }
 
     @Override
     protected void setUp() throws Exception
@@ -92,10 +101,12 @@ public class VirtualHostTest extends QpidTestCase
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
 
-        _virtualHostNode = mock(VirtualHostNode.class);
+
+        _virtualHostNode = mock(TestableVirtualHostNode.class);
         when(_virtualHostNode.getParent(Broker.class)).thenReturn(_broker);
         when(_virtualHostNode.getCategoryClass()).thenReturn(VirtualHostNode.class);
         when(_virtualHostNode.isDurable()).thenReturn(true);
+        when(_virtualHostNode.getAccessControl()).thenReturn(_mockAccessControl);
         _configStore = mock(DurableConfigurationStore.class);
         _storeConfigurationChangeListener = new StoreConfigurationChangeListener(_configStore);
 
@@ -323,13 +334,11 @@ public class VirtualHostTest extends QpidTestCase
 
     public void testUpdateDeniedByACL()
     {
-        when(_broker.getSecurityManager()).thenReturn(_mockSecurityManager);
 
         String virtualHostName = getName();
         VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
-        doThrow(new AccessControlException("mocked ACL exception")).when(_mockSecurityManager).authoriseUpdate(
-                virtualHost);
+        when(_mockAccessControl.authorise(null, Operation.UPDATE, virtualHost, Collections.<String,Object>emptyMap())).thenReturn(Result.DENIED);
 
         assertNull(virtualHost.getDescription());
 
@@ -348,13 +357,12 @@ public class VirtualHostTest extends QpidTestCase
 
     public void testStopDeniedByACL()
     {
-        when(_broker.getSecurityManager()).thenReturn(_mockSecurityManager);
 
         String virtualHostName = getName();
         VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
-        doThrow(new AccessControlException("mocked ACL exception")).when(_mockSecurityManager).authoriseUpdate(
-                virtualHost);
+        when(_mockAccessControl.authorise(null, Operation.UPDATE,
+                virtualHost, Collections.<String,Object>emptyMap())).thenReturn(Result.DENIED);
 
         try
         {
@@ -371,13 +379,11 @@ public class VirtualHostTest extends QpidTestCase
 
     public void testDeleteDeniedByACL()
     {
-        when(_broker.getSecurityManager()).thenReturn(_mockSecurityManager);
-
         String virtualHostName = getName();
         VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
-        doThrow(new AccessControlException("mocked ACL exception")).when(_mockSecurityManager).authoriseDelete(
-                virtualHost);
+        when(_mockAccessControl.authorise(null,
+                Operation.DELETE, virtualHost, Collections.<String,Object>emptyMap())).thenReturn(Result.DENIED);
 
         try
         {

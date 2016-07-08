@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.RuleOutcome;
 
 public final class AclFileParser
@@ -267,7 +266,7 @@ public final class AclFileParser
             throw new IllegalArgumentException("Not a valid permission: " + text, e);
         }
         String identity = args.get(1);
-        Operation operation = Operation.valueOf(args.get(2).toUpperCase());
+        LegacyOperation operation = LegacyOperation.valueOf(args.get(2).toUpperCase());
 
         if (number != null && !ruleSetCreator.isValidNumber(number))
         {

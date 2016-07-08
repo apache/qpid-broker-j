@@ -98,7 +98,6 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         when(_broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
         when(_broker.getModel()).thenReturn(model);
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
-        when(_broker.getSecurityManager()).thenReturn(new org.apache.qpid.server.security.SecurityManager(_broker, false));
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getEventLogger()).thenReturn(value);

@@ -30,8 +30,6 @@ import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.testmodels.TestSecurityManager;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.preferences.NoopPreferenceStoreFactoryService;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 
@@ -42,7 +40,6 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     public static final String TEST_SINGLETON_TYPE = "testsingleton";
 
     public static final int DERIVED_VALUE = -100;
-    private final SecurityManager _securityManager;
     private final PreferenceStore _preferenceStore =
             new NoopPreferenceStoreFactoryService().createInstance(null, Collections.<String, Object>emptyMap());
 
@@ -101,7 +98,6 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     public TestSingletonImpl(final Map<String, Object> attributes)
     {
         super(parentsMap(), attributes, newTaskExecutor(), TestModel.getInstance());
-        _securityManager = new TestSecurityManager(this);
     }
 
     private static CurrentThreadTaskExecutor newTaskExecutor()
@@ -115,7 +111,6 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
                              final TaskExecutor taskExecutor)
     {
         super(parentsMap(), attributes, taskExecutor);
-        _securityManager = new TestSecurityManager(this);
     }
 
 
@@ -189,12 +184,6 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     public String getImmutableValue()
     {
         return _immutableValue;
-    }
-
-    @Override
-    protected SecurityManager getSecurityManager()
-    {
-        return _securityManager;
     }
 
     @Override

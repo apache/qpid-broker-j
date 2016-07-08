@@ -18,7 +18,6 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.firewall.FirewallRule;
 
 public class AclAction
@@ -26,18 +25,18 @@ public class AclAction
     private Action _action;
     private FirewallRule _firewallRule;
 
-    public AclAction(Operation operation, ObjectType object, AclRulePredicates predicates)
+    public AclAction(LegacyOperation operation, ObjectType object, AclRulePredicates predicates)
     {
         _action = new Action(operation, object, predicates.getObjectProperties());
         _firewallRule = predicates.getFirewallRule();
     }
 
-    public AclAction(Operation operation)
+    public AclAction(LegacyOperation operation)
     {
         _action = new Action(operation);
     }
 
-    public AclAction(Operation operation, ObjectType object, ObjectProperties properties)
+    public AclAction(LegacyOperation operation, ObjectType object, ObjectProperties properties)
     {
         _action = new Action(operation, object, properties);
     }

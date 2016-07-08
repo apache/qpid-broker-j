@@ -43,6 +43,7 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.store.MessageHandle;
@@ -427,8 +428,8 @@ public class ServerSessionDelegate extends SessionDelegate
                         args.put("routingKey", messageMetaData.getRoutingKey());
                         args.put("immediate", messageMetaData.isImmediate());
 
-                        getServerConnection(ssn).getAmqpConnection().getBroker().getSecurityManager()
-                            .authoriseExecute(serverSession.getToken(), (ConfiguredObject)destination, "publish", args );
+                        ((ConfiguredObject)destination).authorise(serverSession.getToken(),
+                                       Operation.ACTION("publish"),  args);
 
                     };
                 }

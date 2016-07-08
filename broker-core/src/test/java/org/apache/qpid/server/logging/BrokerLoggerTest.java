@@ -71,10 +71,7 @@ public class BrokerLoggerTest extends QpidTestCase
 
         Model model = BrokerModel.getInstance();
 
-        SecurityManager securityManager = mock(SecurityManager.class);
-
         _broker = mock(Broker.class);
-        when(_broker.getSecurityManager()).thenReturn(securityManager);
         when(_broker.getModel()).thenReturn(model);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         doReturn(Broker.class).when(_broker).getCategoryClass();

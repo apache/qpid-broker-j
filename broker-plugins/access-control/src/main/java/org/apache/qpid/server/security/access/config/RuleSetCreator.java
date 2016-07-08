@@ -25,7 +25,6 @@ import java.util.TreeMap;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.RuleOutcome;
 
 final class RuleSetCreator
@@ -44,7 +43,7 @@ final class RuleSetCreator
         return !_rules.containsKey(number);
     }
 
-    void grant(Integer number, String identity, RuleOutcome ruleOutcome, Operation operation)
+    void grant(Integer number, String identity, RuleOutcome ruleOutcome, LegacyOperation operation)
     {
         AclAction action = new AclAction(operation);
         addRule(number, identity, ruleOutcome, action);
@@ -53,7 +52,7 @@ final class RuleSetCreator
     void grant(Integer number,
                String identity,
                RuleOutcome ruleOutcome,
-               Operation operation,
+               LegacyOperation operation,
                ObjectType object,
                ObjectProperties properties)
     {
@@ -64,7 +63,7 @@ final class RuleSetCreator
     void grant(Integer number,
                String identity,
                RuleOutcome ruleOutcome,
-               Operation operation,
+               LegacyOperation operation,
                ObjectType object,
                AclRulePredicates predicates)
     {

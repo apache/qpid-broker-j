@@ -31,6 +31,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.config.AclFileParser;
 import org.apache.qpid.server.security.access.config.RuleBasedAccessControl;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
@@ -70,7 +71,7 @@ public class ACLFileAccessControlProviderImpl
     @Override
     public void reload()
     {
-        getSecurityManager().authoriseUpdate(this);
+        authorise(Operation.UPDATE);
         reloadAclFile();
     }
 

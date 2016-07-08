@@ -213,8 +213,6 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     DurableConfigurationStore getDurableConfigurationStore();
 
-    SecurityManager getSecurityManager();
-
     void scheduleHouseKeepingTask(long period, HouseKeepingTask task);
 
     ScheduledFuture<?> scheduleTask(long delay, Runnable timeoutTask);

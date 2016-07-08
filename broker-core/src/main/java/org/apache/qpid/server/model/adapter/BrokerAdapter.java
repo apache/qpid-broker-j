@@ -37,7 +37,10 @@ import java.security.AccessControlException;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -61,6 +64,10 @@ import org.apache.qpid.server.BrokerPrincipal;
 import org.apache.qpid.server.logging.QpidLoggerTurboFilter;
 import org.apache.qpid.server.logging.StartupAppender;
 import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
+import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.CompoundAccessControl;
+import org.apache.qpid.server.security.Result;
+import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
@@ -74,7 +81,6 @@ import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogRecorder;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.logging.messages.VirtualHostMessages;
 import org.apache.qpid.server.model.*;
@@ -100,6 +106,68 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private static final int HOUSEKEEPING_SHUTDOWN_TIMEOUT = 5;
 
     public static final String MANAGEMENT_MODE_AUTHENTICATION = "MANAGEMENT_MODE_AUTHENTICATION";
+
+    private static final Operation CONFIGURE_ACTION = Operation.ACTION("CONFIGURE");
+    private static final Operation SHUTDOWN_ACTION = Operation.ACTION("SHUTDOWN");
+
+    private static final AccessControl<SecurityToken> SYSTEM_USER_ALLLOWED = new AccessControl<SecurityToken>()
+    {
+        @Override
+        public Result getDefault()
+        {
+            return Result.DEFER;
+        }
+
+        @Override
+        public SecurityToken newToken()
+        {
+            return null;
+        }
+
+        @Override
+        public SecurityToken newToken(final Subject subject)
+        {
+            return null;
+        }
+
+        @Override
+        public Result authorise(final SecurityToken token,
+                                final Operation operation,
+                                final ConfiguredObject<?> configuredObject)
+        {
+            return SecurityManager.isSystemProcess() ? Result.ALLOWED : Result.DEFER;
+        }
+
+        @Override
+        public Result authorise(final SecurityToken token,
+                                final Operation operation,
+                                final ConfiguredObject<?> configuredObject,
+                                final Map<String, Object> arguments)
+        {
+            return SecurityManager.isSystemProcess() ? Result.ALLOWED : Result.DEFER;
+        }
+    };
+
+
+    private static Comparator<AccessControlProvider> ACCESS_CONTROL_POVIDER_COMPARATOR = new Comparator<AccessControlProvider>()
+    {
+        @Override
+        public int compare(final AccessControlProvider o1, final AccessControlProvider o2)
+        {
+            if(o1.getPriority() < o2.getPriority())
+            {
+                return -1;
+            }
+            else if (o1.getPriority() > o2.getPriority())
+            {
+                return 1;
+            }
+            else
+            {
+                return o1.getName().compareTo(o2.getName());
+            }
+        }
+    };
     private final BrokerPrincipal _principal;
 
     private String[] POSITIVE_NUMERIC_ATTRIBUTES = { CONNECTION_SESSION_COUNT_LIMIT,
@@ -108,9 +176,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
     private SystemConfig<?> _parent;
     private EventLogger _eventLogger;
-    private LogRecorder _logRecorder;
-
-    private final SecurityManager _securityManager;
 
     private AuthenticationProvider<?> _managementModeAuthenticationProvider;
 
@@ -144,13 +209,14 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private final boolean _virtualHostPropertiesNodeEnabled;
     private Collection<BrokerLogger> _brokerLoggersToClose;
     private int _networkBufferSize = DEFAULT_NETWORK_BUFFER_SIZE;
-    private final long _maximumHeapHize = Runtime.getRuntime().maxMemory();
+    private final long _maximumHeapSize = Runtime.getRuntime().maxMemory();
     private final long _maximumDirectMemorySize = getMaxDirectMemorySize();
     private final BufferPoolMXBean _bufferPoolMXBean;
     private final List<String> _jvmArguments;
     private HousekeepingExecutor _houseKeepingTaskExecutor;
     private final AddressSpaceRegistry _addressSpaceRegistry = new AddressSpaceRegistry();
-
+    private ConfigurationChangeListener _accessControlProviderListener = new AccessControlProviderListener();
+    private final AccessControl _accessControl;
 
     @ManagedObjectFactoryConstructor
     public BrokerAdapter(Map<String, Object> attributes,
@@ -159,7 +225,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         super(parentsMap(parent), attributes);
         _parent = parent;
         _eventLogger = parent.getEventLogger();
-        _securityManager = new SecurityManager(this, parent.isManagementMode());
         _principal = new BrokerPrincipal(this);
 
         if (parent.isManagementMode())
@@ -170,6 +235,11 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             SimpleAuthenticationManager authManager = new SimpleAuthenticationManager(authManagerAttrs, this);
             authManager.addUser(BrokerOptions.MANAGEMENT_MODE_USER_NAME, _parent.getManagementModePassword());
             _managementModeAuthenticationProvider = authManager;
+            _accessControl = AccessControl.ALWAYS_ALLOWED;
+        }
+        else
+        {
+            _accessControl =  new CompoundAccessControl(Collections.<AccessControl<?>>emptyList(), Result.ALLOWED);
         }
 
         QpidServiceLoader qpidServiceLoader = new QpidServiceLoader();
@@ -265,6 +335,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         }
 
         final SystemConfig parent = getParent(SystemConfig.class);
+        addChangeListener(_accessControlProviderListener);
         _eventLogger.message(BrokerMessages.CONFIG(parent instanceof FileBasedSettings
                                                            ? ((FileBasedSettings) parent).getStorePath()
                                                            : "N/A"));
@@ -307,13 +378,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
         }
 
-        Collection<AccessControlProvider<?>> accessControlProviders = getAccessControlProviders();
-
-        if(accessControlProviders != null && accessControlProviders.size() > 1)
-        {
-            deleted();
-            throw new IllegalArgumentException("At most one AccessControlProvider can be defined");
-        }
     }
 
     @Override
@@ -342,6 +406,19 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         }
     }
 
+    @Override
+    protected void validateChildDelete(final ConfiguredObject<?> child)
+    {
+        super.validateChildDelete(child);
+        if(child instanceof AccessControlProvider && getChildren(AccessControlProvider.class).size() == 1)
+        {
+            String categoryName = child.getCategoryClass().getSimpleName();
+            throw new IllegalConfigurationException("The " + categoryName + " named '" + child.getName()
+                                                    + "' cannot be deleted as at least one " + categoryName
+                                                    + " must be present");
+        }
+    }
+
     @StateTransition( currentState = State.UNINITIALIZED, desiredState = State.ACTIVE )
     private ListenableFuture<Void> activate()
     {
@@ -367,7 +444,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @Override
     public void initiateShutdown()
     {
-        _securityManager.authorise(Operation.SHUTDOWN, this);
+        authorise(SHUTDOWN_ACTION);
         getEventLogger().message(BrokerMessages.OPERATION("initiateShutdown"));
         _parent.closeAsync();
     }
@@ -406,6 +483,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             throw new IllegalStateException(String.format("Broker context variable %s is set and the broker has %s children",
                     BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD, State.ERRORED));
         }
+        updateAccessControl();
 
         initialiseStatisticsReporting();
 
@@ -769,10 +847,39 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         }
     }
 
-    @Override
-    public SecurityManager getSecurityManager()
+
+    private void updateAccessControl()
     {
-        return _securityManager;
+        if(!isManagementMode())
+        {
+            List<AccessControlProvider> children = new ArrayList<>(getChildren(AccessControlProvider.class));
+            Collections.sort(children, ACCESS_CONTROL_POVIDER_COMPARATOR);
+
+            List<AccessControl<?>> accessControls = new ArrayList<>(children.size()+1);
+            accessControls.add(SYSTEM_USER_ALLLOWED);
+            for(AccessControlProvider prov : children)
+            {
+                if(prov.getState() == State.ERRORED)
+                {
+                    accessControls.clear();
+                    accessControls.add(AccessControl.ALWAYS_DENIED);
+                    break;
+                }
+                else if(prov.getState() == State.ACTIVE)
+                {
+                    accessControls.add(prov.getAccessControl());
+                }
+
+            }
+
+            ((CompoundAccessControl)_accessControl).setAccessControls(accessControls);
+
+        }
+    }
+
+    public AccessControl getAccessControl()
+    {
+        return _accessControl;
     }
 
     @Override
@@ -1115,7 +1222,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @Override
     public long getMaximumHeapMemorySize()
     {
-        return _maximumHeapHize;
+        return _maximumHeapSize;
     }
 
     @Override
@@ -1165,7 +1272,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @Override
     public void performGC()
     {
-        _securityManager.authorise(Operation.CONFIGURE, this);
+        authorise(CONFIGURE_ACTION);
         getEventLogger().message(BrokerMessages.OPERATION("performGC"));
         System.gc();
     }
@@ -1173,7 +1280,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @Override
     public Content getThreadStackTraces(boolean appendToLog)
     {
-        _securityManager.authorise(Operation.CONFIGURE, this);
+        authorise(CONFIGURE_ACTION);
         getEventLogger().message(BrokerMessages.OPERATION("getThreadStackTraces"));
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(true, true);
@@ -1203,7 +1310,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @Override
     public Content findThreadStackTraces(String threadNameFindExpression)
     {
-        _securityManager.authorise(Operation.CONFIGURE, this);
+        authorise(CONFIGURE_ACTION);
         getEventLogger().message(BrokerMessages.OPERATION("findThreadStackTraces"));
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(true, true);
@@ -1391,4 +1498,67 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             return BrokerAdapter.this;
         }
     }
+
+
+    private final class AccessControlProviderListener implements ConfigurationChangeListener
+    {
+        private final Set<ConfiguredObject<?>> _bulkChanges = new HashSet<>();
+
+        @Override
+        public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
+        {
+
+        }
+
+        @Override
+        public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
+        {
+            if(object.getCategoryClass() == Broker.class && child.getCategoryClass() == AccessControlProvider.class)
+            {
+                child.addChangeListener(this);
+                BrokerAdapter.this.updateAccessControl();
+            }
+        }
+
+        @Override
+        public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
+        {
+            if(object.getCategoryClass() == Broker.class && child.getCategoryClass() == AccessControlProvider.class)
+            {
+                BrokerAdapter.this.updateAccessControl();
+            }
+        }
+
+        @Override
+        public void attributeSet(final ConfiguredObject<?> object,
+                                 final String attributeName,
+                                 final Object oldAttributeValue,
+                                 final Object newAttributeValue)
+        {
+            if(object.getCategoryClass() == AccessControlProvider.class && !_bulkChanges.contains(object))
+            {
+                BrokerAdapter.this.updateAccessControl();
+            }
+        }
+
+        @Override
+        public void bulkChangeStart(final ConfiguredObject<?> object)
+        {
+            if(object.getCategoryClass() == AccessControlProvider.class)
+            {
+                _bulkChanges.add(object);
+            }
+        }
+
+        @Override
+        public void bulkChangeEnd(final ConfiguredObject<?> object)
+        {
+            if(object.getCategoryClass() == AccessControlProvider.class)
+            {
+                _bulkChanges.remove(object);
+                BrokerAdapter.this.updateAccessControl();
+            }
+        }
+    }
+
 }

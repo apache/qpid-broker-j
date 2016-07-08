@@ -79,6 +79,7 @@ import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.protocol.LinkRegistryImpl;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
@@ -514,7 +515,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private ListenableFuture<List<Void>> createDefaultExchanges()
     {
-        return Subject.doAs(getSecurityManager().getSubjectWithAddedSystemRights(), new PrivilegedAction<ListenableFuture<List<Void>>>()
+        return Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<ListenableFuture<List<Void>>>()
         {
 
             @Override
@@ -624,7 +625,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public boolean authoriseCreateConnection(final AMQPConnection<?> connection)
     {
-        getSecurityManager().authoriseExecute(this, "connect", Collections.<String,Object>emptyMap());
+        authorise(Operation.ACTION("connect"));
         for(ConnectionValidator validator : _connectionValidators)
         {
             if(!validator.validateConnectionCreation(connection, this))
@@ -955,11 +956,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             }
         }
         return localAddress;
-    }
-
-    public SecurityManager getSecurityManager()
-    {
-        return _broker.getSecurityManager();
     }
 
     @Override

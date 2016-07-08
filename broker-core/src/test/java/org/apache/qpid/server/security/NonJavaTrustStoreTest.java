@@ -42,7 +42,6 @@ public class NonJavaTrustStoreTest extends QpidTestCase
 {
     private final Broker<?> _broker = mock(Broker.class);
     private final TaskExecutor _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
-    private final SecurityManager _securityManager = mock(SecurityManager.class);
     private final Model _model = BrokerModel.getInstance();
     private final ConfiguredObjectFactory _factory = _model.getObjectFactory();
 
@@ -54,7 +53,6 @@ public class NonJavaTrustStoreTest extends QpidTestCase
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getModel()).thenReturn(_model);
-        when(_broker.getSecurityManager()).thenReturn(_securityManager);
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
     }
 

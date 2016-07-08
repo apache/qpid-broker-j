@@ -24,6 +24,10 @@ import org.apache.qpid.server.security.AccessControl;
 @ManagedObject
 public interface AccessControlProvider<X extends AccessControlProvider<X>> extends ConfiguredObject<X>
 {
+    String PRIORITY = "priority";
+
+    @ManagedAttribute(defaultValue = "10")
+    int getPriority();
     //retrieve the underlying AccessControl object
     AccessControl getAccessControl();
 }

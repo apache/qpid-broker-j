@@ -182,7 +182,9 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         _subject.getPrincipals().addAll(connection.getSubject().getPrincipals());
         _subject.getPrincipals().add(new SessionPrincipal(this));
         _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(_subject);
-        _securityToken = connection.getBroker().getSecurityManager().newToken(_subject);
+        _securityToken = connection.getAddressSpace() instanceof ConfiguredObject
+                ? ((ConfiguredObject)connection.getAddressSpace()).newToken(_subject)
+                : connection.getBroker().newToken(_subject);
     }
 
     public void setReceivingChannel(final short receivingChannel)

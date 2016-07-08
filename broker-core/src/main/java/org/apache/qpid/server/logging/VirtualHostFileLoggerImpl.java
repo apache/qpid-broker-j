@@ -41,6 +41,7 @@ import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.util.DaemonThreadFactory;
 
 public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<VirtualHostFileLoggerImpl> implements VirtualHostFileLogger<VirtualHostFileLoggerImpl>, FileLoggerSettings
@@ -146,7 +147,7 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     @Override
     public Content getFile(final String fileName)
     {
-        getSecurityManager().authoriseExecute(this, "getFile", Collections.singletonMap("fileName", (Object)fileName));
+        authorise(Operation.METHOD("getFile"), Collections.singletonMap("fileName", (Object)fileName));
 
         return _rolloverWatcher == null ? null : _rolloverWatcher.getFileContent(fileName);
     }
@@ -154,7 +155,7 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     @Override
     public Content getFiles(@Param(name = "fileName") Set<String> fileName)
     {
-        getSecurityManager().authoriseExecute(this, "getFiles", Collections.singletonMap("fileName", (Object)fileName));
+        authorise(Operation.METHOD("getFiles"), Collections.singletonMap("fileName", (Object)fileName));
 
         return _rolloverWatcher == null ? null : _rolloverWatcher.getFilesAsZippedContent(fileName);
     }
@@ -163,7 +164,7 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     @Override
     public Content getAllFiles()
     {
-        getSecurityManager().authoriseExecute(this, "getAllFiles", Collections.<String,Object>emptyMap());
+        authorise(Operation.METHOD("getAllFiles"));
 
         return _rolloverWatcher == null ? null : _rolloverWatcher.getAllFilesAsZippedContent();
     }

@@ -196,7 +196,6 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
                             : new AutoCommitTransaction(_addressSpace.getMessageStore());
                 }
 
-                final SecurityManager securityManager = getSession().getConnection().getBroker().getSecurityManager();
                 try
                 {
                     Session_1_0 session = getSession();

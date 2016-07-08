@@ -18,23 +18,11 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model.testmodels;
+package org.apache.qpid.server.model;
 
+import org.apache.qpid.server.security.AccessControl;
 
-import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.security.SecurityManager;
-import org.apache.qpid.server.security.access.Operation;
-
-public class TestSecurityManager extends SecurityManager
+public interface AccessControlSource
 {
-    public TestSecurityManager(ConfiguredObject<?> aclProvidersParent)
-    {
-        super(aclProvidersParent, false);
-    }
-
-    @Override
-    public void authorise(Operation operation, ConfiguredObject<?> configuredObject)
-    {
-        // noop
-    }
+    AccessControl getAccessControl();
 }

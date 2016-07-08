@@ -18,11 +18,16 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.security.access.config;
+package org.apache.qpid.server.security;
 
-import org.apache.qpid.server.security.Result;
 
-interface LegacyAccessControl
+import static org.apache.qpid.server.security.AllowAllAccessControlProvider.ALLOW_ALL;
+
+import org.apache.qpid.server.model.AccessControlProvider;
+import org.apache.qpid.server.model.ManagedObject;
+
+@ManagedObject( category = false, type = ALLOW_ALL )
+public interface AllowAllAccessControlProvider<X extends AllowAllAccessControlProvider<X>> extends AccessControlProvider<X>
 {
-    Result authorise(LegacyOperation authoriseOperation, ObjectType objectType, ObjectProperties properties);
+    String ALLOW_ALL = "AllowAll";
 }

@@ -55,7 +55,6 @@ public class VirtualHostCreationTest extends QpidTestCase
         super.setUp();
 
         EventLogger eventLogger = mock(EventLogger.class);
-        SecurityManager securityManager = mock(SecurityManager.class);
         TaskExecutor executor = CurrentThreadTaskExecutor.newStartedInstance();
         SystemConfig systemConfig = mock(SystemConfig.class);
         ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
@@ -68,7 +67,6 @@ public class VirtualHostCreationTest extends QpidTestCase
         Broker broker = mock(Broker.class);
         when(broker.getObjectFactory()).thenReturn(objectFactory);
         when(broker.getModel()).thenReturn(objectFactory.getModel());
-        when(broker.getSecurityManager()).thenReturn(securityManager);
         when(broker.getCategoryClass()).thenReturn(Broker.class);
         when(broker.getParent(eq(SystemConfig.class))).thenReturn(systemConfig);
         when(broker.getTaskExecutor()).thenReturn(executor);

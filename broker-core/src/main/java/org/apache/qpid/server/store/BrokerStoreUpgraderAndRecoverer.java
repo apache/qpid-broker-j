@@ -467,6 +467,9 @@ public class BrokerStoreUpgraderAndRecoverer
 
     private class Upgrader_6_0_to_6_1 extends StoreUpgraderPhase
     {
+        private boolean _hasAcl = false;
+        private UUID _rootRecordId;
+
         public Upgrader_6_0_to_6_1()
         {
             super("modelVersion", "6.0", "6.1");
@@ -478,6 +481,7 @@ public class BrokerStoreUpgraderAndRecoverer
             if (record.getType().equals("Broker"))
             {
                 record = upgradeRootRecord(record);
+                _rootRecordId = record.getId();
 
                 getNextUpgrader().configuredObject(record);
             }
@@ -553,6 +557,19 @@ public class BrokerStoreUpgraderAndRecoverer
         @Override
         public void complete()
         {
+            if(!_hasAcl)
+            {
+                UUID allowAllACLId = UUID.randomUUID();
+                Map<String,Object> attrs = new HashMap<>();
+                attrs.put(ConfiguredObject.NAME, "AllowAll");
+                attrs.put(ConfiguredObject.TYPE, "AllowAll");
+                attrs.put("priority", 9999);
+                ConfiguredObjectRecord allowAllAclRecord =
+                        new ConfiguredObjectRecordImpl(allowAllACLId, "AccessControlProvider", attrs, Collections.singletonMap("Broker", _rootRecordId));
+                getUpdateMap().put(allowAllAclRecord.getId(), allowAllAclRecord);
+                getNextUpgrader().configuredObject(allowAllAclRecord);
+
+            }
             getNextUpgrader().complete();
         }
 

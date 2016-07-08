@@ -64,7 +64,6 @@ import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.database.PrincipalDatabase;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.util.FileHelper;
 
@@ -338,12 +337,6 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         {
             throw new AccountNotFoundException("No such user: '" + username + "'");
         }
-    }
-
-    @Override
-    protected SecurityManager getSecurityManager()
-    {
-        return getBroker().getSecurityManager();
     }
 
     @Override

@@ -25,10 +25,10 @@ import static org.apache.qpid.server.security.access.config.ObjectType.EXCHANGE;
 import static org.apache.qpid.server.security.access.config.ObjectType.METHOD;
 import static org.apache.qpid.server.security.access.config.ObjectType.QUEUE;
 import static org.apache.qpid.server.security.access.config.ObjectType.USER;
-import static org.apache.qpid.server.security.access.Operation.ACCESS_LOGS;
-import static org.apache.qpid.server.security.access.Operation.PUBLISH;
-import static org.apache.qpid.server.security.access.Operation.PURGE;
-import static org.apache.qpid.server.security.access.Operation.UPDATE;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.ACCESS_LOGS;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.PUBLISH;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.PURGE;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.UPDATE;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -59,6 +59,10 @@ class LegacyAccessControlAdapter
                                                                     "setPreferences",
                                                                     "deletePreferences")));
 
+    private static final Set<String> BDB_VIRTUAL_HOST_NODE_OPERATIONS =
+            Collections.unmodifiableSet(new HashSet<>(Arrays.asList("updateMutableConfig",
+                                                                    "cleanLog",
+                                                                    "checkpoint")));
     private final LegacyAccessControl _accessControl;
     private final Model _model;
 
@@ -74,7 +78,7 @@ class LegacyAccessControlAdapter
         return _model;
     }
 
-    Result authorise(final Operation operation, final ConfiguredObject<?> configuredObject)
+    Result authorise(final LegacyOperation operation, final ConfiguredObject<?> configuredObject)
     {
         if (isAllowedOperation(operation, configuredObject))
         {
@@ -90,26 +94,26 @@ class LegacyAccessControlAdapter
         }
 
         ObjectProperties properties = getACLObjectProperties(configuredObject, operation);
-        Operation authoriseOperation = validateAuthoriseOperation(operation, categoryClass);
+        LegacyOperation authoriseOperation = validateAuthoriseOperation(operation, categoryClass);
         return _accessControl.authorise(authoriseOperation, objectType, properties);
 
     }
 
-    private boolean isAllowedOperation(Operation operation, ConfiguredObject<?> configuredObject)
+    private boolean isAllowedOperation(LegacyOperation operation, ConfiguredObject<?> configuredObject)
     {
-        if (configuredObject instanceof Session && (operation == Operation.CREATE || operation == Operation.UPDATE
-                                                    || operation ==  Operation.DELETE))
+        if (configuredObject instanceof Session && (operation == LegacyOperation.CREATE || operation == LegacyOperation.UPDATE
+                                                    || operation == LegacyOperation.DELETE))
         {
             return true;
 
         }
 
-        if (configuredObject instanceof Consumer && (operation == Operation.UPDATE || operation == Operation.DELETE))
+        if (configuredObject instanceof Consumer && (operation == LegacyOperation.UPDATE || operation == LegacyOperation.DELETE))
         {
             return true;
         }
 
-        if (configuredObject instanceof Connection && (operation == Operation.UPDATE || operation == Operation.DELETE))
+        if (configuredObject instanceof Connection && (operation == LegacyOperation.UPDATE || operation == LegacyOperation.DELETE))
         {
             return true;
         }
@@ -192,7 +196,7 @@ class LegacyAccessControlAdapter
     }
 
 
-    private ObjectProperties getACLObjectProperties(ConfiguredObject<?> configuredObject, Operation configuredObjectOperation)
+    private ObjectProperties getACLObjectProperties(ConfiguredObject<?> configuredObject, LegacyOperation configuredObjectOperation)
     {
         String objectName = (String)configuredObject.getAttribute(ConfiguredObject.NAME);
         Class<? extends ConfiguredObject> configuredObjectType = configuredObject.getCategoryClass();
@@ -272,51 +276,111 @@ class LegacyAccessControlAdapter
     }
 
 
-    private Operation validateAuthoriseOperation(Operation operation, Class<? extends ConfiguredObject> category)
+    private LegacyOperation validateAuthoriseOperation(LegacyOperation operation, Class<? extends ConfiguredObject> category)
     {
-        if (operation == Operation.CREATE || operation == Operation.UPDATE)
+        if (operation == LegacyOperation.CREATE || operation == LegacyOperation.UPDATE)
         {
             if (Binding.class.isAssignableFrom(category))
             {
                 // CREATE BINDING is transformed into BIND EXCHANGE rule
-                return Operation.BIND;
+                return LegacyOperation.BIND;
             }
             else if (Consumer.class.isAssignableFrom(category))
             {
                 // CREATE CONSUMER is transformed into CONSUME QUEUE rule
-                return Operation.CONSUME;
+                return LegacyOperation.CONSUME;
             }
             else if (GroupMember.class.isAssignableFrom(category))
             {
                 // CREATE GROUP MEMBER is transformed into UPDATE GROUP rule
-                return Operation.UPDATE;
+                return LegacyOperation.UPDATE;
             }
             else if (isBrokerType(category))
             {
                 // CREATE/UPDATE broker child is transformed into CONFIGURE BROKER rule
-                return Operation.CONFIGURE;
+                return LegacyOperation.CONFIGURE;
             }
         }
-        else if (operation == Operation.DELETE)
+        else if (operation == LegacyOperation.DELETE)
         {
             if (Binding.class.isAssignableFrom(category))
             {
                 // DELETE BINDING is transformed into UNBIND EXCHANGE rule
-                return Operation.UNBIND;
+                return LegacyOperation.UNBIND;
             }
             else if (isBrokerType(category))
             {
                 // DELETE broker child is transformed into CONFIGURE BROKER rule
-                return Operation.CONFIGURE;
+                return LegacyOperation.CONFIGURE;
 
             }
             else if (GroupMember.class.isAssignableFrom(category))
             {
                 // DELETE GROUP MEMBER is transformed into UPDATE GROUP rule
-                return Operation.UPDATE;
+                return LegacyOperation.UPDATE;
             }
         }
         return operation;
+    }
+
+    Result authoriseAction(final ConfiguredObject<?> configuredObject,
+                           String methodName,
+                           final Map<String, Object> arguments)
+    {
+        Class<? extends ConfiguredObject> categoryClass = configuredObject.getCategoryClass();
+        if(categoryClass == Exchange.class)
+        {
+            Exchange exchange = (Exchange) configuredObject;
+            if("publish".equals(methodName))
+            {
+
+                final ObjectProperties _props =
+                        new ObjectProperties(exchange.getParent(VirtualHost.class).getName(), exchange.getName(), (String)arguments.get("routingKey"), (Boolean)arguments.get("immediate"));
+                return _accessControl.authorise(PUBLISH, EXCHANGE, _props);
+            }
+        }
+        else if(categoryClass == VirtualHost.class)
+        {
+            if("connect".equals(methodName))
+            {
+                String virtualHostName = configuredObject.getName();
+                ObjectProperties properties = new ObjectProperties(virtualHostName);
+                properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, virtualHostName);
+                return _accessControl.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties);
+            }
+        }
+        else if(categoryClass == Broker.class)
+        {
+            if("manage".equals(methodName))
+            {
+                return _accessControl.authorise(LegacyOperation.ACCESS, ObjectType.MANAGEMENT, ObjectProperties.EMPTY);
+            }
+        }
+        else if(categoryClass == Queue.class)
+        {
+            Queue queue = (Queue) configuredObject;
+            final ObjectProperties properties = new ObjectProperties();
+            if("publish".equals(methodName))
+            {
+
+                final ObjectProperties _props =
+                        new ObjectProperties(queue.getParent(VirtualHost.class).getName(), "", queue.getName(), (Boolean)arguments.get("immediate"));
+                return _accessControl.authorise(PUBLISH, EXCHANGE, _props);
+            }
+        }
+        else if(categoryClass == VirtualHostLogger.class)
+        {
+            VirtualHostLogger logger = (VirtualHostLogger)configuredObject;
+            if(LOG_ACCESS_METHOD_NAMES.contains(methodName))
+            {
+                return _accessControl.authorise(ACCESS_LOGS,
+                                                ObjectType.VIRTUALHOST,
+                                                new ObjectProperties(logger.getParent(VirtualHost.class).getName()));
+            }
+        }
+
+        return Result.DEFER;
+
     }
 
     Result authoriseExecute(final ConfiguredObject<?> configuredObject,
@@ -342,14 +406,14 @@ class LegacyAccessControlAdapter
                 String virtualHostName = configuredObject.getName();
                 ObjectProperties properties = new ObjectProperties(virtualHostName);
                 properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, virtualHostName);
-                return _accessControl.authorise(Operation.ACCESS, ObjectType.VIRTUALHOST,  properties);
+                return _accessControl.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties);
             }
         }
         else if(categoryClass == Broker.class)
         {
             if("manage".equals(methodName))
             {
-                return _accessControl.authorise(Operation.ACCESS, ObjectType.MANAGEMENT, ObjectProperties.EMPTY);
+                return _accessControl.authorise(LegacyOperation.ACCESS, ObjectType.MANAGEMENT, ObjectProperties.EMPTY);
             }
         }
         else if(categoryClass == Queue.class)
@@ -368,10 +432,10 @@ class LegacyAccessControlAdapter
                 properties.setName(methodName);
                 properties.put(ObjectProperties.Property.COMPONENT, "VirtualHost.Queue");
                 properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, virtualHostName);
-                return _accessControl.authorise(Operation.UPDATE, METHOD, properties);
+                return _accessControl.authorise(LegacyOperation.UPDATE, METHOD, properties);
 
             }
-            else if("queue".equals(methodName))
+            else if("publish".equals(methodName))
             {
 
                 final ObjectProperties _props =
@@ -418,10 +482,42 @@ class LegacyAccessControlAdapter
                 }
             }
         }
+        else if(categoryClass == VirtualHostNode.class)
+        {
+            if(BDB_VIRTUAL_HOST_NODE_OPERATIONS.contains(methodName))
+            {
+                ObjectProperties properties = getACLObjectProperties(configuredObject.getParent(Broker.class), LegacyOperation.UPDATE);
+                return _accessControl.authorise(LegacyOperation.UPDATE, ObjectType.BROKER, properties);
+            }
+        }
 
         return Result.ALLOWED;
 
     }
 
 
+    Result authorise(final Operation operation,
+                     final ConfiguredObject<?> configuredObject,
+                     final Map<String, Object> arguments)
+    {
+        switch(operation.getType())
+        {
+            case CREATE:
+                return authorise(LegacyOperation.CREATE, configuredObject);
+            case UPDATE:
+                return authorise(LegacyOperation.UPDATE, configuredObject);
+            case DELETE:
+                return authorise(LegacyOperation.DELETE, configuredObject);
+            case METHOD:
+                return authoriseExecute(configuredObject, operation.getName(), arguments);
+            case ACTION:
+                return authoriseAction(configuredObject, operation.getName(), arguments);
+            case DISCOVER:
+            case READ:
+                return Result.DEFER;
+
+            default:
+        }
+        return null;
+    }
 }

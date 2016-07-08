@@ -53,6 +53,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
@@ -78,7 +79,6 @@ public class AbstractVirtualHostTest extends QpidTestCase
         Broker<?> broker = mock(Broker.class);
         when(broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
         when(broker.getModel()).thenReturn(BrokerModel.getInstance());
-        when(broker.getSecurityManager()).thenReturn(new SecurityManager(broker, false));
 
         _taskExecutor = new TaskExecutorImpl();
         _taskExecutor.start();

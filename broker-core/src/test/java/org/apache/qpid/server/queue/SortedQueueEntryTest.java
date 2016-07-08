@@ -62,7 +62,6 @@ public class SortedQueueEntryTest extends QueueEntryImplTestBase
         attributes.put(SortedQueue.SORT_KEY, "KEY");
 
         final VirtualHost virtualHost = mock(VirtualHost.class);
-        when(virtualHost.getSecurityManager()).thenReturn(mock(org.apache.qpid.server.security.SecurityManager.class));
         when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
         ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(virtualHost.getObjectFactory()).thenReturn(factory);

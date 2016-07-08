@@ -46,6 +46,7 @@ import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProvider;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProviderImpl;
+import org.apache.qpid.server.security.AllowAllAccessControlProvider;
 import org.apache.qpid.server.security.FileKeyStore;
 import org.apache.qpid.server.security.FileTrustStore;
 import org.apache.qpid.server.security.access.plugins.ACLFileAccessControlProvider;
@@ -734,8 +735,16 @@ public class BrokerACLTest extends QpidRestTestCase
 
 
         assertAccessControlProviderExistence(accessControlProviderName, true);
+        // add a second, low priority AllowAll provider
+        Map<String,Object> attributes = new HashMap<>();
+        final String secondProviderName = "AllowAll";
+        attributes.put(ConfiguredObject.NAME, secondProviderName);
+        attributes.put(ConfiguredObject.TYPE, AllowAllAccessControlProvider.ALLOW_ALL);
+        attributes.put(AccessControlProvider.PRIORITY, 9999);
+        int responseCode = getRestTestHelper().submitRequest("accesscontrolprovider/" + secondProviderName, "PUT", attributes);
+        assertEquals("Access control provider creation should be allowed", 201, responseCode);
 
-        int responseCode = getRestTestHelper().submitRequest("accesscontrolprovider/" + accessControlProviderName, "DELETE");
+        responseCode = getRestTestHelper().submitRequest("accesscontrolprovider/" + accessControlProviderName, "DELETE");
         assertEquals("Access control provider deletion should be allowed", 200, responseCode);
 
         assertAccessControlProviderExistence(accessControlProviderName, false);

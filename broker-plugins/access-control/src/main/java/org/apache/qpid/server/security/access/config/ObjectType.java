@@ -18,62 +18,60 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import static org.apache.qpid.server.security.access.Operation.ACCESS;
-import static org.apache.qpid.server.security.access.Operation.ACCESS_LOGS;
-import static org.apache.qpid.server.security.access.Operation.BIND;
-import static org.apache.qpid.server.security.access.Operation.CONFIGURE;
-import static org.apache.qpid.server.security.access.Operation.CONSUME;
-import static org.apache.qpid.server.security.access.Operation.CREATE;
-import static org.apache.qpid.server.security.access.Operation.DELETE;
-import static org.apache.qpid.server.security.access.Operation.PUBLISH;
-import static org.apache.qpid.server.security.access.Operation.PURGE;
-import static org.apache.qpid.server.security.access.Operation.SHUTDOWN;
-import static org.apache.qpid.server.security.access.Operation.UNBIND;
-import static org.apache.qpid.server.security.access.Operation.UPDATE;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.ACCESS;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.ACCESS_LOGS;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.BIND;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.CONFIGURE;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.CONSUME;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.CREATE;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.DELETE;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.PUBLISH;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.PURGE;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.SHUTDOWN;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.UNBIND;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.UPDATE;
 
 import java.util.EnumSet;
 import java.util.Set;
 
-import org.apache.qpid.server.security.access.Operation;
-
 /**
  * An enumeration of all possible object types that can form part of an access control v2 rule.
  * 
- * Each object type is valid only for a certain set of {@link Operation}s, which are passed as a list to
- * the constructor, and can be checked using the {@link #isSupported(Operation)} method.
+ * Each object type is valid only for a certain set of {@link LegacyOperation}s, which are passed as a list to
+ * the constructor, and can be checked using the {@link #isSupported(LegacyOperation)} method.
  */
 public enum ObjectType
 {
-    ALL(EnumSet.allOf(Operation.class)),
-    VIRTUALHOSTNODE(Operation.ALL, CREATE, DELETE, UPDATE),
-    VIRTUALHOST(Operation.ALL, ACCESS, CREATE, DELETE, UPDATE, ACCESS_LOGS),
-    MANAGEMENT(Operation.ALL, ACCESS),
-    QUEUE(Operation.ALL, CREATE, DELETE, PURGE, CONSUME, UPDATE),
-    EXCHANGE(Operation.ALL, ACCESS, CREATE, DELETE, BIND, UNBIND, PUBLISH, UPDATE),
-    METHOD(Operation.ALL, ACCESS, UPDATE),
-    USER(Operation.ALL, CREATE, DELETE, UPDATE),
-    GROUP(Operation.ALL, CREATE, DELETE, UPDATE),
-    BROKER(Operation.ALL, CONFIGURE, ACCESS_LOGS, SHUTDOWN);
+    ALL(EnumSet.allOf(LegacyOperation.class)),
+    VIRTUALHOSTNODE(LegacyOperation.ALL, CREATE, DELETE, UPDATE),
+    VIRTUALHOST(LegacyOperation.ALL, ACCESS, CREATE, DELETE, UPDATE, ACCESS_LOGS),
+    MANAGEMENT(LegacyOperation.ALL, ACCESS),
+    QUEUE(LegacyOperation.ALL, CREATE, DELETE, PURGE, CONSUME, UPDATE),
+    EXCHANGE(LegacyOperation.ALL, ACCESS, CREATE, DELETE, BIND, UNBIND, PUBLISH, UPDATE),
+    METHOD(LegacyOperation.ALL, ACCESS, UPDATE),
+    USER(LegacyOperation.ALL, CREATE, DELETE, UPDATE),
+    GROUP(LegacyOperation.ALL, CREATE, DELETE, UPDATE),
+    BROKER(LegacyOperation.ALL, CONFIGURE, ACCESS_LOGS, SHUTDOWN);
 
-    private EnumSet<Operation> _operations;
+    private EnumSet<LegacyOperation> _operations;
 
 
-    ObjectType(Operation first, Operation... rest)
+    ObjectType(LegacyOperation first, LegacyOperation... rest)
     {
         this(EnumSet.of(first, rest));
     }
 
-    ObjectType(EnumSet<Operation> operations)
+    ObjectType(EnumSet<LegacyOperation> operations)
     {
         _operations = operations;
     }
     
-    public Set<Operation> getOperations()
+    public Set<LegacyOperation> getOperations()
     {
         return _operations;
     }
     
-    public boolean isSupported(Operation operation)
+    public boolean isSupported(LegacyOperation operation)
     {
         return _operations.contains(operation);
     }

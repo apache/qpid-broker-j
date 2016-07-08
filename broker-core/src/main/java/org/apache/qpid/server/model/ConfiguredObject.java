@@ -26,10 +26,14 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.security.auth.Subject;
+
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.preferences.UserPreferences;
+import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 
 @ManagedObject( creatable = false, category = false )
@@ -267,4 +271,9 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
     void decryptSecrets();
 
     UserPreferences getUserPreferences();
+
+    void authorise(Operation operation) throws AccessControlException;
+    void authorise(Operation operation, Map<String, Object> arguments) throws AccessControlException;
+    void authorise(SecurityToken token, Operation operation, Map<String, Object> arguments) throws AccessControlException;
+    SecurityToken newToken(Subject subject);
 }

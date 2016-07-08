@@ -53,6 +53,7 @@ import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.store.MessageHandle;
@@ -95,9 +96,6 @@ public class AMQChannelTest extends QpidTestCase
         when(_virtualHost.getContextValue(Boolean.class, Broker.BROKER_MSG_AUTH)).thenReturn(false);
         when(_virtualHost.getPrincipal()).thenReturn(mock(Principal.class));
         when(_virtualHost.getEventLogger()).thenReturn(mock(EventLogger.class));
-        SecurityManager securityManager = new SecurityManager(_broker, false);
-        when(_broker.getSecurityManager()).thenReturn(securityManager);
-        when(_virtualHost.getSecurityManager()).thenReturn(securityManager);
 
         _port = mock(AmqpPort.class);
         when(_port.getChildExecutor()).thenReturn(taskExecutor);

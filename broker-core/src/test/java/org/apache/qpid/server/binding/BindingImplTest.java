@@ -60,8 +60,6 @@ public class BindingImplTest extends QpidTestCase
         attributes.put(Binding.NAME, getTestName());
         Queue<?> queue = mock(Queue.class);
         VirtualHost vhost = mock(VirtualHost.class);
-        SecurityManager securityManager = mock(SecurityManager.class);
-        when(vhost.getSecurityManager()).thenReturn(securityManager);
         when(queue.getTaskExecutor()).thenReturn(_taskExecutor);
         when(queue.getChildExecutor()).thenReturn(_taskExecutor);
         when(queue.getVirtualHost()).thenReturn(vhost);

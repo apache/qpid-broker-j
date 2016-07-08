@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 
 @ManagedObject(type=TestVirtualHostNode.VIRTUAL_HOST_NODE_TYPE, category=false)
@@ -32,6 +33,7 @@ public class TestVirtualHostNode extends AbstractStandardVirtualHostNode<TestVir
     public static final String VIRTUAL_HOST_NODE_TYPE = "TestMemory";
 
     private final DurableConfigurationStore _store;
+    private volatile AccessControl _accessControl;
 
     public TestVirtualHostNode(Broker<?> parent, Map<String, Object> attributes)
     {
@@ -61,5 +63,17 @@ public class TestVirtualHostNode extends AbstractStandardVirtualHostNode<TestVir
     @Override
     protected void writeLocationEventLog()
     {
+    }
+
+    public void setAccessControl(final AccessControl accessControl)
+    {
+        _accessControl = accessControl;
+    }
+
+    @Override
+    protected AccessControl getAccessControl()
+    {
+
+        return _accessControl == null ? super.getAccessControl() : _accessControl;
     }
 }
