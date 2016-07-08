@@ -701,13 +701,13 @@ public class RestServlet extends AbstractServlet
         if ("POST".equals(request.getMethod()))
         {
             Object providedObject = getRequestProvidedObject(request, requestInfo, Object.class);
-            restUserPreferenceHandler.handlePOST(userPreferences, requestInfo, providedObject);
+            restUserPreferenceHandler.handlePOST(target, requestInfo, providedObject);
         }
         else if ("PUT".equals(request.getMethod()))
         {
             Map<String, Object> providedObject = getRequestProvidedObject(request, requestInfo);
             final RestUserPreferenceHandler.ActionTaken actionTaken =
-                    restUserPreferenceHandler.handlePUT(userPreferences, requestInfo, providedObject);
+                    restUserPreferenceHandler.handlePUT(target, requestInfo, providedObject);
 
             switch(actionTaken)
             {

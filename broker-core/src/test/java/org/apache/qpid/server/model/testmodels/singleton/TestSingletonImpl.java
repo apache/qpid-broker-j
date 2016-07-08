@@ -227,10 +227,4 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     {
         return _attrWithDefaultFromContextMaterializeInit;
     }
-
-    @Override
-    protected PreferenceStore getPreferencesStore()
-    {
-        return _preferenceStore;
-    }
 }

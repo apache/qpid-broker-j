@@ -15,25 +15,34 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
 
 package org.apache.qpid.server.model.preferences;
 
-import java.util.Collection;
-import java.util.Set;
+import java.security.Principal;
 
-public interface UserPreferences
+public class GenericPrincipal implements Principal, Comparable<Principal>
 {
-    void updateOrAppend(Collection<Preference> preferences);
+    private final String _name;
 
-    Set<Preference> getPreferences();
+    public GenericPrincipal(final String name)
+    {
+        if (name == null)
+        {
+            throw new IllegalArgumentException("Principal name cannot be null");
+        }
+        _name = name;
+    }
 
-    void replace(Collection<Preference> preferences);
+    @Override
+    public String getName()
+    {
+        return _name;
+    }
 
-    void replaceByType(String type, Collection<Preference> preferences);
-
-    void replaceByTypeAndName(String type, String name, Preference preference);
-
-    Set<Preference> getVisiblePreferences();
+    @Override
+    public int compareTo(final Principal other)
+    {
+        return _name.compareTo(other.getName());
+    }
 }

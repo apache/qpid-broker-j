@@ -95,6 +95,7 @@ import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdaterImpl;
+import org.apache.qpid.server.store.preferences.PreferencesRecoverer;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
@@ -497,12 +498,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     protected abstract MessageStore createMessageStore();
-
-    @Override
-    protected PreferenceStore getPreferencesStore()
-    {
-        return _preferenceStore;
-    }
 
     protected boolean isStoreEmpty()
     {
@@ -1968,7 +1963,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             final PreferenceStoreUpdater updater = new PreferenceStoreUpdaterImpl();
             Collection<PreferenceRecord> records = _preferenceStore.openAndLoad(updater);
-            recoverPreferences(records);
+            new PreferencesRecoverer().recoverPreferences(this, records, _preferenceStore);
 
             initialiseHouseKeeping(getHousekeepingCheckPeriod());
             finalState = State.ACTIVE;
@@ -1979,11 +1974,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             setState(finalState);
             reportIfError(getState());
         }
-    }
-
-    protected void recoverPreferences(final Collection<PreferenceRecord> records)
-    {
-        //TODO
     }
 
     protected void startFileSystemSpaceChecking()

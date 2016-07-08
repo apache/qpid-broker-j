@@ -19,7 +19,9 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import static org.apache.qpid.server.management.plugin.servlet.rest.RestUserPreferenceHandler.ActionTaken;
+import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.createPreferenceAttributes;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.security.Principal;
 import java.security.PrivilegedAction;
@@ -38,6 +40,7 @@ import com.google.common.collect.Sets;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.preferences.Preference;
+import org.apache.qpid.server.model.preferences.PreferenceFactory;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
@@ -65,15 +68,14 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
         super.setUp();
         _configuredObject = mock(ConfiguredObject.class);
         _preferenceStore = mock(PreferenceStore.class);
-        _userPreferences = new UserPreferencesImpl(_configuredObject,
-                                                   new HashMap<UUID, Preference>(),
-                                                   new HashMap<String, List<Preference>>(),
-                                                   _preferenceStore);
+        _userPreferences =
+                new UserPreferencesImpl(_preferenceStore, Collections.<Preference>emptyList());
         _groupPrincipal = new GroupPrincipal(MYGROUP);
         _subject = new Subject(true,
                                Sets.newHashSet(new AuthenticatedPrincipal(MYUSER), _groupPrincipal),
                                Collections.emptySet(),
                                Collections.emptySet());
+        when(_configuredObject.getUserPreferences()).thenReturn(_userPreferences);
     }
 
     public void testPutWithVisibilityList_ValidGroup() throws Exception
@@ -93,7 +95,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          public Void run()
                          {
                              final ActionTaken action =
-                                     _handler.handlePUT(_userPreferences, requestInfo, pref);
+                                     _handler.handlePUT(_configuredObject, requestInfo, pref);
                              assertEquals(ActionTaken.CREATED, action);
 
                              assertEquals("Unexpected number of preferences", 1, _userPreferences.getPreferences().size());
@@ -126,7 +128,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          {
                              try
                              {
-                                 _handler.handlePUT(_userPreferences, requestInfo, pref);
+                                 _handler.handlePUT(_configuredObject, requestInfo, pref);
                                  fail("Expected exception not thrown");
                              }
                              catch (IllegalArgumentException e)
@@ -154,7 +156,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          @Override
                          public Void run()
                          {
-                             _handler.handlePOST(_userPreferences, typeRequestInfo, Collections.singletonList(pref));
+                             _handler.handlePOST(_configuredObject, typeRequestInfo, Collections.singletonList(pref));
 
                              assertEquals("Unexpected number of preferences", 1, _userPreferences.getPreferences().size());
                              Preference prefModel = _userPreferences.getPreferences().iterator().next();
@@ -184,7 +186,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          {
                              final Map<String, List<Map<String, Object>>> payload =
                                      Collections.singletonMap("X-testtype2", Collections.singletonList(pref));
-                             _handler.handlePOST(_userPreferences, rootRequestInfo, payload);
+                             _handler.handlePOST(_configuredObject, rootRequestInfo, payload);
 
                              assertEquals("Unexpected number of preferences", 1, _userPreferences.getPreferences().size());
                              Preference prefModel = _userPreferences.getPreferences().iterator().next();
@@ -217,7 +219,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          {
                              try
                              {
-                                 _handler.handlePOST(_userPreferences, requestInfo, Collections.singletonList(pref));
+                                 _handler.handlePOST(_configuredObject, requestInfo, Collections.singletonList(pref));
                                  fail("Expected exception not thrown");
                              }
                              catch (IllegalArgumentException e)
@@ -249,7 +251,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              {
                                  final Map<String, List<Map<String, Object>>> payload =
                                          Collections.singletonMap("X-testType", Collections.singletonList(pref));
-                                 _handler.handlePOST(_userPreferences, requestInfo, payload);
+                                 _handler.handlePOST(_configuredObject, requestInfo, payload);
                                  fail("Expected exception not thrown");
                              }
                              catch (IllegalArgumentException e)
@@ -273,13 +275,16 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          @Override
                          public Void run()
                          {
-                             Preference preference = _userPreferences.createPreference(null,
-                                                                                       type,
-                                                                                       "testpref",
-                                                                                       null,
-                                                                                       Collections.<Principal>singleton(
-                                                                                               _groupPrincipal),
-                                                                                       Collections.<String, Object>emptyMap());
+                             Map<String, Object> prefAttributes = createPreferenceAttributes(
+                                     null,
+                                     null,
+                                     type,
+                                     "testpref",
+                                     null,
+                                     MYUSER,
+                                     Collections.singleton(_groupPrincipal.getName()),
+                                     Collections.<String, Object>emptyMap());
+                             Preference preference = PreferenceFactory.create(_configuredObject, prefAttributes);
                              _userPreferences.updateOrAppend(Collections.singleton(preference));
 
                              Map<String, List<Map<String, Object>>> typeToPreferenceListMap =
@@ -307,24 +312,34 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          public Void run()
                          {
                              final String type = "X-testtype";
-                             Preference p1 = _userPreferences.createPreference(null,
-                                                                               type,
-                                                                               "testpref",
-                                                                               null,
-                                                                               null,
-                                                                               Collections.<String, Object>emptyMap());
-                             Preference p2 = _userPreferences.createPreference(null,
-                                                                               type,
-                                                                               "testpref2",
-                                                                               null,
-                                                                               null,
-                                                                               Collections.<String, Object>emptyMap());
+                             Map<String, Object> pref1Attributes = createPreferenceAttributes(
+                                     null,
+                                     null,
+                                     type,
+                                     "testpref",
+                                     null,
+                                     MYUSER,
+                                     null,
+                                     Collections.<String, Object>emptyMap());
+                             Preference p1 = PreferenceFactory.create(_configuredObject, pref1Attributes);
+                             Map<String, Object> pref2Attributes = createPreferenceAttributes(
+                                     null,
+                                     null,
+                                     type,
+                                     "testpref2",
+                                     null,
+                                     MYUSER,
+                                     null,
+                                     Collections.<String, Object>emptyMap());
+                             Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
                              _userPreferences.updateOrAppend(Arrays.asList(p1, p2));
                              UUID id = p1.getId();
 
-                             final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                                          Collections.<String>emptyList(),
-                                                                                                          Collections.singletonMap("id", Collections.singletonList(id.toString())));
+                             final RequestInfo rootRequestInfo =
+                                     RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
+                                                                              Collections.<String>emptyList(),
+                                                                              Collections.singletonMap("id",
+                                                                                                       Collections.singletonList(id.toString())));
 
                              Map<String, List<Map<String, Object>>> typeToPreferenceListMap =
                                      (Map<String, List<Map<String, Object>>>) _handler.handleGET(_userPreferences, rootRequestInfo);
@@ -349,24 +364,34 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          public Void run()
                          {
                              final String type = "X-testtype";
-                             Preference p1 = _userPreferences.createPreference(null,
-                                                                               type,
-                                                                               "testpref",
-                                                                               null,
-                                                                               null,
-                                                                               Collections.<String, Object>emptyMap());
-                             Preference p2 = _userPreferences.createPreference(null,
-                                                                               type,
-                                                                               "testpref2",
-                                                                               null,
-                                                                               null,
-                                                                               Collections.<String, Object>emptyMap());
+                             Map<String, Object> pref1Attributes = createPreferenceAttributes(
+                                     null,
+                                     null,
+                                     type,
+                                     "testpref",
+                                     null,
+                                     MYUSER,
+                                     null,
+                                     Collections.<String, Object>emptyMap());
+                             Preference p1 = PreferenceFactory.create(_configuredObject, pref1Attributes);
+                             Map<String, Object> pref2Attributes = createPreferenceAttributes(
+                                     null,
+                                     null,
+                                     type,
+                                     "testpref2",
+                                     null,
+                                     MYUSER,
+                                     null,
+                                     Collections.<String, Object>emptyMap());
+                             Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
                              _userPreferences.updateOrAppend(Arrays.asList(p1, p2));
                              UUID id = p1.getId();
 
-                             final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                                          Collections.<String>emptyList(),
-                                                                                                          Collections.singletonMap("id", Collections.singletonList(id.toString())));
+                             final RequestInfo rootRequestInfo =
+                                     RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
+                                                                              Collections.<String>emptyList(),
+                                                                              Collections.singletonMap("id",
+                                                                                                       Collections.singletonList(id.toString())));
 
                              _handler.handleDELETE(_userPreferences, rootRequestInfo);
 
@@ -423,9 +448,10 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
     {
         final String prefName = "testpref";
         final String prefType = "X-testtype";
-        final RequestInfo rootRequestInfo = RequestInfo.createVisiblePreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                            Collections.<String>emptyList(),
-                                                                                            Collections.<String, List<String>>emptyMap());
+        final RequestInfo rootRequestInfo =
+                RequestInfo.createVisiblePreferencesRequestInfo(Collections.<String>emptyList(),
+                                                                Collections.<String>emptyList(),
+                                                                Collections.<String, List<String>>emptyMap());
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
                      {
@@ -433,20 +459,27 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          public Void run()
                          {
                              final Set<Preference> preferences = new HashSet<>();
-                             Preference p1 = _userPreferences.createPreference(null,
-                                                                               prefType,
-                                                                               prefName,
-                                                                               null,
-                                                                               Collections.<Principal>singleton(
-                                                                                       _groupPrincipal),
-                                                                               Collections.<String, Object>emptyMap());
+                             Map<String, Object> pref1Attributes = createPreferenceAttributes(
+                                     null,
+                                     null,
+                                     prefType,
+                                     prefName,
+                                     null,
+                                     MYUSER,
+                                     Collections.singleton(_groupPrincipal.getName()),
+                                     Collections.<String, Object>emptyMap());
+                             Preference p1 = PreferenceFactory.create(_configuredObject, pref1Attributes);
                              preferences.add(p1);
-                             Preference p2 = _userPreferences.createPreference(null,
-                                                                               prefType,
-                                                                               "testPref2",
-                                                                               null,
-                                                                               Collections.<Principal>emptySet(),
-                                                                               Collections.<String, Object>emptyMap());
+                             Map<String, Object> pref2Attributes = createPreferenceAttributes(
+                                     null,
+                                     null,
+                                     prefType,
+                                     "testPref2",
+                                     null,
+                                     MYUSER,
+                                     Collections.<String>emptySet(),
+                                     Collections.<String, Object>emptyMap());
+                             Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
                              preferences.add(p2);
                              _userPreferences.updateOrAppend(preferences);
                              return null;
@@ -468,7 +501,9 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                           typeToPreferenceListMap.keySet().iterator().next());
                              List<Map<String, Object>> preferences = typeToPreferenceListMap.get(prefType);
                              assertEquals("Unexpected number of preferences", 1, preferences.size());
-                             assertEquals("Unexpected name of preferences", prefName, preferences.get(0).get(Preference.NAME_ATTRIBUTE));
+                             assertEquals("Unexpected name of preferences",
+                                          prefName,
+                                          preferences.get(0).get(Preference.NAME_ATTRIBUTE));
                              Set<String> visibilityList = (Set<String>) preferences.get(0).get(Preference.VISIBILITY_LIST_ATTRIBUTE);
                              assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
                              assertEquals("Unexpected principal in visibility list", MYGROUP, visibilityList.iterator().next());
@@ -483,9 +518,10 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
     {
         final String prefName = "testpref";
         final String prefType = "X-testtype";
-        final RequestInfo rootRequestInfo = RequestInfo.createVisiblePreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                            Arrays.asList(prefType),
-                                                                                            Collections.<String, List<String>>emptyMap());
+        final RequestInfo rootRequestInfo =
+                RequestInfo.createVisiblePreferencesRequestInfo(Collections.<String>emptyList(),
+                                                                Arrays.asList(prefType),
+                                                                Collections.<String, List<String>>emptyMap());
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
                      {
@@ -493,20 +529,27 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          public Void run()
                          {
                              final Set<Preference> preferences = new HashSet<>();
-                             Preference p1 = _userPreferences.createPreference(null,
-                                                                               prefType,
-                                                                               prefName,
-                                                                               null,
-                                                                               Collections.<Principal>singleton(
-                                                                                       _groupPrincipal),
-                                                                               Collections.<String, Object>emptyMap());
+                             Map<String, Object> pref1Attributes = createPreferenceAttributes(
+                                     null,
+                                     null,
+                                     prefType,
+                                     prefName,
+                                     null,
+                                     MYUSER,
+                                     Collections.singleton(_groupPrincipal.getName()),
+                                     Collections.<String, Object>emptyMap());
+                             Preference p1 = PreferenceFactory.create(_configuredObject, pref1Attributes);
                              preferences.add(p1);
-                             Preference p2 = _userPreferences.createPreference(null,
-                                                                               prefType,
-                                                                               "testPref2",
-                                                                               null,
-                                                                               Collections.<Principal>emptySet(),
-                                                                               Collections.<String, Object>emptyMap());
+                             Map<String, Object> pref2Attributes = createPreferenceAttributes(
+                                     null,
+                                     null,
+                                     prefType,
+                                     "testPref2",
+                                     null,
+                                     MYUSER,
+                                     Collections.<String>emptySet(),
+                                     Collections.<String, Object>emptyMap());
+                             Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
                              preferences.add(p2);
                              _userPreferences.updateOrAppend(preferences);
                              return null;
@@ -523,7 +566,9 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              List<Map<String, Object>> preferences =
                                      (List<Map<String, Object>>) _handler.handleGET(_userPreferences, rootRequestInfo);
                              assertEquals("Unexpected number of preferences", 1, preferences.size());
-                             assertEquals("Unexpected name of preferences", prefName, preferences.get(0).get(Preference.NAME_ATTRIBUTE));
+                             assertEquals("Unexpected name of preferences",
+                                          prefName,
+                                          preferences.get(0).get(Preference.NAME_ATTRIBUTE));
                              Set<String> visibilityList = (Set<String>) preferences.get(0).get(Preference.VISIBILITY_LIST_ATTRIBUTE);
                              assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
                              assertEquals("Unexpected principal in visibility list", MYGROUP, visibilityList.iterator().next());
@@ -538,9 +583,10 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
     {
         final String prefName = "testpref";
         final String prefType = "X-testtype";
-        final RequestInfo rootRequestInfo = RequestInfo.createVisiblePreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                            Arrays.asList(prefType, prefName),
-                                                                                            Collections.<String, List<String>>emptyMap());
+        final RequestInfo rootRequestInfo =
+                RequestInfo.createVisiblePreferencesRequestInfo(Collections.<String>emptyList(),
+                                                                Arrays.asList(prefType, prefName),
+                                                                Collections.<String, List<String>>emptyMap());
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
                      {
@@ -548,20 +594,27 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          public Void run()
                          {
                              final Set<Preference> preferences = new HashSet<>();
-                             Preference p1 = _userPreferences.createPreference(null,
-                                                                               prefType,
-                                                                               prefName,
-                                                                               null,
-                                                                               Collections.<Principal>singleton(
-                                                                                       _groupPrincipal),
-                                                                               Collections.<String, Object>emptyMap());
+                             Map<String, Object> pref1Attributes = createPreferenceAttributes(
+                                     null,
+                                     null,
+                                     prefType,
+                                     prefName,
+                                     null,
+                                     MYUSER,
+                                     Collections.singleton(_groupPrincipal.getName()),
+                                     Collections.<String, Object>emptyMap());
+                             Preference p1 = PreferenceFactory.create(_configuredObject, pref1Attributes);
                              preferences.add(p1);
-                             Preference p2 = _userPreferences.createPreference(null,
-                                                                               prefType,
-                                                                               "testPref2",
-                                                                               null,
-                                                                               Collections.<Principal>emptySet(),
-                                                                               Collections.<String, Object>emptyMap());
+                             Map<String, Object> pref2Attributes = createPreferenceAttributes(
+                                     null,
+                                     null,
+                                     prefType,
+                                     "testPref2",
+                                     null,
+                                     MYUSER,
+                                     Collections.<String>emptySet(),
+                                     Collections.<String, Object>emptyMap());
+                             Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
                              preferences.add(p2);
                              _userPreferences.updateOrAppend(preferences);
                              return null;
@@ -595,12 +648,17 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          @Override
                          public Void run()
                          {
-                             Preference preference = _userPreferences.createPreference(null,
-                                                                                       preferenceType,
-                                                                                       preferenceName,
-                                                                                       null,
-                                                                                       null,
-                                                                                       Collections.<String, Object>emptyMap());
+                             Map<String, Object> preferenceAttributes = createPreferenceAttributes(
+                                     null,
+                                     null,
+                                     preferenceType,
+                                     preferenceName,
+                                     null,
+                                     MYUSER,
+                                     null,
+                                     Collections.<String, Object>emptyMap());
+                             Preference preference = PreferenceFactory.create(_configuredObject,
+                                                                              preferenceAttributes);
                              _userPreferences.updateOrAppend(Collections.singleton(preference));
                              Set<Preference> retrievedPreferences = _userPreferences.getPreferences();
                              assertEquals("adding pref failed", 1, retrievedPreferences.size());

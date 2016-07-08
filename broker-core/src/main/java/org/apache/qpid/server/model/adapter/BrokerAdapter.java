@@ -72,6 +72,7 @@ import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdaterImpl;
+import org.apache.qpid.server.store.preferences.PreferencesRecoverer;
 import org.apache.qpid.server.util.HousekeepingExecutor;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.slf4j.Logger;
@@ -493,7 +494,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
         final PreferenceStoreUpdaterImpl updater = new PreferenceStoreUpdaterImpl();
         final Collection<PreferenceRecord> preferenceRecords = _preferenceStore.openAndLoad(updater);
-        recoverPreferences(preferenceRecords);
+        new PreferencesRecoverer().recoverPreferences(this, preferenceRecords, _preferenceStore);
 
         if (isManagementMode())
         {
@@ -501,11 +502,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
                                                                 _parent.getManagementModePassword()));
         }
         setState(State.ACTIVE);
-    }
-
-    private void recoverPreferences(final Collection<PreferenceRecord> preferenceRecords)
-    {
-        /* TODO */
     }
 
     private void initialiseStatisticsReporting()
@@ -720,12 +716,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         registerSystemAddressSpaces();
 
         assignTargetSizes();
-    }
-
-    @Override
-    protected PreferenceStore getPreferencesStore()
-    {
-        return _preferenceStore;
     }
 
     @Override

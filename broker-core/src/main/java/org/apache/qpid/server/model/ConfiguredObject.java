@@ -271,6 +271,7 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
     void decryptSecrets();
 
     UserPreferences getUserPreferences();
+    void setUserPreferences(UserPreferences userPreferences);
 
     void authorise(Operation operation) throws AccessControlException;
     void authorise(Operation operation, Map<String, Object> arguments) throws AccessControlException;

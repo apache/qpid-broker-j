@@ -30,7 +30,6 @@ import java.util.UUID;
 import com.google.common.collect.ImmutableSet;
 
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.security.SecurityManager;
 
 public class PreferenceImpl implements Preference
 {
@@ -49,16 +48,43 @@ public class PreferenceImpl implements Preference
                           final String name,
                           final String type,
                           final String description,
+                          final Principal owner,
+                          final Date lastUpdatedDate,
                           final Set<Principal> visibilitySet,
                           final PreferenceValue preferenceValue)
     {
-        _lastUpdatedDate = new Date();
+        if (associatedObject == null)
+        {
+            throw new IllegalArgumentException("Preference associatedObject is mandatory");
+        }
+
+        if (uuid == null)
+        {
+            throw new IllegalArgumentException("Preference id is mandatory");
+        }
+
+        if (name == null || "".equals(name))
+        {
+            throw new IllegalArgumentException("Preference name is mandatory");
+        }
+
+        if (type == null || "".equals(type))
+        {
+            throw new IllegalArgumentException("Preference type is mandatory");
+        }
+
+        if (owner == null)
+        {
+            throw new IllegalArgumentException("Preference owner is mandatory");
+        }
+
+        _lastUpdatedDate = lastUpdatedDate;
         _associatedObject = associatedObject;
         _id = uuid;
         _name = name;
         _type = type;
         _description = description;
-        _owner = SecurityManager.getCurrentUser();
+        _owner = owner;
         _visibilitySet = (visibilitySet == null ? ImmutableSet.<Principal>of() : ImmutableSet.copyOf(visibilitySet));
         _preferenceValue = preferenceValue;
     }

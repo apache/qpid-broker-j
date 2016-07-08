@@ -70,7 +70,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.security.AccessControl;
@@ -81,7 +80,6 @@ import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.encryption.ConfigurationSecretEncrypter;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
-import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.util.Strings;
@@ -109,9 +107,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     }
 
     private ConfigurationSecretEncrypter _encrypter;
-    private final Map<UUID, Preference> _userPreferences = new HashMap<>();
-    private final Map<String, List<Preference>> _userPreferencesByName = new HashMap<>();
     private AccessControl _parentAccessControl;
+    private UserPreferences _userPreferences;
 
     private enum DynamicState { UNINIT, OPENED, CLOSED };
     private final AtomicReference<DynamicState> _dynamicState = new AtomicReference<>(DynamicState.UNINIT);
@@ -2974,12 +2971,13 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     @Override
     public UserPreferences getUserPreferences()
     {
-        return new UserPreferencesImpl(this, _userPreferences, _userPreferencesByName, getPreferencesStore());
+        return _userPreferences;
     }
 
-    protected PreferenceStore getPreferencesStore()
+    @Override
+    public void setUserPreferences(final UserPreferences userPreferences)
     {
-        return null;//TODO: temporary change
+        _userPreferences = userPreferences;
     }
 
     //=========================================================================================

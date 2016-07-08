@@ -36,7 +36,9 @@ import javax.security.auth.Subject;
 
 import com.google.common.base.Joiner;
 
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.preferences.Preference;
+import org.apache.qpid.server.model.preferences.PreferenceFactory;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 
 public class RestUserPreferenceHandler
@@ -97,8 +99,9 @@ public class RestUserPreferenceHandler
         }
     }
 
-    ActionTaken handlePUT(UserPreferences userPreferences, RequestInfo requestInfo, Object providedObject)
+    ActionTaken handlePUT(ConfiguredObject<?> target, RequestInfo requestInfo, Object providedObject)
     {
+        UserPreferences userPreferences = target.getUserPreferences();
         final List<String> preferencesParts = requestInfo.getPreferencesParts();
 
         if (!(providedObject instanceof Map))
@@ -115,19 +118,13 @@ public class RestUserPreferenceHandler
             ensureAttributeMatches(providedAttributes, "name", name);
             ensureAttributeMatches(providedAttributes, "type", type);
 
-            String providedDescription = getProvidedAttributeAsString(providedAttributes, "description");
             UUID providedUuid = getProvidedUuid(providedAttributes);
 
-            Set<Principal> visibilityList = getProvidedVisibilityList(providedAttributes);
-            Map<String, Object> providedValueAttributes = getProvidedValueAttributes(providedAttributes);
+            Preference preference = PreferenceFactory.create(target, providedAttributes);
 
-            final Preference newPref = userPreferences.createPreference(providedUuid,
-                                                                        type,
-                                                                        name,
-                                                                        providedDescription,
-                                                                        visibilityList,
-                                                                        providedValueAttributes);
-            userPreferences.updateOrAppend(Collections.singleton(newPref));
+            ensureValidVisibilityList(preference.getVisibilityList());
+
+            userPreferences.updateOrAppend(Collections.singleton(preference));
 
             return providedUuid == null ? ActionTaken.CREATED : ActionTaken.UPDATED;
         }
@@ -138,8 +135,9 @@ public class RestUserPreferenceHandler
         }
     }
 
-    void handlePOST(UserPreferences userPreferences, RequestInfo requestInfo, Object providedObject)
+    void handlePOST(ConfiguredObject<?> target, RequestInfo requestInfo, Object providedObject)
     {
+        UserPreferences userPreferences = target.getUserPreferences();
         final List<String> preferencesParts = requestInfo.getPreferencesParts();
 
         if (preferencesParts.size() == 1)
@@ -162,18 +160,10 @@ public class RestUserPreferenceHandler
 
                 ensureAttributeMatches(preferenceAttributes, "type", type);
 
-                String providedName = getProvidedAttributeAsString(preferenceAttributes, "name");
-                String providedDescription = getProvidedAttributeAsString(preferenceAttributes, "description");
-                UUID providedUuid = getProvidedUuid(preferenceAttributes);
-                Set<Principal> principals = getProvidedVisibilityList(preferenceAttributes);
-                Map<String, Object> providedValueAttributes = getProvidedValueAttributes(preferenceAttributes);
+                Preference preference = PreferenceFactory.create(target, preferenceAttributes);
 
-                Preference preference = userPreferences.createPreference(providedUuid,
-                                                                         type,
-                                                                         providedName,
-                                                                         providedDescription,
-                                                                         principals,
-                                                                         providedValueAttributes);
+                ensureValidVisibilityList(preference.getVisibilityList());
+
                 preferences.add(preference);
             }
 
@@ -208,18 +198,10 @@ public class RestUserPreferenceHandler
 
                     ensureAttributeMatches(preferenceAttributes, "type", type);
 
-                    String providedName = getProvidedAttributeAsString(preferenceAttributes, "name");
-                    String providedDescription = getProvidedAttributeAsString(preferenceAttributes, "description");
-                    UUID providedUuid = getProvidedUuid(preferenceAttributes);
-                    Set<Principal> principals = getProvidedVisibilityList(preferenceAttributes);
-                    Map<String, Object> providedValueAttributes = getProvidedValueAttributes(preferenceAttributes);
+                    Preference preference = PreferenceFactory.create(target, preferenceAttributes);
 
-                    Preference preference = userPreferences.createPreference(providedUuid,
-                                                                             type,
-                                                                             providedName,
-                                                                             providedDescription,
-                                                                             principals,
-                                                                             providedValueAttributes);
+                    ensureValidVisibilityList(preference.getVisibilityList());
+
                     preferences.add(preference);
                 }
             }
@@ -342,42 +324,12 @@ public class RestUserPreferenceHandler
 
     private String getIdFromQueryParameters(final Map<String, List<String>> queryParameters)
     {
-        final String id;
         List<String> ids = queryParameters.get("id");
         if (ids != null && ids.size() > 1)
         {
             throw new IllegalArgumentException("Multiple ids in query string are not allowed");
         }
         return (ids == null ? null : ids.get(0));
-    }
-
-    private Map<String, Object> getProvidedValueAttributes(final Map<String, Object> preferenceAttributes)
-    {
-        Object providedValueAttributes = preferenceAttributes.get("value");
-
-        if (providedValueAttributes == null)
-        {
-            return Collections.emptyMap();
-        }
-
-        if (!(providedValueAttributes instanceof Map))
-        {
-            final String errorMessage = String.format(
-                    "Invalid preference value ('%s') found in payload, expected to be Map",
-                    providedValueAttributes);
-            throw new IllegalArgumentException(errorMessage);
-        }
-
-        for (Object key : ((Map) providedValueAttributes).keySet())
-        {
-            if (!(key instanceof String))
-            {
-                String errorMessage = String.format(
-                        "The keys of the preference value object must be of type String,  Found key (%s)", key);
-                throw new IllegalArgumentException(errorMessage);
-            }
-        }
-        return (Map<String, Object>) providedValueAttributes;
     }
 
     private UUID getProvidedUuid(final Map<String, Object> providedObjectMap)
@@ -393,55 +345,29 @@ public class RestUserPreferenceHandler
         }
     }
 
-    private Set<Principal> getProvidedVisibilityList(final Map<String, Object> providedAttributes)
+    private void ensureValidVisibilityList(final Collection<Principal> visibilityList)
     {
-        Object visibilityListObject = providedAttributes.get("visibilityList");
-
-        if (visibilityListObject == null)
-        {
-            return null;
-        }
-
-        if (!(visibilityListObject instanceof Collection))
-        {
-            String errorMessage = String.format("Invalid visibilityList ('%s') found in payload", visibilityListObject);
-            throw new IllegalArgumentException(errorMessage);
-        }
-
         Subject currentSubject = Subject.getSubject(AccessController.getContext());
         if (currentSubject == null)
         {
             throw new SecurityException("Current thread does not have a user");
         }
 
-        HashMap<String, Principal> principalNameMap = new HashMap<>(currentSubject.getPrincipals().size());
+        HashSet<String> principalNames = new HashSet<>(currentSubject.getPrincipals().size());
         for (Principal principal : currentSubject.getPrincipals())
         {
-            principalNameMap.put(principal.getName(), principal);
+            principalNames.add(principal.getName());
         }
 
-        Collection visibilityList = (Collection) visibilityListObject;
-        Set<Principal> principals = new HashSet<>(visibilityList.size());
-
-        for (Object visibilityObject : visibilityList)
+        for (Principal visibilityPrincipal : visibilityList)
         {
-            if (!(visibilityObject instanceof String))
-            {
-                String errorMessage = String.format("Invalid visibilityList, '%s' is not a string",
-                                                    visibilityObject);
-                throw new IllegalArgumentException(errorMessage);
-            }
-
-            Principal principal = principalNameMap.get(visibilityObject);
-            if (principal == null)
+            if (!principalNames.contains(visibilityPrincipal.getName()))
             {
                 String errorMessage = String.format("Invalid visibilityList, this user does not hold principal '%s'",
-                                                    visibilityObject);
+                                                    visibilityPrincipal);
                 throw new IllegalArgumentException(errorMessage);
             }
-            principals.add(principal);
         }
-        return principals;
     }
 
     private void ensureAttributeMatches(final Map<String, Object> preferenceAttributes,
@@ -449,14 +375,21 @@ public class RestUserPreferenceHandler
                                         final String expectedValue)
     {
         final Object providedValue = preferenceAttributes.get(attributeName);
-        if (providedValue != null && !Objects.equals(providedValue, expectedValue))
+        if (providedValue != null)
         {
-            final String errorMessage = String.format(
-                    "The attribute '%s' within the payload ('%s') contradicts the value implied by the url ('%s')",
-                    attributeName,
-                    providedValue,
-                    expectedValue);
-            throw new IllegalArgumentException(errorMessage);
+            if (!Objects.equals(providedValue, expectedValue))
+            {
+                final String errorMessage = String.format(
+                        "The attribute '%s' within the payload ('%s') contradicts the value implied by the url ('%s')",
+                        attributeName,
+                        providedValue,
+                        expectedValue);
+                throw new IllegalArgumentException(errorMessage);
+            }
+        }
+        else
+        {
+            preferenceAttributes.put(attributeName, expectedValue);
         }
     }
 

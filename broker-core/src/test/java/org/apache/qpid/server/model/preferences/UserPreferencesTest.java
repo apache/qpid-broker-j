@@ -27,8 +27,6 @@ import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -66,9 +64,7 @@ public class UserPreferencesTest extends QpidTestCase
         super.setUp();
         _configuredObject = mock(ConfiguredObject.class);
         _preferenceStore = mock(PreferenceStore.class);
-        _userPreferences = new UserPreferencesImpl(_configuredObject,
-                                                   new HashMap<UUID, Preference>(),
-                                                   new HashMap<String, List<Preference>>(), _preferenceStore);
+        _userPreferences = new UserPreferencesImpl(_preferenceStore, Collections.<Preference>emptyList());
         _groupPrincipal = new GroupPrincipal(MYGROUP);
         _owner = new AuthenticatedPrincipal(MYUSER);
         _subject = new Subject(true,

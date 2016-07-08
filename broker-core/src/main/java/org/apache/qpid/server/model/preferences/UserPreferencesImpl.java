@@ -36,8 +36,6 @@ import java.util.UUID;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceRecordImpl;
@@ -45,58 +43,20 @@ import org.apache.qpid.server.store.preferences.PreferenceStore;
 
 public class UserPreferencesImpl implements UserPreferences
 {
-    private final ConfiguredObject<?> _associatedObject;
     private final Map<UUID, Preference> _preferences;
     private final Map<String, List<Preference>> _preferencesByName;
     private final PreferenceStore _preferenceStore;
 
-    public UserPreferencesImpl(final ConfiguredObject<?> associatedObject,
-                               final Map<UUID, Preference> userPreferences,
-                               final Map<String, List<Preference>> userPreferencesByName,
-                               final PreferenceStore preferenceStore)
+    public UserPreferencesImpl(final PreferenceStore preferenceStore, final Collection<Preference> preferences)
     {
-        _preferences = userPreferences;
-        _associatedObject = associatedObject;
-        _preferencesByName = userPreferencesByName;
+        _preferences = new HashMap<>();
+        _preferencesByName = new HashMap<>();
         _preferenceStore = preferenceStore;
-    }
 
-    @Override
-    public Preference createPreference(final UUID id,
-                                       final String type,
-                                       final String name,
-                                       final String description,
-                                       final Set<Principal> visibilitySet,
-                                       final Map<String, Object> preferenceValueAttributes)
-    {
-        final Map<String, PreferenceValueFactoryService> preferenceValueFactories =
-                new QpidServiceLoader().getInstancesByType(PreferenceValueFactoryService.class);
-
-        UUID uuid = id;
-        if (uuid == null)
+        for (Preference preference : preferences)
         {
-            uuid = UUID.randomUUID();
+            addPreference(preference);
         }
-
-        if (name == null || "".equals(name))
-        {
-            throw new IllegalArgumentException("Preference name is mandatory");
-        }
-
-        String implementationType = type;
-        if (type != null && type.startsWith("X-"))
-        {
-            implementationType = "X-generic";
-        }
-        final PreferenceValueFactoryService preferenceValueFactory = preferenceValueFactories.get(implementationType);
-        if (preferenceValueFactory == null)
-        {
-            throw new IllegalArgumentException(String.format("Cannot find preference type factory for type '%s'",
-                                                             implementationType));
-        }
-
-        PreferenceValue preferenceValue = preferenceValueFactory.createInstance(preferenceValueAttributes);
-        return new PreferenceImpl(_associatedObject, uuid, name, type, description, visibilitySet, preferenceValue);
     }
 
     @Override
@@ -119,13 +79,7 @@ public class UserPreferencesImpl implements UserPreferences
                 _preferencesByName.get(oldPreference.getName()).remove(oldPreference);
             }
 
-            _preferences.put(preference.getId(), preference);
-
-            if (!_preferencesByName.containsKey(preference.getName()))
-            {
-                _preferencesByName.put(preference.getName(), new ArrayList<Preference>());
-            }
-            _preferencesByName.get(preference.getName()).add(preference);
+            addPreference(preference);
         }
     }
 
@@ -137,7 +91,7 @@ public class UserPreferencesImpl implements UserPreferences
         Set<Preference> preferences = new HashSet<>();
         for (Preference preference : _preferences.values())
         {
-            if (currentPrincipal.equals(preference.getOwner()))
+            if (principalsEqual(currentPrincipal, preference.getOwner()))
             {
                 preferences.add(preference);
             }
@@ -162,7 +116,7 @@ public class UserPreferencesImpl implements UserPreferences
         Collection<PreferenceRecord> preferenceRecordsToAdd = new HashSet<>();
         for (Preference preference : _preferences.values())
         {
-            if (Objects.equals(preference.getOwner(), currentPrincipal)
+            if (principalsEqual(preference.getOwner(), currentPrincipal)
                 && (type == null || Objects.equals(preference.getType(), type)))
             {
                 preferenceRecordsToRemove.add(preference.getId());
@@ -183,14 +137,7 @@ public class UserPreferencesImpl implements UserPreferences
 
         for (Preference preference : preferences)
         {
-            _preferences.put(preference.getId(), preference);
-
-            String preferenceName = preference.getName();
-            if (!_preferencesByName.containsKey(preferenceName))
-            {
-                _preferencesByName.put(preferenceName, new ArrayList<Preference>());
-            }
-            _preferencesByName.get(preferenceName).add(preference);
+           addPreference(preference);
         }
     }
 
@@ -210,7 +157,7 @@ public class UserPreferencesImpl implements UserPreferences
             while (preferenceIterator.hasNext())
             {
                 Preference preference = preferenceIterator.next();
-                if (Objects.equals(preference.getOwner(), currentPrincipal)
+                if (principalsEqual(preference.getOwner(), currentPrincipal)
                     && Objects.equals(preference.getType(), type))
                 {
                     existingPreferenceId = preference.getId();
@@ -233,13 +180,7 @@ public class UserPreferencesImpl implements UserPreferences
 
         if (newPreference != null)
         {
-            _preferences.put(newPreference.getId(), newPreference);
-
-            if (!_preferencesByName.containsKey(name))
-            {
-                _preferencesByName.put(name, new ArrayList<Preference>());
-            }
-            _preferencesByName.get(name).add(newPreference);
+            addPreference(newPreference);
         }
     }
 
@@ -251,7 +192,7 @@ public class UserPreferencesImpl implements UserPreferences
         Set<Preference> visiblePreferences = new HashSet<>();
         for (Preference preference : _preferences.values())
         {
-            if (currentPrincipals.contains(preference.getOwner()))
+            if (principalsContain(currentPrincipals, preference.getOwner()))
             {
                 visiblePreferences.add(preference);
                 continue;
@@ -261,7 +202,7 @@ public class UserPreferencesImpl implements UserPreferences
             {
                 for (Principal principal : visibilityList)
                 {
-                    if (currentPrincipals.contains(principal))
+                    if (principalsContain(currentPrincipals, principal))
                     {
                         visiblePreferences.add(preference);
                         break;
@@ -331,7 +272,7 @@ public class UserPreferencesImpl implements UserPreferences
         for (Preference preference : preferences)
         {
             // validate owner
-            if (!currentPrincipal.equals(preference.getOwner()))
+            if (!principalsEqual(currentPrincipal, preference.getOwner()))
             {
                 throw new SecurityException(String.format("Preference '%s' not owned by current user.",
                                                           preference.getId().toString()));
@@ -354,7 +295,7 @@ public class UserPreferencesImpl implements UserPreferences
             {
                 for (Preference preferenceWithSameName : preferencesWithSameName)
                 {
-                    if (Objects.equals(preferenceWithSameName.getOwner(), preference.getOwner())
+                    if (principalsEqual(preferenceWithSameName.getOwner(), preference.getOwner())
                         && Objects.equals(preferenceWithSameName.getType(), preference.getType())
                         && !Objects.equals(preferenceWithSameName.getId(), preference.getId()))
                     {
@@ -427,5 +368,34 @@ public class UserPreferencesImpl implements UserPreferences
             throw new SecurityException("Current thread does not have a user");
         }
         return currentPrincipals;
+    }
+
+    private void addPreference(final Preference preference)
+    {
+        _preferences.put(preference.getId(), preference);
+        if (!_preferencesByName.containsKey(preference.getName()))
+        {
+            _preferencesByName.put(preference.getName(), new ArrayList<Preference>());
+        }
+        _preferencesByName.get(preference.getName()).add(preference);
+    }
+
+    private boolean principalsEqual(final Principal p1, final Principal p2)
+    {
+        return (p1.equals(p2)
+                || ((p1 instanceof GenericPrincipal) && (((GenericPrincipal) p1).compareTo(p2) == 0))
+                || ((p2 instanceof GenericPrincipal) && (((GenericPrincipal) p2).compareTo(p1) == 0)));
+    }
+
+    private boolean principalsContain(Collection<Principal> principals, Principal principal)
+    {
+        for (Principal currentPrincipal : principals)
+        {
+            if (principalsEqual(principal, currentPrincipal))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }
