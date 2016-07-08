@@ -375,6 +375,10 @@ define(["dojo/_base/declare",
                         this._resultsGrid.setWhere(this.advancedWhere.value);
                         this._resultsGrid.setOrderBy(this.advancedOrderBy.value);
                     }
+
+                    this.saveButton.set("disabled", true);
+                    // if the preference has an id, then we know it is in the store
+                    this.deleteButton.set("disabled", this.preference != null && this.preference.id != null ? false : true);
                 },
                 search: function ()
                 {
@@ -532,6 +536,7 @@ define(["dojo/_base/declare",
                 {
                     this._processStandardModeSelectChange(selectedColumns);
                     this.search();
+                    this._queryChanged();
                 },
                 _standardModeColumnOrderChanged: function (event)
                 {
@@ -547,6 +552,7 @@ define(["dojo/_base/declare",
                         }
                         this._processStandardModeSelectChange(newSelectedItems);
                         this.standardSelectChooser.set("data", {"selected": newSelectedItems});
+                        this._queryChanged();
                     }
                     else
                     {
@@ -573,6 +579,7 @@ define(["dojo/_base/declare",
                             this._processStandardModeSelectChange(newSelectedItems);
                             this.standardSelectChooser.set("data", {"selected": newSelectedItems});
                             this._resultsGrid.refresh();
+                            this._queryChanged();
                         }
                         finally
                         {
@@ -587,6 +594,7 @@ define(["dojo/_base/declare",
                 {
                     this._resultsGrid.setWhere(result);
                     this.search();
+                    this._queryChanged();
                 },
                 _buildGrid: function (currentPage, rowsPerPage)
                 {
@@ -643,6 +651,7 @@ define(["dojo/_base/declare",
                     grid.on('orderByChanged', lang.hitch(this, function (event)
                     {
                         this.advancedOrderBy.set("value", event.orderBy);
+                        this._queryChanged();
                     }));
                     grid.on('dgrid-columnreorder', lang.hitch(this, this._standardModeColumnOrderChanged));
                     grid.on('dgrid-columnstatechange', lang.hitch(this, this._standardModeColumnStateChanged));
@@ -652,7 +661,6 @@ define(["dojo/_base/declare",
                 _queryCompleted: function (e)
                 {
                     this._buildColumnsIfHeadersChanged(e.data);
-                    this._queryChanged(e.query);
                 },
                 _buildColumnsIfHeadersChanged: function (data)
                 {
@@ -888,6 +896,7 @@ define(["dojo/_base/declare",
                         this._toggleSearchButton(select);
                         this._resultsGrid.hiderToggleNode.style.display = '';
                         this.search();
+                        this._queryChanged();
                     }
                 },
                 _getCategoryMetadata: function (value)
@@ -996,6 +1005,8 @@ define(["dojo/_base/declare",
                             this.preference = preference;
                             this._querySaveDialog.hide();
                             this.emit("save", {preference: preference});
+                            this.saveButton.set("disabled", true);
+                            this.deleteButton.set("disabled", false);
                         }));
                     }));
                 },
@@ -1106,6 +1117,7 @@ define(["dojo/_base/declare",
                     var pref = lang.clone(this.preference);
                     pref.value = queryParameters;
                     this.emit("change", {preference: pref});
+                    this.saveButton.set("disabled", false);
                 }
             });
 

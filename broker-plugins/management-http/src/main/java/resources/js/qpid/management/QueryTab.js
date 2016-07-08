@@ -101,8 +101,7 @@ define(["dojo/parser",
             });
             this.queryWidget.on("change", function(e)
             {
-                var changed = !util.equals(that.preference, e.preference);
-                var title = that.getTitle(changed);
+                var title = that.getTitle(true);
                 that.contentPane.set("title", title);
             });
             this.queryWidget.on("delete", function(e)
