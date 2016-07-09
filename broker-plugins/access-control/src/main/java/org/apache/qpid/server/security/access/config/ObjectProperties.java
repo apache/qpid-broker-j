@@ -23,6 +23,9 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * An set of properties for an access control v2 rule {@link ObjectType}.
  *
@@ -32,9 +35,10 @@ import java.util.Map;
  */
 public class ObjectProperties
 {
-    public static final String WILD_CARD = "*";
+    private static final Logger LOGGER = LoggerFactory.getLogger(ObjectProperties.class);
+    static final String WILD_CARD = "*";
 
-    public static final ObjectProperties EMPTY = new ObjectProperties();
+    static final ObjectProperties EMPTY = new ObjectProperties();
 
     public enum Property
     {
@@ -45,11 +49,6 @@ public class ObjectProperties
         TYPE,
         ALTERNATE,
         IMMEDIATE,
-        INTERNAL,
-        NO_WAIT,
-        NO_LOCAL,
-        NO_ACK,
-        PASSIVE,
         DURABLE,
         EXCLUSIVE,
         TEMPORARY,
@@ -89,6 +88,10 @@ public class ObjectProperties
             }
             else
             {
+                if(property == IMMEDIATE)
+                {
+                    LOGGER.warn("ACL rules which depend on the value of the 'immediate' flag are deprecated, and will be removed in the next release");
+                }
                 return property;
             }
         }
