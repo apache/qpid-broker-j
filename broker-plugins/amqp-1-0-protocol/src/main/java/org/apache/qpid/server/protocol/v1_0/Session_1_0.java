@@ -93,6 +93,7 @@ import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
@@ -181,7 +182,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         _connection = connection;
         _subject.getPrincipals().addAll(connection.getSubject().getPrincipals());
         _subject.getPrincipals().add(new SessionPrincipal(this));
-        _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(_subject);
+        _accessControllerContext = connection.getAccessControlContextFromSubject(_subject);
         _securityToken = connection.getAddressSpace() instanceof ConfiguredObject
                 ? ((ConfiguredObject)connection.getAddressSpace()).newToken(_subject)
                 : connection.getBroker().newToken(_subject);

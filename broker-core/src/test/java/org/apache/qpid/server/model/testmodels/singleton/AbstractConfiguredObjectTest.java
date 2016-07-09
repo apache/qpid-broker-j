@@ -664,7 +664,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(secret, object.getSecureValue());
 
         //verify we can retrieve the actual secure value using system rights
-        Subject.doAs(org.apache.qpid.server.security.SecurityManager.getSubjectWithAddedSystemRights(),
+        object.doAsSystem(
                      new PrivilegedAction<Object>()
                      {
                          @Override

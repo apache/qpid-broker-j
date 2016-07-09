@@ -21,7 +21,6 @@ package org.apache.qpid.server.store.jdbc;
 
 import java.io.File;
 import java.nio.charset.Charset;
-import java.security.PrivilegedAction;
 import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -32,14 +31,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.security.auth.Subject;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.plugin.JDBCConnectionProviderFactory;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.AbstractJDBCConfigurationStore;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.MessageStore;
@@ -125,7 +121,7 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
 
                 _connectionProvider = connectionProviderFactory.getConnectionProvider(_connectionURL,
                                                                                       settings.getUsername(),
-                                                                                      getPlainTextPassword(settings),
+                                                                                      settings.getPassword(),
                                                                                       providerAttributes);
             }
             catch (SQLException e)
@@ -248,18 +244,6 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
     public MessageStore getMessageStore()
     {
         return _providedMessageStore;
-    }
-
-    protected String getPlainTextPassword(final JDBCSettings settings)
-    {
-        return Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<String>()
-        {
-            @Override
-            public String run()
-            {
-                return settings.getPassword();
-            }
-        });
     }
 
     private class ProvidedMessageStore extends GenericAbstractJDBCMessageStore

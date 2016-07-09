@@ -18,11 +18,15 @@
  */
 package org.apache.qpid.server.model.testmodels.singleton;
 
+import java.security.Principal;
+import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.security.auth.Subject;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -38,6 +42,18 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
         implements TestSingleton<TestSingletonImpl>
 {
     public static final String TEST_SINGLETON_TYPE = "testsingleton";
+
+    private static final Principal SYSTEM_PRINCIPAL = new Principal() {
+        @Override
+        public String getName()
+        {
+            return "TEST";
+        }
+    };
+    private static final Subject SYSTEM_SUBJECT = new Subject(true,
+                                                       Collections.singleton(SYSTEM_PRINCIPAL),
+                                                       Collections.emptySet(),
+                                                       Collections.emptySet());
 
     public static final int DERIVED_VALUE = -100;
     private final PreferenceStore _preferenceStore =
@@ -226,5 +242,16 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     public String getAttrWithDefaultFromContextMaterializeInit()
     {
         return _attrWithDefaultFromContextMaterializeInit;
+    }
+
+    @Override
+    protected Principal getSystemPrincipal()
+    {
+        return SYSTEM_PRINCIPAL;
+    }
+
+    public <T> T doAsSystem(PrivilegedAction<T> action)
+    {
+        return Subject.doAs(SYSTEM_SUBJECT, action);
     }
 }

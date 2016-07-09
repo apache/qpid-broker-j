@@ -22,7 +22,6 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import java.util.Collections;
 
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
@@ -30,7 +29,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.txn.ServerTransaction;

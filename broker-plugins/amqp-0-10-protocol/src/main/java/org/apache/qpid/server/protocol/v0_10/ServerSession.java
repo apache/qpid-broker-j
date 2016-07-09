@@ -79,9 +79,9 @@ import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
-import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.txn.AlreadyKnownDtxException;
 import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
 import org.apache.qpid.server.txn.DistributedTransaction;
@@ -194,10 +194,13 @@ public class ServerSession extends Session
         _transaction = new AsyncAutoCommitTransaction(this.getMessageStore(),this);
         _logSubject = new ChannelLogSubject(this);
 
-        _subject.getPrincipals().addAll(((ServerConnection) connection).getAuthorizedSubject().getPrincipals());
+        ServerConnection serverConnection = (ServerConnection) connection;
+        AMQPConnection_0_10 amqpConnection = serverConnection.getAmqpConnection();
+
+        _subject.getPrincipals().addAll(serverConnection.getAuthorizedSubject().getPrincipals());
         _subject.getPrincipals().add(new SessionPrincipal(this));
-        _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(_subject);
-        final NamedAddressSpace addressSpace = ((ServerConnection) connection).getAddressSpace();
+        _accessControllerContext = amqpConnection.getAccessControlContextFromSubject(_subject);
+        final NamedAddressSpace addressSpace = serverConnection.getAddressSpace();
 
         if(addressSpace instanceof ConfiguredObject)
         {
@@ -205,7 +208,7 @@ public class ServerSession extends Session
         }
         else
         {
-            _token = ((ServerConnection) connection).getAmqpConnection().getBroker().newToken(_subject);
+            _token = amqpConnection.getBroker().newToken(_subject);
         }
         _transactionTimeoutHelper = new TransactionTimeoutHelper(_logSubject, new CloseAction()
         {
@@ -216,8 +219,8 @@ public class ServerSession extends Session
             }
         }, getConnection().getAmqpConnection());
 
-        _blockingTimeout = ((ServerConnection)connection).getBroker().getContextValue(Long.class,
-                                                                  Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
+        _blockingTimeout = serverConnection.getBroker().getContextValue(Long.class,
+                                                                                       Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
         _maxUncommittedInMemorySize = getConnection().getAmqpConnection().getContextProvider().getContextValue(Long.class, org.apache.qpid.server.model.Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
 
     }

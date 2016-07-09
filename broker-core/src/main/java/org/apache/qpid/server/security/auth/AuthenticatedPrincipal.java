@@ -19,6 +19,7 @@
 package org.apache.qpid.server.security.auth;
 
 import java.io.Serializable;
+import java.security.AccessController;
 import java.security.Principal;
 import java.util.Set;
 
@@ -49,6 +50,29 @@ public final class AuthenticatedPrincipal implements Principal, Serializable
         }
 
         _wrappedPrincipal = wrappedPrincipal;
+    }
+
+    public static AuthenticatedPrincipal getCurrentUser()
+    {
+        Subject subject = Subject.getSubject(AccessController.getContext());
+        final AuthenticatedPrincipal user;
+        if(subject != null)
+        {
+            Set<AuthenticatedPrincipal> principals = subject.getPrincipals(AuthenticatedPrincipal.class);
+            if(!principals.isEmpty())
+            {
+                user = principals.iterator().next();
+            }
+            else
+            {
+                user = null;
+            }
+        }
+        else
+        {
+            user = null;
+        }
+        return user;
     }
 
     @Override

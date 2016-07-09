@@ -21,6 +21,7 @@ package org.apache.qpid.server.model.testmodels.singleton;
 import static org.apache.qpid.server.model.Initialization.copy;
 import static org.apache.qpid.server.model.Initialization.materialize;
 
+import java.security.PrivilegedAction;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -123,5 +124,8 @@ public interface TestSingleton<X extends TestSingleton<X>> extends ConfiguredObj
 
     @ManagedAttribute( defaultValue = "${TEST_CONTEXT_DEFAULT}", initialization = materialize)
     String getAttrWithDefaultFromContextMaterializeInit();
+
+    <T> T doAsSystem(PrivilegedAction<T> action);
+
 
 }

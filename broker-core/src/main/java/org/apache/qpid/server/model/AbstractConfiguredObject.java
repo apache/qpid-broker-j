@@ -29,7 +29,10 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
+import java.security.AccessControlContext;
 import java.security.AccessControlException;
+import java.security.AccessController;
+import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,6 +60,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
+import javax.security.auth.SubjectDomainCombiner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.AbstractFuture;
@@ -74,10 +78,10 @@ import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.server.security.auth.TaskPrincipal;
 import org.apache.qpid.server.security.encryption.ConfigurationSecretEncrypter;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.util.Action;
@@ -108,6 +112,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     private ConfigurationSecretEncrypter _encrypter;
     private AccessControl _parentAccessControl;
+    private Principal _systemPrincipal;
     private UserPreferences _userPreferences;
 
     private enum DynamicState { UNINIT, OPENED, CLOSED };
@@ -256,6 +261,21 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             else if(parent instanceof AccessControlSource && ((AccessControlSource)parent).getAccessControl()!=null)
             {
                 _parentAccessControl = ((AccessControlSource)parent).getAccessControl();
+                break;
+            }
+        }
+
+        for(ConfiguredObject<?> parent : parents.values())
+        {
+            if(parent instanceof AbstractConfiguredObject && ((AbstractConfiguredObject)parent).getSystemPrincipal() != null)
+            {
+                _systemPrincipal = ((AbstractConfiguredObject)parent).getSystemPrincipal();
+                break;
+            }
+            else if(parent instanceof SystemPrincipalSource && ((SystemPrincipalSource)parent).getSystemPrincipal()!=null)
+            {
+                _systemPrincipal = ((SystemPrincipalSource)parent).getSystemPrincipal();
+                break;
             }
         }
 
@@ -327,7 +347,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
         if(!_attributes.containsKey(CREATED_BY))
         {
-            final AuthenticatedPrincipal currentUser = SecurityManager.getCurrentUser();
+            final AuthenticatedPrincipal currentUser = AuthenticatedPrincipal.getCurrentUser();
             if(currentUser != null)
             {
                 _attributes.put(CREATED_BY, currentUser.getName());
@@ -841,7 +861,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     private void initializeAttributes()
     {
-        final AuthenticatedPrincipal currentUser = SecurityManager.getCurrentUser();
+        final AuthenticatedPrincipal currentUser = AuthenticatedPrincipal.getCurrentUser();
         if (currentUser != null)
         {
             String currentUserName = currentUser.getName();
@@ -1708,7 +1728,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     protected void attributeSet(String attributeName, Object oldAttributeValue, Object newAttributeValue)
     {
 
-        final AuthenticatedPrincipal currentUser = SecurityManager.getCurrentUser();
+        final AuthenticatedPrincipal currentUser = AuthenticatedPrincipal.getCurrentUser();
         if(currentUser != null)
         {
             _attributes.put(LAST_UPDATED_BY, currentUser.getName());
@@ -1735,7 +1755,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         if(attr != null)
         {
             Object value = attr.getValue((X)this);
-            if(value != null && !SecurityManager.isSystemProcess() && attr.isSecureValue(value))
+            if(value != null && !isSystemProcess() && attr.isSecureValue(value))
             {
                 return SECURE_VALUES.get(value.getClass());
             }
@@ -1849,7 +1869,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             @Override
             public Map<String, Object> getAttributes()
             {
-                return Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<Map<String, Object>>()
+                return Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<Map<String, Object>>()
                 {
                     @Override
                     public Map<String, Object> run()
@@ -2467,7 +2487,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             public Void execute()
             {
                 authoriseSetAttributes(createProxyForValidation(attributes), attributes.keySet());
-                if (!SecurityManager.isSystemProcess())
+                if (!isSystemProcess())
                 {
                     validateChange(createProxyForValidation(attributes), attributes.keySet());
                 }
@@ -2799,6 +2819,77 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             }
         }
         authorise(Operation.UPDATE);
+    }
+
+    protected Principal getSystemPrincipal()
+    {
+        return _systemPrincipal;
+    }
+
+    protected final Subject getSubjectWithAddedSystemRights()
+    {
+        Subject subject = Subject.getSubject(AccessController.getContext());
+        if(subject == null)
+        {
+            subject = new Subject();
+        }
+        else
+        {
+            subject = new Subject(false, subject.getPrincipals(), subject.getPublicCredentials(), subject.getPrivateCredentials());
+        }
+        subject.getPrincipals().add(getSystemPrincipal());
+        subject.setReadOnly();
+        return subject;
+    }
+
+    protected final AccessControlContext getSystemTaskControllerContext(String taskName, Principal principal)
+    {
+        final Subject subject = getSystemTaskSubject(taskName, principal);
+        final AccessControlContext acc = AccessController.getContext();
+        return AccessController.doPrivileged
+                (new PrivilegedAction<AccessControlContext>()
+                {
+                    public AccessControlContext run()
+                    {
+                        if (subject == null)
+                            return new AccessControlContext(acc, null);
+                        else
+                            return new AccessControlContext
+                                    (acc,
+                                     new SubjectDomainCombiner(subject));
+                    }
+                });
+    }
+
+    protected Subject getSystemTaskSubject(String taskName)
+    {
+        return getSystemSubject(new TaskPrincipal(taskName));
+    }
+
+    protected final Subject getSystemTaskSubject(String taskName, Principal principal)
+    {
+        return getSystemSubject(new TaskPrincipal(taskName), principal);
+    }
+
+    protected final boolean isSystemProcess()
+    {
+        Subject subject = Subject.getSubject(AccessController.getContext());
+        return isSystemSubject(subject);
+    }
+
+    private boolean isSystemSubject(final Subject subject)
+    {
+        return subject != null  && subject.getPrincipals().contains(getSystemPrincipal());
+    }
+
+    private Subject getSystemSubject(Principal... principals)
+    {
+        Set<Principal> principalSet = new HashSet<>(Arrays.asList(principals));
+        principalSet.add(_systemPrincipal);
+        return new Subject(true,
+                           principalSet,
+                           Collections.emptySet(),
+                           Collections.emptySet());
     }
 
     private int getAwaitAttainmentTimeout()

@@ -43,7 +43,6 @@ import org.apache.qpid.server.management.plugin.servlet.ServletConnectionPrincip
 import org.apache.qpid.server.management.plugin.session.LoginLogoutReporter;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.access.Operation;
 
 public class HttpManagementUtil

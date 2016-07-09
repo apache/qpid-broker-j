@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,8 +33,11 @@ import java.util.Map;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
+
+import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.virtualhostnode.TestVirtualHostNode;
 import org.apache.qpid.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +53,6 @@ import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -59,6 +62,16 @@ public class VirtualHostLoggerTest  extends QpidTestCase
     private TaskExecutor _taskExecutor;
     private File _baseFolder;
     private File _logFile;
+
+    interface TestableBroker extends Broker, SystemPrincipalSource
+    {
+    }
+
+    interface TestableVirtualHostNode extends VirtualHostNode, SystemPrincipalSource
+    {
+    }
+
+
 
     @Override
     public void setUp() throws Exception
@@ -78,19 +91,24 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         when(systemConfig.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
         doReturn(SystemConfig.class).when(systemConfig).getCategoryClass();
 
-        Broker<?> broker = mock(Broker.class);
+        Principal systemPrincipal = mock(Principal.class);
+
+        TestableBroker broker = mock(TestableBroker.class);
         when(broker.getModel()).thenReturn(model);
         when(broker.getChildExecutor()).thenReturn(_taskExecutor);
+        when(broker.getSystemPrincipal()).thenReturn(systemPrincipal);
         when(broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
         doReturn(Broker.class).when(broker).getCategoryClass();
 
-        VirtualHostNode<?> node =  mock(VirtualHostNode.class);
+        TestableVirtualHostNode node =  mock(TestableVirtualHostNode.class);
         when(node.getModel()).thenReturn(model);
         when(node.getChildExecutor()).thenReturn(_taskExecutor);
         when(node.getParent(Broker.class)).thenReturn(broker);
         when(node.getConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));
         doReturn(VirtualHostNode.class).when(node).getCategoryClass();
         when(node.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
+        when(node.getSystemPrincipal()).thenReturn(systemPrincipal);
+
 
         // use real VH object rather then mock in order to test create/start/stop functionality
         Map<String, Object> attributes = new HashMap<>();

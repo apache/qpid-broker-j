@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import static org.apache.qpid.server.security.SecurityManager.getCurrentUser;
 import static org.apache.qpid.server.security.access.config.ObjectType.EXCHANGE;
 import static org.apache.qpid.server.security.access.config.ObjectType.METHOD;
 import static org.apache.qpid.server.security.access.config.ObjectType.QUEUE;
@@ -467,7 +466,7 @@ class LegacyAccessControlAdapter
                 if(arguments.get("userId") instanceof String)
                 {
                     String userName = (String) arguments.get("userId");
-                    AuthenticatedPrincipal principal = getCurrentUser();
+                    AuthenticatedPrincipal principal = AuthenticatedPrincipal.getCurrentUser();
                     if (principal != null && principal.getName().equals(userName))
                     {
                         // allow user to update its own data

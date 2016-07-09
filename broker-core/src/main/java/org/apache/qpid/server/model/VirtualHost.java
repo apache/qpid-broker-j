@@ -32,7 +32,6 @@ import java.util.concurrent.ScheduledFuture;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.queue.QueueEntry;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;

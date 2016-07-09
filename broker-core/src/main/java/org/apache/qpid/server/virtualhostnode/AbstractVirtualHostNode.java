@@ -534,7 +534,7 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
     private Map<String, Object> enrichAttributesWithAuditInformation(final Map<String, Object> attributes)
     {
         LinkedHashMap<String,Object> enriched = new LinkedHashMap<>(attributes);
-        final AuthenticatedPrincipal currentUser = org.apache.qpid.server.security.SecurityManager.getCurrentUser();
+        final AuthenticatedPrincipal currentUser = AuthenticatedPrincipal.getCurrentUser();
 
         if(currentUser != null)
         {

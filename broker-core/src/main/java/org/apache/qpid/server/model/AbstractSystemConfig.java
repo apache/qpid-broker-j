@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Collections;
@@ -71,6 +72,9 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
     private static final UUID SYSTEM_ID = new UUID(0l, 0l);
     private static final long SHUTDOWN_TIMEOUT = 30000l;
+
+    private final Principal _systemPrincipal;
+
     private final EventLogger _eventLogger;
 
     private volatile DurableConfigurationStore _configurationStore;
@@ -100,12 +104,14 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
     public AbstractSystemConfig(final TaskExecutor taskExecutor,
                                 final EventLogger eventLogger,
+                                final Principal systemPrincipal,
                                 final Map<String, Object> attributes)
     {
         super(parentsMap(),
               updateAttributes(attributes),
               taskExecutor, BrokerModel.getInstance());
         _eventLogger = eventLogger;
+        _systemPrincipal = systemPrincipal;
         getTaskExecutor().start();
     }
 
@@ -383,11 +389,17 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         return preferenceStoreFactory.createInstance(this, attributes);
     }
 
+    protected final Principal getSystemPrincipal()
+    {
+        return _systemPrincipal;
+    }
+
+
     private class ShutdownService implements Runnable
     {
         public void run()
         {
-            Subject.doAs(org.apache.qpid.server.security.SecurityManager.getSystemTaskSubject("Shutdown"),
+            Subject.doAs(getSystemTaskSubject("Shutdown"),
                          new PrivilegedAction<Object>()
                          {
                              @Override

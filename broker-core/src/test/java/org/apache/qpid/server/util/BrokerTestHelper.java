@@ -24,6 +24,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.*;
 
@@ -39,12 +40,11 @@ import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.security.AccessControl;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -55,6 +55,33 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class BrokerTestHelper
 {
+
+    private static final Principal SYSTEM_PRINCIPAL =
+            new Principal()
+            {
+
+                @Override
+                public String getName()
+                {
+                    return "TEST";
+                }
+            };
+    private static final Subject SYSTEM_SUBJECT = new Subject(true,
+                                                              Collections.singleton(SYSTEM_PRINCIPAL),
+                                                              Collections.emptySet(),
+                                                              Collections.emptySet());
+    interface TestableBroker extends Broker,
+                                     SystemPrincipalSource
+    {
+
+    }
+
+    interface TestableVirtualHost extends VirtualHost,
+                                     SystemPrincipalSource
+    {
+
+    }
+
 
     private static List<VirtualHost> _createdVirtualHosts = new ArrayList<>();
 
@@ -88,7 +115,7 @@ public class BrokerTestHelper
         when(systemConfig.getModel()).thenReturn(objectFactory.getModel());
         when(systemConfig.getCategoryClass()).thenReturn(SystemConfig.class);
 
-        Broker broker = mock(Broker.class);
+        TestableBroker broker = mock(TestableBroker.class);
         when(broker.getConnection_sessionCountLimit()).thenReturn(1);
         when(broker.getConnection_closeWhenNoRoute()).thenReturn(false);
         when(broker.getId()).thenReturn(UUID.randomUUID());
@@ -99,6 +126,7 @@ public class BrokerTestHelper
         when(broker.getCategoryClass()).thenReturn(Broker.class);
         when(broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
         when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0l);
+        when(broker.getSystemPrincipal()).thenReturn(SYSTEM_PRINCIPAL);
 
         when(broker.getTaskExecutor()).thenReturn(TASK_EXECUTOR);
         when(systemConfig.getTaskExecutor()).thenReturn(TASK_EXECUTOR);
@@ -124,12 +152,17 @@ public class BrokerTestHelper
         return createVirtualHost(attributes, broker, false);
     }
 
+    interface TestableVirtualHostNode extends VirtualHostNode, SystemPrincipalSource
+    {
+
+    }
+
     private static VirtualHost<?> createVirtualHost(final Map<String, Object> attributes,
                                                         final Broker<?> broker, boolean defaultVHN)
     {
         ConfiguredObjectFactory objectFactory = broker.getObjectFactory();
 
-        VirtualHostNode virtualHostNode = mock(VirtualHostNode.class);
+        TestableVirtualHostNode virtualHostNode = mock(TestableVirtualHostNode.class);
         String virtualHostNodeName = String.format("%s_%s", attributes.get(VirtualHostNode.NAME), "_node");
         when(virtualHostNode.getName()).thenReturn( virtualHostNodeName);
         when(virtualHostNode.getTaskExecutor()).thenReturn(TASK_EXECUTOR);
@@ -137,6 +170,7 @@ public class BrokerTestHelper
         when(virtualHostNode.isDefaultVirtualHostNode()).thenReturn(defaultVHN);
 
         when(virtualHostNode.getParent(eq(Broker.class))).thenReturn(broker);
+        when(virtualHostNode.getSystemPrincipal()).thenReturn(mock(Principal.class));
 
         Collection<VirtualHostNode<?>> nodes = broker.getVirtualHostNodes();
         nodes = new ArrayList<>(nodes != null ?  nodes : Collections.<VirtualHostNode<?>>emptyList());
@@ -209,10 +243,7 @@ public class BrokerTestHelper
 
     public static Exchange<?> createExchange(String hostName, final boolean durable, final EventLogger eventLogger) throws Exception
     {
-        Broker broker = mock(Broker.class);
-        when(broker.getModel()).thenReturn(BrokerModel.getInstance());
-        when(broker.getCategoryClass()).thenReturn(Broker.class);
-        final VirtualHost<?> virtualHost = mock(VirtualHost.class);
+        final TestableVirtualHost virtualHost = mock(TestableVirtualHost.class);
         when(virtualHost.getName()).thenReturn(hostName);
         when(virtualHost.getEventLogger()).thenReturn(eventLogger);
         when(virtualHost.getDurableConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));
@@ -226,7 +257,9 @@ public class BrokerTestHelper
         attributes.put(org.apache.qpid.server.model.Exchange.NAME, "amq.direct");
         attributes.put(org.apache.qpid.server.model.Exchange.TYPE, "direct");
         attributes.put(org.apache.qpid.server.model.Exchange.DURABLE, durable);
-        return Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<Exchange<?>>()
+        when(virtualHost.getSystemPrincipal()).thenReturn(SYSTEM_PRINCIPAL);
+
+        return Subject.doAs(SYSTEM_SUBJECT, new PrivilegedAction<Exchange<?>>()
         {
             @Override
             public Exchange<?> run()

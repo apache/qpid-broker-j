@@ -65,7 +65,6 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.BaseQueue;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -126,7 +125,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     {
         super.onValidate();
 
-        if(!SecurityManager.isSystemProcess())
+        if(!isSystemProcess())
         {
             if (isReservedExchangeName(getName()))
             {

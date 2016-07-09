@@ -77,8 +77,8 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
         _systemConfig = new JsonSystemConfigImpl(_taskExecutor,
-                                               mock(EventLogger.class),
-                                                 new BrokerOptions().convertToSystemConfigAttributes());
+                                                 mock(EventLogger.class),
+                                                 null, new BrokerOptions().convertToSystemConfigAttributes());
     }
 
     public void testUpgradeVirtualHostWithJDBCStoreAndBoneCPPool()

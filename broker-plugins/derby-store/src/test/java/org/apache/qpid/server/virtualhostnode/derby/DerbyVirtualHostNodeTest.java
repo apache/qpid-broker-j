@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFileAttributeView;
+import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,6 +39,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.adapter.BrokerAdapter;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -158,16 +160,21 @@ public class DerbyVirtualHostNodeTest extends QpidTestCase
         }
     }
 
+    interface TestableSystemConfig extends SystemConfig, SystemPrincipalSource
+    {
+    }
+
     private BrokerAdapter createBroker()
     {
         Map<String, Object> brokerAttributes = Collections.<String, Object>singletonMap(Broker.NAME, "Broker");
-        SystemConfig parent = mock(SystemConfig.class);
+        TestableSystemConfig parent = mock(TestableSystemConfig.class);
         when(parent.getEventLogger()).thenReturn(new EventLogger());
         when(parent.getCategoryClass()).thenReturn(SystemConfig.class);
         when(parent.getTaskExecutor()).thenReturn(_taskExecutor);
         when(parent.getChildExecutor()).thenReturn(_taskExecutor);
         when(parent.getModel()).thenReturn(BrokerModel.getInstance());
         when(parent.getObjectFactory()).thenReturn(new ConfiguredObjectFactoryImpl(BrokerModel.getInstance()));
+        when(parent.getSystemPrincipal()).thenReturn(mock(Principal.class));
         BrokerAdapter broker = new BrokerAdapter(brokerAttributes, parent);
         broker.start();
         return broker;

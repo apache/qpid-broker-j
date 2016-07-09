@@ -43,7 +43,7 @@ import com.google.common.collect.Ordering;
 
 
 
-import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceRecordImpl;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
@@ -364,7 +364,7 @@ public class UserPreferencesImpl implements UserPreferences
 
     private Principal getMainPrincipalOrThrow() throws SecurityException
     {
-        Principal currentPrincipal = SecurityManager.getCurrentUser();
+        Principal currentPrincipal = AuthenticatedPrincipal.getCurrentUser();
         if (currentPrincipal == null)
         {
             throw new SecurityException("Current thread does not have a user");

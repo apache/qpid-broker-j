@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,15 +46,17 @@ import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
-import org.apache.qpid.server.security.AccessControl;
-import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AmqpPortImplTest extends QpidTestCase
 {
+    interface TestableBroker extends Broker, SystemPrincipalSource
+    {
+    }
     private static final String AUTHENTICATION_PROVIDER_NAME = "test";
     private TaskExecutor _taskExecutor;
-    private Broker _broker;
+    private TestableBroker _broker;
     private AmqpPortImpl _port;
 
     @Override
@@ -63,13 +66,15 @@ public class AmqpPortImplTest extends QpidTestCase
         _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         Model model = BrokerModel.getInstance();
 
-        _broker = mock(Broker.class);
+        _broker = mock(TestableBroker.class);
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getModel()).thenReturn(model);
         when(_broker.getId()).thenReturn(UUID.randomUUID());
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
+        when(_broker.getSystemPrincipal()).thenReturn(mock(Principal.class));
+
         AuthenticationProvider<?> provider = mock(AuthenticationProvider.class);
         when(provider.getName()).thenReturn(AUTHENTICATION_PROVIDER_NAME);
         when(provider.getParent(Broker.class)).thenReturn(_broker);

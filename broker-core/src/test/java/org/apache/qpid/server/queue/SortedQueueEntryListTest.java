@@ -43,7 +43,6 @@ import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.TransactionLogResource;
 
 public class SortedQueueEntryListTest extends QueueEntryListTestBase

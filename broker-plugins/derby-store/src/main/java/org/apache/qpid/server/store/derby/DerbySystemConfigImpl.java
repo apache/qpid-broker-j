@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.store.derby;
 
+import java.security.Principal;
 import java.util.Map;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -46,9 +47,10 @@ public class DerbySystemConfigImpl extends AbstractSystemConfig<DerbySystemConfi
     @SystemConfigFactoryConstructor
     public DerbySystemConfigImpl(final TaskExecutor taskExecutor,
                                  final EventLogger eventLogger,
+                                 final Principal systemPrincipal,
                                  final Map<String, Object> attributes)
     {
-        super(taskExecutor, eventLogger, attributes);
+        super(taskExecutor, eventLogger, systemPrincipal, attributes);
     }
 
     @Override

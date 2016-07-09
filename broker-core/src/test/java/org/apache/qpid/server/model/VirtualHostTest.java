@@ -34,6 +34,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.security.AccessControlException;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,8 +58,6 @@ import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.SecurityManager;
-import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
@@ -84,7 +83,7 @@ public class VirtualHostTest extends QpidTestCase
     private VirtualHost<?> _virtualHost;
     private StoreConfigurationChangeListener _storeConfigurationChangeListener;
 
-    private interface TestableVirtualHostNode extends VirtualHostNode, AccessControlSource
+    private interface TestableVirtualHostNode extends VirtualHostNode, AccessControlSource, SystemPrincipalSource
     {
 
     }
@@ -107,6 +106,9 @@ public class VirtualHostTest extends QpidTestCase
         when(_virtualHostNode.getCategoryClass()).thenReturn(VirtualHostNode.class);
         when(_virtualHostNode.isDurable()).thenReturn(true);
         when(_virtualHostNode.getAccessControl()).thenReturn(_mockAccessControl);
+        Principal systemPrincipal = ((SystemPrincipalSource)_broker).getSystemPrincipal();
+        when(_virtualHostNode.getSystemPrincipal()).thenReturn(systemPrincipal);
+
         _configStore = mock(DurableConfigurationStore.class);
         _storeConfigurationChangeListener = new StoreConfigurationChangeListener(_configStore);
 

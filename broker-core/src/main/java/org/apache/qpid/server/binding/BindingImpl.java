@@ -45,7 +45,6 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.access.Operation;
 
 public class BindingImpl

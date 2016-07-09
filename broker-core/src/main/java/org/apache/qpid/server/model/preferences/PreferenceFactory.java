@@ -30,7 +30,6 @@ import java.util.UUID;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 
 public class PreferenceFactory
@@ -38,7 +37,7 @@ public class PreferenceFactory
     public static Preference create(final ConfiguredObject<?> associatedObject,
                                     final Map<String, Object> attributes)
     {
-        AuthenticatedPrincipal currentUser = SecurityManager.getCurrentUser();
+        AuthenticatedPrincipal currentUser = AuthenticatedPrincipal.getCurrentUser();
         Map<String, Object> overriddenAttributes =  new HashMap<>(attributes);
         overriddenAttributes.put(Preference.OWNER_ATTRIBUTE, currentUser == null ? null : currentUser.getName());
         overriddenAttributes.put(Preference.LAST_UPDATED_DATE_ATTRIBUTE, System.currentTimeMillis());

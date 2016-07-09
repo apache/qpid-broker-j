@@ -53,7 +53,6 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.BaseQueue;
-import org.apache.qpid.server.security.SecurityManager;
 
 public class HeadersExchangeTest extends QpidTestCase
 {

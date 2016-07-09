@@ -85,7 +85,6 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageFilterFactory;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.store.MessageDurability;
@@ -287,10 +286,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
 
         _virtualHost = virtualHost;
-        _immediateDeliveryContext = SecurityManager.getSystemTaskControllerContext("Immediate Delivery", virtualHost.getPrincipal());
+        _immediateDeliveryContext = getSystemTaskControllerContext("Immediate Delivery", virtualHost.getPrincipal());
 
-        _queueRunner = new QueueRunner(this, SecurityManager.getSystemTaskControllerContext("Queue Delivery",
-                                                                                            virtualHost.getPrincipal()));
+        _queueRunner = new QueueRunner(this, getSystemTaskControllerContext("Queue Delivery",
+                                                                            virtualHost.getPrincipal()));
     }
 
     @Override
@@ -301,7 +300,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         if(isDurable() && (getLifetimePolicy()  == LifetimePolicy.DELETE_ON_CONNECTION_CLOSE
                             || getLifetimePolicy() == LifetimePolicy.DELETE_ON_SESSION_END))
         {
-            Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(),
+            Subject.doAs(getSubjectWithAddedSystemRights(),
                          new PrivilegedAction<Object>()
                          {
                              @Override
@@ -316,7 +315,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         if(!isDurable() && getMessageDurability() != MessageDurability.NEVER)
         {
-            Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(),
+            Subject.doAs(getSubjectWithAddedSystemRights(),
                          new PrivilegedAction<Object>()
                          {
                              @Override
@@ -548,7 +547,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             @Override
             public void performAction(final Deletable object)
             {
-                Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(),
+                Subject.doAs(getSubjectWithAddedSystemRights(),
                              new PrivilegedAction<Void>()
                              {
                                  @Override
@@ -982,7 +981,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
                 _logger.debug("Auto-deleting queue: {}", this);
 
-                Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
+                Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
                              {
                                  @Override
                                  public Object run()

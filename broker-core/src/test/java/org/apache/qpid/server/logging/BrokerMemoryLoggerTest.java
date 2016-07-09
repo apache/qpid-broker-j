@@ -60,7 +60,7 @@ public class BrokerMemoryLoggerTest extends QpidTestCase
         _taskExecutor.start();
         _systemConfig = new JsonSystemConfigImpl(_taskExecutor,
                                                  mock(EventLogger.class),
-                                                 new BrokerOptions().convertToSystemConfigAttributes());
+                                                 null, new BrokerOptions().convertToSystemConfigAttributes());
 
         when(_brokerEntry.getId()).thenReturn(_brokerId);
         when(_brokerEntry.getType()).thenReturn(Broker.class.getSimpleName());

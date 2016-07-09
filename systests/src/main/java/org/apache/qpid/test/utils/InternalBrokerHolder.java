@@ -22,6 +22,9 @@ package org.apache.qpid.test.utils;
 
 import java.io.File;
 import java.security.PrivilegedAction;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.security.auth.Subject;
@@ -31,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.Broker;
 import org.apache.qpid.server.BrokerOptions;
-import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.auth.TaskPrincipal;
 import org.apache.qpid.server.util.Action;
 
 public class InternalBrokerHolder extends AbstractBrokerHolder
@@ -90,8 +93,11 @@ public class InternalBrokerHolder extends AbstractBrokerHolder
         if (_broker != null)
         {
             LOGGER.info("Shutting down Broker instance");
-
-            Subject.doAs(SecurityManager.getSystemTaskSubject("Shutdown"), new PrivilegedAction<Object>()
+            Subject shutdownSubject = new Subject(true,
+                                                  new HashSet<>(Arrays.asList(_broker.getSystemPrincipal(), new TaskPrincipal("Shutdown"))),
+                                                  Collections.emptySet(),
+                                                  Collections.emptySet());
+            Subject.doAs(shutdownSubject, new PrivilegedAction<Object>()
             {
                 @Override
                 public Object run()

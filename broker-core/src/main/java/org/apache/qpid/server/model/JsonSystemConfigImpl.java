@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.model;
 
+import java.security.Principal;
 import java.util.Map;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -37,9 +38,10 @@ public class JsonSystemConfigImpl extends AbstractSystemConfig<JsonSystemConfigI
     @SystemConfigFactoryConstructor
     public JsonSystemConfigImpl(final TaskExecutor taskExecutor,
                                 final EventLogger eventLogger,
+                                final Principal systemPrincipal,
                                 final Map<String, Object> attributes)
     {
-        super(taskExecutor, eventLogger, attributes);
+        super(taskExecutor, eventLogger, systemPrincipal, attributes);
     }
 
     public String getStorePath()

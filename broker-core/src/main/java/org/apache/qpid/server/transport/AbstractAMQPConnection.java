@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
+import javax.security.auth.SubjectDomainCombiner;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -178,6 +179,25 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         attributes.put(NAME, "[" + connectionId + "] " + String.valueOf(network.getRemoteAddress()).replaceAll("/", ""));
         attributes.put(DURABLE, false);
         return attributes;
+    }
+
+    @Override
+    public final AccessControlContext getAccessControlContextFromSubject(final Subject subject)
+    {
+        final AccessControlContext acc = AccessController.getContext();
+        return AccessController.doPrivileged(
+                new PrivilegedAction<AccessControlContext>()
+                {
+                    public AccessControlContext run()
+                    {
+                        if (subject == null)
+                            return new AccessControlContext(acc, null);
+                        else
+                            return new AccessControlContext
+                                    (acc,
+                                     new SubjectDomainCombiner(subject));
+                    }
+                });
     }
 
     @Override
@@ -670,7 +690,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
 
     public final void updateAccessControllerContext()
     {
-        _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(
+        _accessControllerContext = getAccessControlContextFromSubject(
                 getSubject());
     }
 

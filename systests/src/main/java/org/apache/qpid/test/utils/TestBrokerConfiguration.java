@@ -91,7 +91,8 @@ public class TestBrokerConfiguration
         _storeType = storeType;
         brokerOptions.setInitialConfigurationLocation(initialStoreLocation);
         final AbstractSystemConfig parentObject = new JsonSystemConfigImpl(_taskExecutor,
-                                                               mock(EventLogger.class),
+                                                                           mock(EventLogger.class),
+                                                                           null,
                                                                            brokerOptions.convertToSystemConfigAttributes());
 
         ConfiguredObjectRecordConverter converter = new ConfiguredObjectRecordConverter(BrokerModel.getInstance());
@@ -203,8 +204,8 @@ public class TestBrokerConfiguration
         attributes.put(SystemConfig.STARTUP_LOGGED_TO_SYSTEM_OUT, false);
         attributes.put(ConfiguredObject.DESIRED_STATE, State.QUIESCED);
         final SystemConfig parentObject = configFactory.newInstance(_taskExecutor,
-                                                                   mock(EventLogger.class),
-                                                                    attributes);
+                                                                    mock(EventLogger.class),
+                                                                    null, attributes);
 
         parentObject.open();
         DurableConfigurationStore configurationStore = parentObject.getConfigurationStore();

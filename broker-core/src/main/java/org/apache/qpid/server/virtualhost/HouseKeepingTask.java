@@ -25,29 +25,17 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.security.SecurityManager;
 
 public abstract class HouseKeepingTask implements Runnable
 {
     private final String _name;
     private final AccessControlContext _accessControlContext;
 
-    public HouseKeepingTask(VirtualHost vhost)
-    {
-        this(null, vhost, null);
-    }
-
     public HouseKeepingTask(String name, VirtualHost vhost, AccessControlContext context)
     {
         _name = name == null ? vhost.getName() + ":" + this.getClass().getSimpleName() : name;
-        if (context == null)
-        {
-            _accessControlContext = SecurityManager.getSystemTaskControllerContext(_name, vhost.getPrincipal());
-        }
-        else
-        {
-            _accessControlContext = context;
-        }
+        _accessControlContext = context;
+
     }
 
     final public void run()

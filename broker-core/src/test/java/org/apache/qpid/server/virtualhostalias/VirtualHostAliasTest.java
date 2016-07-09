@@ -36,6 +36,7 @@ import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PatternMatchingAlias;
 import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.model.VirtualHostNode;
@@ -45,6 +46,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class VirtualHostAliasTest extends QpidTestCase
 {
+
     private final Map<String, VirtualHost<?>> _vhosts = new HashMap<>();
     private Broker<?> _broker;
     private AmqpPort _port;

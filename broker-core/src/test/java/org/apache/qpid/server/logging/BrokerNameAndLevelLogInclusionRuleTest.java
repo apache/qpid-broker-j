@@ -38,7 +38,6 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class BrokerNameAndLevelLogInclusionRuleTest extends QpidTestCase

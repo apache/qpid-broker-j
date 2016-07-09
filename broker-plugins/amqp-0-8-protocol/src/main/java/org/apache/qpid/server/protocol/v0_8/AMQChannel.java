@@ -99,7 +99,6 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.MessageHandle;
@@ -107,6 +106,7 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.LocalTransaction.ActivityTimeAccessor;
@@ -242,7 +242,7 @@ public class AMQChannel
                                connection.getSubject().getPrivateCredentials());
         _subject.getPrincipals().add(new SessionPrincipal(this));
 
-        _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(_subject);
+        _accessControllerContext = connection.getAccessControlContextFromSubject(_subject);
         _token = (_connection.getAddressSpace() instanceof ConfiguredObject)
                 ? ((ConfiguredObject)_connection.getAddressSpace()).newToken(_subject)
                 :_connection.getBroker().newToken(_subject);

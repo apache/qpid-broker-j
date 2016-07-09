@@ -113,6 +113,7 @@ public class SystemConfigFactoryGenerator extends AbstractProcessor
             pw.println(";");
             pw.println();
 
+            pw.println("import java.security.Principal;");
             pw.println("import java.util.Map;");
             pw.println();
             pw.println("import org.apache.qpid.server.configuration.updater.TaskExecutor;");
@@ -138,9 +139,10 @@ public class SystemConfigFactoryGenerator extends AbstractProcessor
             pw.println("    @Override");
             pw.println("    public "+objectSimpleName+" newInstance(final TaskExecutor taskExecutor,");
             pw.println("                       final EventLogger eventLogger,");
+            pw.println("                       final Principal systemPrincipal,");
             pw.println("                       final Map<String,Object> attributes)");
             pw.println("    {");
-            pw.println("        return new "+objectSimpleName+"(taskExecutor, eventLogger, attributes);");
+            pw.println("        return new "+objectSimpleName+"(taskExecutor, eventLogger, systemPrincipal, attributes);");
             pw.println("    }");
             pw.println("}");
 

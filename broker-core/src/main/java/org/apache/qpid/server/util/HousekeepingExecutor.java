@@ -20,35 +20,33 @@
  */
 package org.apache.qpid.server.util;
 
-import java.security.Principal;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+
+import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.pool.SuppressingInheritedAccessControlContextThreadFactory;
-import org.apache.qpid.server.security.SecurityManager;
 
 public class HousekeepingExecutor extends ScheduledThreadPoolExecutor
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HousekeepingExecutor.class);
 
-    public HousekeepingExecutor(final String threadPrefix, final int threadCount, final Principal principal)
+    public HousekeepingExecutor(final String threadPrefix, final int threadCount, final Subject subject)
     {
-        super(threadCount, createThreadFactory(threadPrefix, threadCount, principal));
+        super(threadCount, createThreadFactory(threadPrefix, threadCount, subject));
 
     }
 
-    private static SuppressingInheritedAccessControlContextThreadFactory createThreadFactory(String threadPrefix, int threadCount, Principal principal)
+    private static SuppressingInheritedAccessControlContextThreadFactory createThreadFactory(String threadPrefix, int threadCount, Subject subject)
     {
-        return new SuppressingInheritedAccessControlContextThreadFactory(threadPrefix,
-                                                                          SecurityManager.getSystemTaskSubject("Housekeeping", principal));
-
+        return new SuppressingInheritedAccessControlContextThreadFactory(threadPrefix, subject);
     }
 
     @Override

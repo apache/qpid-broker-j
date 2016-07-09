@@ -36,8 +36,6 @@ import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
-import org.apache.qpid.server.security.AccessControl;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class HttpPortImplTest extends QpidTestCase

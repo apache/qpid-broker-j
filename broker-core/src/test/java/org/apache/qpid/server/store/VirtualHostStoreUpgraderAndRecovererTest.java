@@ -26,6 +26,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,12 +36,14 @@ import java.util.UUID;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.model.AbstractSystemConfig;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
@@ -60,6 +63,28 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
     private UUID _hostId;
     private VirtualHostNode _virtualHostNode;
     private DurableConfigurationStore _durableConfigurationStore;
+
+    private final Principal _systemPrincipal =
+            new Principal()
+            {
+
+                @Override
+                public String getName()
+                {
+                    return "TEST";
+                }
+            };
+
+    private final Subject _systemSubject = new Subject(true,
+                                                       Collections.singleton(_systemPrincipal),
+                                                       Collections.emptySet(),
+                                                       Collections.emptySet());
+
+
+    interface TestableBroker extends Broker, SystemPrincipalSource
+    {
+
+    }
 
     @Override
     public void setUp() throws Exception
@@ -85,11 +110,12 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         SystemConfig<?> systemConfig = mock(SystemConfig.class);
         when(systemConfig.getEventLogger()).thenReturn(new EventLogger());
 
-        Broker<?> broker = mock(Broker.class);
+        TestableBroker broker = mock(TestableBroker.class);
         when(broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
         when(broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(broker.getModel()).thenReturn(BrokerModel.getInstance());
+        when(broker.getSystemPrincipal()).thenReturn(_systemPrincipal);
 
         _durableConfigurationStore = mock(DurableConfigurationStore.class);
         Map<String,Object> attributes = new HashMap<>();
@@ -121,7 +147,7 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         upgraderAndRecoverer.perform(_durableConfigurationStore);
 
         final VirtualHost<?>  host = _virtualHostNode.getVirtualHost();
-        Subject.doAs(org.apache.qpid.server.security.SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<Void>()
+        Subject.doAs(_systemSubject, new PrivilegedAction<Void>()
                 {
                     @Override
                     public Void run()
@@ -164,7 +190,7 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         upgraderAndRecoverer.perform(_durableConfigurationStore);
 
         final VirtualHost<?>  host = _virtualHostNode.getVirtualHost();
-        Subject.doAs(org.apache.qpid.server.security.SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<Void>()
+        Subject.doAs(_systemSubject, new PrivilegedAction<Void>()
                 {
                     @Override
                     public Void run()

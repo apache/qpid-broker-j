@@ -78,7 +78,6 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.protocol.LinkRegistryImpl;
 import org.apache.qpid.server.queue.QueueEntry;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
@@ -234,8 +233,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _dataReceived = new StatisticsCounter("bytes-received-" + getName());
         _principal = new VirtualHostPrincipal(this);
 
-        _housekeepingJobContext = SecurityManager.getSystemTaskControllerContext("Housekeeping["+getName()+"]", _principal);
-        _fileSystemSpaceCheckerJobContext = SecurityManager.getSystemTaskControllerContext("FileSystemSpaceChecker["+getName()+"]", _principal);
+        _housekeepingJobContext = getSystemTaskControllerContext("Housekeeping["+getName()+"]", _principal);
+        _fileSystemSpaceCheckerJobContext = getSystemTaskControllerContext("FileSystemSpaceChecker["+getName()+"]", _principal);
 
         _fileSystemSpaceChecker = new FileSystemSpaceChecker();
 
@@ -510,7 +509,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private ListenableFuture<List<Void>> createDefaultExchanges()
     {
-        return Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<ListenableFuture<List<Void>>>()
+        return Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<ListenableFuture<List<Void>>>()
         {
 
             @Override
@@ -781,7 +780,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     try
                     {
 
-                        final T node =  Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(),
+                        final T node =  Subject.doAs(getSubjectWithAddedSystemRights(),
                                                      new PrivilegedAction<T>()
                                                      {
                                                          @Override
@@ -1888,13 +1887,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         _houseKeepingTaskExecutor = new HousekeepingExecutor("virtualhost-" + getName() + "-pool",
                                                              getHousekeepingThreadCount(),
-                                                             getPrincipal());
+                                                             getSystemTaskSubject("Housekeeping", getPrincipal()));
 
         long threadPoolKeepAliveTimeout = getContextValue(Long.class, CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT);
 
         final SuppressingInheritedAccessControlContextThreadFactory connectionThreadFactory =
                 new SuppressingInheritedAccessControlContextThreadFactory("virtualhost-" + getName() + "-iopool",
-                                                                          SecurityManager.getSystemTaskSubject("IO Pool", getPrincipal()));
+                                                                          getSystemTaskSubject("IO Pool", getPrincipal()));
 
         _networkConnectionScheduler = new NetworkConnectionScheduler("virtualhost-" + getName() + "-iopool",
                                                                      getNumberOfSelectors(),
@@ -2021,7 +2020,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         final List<ListenableFuture<Void>> childOpenFutures = new ArrayList<>();
 
-        Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
+        Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
         {
             @Override
             public Object run()

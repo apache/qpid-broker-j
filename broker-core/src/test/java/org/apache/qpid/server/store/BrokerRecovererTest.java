@@ -62,8 +62,8 @@ public class BrokerRecovererTest extends QpidTestCase
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
         _systemConfig = new JsonSystemConfigImpl(_taskExecutor,
-                                               mock(EventLogger.class),
-                                                 new BrokerOptions().convertToSystemConfigAttributes());
+                                                 mock(EventLogger.class),
+                                                 null, new BrokerOptions().convertToSystemConfigAttributes());
 
         when(_brokerEntry.getId()).thenReturn(_brokerId);
         when(_brokerEntry.getType()).thenReturn(Broker.class.getSimpleName());

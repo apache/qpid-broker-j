@@ -24,7 +24,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.security.Principal;
 import java.security.PrivilegedExceptionAction;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -50,7 +53,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.plugin.PluggableFactoryLoader;
 import org.apache.qpid.server.plugin.SystemConfigFactory;
-import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.auth.TaskPrincipal;
 import org.apache.qpid.server.util.Action;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +68,8 @@ public class Broker
     private volatile SystemConfig _systemConfig;
 
     private final Action<Integer> _shutdownAction;
+    private final Principal _systemPrincipal = new SystemPrincipal();
+    private final Subject _brokerTaskSubject;
 
 
     public Broker()
@@ -75,6 +80,16 @@ public class Broker
     public Broker(Action<Integer> shutdownAction)
     {
         _shutdownAction = shutdownAction;
+        _brokerTaskSubject = new Subject(true,
+                                         new HashSet<>(Arrays.asList(_systemPrincipal, new TaskPrincipal("Broker"))),
+                                         Collections.emptySet(),
+                                         Collections.emptySet());
+
+    }
+
+    public Principal getSystemPrincipal()
+    {
+        return _systemPrincipal;
     }
 
     public void shutdown()
@@ -123,8 +138,7 @@ public class Broker
     public void startup(final BrokerOptions options) throws Exception
     {
         _eventLogger = new EventLogger(new SystemOutMessageLogger());
-
-        Subject.doAs(SecurityManager.getSystemTaskSubject("Broker"), new PrivilegedExceptionAction<Object>()
+        Subject.doAs(_brokerTaskSubject, new PrivilegedExceptionAction<Object>()
         {
             @Override
             public Object run() throws Exception
@@ -185,7 +199,10 @@ public class Broker
 
 
         _taskExecutor.start();
-        _systemConfig = configFactory.newInstance(_taskExecutor, _eventLogger, options.convertToSystemConfigAttributes());
+        _systemConfig = configFactory.newInstance(_taskExecutor,
+                                                  _eventLogger,
+                                                  _systemPrincipal,
+                                                  options.convertToSystemConfigAttributes());
         _systemConfig.open();
         if (_systemConfig.getBroker().getState() == State.ERRORED)
         {
@@ -242,6 +259,19 @@ public class Broker
         for (String propName : propertyNames)
         {
             System.setProperty(propName, props.getProperty(propName));
+        }
+    }
+
+    private static final class SystemPrincipal implements Principal
+    {
+        private SystemPrincipal()
+        {
+        }
+
+        @Override
+        public String getName()
+        {
+            return "SYSTEM";
         }
     }
 }

@@ -24,6 +24,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,16 +47,18 @@ import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.model.port.PortFactory;
-import org.apache.qpid.server.security.AccessControl;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class PortFactoryTest extends QpidTestCase
 {
+    interface TestableBroker extends Broker, SystemPrincipalSource
+    {
+    }
     private UUID _portId = UUID.randomUUID();
     private int _portNumber;
     private Set<String> _tcpStringSet = Collections.singleton(Transport.TCP.name());
@@ -65,7 +68,7 @@ public class PortFactoryTest extends QpidTestCase
 
     private Map<String, Object> _attributes = new HashMap<String, Object>();
 
-    private Broker _broker = mock(Broker.class);
+    private TestableBroker _broker = mock(TestableBroker.class);
     private KeyStore _keyStore = mock(KeyStore.class);
     private TrustStore _trustStore = mock(TrustStore.class);
     private String _authProviderName = "authProvider";
@@ -83,6 +86,7 @@ public class PortFactoryTest extends QpidTestCase
         when(_broker.getChildren(eq(AuthenticationProvider.class))).thenReturn(Collections.singleton(_authProvider));
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
+        when(_broker.getSystemPrincipal()).thenReturn(mock(Principal.class));
 
         ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(_broker.getObjectFactory()).thenReturn(objectFactory);

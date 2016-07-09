@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.security.Principal;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -51,10 +52,9 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.security.AccessControl;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
@@ -65,8 +65,12 @@ import org.apache.qpid.util.FileUtils;
 public class AbstractVirtualHostTest extends QpidTestCase
 {
     private TaskExecutor _taskExecutor;
-    private VirtualHostNode _node;
+    private TestableVHN _node;
     private MessageStore _failingStore;
+
+    interface TestableVHN extends VirtualHostNode, SystemPrincipalSource
+    {
+    }
 
     @Override
     public void setUp() throws Exception
@@ -85,7 +89,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
         when(broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(broker.getChildExecutor()).thenReturn(_taskExecutor);
 
-        _node = mock(VirtualHostNode.class);
+        _node = mock(TestableVHN.class);
         when(_node.getParent(Broker.class)).thenReturn(broker);
         when(_node.getModel()).thenReturn(BrokerModel.getInstance());
         when(_node.getTaskExecutor()).thenReturn(_taskExecutor);
@@ -93,6 +97,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
         when(_node.getConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));
         when(_node.getCategoryClass()).thenReturn(VirtualHostNode.class);
         when(_node.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
+        when(_node.getSystemPrincipal()).thenReturn(mock(Principal.class));
 
         _failingStore = mock(MessageStore.class);
         doThrow(new RuntimeException("Cannot open store")).when(_failingStore).openMessageStore(any(ConfiguredObject.class));

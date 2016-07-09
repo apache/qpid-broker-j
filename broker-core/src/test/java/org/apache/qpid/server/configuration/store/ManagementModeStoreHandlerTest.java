@@ -27,6 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -79,7 +80,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         _taskExecutor.start();
 
         _systemConfig = new JsonSystemConfigImpl(_taskExecutor, mock(EventLogger.class),
-                                                 new BrokerOptions().convertToSystemConfigAttributes());
+                                                 null, new BrokerOptions().convertToSystemConfigAttributes());
 
 
         ConfiguredObjectRecord systemContextRecord = _systemConfig.asObjectRecord();
@@ -124,7 +125,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         attributes.put(ConfiguredObject.DESIRED_STATE, State.QUIESCED);
         _systemConfig = new AbstractSystemConfig(_taskExecutor,
                                                  mock(EventLogger.class),
-                                                 attributes)
+                                                 mock(Principal.class), attributes)
         {
             @Override
             protected void onOpen()

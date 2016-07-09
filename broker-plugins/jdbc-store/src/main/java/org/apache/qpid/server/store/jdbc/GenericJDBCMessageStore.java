@@ -22,7 +22,6 @@ package org.apache.qpid.server.store.jdbc;
 
 
 import java.io.File;
-import java.security.PrivilegedAction;
 import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -32,14 +31,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import javax.security.auth.Subject;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.plugin.JDBCConnectionProviderFactory;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.StoreException;
 
 /**
@@ -104,7 +100,7 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
 
             _connectionProvider = connectionProviderFactory.getConnectionProvider(_connectionURL,
                                                                                   settings.getUsername(),
-                                                                                  getPlainTextPassword(settings),
+                                                                                  settings.getPassword(),
                                                                                   providerAttributes);
         }
         catch (SQLException e)
@@ -185,15 +181,4 @@ public class GenericJDBCMessageStore extends GenericAbstractJDBCMessageStore
         return null;
     }
 
-    protected String getPlainTextPassword(final JDBCSettings settings)
-    {
-        return Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<String>()
-        {
-            @Override
-            public String run()
-            {
-                return settings.getPassword();
-            }
-        });
-    }
 }

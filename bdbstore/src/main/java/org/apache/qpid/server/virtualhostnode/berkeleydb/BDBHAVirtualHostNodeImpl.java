@@ -73,13 +73,11 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.model.RemoteReplicationNode;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
@@ -92,7 +90,6 @@ import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironment
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacadeFactory;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicationGroupListener;
 import org.apache.qpid.server.store.StoreException;
-import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 import org.apache.qpid.server.store.preferences.ProvidedPreferenceStoreFactoryService;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
@@ -656,7 +653,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                     if(host != null)
                     {
                         final VirtualHost<?> recoveredHost = host;
-                        Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
+                        Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
                         {
                             @Override
                             public Object run()
@@ -686,7 +683,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                 }
 
                 final VirtualHost<?> recoveredHost = host;
-                Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
+                Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
                 {
                     @Override
                     public Object run()
@@ -1122,7 +1119,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         @Override
         public void onNodeState(final ReplicationNode node, final NodeState nodeState)
         {
-            Subject.doAs(SecurityManager.getSystemTaskSubject(_virtualHostNodePrincipalName), new PrivilegedAction<Void>()
+            Subject.doAs(getSystemTaskSubject(_virtualHostNodePrincipalName), new PrivilegedAction<Void>()
             {
                 @Override
                 public Void run()
@@ -1210,7 +1207,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         @Override
         public boolean onIntruderNode(final ReplicationNode node)
         {
-            return Subject.doAs(SecurityManager.getSystemTaskSubject(_virtualHostNodePrincipalName), new PrivilegedAction<Boolean>()
+            return Subject.doAs(getSystemTaskSubject(_virtualHostNodePrincipalName), new PrivilegedAction<Boolean>()
             {
                 @Override
                 public Boolean run()
@@ -1366,7 +1363,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         @Override
         public Void execute()
         {
-            return Subject.doAs(SecurityManager.getSystemTaskSubject(_virtualHostNodePrincipalName), new PrivilegedAction<Void>()
+            return Subject.doAs(getSystemTaskSubject(_virtualHostNodePrincipalName), new PrivilegedAction<Void>()
             {
                 @Override
                 public Void run()

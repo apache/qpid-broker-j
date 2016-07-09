@@ -40,7 +40,6 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.TransactionLogResource;
 
 public class StandardQueueEntryListTest extends QueueEntryListTestBase

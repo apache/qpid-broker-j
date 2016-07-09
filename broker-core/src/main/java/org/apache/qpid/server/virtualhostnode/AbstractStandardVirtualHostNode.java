@@ -41,16 +41,10 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.RemoteReplicationNode;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.plugin.QpidServiceLoader;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.VirtualHostStoreUpgraderAndRecoverer;
-import org.apache.qpid.server.store.preferences.NoopPreferenceStoreFactoryService;
-import org.apache.qpid.server.store.preferences.PreferenceStore;
-import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
-import org.apache.qpid.server.store.preferences.PreferenceStoreFactoryService;
 
 public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandardVirtualHostNode<X>> extends AbstractVirtualHostNode<X>
                 implements VirtualHostNode<X>
@@ -115,7 +109,7 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
         if (host != null)
         {
             final VirtualHost<?> recoveredHost = host;
-            final ListenableFuture<Void> openFuture = Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(),
+            final ListenableFuture<Void> openFuture = Subject.doAs(getSubjectWithAddedSystemRights(),
                                                                    new PrivilegedAction<ListenableFuture<Void>>()
                                                                    {
                                                                        @Override

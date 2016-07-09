@@ -18,19 +18,13 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.plugin;
+package org.apache.qpid.server.model;
 
 import java.security.Principal;
-import java.util.Map;
 
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.model.SystemConfig;
+import javax.security.auth.Subject;
 
-public interface SystemConfigFactory<X extends SystemConfig<X>> extends Pluggable
+public interface SystemPrincipalSource
 {
-    X newInstance(final TaskExecutor taskExecutor,
-                  final EventLogger eventLogger,
-                  final Principal systemPrincipal,
-                  final Map<String, Object> options);
+    Principal getSystemPrincipal();
 }

@@ -89,7 +89,6 @@ import org.apache.qpid.server.plugin.ConfigurationSecretEncrypterFactory;
 import org.apache.qpid.server.plugin.PluggableFactoryLoader;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.SystemNodeCreator;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.auth.manager.SimpleAuthenticationManager;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.stats.StatisticsGatherer;
@@ -111,7 +110,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private static final Operation CONFIGURE_ACTION = Operation.ACTION("CONFIGURE");
     private static final Operation SHUTDOWN_ACTION = Operation.ACTION("SHUTDOWN");
 
-    private static final AccessControl<SecurityToken> SYSTEM_USER_ALLLOWED = new AccessControl<SecurityToken>()
+    private final AccessControl<SecurityToken> _systemUserAllowed = new AccessControl<SecurityToken>()
     {
         @Override
         public Result getDefault()
@@ -136,7 +135,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
                                 final Operation operation,
                                 final ConfiguredObject<?> configuredObject)
         {
-            return SecurityManager.isSystemProcess() ? Result.ALLOWED : Result.DEFER;
+            return isSystemProcess() ? Result.ALLOWED : Result.DEFER;
         }
 
         @Override
@@ -145,7 +144,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
                                 final ConfiguredObject<?> configuredObject,
                                 final Map<String, Object> arguments)
         {
-            return SecurityManager.isSystemProcess() ? Result.ALLOWED : Result.DEFER;
+            return isSystemProcess() ? Result.ALLOWED : Result.DEFER;
         }
     };
 
@@ -490,7 +489,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
         _houseKeepingTaskExecutor = new HousekeepingExecutor("broker-" + getName() + "-pool",
                                                              getHousekeepingThreadCount(),
-                                                             _principal);
+                                                             getSystemTaskSubject("Housekeeping", _principal));
 
         final PreferenceStoreUpdaterImpl updater = new PreferenceStoreUpdaterImpl();
         final Collection<PreferenceRecord> preferenceRecords = _preferenceStore.openAndLoad(updater);
@@ -744,7 +743,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
                            {
                                // permission has already been granted to create the virtual host
                                // disable further access check on other operations, e.g. create exchange
-                               Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(),
+                               Subject.doAs(getSubjectWithAddedSystemRights(),
                                             new PrivilegedAction<Object>()
                                             {
                                                 @Override
@@ -846,7 +845,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             Collections.sort(children, ACCESS_CONTROL_POVIDER_COMPARATOR);
 
             List<AccessControl<?>> accessControls = new ArrayList<>(children.size()+1);
-            accessControls.add(SYSTEM_USER_ALLLOWED);
+            accessControls.add(_systemUserAllowed);
             for(AccessControlProvider prov : children)
             {
                 if(prov.getState() == State.ERRORED)
@@ -1009,7 +1008,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         {
             _reset = reset;
             _logger = logger;
-            _subject = SecurityManager.getSystemTaskSubject("Statistics");
+            _subject = getSystemTaskSubject("Statistics");
         }
 
         public void run()

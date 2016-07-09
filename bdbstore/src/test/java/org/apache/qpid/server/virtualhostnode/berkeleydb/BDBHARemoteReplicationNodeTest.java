@@ -47,7 +47,6 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.DurableConfigurationStore;

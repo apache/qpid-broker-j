@@ -57,7 +57,6 @@ import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.TransportProviderFactory;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.transport.AcceptingTransport;
 import org.apache.qpid.server.transport.PortBindFailureException;
 import org.apache.qpid.server.transport.TransportProvider;
@@ -188,7 +187,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         hostnameAliasAttributes.put(VirtualHostAlias.TYPE, HostNameAlias.TYPE_NAME);
         hostnameAliasAttributes.put(VirtualHostAlias.DURABLE, true);
 
-        Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(),
+        Subject.doAs(getSubjectWithAddedSystemRights(),
                      new PrivilegedAction<Object>()
                      {
                          @Override

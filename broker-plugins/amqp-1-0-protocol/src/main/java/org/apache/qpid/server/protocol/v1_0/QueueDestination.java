@@ -22,12 +22,10 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import java.util.Collections;
 
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.MessageEnqueueRecord;

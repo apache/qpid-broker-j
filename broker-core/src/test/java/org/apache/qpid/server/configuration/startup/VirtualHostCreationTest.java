@@ -24,6 +24,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -38,16 +39,21 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class VirtualHostCreationTest extends QpidTestCase
 {
-    private VirtualHostNode _virtualHostNode;
+    interface TestableVirtualHostNode extends VirtualHostNode, SystemPrincipalSource
+    {
+
+    };
+
+    private TestableVirtualHostNode _virtualHostNode;
 
     @Override
     public void setUp() throws Exception
@@ -72,7 +78,7 @@ public class VirtualHostCreationTest extends QpidTestCase
         when(broker.getTaskExecutor()).thenReturn(executor);
         when(broker.getChildExecutor()).thenReturn(executor);
 
-        _virtualHostNode = mock(VirtualHostNode.class);
+        _virtualHostNode = mock(TestableVirtualHostNode.class);
         when(_virtualHostNode.getParent(Broker.class)).thenReturn(broker);
         when(_virtualHostNode.getObjectFactory()).thenReturn(objectFactory);
         when(_virtualHostNode.getConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));
@@ -80,6 +86,7 @@ public class VirtualHostCreationTest extends QpidTestCase
         when(_virtualHostNode.getCategoryClass()).thenReturn(VirtualHostNode.class);
         when(_virtualHostNode.getTaskExecutor()).thenReturn(executor);
         when(_virtualHostNode.getChildExecutor()).thenReturn(executor);
+        when(_virtualHostNode.getSystemPrincipal()).thenReturn(mock(Principal.class));
     }
 
     public void testCreateVirtualHostFromStoreConfigAttributes()

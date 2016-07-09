@@ -21,8 +21,11 @@
 package org.apache.qpid.server.transport;
 
 import java.net.SocketAddress;
+import java.security.AccessControlContext;
 import java.security.Principal;
 import java.util.List;
+
+import javax.security.auth.Subject;
 
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.model.Connection;
@@ -34,6 +37,8 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
     boolean isMessageAssignmentSuspended();
 
     void alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(boolean override);
+
+    AccessControlContext getAccessControlContextFromSubject(Subject subject);
 
     long getConnectionId();
 

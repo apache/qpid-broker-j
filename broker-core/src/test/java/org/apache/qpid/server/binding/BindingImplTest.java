@@ -36,7 +36,6 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class BindingImplTest extends QpidTestCase
