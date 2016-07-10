@@ -25,27 +25,22 @@ import static org.mockito.Mockito.when;
 
 import java.security.Principal;
 
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
-import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
 
 public class JsonFileConfigStoreConfigurationTest extends AbstractDurableConfigurationStoreTestCase
 {
-    interface TestableJsonVHN extends JsonVirtualHostNode, SystemPrincipalSource
-    {
-    }
-
     @Override
     protected VirtualHostNode createVirtualHostNode(String storeLocation, ConfiguredObjectFactory factory)
     {
-        final TestableJsonVHN parent = mock(TestableJsonVHN.class);
+        final JsonVirtualHostNode parent = BrokerTestHelper.mockWithSystemPrincipal(JsonVirtualHostNode.class, mock(Principal.class));
         when(parent.getStorePath()).thenReturn(storeLocation);
         when(parent.getName()).thenReturn("testName");
         when(parent.getObjectFactory()).thenReturn(factory);
         when(parent.getModel()).thenReturn(factory.getModel());
-        when(parent.getSystemPrincipal()).thenReturn(mock(Principal.class));
 
         return parent;
     }

@@ -68,7 +68,6 @@ import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.util.BrokerTestHelper;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -78,15 +77,10 @@ public class VirtualHostTest extends QpidTestCase
     private final AccessControl _mockAccessControl = mock(AccessControl.class);
     private Broker _broker;
     private TaskExecutor _taskExecutor;
-    private TestableVirtualHostNode _virtualHostNode;
+    private VirtualHostNode _virtualHostNode;
     private DurableConfigurationStore _configStore;
     private VirtualHost<?> _virtualHost;
     private StoreConfigurationChangeListener _storeConfigurationChangeListener;
-
-    private interface TestableVirtualHostNode extends VirtualHostNode, AccessControlSource, SystemPrincipalSource
-    {
-
-    }
 
     @Override
     protected void setUp() throws Exception
@@ -101,13 +95,11 @@ public class VirtualHostTest extends QpidTestCase
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
 
 
-        _virtualHostNode = mock(TestableVirtualHostNode.class);
+        Principal systemPrincipal = ((SystemPrincipalSource)_broker).getSystemPrincipal();
+        _virtualHostNode = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(VirtualHostNode.class, systemPrincipal, _mockAccessControl);
         when(_virtualHostNode.getParent(Broker.class)).thenReturn(_broker);
         when(_virtualHostNode.getCategoryClass()).thenReturn(VirtualHostNode.class);
         when(_virtualHostNode.isDurable()).thenReturn(true);
-        when(_virtualHostNode.getAccessControl()).thenReturn(_mockAccessControl);
-        Principal systemPrincipal = ((SystemPrincipalSource)_broker).getSystemPrincipal();
-        when(_virtualHostNode.getSystemPrincipal()).thenReturn(systemPrincipal);
 
         _configStore = mock(DurableConfigurationStore.class);
         _storeConfigurationChangeListener = new StoreConfigurationChangeListener(_configStore);

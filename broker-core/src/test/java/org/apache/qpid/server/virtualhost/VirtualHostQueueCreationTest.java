@@ -35,13 +35,13 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.queue.PriorityQueue;
@@ -54,13 +54,8 @@ import org.apache.qpid.test.utils.QpidTestCase;
 public class VirtualHostQueueCreationTest extends QpidTestCase
 {
     private VirtualHost<?> _virtualHost;
-    private TestableVHN _virtualHostNode;
+    private VirtualHostNode _virtualHostNode;
     private TaskExecutor _taskExecutor;
-
-    interface TestableVHN extends VirtualHostNode, SystemPrincipalSource
-    {
-    }
-
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
@@ -86,7 +81,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         when(broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(broker.getChildExecutor()).thenReturn(_taskExecutor);
 
-        _virtualHostNode = mock(TestableVHN.class);
+        _virtualHostNode = BrokerTestHelper.mockWithSystemPrincipal(VirtualHostNode.class, mock(Principal.class));
         when(_virtualHostNode.getParent(Broker.class)).thenReturn(broker);
         when(_virtualHostNode.getConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));
         when(_virtualHostNode.getObjectFactory()).thenReturn(objectFactory);
@@ -94,7 +89,6 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         when(_virtualHostNode.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_virtualHostNode.getChildExecutor()).thenReturn(_taskExecutor);
         when(((VirtualHostNode)_virtualHostNode).getCategoryClass()).thenReturn(VirtualHostNode.class);
-        when(_virtualHostNode.getSystemPrincipal()).thenReturn(mock(Principal.class));
 
         when(_virtualHostNode.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
         _virtualHost = createHost();

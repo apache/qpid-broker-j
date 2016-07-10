@@ -47,6 +47,7 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
@@ -54,7 +55,6 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
@@ -440,18 +440,13 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         return createTestQueue(queueName, queueOwner, exclusive, null, arguments);
     }
 
-    interface TestableQueue extends Queue, SystemPrincipalSource
-    {
-
-    }
-
     private Queue<?> createTestQueue(String queueName,
                                      String queueOwner,
                                      boolean exclusive,
                                      Exchange<?> alternateExchange,
                                      final Map<String, Object> arguments) throws StoreException
     {
-        TestableQueue queue = mock(TestableQueue.class);
+        Queue queue = BrokerTestHelper.mockWithSystemPrincipal(Queue.class, mock(Principal.class));
         when(queue.getName()).thenReturn(queueName);
         when(queue.isExclusive()).thenReturn(exclusive);
         when(queue.getId()).thenReturn(_queueId);
@@ -459,7 +454,6 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         when(queue.getAlternateExchange()).thenReturn(alternateExchange);
         when(queue.getCategoryClass()).thenReturn((Class)Queue.class);
         when(queue.isDurable()).thenReturn(true);
-        when(queue.getSystemPrincipal()).thenReturn(mock(Principal.class));
         TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         when(queue.getTaskExecutor()).thenReturn(taskExecutor);
         when(queue.getChildExecutor()).thenReturn(taskExecutor);

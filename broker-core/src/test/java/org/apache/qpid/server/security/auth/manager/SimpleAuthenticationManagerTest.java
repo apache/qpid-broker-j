@@ -35,7 +35,7 @@ import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.sasl.SaslUtil;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainSaslServer;
-import org.apache.qpid.server.util.BrokerTestHelper;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class SimpleAuthenticationManagerTest extends QpidTestCase

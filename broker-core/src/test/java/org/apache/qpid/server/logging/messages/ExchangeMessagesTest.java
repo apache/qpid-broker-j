@@ -23,7 +23,7 @@ package org.apache.qpid.server.logging.messages;
 import java.util.List;
 
 import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.util.BrokerTestHelper;
+import org.apache.qpid.server.model.BrokerTestHelper;
 
 /**
  * Test EXH Log Messages

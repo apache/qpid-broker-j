@@ -40,6 +40,7 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
@@ -47,7 +48,6 @@ import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -56,9 +56,6 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class PortFactoryTest extends QpidTestCase
 {
-    interface TestableBroker extends Broker, SystemPrincipalSource
-    {
-    }
     private UUID _portId = UUID.randomUUID();
     private int _portNumber;
     private Set<String> _tcpStringSet = Collections.singleton(Transport.TCP.name());
@@ -68,7 +65,7 @@ public class PortFactoryTest extends QpidTestCase
 
     private Map<String, Object> _attributes = new HashMap<String, Object>();
 
-    private TestableBroker _broker = mock(TestableBroker.class);
+    private Broker _broker = BrokerTestHelper.mockWithSystemPrincipal(Broker.class, mock(Principal.class));
     private KeyStore _keyStore = mock(KeyStore.class);
     private TrustStore _trustStore = mock(TrustStore.class);
     private String _authProviderName = "authProvider";
@@ -86,7 +83,6 @@ public class PortFactoryTest extends QpidTestCase
         when(_broker.getChildren(eq(AuthenticationProvider.class))).thenReturn(Collections.singleton(_authProvider));
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
-        when(_broker.getSystemPrincipal()).thenReturn(mock(Principal.class));
 
         ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(_broker.getObjectFactory()).thenReturn(objectFactory);

@@ -249,6 +249,11 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 _encrypter = ((AbstractConfiguredObject)parent)._encrypter;
                 break;
             }
+            else if(parent instanceof ConfigurationSecretEncrypterSource && ((ConfigurationSecretEncrypterSource)parent).getEncrypter() != null)
+            {
+                _encrypter = ((ConfigurationSecretEncrypterSource)parent).getEncrypter();
+                break;
+            }
         }
 
         for(ConfiguredObject<?> parent : parents.values())

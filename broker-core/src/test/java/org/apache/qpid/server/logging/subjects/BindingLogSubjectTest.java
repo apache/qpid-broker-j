@@ -23,7 +23,7 @@ package org.apache.qpid.server.logging.subjects;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.util.BrokerTestHelper;
+import org.apache.qpid.server.model.BrokerTestHelper;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

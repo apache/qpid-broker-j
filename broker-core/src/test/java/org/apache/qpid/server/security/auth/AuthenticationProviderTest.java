@@ -46,7 +46,7 @@ import org.apache.qpid.server.security.auth.manager.ScramSHA1AuthenticationManag
 import org.apache.qpid.server.security.auth.manager.ScramSHA256AuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ScramSHA256AuthenticationManagerFactory;
 import org.apache.qpid.server.security.auth.manager.SimpleAuthenticationManager;
-import org.apache.qpid.server.util.BrokerTestHelper;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 

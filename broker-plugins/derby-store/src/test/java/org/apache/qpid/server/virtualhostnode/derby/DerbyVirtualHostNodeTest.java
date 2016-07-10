@@ -37,9 +37,9 @@ import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.adapter.BrokerAdapter;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -160,21 +160,16 @@ public class DerbyVirtualHostNodeTest extends QpidTestCase
         }
     }
 
-    interface TestableSystemConfig extends SystemConfig, SystemPrincipalSource
-    {
-    }
-
     private BrokerAdapter createBroker()
     {
         Map<String, Object> brokerAttributes = Collections.<String, Object>singletonMap(Broker.NAME, "Broker");
-        TestableSystemConfig parent = mock(TestableSystemConfig.class);
+        SystemConfig parent = BrokerTestHelper.mockWithSystemPrincipal(SystemConfig.class, mock(Principal.class));
         when(parent.getEventLogger()).thenReturn(new EventLogger());
         when(parent.getCategoryClass()).thenReturn(SystemConfig.class);
         when(parent.getTaskExecutor()).thenReturn(_taskExecutor);
         when(parent.getChildExecutor()).thenReturn(_taskExecutor);
         when(parent.getModel()).thenReturn(BrokerModel.getInstance());
         when(parent.getObjectFactory()).thenReturn(new ConfiguredObjectFactoryImpl(BrokerModel.getInstance()));
-        when(parent.getSystemPrincipal()).thenReturn(mock(Principal.class));
         BrokerAdapter broker = new BrokerAdapter(brokerAttributes, parent);
         broker.start();
         return broker;

@@ -24,7 +24,7 @@ import java.security.Principal;
 
 import javax.security.auth.Subject;
 
-public interface SystemPrincipalSource
+interface SystemPrincipalSource
 {
     Principal getSystemPrincipal();
 }

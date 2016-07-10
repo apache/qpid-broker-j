@@ -45,18 +45,15 @@ import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Model;
-import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AmqpPortImplTest extends QpidTestCase
 {
-    interface TestableBroker extends Broker, SystemPrincipalSource
-    {
-    }
     private static final String AUTHENTICATION_PROVIDER_NAME = "test";
     private TaskExecutor _taskExecutor;
-    private TestableBroker _broker;
+    private Broker _broker;
     private AmqpPortImpl _port;
 
     @Override
@@ -66,14 +63,13 @@ public class AmqpPortImplTest extends QpidTestCase
         _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         Model model = BrokerModel.getInstance();
 
-        _broker = mock(TestableBroker.class);
+        _broker = BrokerTestHelper.mockWithSystemPrincipal(Broker.class, mock(Principal.class));
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getModel()).thenReturn(model);
         when(_broker.getId()).thenReturn(UUID.randomUUID());
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
-        when(_broker.getSystemPrincipal()).thenReturn(mock(Principal.class));
 
         AuthenticationProvider<?> provider = mock(AuthenticationProvider.class);
         when(provider.getName()).thenReturn(AUTHENTICATION_PROVIDER_NAME);

@@ -32,13 +32,12 @@ import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.DurableConfigurationStore;
-import org.apache.qpid.server.store.preferences.NoopPreferenceStoreFactoryService;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.server.virtualhostnode.TestVirtualHostNode;
@@ -47,11 +46,8 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class BrokerAdapterTest extends QpidTestCase
 {
-    interface TestableSystemConfig extends SystemConfig, SystemPrincipalSource
-    {
-    }
     private TaskExecutorImpl _taskExecutor;
-    private TestableSystemConfig _systemConfig;
+    private SystemConfig _systemConfig;
     private BrokerAdapter _brokerAdapter;
 
     @Override
@@ -62,14 +58,13 @@ public class BrokerAdapterTest extends QpidTestCase
         _taskExecutor = new TaskExecutorImpl();
         _taskExecutor.start();
 
-        _systemConfig = mock(TestableSystemConfig.class);
+        _systemConfig = BrokerTestHelper.mockWithSystemPrincipal(SystemConfig.class, mock(Principal.class));
         when(_systemConfig.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_systemConfig.getChildExecutor()).thenReturn(_taskExecutor);
         when(_systemConfig.getModel()).thenReturn(BrokerModel.getInstance());
         when(_systemConfig.getEventLogger()).thenReturn(new EventLogger());
         when(_systemConfig.getCategoryClass()).thenReturn(SystemConfig.class);
         when(_systemConfig.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
-        when(_systemConfig.getSystemPrincipal()).thenReturn(mock(Principal.class));
     }
 
     @Override

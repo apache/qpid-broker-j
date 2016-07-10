@@ -40,7 +40,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.User;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
-import org.apache.qpid.server.util.BrokerTestHelper;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase

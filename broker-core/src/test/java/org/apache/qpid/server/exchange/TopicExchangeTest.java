@@ -45,7 +45,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.server.util.BrokerTestHelper;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.test.utils.QpidTestCase;
 

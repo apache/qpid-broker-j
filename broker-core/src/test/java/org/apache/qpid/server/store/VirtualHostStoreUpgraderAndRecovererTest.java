@@ -36,14 +36,13 @@ import java.util.UUID;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.model.AbstractSystemConfig;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.server.model.SystemPrincipalSource;
 import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
@@ -81,11 +80,6 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
                                                        Collections.emptySet());
 
 
-    interface TestableBroker extends Broker, SystemPrincipalSource
-    {
-
-    }
-
     @Override
     public void setUp() throws Exception
     {
@@ -110,12 +104,11 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         SystemConfig<?> systemConfig = mock(SystemConfig.class);
         when(systemConfig.getEventLogger()).thenReturn(new EventLogger());
 
-        TestableBroker broker = mock(TestableBroker.class);
+        Broker broker = BrokerTestHelper.mockWithSystemPrincipal(Broker.class, _systemPrincipal);
         when(broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
         when(broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(broker.getModel()).thenReturn(BrokerModel.getInstance());
-        when(broker.getSystemPrincipal()).thenReturn(_systemPrincipal);
 
         _durableConfigurationStore = mock(DurableConfigurationStore.class);
         Map<String,Object> attributes = new HashMap<>();

@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.model;
 
-import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.encryption.ConfigurationSecretEncrypter;
 
-interface AccessControlSource
+interface ConfigurationSecretEncrypterSource
 {
-    AccessControl getAccessControl();
+    ConfigurationSecretEncrypter getEncrypter();
 }

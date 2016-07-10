@@ -31,6 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.security.AccessControlException;
+import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,7 +41,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.model.AccessControlSource;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.VirtualHost;
@@ -51,7 +51,7 @@ import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade;
-import org.apache.qpid.server.util.BrokerTestHelper;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -62,15 +62,9 @@ public class BDBHARemoteReplicationNodeTest extends QpidTestCase
 
     private Broker _broker;
     private TaskExecutor _taskExecutor;
-    private BDBHAVirtualHostNodeTest<?> _virtualHostNode;
+    private BDBHAVirtualHostNode<?> _virtualHostNode;
     private DurableConfigurationStore _configStore;
     private ReplicatedEnvironmentFacade _facade;
-
-    private interface BDBHAVirtualHostNodeTest<X extends BDBHAVirtualHostNodeTest<X>> extends BDBHAVirtualHostNode<X>,
-                                                                                              AccessControlSource
-    {
-
-    }
 
 
     @Override
@@ -87,8 +81,10 @@ public class BDBHARemoteReplicationNodeTest extends QpidTestCase
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
 
-        _virtualHostNode = mock(BDBHAVirtualHostNodeTest.class);
-        when(_virtualHostNode.getAccessControl()).thenReturn(_mockAccessControl);
+        _virtualHostNode = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(BDBHAVirtualHostNode.class,
+                                                                                    mock(Principal.class),
+                                                                                    _mockAccessControl);
+
         _configStore = mock(DurableConfigurationStore.class);
         when(_virtualHostNode.getConfigurationStore()).thenReturn(_configStore);
 

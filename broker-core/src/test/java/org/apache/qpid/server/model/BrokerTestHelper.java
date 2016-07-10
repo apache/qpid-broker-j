@@ -18,33 +18,32 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.util;
+package org.apache.qpid.server.model;
 
+import static org.apache.bcel.Constants.ACC_INTERFACE;
+import static org.apache.bcel.Constants.ACC_PUBLIC;
+import static org.apache.bcel.Constants.ACC_SUPER;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.security.auth.Subject;
+
+import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.generic.ClassGen;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerModel;
-import org.apache.qpid.server.model.ConfiguredObjectFactory;
-import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
-import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.server.model.SystemPrincipalSource;
-import org.apache.qpid.server.model.UUIDGenerator;
-import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -70,17 +69,11 @@ public class BrokerTestHelper
                                                               Collections.singleton(SYSTEM_PRINCIPAL),
                                                               Collections.emptySet(),
                                                               Collections.emptySet());
-    interface TestableBroker extends Broker,
-                                     SystemPrincipalSource
-    {
-
-    }
-
-    interface TestableVirtualHost extends VirtualHost,
-                                     SystemPrincipalSource
-    {
-
-    }
+    private static final Map<Class<? extends ConfiguredObject>, Class<? extends ConfiguredObject>>
+            SYSTEM_PRINCIPAL_SOURCE_MOCKS = new HashMap<>();
+    private static final Map<Class<? extends ConfiguredObject>, Class<? extends ConfiguredObject>>
+            SYSTEM_PRINCIPAL_AND_ACCESS_CONTROL_SOURCE_MOCKS = new HashMap<>();
+    private static final AtomicInteger GENERATED_INTERFACE_COUNTER = new AtomicInteger();
 
 
     private static List<VirtualHost> _createdVirtualHosts = new ArrayList<>();
@@ -115,7 +108,7 @@ public class BrokerTestHelper
         when(systemConfig.getModel()).thenReturn(objectFactory.getModel());
         when(systemConfig.getCategoryClass()).thenReturn(SystemConfig.class);
 
-        TestableBroker broker = mock(TestableBroker.class);
+        Broker broker = mockWithSystemPrincipal(Broker.class, SYSTEM_PRINCIPAL);
         when(broker.getConnection_sessionCountLimit()).thenReturn(1);
         when(broker.getConnection_closeWhenNoRoute()).thenReturn(false);
         when(broker.getId()).thenReturn(UUID.randomUUID());
@@ -126,7 +119,6 @@ public class BrokerTestHelper
         when(broker.getCategoryClass()).thenReturn(Broker.class);
         when(broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
         when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0l);
-        when(broker.getSystemPrincipal()).thenReturn(SYSTEM_PRINCIPAL);
 
         when(broker.getTaskExecutor()).thenReturn(TASK_EXECUTOR);
         when(systemConfig.getTaskExecutor()).thenReturn(TASK_EXECUTOR);
@@ -152,17 +144,12 @@ public class BrokerTestHelper
         return createVirtualHost(attributes, broker, false);
     }
 
-    interface TestableVirtualHostNode extends VirtualHostNode, SystemPrincipalSource
-    {
-
-    }
-
     private static VirtualHost<?> createVirtualHost(final Map<String, Object> attributes,
                                                         final Broker<?> broker, boolean defaultVHN)
     {
         ConfiguredObjectFactory objectFactory = broker.getObjectFactory();
 
-        TestableVirtualHostNode virtualHostNode = mock(TestableVirtualHostNode.class);
+        VirtualHostNode virtualHostNode = mockWithSystemPrincipal(VirtualHostNode.class, SYSTEM_PRINCIPAL);
         String virtualHostNodeName = String.format("%s_%s", attributes.get(VirtualHostNode.NAME), "_node");
         when(virtualHostNode.getName()).thenReturn( virtualHostNodeName);
         when(virtualHostNode.getTaskExecutor()).thenReturn(TASK_EXECUTOR);
@@ -170,7 +157,6 @@ public class BrokerTestHelper
         when(virtualHostNode.isDefaultVirtualHostNode()).thenReturn(defaultVHN);
 
         when(virtualHostNode.getParent(eq(Broker.class))).thenReturn(broker);
-        when(virtualHostNode.getSystemPrincipal()).thenReturn(mock(Principal.class));
 
         Collection<VirtualHostNode<?>> nodes = broker.getVirtualHostNodes();
         nodes = new ArrayList<>(nodes != null ?  nodes : Collections.<VirtualHostNode<?>>emptyList());
@@ -243,7 +229,7 @@ public class BrokerTestHelper
 
     public static Exchange<?> createExchange(String hostName, final boolean durable, final EventLogger eventLogger) throws Exception
     {
-        final TestableVirtualHost virtualHost = mock(TestableVirtualHost.class);
+        final VirtualHost virtualHost = mockWithSystemPrincipal(VirtualHost.class, SYSTEM_PRINCIPAL);
         when(virtualHost.getName()).thenReturn(hostName);
         when(virtualHost.getEventLogger()).thenReturn(eventLogger);
         when(virtualHost.getDurableConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));
@@ -257,7 +243,6 @@ public class BrokerTestHelper
         attributes.put(org.apache.qpid.server.model.Exchange.NAME, "amq.direct");
         attributes.put(org.apache.qpid.server.model.Exchange.TYPE, "direct");
         attributes.put(org.apache.qpid.server.model.Exchange.DURABLE, durable);
-        when(virtualHost.getSystemPrincipal()).thenReturn(SYSTEM_PRINCIPAL);
 
         return Subject.doAs(SYSTEM_SUBJECT, new PrivilegedAction<Exchange<?>>()
         {
@@ -279,6 +264,120 @@ public class BrokerTestHelper
         attributes.put(Queue.NAME, queueName);
         Queue<?> queue = virtualHost.createChild(Queue.class, attributes);
         return queue;
+    }
+
+    // The generated classes can't directly inherit from SystemPricipalSource / AccessControlSource as
+    // these are package local, and package local visibility is prevented between classes loaded from different
+    // class loaders.  Using these "public" interfaces gets around the problem.
+    public interface TestableSystemPrincipalSource extends SystemPrincipalSource {}
+    public interface TestableAccessControlSource extends AccessControlSource {}
+
+    public static <X extends ConfiguredObject> X mockWithSystemPrincipal(Class<X> clazz, Principal principal)
+    {
+        synchronized (SYSTEM_PRINCIPAL_SOURCE_MOCKS)
+        {
+            Class<?> mockedClass = SYSTEM_PRINCIPAL_SOURCE_MOCKS.get(clazz);
+            if(mockedClass == null)
+            {
+                mockedClass = generateTestableInterface(clazz, TestableSystemPrincipalSource.class);
+                SYSTEM_PRINCIPAL_SOURCE_MOCKS.put(clazz, (Class<? extends X>) mockedClass);
+            }
+            X mock = mock((Class<? extends X>)mockedClass);
+            when(((SystemPrincipalSource)mock).getSystemPrincipal()).thenReturn(principal);
+
+            return mock;
+        }
+    }
+
+    public static <X extends ConfiguredObject> X mockWithSystemPrincipalAndAccessControl(Class<X> clazz,
+                                                                                         Principal principal,
+                                                                                         AccessControl accessControl)
+    {
+        synchronized (SYSTEM_PRINCIPAL_AND_ACCESS_CONTROL_SOURCE_MOCKS)
+        {
+            Class<?> mockedClass = SYSTEM_PRINCIPAL_AND_ACCESS_CONTROL_SOURCE_MOCKS.get(clazz);
+            if(mockedClass == null)
+            {
+                mockedClass = generateTestableInterface(clazz, TestableSystemPrincipalSource.class, TestableAccessControlSource.class);
+                SYSTEM_PRINCIPAL_AND_ACCESS_CONTROL_SOURCE_MOCKS.put(clazz, (Class<? extends X>) mockedClass);
+            }
+            X mock = mock((Class<? extends X>)mockedClass);
+            when(((SystemPrincipalSource)mock).getSystemPrincipal()).thenReturn(principal);
+            when(((AccessControlSource)mock).getAccessControl()).thenReturn(accessControl);
+
+            return mock;
+        }
+    }
+
+
+    private static Class<?> generateTestableInterface(final Class<?>... interfaces)
+    {
+        final String fqcn = BrokerTestHelper.class.getPackage().getName() + ".Testable" + interfaces[0].getSimpleName() + "_" + GENERATED_INTERFACE_COUNTER.incrementAndGet();
+        final byte[] classBytes = createSubClassByteCode(fqcn, interfaces);
+
+        try
+        {
+            final ClassLoader classLoader = new TestableMockDelegatingClassloader(fqcn, classBytes);
+            Class<?> clazz = classLoader.loadClass(fqcn);
+            return clazz;
+        }
+        catch (ClassNotFoundException cnfe)
+        {
+            throw new IllegalArgumentException("Could not resolve dynamically generated class " + fqcn, cnfe);
+        }
+    }
+
+    private static byte[] createSubClassByteCode(final String className, final Class<?>[] interfaces)
+    {
+        String[] ifnames = new String[interfaces.length];
+        for(int i = 0; i<interfaces.length; i++)
+        {
+            ifnames[i] = interfaces[i].getName();
+        }
+        ClassGen classGen = new ClassGen(className,
+                                         "java.lang.Object",
+                                         "<generated>",
+                                         ACC_PUBLIC | ACC_SUPER | ACC_INTERFACE,
+                                         ifnames);
+
+
+        JavaClass javaClass = classGen.getJavaClass();
+
+        try(ByteArrayOutputStream out = new ByteArrayOutputStream())
+        {
+            javaClass.dump(out);
+            return out.toByteArray();
+        }
+        catch (IOException ioex)
+        {
+            throw new IllegalStateException("Could not write to a ByteArrayOutputStream - should not happen", ioex);
+        }
+    }
+
+    private static final class TestableMockDelegatingClassloader extends ClassLoader
+    {
+        private final String _className;
+        private final Class<? extends ConfiguredObject> _clazz;
+
+        private TestableMockDelegatingClassloader(String className, byte[] classBytes)
+        {
+            super(ConfiguredObject.class.getClassLoader());
+            _className = className;
+            _clazz = (Class<? extends ConfiguredObject>) defineClass(className, classBytes, 0, classBytes.length);
+        }
+
+        @Override
+        protected Class<?> findClass(String fqcn) throws ClassNotFoundException
+        {
+            if (fqcn.equals(_className))
+            {
+                return _clazz;
+            }
+            else
+            {
+                return getParent().loadClass(fqcn);
+            }
+        }
     }
 
 }

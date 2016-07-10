@@ -21,7 +21,7 @@
 package org.apache.qpid.server.logging.subjects;
 
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.util.BrokerTestHelper;
+import org.apache.qpid.server.model.BrokerTestHelper;
 
 /**
  * Validate MessageStoreLogSubjects are logged as expected

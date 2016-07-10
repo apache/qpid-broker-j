@@ -23,7 +23,7 @@ package org.apache.qpid.server.logging.actors;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.util.BrokerTestHelper;
+import org.apache.qpid.server.model.BrokerTestHelper;
 
 public abstract class BaseConnectionActorTestCase extends BaseActorTestCase
 {
