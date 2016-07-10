@@ -19,12 +19,34 @@
  */
 package org.apache.qpid.server.model;
 
+import java.util.Comparator;
+
 import org.apache.qpid.server.security.AccessControl;
 
 @ManagedObject
-public interface AccessControlProvider<X extends AccessControlProvider<X>> extends ConfiguredObject<X>
+public interface AccessControlProvider<X extends AccessControlProvider<X>> extends ConfiguredObject<X>, Comparable<AccessControlProvider>
 {
     String PRIORITY = "priority";
+
+    Comparator<AccessControlProvider> ACCESS_CONTROL_POVIDER_COMPARATOR = new Comparator<AccessControlProvider>()
+    {
+        @Override
+        public int compare(final AccessControlProvider o1, final AccessControlProvider o2)
+        {
+            if(o1.getPriority() < o2.getPriority())
+            {
+                return -1;
+            }
+            else if (o1.getPriority() > o2.getPriority())
+            {
+                return 1;
+            }
+            else
+            {
+                return o1.getName().compareTo(o2.getName());
+            }
+        }
+    };
 
     @ManagedAttribute(defaultValue = "10")
     int getPriority();

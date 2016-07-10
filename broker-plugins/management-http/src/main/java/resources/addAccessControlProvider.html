@@ -48,7 +48,19 @@
                             </select>
                         </div>
                     </div>
-
+                    <div class="clear">
+                        <div class="formLabel-labelCell tableContainer-labelCell">Priority:</div>
+                        <div class="formLabel-controlCell tableContainer-valueCell">
+                            <input type="text" id="addAccessControlProvider.priority"
+                                   data-dojo-type="dijit/form/ValidationTextBox"
+                                   data-dojo-props="
+                              name: 'priority',
+                              placeHolder: 'priority',
+                              required: false,
+                              promptMessage: 'Priority of this provider (0 is highest priority)',
+                              title: 'Enter a priority for the provider (0 is highest priority)'" />
+                        </div>
+                    </div>
                     <div class="clear">
                         <div id="addAccessControlProvider.typeFields"></div>
                     </div>

@@ -734,15 +734,19 @@ define(["dojo/parser",
                 new UpdatableStore([], query(".broker-access-control-providers")[0], [{
                     name: "Name",
                     field: "name",
-                    width: "40%"
+                    width: "20%"
                 }, {
                     name: "State",
                     field: "state",
-                    width: "30%"
+                    width: "20%"
                 }, {
                     name: "Type",
                     field: "type",
-                    width: "30%"
+                    width: "40%"
+                }, {
+                    name: "Priority",
+                    field: "priority",
+                    width: "20%"
                 }], function (obj)
                 {
                     connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
@@ -834,43 +838,7 @@ define(["dojo/parser",
             }
         };
 
-        BrokerUpdater.prototype.displayACLWarnMessage = function (aclProviderData)
-        {
-            var message = "";
-            if (aclProviderData.length > 1)
-            {
-                var aclProviders = {};
-                var theSameTypeFound = false;
-                for (var d = 0; d < aclProviderData.length; d++)
-                {
-                    var acl = aclProviderData[d];
-                    var aclType = acl.type;
-                    if (aclProviders[aclType])
-                    {
-                        aclProviders[aclType].push(acl.name);
-                        theSameTypeFound = true;
-                    }
-                    else
-                    {
-                        aclProviders[aclType] = [acl.name];
-                    }
-                }
-
-                if (theSameTypeFound)
-                {
-                    message = "Only one instance of a given type will be used. Please remove an instance of type(s):";
-                    for (var aclType in aclProviders)
-                    {
-                        if (aclProviders[aclType].length > 1)
-                        {
-                            message += " " + aclType;
-                        }
-                    }
-                }
-            }
-            this.accessControlProvidersWarn.innerHTML = message;
-        }
-
+        
         BrokerUpdater.prototype.update = function (callback)
         {
             if (!this.contentPane.selected && !callback)
@@ -961,7 +929,6 @@ define(["dojo/parser",
                     {
                         var data = that.brokerData.accesscontrolproviders ? that.brokerData.accesscontrolproviders : [];
                         that.accessControlProvidersGrid.update(data);
-                        that.displayACLWarnMessage(data);
                     }
                     if (that.brokerLoggersGrid)
                     {

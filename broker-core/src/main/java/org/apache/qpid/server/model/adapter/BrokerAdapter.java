@@ -38,7 +38,6 @@ import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -149,25 +148,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     };
 
 
-    private static Comparator<AccessControlProvider> ACCESS_CONTROL_POVIDER_COMPARATOR = new Comparator<AccessControlProvider>()
-    {
-        @Override
-        public int compare(final AccessControlProvider o1, final AccessControlProvider o2)
-        {
-            if(o1.getPriority() < o2.getPriority())
-            {
-                return -1;
-            }
-            else if (o1.getPriority() > o2.getPriority())
-            {
-                return 1;
-            }
-            else
-            {
-                return o1.getName().compareTo(o2.getName());
-            }
-        }
-    };
     private final BrokerPrincipal _principal;
 
     private String[] POSITIVE_NUMERIC_ATTRIBUTES = { CONNECTION_SESSION_COUNT_LIMIT,
@@ -517,8 +497,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         }
     }
 
-
-
     @Override
     public String getBuildVersion()
     {
@@ -842,7 +820,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         if(!isManagementMode())
         {
             List<AccessControlProvider> children = new ArrayList<>(getChildren(AccessControlProvider.class));
-            Collections.sort(children, ACCESS_CONTROL_POVIDER_COMPARATOR);
+            Collections.sort(children, AccessControlProvider.ACCESS_CONTROL_POVIDER_COMPARATOR);
 
             List<AccessControl<?>> accessControls = new ArrayList<>(children.size()+1);
             accessControls.add(_systemUserAllowed);

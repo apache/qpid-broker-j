@@ -28,6 +28,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.AccessControlMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
@@ -94,4 +95,9 @@ public class AllowAllAccessControlProviderImpl extends AbstractConfiguredObject<
                              });
     }
 
+    @Override
+    public int compareTo(final AccessControlProvider o)
+    {
+        return ACCESS_CONTROL_POVIDER_COMPARATOR.compare(this, o);
+    }
 }

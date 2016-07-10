@@ -117,6 +117,7 @@ define(["dojo/parser",
             this.name = query(".name", node)[0];
             this.type = query(".type", node)[0];
             this.state = query(".state", node)[0];
+            this.priority = query(".priority", node)[0];
 
             var that = this;
 
@@ -152,6 +153,8 @@ define(["dojo/parser",
             this.name.innerHTML = entities.encode(String(this.accessControlProviderData["name"]));
             this.type.innerHTML = entities.encode(String(this.accessControlProviderData["type"]));
             this.state.innerHTML = entities.encode(String(this.accessControlProviderData["state"]));
+            this.priority.innerHTML = entities.encode(String(this.accessControlProviderData["priority"]));
+
         };
 
         return AccessControlProvider;

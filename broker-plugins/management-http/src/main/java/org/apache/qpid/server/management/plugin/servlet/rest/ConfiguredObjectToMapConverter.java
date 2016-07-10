@@ -268,15 +268,21 @@ public class ConfiguredObjectToMapConverter
                 if(children != null)
                 {
                     List<? extends ConfiguredObject> sortedChildren = new ArrayList<ConfiguredObject>(children);
-                    Collections.sort(sortedChildren, new Comparator<ConfiguredObject>()
+                    if(Comparable.class.isAssignableFrom(childClass))
                     {
-                        @Override
-                        public int compare(final ConfiguredObject o1, final ConfiguredObject o2)
+                        Collections.sort((List)sortedChildren);
+                    }
+                    else
+                    {
+                        Collections.sort(sortedChildren, new Comparator<ConfiguredObject>()
                         {
-                            return o1.getName().compareTo(o2.getName());
-                        }
-                    });
-
+                            @Override
+                            public int compare(final ConfiguredObject o1, final ConfiguredObject o2)
+                            {
+                                return o1.getName().compareTo(o2.getName());
+                            }
+                        });
+                    }
                     List<Map<String, Object>> childObjects = new ArrayList<>();
 
 

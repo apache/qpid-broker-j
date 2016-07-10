@@ -184,4 +184,10 @@ public abstract class AbstractRuleBasedAccessControlProvider<X extends AbstractR
     {
         return _priority;
     }
+
+    @Override
+    public int compareTo(final AccessControlProvider o)
+    {
+        return ACCESS_CONTROL_POVIDER_COMPARATOR.compare(this, o);
+    }
 }

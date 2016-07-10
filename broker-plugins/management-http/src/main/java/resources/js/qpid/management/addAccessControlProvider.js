@@ -90,6 +90,8 @@ define(["dojo/_base/lang",
             this.supportedAccessControlProviderTypes.sort();
             var accessControlProviderTypeStore = util.makeTypeStore(this.supportedAccessControlProviderTypes);
             this.accessControlProviderType.set("store", accessControlProviderTypeStore);
+            util.applyMetadataToWidgets(dom.byId("addAccessControlProvider.contentPane"), "AccessControlProvider", "AllowAll", management.metadata);
+
             this.dialog.show();
         },
         _cancel: function (e)
