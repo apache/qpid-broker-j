@@ -56,7 +56,23 @@ public class UserPreferencesImpl implements UserPreferences
         @Override
         public int compare(final Preference o1, final Preference o2)
         {
-            return _ordering.compare(o1.getName(), o2.getName());
+            int nameOrder = _ordering.compare(o1.getName(), o2.getName());
+            if(nameOrder != 0)
+            {
+                return nameOrder;
+            }
+            else
+            {
+                int typeOrder = _ordering.compare(o1.getType(), o2.getType());
+                if(typeOrder != 0)
+                {
+                    return typeOrder;
+                }
+                else
+                {
+                    return o1.getId().compareTo(o2.getId());
+                }
+            }
         }
     };
 
