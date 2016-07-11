@@ -303,13 +303,13 @@ public class RequestInfoParserTest extends QpidTestCase
         RequestInfoParser parser = new RequestInfoParser(VirtualHostNode.class, VirtualHost.class);
 
         configureRequest("GET", "servletPath", "/*/*");
-        assertTrue("Fully wildcard path should be wild", parser.parse(_request).isWild());
+        assertTrue("Fully wildcarded path should be wild", parser.parse(_request).hasWildcard());
 
         configureRequest("GET", "servletPath", "/myvhn/*");
-        assertTrue("Partially wildcarded path should be wild too", parser.parse(_request).isWild());
+        assertTrue("Partially wildcarded path should be wild too", parser.parse(_request).hasWildcard());
 
         configureRequest("GET", "servletPath", "/myvhn/myvh");
-        assertFalse("Path with no wildcards should not be wild", parser.parse(_request).isWild());
+        assertFalse("Path with no wildcards should not be wild", parser.parse(_request).hasWildcard());
     }
 
     private void configureRequest(final String method,

@@ -35,8 +35,6 @@ import java.util.UUID;
 
 import javax.security.auth.Subject;
 
-import com.google.common.collect.Sets;
-
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.preferences.Preference;
@@ -722,7 +720,7 @@ public class PreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _testObject.getUserPreferences().updateOrAppend(Sets.newHashSet(sharedPreference));
+                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(sharedPreference));
                 return null;
             }
         });
@@ -743,7 +741,7 @@ public class PreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _testObject.getUserPreferences().updateOrAppend(Sets.newHashSet(notSharedPreference));
+                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(notSharedPreference));
                 return null;
             }
         });
@@ -764,7 +762,7 @@ public class PreferencesTest extends QpidTestCase
             public Void run()
             {
 
-                _testObject.getUserPreferences().updateOrAppend(Sets.newHashSet(p));
+                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(p));
 
                 Set<Preference> retrievedPreferences = _testObject.getUserPreferences().getVisiblePreferences();
                 assertEquals("Unexpected number of preferences", 2, retrievedPreferences.size());
@@ -800,7 +798,7 @@ public class PreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _testObject.getUserPreferences().updateOrAppend(Sets.newHashSet(sharedPreference));
+                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(sharedPreference));
                 return null;
             }
         });
@@ -821,7 +819,7 @@ public class PreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _testObject.getUserPreferences().updateOrAppend(Sets.newHashSet(testUserPreference));
+                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(testUserPreference));
 
                 Set<Preference> retrievedPreferences = _testObject.getUserPreferences().getVisiblePreferences();
                 assertEquals("Unexpected number of preferences", 2, retrievedPreferences.size());

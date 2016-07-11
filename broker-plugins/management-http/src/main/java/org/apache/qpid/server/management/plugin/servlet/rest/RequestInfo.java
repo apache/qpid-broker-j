@@ -33,7 +33,7 @@ public class RequestInfo
     private final String _operationName;
     private final List<String> _preferencesParts;
     private final Map<String, List<String>> _queryParameters;
-    private final boolean _wild;
+    private final boolean _hasWildcard;
 
     public static RequestInfo createModelRequestInfo(final List<String> modelParts, Map<String, List<String>> queryParameters)
     {
@@ -71,7 +71,7 @@ public class RequestInfo
         _type = type;
         _operationName = operationName;
         _modelParts = ImmutableList.copyOf(modelParts);
-        _wild = _modelParts.contains("*");
+        _hasWildcard = _modelParts.contains("*");
         _preferencesParts = ImmutableList.copyOf(preferencesParts);
         _queryParameters = ImmutableMap.copyOf(queryParameters);
     }
@@ -105,9 +105,9 @@ public class RequestInfo
         return _queryParameters;
     }
 
-    public boolean isWild()
+    public boolean hasWildcard()
     {
-        return _wild;
+        return _hasWildcard;
     }
 
     enum RequestType

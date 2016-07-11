@@ -185,26 +185,26 @@ public class RestServlet extends AbstractServlet
         final Model model = getBroker().getModel();
         boolean wildcard = false;
         Class<? extends ConfiguredObject> parentType = Broker.class;
-        for(int i = 0; i < _hierarchy.length; i++)
+        for (int i = 0; i < _hierarchy.length; i++)
         {
-            if(model.getChildTypes(parentType).contains(_hierarchy[i]))
+            if (model.getChildTypes(parentType).contains(_hierarchy[i]))
             {
                 parentType = _hierarchy[i];
-                for(ConfiguredObject<?> parent : parents)
+                for (ConfiguredObject<?> parent : parents)
                 {
-                    if(names.size() > i
-                            && names.get(i) != null
-                            && !names.get(i).equals("*")
-                            && names.get(i).trim().length() != 0)
+                    if (names.size() > i
+                        && names.get(i) != null
+                        && !names.get(i).equals("*")
+                        && names.get(i).trim().length() != 0)
                     {
-                        for(ConfiguredObject<?> child : parent.getChildren(_hierarchy[i]))
+                        for (ConfiguredObject<?> child : parent.getChildren(_hierarchy[i]))
                         {
-                            if(child.getName().equals(names.get(i)))
+                            if (child.getName().equals(names.get(i)))
                             {
                                 children.add(child);
                             }
                         }
-                        if(children.isEmpty())
+                        if (children.isEmpty())
                         {
                             return null;
                         }
@@ -219,10 +219,10 @@ public class RestServlet extends AbstractServlet
             else
             {
                 children = parents;
-                if(names.size() > i
-                        && names.get(i) != null
-                        && !names.get(i).equals("*")
-                        && names.get(i).trim().length() != 0)
+                if (names.size() > i
+                    && names.get(i) != null
+                    && !names.get(i).equals("*")
+                    && names.get(i).trim().length() != 0)
                 {
                     filters.put(_hierarchy[i], names.get(i));
                 }
@@ -236,39 +236,38 @@ public class RestServlet extends AbstractServlet
             children = new ArrayList<>();
         }
 
-        if(!filters.isEmpty() && !parents.isEmpty())
+        if (!filters.isEmpty() && !parents.isEmpty())
         {
             Collection<ConfiguredObject<?>> potentials = parents;
             parents = new ArrayList<>();
 
-            for(ConfiguredObject o : potentials)
+            for (ConfiguredObject o : potentials)
             {
 
                 boolean match = true;
 
-                for(Map.Entry<Class<? extends ConfiguredObject>, String> entry : filters.entrySet())
+                for (Map.Entry<Class<? extends ConfiguredObject>, String> entry : filters.entrySet())
                 {
                     Collection<? extends ConfiguredObject> ancestors =
-                            getAncestors(getConfiguredClass(),entry.getKey(), o);
+                            getAncestors(getConfiguredClass(), entry.getKey(), o);
                     match = false;
-                    for(ConfiguredObject ancestor : ancestors)
+                    for (ConfiguredObject ancestor : ancestors)
                     {
-                        if(ancestor.getName().equals(entry.getValue()))
+                        if (ancestor.getName().equals(entry.getValue()))
                         {
                             match = true;
                             break;
                         }
                     }
-                    if(!match)
+                    if (!match)
                     {
                         break;
                     }
                 }
-                if(match)
+                if (match)
                 {
                     parents.add(o);
                 }
-
             }
         }
 
@@ -283,7 +282,7 @@ public class RestServlet extends AbstractServlet
         else
         {
             Iterator<ConfiguredObject<?>> iter = parents.iterator();
-            while(iter.hasNext())
+            while (iter.hasNext())
             {
                 ConfiguredObject obj = iter.next();
                 for (Predicate<ConfiguredObject<?>> predicate : filterPredicateList)
@@ -302,11 +301,11 @@ public class RestServlet extends AbstractServlet
 
     private List<Predicate<ConfiguredObject<?>>> buildFilterPredicates(final HttpServletRequest request)
     {
-       List<Predicate<ConfiguredObject<?>>> predicates = new ArrayList<>();
+        List<Predicate<ConfiguredObject<?>>> predicates = new ArrayList<>();
 
-        for(final String paramName : Collections.list(request.getParameterNames()))
+        for (final String paramName : Collections.list(request.getParameterNames()))
         {
-            if(!RESERVED_PARAMS.contains(paramName))
+            if (!RESERVED_PARAMS.contains(paramName))
             {
                 final List<String> allowedValues = Arrays.asList(request.getParameterValues(paramName));
 
@@ -377,7 +376,8 @@ public class RestServlet extends AbstractServlet
                     setContentDispositionHeaderIfNecessary(response, attachmentFilename);
                 }
 
-                Collection<ConfiguredObject<?>> allObjects = getTargetObjects(requestInfo, buildFilterPredicates(request));
+                Collection<ConfiguredObject<?>> allObjects =
+                        getTargetObjects(requestInfo, buildFilterPredicates(request));
 
                 if (allObjects == null || (allObjects.isEmpty() && isSingleObjectRequest(requestInfo)))
                 {
@@ -654,27 +654,27 @@ public class RestServlet extends AbstractServlet
         }
 
         final Object responseObject;
-        if (requestInfo.isWild())
+        if (requestInfo.hasWildcard())
         {
             responseObject = new ArrayList<>(allObjects.size());
-            for(ConfiguredObject<?> target : allObjects)
+            for (ConfiguredObject<?> target : allObjects)
             {
                 final UserPreferences userPreferences = target.getUserPreferences();
                 try
                 {
                     final Object preferences = new RestUserPreferenceHandler().handleGET(userPreferences, requestInfo);
-                    if (preferences == null ||
-                        (preferences instanceof Collection && ((Collection) preferences).isEmpty()) ||
-                        (preferences instanceof Map && ((Map) preferences).isEmpty()))
+                    if (preferences == null || (preferences instanceof Collection
+                                                && ((Collection) preferences).isEmpty()) || (preferences instanceof Map
+                                                                                             && ((Map) preferences).isEmpty()))
                     {
                         continue;
                     }
-                    ((List<Object>)responseObject).add(preferences);
+                    ((List<Object>) responseObject).add(preferences);
                 }
                 catch (NotFoundException e)
                 {
                     // The case where the preference's type and name is provided, but this particular object does not
-                    // have a macthing preference.
+                    // have a matching preference.
                 }
             }
         }
@@ -684,7 +684,6 @@ public class RestServlet extends AbstractServlet
             final UserPreferences userPreferences = target.getUserPreferences();
 
             responseObject = new RestUserPreferenceHandler().handleGET(userPreferences, requestInfo);
-
         }
         sendJsonResponse(responseObject, request, response);
     }
