@@ -135,7 +135,7 @@ public class HeartbeatTest extends QpidBrokerTestCase
         {
             producer.send(senderSession.createTextMessage("Msg " + i));
             Thread.sleep(500);
-            assertNotNull("Expected to received message", consumer.receive(500));
+            assertNotNull("Expected to receive message within " + RECEIVE_TIMEOUT + "ms.", consumer.receive(RECEIVE_TIMEOUT));
             // Consumer does not ack the message in order that no bytes flow from consumer connection back to Broker
         }
 
