@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
+import static org.apache.qpid.server.transport.AbstractAMQPConnection.PUBLISH_ACTION_MAP_CREATOR;
+
 import java.nio.charset.StandardCharsets;
 import java.security.AccessControlException;
 import java.util.Collection;
@@ -44,6 +46,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.security.access.Operation;
+import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.store.MessageHandle;
@@ -424,12 +427,11 @@ public class ServerSessionDelegate extends SessionDelegate
                     serverSession.getAMQPConnection().checkAuthorizedMessagePrincipal(getMessageUserId(xfr));
                     if(destination instanceof ConfiguredObject)
                     {
-                        Map<String,Object> args = new HashMap<>();
-                        args.put("routingKey", messageMetaData.getRoutingKey());
-                        args.put("immediate", messageMetaData.isImmediate());
 
                         ((ConfiguredObject)destination).authorise(serverSession.getToken(),
-                                       Operation.ACTION("publish"),  args);
+                                                                  Operation.ACTION("publish"),
+                                                                  PUBLISH_ACTION_MAP_CREATOR.createMap(messageMetaData.getRoutingKey(),
+                                                                                                       messageMetaData.isImmediate()));
 
                     };
                 }

@@ -660,6 +660,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             {
                 ((AbstractConfiguredObject<?>)parent).registerChild(this);
             }
+            else if(parent instanceof AbstractConfiguredObjectProxy)
+            {
+                ((AbstractConfiguredObjectProxy)parent).registerChild(this);
+            }
         }
     }
 
@@ -969,7 +973,12 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 {
                     final AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
                     childStateFutures.add(configuredObject.doAttainState(exceptionHandler));
-
+                }
+                else if(child instanceof AbstractConfiguredObjectProxy
+                    && ((AbstractConfiguredObjectProxy)child).getDynamicState() == DynamicState.OPENED)
+                {
+                    final AbstractConfiguredObjectProxy configuredObject = (AbstractConfiguredObjectProxy) child;
+                    childStateFutures.add(configuredObject.doAttainState(exceptionHandler));
                 }
             }
         });
@@ -1051,16 +1060,25 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 @Override
                 public void performAction(final ConfiguredObject<?> child)
                 {
-                    if (child.getState() != State.ERRORED && child instanceof AbstractConfiguredObject)
+                    if (child.getState() != State.ERRORED)
                     {
-                        AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
+
                         try
                         {
-                            configuredObject.doOpening(false, exceptionHandler);
+                            if(child instanceof AbstractConfiguredObject)
+                            {
+                                AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
+                                configuredObject.doOpening(false, exceptionHandler);
+                            }
+                            else if(child instanceof AbstractConfiguredObjectProxy)
+                            {
+                                AbstractConfiguredObjectProxy configuredObject = (AbstractConfiguredObjectProxy) child;
+                                configuredObject.doOpening(false, exceptionHandler);
+                            }
                         }
                         catch (RuntimeException e)
                         {
-                            exceptionHandler.handleException(e, configuredObject);
+                            exceptionHandler.handleException(e, child);
                         }
                     }
                 }
@@ -1079,16 +1097,24 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 @Override
                 public void performAction(final ConfiguredObject<?> child)
                 {
-                    if (child.getState() != State.ERRORED && child instanceof AbstractConfiguredObject)
+                    if (child.getState() != State.ERRORED)
                     {
-                        AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
                         try
                         {
-                            configuredObject.doValidation(false, exceptionHandler);
+                            if(child instanceof AbstractConfiguredObject)
+                            {
+                                AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
+                                configuredObject.doValidation(false, exceptionHandler);
+                            }
+                            else if(child instanceof AbstractConfiguredObjectProxy)
+                            {
+                                AbstractConfiguredObjectProxy configuredObject = (AbstractConfiguredObjectProxy) child;
+                                configuredObject.doValidation(false, exceptionHandler);
+                            }
                         }
                         catch (RuntimeException e)
                         {
-                            exceptionHandler.handleException(e, configuredObject);
+                            exceptionHandler.handleException(e, child);
                         }
                     }
                 }
@@ -1108,18 +1134,26 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 @Override
                 public void performAction(Object child)
                 {
-                    if (child instanceof AbstractConfiguredObject)
-                    {
-                        AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
                         try
                         {
-                            configuredObject.doResolution(false, exceptionHandler);
+                            if (child instanceof AbstractConfiguredObject)
+                            {
+                                AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
+
+                                configuredObject.doResolution(false, exceptionHandler);
+                            }
+                            else if (child instanceof AbstractConfiguredObjectProxy)
+                            {
+                                AbstractConfiguredObjectProxy configuredObject = (AbstractConfiguredObjectProxy) child;
+
+                                configuredObject.doResolution(false, exceptionHandler);
+                            }
                         }
                         catch (RuntimeException e)
                         {
-                            exceptionHandler.handleException(e, configuredObject);
+                            exceptionHandler.handleException(e, (ConfiguredObject)child);
                         }
-                    }
+
                 }
             });
             postResolveChildren();
@@ -1161,18 +1195,24 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 @Override
                 public void performAction(final ConfiguredObject<?> child)
                 {
-                    if (child instanceof AbstractConfiguredObject)
-                    {
-                        AbstractConfiguredObject configuredObject =(AbstractConfiguredObject) child;
                         try
                         {
-                            configuredObject.doCreation(false, exceptionHandler);
+                            if (child instanceof AbstractConfiguredObject)
+                            {
+                                AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
+                                configuredObject.doCreation(false, exceptionHandler);
+                            }
+                            else if(child instanceof AbstractConfiguredObjectProxy)
+                            {
+                                AbstractConfiguredObjectProxy configuredObject = (AbstractConfiguredObjectProxy) child;
+                                configuredObject.doCreation(false, exceptionHandler);
+                            }
                         }
                         catch (RuntimeException e)
                         {
-                            exceptionHandler.handleException(e, configuredObject);
+                            exceptionHandler.handleException(e, child);
                         }
-                    }
+
                 }
             });
         }
@@ -1593,6 +1633,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                 if(parent instanceof AbstractConfiguredObject)
                                 {
                                     ((AbstractConfiguredObject<?>)parent).validateChildDelete(AbstractConfiguredObject.this);
+                                }
+                                else if (parent instanceof AbstractConfiguredObjectProxy)
+                                {
+                                    ((AbstractConfiguredObjectProxy)parent).validateChildDelete(AbstractConfiguredObject.this);
                                 }
                             }
 
@@ -2156,6 +2200,15 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     parentObj.childRemoved(this);
                 }
             }
+            else if (parent instanceof AbstractConfiguredObjectProxy)
+            {
+                AbstractConfiguredObjectProxy parentObj = (AbstractConfiguredObjectProxy) parent;
+                parentObj.unregisterChild(this);
+                if(removed)
+                {
+                    parentObj.childRemoved(this);
+                }
+            }
         }
     }
 
@@ -2204,6 +2257,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         {
             return ((AbstractConfiguredObject)child).getAttainStateFuture();
         }
+        else if(child instanceof AbstractConfiguredObjectProxy)
+        {
+            return ((AbstractConfiguredObjectProxy)child).getAttainStateFuture();
+        }
         else
         {
             return Futures.immediateFuture(child);
@@ -2218,6 +2275,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         if (child instanceof AbstractConfiguredObject)
         {
             return ((AbstractConfiguredObject)child).getAttainStateFuture();
+        }
+        else if(child instanceof AbstractConfiguredObjectProxy)
+        {
+            return ((AbstractConfiguredObjectProxy)child).getAttainStateFuture();
         }
         else
         {
@@ -2552,6 +2613,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 if (object instanceof AbstractConfiguredObject)
                 {
                     ((AbstractConfiguredObject) object).forceUpdateAllSecureAttributes();
+                }
+                else if(object instanceof AbstractConfiguredObjectProxy)
+                {
+                    ((AbstractConfiguredObjectProxy) object).forceUpdateAllSecureAttributes();
                 }
             }
         });
@@ -3393,15 +3458,22 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     interface AbstractConfiguredObjectExceptionHandler
     {
-        void handleException(RuntimeException exception, AbstractConfiguredObject<?> source);
+        void handleException(RuntimeException exception, ConfiguredObject<?> source);
     }
 
     private static class OpenExceptionHandler implements AbstractConfiguredObjectExceptionHandler
     {
         @Override
-        public void handleException(RuntimeException exception, AbstractConfiguredObject<?> source)
+        public void handleException(RuntimeException exception, ConfiguredObject<?> source)
         {
-            source.handleExceptionOnOpen(exception);
+            if(source instanceof AbstractConfiguredObject)
+            {
+                ((AbstractConfiguredObject)source).handleExceptionOnOpen(exception);
+            }
+            else if(source instanceof AbstractConfiguredObjectProxy)
+            {
+                ((AbstractConfiguredObjectProxy)source).handleExceptionOnOpen(exception);
+            }
         }
     }
 
@@ -3420,8 +3492,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
 
         @Override
-
-        public void handleException(RuntimeException exception, AbstractConfiguredObject<?> source)
+        public void handleException(RuntimeException exception, ConfiguredObject<?> source)
         {
             try
             {
@@ -3435,10 +3506,48 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             {
                 if (_unregister)
                 {
-                    source.unregister(false);
+                    if(source instanceof AbstractConfiguredObject)
+                    {
+                        ((AbstractConfiguredObject)source).unregister(false);
+                    }
+                    else if (source instanceof AbstractConfiguredObjectProxy)
+                    {
+                        ((AbstractConfiguredObjectProxy)source).unregister(false);
+                    }
                 }
                 throw exception;
             }
         }
+    }
+
+    private interface AbstractConfiguredObjectProxy
+    {
+        void registerChild(ConfiguredObject configuredObject);
+
+        DynamicState getDynamicState();
+
+        ListenableFuture<Void> doAttainState(AbstractConfiguredObjectExceptionHandler exceptionHandler);
+
+        void doOpening(boolean skipCheck, AbstractConfiguredObjectExceptionHandler exceptionHandler);
+
+        void handleExceptionOnOpen(RuntimeException exception);
+
+        void unregister(boolean removed);
+
+        void doValidation(boolean skipCheck, AbstractConfiguredObjectExceptionHandler exceptionHandler);
+
+        void doResolution(boolean skipCheck, AbstractConfiguredObjectExceptionHandler exceptionHandler);
+
+        void doCreation(boolean skipCheck, AbstractConfiguredObjectExceptionHandler exceptionHandler);
+
+        void validateChildDelete(ConfiguredObject child);
+
+        void unregisterChild(ConfiguredObject child);
+
+        void childRemoved(ConfiguredObject child);
+
+        ListenableFuture getAttainStateFuture();
+
+        void forceUpdateAllSecureAttributes();
     }
 }

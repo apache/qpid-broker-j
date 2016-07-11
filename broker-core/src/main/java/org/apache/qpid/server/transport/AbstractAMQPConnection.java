@@ -72,6 +72,7 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.FixedKeyMapCreator;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 import org.apache.qpid.transport.network.Ticker;
@@ -81,6 +82,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         implements ProtocolEngine, AMQPConnection<C>, EventLoggerProvider
 
 {
+    public static final FixedKeyMapCreator PUBLISH_ACTION_MAP_CREATOR = new FixedKeyMapCreator("routingKey", "immediate");
     private static final Logger _logger = LoggerFactory.getLogger(AbstractAMQPConnection.class);
 
     private final Broker<?> _broker;

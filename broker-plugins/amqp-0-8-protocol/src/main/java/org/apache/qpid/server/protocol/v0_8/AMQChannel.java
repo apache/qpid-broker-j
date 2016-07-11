@@ -439,12 +439,9 @@ public class AMQChannel
 
                 if(_currentMessage.getDestination() instanceof ConfiguredObject)
                 {
-                    Map<String,Object> args = new HashMap<>();
-                    args.put("routingKey", routingKey);
-                    args.put("immediate", info.isImmediate());
                     ((ConfiguredObject)_currentMessage.getDestination()).authorise(_token,
-                                              Operation.ACTION("publish"),
-                                              args);
+                                                                                   Operation.ACTION("publish"),
+                                                                                   AbstractAMQPConnection.PUBLISH_ACTION_MAP_CREATOR.createMap(routingKey, info.isImmediate()));
 
                 };
 
