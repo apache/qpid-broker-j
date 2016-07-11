@@ -67,6 +67,14 @@ define(["dojo/dom",
             parser.parse(this.node)
                 .then(function (instances)
                 {
+                    var meta = that.management.metadata;
+                    var typeMetaData = meta.getMetaData("Plugin", "MANAGEMENT-HTTP");
+
+                    var methodsMultiSelect = dom.byId("formEditHttpPlugin.corsAllowMethods");
+                    var methodsValidValues = typeMetaData.attributes.corsAllowMethods.validValues;
+                    var methodsValues = meta.extractUniqueListOfValues(methodsValidValues);
+                    util.setMultiSelectOptions(methodsMultiSelect, methodsValues.sort());
+
                     that.managementHttpUpdater = new ManagementHttpUpdater(that);
                     that.managementHttpUpdater.update(function ()
                     {
@@ -104,6 +112,10 @@ define(["dojo/dom",
             this.httpsSaslAuthenticationEnabled = query(".httpsSaslAuthenticationEnabled", node)[0];
             this.httpSaslAuthenticationEnabled = query(".httpSaslAuthenticationEnabled", node)[0];
             this.compressResponses = query(".compressResponses", node)[0];
+            this.corsAllowOrigins = query(".corsAllowOrigins", node)[0];
+            this.corsAllowMethods = query(".corsAllowMethods", node)[0];
+            this.corsAllowHeaders = query(".corsAllowHeaders", node)[0];
+            this.corsAllowCredentials = query(".corsAllowCredentials", node)[0];
             this.management = this.controller.management;
         }
 
@@ -135,6 +147,13 @@ define(["dojo/dom",
                         showBoolean(that.pluginData.httpSaslAuthenticationEnabled);
                     that.compressResponses.innerHTML = showBoolean(that.pluginData.compressResponses);
                     that.sessionTimeout.innerHTML = that.pluginData.sessionTimeout;
+                    that.httpSaslAuthenticationEnabled.innerHTML =
+                        showBoolean(that.pluginData.httpSaslAuthenticationEnabled);
+                    that.corsAllowOrigins.innerHTML = that.pluginData.corsAllowOrigins;
+                    that.corsAllowMethods.innerHTML = that.pluginData.corsAllowMethods;
+                    that.corsAllowHeaders.innerHTML = that.pluginData.corsAllowHeaders;
+                    that.corsAllowCredentials.innerHTML = showBoolean(that.pluginData.corsAllowCredentials);
+
                     if (callback)
                     {
                         callback();

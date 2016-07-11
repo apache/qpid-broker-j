@@ -130,6 +130,8 @@ define(["dojo/_base/event",
                 "MANAGEMENT-HTTP",
                 actualData,
                 this.management.metadata);
+            var methodsMultiSelectWidget = registry.byId("formEditHttpPlugin.corsAllowMethods");
+            methodsMultiSelectWidget.set("value", actualData.corsAllowMethods);
             this.dialog.startup();
             this.dialog.show();
             if (!this.resizeEventRegistered)

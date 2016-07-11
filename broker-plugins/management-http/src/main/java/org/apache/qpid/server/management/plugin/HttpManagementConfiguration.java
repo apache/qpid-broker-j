@@ -20,13 +20,13 @@
  */
 package org.apache.qpid.server.management.plugin;
 
+import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.Plugin;
-import org.apache.qpid.server.model.port.HttpPort;
 
 public interface HttpManagementConfiguration<X extends HttpManagementConfiguration<X>> extends Plugin<X>
 {
@@ -45,6 +45,18 @@ public interface HttpManagementConfiguration<X extends HttpManagementConfigurati
 
     @ManagedAttribute( defaultValue = "600" )
     public int getSessionTimeout();
+
+    @ManagedAttribute( defaultValue = "" )
+    public String getCorsAllowOrigins();
+
+    @ManagedAttribute( defaultValue = "[\"HEAD\",\"GET\",\"POST\"]", validValues = {"org.apache.qpid.server.management.plugin.HttpManagement#getAllAvailableCorsMethodCombinations()"} )
+    public Set<String> getCorsAllowMethods();
+
+    @ManagedAttribute( defaultValue = "Content-Type,Accept,Origin,X-Requested-With" )
+    public String getCorsAllowHeaders();
+
+    @ManagedAttribute( defaultValue = "true" )
+    public boolean getCorsAllowCredentials();
 
     String QPID_HELP_URL = "qpid.helpURL";
     @ManagedContextDefault(name = QPID_HELP_URL)

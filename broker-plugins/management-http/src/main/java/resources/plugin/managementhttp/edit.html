@@ -121,6 +121,65 @@
                         </div>
                     </div>
 
+                    <div class="clear formBox">
+                      <fieldset>
+                        <legend>Cross Origin Resource Sharing (CORS)</legend>
+                        <div class="clear">
+                          <div class="formLabel-labelCell tableContainer-labelCell">Allow Origins</div>
+                          <div class="formLabel-valueCell tableContainer-valueCell">
+                              <input data-dojo-type="dijit/form/ValidationTextBox"
+                                     id="editHttpManagement.corsAllowOrigins"
+                                     data-dojo-props="
+                                     name: 'corsAllowOrigins',
+                                     trim: true,
+                                     invalidMessage: 'Invalid value',
+                                     placeHolder: 'Allowed Origins',
+                                     promptMessage: 'A comma separated list of origins that are allowed to access the resources.'"/>
+                          </div>
+                        </div>
+                        <div class="clear">
+                          <div class="formLabel-labelCell tableContainer-labelCell">Allow Methods</div>
+                          <div class="formLabel-valueCell tableContainer-valueCell">
+                            <div class="formLabel-controlCell">
+                              <select id="formEditHttpPlugin.corsAllowMethods"
+                                      data-dojo-type="dijit.form.MultiSelect"
+                                      data-dojo-props="
+                                                       name: 'corsAllowMethods',
+                                                       value: '',
+                                                       title: 'HTTP methods that are allowed to be used when accessing the resources.'">
+                              </select>
+                            </div>
+                            <div id="formEditHttpPlugin.corsAllowMethods.tooltip"
+                                 data-dojo-type="dijit.Tooltip"
+                                 data-dojo-props="connectId: 'formEditHttpPlugin.corsAllowMethods',
+                                                  label: 'HTTP methods that are allowed to be used when accessing the resources.'">
+                            </div>
+                          </div>
+                        </div>
+                        <div class="clear">
+                          <div class="formLabel-labelCell tableContainer-labelCell">Allow Headers</div>
+                          <div class="formLabel-valueCell tableContainer-valueCell">
+                              <input data-dojo-type="dijit/form/ValidationTextBox"
+                                     id="editHttpManagement.corsAllowHeaders"
+                                     data-dojo-props="
+                                     name: 'corsAllowHeaders',
+                                     trim: true,
+                                     invalidMessage: 'Invalid value',
+                                     placeHolder: 'Allowed Headers',
+                                     promptMessage: 'A comma separated list of HTTP headers that are allowed to be specified when accessing the resources.'"/>
+                          </div>
+                        </div>
+                        <div class="clear">
+                          <div class="formLabel-labelCell tableContainer-labelCell">Allow Credentials</div>
+                          <div class="formLabel-valueCell tableContainer-valueCell">
+                            <input type="text" id="editHttpPlugin.corsAllowCredentials"
+                                   data-dojo-type="dijit/form/CheckBox"
+                                   data-dojo-props=" name: 'corsAllowCredentials' " />
+                          </div>
+                        </div>
+                      </fieldset>
+                    </div>
+
                 </div>
                 <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
                     <button data-dojo-type="dijit/form/Button" id="editHttpManagement.saveButton" data-dojo-props="label: 'Save'">Save</button>

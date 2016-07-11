@@ -21,6 +21,7 @@
 package org.apache.qpid.server.management.plugin;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.net.BindException;
 import java.net.InetSocketAddress;
@@ -45,11 +46,10 @@ import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.http.HttpServletRequest;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-
-import org.apache.qpid.server.logging.messages.PortMessages;
-import org.apache.qpid.server.management.plugin.filter.ExceptionHandlingFilter;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
@@ -61,6 +61,7 @@ import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -69,7 +70,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.messages.ManagementConsoleMessages;
+import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.management.plugin.connector.TcpAndSslSelectChannelConnector;
+import org.apache.qpid.server.management.plugin.filter.ExceptionHandlingFilter;
 import org.apache.qpid.server.management.plugin.filter.ForbiddingAuthorisationFilter;
 import org.apache.qpid.server.management.plugin.filter.ForbiddingTraceFilter;
 import org.apache.qpid.server.management.plugin.filter.LoggingFilter;
@@ -90,7 +93,20 @@ import org.apache.qpid.server.management.plugin.servlet.rest.StructureServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.TimeZoneServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.UserPreferencesServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.VirtualHostQueryServlet;
-import org.apache.qpid.server.model.*;
+import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.KeyStore;
+import org.apache.qpid.server.model.ManagedAttributeField;
+import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.model.Transport;
+import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.adapter.AbstractPluginAdapter;
 import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.model.port.PortManager;
@@ -140,6 +156,18 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
     @ManagedAttributeField
     private int _sessionTimeout;
+
+    @ManagedAttributeField
+    public String _corsAllowOrigins;
+
+    @ManagedAttributeField
+    public Set<String> _corsAllowMethods;
+
+    @ManagedAttributeField
+    public String _corsAllowHeaders;
+
+    @ManagedAttributeField
+    public boolean _corsAllowCredentials;
 
     @ManagedAttributeField
     private boolean _compressResponses;
@@ -213,6 +241,26 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         return _sessionTimeout;
     }
 
+    public String getCorsAllowOrigins()
+    {
+        return _corsAllowOrigins;
+    }
+
+    public Set<String> getCorsAllowMethods()
+    {
+        return _corsAllowMethods;
+    }
+
+    public String getCorsAllowHeaders()
+    {
+        return _corsAllowHeaders;
+    }
+
+    public boolean getCorsAllowCredentials()
+    {
+        return _corsAllowCredentials;
+    }
+
     private Server createServer(Collection<HttpPort<?>> ports)
     {
         _logger.debug("Starting up web server on {}", ports);
@@ -259,6 +307,13 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.getServletContext().setAttribute(HttpManagementUtil.ATTR_MANAGEMENT_CONFIGURATION, this);
 
         root.addFilter(new FilterHolder(new ExceptionHandlingFilter()), "/*", EnumSet.allOf(DispatcherType.class));
+
+        FilterHolder corsFilter = new FilterHolder(new CrossOriginFilter());
+        corsFilter.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, getCorsAllowOrigins());
+        corsFilter.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, Joiner.on(",").join(getCorsAllowMethods()));
+        corsFilter.setInitParameter(CrossOriginFilter.ALLOWED_HEADERS_PARAM, getCorsAllowHeaders());
+        corsFilter.setInitParameter(CrossOriginFilter.ALLOW_CREDENTIALS_PARAM, String.valueOf(getCorsAllowCredentials()));
+        root.addFilter(corsFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         FilterHolder loggingFilter = new FilterHolder(new LoggingFilter());
         root.addFilter(loggingFilter, "/api/*", EnumSet.of(DispatcherType.REQUEST));
@@ -721,6 +776,43 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     {
         HttpPort<?> port = getPort(request);
         return port == null ? null : port.getAuthenticationProvider();
+    }
+
+    @SuppressWarnings("unused")
+    public static Set<String> getAllAvailableCorsMethodCombinations()
+    {
+        List<String> methods = Arrays.asList("OPTION", "HEAD", "GET", "POST", "PUT", "DELETE");
+        Set<Set<String>> combinations = new HashSet();
+        int n = methods.size();
+        assert n < 31 : "Too many combination to calculate";
+        // enumerate all 2**n combinations
+        for (int i = 0; i < (1 << n); ++i) {
+            Set<String> currentCombination = new HashSet();
+            // each bit in the variable i represents an item of the sequence
+            // if the bit is set the item should appear in this particular combination
+            for (int index = 0; index < n; ++index) {
+                if ((i & (1 << index)) != 0) {
+                    currentCombination.add(methods.get(index));
+                }
+            }
+            combinations.add(currentCombination);
+        }
+
+        Set<String> combinationsAsString = new HashSet<>(combinations.size());
+        ObjectMapper mapper = new ObjectMapper();
+        for(Set<String> combination : combinations)
+        {
+            try(StringWriter writer = new StringWriter())
+            {
+                mapper.writeValue(writer, combination);
+                combinationsAsString.add(writer.toString());
+            }
+            catch (IOException e)
+            {
+                throw new IllegalArgumentException("Unexpected IO Exception generating JSON string", e);
+            }
+        }
+        return Collections.unmodifiableSet(combinationsAsString);
     }
 
     public static HttpPort<?> getPort(final HttpServletRequest request)
