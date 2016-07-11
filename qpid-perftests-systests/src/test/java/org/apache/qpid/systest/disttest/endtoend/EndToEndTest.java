@@ -20,8 +20,10 @@ package org.apache.qpid.systest.disttest.endtoend;
 
 import static org.apache.qpid.disttest.AbstractRunner.JNDI_CONFIG_PROP;
 import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMB;
+import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMBER_CONSUMPTION_TO_PRODUCTION_RATIO_SUCCESS_THRESHOLD;
 import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMBER_MINIMUM_DELTA;
 import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMBER_MAX_NUMBER_OF_RUNS;
+import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMBER_PRODUCTION_TO_TARGET_RATIO_SUCCESS_THRESHOLD;
 import static org.apache.qpid.disttest.ControllerRunner.OUTPUT_DIR_PROP;
 import static org.apache.qpid.disttest.ControllerRunner.TEST_CONFIG_PROP;
 
@@ -169,8 +171,10 @@ public class EndToEndTest extends QpidBrokerTestCase
         arguments.put(OUTPUT_DIR_PROP, _outputDir.getAbsolutePath());
         arguments.put(HILL_CLIMB, "true");
         // Reduce the minimum delta and number of runs so that test executes more quickly.We are not interested in an accurate repeatable value in this test.
-        arguments.put(HILL_CLIMBER_MINIMUM_DELTA, "10");
+        arguments.put(HILL_CLIMBER_MINIMUM_DELTA, "9999");
         arguments.put(HILL_CLIMBER_MAX_NUMBER_OF_RUNS, "1");
+        arguments.put(HILL_CLIMBER_PRODUCTION_TO_TARGET_RATIO_SUCCESS_THRESHOLD, "0.01");
+        arguments.put(HILL_CLIMBER_CONSUMPTION_TO_PRODUCTION_RATIO_SUCCESS_THRESHOLD, "0.01");
 
         runController(arguments);
         checkXmlFile(arguments);
