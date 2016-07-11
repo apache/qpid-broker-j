@@ -48,6 +48,18 @@
                     <para><emphasis>Session timeout</emphasis> is the timeout in seconds to close
                         the HTTP session. It is set to 10 minutes by default.</para>
                 </listitem>
+                <listitem>
+                    <para><emphasis>CORS Allow Origins</emphasis> is a comma separated list of origins that are allowed to access the REST API. Set to '*' to allow all origins. Default is empty, meaning CORS is disabled.</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>CORS Allow Methods</emphasis> is a comma separated list of HTTP methods that are allowed to be used when doing CORS requests. Default value is "HEAD,GET,POST".</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>CORS Allow Headers</emphasis> is a comma separated list of HTTP headers that are allowed to be specified when doing CORS requests. Default value is "Content-Type,Accept,Origin,X-Requested-With".</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>CORS Allow Credentials</emphasis> is a boolean indicating if the resource allows requests with credentials. Default value is true.</para>
+                </listitem>
             </itemizedlist>
         </para>
     </section>

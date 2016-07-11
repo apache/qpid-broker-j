@@ -342,5 +342,14 @@ curl --user admin -X PUT  -d '{}' http://localhost:8080/api/latest/binding/&lt;v
     </para>
   </section>
 
+  <section xml:id="Java-Broker-Management-Channel-REST-API-CORS">
+    <title>Cross Origin Resource Sharing (CORS)</title>
+    <para> The Qpid Java broker supports Cross Origin Resource Sharing (CORS)
+      to allow web management consoles other than the one embedded in the
+      broker to use the REST API.  This feature must be enabled by configuring
+      the CORS Allow Origins and related attributes on the
+      <xref linkend="Java-Broker-Management-Managing-Plugin-HTTP"/>
+    </para>
+  </section>
 
 </section>
