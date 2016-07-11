@@ -113,15 +113,18 @@ public class PreferencesRecoverer
             }
         }
         associatedObject.setUserPreferences(new UserPreferencesImpl(preferenceStore, recoveredPreferences));
-        Model model = associatedObject.getModel();
-        Collection<Class<? extends ConfiguredObject>> childrenCategories =
-                model.getChildTypes(associatedObject.getCategoryClass());
-        for (Class<? extends ConfiguredObject> childCategory : childrenCategories)
+
+        if (!(associatedObject instanceof PreferenceStoreProvider))
         {
-            Collection<? extends ConfiguredObject> children = associatedObject.getChildren(childCategory);
-            for (ConfiguredObject<?> child : children)
+            Collection<Class<? extends ConfiguredObject>> childrenCategories =
+                    associatedObject.getModel().getChildTypes(associatedObject.getCategoryClass());
+            for (Class<? extends ConfiguredObject> childCategory : childrenCategories)
             {
-                setUserPreferences(child, objectToRecordMap, preferenceStore, corruptedRecords);
+                Collection<? extends ConfiguredObject> children = associatedObject.getChildren(childCategory);
+                for (ConfiguredObject<?> child : children)
+                {
+                    setUserPreferences(child, objectToRecordMap, preferenceStore, corruptedRecords);
+                }
             }
         }
     }

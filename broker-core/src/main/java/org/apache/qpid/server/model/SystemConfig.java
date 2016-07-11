@@ -25,9 +25,10 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
+import org.apache.qpid.server.store.preferences.PreferenceStoreProvider;
 
 @ManagedObject (creatable = false)
-public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObject<X>, ModelRoot
+public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObject<X>, ModelRoot, PreferenceStoreProvider
 {
     String MANAGEMENT_MODE = "managementMode";
     
@@ -70,7 +71,4 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
     Broker getBroker();
 
     DurableConfigurationStore getConfigurationStore();
-
-    PreferenceStore createPreferenceStore();
-
 }

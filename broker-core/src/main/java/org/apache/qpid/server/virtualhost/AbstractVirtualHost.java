@@ -92,6 +92,7 @@ import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreProvider;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdaterImpl;
 import org.apache.qpid.server.store.preferences.PreferencesRecoverer;
@@ -467,8 +468,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         }
 
-        VirtualHostNode<?> parent = getParent(VirtualHostNode.class);
-        _preferenceStore = parent.createPreferenceStore();
+        PreferenceStoreProvider preferenceStoreProvider = getParent(VirtualHostNode.class);
+        _preferenceStore = preferenceStoreProvider.createPreferenceStore();
     }
 
     private void checkVHostStateIsActive()

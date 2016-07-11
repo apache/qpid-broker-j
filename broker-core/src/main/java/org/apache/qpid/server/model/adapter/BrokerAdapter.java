@@ -70,6 +70,7 @@ import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreProvider;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdaterImpl;
 import org.apache.qpid.server.store.preferences.PreferencesRecoverer;
 import org.apache.qpid.server.util.HousekeepingExecutor;
@@ -667,8 +668,8 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     {
         super.onOpen();
 
-        SystemConfig<?> systemConfig = getParent(SystemConfig.class);
-        _preferenceStore = systemConfig.createPreferenceStore();
+        PreferenceStoreProvider preferenceStoreProvider = getParent(SystemConfig.class);
+        _preferenceStore = preferenceStoreProvider.createPreferenceStore();
 
         getEventLogger().message(BrokerMessages.STARTUP(CommonProperties.getReleaseVersion(),
                                                         CommonProperties.getBuildVersion()));

@@ -45,6 +45,11 @@ public class RestUserPreferenceHandler
 {
     public void handleDELETE(final UserPreferences userPreferences, final RequestInfo requestInfo)
     {
+        if (userPreferences == null)
+        {
+            throw new NotFoundException("User preferences are not available");
+        }
+
         final List<String> preferencesParts = requestInfo.getPreferencesParts();
         final Map<String, List<String>> queryParameters = requestInfo.getQueryParameters();
         String id = getIdFromQueryParameters(queryParameters);
@@ -102,6 +107,11 @@ public class RestUserPreferenceHandler
     ActionTaken handlePUT(ConfiguredObject<?> target, RequestInfo requestInfo, Object providedObject)
     {
         UserPreferences userPreferences = target.getUserPreferences();
+        if (userPreferences == null)
+        {
+            throw new NotFoundException("User preferences are not available");
+        }
+
         final List<String> preferencesParts = requestInfo.getPreferencesParts();
 
         if (!(providedObject instanceof Map))
@@ -138,6 +148,11 @@ public class RestUserPreferenceHandler
     void handlePOST(ConfiguredObject<?> target, RequestInfo requestInfo, Object providedObject)
     {
         UserPreferences userPreferences = target.getUserPreferences();
+        if (userPreferences == null)
+        {
+            throw new NotFoundException("User preferences are not available");
+        }
+
         final List<String> preferencesParts = requestInfo.getPreferencesParts();
 
         if (preferencesParts.size() == 1)
@@ -217,6 +232,11 @@ public class RestUserPreferenceHandler
 
     Object handleGET(UserPreferences userPreferences, RequestInfo requestInfo)
     {
+        if (userPreferences == null)
+        {
+            throw new NotFoundException("User preferences are not available");
+        }
+
         final List<String> preferencesParts = requestInfo.getPreferencesParts();
         final Map<String, List<String>> queryParameters = requestInfo.getQueryParameters();
         String id = getIdFromQueryParameters(queryParameters);

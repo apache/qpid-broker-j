@@ -1187,6 +1187,15 @@ public class RestServlet extends AbstractServlet
             }
             case USER_PREFERENCES:
             {
+                //TODO: define format how to report the results for bulk delete, i.e. how to report individual errors and success statuses
+                if (allObjects.size() > 1)
+                {
+                    sendJsonErrorResponse(request,
+                                          response,
+                                          HttpServletResponse.SC_BAD_REQUEST,
+                                          "Deletion of user preferences using wildcards is unsupported");
+                    return;
+                }
                 for (ConfiguredObject o : allObjects)
                 {
                     new RestUserPreferenceHandler().handleDELETE(o.getUserPreferences(), requestInfo);
