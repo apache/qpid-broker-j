@@ -23,12 +23,11 @@ package org.apache.qpid.server.model;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.store.DurableConfigurationStore;
-import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
-import org.apache.qpid.server.store.preferences.PreferenceStoreProvider;
+import org.apache.qpid.server.store.preferences.PreferencesRoot;
 
 @ManagedObject (creatable = false)
-public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObject<X>, ModelRoot, PreferenceStoreProvider
+public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObject<X>, ModelRoot, PreferencesRoot
 {
     String MANAGEMENT_MODE = "managementMode";
     

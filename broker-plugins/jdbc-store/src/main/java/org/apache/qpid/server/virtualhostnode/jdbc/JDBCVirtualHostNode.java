@@ -41,7 +41,4 @@ public interface JDBCVirtualHostNode<X extends JDBCVirtualHostNode<X>> extends V
     @ManagedAttribute(secure=true)
     String getPassword();
 
-    @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
-            defaultValue = "{\"type\": \"Provided\"}")
-    PreferenceStoreAttributes getPreferenceStoreAttributes();
 }

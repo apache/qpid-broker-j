@@ -90,6 +90,7 @@ import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironment
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacadeFactory;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicationGroupListener;
 import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 import org.apache.qpid.server.store.preferences.ProvidedPreferenceStoreFactoryService;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
@@ -770,6 +771,12 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         {
             environmentFacade.setCacheSize(cacheSize);
         }
+    }
+
+    @Override
+    public PreferenceStore getPreferenceStore()
+    {
+        return getConfigurationStore().getPreferenceStore();
     }
 
     private class EnvironmentStateChangeListener implements StateChangeListener

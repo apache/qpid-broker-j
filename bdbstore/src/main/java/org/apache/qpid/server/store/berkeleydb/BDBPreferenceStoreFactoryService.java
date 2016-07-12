@@ -17,32 +17,36 @@
  * under the License.
  */
 
-package org.apache.qpid.server.store.preferences;
+package org.apache.qpid.server.store.berkeleydb;
+
 
 import java.util.Map;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreFactoryService;
 
 @SuppressWarnings("unused")
 @PluggableService
-public class ProvidedPreferenceStoreFactoryService implements PreferenceStoreFactoryService
+public class BDBPreferenceStoreFactoryService implements PreferenceStoreFactoryService
 {
-
-    public static final String TYPE = "Provided";
+    private static final String TYPE = "BDB";
+    private static final String PATH = "path";
 
     @Override
     public PreferenceStore createInstance(final ConfiguredObject<?> parent,
                                           final Map<String, Object> preferenceStoreAttributes)
     {
-        if (!(parent instanceof PreferenceStoreProvider))
+        final Object path = preferenceStoreAttributes.get(PATH);
+        if (path == null || !(path instanceof String))
         {
-            throw new IllegalConfigurationException(
-                    "Cannot create provided preference store on non PreferenceStoreProvider");
+            throw new IllegalConfigurationException("BDBPreferenceStore requires path");
         }
 
-        return ((PreferenceStoreProvider) parent).getPreferenceStore();
+        final String storePath = (String)path;
+        return new BDBPreferenceStore(parent, storePath);
     }
 
     @Override

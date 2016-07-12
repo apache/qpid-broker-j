@@ -31,6 +31,7 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.SystemConfigFactoryConstructor;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 
 @ManagedObject(category = false, type = BDBSystemConfigImpl.SYSTEM_CONFIG_TYPE)
 public class BDBSystemConfigImpl extends AbstractSystemConfig<BDBSystemConfigImpl> implements BDBSystemConfig<BDBSystemConfigImpl>
@@ -76,5 +77,11 @@ public class BDBSystemConfigImpl extends AbstractSystemConfig<BDBSystemConfigImp
     public Long getStoreOverfullSize()
     {
         return _storeOverfullSize;
+    }
+
+    @Override
+    public PreferenceStore getPreferenceStore()
+    {
+        return ((BDBConfigurationStore) getConfigurationStore()).getPreferenceStore();
     }
 }

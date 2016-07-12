@@ -25,9 +25,10 @@ import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.store.FileBasedSettings;
 import org.apache.qpid.server.store.SizeMonitoringSettings;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
+import org.apache.qpid.server.store.preferences.PreferenceStoreProvider;
 
 public interface BDBSystemConfig<X extends BDBSystemConfig<X>> extends SystemConfig<X>, FileBasedSettings,
-                                                                       SizeMonitoringSettings
+                                                                       SizeMonitoringSettings, PreferenceStoreProvider
 {
     @ManagedAttribute(mandatory = true)
     String getStorePath();

@@ -36,6 +36,7 @@ import org.apache.qpid.server.store.berkeleydb.BDBConfigurationStore;
 import org.apache.qpid.server.store.berkeleydb.BDBMessageStore;
 import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
 import org.apache.qpid.server.store.berkeleydb.BDBCacheSizeSetter;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.virtualhostnode.AbstractStandardVirtualHostNode;
 
 @ManagedObject(type = BDBVirtualHostNodeImpl.VIRTUAL_HOST_NODE_TYPE, category = false,
@@ -186,5 +187,11 @@ public class BDBVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<BDBV
             }
         }
         return Collections.emptyMap();
+    }
+
+    @Override
+    public PreferenceStore getPreferenceStore()
+    {
+        return ((BDBConfigurationStore) getConfigurationStore()).getPreferenceStore();
     }
 }

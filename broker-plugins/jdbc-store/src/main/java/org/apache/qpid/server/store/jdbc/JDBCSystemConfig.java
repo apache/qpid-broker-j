@@ -39,6 +39,6 @@ public interface JDBCSystemConfig<X extends JDBCSystemConfig<X>> extends SystemC
     String getPassword();
 
     @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
-            defaultValue = "{\"type\": \"Provided\"}")
+            defaultValue = "{\"type\": \"Noop\"}")
     PreferenceStoreAttributes getPreferenceStoreAttributes();
 }

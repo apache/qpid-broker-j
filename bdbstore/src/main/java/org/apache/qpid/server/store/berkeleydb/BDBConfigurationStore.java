@@ -53,8 +53,10 @@ import org.apache.qpid.server.store.berkeleydb.entry.HierarchyKey;
 import org.apache.qpid.server.store.berkeleydb.tuple.ConfiguredObjectBinding;
 import org.apache.qpid.server.store.berkeleydb.tuple.HierarchyKeyBinding;
 import org.apache.qpid.server.store.berkeleydb.tuple.UUIDTupleBinding;
-import org.apache.qpid.server.store.berkeleydb.upgrade.Upgrader;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
+import org.apache.qpid.server.store.preferences.PreferenceRecord;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
 import org.apache.qpid.util.FileUtils;
 
 /**
@@ -65,7 +67,7 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BDBConfigurationStore.class);
 
-    public static final int VERSION = 8;
+    public static final int VERSION = 9;
     private static final String CONFIGURED_OBJECTS_DB_NAME = "CONFIGURED_OBJECTS";
     private static final String CONFIGURED_OBJECT_HIERARCHY_DB_NAME = "CONFIGURED_OBJECT_HIERARCHY";
 
@@ -74,6 +76,7 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
     private final EnvironmentFacadeFactory _environmentFacadeFactory;
 
     private final ProvidedBDBMessageStore _providedMessageStore = new ProvidedBDBMessageStore();
+    private final ProvidedBDBPreferenceStore _providedPreferenceStore = new ProvidedBDBPreferenceStore();
 
     private EnvironmentFacade _environmentFacade;
 
@@ -469,6 +472,11 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
         return _providedMessageStore;
     }
 
+    public PreferenceStore getPreferenceStore()
+    {
+        return _providedPreferenceStore;
+    }
+
     private void checkConfigurationStoreOpen()
     {
         if (!isConfigurationStoreOpen())
@@ -609,4 +617,30 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
         }
     }
 
+    private class ProvidedBDBPreferenceStore extends AbstractBDBPreferenceStore
+    {
+        @Override
+        public Collection<PreferenceRecord> openAndLoad(final PreferenceStoreUpdater updater) throws StoreException
+        {
+            return super.openAndLoad(updater);
+        }
+
+        @Override
+        public void close()
+        {
+            closeInternal();
+        }
+
+        @Override
+        protected EnvironmentFacade getEnvironmentFacade()
+        {
+            return _environmentFacade;
+        }
+
+        @Override
+        protected Logger getLogger()
+        {
+            return LOGGER;
+        }
+    }
 }

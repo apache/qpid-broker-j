@@ -32,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.PreferenceFactory;
 import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
@@ -114,7 +113,7 @@ public class PreferencesRecoverer
         }
         associatedObject.setUserPreferences(new UserPreferencesImpl(preferenceStore, recoveredPreferences));
 
-        if (!(associatedObject instanceof PreferenceStoreProvider))
+        if (!(associatedObject instanceof PreferencesRoot))
         {
             Collection<Class<? extends ConfiguredObject>> childrenCategories =
                     associatedObject.getModel().getChildTypes(associatedObject.getCategoryClass());

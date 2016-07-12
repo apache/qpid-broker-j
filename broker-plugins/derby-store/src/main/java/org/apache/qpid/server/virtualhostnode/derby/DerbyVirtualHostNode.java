@@ -29,8 +29,4 @@ public interface DerbyVirtualHostNode<X extends DerbyVirtualHostNode<X>> extends
 
     @ManagedAttribute(mandatory = true, defaultValue = "${qpid.work_dir}${file.separator}${this:name}${file.separator}config")
     String getStorePath();
-
-    @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
-            defaultValue = "{\"type\": \"Provided\"}")
-    PreferenceStoreAttributes getPreferenceStoreAttributes();
 }

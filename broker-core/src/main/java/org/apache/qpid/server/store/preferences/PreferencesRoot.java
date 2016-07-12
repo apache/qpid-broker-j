@@ -19,7 +19,7 @@
 
 package org.apache.qpid.server.store.preferences;
 
-public interface PreferenceStoreProvider
+public interface PreferencesRoot
 {
-    PreferenceStore getPreferenceStore();
+    PreferenceStore createPreferenceStore();
 }
