@@ -18,7 +18,6 @@
 package org.apache.qpid.test.utils;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -60,7 +59,6 @@ import org.apache.qpid.client.AMQTopic;
 import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.jms.ConnectionURL;
-import org.apache.qpid.server.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.store.MemoryConfigurationStore;
 import org.apache.qpid.url.URLSyntaxException;
@@ -112,24 +110,6 @@ public class QpidBrokerTestCase extends QpidTestCase
     protected AMQConnectionFactory _connectionFactory;
     private BrokerHolder _defaultBroker;
     private MessageType _messageType = MessageType.TEXT;
-
-    public QpidBrokerTestCase()
-    {
-        super();
-
-        if (JAVA.equals(BROKER_LANGUAGE))
-        {
-            overrideTestSystemProperties();
-            try
-            {
-                Broker.populateSystemPropertiesFromDefaults(null);
-            }
-            catch (IOException ioe)
-            {
-                throw new RuntimeException("Failed to load Java broker system properties", ioe);
-            }
-        }
-    }
 
     @Override
     public void runBare() throws Throwable

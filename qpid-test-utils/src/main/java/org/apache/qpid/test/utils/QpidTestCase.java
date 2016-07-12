@@ -134,13 +134,7 @@ public class QpidTestCase extends TestCase
     }
 
     private static final List<String> _exclusionList;
-    private final Properties _overriddenProperties;
-
-    public QpidTestCase()
-    {
-        super();
-        _overriddenProperties = loadOverriddenTestSystemProperties();
-    }
+    private static final Properties OVERRIDDEN_PROPERTIES = loadOverriddenTestSystemProperties();
 
     public void run(TestResult testResult)
     {
@@ -302,7 +296,7 @@ public class QpidTestCase extends TestCase
 
     protected void overrideTestSystemProperties()
     {
-        setTestOverriddenProperties(_overriddenProperties);
+        setTestOverriddenProperties(OVERRIDDEN_PROPERTIES);
     }
 
     protected void setTestOverriddenProperties(Properties properties)
@@ -313,7 +307,7 @@ public class QpidTestCase extends TestCase
         }
     }
 
-    private Properties loadOverriddenTestSystemProperties()
+    private static Properties loadOverriddenTestSystemProperties()
     {
         Properties properties = new Properties();
         String pathToFileWithOverriddenClientAndBrokerProperties = System.getProperty(TEST_OVERRIDDEN_PROPERTIES);
