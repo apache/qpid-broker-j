@@ -675,7 +675,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public Collection<AMQPConnection<?>> getConnections()
+    public Collection<? extends Connection<?>> getConnections()
     {
         return _connections;
     }

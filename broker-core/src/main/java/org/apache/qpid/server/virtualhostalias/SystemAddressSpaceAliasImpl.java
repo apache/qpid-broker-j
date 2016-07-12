@@ -35,7 +35,7 @@ import org.apache.qpid.server.model.PatternMatchingAlias;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.SystemAddressSpaceAlias;
 
-public final class SystemAddressSpaceAliasImpl
+public class SystemAddressSpaceAliasImpl
         extends AbstractVirtualHostAlias<SystemAddressSpaceAliasImpl>
         implements SystemAddressSpaceAlias<SystemAddressSpaceAliasImpl>
 {

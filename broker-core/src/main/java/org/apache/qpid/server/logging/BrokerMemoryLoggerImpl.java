@@ -105,8 +105,6 @@ public class BrokerMemoryLoggerImpl extends AbstractBrokerLogger<BrokerMemoryLog
     @Override
     public Collection<LogRecord> getLogEntries(long lastLogId)
     {
-        authorise(Operation.METHOD("getLogEntries"));
-
         List<LogRecord> logRecords = new ArrayList<>();
         for(LogRecord record : _logRecorder)
         {

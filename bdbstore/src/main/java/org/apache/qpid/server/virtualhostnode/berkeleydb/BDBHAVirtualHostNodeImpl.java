@@ -1399,7 +1399,6 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     @Override
     public void updateMutableConfig()
     {
-        authorise(Operation.METHOD("updateMutableConfig"));
         ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
         if (environmentFacade != null)
         {
@@ -1410,7 +1409,6 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     @Override
     public int cleanLog()
     {
-        authorise(Operation.METHOD("cleanLog"));
         ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
         if (environmentFacade != null)
         {
@@ -1422,7 +1420,6 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     @Override
     public void checkpoint(final boolean force)
     {
-        authorise(Operation.METHOD("checkpoint"), Collections.<String,Object>singletonMap("force", force));
         ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
         if (environmentFacade != null)
         {

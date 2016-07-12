@@ -147,7 +147,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
 
         Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
 
-        assertEquals("Queue not a priority queue", PriorityQueueImpl.class, queue.getClass());
+        assertTrue("Queue not a priority queue", queue instanceof PriorityQueueImpl);
         verifyQueueRegistered("testPriorityQueue");
         verifyRegisteredQueueCount(1);
     }
@@ -164,7 +164,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
 
 
         Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
-        assertEquals("Queue not a simple queue", StandardQueueImpl.class, queue.getClass());
+        assertTrue("Queue not a simple queue", queue instanceof StandardQueueImpl);
         verifyQueueRegistered(queueName);
 
         //verify that no alternate exchange or DLQ were produced

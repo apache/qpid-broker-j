@@ -286,7 +286,7 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public Collection<Connection<?>> getConnections()
+    public Collection<? extends Connection<?>> getConnections()
     {
         return Collections.emptyList();
     }

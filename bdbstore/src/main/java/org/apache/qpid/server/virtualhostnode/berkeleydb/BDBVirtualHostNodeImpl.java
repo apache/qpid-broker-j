@@ -101,7 +101,6 @@ public class BDBVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<BDBV
     @Override
     public void updateMutableConfig()
     {
-        authorise(Operation.METHOD("updateMutableConfig"));
         BDBConfigurationStore bdbConfigurationStore = (BDBConfigurationStore) getConfigurationStore();
         if (bdbConfigurationStore != null)
         {
@@ -116,7 +115,6 @@ public class BDBVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<BDBV
     @Override
     public int cleanLog()
     {
-        authorise(Operation.METHOD("cleanLog"));
         BDBConfigurationStore bdbConfigurationStore = (BDBConfigurationStore) getConfigurationStore();
         if (bdbConfigurationStore != null)
         {
@@ -132,7 +130,6 @@ public class BDBVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<BDBV
     @Override
     public void checkpoint(final boolean force)
     {
-        authorise(Operation.METHOD("checkpoint"), Collections.<String,Object>singletonMap("force", force));
         BDBConfigurationStore bdbConfigurationStore = (BDBConfigurationStore) getConfigurationStore();
         if (bdbConfigurationStore != null)
         {

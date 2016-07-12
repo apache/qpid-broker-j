@@ -30,7 +30,7 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNameAlias;
 import org.apache.qpid.server.model.VirtualHostNode;
 
-public final class VirtualHostNameAliasImpl
+public class VirtualHostNameAliasImpl
         extends AbstractVirtualHostAlias<VirtualHostNameAliasImpl>
         implements VirtualHostNameAlias<VirtualHostNameAliasImpl>
 {

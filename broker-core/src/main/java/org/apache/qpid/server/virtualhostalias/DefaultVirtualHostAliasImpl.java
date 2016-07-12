@@ -29,7 +29,7 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.VirtualHostNode;
 
-public final class DefaultVirtualHostAliasImpl
+public class DefaultVirtualHostAliasImpl
         extends AbstractVirtualHostAlias<DefaultVirtualHostAliasImpl>
         implements DefaultVirtualHostAlias<DefaultVirtualHostAliasImpl>
 {

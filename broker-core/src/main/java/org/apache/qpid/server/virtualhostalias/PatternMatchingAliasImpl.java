@@ -32,7 +32,7 @@ import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.PatternMatchingAlias;
 import org.apache.qpid.server.model.Port;
 
-public final class PatternMatchingAliasImpl
+public class PatternMatchingAliasImpl
         extends AbstractFixedVirtualHostNodeAlias<PatternMatchingAliasImpl>
         implements PatternMatchingAlias<PatternMatchingAliasImpl>
 {

@@ -147,16 +147,12 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     @Override
     public Content getFile(final String fileName)
     {
-        authorise(Operation.METHOD("getFile"), Collections.singletonMap("fileName", (Object)fileName));
-
         return _rolloverWatcher == null ? null : _rolloverWatcher.getFileContent(fileName);
     }
 
     @Override
     public Content getFiles(@Param(name = "fileName") Set<String> fileName)
     {
-        authorise(Operation.METHOD("getFiles"), Collections.singletonMap("fileName", (Object)fileName));
-
         return _rolloverWatcher == null ? null : _rolloverWatcher.getFilesAsZippedContent(fileName);
     }
 
@@ -164,8 +160,6 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     @Override
     public Content getAllFiles()
     {
-        authorise(Operation.METHOD("getAllFiles"));
-
         return _rolloverWatcher == null ? null : _rolloverWatcher.getAllFilesAsZippedContent();
     }
 

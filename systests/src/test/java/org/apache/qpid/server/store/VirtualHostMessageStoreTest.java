@@ -64,10 +64,8 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
 import org.apache.qpid.server.protocol.v0_8.MessageMetaData;
 import org.apache.qpid.server.queue.LastValueQueue;
-import org.apache.qpid.server.queue.LastValueQueueImpl;
 import org.apache.qpid.server.queue.PriorityQueue;
-import org.apache.qpid.server.queue.PriorityQueueImpl;
-import org.apache.qpid.server.queue.StandardQueueImpl;
+import org.apache.qpid.server.queue.StandardQueue;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -563,18 +561,18 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
         if (usePriority)
         {
-            assertEquals("Queue is no longer a Priority Queue", PriorityQueueImpl.class, queue.getClass());
+            assertTrue("Queue is no longer a Priority Queue", queue instanceof PriorityQueue);
             assertEquals("Priority Queue does not have set priorities",
-                    DEFAULT_PRIORTY_LEVEL, ((PriorityQueueImpl) queue).getPriorities());
+                    DEFAULT_PRIORTY_LEVEL, ((PriorityQueue) queue).getPriorities());
         }
         else if (lastValueQueue)
         {
-            assertEquals("Queue is no longer a LastValue Queue", LastValueQueueImpl.class, queue.getClass());
-            assertEquals("LastValue Queue Key has changed", LVQ_KEY, ((LastValueQueueImpl) queue).getLvqKey());
+            assertTrue("Queue is no longer a LastValue Queue", queue instanceof LastValueQueue);
+            assertEquals("LastValue Queue Key has changed", LVQ_KEY, ((LastValueQueue) queue).getLvqKey());
         }
         else
         {
-            assertEquals("Queue is not 'simple'", StandardQueueImpl.class, queue.getClass());
+            assertTrue("Queue is not 'simple'", queue instanceof StandardQueue);
         }
 
         assertEquals("Queue owner is not as expected for queue " + queue.getName(), exclusive ? queueOwner : null, queue.getOwner());

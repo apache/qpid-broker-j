@@ -1864,9 +1864,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public long clearQueue()
     {
-        //Perform ACLs
-        authorise(Operation.METHOD("clearQueue"));
-
         QueueEntryIterator queueListIterator = getEntries().iterator();
         long count = 0;
 
@@ -3409,13 +3406,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public List<Long> moveMessages(Queue<?> destination, List<Long> messageIds, final String selector, final int limit)
     {
-        Map<String, Object> args = new HashMap<>();
-        args.put("destination", destination);
-        args.put("messageIds", messageIds);
-        args.put("selector", selector);
-        args.put("limit", limit);
-        authorise(Operation.METHOD("moveMessages"), args);
-
         MoveMessagesTransaction transaction = new MoveMessagesTransaction(this,
                                                                           messageIds,
                                                                           destination,
@@ -3429,14 +3419,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public List<Long> copyMessages(Queue<?> destination, List<Long> messageIds, final String selector, int limit)
     {
-
-        Map<String, Object> args = new HashMap<>();
-        args.put("destination", destination);
-        args.put("messageIds", messageIds);
-        args.put("selector", selector);
-        args.put("limit", limit);
-        authorise(Operation.METHOD("copyMessages"), args);
-
         CopyMessagesTransaction transaction = new CopyMessagesTransaction(this,
                                                                           messageIds,
                                                                           destination,
@@ -3450,13 +3432,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public List<Long> deleteMessages(final List<Long> messageIds, final String selector, int limit)
     {
-
-        Map<String, Object> args = new HashMap<>();
-        args.put("messageIds", messageIds);
-        args.put("selector", selector);
-        args.put("limit", limit);
-        authorise(Operation.METHOD("deleteMessages"), args);
-
         DeleteMessagesTransaction transaction = new DeleteMessagesTransaction(this,
                                                                               messageIds,
                                                                               parseSelector(selector),
