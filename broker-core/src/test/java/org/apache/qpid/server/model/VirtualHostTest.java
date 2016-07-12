@@ -74,7 +74,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class VirtualHostTest extends QpidTestCase
 {
-    private final AccessControl _mockAccessControl = mock(AccessControl.class);
+    private final AccessControl _mockAccessControl = BrokerTestHelper.createAccessControlMock();
     private Broker _broker;
     private TaskExecutor _taskExecutor;
     private VirtualHostNode _virtualHostNode;

@@ -113,4 +113,10 @@ public final class Operation
     {
         return Objects.hash(getType(), getName());
     }
+
+    @Override
+    public String toString()
+    {
+        return "Operation[" +_type + (_name.equals(_type.name()) ? "" : ("("+_name+")")) + "]";
+    }
 }

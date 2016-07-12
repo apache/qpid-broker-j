@@ -24,17 +24,19 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.CustomRestHeaders;
 import org.apache.qpid.server.model.ManagedAttributeField;
@@ -42,31 +44,38 @@ import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.RestContentHeader;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.VirtualHostAccessControlProvider;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.config.ObjectProperties;
-import org.apache.qpid.server.security.access.config.ObjectType;
-import org.apache.qpid.server.security.access.config.LegacyOperation;
 import org.apache.qpid.server.security.access.RuleOutcome;
 import org.apache.qpid.server.security.access.config.AclAction;
 import org.apache.qpid.server.security.access.config.AclFileParser;
 import org.apache.qpid.server.security.access.config.AclRulePredicates;
+import org.apache.qpid.server.security.access.config.LegacyOperation;
+import org.apache.qpid.server.security.access.config.ObjectProperties;
+import org.apache.qpid.server.security.access.config.ObjectType;
 import org.apache.qpid.server.security.access.config.Rule;
 import org.apache.qpid.server.security.access.config.RuleBasedAccessControl;
 import org.apache.qpid.server.security.access.config.RuleSet;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
-public class RuleBasedAccessControlProviderImpl
-        extends AbstractRuleBasedAccessControlProvider<RuleBasedAccessControlProviderImpl>
-        implements RuleBasedAccessControlProvider<RuleBasedAccessControlProviderImpl>
+public class RuleBasedVirtualHostAccessControlProviderImpl
+        extends AbstractRuleBasedAccessControlProvider<RuleBasedVirtualHostAccessControlProviderImpl>
+        implements RuleBasedVirtualHostAccessControlProvider<RuleBasedVirtualHostAccessControlProviderImpl>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RuleBasedAccessControlProviderImpl.class);
+    private static final EnumSet<ObjectType> ALLOWED_OBJECT_TYPES = EnumSet.of(ObjectType.ALL,
+                                                                               ObjectType.QUEUE,
+                                                                               ObjectType.EXCHANGE,
+                                                                               ObjectType.VIRTUALHOST,
+                                                                               ObjectType.METHOD);
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RuleBasedVirtualHostAccessControlProviderImpl.class);
 
     static
     {
         Handler.register();
     }
-
-    private final Broker _broker;
 
     @ManagedAttributeField
     private Result _defaultResult;
@@ -75,10 +84,9 @@ public class RuleBasedAccessControlProviderImpl
 
 
     @ManagedObjectFactoryConstructor
-    public RuleBasedAccessControlProviderImpl(Map<String, Object> attributes, Broker broker)
+    public RuleBasedVirtualHostAccessControlProviderImpl(Map<String, Object> attributes, VirtualHost<?> virtualHost)
     {
-        super(attributes, broker);
-        _broker = broker;
+        super(attributes, virtualHost);
     }
 
 
@@ -89,6 +97,22 @@ public class RuleBasedAccessControlProviderImpl
         if(attributes.containsKey(DEFAULT_RESULT) || attributes.containsKey(RULES))
         {
             recreateAccessController();
+        }
+    }
+
+    @Override
+    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+        if(changedAttributes.contains(RULES))
+        {
+            for(AclRule rule : ((RuleBasedVirtualHostAccessControlProvider<?>)proxyForValidation).getRules())
+            {
+                if(!ALLOWED_OBJECT_TYPES.contains(rule.getObjectType()))
+                {
+                    throw new IllegalArgumentException("Cannot use the object type " + rule.getObjectType() + " only the following object types are allowed: " + ALLOWED_OBJECT_TYPES);
+                }
+            }
         }
     }
 
@@ -124,15 +148,16 @@ public class RuleBasedAccessControlProviderImpl
     private ListenableFuture<Void> activate()
     {
 
+        final boolean isManagementMode = getModel().getAncestor(SystemConfig.class, this).isManagementMode();
         try
         {
             recreateAccessController();
-            setState(_broker.isManagementMode() ? State.QUIESCED : State.ACTIVE);
+            setState(isManagementMode ? State.QUIESCED : State.ACTIVE);
         }
         catch (RuntimeException e)
         {
             setState(State.ERRORED);
-            if (_broker.isManagementMode())
+            if (isManagementMode)
             {
                 LOGGER.warn("Failed to activate ACL provider: " + getName(), e);
             }
@@ -157,6 +182,12 @@ public class RuleBasedAccessControlProviderImpl
         attrs.put(DEFAULT_RESULT, ruleSet.getDefault());
         attrs.put(RULES, aclRules);
         setAttributes(attrs);
+    }
+
+    @Override
+    public int compareTo(final VirtualHostAccessControlProvider o)
+    {
+        return VIRTUAL_HOST_ACCESS_CONTROL_POVIDER_COMPARATOR.compare(this, o);
     }
 
     public static class AclRuleImpl implements AclRule
@@ -253,11 +284,6 @@ public class RuleBasedAccessControlProviderImpl
         {
 
         }
-    }
-
-    public int compareTo(final AccessControlProvider o)
-    {
-        return ACCESS_CONTROL_POVIDER_COMPARATOR.compare(this, o);
     }
 
 }

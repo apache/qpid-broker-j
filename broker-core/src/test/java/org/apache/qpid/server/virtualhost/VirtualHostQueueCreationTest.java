@@ -47,6 +47,7 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.queue.PriorityQueue;
 import org.apache.qpid.server.queue.PriorityQueueImpl;
 import org.apache.qpid.server.queue.StandardQueueImpl;
+import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -73,7 +74,10 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         when(context.getEventLogger()).thenReturn(eventLogger);
         when(context.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
 
-        Broker broker = mock(Broker.class);
+        Principal systemPrincipal = mock(Principal.class);
+        AccessControl accessControl = BrokerTestHelper.createAccessControlMock();
+
+        Broker broker = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(Broker.class, systemPrincipal, accessControl);
         when(broker.getObjectFactory()).thenReturn(objectFactory);
         when(broker.getCategoryClass()).thenReturn(Broker.class);
         when(broker.getParent(SystemConfig.class)).thenReturn(context);
@@ -81,7 +85,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         when(broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(broker.getChildExecutor()).thenReturn(_taskExecutor);
 
-        _virtualHostNode = BrokerTestHelper.mockWithSystemPrincipal(VirtualHostNode.class, mock(Principal.class));
+        _virtualHostNode = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(VirtualHostNode.class, systemPrincipal, accessControl);
         when(_virtualHostNode.getParent(Broker.class)).thenReturn(broker);
         when(_virtualHostNode.getConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));
         when(_virtualHostNode.getObjectFactory()).thenReturn(objectFactory);

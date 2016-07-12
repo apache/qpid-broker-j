@@ -29,10 +29,12 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.messages.AccessControlMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
@@ -42,7 +44,7 @@ import org.apache.qpid.server.security.access.config.RuleBasedAccessControl;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
 public abstract class AbstractRuleBasedAccessControlProvider<X extends AbstractRuleBasedAccessControlProvider<X>>
-        extends AbstractConfiguredObject<X> implements AccessControlProvider<X>
+        extends AbstractConfiguredObject<X> implements EventLoggerProvider
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRuleBasedAccessControlProvider.class);
 
@@ -52,28 +54,21 @@ public abstract class AbstractRuleBasedAccessControlProvider<X extends AbstractR
     }
 
     private volatile RuleBasedAccessControl _accessControl;
-    private final Broker _broker;
     private final EventLogger _eventLogger;
 
     @ManagedAttributeField
     private int _priority;
 
-    public AbstractRuleBasedAccessControlProvider(Map<String, Object> attributes, Broker broker)
+    public AbstractRuleBasedAccessControlProvider(Map<String, Object> attributes, ConfiguredObject<?> parent)
     {
-        super(parentsMap(broker), attributes);
+        super(parentsMap(parent), attributes);
 
 
-        _broker = broker;
-        _eventLogger = _broker.getEventLogger();
+        _eventLogger = ((EventLoggerProvider)parent).getEventLogger();
         _eventLogger.message(AccessControlMessages.CREATE(getName()));
     }
 
-    protected final Broker getBroker()
-    {
-        return _broker;
-    }
-
-    protected final EventLogger getEventLogger()
+    public final EventLogger getEventLogger()
     {
         return _eventLogger;
     }
@@ -111,31 +106,6 @@ public abstract class AbstractRuleBasedAccessControlProvider<X extends AbstractR
         super.onOpen();
     }
 
-
-    @StateTransition(currentState = {State.UNINITIALIZED, State.QUIESCED, State.ERRORED}, desiredState = State.ACTIVE)
-    @SuppressWarnings("unused")
-    private ListenableFuture<Void> activate()
-    {
-
-        try
-        {
-            recreateAccessController();
-            setState(_broker.isManagementMode() ? State.QUIESCED : State.ACTIVE);
-        }
-        catch (RuntimeException e)
-        {
-            setState(State.ERRORED);
-            if (_broker.isManagementMode())
-            {
-                LOGGER.warn("Failed to activate ACL provider: " + getName(), e);
-            }
-            else
-            {
-                throw e;
-            }
-        }
-        return Futures.immediateFuture(null);
-    }
 
     protected final void recreateAccessController()
     {
@@ -179,15 +149,9 @@ public abstract class AbstractRuleBasedAccessControlProvider<X extends AbstractR
         return _accessControl;
     }
 
-    @Override
     public final int getPriority()
     {
         return _priority;
     }
 
-    @Override
-    public int compareTo(final AccessControlProvider o)
-    {
-        return ACCESS_CONTROL_POVIDER_COMPARATOR.compare(this, o);
-    }
 }

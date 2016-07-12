@@ -51,6 +51,8 @@ import org.apache.qpid.server.model.adapter.FileBasedGroupProviderImpl;
 import org.apache.qpid.server.plugin.PluggableFactoryLoader;
 import org.apache.qpid.server.plugin.SystemConfigFactory;
 import org.apache.qpid.server.security.access.plugins.ACLFileAccessControlProvider;
+import org.apache.qpid.server.security.access.plugins.AclRule;
+import org.apache.qpid.server.security.access.plugins.RuleBasedAccessControlProvider;
 import org.apache.qpid.server.store.AbstractMemoryStore;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordConverter;
@@ -76,6 +78,7 @@ public class TestBrokerConfiguration
     public static final String ENTRY_NAME_SSL_TRUSTSTORE = "systestsTrustStore";
     public static final String ENTRY_NAME_GROUP_FILE = "groupFile";
     public static final String ENTRY_NAME_ACL_FILE = "aclFile";
+    public static final String ENTRY_NAME_ACL_RULES = "aclRules";
     private final TaskExecutor _taskExecutor;
     private final String _storeType;
 
@@ -338,6 +341,17 @@ public class TestBrokerConfiguration
 
         return addObjectConfiguration(AccessControlProvider.class, attributes);
     }
+
+    public UUID addAclRuleConfiguration(AclRule[] aclRules)
+    {
+        Map<String, Object> attributes = new HashMap<String, Object>();
+        attributes.put(AccessControlProvider.NAME, ENTRY_NAME_ACL_RULES);
+        attributes.put(AccessControlProvider.TYPE, RuleBasedAccessControlProvider.RULE_BASED_TYPE);
+        attributes.put(RuleBasedAccessControlProvider.RULES, aclRules);
+
+        return addObjectConfiguration(AccessControlProvider.class, attributes);
+    }
+
 
     private boolean setObjectAttributes(ConfiguredObjectRecord entry, Map<String, Object> attributes)
     {

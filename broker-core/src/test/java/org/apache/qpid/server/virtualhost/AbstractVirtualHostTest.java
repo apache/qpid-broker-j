@@ -55,6 +55,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
@@ -76,7 +77,10 @@ public class AbstractVirtualHostTest extends QpidTestCase
         SystemConfig systemConfig = mock(SystemConfig.class);
         when(systemConfig.getEventLogger()).thenReturn(mock(EventLogger.class));
         when(systemConfig.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
-        Broker<?> broker = mock(Broker.class);
+        AccessControl accessControlMock = BrokerTestHelper.createAccessControlMock();
+        Principal systemPrincipal = mock(Principal.class);
+        Broker<?> broker = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(Broker.class, systemPrincipal,
+                                                                                    accessControlMock);
         when(broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
         when(broker.getModel()).thenReturn(BrokerModel.getInstance());
 
@@ -85,7 +89,8 @@ public class AbstractVirtualHostTest extends QpidTestCase
         when(broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(broker.getChildExecutor()).thenReturn(_taskExecutor);
 
-        _node = BrokerTestHelper.mockWithSystemPrincipal(VirtualHostNode.class, mock(Principal.class));
+        _node = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(VirtualHostNode.class,
+                                                                         systemPrincipal, accessControlMock);
         when(_node.getParent(Broker.class)).thenReturn(broker);
         when(_node.getModel()).thenReturn(BrokerModel.getInstance());
         when(_node.getTaskExecutor()).thenReturn(_taskExecutor);

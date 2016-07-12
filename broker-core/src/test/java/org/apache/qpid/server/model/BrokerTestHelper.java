@@ -23,6 +23,7 @@ package org.apache.qpid.server.model;
 import static org.apache.bcel.Constants.ACC_INTERFACE;
 import static org.apache.bcel.Constants.ACC_PUBLIC;
 import static org.apache.bcel.Constants.ACC_SUPER;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -44,6 +45,9 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.Result;
+import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -99,6 +103,21 @@ public class BrokerTestHelper
 
     public static Broker<?> createBrokerMock()
     {
+        return createBrokerMock(createAccessControlMock());
+    }
+
+    public static AccessControl createAccessControlMock()
+    {
+        AccessControl mock = mock(AccessControl.class);
+        when(mock.authorise(any(SecurityToken.class), any(Operation.class), any(ConfiguredObject.class))).thenReturn(
+                Result.DEFER);
+        when(mock.authorise(any(SecurityToken.class), any(Operation.class), any(ConfiguredObject.class), any(Map.class))).thenReturn(Result.DEFER);
+        when(mock.getDefault()).thenReturn(Result.ALLOWED);
+        return mock;
+    }
+
+    private static Broker<?> createBrokerMock(AccessControl accessControl)
+    {
         ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         EventLogger eventLogger = new EventLogger();
 
@@ -108,7 +127,7 @@ public class BrokerTestHelper
         when(systemConfig.getModel()).thenReturn(objectFactory.getModel());
         when(systemConfig.getCategoryClass()).thenReturn(SystemConfig.class);
 
-        Broker broker = mockWithSystemPrincipal(Broker.class, SYSTEM_PRINCIPAL);
+        Broker broker = mockWithSystemPrincipalAndAccessControl(Broker.class, SYSTEM_PRINCIPAL, accessControl);
         when(broker.getConnection_sessionCountLimit()).thenReturn(1);
         when(broker.getConnection_closeWhenNoRoute()).thenReturn(false);
         when(broker.getId()).thenReturn(UUID.randomUUID());
@@ -139,17 +158,16 @@ public class BrokerTestHelper
 
     public static VirtualHost<?> createVirtualHost(Map<String, Object> attributes)
     {
-
-        Broker<?> broker = createBrokerMock();
-        return createVirtualHost(attributes, broker, false);
+        Broker<?> broker = createBrokerMock(createAccessControlMock());
+        return createVirtualHost(attributes, broker, false, createAccessControlMock());
     }
 
     private static VirtualHost<?> createVirtualHost(final Map<String, Object> attributes,
-                                                        final Broker<?> broker, boolean defaultVHN)
+                                                        final Broker<?> broker, boolean defaultVHN, AccessControl accessControl)
     {
         ConfiguredObjectFactory objectFactory = broker.getObjectFactory();
 
-        VirtualHostNode virtualHostNode = mockWithSystemPrincipal(VirtualHostNode.class, SYSTEM_PRINCIPAL);
+        VirtualHostNode virtualHostNode = mockWithSystemPrincipalAndAccessControl(VirtualHostNode.class, SYSTEM_PRINCIPAL, accessControl);
         String virtualHostNodeName = String.format("%s_%s", attributes.get(VirtualHostNode.NAME), "_node");
         when(virtualHostNode.getName()).thenReturn( virtualHostNodeName);
         when(virtualHostNode.getTaskExecutor()).thenReturn(TASK_EXECUTOR);
@@ -185,16 +203,21 @@ public class BrokerTestHelper
 
     public static VirtualHost<?> createVirtualHost(String name) throws Exception
     {
-        return createVirtualHost(name, createBrokerMock(), false);
+        return createVirtualHost(name, createBrokerMock(createAccessControlMock()), false, createAccessControlMock());
     }
 
     public static VirtualHost<?> createVirtualHost(String name, Broker<?> broker, boolean defaultVHN) throws Exception
+    {
+        return createVirtualHost(name, broker, defaultVHN, createAccessControlMock());
+    }
+
+    private static VirtualHost<?> createVirtualHost(String name, Broker<?> broker, boolean defaultVHN, AccessControl accessControl) throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(org.apache.qpid.server.model.VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
         attributes.put(org.apache.qpid.server.model.VirtualHost.NAME, name);
 
-        return createVirtualHost(attributes, broker, defaultVHN);
+        return createVirtualHost(attributes, broker, defaultVHN, accessControl);
     }
 
     public static AMQSessionModel<?> createSession(int channelId, AMQPConnection<?> connection)

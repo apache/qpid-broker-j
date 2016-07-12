@@ -23,14 +23,20 @@ package org.apache.qpid.server.security.access.plugins;
 import java.util.Map;
 
 import org.apache.qpid.server.logging.messages.AccessControlMessages;
+
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.config.AclFileParser;
 import org.apache.qpid.server.security.access.config.RuleBasedAccessControl;
@@ -47,6 +53,8 @@ public class ACLFileAccessControlProviderImpl
         Handler.register();
     }
 
+    private final Broker _broker;
+
     @ManagedAttributeField( afterSet = "reloadAclFile")
     private String _path;
 
@@ -54,12 +62,13 @@ public class ACLFileAccessControlProviderImpl
     public ACLFileAccessControlProviderImpl(Map<String, Object> attributes, Broker broker)
     {
         super(attributes, broker);
+        _broker = broker;
     }
 
     @Override
     protected RuleBasedAccessControl createRuleBasedAccessController()
     {
-        return new RuleBasedAccessControl(AclFileParser.parse(getPath(), getBroker()), getBroker().getModel());
+        return new RuleBasedAccessControl(AclFileParser.parse(getPath(), this), getModel());
     }
 
     @Override
@@ -89,10 +98,40 @@ public class ACLFileAccessControlProviderImpl
         }
     }
 
+    @StateTransition(currentState = {State.UNINITIALIZED, State.QUIESCED, State.ERRORED}, desiredState = State.ACTIVE)
+    @SuppressWarnings("unused")
+    private ListenableFuture<Void> activate()
+    {
+
+        try
+        {
+            recreateAccessController();
+            setState(_broker.isManagementMode() ? State.QUIESCED : State.ACTIVE);
+        }
+        catch (RuntimeException e)
+        {
+            setState(State.ERRORED);
+            if (_broker.isManagementMode())
+            {
+                LOGGER.warn("Failed to activate ACL provider: " + getName(), e);
+            }
+            else
+            {
+                throw e;
+            }
+        }
+        return Futures.immediateFuture(null);
+    }
+
     @Override
     public String getPath()
     {
         return _path;
+    }
+
+    public int compareTo(final AccessControlProvider o)
+    {
+        return ACCESS_CONTROL_POVIDER_COMPARATOR.compare(this, o);
     }
 
 }

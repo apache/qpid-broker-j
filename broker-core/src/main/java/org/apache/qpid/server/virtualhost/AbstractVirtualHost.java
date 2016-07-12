@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -78,6 +79,10 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.protocol.LinkRegistryImpl;
 import org.apache.qpid.server.queue.QueueEntry;
+import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.CompoundAccessControl;
+import org.apache.qpid.server.security.Result;
+import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
@@ -164,6 +169,50 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private final VirtualHostPrincipal _principal;
 
+    private ConfigurationChangeListener _accessControlProviderListener = new AccessControlProviderListener();
+
+    private final AccessControl _accessControl;
+
+
+    private final AccessControl<SecurityToken> _systemUserAllowed = new AccessControl<SecurityToken>()
+    {
+        @Override
+        public Result getDefault()
+        {
+            return Result.DEFER;
+        }
+
+        @Override
+        public SecurityToken newToken()
+        {
+            return null;
+        }
+
+        @Override
+        public SecurityToken newToken(final Subject subject)
+        {
+            return null;
+        }
+
+        @Override
+        public Result authorise(final SecurityToken token,
+                                final Operation operation,
+                                final ConfiguredObject<?> configuredObject)
+        {
+            return isSystemProcess() ? Result.ALLOWED : Result.DEFER;
+        }
+
+        @Override
+        public Result authorise(final SecurityToken token,
+                                final Operation operation,
+                                final ConfiguredObject<?> configuredObject,
+                                final Map<String, Object> arguments)
+        {
+            return isSystemProcess() ? Result.ALLOWED : Result.DEFER;
+        }
+    };
+
+
     @ManagedAttributeField
     private boolean _queue_deadLetterQueueEnabled;
 
@@ -234,12 +283,53 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _dataReceived = new StatisticsCounter("bytes-received-" + getName());
         _principal = new VirtualHostPrincipal(this);
 
+        if (_broker.getParent(SystemConfig.class).isManagementMode())
+        {
+            _accessControl = AccessControl.ALWAYS_ALLOWED;
+        }
+        else
+        {
+            _accessControl =  new CompoundAccessControl(
+                    Collections.<AccessControl<?>>emptyList(), Result.DEFER
+            );
+        }
+
         _housekeepingJobContext = getSystemTaskControllerContext("Housekeeping["+getName()+"]", _principal);
         _fileSystemSpaceCheckerJobContext = getSystemTaskControllerContext("FileSystemSpaceChecker["+getName()+"]", _principal);
 
         _fileSystemSpaceChecker = new FileSystemSpaceChecker();
 
         addChangeListener(new TargetSizeAssigningListener());
+    }
+
+    private void updateAccessControl()
+    {
+        if(!_broker.getParent(SystemConfig.class).isManagementMode())
+        {
+            List<VirtualHostAccessControlProvider> children = new ArrayList<>(getChildren(VirtualHostAccessControlProvider.class));
+            _logger.debug("Updating access control list with {} provider children", children.size());
+            Collections.sort(children, VirtualHostAccessControlProvider.VIRTUAL_HOST_ACCESS_CONTROL_POVIDER_COMPARATOR);
+
+            List<AccessControl<?>> accessControls = new ArrayList<>(children.size()+2);
+            accessControls.add(_systemUserAllowed);
+            for(VirtualHostAccessControlProvider prov : children)
+            {
+                if(prov.getState() == State.ERRORED)
+                {
+                    accessControls.clear();
+                    accessControls.add(AccessControl.ALWAYS_DENIED);
+                    break;
+                }
+                else if(prov.getState() == State.ACTIVE)
+                {
+                    accessControls.add(prov.getAccessControl());
+                }
+
+            }
+            accessControls.add(getParentAccessControl());
+            ((CompoundAccessControl)_accessControl).setAccessControls(accessControls);
+
+        }
     }
 
     public void onValidate()
@@ -310,6 +400,24 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             validateConnectionThreadPoolSettings(virtualHost);
         }
+    }
+
+    @Override
+    protected AccessControl getAccessControl()
+    {
+        return _accessControl;
+    }
+
+    private AccessControl getParentAccessControl()
+    {
+        return super.getAccessControl();
+    }
+
+    @Override
+    protected void postResolveChildren()
+    {
+        super.postResolveChildren();
+        addChangeListener(_accessControlProviderListener);
     }
 
     private void validateNodeAutoCreationPolicy(final NodeAutoCreationPolicy policy)
@@ -603,7 +711,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             throw new UnsupportedOperationException();
         }
-        else if(childClass == VirtualHostLogger.class)
+        else if(childClass == VirtualHostLogger.class || childClass == VirtualHostAccessControlProvider.class)
         {
             return getObjectFactory().createAsync(childClass, attributes, this);
         }
@@ -1902,6 +2010,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                                                      threadPoolKeepAliveTimeout,
                                                                      connectionThreadFactory);
         _networkConnectionScheduler.start();
+
+        updateAccessControl();
+
         MessageStore messageStore = getMessageStore();
         messageStore.openMessageStore(this);
 
@@ -2149,4 +2260,66 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     {
         return !(_systemNodeSources.isEmpty() && getChildren(Queue.class).isEmpty());
     }
+
+    private final class AccessControlProviderListener implements ConfigurationChangeListener
+    {
+        private final Set<ConfiguredObject<?>> _bulkChanges = new HashSet<>();
+
+        @Override
+        public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
+        {
+
+        }
+
+        @Override
+        public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
+        {
+            if(object.getCategoryClass() == VirtualHost.class && child.getCategoryClass() == VirtualHostAccessControlProvider.class)
+            {
+                child.addChangeListener(this);
+                AbstractVirtualHost.this.updateAccessControl();
+            }
+        }
+
+        @Override
+        public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
+        {
+            if(object.getCategoryClass() == VirtualHost.class && child.getCategoryClass() == VirtualHostAccessControlProvider.class)
+            {
+                AbstractVirtualHost.this.updateAccessControl();
+            }
+        }
+
+        @Override
+        public void attributeSet(final ConfiguredObject<?> object,
+                                 final String attributeName,
+                                 final Object oldAttributeValue,
+                                 final Object newAttributeValue)
+        {
+            if(object.getCategoryClass() == VirtualHostAccessControlProvider.class && !_bulkChanges.contains(object))
+            {
+                AbstractVirtualHost.this.updateAccessControl();
+            }
+        }
+
+        @Override
+        public void bulkChangeStart(final ConfiguredObject<?> object)
+        {
+            if(object.getCategoryClass() == VirtualHostAccessControlProvider.class)
+            {
+                _bulkChanges.add(object);
+            }
+        }
+
+        @Override
+        public void bulkChangeEnd(final ConfiguredObject<?> object)
+        {
+            if(object.getCategoryClass() == VirtualHostAccessControlProvider.class)
+            {
+                _bulkChanges.remove(object);
+                AbstractVirtualHost.this.updateAccessControl();
+            }
+        }
+    }
+
 }

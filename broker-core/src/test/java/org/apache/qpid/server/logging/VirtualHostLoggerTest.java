@@ -35,6 +35,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 
 import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.util.FileUtils;
@@ -83,13 +84,15 @@ public class VirtualHostLoggerTest  extends QpidTestCase
 
         Principal systemPrincipal = mock(Principal.class);
 
-        Broker broker = BrokerTestHelper.mockWithSystemPrincipal(Broker.class, systemPrincipal);
+        AccessControl accessControlMock = BrokerTestHelper.createAccessControlMock();
+        Broker broker = BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(Broker.class, systemPrincipal,
+                                                                                 accessControlMock);
         when(broker.getModel()).thenReturn(model);
         when(broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
         doReturn(Broker.class).when(broker).getCategoryClass();
 
-        VirtualHostNode node =  BrokerTestHelper.mockWithSystemPrincipal(VirtualHostNode.class, systemPrincipal);
+        VirtualHostNode node =  BrokerTestHelper.mockWithSystemPrincipalAndAccessControl(VirtualHostNode.class, systemPrincipal, accessControlMock);
         when(node.getModel()).thenReturn(model);
         when(node.getChildExecutor()).thenReturn(_taskExecutor);
         when(node.getParent(Broker.class)).thenReturn(broker);

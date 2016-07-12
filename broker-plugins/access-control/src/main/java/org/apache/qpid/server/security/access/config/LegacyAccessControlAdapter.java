@@ -182,6 +182,7 @@ class LegacyAccessControlAdapter
         return VirtualHost.class.isAssignableFrom(category) ||
                VirtualHostLogger.class.isAssignableFrom(category) ||
                VirtualHostLogInclusionRule.class.isAssignableFrom(category) ||
+               VirtualHostAccessControlProvider.class.isAssignableFrom(category) ||
                Connection.class.isAssignableFrom(category);
     }
 
