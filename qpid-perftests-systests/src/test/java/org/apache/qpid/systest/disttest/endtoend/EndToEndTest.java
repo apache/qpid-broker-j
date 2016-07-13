@@ -171,12 +171,14 @@ public class EndToEndTest extends QpidBrokerTestCase
         arguments.put(JNDI_CONFIG_PROP, JNDI_CONFIG_FILE);
         arguments.put(OUTPUT_DIR_PROP, _outputDir.getAbsolutePath());
         arguments.put(HILL_CLIMB, "true");
-        // Reduce the minimum delta and number of runs so that test executes more quickly.We are not interested in an accurate repeatable value in this test.
+
+        // Change default performance test settings to have it executed more quickly.
+        // We are not interested in an accurate repeatable value in this test.
+        arguments.put(HILL_CLIMBER_START_TARGET_RATE, "131073");
         arguments.put(HILL_CLIMBER_MINIMUM_DELTA, "64000");
         arguments.put(HILL_CLIMBER_MAX_NUMBER_OF_RUNS, "1");
         arguments.put(HILL_CLIMBER_PRODUCTION_TO_TARGET_RATIO_SUCCESS_THRESHOLD, "0.01");
         arguments.put(HILL_CLIMBER_CONSUMPTION_TO_PRODUCTION_RATIO_SUCCESS_THRESHOLD, "0.01");
-        arguments.put(HILL_CLIMBER_START_TARGET_RATE, "131073");
 
         runController(arguments);
         checkXmlFile(arguments);
