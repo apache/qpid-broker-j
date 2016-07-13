@@ -38,7 +38,7 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
     String STARTUP_LOGGED_TO_SYSTEM_OUT = "startupLoggedToSystemOut";
 
     @ManagedContextDefault(name="qpid.broker.defaultPreferenceStoreAttributes")
-    String DEFAULT_PREFERENCE_STORE_ATTRIBUTES = "{\"type\": \"JSON\", \"attributes\":{\"path\": \"${qpid.work_dir}${file.separator}preferences.json\"}}";
+    String DEFAULT_PREFERENCE_STORE_ATTRIBUTES = "{\"type\": \"JSON\", \"attributes\":{\"path\": \"${json:qpid.work_dir}${json:file.separator}preferences.json\"}}";
 
     @ManagedContextDefault(name = BrokerProperties.POSIX_FILE_PERMISSIONS)
     String DEFAULT_POSIX_FILE_PERMISSIONS = "rw-r-----";
