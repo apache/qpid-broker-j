@@ -52,26 +52,6 @@ class CachingSecurityToken implements SecurityToken
         return _subject;
     }
 
-    Result authoriseMethod(final RuleBasedAccessControl ruleBasedAccessControl,
-                           final ConfiguredObject<?> configuredObject,
-                           final String methodName,
-                           final Map<String, Object> arguments)
-    {
-        AccessControlCache cache = CACHE_UPDATE.get(this);
-        while(cache.getAccessControl() != ruleBasedAccessControl)
-        {
-            CACHE_UPDATE.compareAndSet(this, cache, new AccessControlCache(ruleBasedAccessControl));
-        }
-        final CachedMethodAuthKey key = new CachedMethodAuthKey(configuredObject, Operation.METHOD(methodName), arguments);
-        Result result = cache.getCache().get(key);
-        if(result == null)
-        {
-            result = ruleBasedAccessControl.authoriseMethod(configuredObject, methodName, arguments);
-            cache.getCache().putIfAbsent(key, result);
-        }
-        return result;
-    }
-
     Result authorise(final RuleBasedAccessControl ruleBasedAccessControl, final Operation operation,
                      final ConfiguredObject<?> configuredObject,
                      final Map<String, Object> arguments)

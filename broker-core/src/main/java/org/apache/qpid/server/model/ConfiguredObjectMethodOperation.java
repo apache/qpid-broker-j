@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class ConfiguredObjectMethodOperation<C extends ConfiguredObject> implements ConfiguredObjectOperation<C>
@@ -109,6 +110,7 @@ public class ConfiguredObjectMethodOperation<C extends ConfiguredObject> impleme
         }
         else
         {
+            subject.authorise(Operation.METHOD(_operation.getName()), parameters);
 
             Set<String> providedNames = new HashSet<>(parameters.keySet());
             providedNames.removeAll(_validNames);

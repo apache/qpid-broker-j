@@ -107,9 +107,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
     public static final String MANAGEMENT_MODE_AUTHENTICATION = "MANAGEMENT_MODE_AUTHENTICATION";
 
-    private static final Operation CONFIGURE_ACTION = Operation.ACTION("CONFIGURE");
-    private static final Operation SHUTDOWN_ACTION = Operation.ACTION("SHUTDOWN");
-
     private final AccessControl<SecurityToken> _systemUserAllowed = new AccessControl<SecurityToken>()
     {
         @Override
@@ -425,7 +422,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @Override
     public void initiateShutdown()
     {
-        authorise(SHUTDOWN_ACTION);
         getEventLogger().message(BrokerMessages.OPERATION("initiateShutdown"));
         _parent.closeAsync();
     }
@@ -1240,7 +1236,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @Override
     public void performGC()
     {
-        authorise(CONFIGURE_ACTION);
         getEventLogger().message(BrokerMessages.OPERATION("performGC"));
         System.gc();
     }
@@ -1248,7 +1243,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @Override
     public Content getThreadStackTraces(boolean appendToLog)
     {
-        authorise(CONFIGURE_ACTION);
         getEventLogger().message(BrokerMessages.OPERATION("getThreadStackTraces"));
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(true, true);
@@ -1278,7 +1272,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @Override
     public Content findThreadStackTraces(String threadNameFindExpression)
     {
-        authorise(CONFIGURE_ACTION);
         getEventLogger().message(BrokerMessages.OPERATION("findThreadStackTraces"));
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(true, true);

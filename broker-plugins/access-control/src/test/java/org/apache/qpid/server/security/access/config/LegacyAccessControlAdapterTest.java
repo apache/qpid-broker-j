@@ -759,7 +759,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
 
         ObjectProperties properties = createExpectedQueueObjectProperties();
 
-        _adapter.authoriseExecute(queue, "clearQueue", Collections.<String,Object>emptyMap());
+        _adapter.authoriseMethod(queue, "clearQueue", Collections.<String,Object>emptyMap());
         verify(_accessControl).authorise(eq(LegacyOperation.PURGE), eq(ObjectType.QUEUE), eq(properties));
 
     }
@@ -770,7 +770,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
 
         ConfiguredObject logger = mock(BrokerLogger.class);
         when(logger.getCategoryClass()).thenReturn(BrokerLogger.class);
-        _adapter.authoriseExecute(logger, "getFile", Collections.singletonMap("fileName", (Object)"qpid.log"));
+        _adapter.authoriseMethod(logger, "getFile", Collections.singletonMap("fileName", (Object)"qpid.log"));
 
         verify(_accessControl).authorise(ACCESS_LOGS, BROKER, ObjectProperties.EMPTY);
 
@@ -782,7 +782,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(logger.getCategoryClass()).thenReturn(VirtualHostLogger.class);
         when(logger.getParent(eq(VirtualHost.class))).thenReturn(_virtualHost);
 
-        _adapter.authoriseExecute(logger, "getFile", Collections.singletonMap("fileName", (Object)"qpid.log"));
+        _adapter.authoriseMethod(logger, "getFile", Collections.singletonMap("fileName", (Object)"qpid.log"));
         ObjectProperties expectedObjectProperties = new ObjectProperties(_virtualHost.getName());
         verify(_accessControl).authorise(ACCESS_LOGS, VIRTUALHOST, expectedObjectProperties);
 
@@ -803,7 +803,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(queue.getCategoryClass()).thenReturn(Queue.class);
 
 
-        _adapter.authoriseExecute(queue, "deleteMessages", Collections.<String,Object>emptyMap());
+        _adapter.authoriseMethod(queue, "deleteMessages", Collections.<String,Object>emptyMap());
         verify(_accessControl).authorise(eq(LegacyOperation.UPDATE), eq(ObjectType.METHOD), eq(properties));
 
     }
@@ -818,7 +818,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
 
         ObjectProperties properties = new ObjectProperties("testUser");
 
-        _adapter.authoriseExecute(authenticationProvider, "getPreferences", Collections.<String,Object>singletonMap("userId","testUser"));
+        _adapter.authoriseMethod(authenticationProvider, "getPreferences", Collections.<String,Object>singletonMap("userId", "testUser"));
         verify(_accessControl).authorise(eq(LegacyOperation.UPDATE), eq(ObjectType.USER), eq(properties));
 
     }
@@ -826,7 +826,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
 
     public void testAccessManagement()
     {
-        _adapter.authoriseExecute(_broker, "manage", Collections.<String,Object>emptyMap());
+        _adapter.authoriseAction(_broker, "manage", Collections.<String,Object>emptyMap());
         verify(_accessControl).authorise(LegacyOperation.ACCESS, ObjectType.MANAGEMENT, ObjectProperties.EMPTY);
 
     }
@@ -845,7 +845,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         Map<String,Object> args = new HashMap<>();
         args.put("routingKey",routingKey);
         args.put("immediate", true);
-        _adapter.authoriseExecute(exchange, "publish", args);
+        _adapter.authoriseAction(exchange, "publish", args);
 
         verify(_accessControl).authorise(eq(LegacyOperation.PUBLISH), eq(ObjectType.EXCHANGE), eq(properties));
 
@@ -858,7 +858,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         properties.put(ObjectProperties.Property.NAME, TEST_VIRTUAL_HOST);
         properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
 
-        _adapter.authoriseExecute(_virtualHost, "connect", Collections.<String,Object>emptyMap());
+        _adapter.authoriseAction(_virtualHost, "connect", Collections.<String,Object>emptyMap());
 
         verify(_accessControl).authorise(eq(LegacyOperation.ACCESS), eq(ObjectType.VIRTUALHOST), eq(properties));
 

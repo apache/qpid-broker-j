@@ -62,6 +62,14 @@ class LegacyAccessControlAdapter
             Collections.unmodifiableSet(new HashSet<>(Arrays.asList("updateMutableConfig",
                                                                     "cleanLog",
                                                                     "checkpoint")));
+
+    private static final Set<String> BROKER_CONFIGURE_OPERATIONS=
+            Collections.unmodifiableSet(new HashSet<>(Arrays.asList("setJVMOptions",
+                                                                    "dumpHeap",
+                                                                    "performGC",
+                                                                    "getThreadStackTraces",
+                                                                    "findThreadStackTraces")));
+
     private final LegacyAccessControl _accessControl;
     private final Model _model;
 
@@ -324,14 +332,14 @@ class LegacyAccessControlAdapter
     }
 
     Result authoriseAction(final ConfiguredObject<?> configuredObject,
-                           String methodName,
+                           String actionName,
                            final Map<String, Object> arguments)
     {
         Class<? extends ConfiguredObject> categoryClass = configuredObject.getCategoryClass();
         if(categoryClass == Exchange.class)
         {
             Exchange exchange = (Exchange) configuredObject;
-            if("publish".equals(methodName))
+            if("publish".equals(actionName))
             {
 
                 final ObjectProperties _props =
@@ -341,7 +349,7 @@ class LegacyAccessControlAdapter
         }
         else if(categoryClass == VirtualHost.class)
         {
-            if("connect".equals(methodName))
+            if("connect".equals(actionName))
             {
                 String virtualHostName = configuredObject.getName();
                 ObjectProperties properties = new ObjectProperties(virtualHostName);
@@ -351,16 +359,19 @@ class LegacyAccessControlAdapter
         }
         else if(categoryClass == Broker.class)
         {
-            if("manage".equals(methodName))
+            if("manage".equals(actionName))
             {
                 return _accessControl.authorise(LegacyOperation.ACCESS, ObjectType.MANAGEMENT, ObjectProperties.EMPTY);
+            }
+            else if("CONFIGURE".equals(actionName) || "SHUTDOWN".equals(actionName))
+            {
+                return _accessControl.authorise(LegacyOperation.valueOf(actionName), ObjectType.BROKER, ObjectProperties.EMPTY);
             }
         }
         else if(categoryClass == Queue.class)
         {
             Queue queue = (Queue) configuredObject;
-            final ObjectProperties properties = new ObjectProperties();
-            if("publish".equals(methodName))
+            if("publish".equals(actionName))
             {
 
                 final ObjectProperties _props =
@@ -368,55 +379,17 @@ class LegacyAccessControlAdapter
                 return _accessControl.authorise(PUBLISH, EXCHANGE, _props);
             }
         }
-        else if(categoryClass == VirtualHostLogger.class)
-        {
-            VirtualHostLogger logger = (VirtualHostLogger)configuredObject;
-            if(LOG_ACCESS_METHOD_NAMES.contains(methodName))
-            {
-                return _accessControl.authorise(ACCESS_LOGS,
-                                                ObjectType.VIRTUALHOST,
-                                                new ObjectProperties(logger.getParent(VirtualHost.class).getName()));
-            }
-        }
 
         return Result.DEFER;
 
     }
 
-    Result authoriseExecute(final ConfiguredObject<?> configuredObject,
-                            final String methodName,
-                            final Map<String, Object> arguments)
+    Result authoriseMethod(final ConfiguredObject<?> configuredObject,
+                           final String methodName,
+                           final Map<String, Object> arguments)
     {
         Class<? extends ConfiguredObject> categoryClass = configuredObject.getCategoryClass();
-        if(categoryClass == Exchange.class)
-        {
-            Exchange exchange = (Exchange) configuredObject;
-            if("publish".equals(methodName))
-            {
-
-                final ObjectProperties _props =
-                        new ObjectProperties(exchange.getParent(VirtualHost.class).getName(), exchange.getName(), (String)arguments.get("routingKey"), (Boolean)arguments.get("immediate"));
-                return _accessControl.authorise(PUBLISH, EXCHANGE, _props);
-            }
-        }
-        else if(categoryClass == VirtualHost.class)
-        {
-            if("connect".equals(methodName))
-            {
-                String virtualHostName = configuredObject.getName();
-                ObjectProperties properties = new ObjectProperties(virtualHostName);
-                properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, virtualHostName);
-                return _accessControl.authorise(LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, properties);
-            }
-        }
-        else if(categoryClass == Broker.class)
-        {
-            if("manage".equals(methodName))
-            {
-                return _accessControl.authorise(LegacyOperation.ACCESS, ObjectType.MANAGEMENT, ObjectProperties.EMPTY);
-            }
-        }
-        else if(categoryClass == Queue.class)
+        if(categoryClass == Queue.class)
         {
             Queue queue = (Queue) configuredObject;
             final ObjectProperties properties = new ObjectProperties();
@@ -490,7 +463,18 @@ class LegacyAccessControlAdapter
                 return _accessControl.authorise(LegacyOperation.UPDATE, ObjectType.BROKER, properties);
             }
         }
+        else if(categoryClass == Broker.class)
+        {
+            if(BROKER_CONFIGURE_OPERATIONS.contains(methodName))
+            {
+                _accessControl.authorise(LegacyOperation.CONFIGURE, ObjectType.BROKER, ObjectProperties.EMPTY);
+            }
+            else if("initiateShutdown".equals(methodName))
+            {
+                _accessControl.authorise(LegacyOperation.SHUTDOWN, ObjectType.BROKER, ObjectProperties.EMPTY);
+            }
 
+        }
         return Result.ALLOWED;
 
     }
@@ -509,7 +493,7 @@ class LegacyAccessControlAdapter
             case DELETE:
                 return authorise(LegacyOperation.DELETE, configuredObject);
             case METHOD:
-                return authoriseExecute(configuredObject, operation.getName(), arguments);
+                return authoriseMethod(configuredObject, operation.getName(), arguments);
             case ACTION:
                 return authoriseAction(configuredObject, operation.getName(), arguments);
             case DISCOVER:

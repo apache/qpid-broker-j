@@ -113,13 +113,6 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
         }
     }
 
-    public Result authoriseMethod(final ConfiguredObject<?> configuredObject,
-                                  final String methodName,
-                                  final Map<String, Object> arguments)
-    {
-        return _adapter.authoriseExecute(configuredObject, methodName, arguments);
-    }
-
     @Override
     public Result authorise(final CachingSecurityToken token,
                             final Operation operation,
