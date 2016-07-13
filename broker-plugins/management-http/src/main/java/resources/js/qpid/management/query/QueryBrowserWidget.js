@@ -128,8 +128,6 @@ define(["dojo/_base/declare",
         return declare("qpid.management.query.QueryBrowserWidget",
             [dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
             {
-                management: null,
-                structure: null,
                 //Strip out the apache comment header from the template html as comments unsupported.
                 templateString: template.replace(/<!--[\s\S]*?-->/g, ""),
                 // attached automatically from template fields
@@ -140,6 +138,7 @@ define(["dojo/_base/declare",
 
                 // passed automatically by constructor
                 manangement: null,
+                structure: null,
 
                 // internal
                 _preferenceStore: null,
@@ -193,6 +192,10 @@ define(["dojo/_base/declare",
                             all: "No queries",
                             sharedWithMe: "No one has shared queries with you",
                             myQueries: "You have no queries"
+                        },
+                        highlightRow: function ()
+                        {
+                            // Suppress row highlighting
                         }
                     }, this.queryBrowserGridNode);
 
@@ -224,86 +227,7 @@ define(["dojo/_base/declare",
                         targetStore: targetStore,
                         management: this.management,
                         structure: this.structure,
-                        transformer: function (preferences)
-                        {
-                            var items = [];
-                            if (preferences.brokerPreferences)
-                            {
-                                items = this.processPreferencesForObject(preferences.brokerPreferences);
-                            }
-                            if (preferences.virtualHostsPreferences)
-                            {
-                                for (var i = 0; i < preferences.virtualHostsPreferences.length; i++)
-                                {
-                                    var virtualHostPreference = preferences.virtualHostsPreferences[i];
-                                    items = items.concat(this.processPreferencesForObject(virtualHostPreference));
-                                }
-                            }
-                            return items;
-                        },
-                        processPreferencesForObject: function (preferenceList)
-                        {
-                            if (this.filter != "all")
-                            {
-                                for (var i = preferenceList.length - 1; i >= 0; i--)
-                                {
-                                    var item = preferenceList[i];
-                                    if (this.filter == "myQueries" && item.owner != this.management.userName)
-                                    {
-                                        preferenceList.splice(i, 1);
-                                    }
-                                    else if (this.filter == "sharedWithMe" && item.owner == this.management.userName)
-                                    {
-                                        preferenceList.splice(i, 1);
-                                    }
-                                }
-                            }
-
-                            if (preferenceList.length == 0)
-                            {
-                                return [];
-                            }
-
-                            // We know all the preferences will be associated with the same object, so we take the first
-                            var root = this.structure.findById(preferenceList[0].associatedObject);
-                            if (!root)
-                            {
-                                return [];
-                            }
-
-                            var items = [];
-                            var rootName =  util.generateName(root);
-                            var rootItem = {
-                                id: root.id,
-                                name: rootName
-                            };
-
-                            items.push(rootItem);
-
-                            var rootItemCategories = {};
-                            for (var i = 0; i < preferenceList.length; i++)
-                            {
-                                var preferenceItem = preferenceList[i];
-
-                                var categoryId = rootItem.id + preferenceItem.value.category;
-                                var categoryItem = rootItemCategories[categoryId];
-                                if (!categoryItem)
-                                {
-                                    categoryItem = {
-                                        id: categoryId,
-                                        name: preferenceItem.value.category,
-                                        parent: rootItem.id
-                                    };
-                                    items.push(categoryItem);
-                                    rootItemCategories[categoryId] = categoryItem;
-                                }
-                                preferenceItem.hasChildren = false;
-                                preferenceItem.parent = categoryItem.id;
-                                items.push(preferenceItem);
-                            }
-
-                            return items;
-                        }
+                        transformer: lang.hitch(this, this._preferencesTransformer)
                     });
                     return preferencesStore;
                 },
@@ -339,13 +263,93 @@ define(["dojo/_base/declare",
                 _modifyFilter: function (event, targetWidget)
                 {
                     var value = targetWidget.get("value");
-                    this._preferenceStore.filter = value;
+                    this.filter = value;
                     if (this.queryBrowserGrid.noDataMessages[value])
                     {
                         this.queryBrowserGrid.noDataMessage = this.queryBrowserGrid.noDataMessages[value];
                     }
                     this.update();
                     this.queryBrowserGrid.refresh();
+                },
+                _preferencesTransformer: function (preferences)
+                {
+                    var items = [];
+                    if (preferences.brokerPreferences)
+                    {
+                        items = this._processPreferencesForObject(preferences.brokerPreferences);
+                    }
+                    if (preferences.virtualHostsPreferences)
+                    {
+                        for (var i = 0; i < preferences.virtualHostsPreferences.length; i++)
+                        {
+                            var virtualHostPreference = preferences.virtualHostsPreferences[i];
+                            items = items.concat(this._processPreferencesForObject(virtualHostPreference));
+                        }
+                    }
+                    return items;
+                },
+                _processPreferencesForObject: function (preferenceList)
+                {
+                    if (this.filter != "all")
+                    {
+                        for (var i = preferenceList.length - 1; i >= 0; i--)
+                        {
+                            var item = preferenceList[i];
+                            if (this.filter == "myQueries" && item.owner != this.management.userName)
+                            {
+                                preferenceList.splice(i, 1);
+                            }
+                            else if (this.filter == "sharedWithMe" && item.owner == this.management.userName)
+                            {
+                                preferenceList.splice(i, 1);
+                            }
+                        }
+                    }
+
+                    if (preferenceList.length == 0)
+                    {
+                        return [];
+                    }
+
+                    // We know all the preferences will be associated with the same object, so we take the first
+                    var root = this.structure.findById(preferenceList[0].associatedObject);
+                    if (!root)
+                    {
+                        return [];
+                    }
+
+                    var items = [];
+                    var rootName =  util.generateName(root);
+                    var rootItem = {
+                        id: root.id,
+                        name: rootName
+                    };
+
+                    items.push(rootItem);
+
+                    var rootItemCategories = {};
+                    for (var i = 0; i < preferenceList.length; i++)
+                    {
+                        var preferenceItem = preferenceList[i];
+
+                        var categoryId = rootItem.id + preferenceItem.value.category;
+                        var categoryItem = rootItemCategories[categoryId];
+                        if (!categoryItem)
+                        {
+                            categoryItem = {
+                                id: categoryId,
+                                name: preferenceItem.value.category,
+                                parent: rootItem.id
+                            };
+                            items.push(categoryItem);
+                            rootItemCategories[categoryId] = categoryItem;
+                        }
+                        preferenceItem.hasChildren = false;
+                        preferenceItem.parent = categoryItem.id;
+                        items.push(preferenceItem);
+                    }
+
+                    return items;
                 }
             });
     });

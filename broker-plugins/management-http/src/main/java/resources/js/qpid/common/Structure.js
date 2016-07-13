@@ -18,13 +18,13 @@
  *
  */
 
-define(["dojo/_base/lang",],
+define(["dojo/_base/lang"],
     function (lang)
     {
         function Structure()
         {
             this.structure = null;
-        }
+        };
 
         Structure.prototype.update = function (structure)
         {
@@ -66,11 +66,11 @@ define(["dojo/_base/lang",],
                     }
                     return null;
                 }
-            }
+            };
 
             return findObject(this.structure, null, "broker");
 
-        }
+        };
 
         return Structure;
     });
