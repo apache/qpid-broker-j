@@ -110,6 +110,7 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
         }
         catch (Exception e)
         {
+            _storeState.set(StoreState.ERRORED);
             close();
             throw e;
         }
@@ -121,7 +122,7 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
         while (true)
         {
             StoreState storeState = _storeState.get();
-            if (storeState.equals(StoreState.OPENED) || storeState.equals(StoreState.OPENING))
+            if (storeState.equals(StoreState.OPENED) || storeState.equals(StoreState.ERRORED))
             {
                 if (_storeState.compareAndSet(storeState, StoreState.CLOSING))
                 {
@@ -194,7 +195,7 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
 
     private enum StoreState
     {
-        CLOSED, OPENING, OPENED, CLOSING;
+        CLOSED, OPENING, OPENED, CLOSING, ERRORED;
     }
 
     public static class StoreContent
