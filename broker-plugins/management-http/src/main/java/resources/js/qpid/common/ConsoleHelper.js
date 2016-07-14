@@ -148,7 +148,7 @@ define(["dojo/query",
         {
             this.controller.show("queryBrowser", "QueueBrowser");
         },
-        init: function (controller, treeView)
+        init: function (controller, TreeView)
         {
             this.controller = controller;
             this.management = new Management("", util.xhrErrorHandler);
@@ -173,10 +173,8 @@ define(["dojo/query",
                     management.init(function ()
                     {
                         updater.registerUpdateIntervalListener(management.userPreferences);
-                        controller.init(management, structure);
-                        treeView.create(getContextPath() + 'service/structure',
-                            management,
-                            query('div[qpid-type="treeView"]')[0]);
+                        var treeView = new TreeView(management, query('div[qpid-type="treeView"]')[0]);
+                        controller.init(management, structure, treeView);
                         dijit.Tooltip.defaultPosition =
                             ["after-centered",
                              "below-centered"];

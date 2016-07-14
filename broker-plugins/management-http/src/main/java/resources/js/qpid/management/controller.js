@@ -198,19 +198,26 @@ define(["dojo/dom",
 
         };
 
-        controller.init = function (management, structure)
+        controller.init = function (management, structure, treeView)
         {
             controller.management = management;
             controller.structure = structure;
 
-            updater.add({update : function()
+            var structureUpdate = function()
             {
-                var promise = management.get({url: "service/structure"});
-                promise.then(lang.hitch(this, function (data)
-                {
-                    structure.update(data);
-                }));
-            }});
+              var promise = management.get({url: "service/structure"});
+              return promise.then(lang.hitch(this, function (data)
+              {
+                  structure.update(data);
+                  treeView.update(data);
+              }));
+            };
+
+            var initialUpdate = structureUpdate();
+            initialUpdate.then(lang.hitch(this, function ()
+            {
+                updater.add({update : structureUpdate});
+            }));
         };
 
         controller.update = function(tabObject, name, parent, objectId)

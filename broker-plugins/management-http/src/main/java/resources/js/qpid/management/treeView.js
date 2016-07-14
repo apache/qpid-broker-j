@@ -18,20 +18,19 @@
  * under the License.
  *
  */
-define(["dojo/query",
-        "dojo/io-query",
+define(["dojo/_base/lang",
+        "dojo/query",
         "dijit/Tree",
         "qpid/common/util",
-        "qpid/common/updater",
         "qpid/management/controller",
         "dojo/ready",
-        "dojo/domReady!"], function (query, ioQuery, Tree, util, updater, controller, ready)
+        "dojo/domReady!"], function (lang, query, Tree, util, controller, ready)
 {
 
-    function TreeViewModel(queryString, management)
+    function TreeViewModel(management, node)
     {
-        this.query = queryString;
         this.management = management;
+        this.node = node;
 
         this.onChildrenChange = function (parent, children)
         {
@@ -428,64 +427,32 @@ define(["dojo/query",
         }
     };
 
-    TreeViewModel.prototype.update = function (callback)
+    TreeViewModel.prototype.update = function (data)
     {
-        var thisObj = this;
-
-        this.management.get({url: this.query})
-            .then(function (data)
-            {
-                try
-                {
-                    if (thisObj.model)
-                    {
-                        thisObj.updateModel(data);
-                    }
-                    else
-                    {
-                        thisObj.buildModel(data);
-                    }
-
-                    if (callback)
-                    {
-                        callback();
-                    }
-                }
-                catch (e)
-                {
-                    console.error(e);
-                }
-            }, util.xhrErrorHandler);
-
+        if (this.model)
+        {
+            this.updateModel(data);
+        }
+        else
+        {
+            this.buildModel(data);
+            this.startUp();
+        }
     };
 
-    TreeViewModel.create = function (structureUrl, management, node)
+    TreeViewModel.prototype.startUp = function ()
     {
-        var treeModel = new TreeViewModel(structureUrl, management);
-        treeModel.update(function ()
+        var tree = new Tree({model: this}, this.node);
+        tree.on("dblclick", lang.hitch(this, function (object)
         {
-            var tree = new Tree({model: treeModel}, node);
-            tree.on("dblclick", function (object)
+            if (object && !object._dummyChild)
             {
-                if (object && !object._dummyChild)
-                {
-                    treeModel.relocate(object);
-                }
-
-            }, true);
-            tree.startup();
-            updater.add(treeModel);
-            try
-            {
-                onReady();
+                this.relocate(object);
             }
-            catch (e)
-            {
-                console.error(e);
-            }
-        });
 
-        var onReady = function ()
+        }), true);
+        tree.startup();
+        try
         {
             controller.show("broker", "");
 
@@ -499,14 +466,14 @@ define(["dojo/query",
                     {
                         if (tab.objectId)
                         {
-                            modelObject = treeModel.fetchItemByIdentity(tab.objectId);
+                            modelObject = this.fetchItemByIdentity(tab.objectId);
                             if (modelObject)
                             {
-                                treeModel.relocate(modelObject);
+                                this.relocate(modelObject);
                             }
                             else
                             {
-                                management.userPreferences.removeTab(tab);
+                                this.management.userPreferences.removeTab(tab);
                             }
                         }
                         else
@@ -516,7 +483,11 @@ define(["dojo/query",
                     }
                 }
             }
-        };
+        }
+        catch (e)
+        {
+            console.error(e);
+        }
     };
 
     return TreeViewModel;
