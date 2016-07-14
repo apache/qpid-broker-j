@@ -19,10 +19,16 @@
 
 package org.apache.qpid.server.model.preferences;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import org.apache.qpid.server.store.preferences.PreferenceRecord;
 
 public class PreferenceTestHelper
 {
@@ -46,5 +52,31 @@ public class PreferenceTestHelper
         preferenceAttributes.put(Preference.VISIBILITY_LIST_ATTRIBUTE, visibilitySet);
         preferenceAttributes.put(Preference.VALUE_ATTRIBUTE, preferenceValueAttributes);
         return preferenceAttributes;
+    }
+
+    public static void assertRecords(final Collection<PreferenceRecord> expected,
+                                     final Collection<PreferenceRecord> actual)
+    {
+        assertEquals("Unexpected number of records", expected.size(), actual.size());
+
+        for (PreferenceRecord expectedRecord : expected)
+        {
+            PreferenceRecord actualRecord = null;
+            for (PreferenceRecord record : actual)
+            {
+                if (record.getId().equals(expectedRecord.getId()))
+                {
+                    actualRecord = record;
+                    break;
+                }
+            }
+            assertNotNull(String.format("No actual record found for expected record '%s'", expectedRecord.getId()),
+                          actualRecord);
+            assertEquals(String.format("Expected attributes are different from actual: %s vs %s",
+                                       expectedRecord.getAttributes().toString(),
+                                       actualRecord.getAttributes().toString()),
+                         new HashMap<>(expectedRecord.getAttributes()),
+                         new HashMap<>(actualRecord.getAttributes()));
+        }
     }
 }

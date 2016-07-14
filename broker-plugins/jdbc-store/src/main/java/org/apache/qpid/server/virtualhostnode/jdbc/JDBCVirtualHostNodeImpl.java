@@ -31,6 +31,7 @@ import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.jdbc.GenericJDBCConfigurationStore;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.virtualhostnode.AbstractStandardVirtualHostNode;
 
 @ManagedObject(type = JDBCVirtualHostNodeImpl.VIRTUAL_HOST_NODE_TYPE, category = false ,
@@ -105,5 +106,11 @@ public class JDBCVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<JDB
     public static Map<String, Collection<String>> getSupportedChildTypes()
     {
         return Collections.singletonMap(VirtualHost.class.getSimpleName(), getSupportedVirtualHostTypes(true));
+    }
+
+    @Override
+    public PreferenceStore getPreferenceStore()
+    {
+        return ((GenericJDBCConfigurationStore) getConfigurationStore()).getPreferenceStore();
     }
 }

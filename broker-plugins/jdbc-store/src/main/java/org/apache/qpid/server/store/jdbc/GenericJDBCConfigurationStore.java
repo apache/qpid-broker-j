@@ -41,6 +41,8 @@ import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreProvider;
 import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.store.preferences.AbstractJDBCPreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 
 /**
  * Implementation of a DurableConfigurationStore backed by Generic JDBC Database
@@ -54,6 +56,7 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
 
     private final AtomicBoolean _configurationStoreOpen = new AtomicBoolean();
     private final MessageStore _providedMessageStore = new ProvidedMessageStore();
+    private final PreferenceStore _providedPreferenceStore = new ProvidedPreferenceStore();
 
     private String _connectionURL;
     private ConnectionProvider _connectionProvider;
@@ -246,6 +249,11 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
         return _providedMessageStore;
     }
 
+    public PreferenceStore getPreferenceStore()
+    {
+        return _providedPreferenceStore;
+    }
+
     private class ProvidedMessageStore extends GenericAbstractJDBCMessageStore
     {
         @Override
@@ -309,5 +317,38 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
         }
     }
 
+    private class ProvidedPreferenceStore extends AbstractJDBCPreferenceStore
+    {
+        private final Logger LOGGER = LoggerFactory.getLogger(ProvidedPreferenceStore.class);
 
+        @Override
+        protected Logger getLogger()
+        {
+            return LOGGER;
+        }
+
+        @Override
+        protected Connection getConnection() throws SQLException
+        {
+            return GenericJDBCConfigurationStore.this.getConnection();
+        }
+
+        @Override
+        protected String getSqlBlobType()
+        {
+            return GenericJDBCConfigurationStore.this.getSqlBlobType();
+        }
+
+        @Override
+        protected String getBlobAsString(final ResultSet rs, final int col) throws SQLException
+        {
+            return GenericJDBCConfigurationStore.this.getBlobAsString(rs, col);
+        }
+
+        @Override
+        public void doClose()
+        {
+            // noop
+        }
+    }
 }

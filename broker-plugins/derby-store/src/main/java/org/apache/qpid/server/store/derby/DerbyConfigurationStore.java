@@ -39,6 +39,7 @@ import org.apache.qpid.server.store.FileBasedSettings;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreProvider;
 import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.store.preferences.AbstractJDBCPreferenceStore;
 import org.apache.qpid.util.FileUtils;
 
 /**
@@ -52,6 +53,7 @@ public class DerbyConfigurationStore extends AbstractJDBCConfigurationStore
 
     private final AtomicBoolean _configurationStoreOpen = new AtomicBoolean();
     private final ProvidedMessageStore _providedMessageStore = new ProvidedMessageStore();
+    private final ProvidedPreferenceStore _providedPreferenceStore = new ProvidedPreferenceStore();
 
     private String _connectionURL;
 
@@ -234,6 +236,41 @@ public class DerbyConfigurationStore extends AbstractJDBCConfigurationStore
         protected Logger getLogger()
         {
             return DerbyConfigurationStore.this.getLogger();
+        }
+    }
+
+    private class ProvidedPreferenceStore extends AbstractJDBCPreferenceStore
+    {
+        private final Logger LOGGER = LoggerFactory.getLogger(ProvidedPreferenceStore.class);
+
+        @Override
+        protected Logger getLogger()
+        {
+            return LOGGER;
+        }
+
+        @Override
+        protected Connection getConnection() throws SQLException
+        {
+            return DerbyConfigurationStore.this.getConnection();
+        }
+
+        @Override
+        protected String getSqlBlobType()
+        {
+            return "blob";
+        }
+
+        @Override
+        protected String getBlobAsString(final ResultSet rs, final int col) throws SQLException
+        {
+            return DerbyUtils.getBlobAsString(rs, col);
+        }
+
+        @Override
+        public void doClose()
+        {
+            // noop
         }
     }
 }

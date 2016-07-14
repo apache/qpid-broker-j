@@ -21,12 +21,18 @@ package org.apache.qpid.server.virtualhostnode.derby;
 
 
 import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.store.FileBasedSettings;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 
-public interface DerbyVirtualHostNode<X extends DerbyVirtualHostNode<X>> extends org.apache.qpid.server.model.VirtualHostNode<X>, org.apache.qpid.server.store.FileBasedSettings
+public interface DerbyVirtualHostNode<X extends DerbyVirtualHostNode<X>> extends VirtualHostNode<X>, FileBasedSettings
 {
     String STORE_PATH = "storePath";
 
     @ManagedAttribute(mandatory = true, defaultValue = "${qpid.work_dir}${file.separator}${this:name}${file.separator}config")
     String getStorePath();
+
+    @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
+            defaultValue = "{\"type\": \"Provided\"}")
+    PreferenceStoreAttributes getPreferenceStoreAttributes();
 }

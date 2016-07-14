@@ -39,6 +39,6 @@ public interface DerbySystemConfig<X extends DerbySystemConfig<X>> extends Syste
     Long getStoreOverfullSize();
 
     @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
-            defaultValue = "{\"type\": \"Noop\"}")
+            defaultValue = "{\"type\": \"Provided\"}")
     PreferenceStoreAttributes getPreferenceStoreAttributes();
 }

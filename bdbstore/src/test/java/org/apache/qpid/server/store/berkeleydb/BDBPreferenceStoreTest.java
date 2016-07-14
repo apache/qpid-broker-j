@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -44,6 +43,7 @@ import com.sleepycat.je.EnvironmentConfig;
 
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.preferences.PreferenceTestHelper;
 import org.apache.qpid.server.store.berkeleydb.tuple.MapBinding;
 import org.apache.qpid.server.store.berkeleydb.tuple.UUIDTupleBinding;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
@@ -103,7 +103,7 @@ public class BDBPreferenceStoreTest extends QpidTestCase
                      AbstractBDBPreferenceStore.StoreState.OPENED,
                      _preferenceStore.getStoreState());
         assertNotNull("Store was not properly opened", _preferenceStore.getEnvironmentFacade());
-        assertRecords(_testInitialRecords, recovered);
+        PreferenceTestHelper.assertRecords(_testInitialRecords, recovered);
     }
 
     public void testClose() throws Exception
@@ -131,7 +131,7 @@ public class BDBPreferenceStoreTest extends QpidTestCase
         Collection<PreferenceRecord> recovered = _preferenceStore.openAndLoad(_updater);
         List<PreferenceRecord> expected = new ArrayList<>(records);
         expected.add(_testInitialRecords.get(1));
-        assertRecords(expected, recovered);
+        PreferenceTestHelper.assertRecords(expected, recovered);
     }
 
     public void testReplace() throws Exception
@@ -149,7 +149,7 @@ public class BDBPreferenceStoreTest extends QpidTestCase
 
         _preferenceStore.close();
         Collection<PreferenceRecord> recovered = _preferenceStore.openAndLoad(_updater);
-        assertRecords(recordsToAddUpdate, recovered);
+        PreferenceTestHelper.assertRecords(recordsToAddUpdate, recovered);
     }
 
     public void testUpdateFailIfNotOpened() throws Exception
@@ -175,31 +175,6 @@ public class BDBPreferenceStoreTest extends QpidTestCase
         catch (IllegalStateException e)
         {
             // pass
-        }
-    }
-
-    private void assertRecords(final Collection<PreferenceRecord> expected, final Collection<PreferenceRecord> actual)
-    {
-        assertEquals("Unexpected number of records", expected.size(), actual.size());
-
-        for (PreferenceRecord expectedRecord : expected)
-        {
-            PreferenceRecord actualRecord = null;
-            for (PreferenceRecord record : actual)
-            {
-                if (record.getId().equals(expectedRecord.getId()))
-                {
-                    actualRecord = record;
-                    break;
-                }
-            }
-            assertNotNull(String.format("No actual record found for expected record '%s'", expectedRecord.getId()),
-                          actualRecord);
-            assertEquals(String.format("Expected attributes are different from actual: %s vs %s",
-                                       expectedRecord.getAttributes().toString(),
-                                       actualRecord.getAttributes().toString()),
-                         new HashMap<>(expectedRecord.getAttributes()),
-                         new HashMap<>(actualRecord.getAttributes()));
         }
     }
 
