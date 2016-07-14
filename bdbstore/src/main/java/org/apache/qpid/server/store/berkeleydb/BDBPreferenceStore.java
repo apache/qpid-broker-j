@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.store.berkeleydb;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.Map;
 
@@ -30,16 +31,19 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
+import org.apache.qpid.util.FileUtils;
 
 public class BDBPreferenceStore extends AbstractBDBPreferenceStore
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BDBPreferenceStore.class);
 
+    private final String _storePath;
     private final EnvironmentFacadeFactory _environmentFactory;
     private volatile EnvironmentFacade _environmentFacade;
 
     public BDBPreferenceStore(final ConfiguredObject<?> parent, final String storePath)
     {
+        _storePath = storePath;
         _environmentFactory = new EnvironmentFacadeFactory()
         {
             @Override
@@ -92,6 +96,24 @@ public class BDBPreferenceStore extends AbstractBDBPreferenceStore
 
         _environmentFacade = _environmentFactory.createEnvironmentFacade(null);
         return super.openAndLoad(updater);
+    }
+
+    @Override
+    protected void doDelete()
+    {
+        if (_storePath != null)
+        {
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug("Deleting preference store " + _storePath);
+            }
+
+            File preferenceStoreFile = new File(_storePath);
+            if (!FileUtils.delete(preferenceStoreFile, true))
+            {
+                LOGGER.info("Failed to delete the preference store at location " + _storePath);
+            }
+        }
     }
 
     @Override

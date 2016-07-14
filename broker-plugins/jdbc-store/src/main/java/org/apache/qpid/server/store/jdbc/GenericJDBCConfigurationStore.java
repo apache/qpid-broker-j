@@ -346,6 +346,19 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
         }
 
         @Override
+        public void onDelete()
+        {
+            try
+            {
+                dropTables(GenericJDBCConfigurationStore.this.getConnection());
+            }
+            catch (SQLException e)
+            {
+                getLogger().warn("Could not drop preference database tables on deletion", e);
+            }
+        }
+
+        @Override
         public void doClose()
         {
             // noop

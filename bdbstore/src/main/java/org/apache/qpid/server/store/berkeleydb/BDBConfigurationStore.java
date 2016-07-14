@@ -626,6 +626,12 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
         }
 
         @Override
+        protected void doDelete()
+        {
+            // noop
+        }
+
+        @Override
         public void close()
         {
             closeInternal();

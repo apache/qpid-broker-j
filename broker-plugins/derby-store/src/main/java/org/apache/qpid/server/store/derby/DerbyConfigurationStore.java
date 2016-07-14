@@ -268,6 +268,19 @@ public class DerbyConfigurationStore extends AbstractJDBCConfigurationStore
         }
 
         @Override
+        public void onDelete()
+        {
+            try
+            {
+                dropTables(DerbyConfigurationStore.this.getConnection());
+            }
+            catch (SQLException e)
+            {
+                getLogger().warn("Could not drop preference database tables on deletion", e);
+            }
+        }
+
+        @Override
         public void doClose()
         {
             // noop

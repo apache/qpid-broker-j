@@ -176,6 +176,13 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
     }
 
     @Override
+    public void onDelete()
+    {
+        close();
+        delete(_storePath);
+    }
+
+    @Override
     protected ObjectMapper getSerialisationObjectMapper()
     {
         return _objectMapper;

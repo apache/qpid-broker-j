@@ -35,7 +35,6 @@ import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.DatabaseNotFoundException;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
@@ -189,6 +188,15 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
             }
         }
     }
+
+    @Override
+    public void onDelete()
+    {
+        close();
+        doDelete();
+    }
+
+    protected abstract void doDelete();
 
     protected abstract EnvironmentFacade getEnvironmentFacade();
 

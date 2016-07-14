@@ -188,6 +188,19 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
         _storeState.set(StoreState.CLOSED);
     }
 
+    protected void dropTables(final Connection connection) throws SQLException
+    {
+        try (Statement dropTableStatement = connection.createStatement())
+        {
+            dropTableStatement.execute("DROP TABLE " + PREFERENCES_TABLE_NAME);
+            dropTableStatement.execute("DROP TABLE " + PREFERENCES_VERSION_TABLE_NAME);
+        }
+        catch (SQLException e)
+        {
+            getLogger().warn("Failed to drop preferences table", e);
+        }
+    }
+
     protected abstract void doClose();
 
     protected abstract Logger getLogger();

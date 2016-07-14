@@ -1073,13 +1073,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     protected void onClose()
     {
-        if (_preferenceStore != null)
-        {
-            _preferenceStore.close();
-        }
-
         _dtxRegistry.close();
         closeMessageStore();
+        closePreferenceStore();
         shutdownHouseKeeping();
         closeNetworkConnectionScheduler();
         _eventLogger.message(VirtualHostMessages.CLOSED(getName()));
@@ -1660,12 +1656,21 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 shutdownHouseKeeping();
                 closeNetworkConnectionScheduler();
                 closeMessageStore();
-                _preferenceStore.close();
+                closePreferenceStore();
                 setState(State.STOPPED);
 
                 stopLogging(loggers);
             }
         });
+    }
+
+    private void closePreferenceStore()
+    {
+        PreferenceStore ps = _preferenceStore;
+        if (ps != null)
+        {
+            ps.close();
+        }
     }
 
     private void stopLogging(Collection<VirtualHostLogger> loggers)
@@ -1695,6 +1700,18 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                             catch (Exception e)
                             {
                                 _logger.warn("Exception occurred on message store deletion", e);
+                            }
+                        }
+                        PreferenceStore ps = _preferenceStore;
+                        if (ps != null)
+                        {
+                            try
+                            {
+                                ps.onDelete();
+                            }
+                            catch (Exception e)
+                            {
+                                _logger.warn("Exception occurred on preference store deletion", e);
                             }
                         }
                         deleted();

@@ -33,4 +33,6 @@ public interface PreferenceStore
     void updateOrCreate(Collection<PreferenceRecord> preferenceRecords);
 
     void replace(Collection<UUID> preferenceRecordsToRemove, Collection<PreferenceRecord> preferenceRecordsToAdd);
+
+    void onDelete();
 }

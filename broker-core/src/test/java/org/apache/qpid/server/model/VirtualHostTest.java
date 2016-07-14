@@ -65,6 +65,7 @@ import org.apache.qpid.server.store.Event;
 import org.apache.qpid.server.store.EventListener;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.util.Action;
@@ -81,6 +82,7 @@ public class VirtualHostTest extends QpidTestCase
     private DurableConfigurationStore _configStore;
     private VirtualHost<?> _virtualHost;
     private StoreConfigurationChangeListener _storeConfigurationChangeListener;
+    private PreferenceStore _preferenceStore;
 
     @Override
     protected void setUp() throws Exception
@@ -114,7 +116,8 @@ public class VirtualHostTest extends QpidTestCase
         when(_virtualHostNode.getModel()).thenReturn(objectFactory.getModel());
         when(_virtualHostNode.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_virtualHostNode.getChildExecutor()).thenReturn(_taskExecutor);
-        when(_virtualHostNode.createPreferenceStore()).thenReturn(mock(PreferenceStore.class));
+        _preferenceStore = mock(PreferenceStore.class);
+        when(_virtualHostNode.createPreferenceStore()).thenReturn(_preferenceStore);
     }
 
     @Override
@@ -161,6 +164,7 @@ public class VirtualHostTest extends QpidTestCase
 
         assertEquals("Unexpected state", State.DELETED, virtualHost.getState());
         verify(_configStore).remove(matchesRecord(virtualHost.getId(), virtualHost.getType()));
+        verify(_preferenceStore).onDelete();
     }
 
     public void testStopAndStartVirtualHost()
@@ -172,12 +176,14 @@ public class VirtualHostTest extends QpidTestCase
 
         virtualHost.stop();
         assertEquals("Unexpected state", State.STOPPED, virtualHost.getState());
+        verify(_preferenceStore).close();
 
         virtualHost.start();
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
         verify(_configStore, times(1)).update(eq(true), matchesRecord(virtualHost.getId(), virtualHost.getType()));
         verify(_configStore, times(2)).update(eq(false), matchesRecord(virtualHost.getId(), virtualHost.getType()));
+        verify(_preferenceStore, times(2)).openAndLoad(any(PreferenceStoreUpdater.class));
     }
 
     public void testRestartingVirtualHostRecoversChildren()

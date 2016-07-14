@@ -64,6 +64,12 @@ public class NoopPreferenceStoreFactoryService implements PreferenceStoreFactory
             {
 
             }
+
+            @Override
+            public void onDelete()
+            {
+
+            }
         };
     }
 
