@@ -71,48 +71,17 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
 
         try
         {
-            Collection<PreferenceRecord> records = new LinkedHashSet<>();
-
-            Cursor cursor = null;
-
-            try
-            {
-                cursor = getPreferencesDb().openCursor(null, null);
-                DatabaseEntry key = new DatabaseEntry();
-                DatabaseEntry value = new DatabaseEntry();
-                UUIDTupleBinding keyBinding = UUIDTupleBinding.getInstance();
-                MapBinding valueBinding = MapBinding.getInstance();
-
-                while (cursor.getNext(key, value, LockMode.RMW) == OperationStatus.SUCCESS)
-                {
-                    UUID preferenceId = keyBinding.entryToObject(key);
-                    Map<String, Object> preferenceAttributes = valueBinding.entryToObject(value);
-                    PreferenceRecord record = new PreferenceRecordImpl(preferenceId, preferenceAttributes);
-                    records.add(record);
-                }
-            }
-            catch (RuntimeException e)
-            {
-                throw environmentFacade.handleDatabaseException("Cannot visit messages", e);
-            }
-            finally
-            {
-                if (cursor != null)
-                {
-                    try
-                    {
-                        cursor.close();
-                    }
-                    catch (RuntimeException e)
-                    {
-                        throw environmentFacade.handleDatabaseException("Cannot close cursor", e);
-                    }
-                }
-            }
-
             ModelVersion currentVersion =
                     new ModelVersion(BrokerModel.MODEL_MAJOR_VERSION, BrokerModel.MODEL_MINOR_VERSION);
             ModelVersion storedVersion = getStoredVersion();
+
+            if (currentVersion.lessThan(storedVersion))
+            {
+                throw new StoreException(String.format("Cannot downgrade preference store from '%s' to '%s'", storedVersion, currentVersion));
+            }
+
+            Collection<PreferenceRecord> records = getPreferenceRecords(environmentFacade);
+
             if (storedVersion.lessThan(currentVersion))
             {
                 final Collection<UUID> ids = new HashSet<>();
@@ -130,6 +99,7 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
         }
         catch (Exception e)
         {
+            _storeState.set(StoreState.ERRORED);
             close();
             throw e;
         }
@@ -229,7 +199,7 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
         while (true)
         {
             StoreState storeState = getStoreState();
-            if (storeState.equals(StoreState.OPENED) || storeState.equals(StoreState.OPENING))
+            if (storeState.equals(StoreState.OPENED) || storeState.equals(StoreState.ERRORED))
             {
                 if (_storeState.compareAndSet(storeState, StoreState.CLOSING))
                 {
@@ -251,6 +221,49 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
     StoreState getStoreState()
     {
         return _storeState.get();
+    }
+
+    private Collection<PreferenceRecord> getPreferenceRecords(final EnvironmentFacade environmentFacade)
+    {
+        Collection<PreferenceRecord> records = new LinkedHashSet<>();
+
+        Cursor cursor = null;
+
+        try
+        {
+            cursor = getPreferencesDb().openCursor(null, null);
+            DatabaseEntry key = new DatabaseEntry();
+            DatabaseEntry value = new DatabaseEntry();
+            UUIDTupleBinding keyBinding = UUIDTupleBinding.getInstance();
+            MapBinding valueBinding = MapBinding.getInstance();
+
+            while (cursor.getNext(key, value, LockMode.RMW) == OperationStatus.SUCCESS)
+            {
+                UUID preferenceId = keyBinding.entryToObject(key);
+                Map<String, Object> preferenceAttributes = valueBinding.entryToObject(value);
+                PreferenceRecord record = new PreferenceRecordImpl(preferenceId, preferenceAttributes);
+                records.add(record);
+            }
+        }
+        catch (RuntimeException e)
+        {
+            throw environmentFacade.handleDatabaseException("Cannot visit messages", e);
+        }
+        finally
+        {
+            if (cursor != null)
+            {
+                try
+                {
+                    cursor.close();
+                }
+                catch (RuntimeException e)
+                {
+                    throw environmentFacade.handleDatabaseException("Cannot close cursor", e);
+                }
+            }
+        }
+        return records;
     }
 
     private void updateOrCreateInternal(final Transaction txn,
@@ -351,6 +364,6 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
 
     enum StoreState
     {
-        CLOSED, OPENING, OPENED, CLOSING;
+        CLOSED, OPENING, OPENED, CLOSING, ERRORED;
     }
 }
