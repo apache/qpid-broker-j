@@ -58,14 +58,6 @@ define(["dojo/_base/declare",
               ColumnHider,
               QueryGrid)
     {
-        var predefinedCategories = [{
-            id: "queue",
-            name: "Queue"
-        }, {
-            id: "connection",
-            name: "Connection"
-        }];
-
         var QuerySaveDialogForm = declare("qpid.management.query.QuerySaveDialogForm",
             [dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
             {
@@ -140,6 +132,7 @@ define(["dojo/_base/declare",
                 _onChange: function (e)
                 {
                     var invalid = !this.queryName.value;
+                    this.saveButton.set("disabled", invalid);
                 },
                 _onFormSubmit: function (e)
                 {
@@ -338,10 +331,9 @@ define(["dojo/_base/declare",
                     this.deleteButton.on("click", lang.hitch(this, this._deleteQuery));
 
                     // advanced mode widgets
-                    this.advancedSelect.on("change", lang.hitch(this, this._toggleSearchButton));
-                    this.advancedSelect.on("blur", lang.hitch(this, this._advancedModeSelectChanged));
-                    this.advancedWhere.on("blur", lang.hitch(this, this._advancedModeWhereChanged));
-                    this.advancedOrderBy.on("blur", lang.hitch(this, this._advancedModeOrderByChanged));
+                    this.advancedSelect.on("change", lang.hitch(this, this._advancedModeSelectChanged));
+                    this.advancedWhere.on("change", lang.hitch(this, this._advancedModeWhereChanged));
+                    this.advancedOrderBy.on("change", lang.hitch(this, this._advancedModeOrderByChanged));
                     this.advancedSelect.on("keyDown", lang.hitch(this, this._advancedModeKeyPressed));
                     this.advancedWhere.on("keyDown", lang.hitch(this, this._advancedModeKeyPressed));
                     this.advancedOrderBy.on("keyDown", lang.hitch(this, this._advancedModeKeyPressed));
@@ -358,21 +350,28 @@ define(["dojo/_base/declare",
                     this.modeButton.on("click", lang.hitch(this, this._showModeSwitchWarningIfRequired));
 
                     var rowsPerPage = valuePresent && this.preference.value.limit ? this.preference.value.limit  : 100;
-                    var currentPage = valuePresent && this.preference.value.offset ?  this.preference.value.offset/rowsPerPage + 1: 1;
+                    var currentPage = valuePresent && this.preference.value.offset ?  this.preference.value.offset / rowsPerPage + 1: 1;
                     this._buildGrid(currentPage, rowsPerPage);
-                    var openingPreference = this.preference && this.preference.value && this.preference.value.select;
-                    this._initCategory(this.categoryName, !openingPreference);
-                    this._toggleSearchButton();
+                    this._initCategory(this.categoryName, !selectPresent);
 
                     if (selectPresent)
                     {
-                        this._modeChanged();
+                        this._configureModalWidgets(false);
+                        this.advancedSelect._lastValueReported = this.preference.value.select;
+                        this.advancedWhere._lastValueReported = this.preference.value.where;
+                        this.advancedOrderBy._lastValueReported = this.preference.value.orderBy;
+
                         this.advancedSelect.set("value", this.preference.value.select);
                         this.advancedWhere.set("value", this.preference.value.where);
                         this.advancedOrderBy.set("value", this.preference.value.orderBy);
                         this._setSelectClause(this.advancedSelect.value);
                         this._resultsGrid.setWhere(this.advancedWhere.value);
                         this._resultsGrid.setOrderBy(this.advancedOrderBy.value);
+                        this._toggleSearchButton(this.preference.value.select);
+                    }
+                    else
+                    {
+                        this._toggleSearchButton(true);
                     }
 
                     // if the preference has an id, then we know it is in the store
@@ -774,58 +773,33 @@ define(["dojo/_base/declare",
                     }
                     return columns;
                 },
-                _initCategory: function (value, newPreference)
+                _initCategory: function (value, isNew)
                 {
                     var metadata = this._getCategoryMetadata(value);
                     var columns, items, selectedItems;
-                    if (!metadata)
-                    {
-                        this.domNode.innerHTML = "<b>Invalid category " + entities.encode(String(value)) + "</b>";
-                        return;
-                    }
-                    else
+                    if (metadata)
                     {
                         var data = this._combineTypeAttributesAndStatistics(metadata);
                         columns = data.asObject;
                         items = data.asArray;
-                        selectedItems = newPreference ?  this.getDefaultColumns(value) : [];
-                    }
+                        selectedItems = isNew ?  this.getDefaultColumns(value) : [];
 
-                    this.standardSelectChooser.set("data", {
-                        items: items,
-                        idProperty: "id",
-                        selected: selectedItems,
-                        nameProperty: "attributeName"
-                    });
-                    this.standardWhereChooser.set("data", {
-                        items: items,
-                        selected: [],
-                        idProperty: "id",
-                        nameProperty: "attributeName"
-                    });
-                    this._columns = columns;
-                    this._lastStandardModeSelect = this.standardSelectChooser.get("selectedItems");
-                    if (newPreference)
-                    {
-                        this.standardWhereExpressionBuilder.clearWhereCriteria();
-
-                        this.advancedWhere.set("value", "");
-                        this.advancedOrderBy.set("value", "");
+                        this.standardSelectChooser.set("data", {
+                          items: items,
+                          idProperty: "id",
+                          selected: selectedItems,
+                          nameProperty: "attributeName"
+                        });
+                        this.standardWhereChooser.set("data", {
+                          items: items,
+                          selected: [],
+                          idProperty: "id",
+                          nameProperty: "attributeName"
+                        });
+                        this._columns = columns;
+                        this._lastStandardModeSelect = this.standardSelectChooser.get("selectedItems");
                         var select = this._buildSelectExpression(this._lastStandardModeSelect);
-                        this.advancedSelect.set("value", select);
                         this._setSelectClause(select);
-                        this._resultsGrid.setWhere("");
-                        this._resultsGrid.setOrderBy("");
-                        this._resultsGrid.setSort([]);
-                        this._resultsGrid.setCategory(value);
-                        var disableMetadataDependant = !metadata;
-                        this.standardWhereChooser.set("disabled", disableMetadataDependant);
-                        this.standardSelectChooser.set("disabled", disableMetadataDependant);
-                        this.modeButton.set("disabled", disableMetadataDependant);
-                        this.advancedSelect.set("disabled", disableMetadataDependant);
-                        this.advancedWhere.set("disabled", disableMetadataDependant);
-                        this.advancedOrderBy.set("disabled", disableMetadataDependant);
-                        this._toggleSearchButton();
                     }
                 },
                 _advancedModeKeyPressed: function (evt)
@@ -844,22 +818,19 @@ define(["dojo/_base/declare",
                 _modeChanged: function ()
                 {
                     this._standardMode = !this._standardMode;
+                    this._configureModalWidgets(this._standardMode);
                     if (!this._standardMode)
                     {
-                        this.modeButton.set("label", "Standard View");
-                        this.modeButton.set("title", "Switch to 'Standard View' search");
-                        this.modeButton.set("iconClass", "dijitIconApplication");
-                        this.advancedSelect.set("disabled", false);
-                        this.advancedWhere.set("disabled", false);
-                        this.standardSearch.style.display = "none";
-                        this.standardWhereExpressionBuilder.domNode.style.display = "none";
-                        this.advancedSearch.style.display = "";
-                        this.advancedSelect.set("value",
-                            this._buildSelectExpression(this.standardSelectChooser.get("selectedItems")));
-                        this.advancedWhere.set("value", this._resultsGrid.getWhere());
-                        this.advancedOrderBy.set("value", this._resultsGrid.getOrderBy());
+                        var selectValue = this._buildSelectExpression(this.standardSelectChooser.get("selectedItems"));
+                        var whereValue = this._resultsGrid.getWhere();
+                        var orderByValue = this._resultsGrid.getOrderBy();
 
-                        this._resultsGrid.hiderToggleNode.style.display = 'none';
+                        this.advancedSelect._lastValueReported = selectValue;
+                        this.advancedWhere._lastValueReported = whereValue;
+                        this.advancedOrderBy._lastValueReported = orderByValue;
+                        this.advancedSelect.set("value", selectValue);
+                        this.advancedOrderBy.set("value", orderByValue);
+                        this.advancedWhere.set("value", whereValue);
 
                         // rebuild columns to disable column reordering and removal
                         if (this._lastHeaders && this._lastHeaders.length)
@@ -871,14 +842,6 @@ define(["dojo/_base/declare",
                     }
                     else
                     {
-                        this.modeButton.set("label", "Advanced View");
-                        this.modeButton.set("title", "Switch to 'Advanced View' search using SQL-like expressions");
-                        this.modeButton.set("iconClass", "advancedViewIcon ui-icon");
-                        this.advancedSelect.set("disabled", true);
-                        this.advancedWhere.set("disabled", true);
-                        this.standardSearch.style.display = "";
-                        this.standardWhereExpressionBuilder.domNode.style.display = "";
-                        this.advancedSearch.style.display = "none";
                         var category = this.categoryName;
                         var selectedItems = this.getDefaultColumns(category);
                         this.standardSelectChooser.set("data", {selected: selectedItems});
@@ -896,6 +859,32 @@ define(["dojo/_base/declare",
                         this.search();
                         this._queryChanged();
                     }
+                },
+                _configureModalWidgets: function(standardMode)
+                {
+                  if (standardMode)
+                  {
+                    this.modeButton.set("label", "Advanced View");
+                    this.modeButton.set("title", "Switch to 'Advanced View' search using SQL-like expressions");
+                    this.modeButton.set("iconClass", "advancedViewIcon ui-icon");
+                    this.advancedSelect.set("disabled", true);
+                    this.advancedWhere.set("disabled", true);
+                    this.standardSearch.style.display = "";
+                    this.standardWhereExpressionBuilder.domNode.style.display = "";
+                    this.advancedSearch.style.display = "none";
+                  }
+                  else
+                  {
+                    this.modeButton.set("label", "Standard View");
+                    this.modeButton.set("title", "Switch to 'Standard View' search");
+                    this.modeButton.set("iconClass", "dijitIconApplication");
+                    this.advancedSelect.set("disabled", false);
+                    this.advancedWhere.set("disabled", false);
+                    this.standardSearch.style.display = "none";
+                    this.standardWhereExpressionBuilder.domNode.style.display = "none";
+                    this.advancedSearch.style.display = "";
+                    this._resultsGrid.hiderToggleNode.style.display = 'none';
+                  }
                 },
                 _getCategoryMetadata: function (value)
                 {
