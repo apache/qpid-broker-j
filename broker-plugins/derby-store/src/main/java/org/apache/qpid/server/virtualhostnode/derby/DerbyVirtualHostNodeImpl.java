@@ -35,6 +35,7 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.derby.DerbyConfigurationStore;
 import org.apache.qpid.server.store.derby.DerbyUtils;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.util.FileHelper;
 import org.apache.qpid.server.virtualhostnode.AbstractStandardVirtualHostNode;
 
@@ -96,5 +97,11 @@ public class DerbyVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<De
         {
             throw new IllegalConfigurationException("The store path is not writable directory");
         }
+    }
+
+    @Override
+    public PreferenceStore getPreferenceStore()
+    {
+        return ((DerbyConfigurationStore)getConfigurationStore()).getPreferenceStore();
     }
 }

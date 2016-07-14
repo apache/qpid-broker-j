@@ -40,6 +40,7 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreProvider;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.preferences.AbstractJDBCPreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.util.FileUtils;
 
 /**
@@ -177,6 +178,12 @@ public class DerbyConfigurationStore extends AbstractJDBCConfigurationStore
     {
         return _providedMessageStore;
     }
+
+    public PreferenceStore getPreferenceStore()
+    {
+        return _providedPreferenceStore;
+    }
+
 
     @Override
     protected boolean tableExists(final String tableName, final Connection conn) throws SQLException
