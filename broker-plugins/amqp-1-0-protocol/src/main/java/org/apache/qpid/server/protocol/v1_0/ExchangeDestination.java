@@ -20,9 +20,14 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import java.util.Arrays;
 import java.util.Collections;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
@@ -35,6 +40,7 @@ import org.apache.qpid.server.txn.ServerTransaction;
 
 public class ExchangeDestination implements ReceivingDestination, SendingDestination
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExchangeDestination.class);
     private static final Accepted ACCEPTED = new Accepted();
     public static final Rejected REJECTED = new Rejected();
     private static final Outcome[] OUTCOMES = { ACCEPTED, REJECTED};
@@ -44,13 +50,21 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
     private TerminusDurability _durability;
     private TerminusExpiryPolicy _expiryPolicy;
     private String _initialRoutingAddress;
+    private final boolean _discardUnroutable;
 
-    public ExchangeDestination(Exchange<?> exchange, TerminusDurability durable, TerminusExpiryPolicy expiryPolicy, String address)
+    public ExchangeDestination(Exchange<?> exchange,
+                               TerminusDurability durable,
+                               TerminusExpiryPolicy expiryPolicy,
+                               String address,
+                               final Symbol[] capabilities)
     {
         _exchange = exchange;
         _durability = durable;
         _expiryPolicy = expiryPolicy;
         _address = address;
+        _discardUnroutable = (capabilities != null && Arrays.asList(capabilities).contains(DISCARD_UNROUTABLE)) || exchange.getUnroutableMessageBehaviour() == Exchange.UnroutableMessageBehaviour.DISCARD;
+
+
     }
 
     public Outcome[] getOutcomes()
@@ -90,7 +104,7 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
                                       null);
 
 
-        return enqueues == 0 ? REJECTED : ACCEPTED;
+        return enqueues == 0 && !_discardUnroutable ? REJECTED : ACCEPTED;
     }
 
     @Override
@@ -182,5 +196,13 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
     public String getInitialRoutingAddress()
     {
         return _initialRoutingAddress;
+    }
+
+    @Override
+    public Symbol[] getCapabilities()
+    {
+        Symbol[] capabilities = new Symbol[1];
+        capabilities[0] = _discardUnroutable ? DISCARD_UNROUTABLE : REJECT_UNROUTABLE;
+        return capabilities;
     }
 }

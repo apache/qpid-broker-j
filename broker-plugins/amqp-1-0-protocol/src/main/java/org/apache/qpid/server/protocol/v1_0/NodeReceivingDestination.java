@@ -20,10 +20,13 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import java.util.Arrays;
 import java.util.Collections;
 
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
@@ -39,6 +42,7 @@ public class NodeReceivingDestination implements ReceivingDestination
     private static final Accepted ACCEPTED = new Accepted();
     public static final Rejected REJECTED = new Rejected();
     private static final Outcome[] OUTCOMES = { ACCEPTED, REJECTED};
+    private final boolean _discardUnroutable;
 
     private MessageDestination _destination;
     private TerminusDurability _durability;
@@ -48,12 +52,16 @@ public class NodeReceivingDestination implements ReceivingDestination
     public NodeReceivingDestination(MessageDestination destination,
                                     TerminusDurability durable,
                                     TerminusExpiryPolicy expiryPolicy,
-                                    final String address)
+                                    final String address, final Symbol[] capabilities)
     {
         _destination = destination;
         _durability = durable;
         _expiryPolicy = expiryPolicy;
         _address = address;
+        _discardUnroutable = destination instanceof Exchange
+                             && ((capabilities != null && Arrays.asList(capabilities).contains(DISCARD_UNROUTABLE))
+                                 || ((Exchange)destination).getUnroutableMessageBehaviour() == Exchange.UnroutableMessageBehaviour.DISCARD);
+
     }
 
     public Outcome[] getOutcomes()
@@ -92,7 +100,7 @@ public class NodeReceivingDestination implements ReceivingDestination
         int enqueues = _destination.send(message, routingAddress, instanceProperties, txn, null);
 
 
-        return enqueues == 0 ? REJECTED : ACCEPTED;
+        return enqueues == 0 && !_discardUnroutable ? REJECTED : ACCEPTED;
     }
 
     @Override
@@ -163,5 +171,13 @@ public class NodeReceivingDestination implements ReceivingDestination
     public MessageDestination getDestination()
     {
         return _destination;
+    }
+
+    @Override
+    public Symbol[] getCapabilities()
+    {
+        Symbol[] capabilities = new Symbol[1];
+        capabilities[0] = _discardUnroutable ? DISCARD_UNROUTABLE : REJECT_UNROUTABLE;
+        return capabilities;
     }
 }

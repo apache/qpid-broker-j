@@ -21,8 +21,10 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+
 public interface Destination
 {
-
+    Symbol[] getCapabilities();
 
 }

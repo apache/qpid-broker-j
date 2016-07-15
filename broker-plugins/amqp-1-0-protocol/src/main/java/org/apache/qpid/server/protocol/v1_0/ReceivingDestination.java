@@ -22,11 +22,15 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.txn.ServerTransaction;
 
 public interface ReceivingDestination extends Destination
 {
+
+    Symbol REJECT_UNROUTABLE = Symbol.valueOf("REJECT_UNROUTABLE");
+    Symbol DISCARD_UNROUTABLE = Symbol.valueOf("DISCARD_UNROUTABLE");
 
     Outcome[] getOutcomes();
 

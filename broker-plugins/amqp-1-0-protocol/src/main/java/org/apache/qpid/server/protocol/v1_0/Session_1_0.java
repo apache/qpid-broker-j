@@ -93,7 +93,6 @@ import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
@@ -755,10 +754,11 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                                     new ExchangeDestination(exchg,
                                                             source.getDurable(),
                                                             source.getExpiryPolicy(),
-                                                            parts[0]);
+                                                            parts[0],
+                                                            target.getCapabilities());
                             exchangeDestination.setInitialRoutingAddress(parts[1]);
                             destination = exchangeDestination;
-
+                            target.setCapabilities(exchangeDestination.getCapabilities());
                         }
                         else
                         {
@@ -778,10 +778,14 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                             Exchange<?> exchg = getExchange(addr);
                             if (exchg != null)
                             {
-                                destination = new ExchangeDestination(exchg,
+                                ExchangeDestination exchangeDestination =
+                                              new ExchangeDestination(exchg,
                                                                       source.getDurable(),
                                                                       source.getExpiryPolicy(),
-                                                                      addr);
+                                                                      addr,
+                                                                      target.getCapabilities());
+                                destination = exchangeDestination;
+                                target.setCapabilities(exchangeDestination.getCapabilities());
                             }
                             else
                             {
@@ -924,7 +928,10 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                         {
                             MessageDestination messageDestination = getAddressSpace().getDefaultDestination();
                             destination = new NodeReceivingDestination(messageDestination, target.getDurable(),
-                                                                       target.getExpiryPolicy(), "");
+                                                                       target.getExpiryPolicy(), "",
+                                                                       target.getCapabilities());
+                            target.setCapabilities(destination.getCapabilities());
+
                         }
                         else if (!addr.startsWith("/") && addr.contains("/"))
                         {
@@ -936,10 +943,11 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                                         new ExchangeDestination(exchange,
                                                                 target.getDurable(),
                                                                 target.getExpiryPolicy(),
-                                                                parts[0]);
+                                                                parts[0],
+                                                                target.getCapabilities());
 
                                 exchangeDestination.setInitialRoutingAddress(parts[1]);
-
+                                target.setCapabilities(exchangeDestination.getCapabilities());
                                 destination = exchangeDestination;
 
                             }
@@ -957,7 +965,9 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                             {
                                 destination =
                                         new NodeReceivingDestination(messageDestination, target.getDurable(),
-                                                                     target.getExpiryPolicy(), addr);
+                                                                     target.getExpiryPolicy(), addr, target.getCapabilities());
+                                target.setCapabilities(destination.getCapabilities());
+
                             }
                             else
                             {

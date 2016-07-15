@@ -84,6 +84,8 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     @ManagedAttributeField(beforeSet = "preSetAlternateExchange", afterSet = "postSetAlternateExchange" )
     private Exchange<?> _alternateExchange;
+    @ManagedAttributeField
+    private UnroutableMessageBehaviour _unroutableMessageBehaviour;
 
     private VirtualHost<?> _virtualHost;
 
@@ -205,6 +207,12 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             deleted();
             return Futures.immediateFuture(null);
         }
+    }
+
+    @Override
+    public UnroutableMessageBehaviour getUnroutableMessageBehaviour()
+    {
+        return _unroutableMessageBehaviour;
     }
 
     @Override

@@ -21,6 +21,7 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.message.MessageSource;
 
@@ -53,4 +54,9 @@ public class MessageSourceDestination implements SendingDestination
         return _queue;
     }
 
+    @Override
+    public Symbol[] getCapabilities()
+    {
+        return new Symbol[0];
+    }
 }

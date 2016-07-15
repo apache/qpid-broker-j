@@ -40,10 +40,18 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
 
     String ALTERNATE_EXCHANGE                   = "alternateExchange";
 
+    enum UnroutableMessageBehaviour
+    {
+        REJECT, DISCARD
+    }
+
     // Attributes
 
     @ManagedAttribute
     Exchange<?> getAlternateExchange();
+
+    @ManagedAttribute(description = "(AMQP 1.0 only) Default behaviour to apply when a message is not routed to any queues", defaultValue = "DISCARD")
+    UnroutableMessageBehaviour getUnroutableMessageBehaviour();
 
     //children
     Collection<? extends Binding> getBindings();
