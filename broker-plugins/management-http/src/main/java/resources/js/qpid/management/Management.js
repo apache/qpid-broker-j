@@ -19,6 +19,7 @@
  *
  */
 define(["dojo/_base/lang",
+        "dojo/promise/all",
         "dojo/_base/array",
         "dojo/request/xhr",
         "dojo/io-query",
@@ -29,7 +30,7 @@ define(["dojo/_base/lang",
         "qpid/common/metadata",
         "qpid/common/timezone",
         "qpid/management/UserPreferences"],
-    function (lang, array, xhr, ioQuery, json, Promise, Deferred, sasl, Metadata, Timezone, UserPreferences)
+    function (lang, all, array, xhr, ioQuery, json, Promise, Deferred, sasl, Metadata, Timezone, UserPreferences)
     {
 
         function shallowCopy(source, target, excludes)
@@ -482,13 +483,41 @@ define(["dojo/_base/lang",
         Management.prototype.init = function (callback)
         {
             var that = this;
-            this.loadMetadata(function ()
+            this.getAuthenticatedUserAndGroups(function()
             {
-                that.loadTimezones(function ()
+                that.loadMetadata(function ()
                 {
-                    that.loadUserPreferences(callback);
+                    that.loadTimezones(function ()
+                    {
+                        that.loadUserPreferences(callback);
+                    });
                 });
             });
+        };
+
+        Management.prototype.getAuthenticatedUserAndGroups = function (callback)
+        {
+            var baseUrl = this.objectToURL({type : "broker"});
+
+            var userPromise = this.get({url: baseUrl + "/getUser"});
+            var groupsPromise = this.get({url: baseUrl + "/getGroups"});
+
+            var complete = function(result)
+            {
+                if (result)
+                {
+                    this.user = result.user;
+                    this.groups = result.groups;
+                }
+            };
+
+            all({
+                user: userPromise,
+                groups: groupsPromise
+            })
+                .then(lang.hitch(this, complete), lang.hitch(this, this.errorHandler))
+                .then(lang.hitch(callback));
+
         };
 
         // summary:
@@ -664,6 +693,16 @@ define(["dojo/_base/lang",
                    + (visiblePreferences ? "/visiblepreferences/" : "/userpreferences/")
                    + encodeURIComponent(encodeURIComponent(type))
                    + (name ? "/" + encodeURIComponent(encodeURIComponent(name)) : "" );
+        };
+
+        Management.prototype.getGroups = function ()
+        {
+            return lang.clone(this.groups);
+        };
+
+        Management.prototype.getAuthenticatedUser = function ()
+        {
+            return this.user;
         };
 
         return Management;

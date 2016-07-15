@@ -93,14 +93,14 @@ define(["dojo/_base/declare",
                     this.queryName.set("value", this.preference.name);
                     this.queryDescription.set("value", this.preference.description);
 
-                    var userGroups = [];  // TODO retrieve groups from server
+                    var userGroups = this.management.getGroups();
                     var selected = this.preference.visibilityList || [];
-                    for (var i = 0; i < selected.length; i++)
+                    for (var i = selected.length - 1; i >= 0; i--)
                     {
                         var present = false;
                         for (var j = 0; j < userGroups.length; j++)
                         {
-                            if (selected[i] === userGroups[j])
+                            if (selected[i] === userGroups[j].name)
                             {
                                 present = true;
                                 break;
@@ -108,13 +108,13 @@ define(["dojo/_base/declare",
                         }
                         if (!present)
                         {
-                            userGroups.push(selected[i]);
+                            selected.splice(i, 1);
                         }
                     }
                     var items = [];
                     for (var j = 0; j < userGroups.length; j++)
                     {
-                        items[j] = {id: userGroups[j], name: userGroups[j]};
+                        items[j] = {id: userGroups[j].name, name: userGroups[j].name};
                     }
                     this.groupChooser.set("data", {items: items, selected: selected});
                     this._onChange();

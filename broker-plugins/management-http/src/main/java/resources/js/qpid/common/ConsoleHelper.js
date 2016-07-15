@@ -162,13 +162,7 @@ define(["dojo/query",
             {
                 if (data.user)
                 {
-                    var userName = entities.encode(String(data.user));
                     var controlButton = registry.byId("authenticatedUserControls");
-                    if (controlButton)
-                    {
-                        controlButton.set("label", userName);
-                        controlButton.domNode.style.display = '';
-                    }
                     registry.byId("login").domNode.style.display = "inline";
                     management.init(function ()
                     {
@@ -178,8 +172,12 @@ define(["dojo/query",
                         dijit.Tooltip.defaultPosition =
                             ["after-centered",
                              "below-centered"];
+                        if (controlButton)
+                        {
+                            controlButton.set("label", management.getAuthenticatedUser().name);
+                            controlButton.domNode.style.display = '';
+                        }
                     });
-                    management.userName = userName; // TODO Temporary - will be repolaced by whoami
                 }
                 else
                 {

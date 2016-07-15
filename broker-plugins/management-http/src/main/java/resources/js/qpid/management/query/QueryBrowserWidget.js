@@ -292,14 +292,15 @@ define(["dojo/_base/declare",
                 {
                     if (this.filter != "all")
                     {
+                        var authenticatedUser = this.management.getAuthenticatedUser().name;
                         for (var i = preferenceList.length - 1; i >= 0; i--)
                         {
                             var item = preferenceList[i];
-                            if (this.filter == "myQueries" && item.owner != this.management.userName)
+                            if (this.filter == "myQueries" && item.owner != authenticatedUser)
                             {
                                 preferenceList.splice(i, 1);
                             }
-                            else if (this.filter == "sharedWithMe" && item.owner == this.management.userName)
+                            else if (this.filter == "sharedWithMe" && item.owner == authenticatedUser)
                             {
                                 preferenceList.splice(i, 1);
                             }
