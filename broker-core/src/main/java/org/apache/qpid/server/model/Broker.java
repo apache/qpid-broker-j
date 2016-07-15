@@ -20,8 +20,10 @@
  */
 package org.apache.qpid.server.model;
 
+import java.security.Principal;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -238,6 +240,12 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     Content findThreadStackTraces(@Param(name="threadNameFindExpression",
                                         description = "Regular expression to find threads with names containing matching characters")
                                  String threadNameFindExpression);
+
+    @ManagedOperation(nonModifying = true, description = "Returns the principal of the currently authenticated user")
+    Principal getUser();
+
+    @ManagedOperation(nonModifying = true, description = "Returns the groups to which the currently authenticated user belongs")
+    Set<Principal> getGroups();
 
     //children
     Collection<VirtualHostNode<?>> getVirtualHostNodes();

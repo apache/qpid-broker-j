@@ -34,6 +34,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.security.AccessControlException;
+import java.security.AccessController;
+import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -68,6 +70,7 @@ import org.apache.qpid.server.security.CompoundAccessControl;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
+import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferencesRoot;
@@ -1286,6 +1289,25 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             }
         }
         return new ThreadStackContent(threadDump.toString());
+    }
+
+    @Override
+    public Principal getUser()
+    {
+        return AuthenticatedPrincipal.getCurrentUser();
+    }
+
+    @Override
+    public Set<Principal> getGroups()
+    {
+        Subject currentSubject = Subject.getSubject(AccessController.getContext());
+        if (currentSubject == null)
+        {
+            return Collections.emptySet();
+        }
+
+        final Set<Principal> currentPrincipals = Collections.<Principal>unmodifiableSet(currentSubject.getPrincipals(java.security.acl.Group.class));
+        return currentPrincipals;
     }
 
     private String getThreadStackTraces(final ThreadInfo threadInfo)
