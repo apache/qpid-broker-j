@@ -2955,7 +2955,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     private Subject getSystemSubject(Principal... principals)
     {
         Set<Principal> principalSet = new HashSet<>(Arrays.asList(principals));
-        principalSet.add(_systemPrincipal);
+        principalSet.add(getSystemPrincipal());
         return new Subject(true,
                            principalSet,
                            Collections.emptySet(),
