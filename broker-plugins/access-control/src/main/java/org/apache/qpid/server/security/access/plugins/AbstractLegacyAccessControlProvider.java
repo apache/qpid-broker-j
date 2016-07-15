@@ -28,25 +28,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
-import org.apache.qpid.server.logging.messages.AccessControlMessages;
-import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.AccessControlProvider;
-import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.CommonAccessControlProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.ManagedAttributeField;
-import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.security.access.AbstractAccessControlProvider;
 import org.apache.qpid.server.security.access.config.RuleBasedAccessControl;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
-public abstract class AbstractRuleBasedAccessControlProvider<X extends AbstractRuleBasedAccessControlProvider<X>>
-        extends AbstractConfiguredObject<X> implements EventLoggerProvider
+abstract class AbstractLegacyAccessControlProvider<X extends AbstractLegacyAccessControlProvider<X,T,Y>, T extends EventLoggerProvider & ConfiguredObject<?>, Y extends CommonAccessControlProvider<Y>>
+        extends AbstractAccessControlProvider<X, Y, T> implements EventLoggerProvider
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRuleBasedAccessControlProvider.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLegacyAccessControlProvider.class);
 
     static
     {
@@ -54,23 +50,12 @@ public abstract class AbstractRuleBasedAccessControlProvider<X extends AbstractR
     }
 
     private volatile RuleBasedAccessControl _accessControl;
-    private final EventLogger _eventLogger;
 
-    @ManagedAttributeField
-    private int _priority;
 
-    public AbstractRuleBasedAccessControlProvider(Map<String, Object> attributes, ConfiguredObject<?> parent)
+    AbstractLegacyAccessControlProvider(Map<String, Object> attributes, T parent)
     {
-        super(parentsMap(parent), attributes);
+        super(attributes, parent);
 
-
-        _eventLogger = ((EventLoggerProvider)parent).getEventLogger();
-        _eventLogger.message(AccessControlMessages.CREATE(getName()));
-    }
-
-    public final EventLogger getEventLogger()
-    {
-        return _eventLogger;
     }
 
     @Override
@@ -99,11 +84,30 @@ public abstract class AbstractRuleBasedAccessControlProvider<X extends AbstractR
 
     abstract protected RuleBasedAccessControl createRuleBasedAccessController();
 
-
-    @Override
-    protected void onOpen()
+    @StateTransition(currentState = {State.UNINITIALIZED, State.QUIESCED, State.ERRORED}, desiredState = State.ACTIVE)
+    @SuppressWarnings("unused")
+    private ListenableFuture<Void> activate()
     {
-        super.onOpen();
+
+        final boolean isManagementMode = getModel().getAncestor(SystemConfig.class, this).isManagementMode();
+        try
+        {
+            recreateAccessController();
+            setState(isManagementMode ? State.QUIESCED : State.ACTIVE);
+        }
+        catch (RuntimeException e)
+        {
+            setState(State.ERRORED);
+            if (isManagementMode)
+            {
+                LOGGER.warn("Failed to activate ACL provider: " + getName(), e);
+            }
+            else
+            {
+                throw e;
+            }
+        }
+        return Futures.immediateFuture(null);
     }
 
 
@@ -112,46 +116,11 @@ public abstract class AbstractRuleBasedAccessControlProvider<X extends AbstractR
         _accessControl = createRuleBasedAccessController();
     }
 
-    @Override
-    protected void onClose()
-    {
-        super.onClose();
 
-    }
-
-    @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)
-    @SuppressWarnings("unused")
-    private ListenableFuture<Void> startQuiesced()
-    {
-        setState(State.QUIESCED);
-        return Futures.immediateFuture(null);
-    }
-
-    @StateTransition(currentState = {State.ACTIVE, State.QUIESCED, State.ERRORED}, desiredState = State.DELETED)
-    @SuppressWarnings("unused")
-    private ListenableFuture<Void> doDelete()
-    {
-        return doAfterAlways(closeAsync(),
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        setState(State.DELETED);
-                        deleted();
-                        _eventLogger.message(AccessControlMessages.DELETE(getName()));
-                    }
-                });
-    }
 
     public final AccessControl getAccessControl()
     {
         return _accessControl;
-    }
-
-    public final int getPriority()
-    {
-        return _priority;
     }
 
 }

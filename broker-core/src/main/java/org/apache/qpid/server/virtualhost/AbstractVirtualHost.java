@@ -308,7 +308,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             List<VirtualHostAccessControlProvider> children = new ArrayList<>(getChildren(VirtualHostAccessControlProvider.class));
             _logger.debug("Updating access control list with {} provider children", children.size());
-            Collections.sort(children, VirtualHostAccessControlProvider.VIRTUAL_HOST_ACCESS_CONTROL_POVIDER_COMPARATOR);
+            Collections.sort(children, VirtualHostAccessControlProvider.ACCESS_CONTROL_PROVIDER_COMPARATOR);
 
             List<AccessControl<?>> accessControls = new ArrayList<>(children.size()+2);
             accessControls.add(_systemUserAllowed);

@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
@@ -43,7 +42,7 @@ import org.apache.qpid.server.security.access.config.RuleBasedAccessControl;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
 public class ACLFileAccessControlProviderImpl
-        extends AbstractRuleBasedAccessControlProvider<ACLFileAccessControlProviderImpl>
+        extends AbstractLegacyAccessControlProvider<ACLFileAccessControlProviderImpl, Broker<?>, AccessControlProvider<?>>
         implements ACLFileAccessControlProvider<ACLFileAccessControlProviderImpl>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ACLFileAccessControlProviderImpl.class);
@@ -129,9 +128,9 @@ public class ACLFileAccessControlProviderImpl
         return _path;
     }
 
-    public int compareTo(final AccessControlProvider o)
+    public int compareTo(final AccessControlProvider<?> o)
     {
-        return ACCESS_CONTROL_POVIDER_COMPARATOR.compare(this, o);
+        return ACCESS_CONTROL_PROVIDER_COMPARATOR.compare(this, o);
     }
 
 }

@@ -820,7 +820,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         if(!isManagementMode())
         {
             List<AccessControlProvider> children = new ArrayList<>(getChildren(AccessControlProvider.class));
-            Collections.sort(children, AccessControlProvider.ACCESS_CONTROL_POVIDER_COMPARATOR);
+            Collections.sort(children, CommonAccessControlProvider.ACCESS_CONTROL_PROVIDER_COMPARATOR);
 
             List<AccessControl<?>> accessControls = new ArrayList<>(children.size()+1);
             accessControls.add(_systemUserAllowed);

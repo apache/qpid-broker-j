@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.security;
+package org.apache.qpid.server.security.access;
 
 import java.util.Map;
 
@@ -26,49 +26,53 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.messages.AccessControlMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.AccessControlProvider;
-import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.CommonAccessControlProvider;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
-import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.security.AccessControl;
 
-public class AllowAllAccessControlProviderImpl extends AbstractConfiguredObject<AllowAllAccessControlProviderImpl> implements AllowAllAccessControlProvider<AllowAllAccessControlProviderImpl>
+
+public abstract class AbstractAccessControlProvider<X extends AbstractAccessControlProvider<X,Y,T>, Y extends CommonAccessControlProvider<Y>, T extends EventLoggerProvider & ConfiguredObject<?>>
+        extends AbstractConfiguredObject<X> implements EventLoggerProvider, CommonAccessControlProvider<Y>
 {
-    private final Broker _broker;
+    private final EventLogger _eventLogger;
     @ManagedAttributeField
     private int _priority;
 
-    @ManagedObjectFactoryConstructor
-    public AllowAllAccessControlProviderImpl(Map<String, Object> attributes, Broker broker)
+
+    public AbstractAccessControlProvider(Map<String, Object> attributes, T parent)
     {
-        super(parentsMap(broker), attributes);
-        _broker = broker;
+        super(parentsMap(parent), attributes);
+
+        _eventLogger = parent.getEventLogger();
+        _eventLogger.message(AccessControlMessages.CREATE(getName()));
+
+
     }
 
     @Override
-    public int getPriority()
+    public EventLogger getEventLogger()
+    {
+        return _eventLogger;
+    }
+
+    public final int getPriority()
     {
         return _priority;
     }
 
+    public abstract AccessControl getAccessControl();
+
     @Override
-    public AccessControl getAccessControl()
+    public int compareTo(final Y o)
     {
-        return AccessControl.ALWAYS_ALLOWED;
+        return ACCESS_CONTROL_PROVIDER_COMPARATOR.compare((Y)this, o);
     }
-
-    @StateTransition(currentState = {State.UNINITIALIZED, State.QUIESCED, State.ERRORED}, desiredState = State.ACTIVE)
-    @SuppressWarnings("unused")
-    private ListenableFuture<Void> activate()
-    {
-
-        setState(_broker.isManagementMode() ? State.QUIESCED : State.ACTIVE);
-        return Futures.immediateFuture(null);
-    }
-
 
     @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)
     @SuppressWarnings("unused")
@@ -90,14 +94,9 @@ public class AllowAllAccessControlProviderImpl extends AbstractConfiguredObject<
                                  {
                                      setState(State.DELETED);
                                      deleted();
-                                     _broker.getEventLogger().message(AccessControlMessages.DELETE(getName()));
+                                     getEventLogger().message(AccessControlMessages.DELETE(getName()));
                                  }
                              });
     }
 
-    @Override
-    public int compareTo(final AccessControlProvider<?> o)
-    {
-        return ACCESS_CONTROL_PROVIDER_COMPARATOR.compare(this, o);
-    }
 }
