@@ -91,8 +91,6 @@ public class UserPreferencesRestTest extends QpidRestTestCase
         prefValueAttributes.put(QueryPreferenceValue.SCOPE_ATTRIBUTE, "");
         prefValueAttributes.put(QueryPreferenceValue.CATEGORY_ATTRIBUTE, "queue");
         prefValueAttributes.put(QueryPreferenceValue.SELECT_ATTRIBUTE, "id,name,queueDepthMessages");
-        prefValueAttributes.put(QueryPreferenceValue.CURRENT_PAGE_ATTRIBUTE, 7);
-        prefValueAttributes.put(QueryPreferenceValue.REFRESH_INTERVAL_ATTRIBUTE, 1000);
         prefAttributes.put(Preference.VALUE_ATTRIBUTE, prefValueAttributes);
 
         String fullUrl = String.format("broker/userpreferences/%s/%s", prefType, prefName);
