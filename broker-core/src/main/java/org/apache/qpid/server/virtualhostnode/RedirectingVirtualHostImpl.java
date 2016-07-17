@@ -32,6 +32,7 @@ import java.util.concurrent.ScheduledFuture;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
@@ -55,12 +56,14 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.virtualhost.*;
 
-@ManagedObject( category = false, type = RedirectingVirtualHostImpl.TYPE, register = false )
+@ManagedObject( category = false, type = RedirectingVirtualHostImpl.VIRTUAL_HOST_TYPE, register = false,
+                description = RedirectingVirtualHostImpl.CLASS_DESCRIPTION)
 class RedirectingVirtualHostImpl
     extends AbstractConfiguredObject<RedirectingVirtualHostImpl>
         implements RedirectingVirtualHost<RedirectingVirtualHostImpl>
 {
-    public static final String TYPE = "REDIRECTOR";
+    public static final String VIRTUAL_HOST_TYPE = "REDIRECTOR";
+
     private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
     private final Broker<?> _broker;
     private final VirtualHostPrincipal _principal;
@@ -128,7 +131,16 @@ class RedirectingVirtualHostImpl
     {
         super.validateChange(proxyForValidation, changedAttributes);
 
-        throwUnsupportedForRedirector();
+        if (changedAttributes.contains(DESIRED_STATE) && proxyForValidation.getDesiredState() == State.DELETED)
+        {
+            throw new IllegalConfigurationException("Directly deleting a redirecting virtualhost is not supported. "
+            + "Delete the parent virtual host node '" + getParent(VirtualHostNode.class) + "' instead.");
+        }
+        else
+        {
+            throw new IllegalConfigurationException("A redirecting virtualhost does not support changing of"
+                                                    + " its attributes");
+        }
     }
 
     @Override

@@ -30,7 +30,10 @@ import org.apache.qpid.server.model.VirtualHostNode;
 @ManagedObject(type= RedirectingVirtualHostNodeImpl.VIRTUAL_HOST_NODE_TYPE, category=false, validChildTypes = "org.apache.qpid.server.virtualhostnode.RedirectingVirtualHostNodeImpl#getSupportedChildTypes()")
 public interface RedirectingVirtualHostNode<X extends RedirectingVirtualHostNode<X>> extends VirtualHostNode<X>
 {
+    public static final String REDIRECTS = "redirects";
 
-    @ManagedAttribute( defaultValue = "{}")
+    @ManagedAttribute( defaultValue = "{}", description = "Port to hostname mapping.  Connections made to this virtual"
+                                                          + " host node on a mapped port will be automatically"
+                                                          + " redirected to the given hostname.")
     Map<Port<?>, String> getRedirects();
 }

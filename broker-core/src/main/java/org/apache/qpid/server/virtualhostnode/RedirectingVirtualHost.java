@@ -27,4 +27,8 @@ public interface RedirectingVirtualHost<X extends RedirectingVirtualHost<X>>
         extends VirtualHost<X>,
                 NonStandardVirtualHost<X>
 {
+    String CLASS_DESCRIPTION = "A special virtualhost type that merely redirects all incoming connections to an"
+                               + " alternative broker.  The mapping which governs the redirect is held by the"
+                               + " the parent virtual host node.";
+
 }
