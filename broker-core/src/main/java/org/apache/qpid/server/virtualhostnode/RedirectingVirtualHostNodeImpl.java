@@ -61,6 +61,9 @@ public class RedirectingVirtualHostNodeImpl
     private boolean _defaultVirtualHostNode;
 
     @ManagedAttributeField
+    private PreferenceStoreAttributes _preferenceStoreAttributes;
+
+    @ManagedAttributeField
     private Map<Port<?>,String> _redirects;
 
     private RedirectingVirtualHostImpl _virtualHost;
@@ -137,7 +140,7 @@ public class RedirectingVirtualHostNodeImpl
     @Override
     public PreferenceStoreAttributes getPreferenceStoreAttributes()
     {
-        return null;
+        return _preferenceStoreAttributes;
     }
 
     @Override
