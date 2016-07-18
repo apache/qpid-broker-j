@@ -28,6 +28,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.sleepycat.bind.tuple.LongBinding;
 import com.sleepycat.bind.tuple.StringBinding;
@@ -55,7 +56,8 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
 {
     private static final String PREFERENCES_DB_NAME = "USER_PREFERENCES";
     private static final String PREFERENCES_VERSION_DB_NAME = "USER_PREFERENCES_VERSION";
-    private AtomicReference<StoreState> _storeState = new AtomicReference<>(StoreState.CLOSED);
+    private final AtomicReference<StoreState> _storeState = new AtomicReference<>(StoreState.CLOSED);
+    private final ReentrantReadWriteLock _useOrCloseRWLock = new ReentrantReadWriteLock(true);
 
     @Override
     public Collection<PreferenceRecord> openAndLoad(final PreferenceStoreUpdater updater) throws StoreException
@@ -107,36 +109,45 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
     @Override
     public void updateOrCreate(final Collection<PreferenceRecord> preferenceRecords)
     {
-        if (!getStoreState().equals(StoreState.OPENED))
-        {
-            throw new IllegalStateException("PreferenceStore is not opened");
-        }
-
-        if (preferenceRecords.isEmpty())
-        {
-            return;
-        }
-
-        EnvironmentFacade environmentFacade = getEnvironmentFacade();
-        Transaction txn = null;
+        _useOrCloseRWLock.readLock().lock();
         try
         {
-            txn = environmentFacade.beginTransaction(null);
-            updateOrCreateInternal(txn, preferenceRecords);
-            txn.commit();
-            txn = null;
-        }
-        catch (RuntimeException e)
-        {
-            throw environmentFacade.handleDatabaseException("Error on preferences updateOrCreate: " + e.getMessage(),
-                                                            e);
+            if (!getStoreState().equals(StoreState.OPENED))
+            {
+                throw new IllegalStateException("PreferenceStore is not opened");
+            }
+
+            if (preferenceRecords.isEmpty())
+            {
+                return;
+            }
+
+            EnvironmentFacade environmentFacade = getEnvironmentFacade();
+            Transaction txn = null;
+            try
+            {
+                txn = environmentFacade.beginTransaction(null);
+                updateOrCreateInternal(txn, preferenceRecords);
+                txn.commit();
+                txn = null;
+            }
+            catch (RuntimeException e)
+            {
+                throw environmentFacade.handleDatabaseException("Error on preferences updateOrCreate: "
+                                                                + e.getMessage(),
+                                                                e);
+            }
+            finally
+            {
+                if (txn != null)
+                {
+                    abortTransactionSafely(txn, environmentFacade);
+                }
+            }
         }
         finally
         {
-            if (txn != null)
-            {
-                abortTransactionSafely(txn, environmentFacade);
-            }
+            _useOrCloseRWLock.readLock().unlock();
         }
     }
 
@@ -144,87 +155,116 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
     public void replace(final Collection<UUID> preferenceRecordsToRemove,
                         final Collection<PreferenceRecord> preferenceRecordsToAdd)
     {
-        if (!getStoreState().equals(StoreState.OPENED))
-        {
-            throw new IllegalStateException("PreferenceStore is not opened");
-        }
-
-        if (preferenceRecordsToRemove.isEmpty() && preferenceRecordsToAdd.isEmpty())
-        {
-            return;
-        }
-
-        EnvironmentFacade environmentFacade = getEnvironmentFacade();
-        Transaction txn = null;
+        _useOrCloseRWLock.readLock().lock();
         try
         {
-            txn = environmentFacade.beginTransaction(null);
-            Database preferencesDb = getPreferencesDb();
-            DatabaseEntry key = new DatabaseEntry();
-            UUIDTupleBinding keyBinding = UUIDTupleBinding.getInstance();
-            for (UUID id : preferenceRecordsToRemove)
+            if (!getStoreState().equals(StoreState.OPENED))
             {
-                getLogger().debug("Removing preference {}", id);
-                keyBinding.objectToEntry(id, key);
-                OperationStatus status = preferencesDb.delete(txn, key);
-                if (status == OperationStatus.NOTFOUND)
+                throw new IllegalStateException("PreferenceStore is not opened");
+            }
+
+            if (preferenceRecordsToRemove.isEmpty() && preferenceRecordsToAdd.isEmpty())
+            {
+                return;
+            }
+
+            EnvironmentFacade environmentFacade = getEnvironmentFacade();
+            Transaction txn = null;
+            try
+            {
+                txn = environmentFacade.beginTransaction(null);
+                Database preferencesDb = getPreferencesDb();
+                DatabaseEntry key = new DatabaseEntry();
+                UUIDTupleBinding keyBinding = UUIDTupleBinding.getInstance();
+                for (UUID id : preferenceRecordsToRemove)
                 {
-                    getLogger().debug("Preference {} not found", id);
+                    getLogger().debug("Removing preference {}", id);
+                    keyBinding.objectToEntry(id, key);
+                    OperationStatus status = preferencesDb.delete(txn, key);
+                    if (status == OperationStatus.NOTFOUND)
+                    {
+                        getLogger().debug("Preference {} not found", id);
+                    }
+                }
+                updateOrCreateInternal(txn, preferenceRecordsToAdd);
+                txn.commit();
+                txn = null;
+            }
+            catch (RuntimeException e)
+            {
+                throw environmentFacade.handleDatabaseException("Error on replacing of preferences: " + e.getMessage(),
+                                                                e);
+            }
+            finally
+            {
+                if (txn != null)
+                {
+                    abortTransactionSafely(txn, environmentFacade);
                 }
             }
-            updateOrCreateInternal(txn, preferenceRecordsToAdd);
-            txn.commit();
-            txn = null;
-        }
-        catch (RuntimeException e)
-        {
-            throw environmentFacade.handleDatabaseException("Error on replacing of preferences: " + e.getMessage(), e);
         }
         finally
         {
-            if (txn != null)
-            {
-                abortTransactionSafely(txn, environmentFacade);
-            }
+            _useOrCloseRWLock.readLock().unlock();
         }
     }
 
     @Override
     public void onDelete()
     {
-        close();
-        doDelete();
+        _useOrCloseRWLock.writeLock().lock();
+        try
+        {
+            close();
+            doDelete();
+        }
+        finally
+        {
+            _useOrCloseRWLock.writeLock().unlock();
+        }
     }
+
+    @Override
+    public void close()
+    {
+        _useOrCloseRWLock.writeLock().lock();
+        try
+        {
+            while (true)
+            {
+                StoreState storeState = getStoreState();
+                if (storeState.equals(StoreState.OPENED) || storeState.equals(StoreState.ERRORED))
+                {
+                    if (_storeState.compareAndSet(storeState, StoreState.CLOSING))
+                    {
+                        break;
+                    }
+                }
+                else if (storeState.equals(StoreState.CLOSED) || storeState.equals(StoreState.CLOSING))
+                {
+                    return;
+                }
+            }
+
+            getEnvironmentFacade().closeDatabase(PREFERENCES_DB_NAME);
+
+            doClose();
+            _storeState.set(StoreState.CLOSED);
+
+        }
+        finally
+        {
+            _useOrCloseRWLock.writeLock().unlock();
+        }
+    }
+
+    protected abstract void doClose();
 
     protected abstract void doDelete();
 
     protected abstract EnvironmentFacade getEnvironmentFacade();
 
     protected abstract Logger getLogger();
-
-    boolean closeInternal()
-    {
-        while (true)
-        {
-            StoreState storeState = getStoreState();
-            if (storeState.equals(StoreState.OPENED) || storeState.equals(StoreState.ERRORED))
-            {
-                if (_storeState.compareAndSet(storeState, StoreState.CLOSING))
-                {
-                    break;
-                }
-            }
-            else if (storeState.equals(StoreState.CLOSED) || storeState.equals(StoreState.CLOSING))
-            {
-                return false;
-            }
-        }
-
-        getEnvironmentFacade().closeDatabase(PREFERENCES_DB_NAME);
-
-        _storeState.set(StoreState.CLOSED);
-        return true;
-    }
 
     StoreState getStoreState()
     {

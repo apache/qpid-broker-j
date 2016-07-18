@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -42,8 +41,8 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
     private final String _storePath;
     private final String _posixFilePermissions;
     private final ObjectMapper _objectMapper;
-    private Map<UUID, StoredPreferenceRecord> _recordMap;
-    private AtomicReference<StoreState> _storeState = new AtomicReference<>(StoreState.CLOSED);
+    private final Map<UUID, StoredPreferenceRecord> _recordMap;
+    private StoreState _storeState = StoreState.CLOSED;
 
     public JsonFilePreferenceStore(String path, String posixFilePermissions)
     {
@@ -55,12 +54,12 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
     }
 
     @Override
-    public Collection<PreferenceRecord> openAndLoad(final PreferenceStoreUpdater updater) throws StoreException
+    public synchronized Collection<PreferenceRecord> openAndLoad(final PreferenceStoreUpdater updater) throws StoreException
     {
-        if (!_storeState.compareAndSet(StoreState.CLOSED, StoreState.OPENING))
+        if (_storeState != StoreState.CLOSED)
         {
             throw new IllegalStateException(String.format("PreferenceStore cannot be opened when in state '%s'",
-                                                          _storeState.get()));
+                                                          _storeState));
         }
 
         try
@@ -104,47 +103,34 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
                 _recordMap.put(preferenceRecord.getId(), preferenceRecord);
             }
 
-            _storeState.set(StoreState.OPENED);
+            _storeState = StoreState.OPENED;
 
             return records;
         }
         catch (Exception e)
         {
-            _storeState.set(StoreState.ERRORED);
+            _storeState = StoreState.ERRORED;
             close();
             throw e;
         }
     }
 
     @Override
-    public void close()
+    public synchronized void close()
     {
-        while (true)
+        if (_storeState != StoreState.CLOSED)
         {
-            StoreState storeState = _storeState.get();
-            if (storeState.equals(StoreState.OPENED) || storeState.equals(StoreState.ERRORED))
-            {
-                if (_storeState.compareAndSet(storeState, StoreState.CLOSING))
-                {
-                    break;
-                }
-            }
-            else if (storeState.equals(StoreState.CLOSED) || storeState.equals(StoreState.CLOSING))
-            {
-                return;
-            }
+            cleanup();
+            _recordMap.clear();
+
+            _storeState = StoreState.CLOSED;
         }
-
-        cleanup();
-        _recordMap.clear();
-
-        _storeState.set(StoreState.CLOSED);
     }
 
     @Override
-    public void updateOrCreate(final Collection<PreferenceRecord> preferenceRecords)
+    public synchronized void updateOrCreate(final Collection<PreferenceRecord> preferenceRecords)
     {
-        if (!_storeState.get().equals(StoreState.OPENED))
+        if (_storeState != StoreState.OPENED)
         {
             throw new IllegalStateException("PreferenceStore is not opened");
         }
@@ -158,10 +144,10 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
     }
 
     @Override
-    public void replace(final Collection<UUID> preferenceRecordsToRemove,
+    public synchronized void replace(final Collection<UUID> preferenceRecordsToRemove,
                         final Collection<PreferenceRecord> preferenceRecordsToAdd)
     {
-        if (!_storeState.get().equals(StoreState.OPENED))
+        if (_storeState != StoreState.OPENED)
         {
             throw new IllegalStateException("PreferenceStore is not opened");
         }
@@ -176,7 +162,7 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
     }
 
     @Override
-    public void onDelete()
+    public synchronized void onDelete()
     {
         close();
         delete(_storePath);
@@ -202,10 +188,10 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
 
     private enum StoreState
     {
-        CLOSED, OPENING, OPENED, CLOSING, ERRORED;
+        CLOSED, OPENED, ERRORED;
     }
 
-    public static class StoreContent
+    private static class StoreContent
     {
         private String _version;
         private StoredPreferenceRecord[] _preferences = new StoredPreferenceRecord[0];
@@ -243,7 +229,7 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
         }
     }
 
-    public static class StoredPreferenceRecord implements PreferenceRecord
+    private static class StoredPreferenceRecord implements PreferenceRecord
     {
         private UUID _id;
         private Map<String, Object> _attributes;

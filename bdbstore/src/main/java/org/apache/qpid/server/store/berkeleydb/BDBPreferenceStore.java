@@ -117,19 +117,16 @@ public class BDBPreferenceStore extends AbstractBDBPreferenceStore
     }
 
     @Override
-    public void close()
+    protected void doClose()
     {
-        if (closeInternal())
+        try
         {
-            try
-            {
-                _environmentFacade.close();
-                _environmentFacade = null;
-            }
-            catch (RuntimeException e)
-            {
-                throw new StoreException("Exception occurred on preference store close", e);
-            }
+            _environmentFacade.close();
+            _environmentFacade = null;
+        }
+        catch (RuntimeException e)
+        {
+            throw new StoreException("Exception occurred on preference store close", e);
         }
     }
 

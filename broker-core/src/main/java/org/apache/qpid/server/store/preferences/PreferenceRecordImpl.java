@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.store.preferences;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
@@ -49,6 +50,6 @@ public class PreferenceRecordImpl implements PreferenceRecord
     @Override
     public Map<String, Object> getAttributes()
     {
-        return _attributes;
+        return Collections.unmodifiableMap(_attributes);
     }
 }

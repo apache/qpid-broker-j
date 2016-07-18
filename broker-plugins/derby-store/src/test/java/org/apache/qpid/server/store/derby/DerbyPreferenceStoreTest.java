@@ -304,7 +304,7 @@ public class DerbyPreferenceStoreTest extends QpidTestCase
         }
 
         @Override
-        public void onDelete()
+        protected void doDelete()
         {
             // noop
         }

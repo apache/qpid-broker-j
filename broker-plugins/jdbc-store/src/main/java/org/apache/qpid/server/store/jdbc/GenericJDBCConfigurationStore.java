@@ -346,7 +346,7 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
         }
 
         @Override
-        public void onDelete()
+        protected void doDelete()
         {
             try
             {

@@ -35,6 +35,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,6 +65,7 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
     private static final String UPDATE_PREFERENCES = "UPDATE " + PREFERENCES_TABLE_NAME + " SET attributes = ? WHERE id = ?";
 
     private final AtomicReference<StoreState> _storeState = new AtomicReference<>(StoreState.CLOSED);
+    private final ReentrantReadWriteLock _useOrCloseRWLock = new ReentrantReadWriteLock(true);
 
     @Override
     public Collection<PreferenceRecord> openAndLoad(final PreferenceStoreUpdater updater) throws StoreException
@@ -118,74 +120,115 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
     @Override
     public void updateOrCreate(final Collection<PreferenceRecord> preferenceRecords)
     {
-        if (!getStoreState().equals(StoreState.OPENED))
+        _useOrCloseRWLock.readLock().lock();
+        try
         {
-            throw new IllegalStateException("PreferenceStore is not opened");
-        }
-
-        performSafeTransaction(new BaseAction<Connection, Exception>()
-        {
-            @Override
-            public void performAction(final Connection connection) throws Exception
+            if (!getStoreState().equals(StoreState.OPENED))
             {
-                updateOrCreateInternal(connection, preferenceRecords);
+                throw new IllegalStateException("PreferenceStore is not opened");
             }
-        });
+
+            performSafeTransaction(new BaseAction<Connection, Exception>()
+            {
+                @Override
+                public void performAction(final Connection connection) throws Exception
+                {
+                    updateOrCreateInternal(connection, preferenceRecords);
+                }
+            });
+        }
+        finally
+        {
+            _useOrCloseRWLock.readLock().unlock();
+        }
     }
 
     @Override
     public void replace(final Collection<UUID> preferenceRecordsToRemove,
                         final Collection<PreferenceRecord> preferenceRecordsToAdd)
     {
-        if (!getStoreState().equals(StoreState.OPENED))
+        _useOrCloseRWLock.readLock().lock();
+        try
         {
-            throw new IllegalStateException("PreferenceStore is not opened");
-        }
-
-        performSafeTransaction(new BaseAction<Connection, Exception>()
-        {
-            @Override
-            public void performAction(final Connection connection) throws Exception
+            if (!getStoreState().equals(StoreState.OPENED))
             {
-                for (UUID id : preferenceRecordsToRemove)
+                throw new IllegalStateException("PreferenceStore is not opened");
+            }
+
+            performSafeTransaction(new BaseAction<Connection, Exception>()
+            {
+                @Override
+                public void performAction(final Connection connection) throws Exception
                 {
-                    try (PreparedStatement deleteStatement = connection.prepareStatement(DELETE_FROM_PREFERENCES))
+                    for (UUID id : preferenceRecordsToRemove)
                     {
-                        deleteStatement.setString(1, id.toString());
-                        int deletedCount = deleteStatement.executeUpdate();
-                        if (deletedCount == 1)
+                        try (PreparedStatement deleteStatement = connection.prepareStatement(DELETE_FROM_PREFERENCES))
                         {
-                            getLogger().debug(String.format("Failed to delete preference with id %s : no such record", id));
+                            deleteStatement.setString(1, id.toString());
+                            int deletedCount = deleteStatement.executeUpdate();
+                            if (deletedCount == 1)
+                            {
+                                getLogger().debug(String.format(
+                                        "Failed to delete preference with id %s : no such record",
+                                        id));
+                            }
                         }
                     }
+                    updateOrCreateInternal(connection, preferenceRecordsToAdd);
                 }
-                updateOrCreateInternal(connection, preferenceRecordsToAdd);
-            }
-        });
+            });
+        }
+        finally
+        {
+            _useOrCloseRWLock.readLock().unlock();
+        }
+    }
+
+    @Override
+    public void onDelete()
+    {
+        _useOrCloseRWLock.writeLock().lock();
+        try
+        {
+            close();
+            doDelete();
+        }
+        finally
+        {
+            _useOrCloseRWLock.writeLock().unlock();
+        }
     }
 
     @Override
     public void close()
     {
-        while (true)
+        _useOrCloseRWLock.writeLock().lock();
+        try
         {
-            StoreState storeState = getStoreState();
-            if (storeState.equals(StoreState.OPENED) || storeState.equals(StoreState.ERRORED))
+            while (true)
             {
-                if (_storeState.compareAndSet(storeState, StoreState.CLOSING))
+                StoreState storeState = getStoreState();
+                if (storeState.equals(StoreState.OPENED) || storeState.equals(StoreState.ERRORED))
                 {
-                    break;
+                    if (_storeState.compareAndSet(storeState, StoreState.CLOSING))
+                    {
+                        break;
+                    }
+                }
+                else if (storeState.equals(StoreState.CLOSED) || storeState.equals(StoreState.CLOSING))
+                {
+                    return;
                 }
             }
-            else if (storeState.equals(StoreState.CLOSED) || storeState.equals(StoreState.CLOSING))
-            {
-                return;
-            }
+
+            doClose();
+
+            _storeState.set(StoreState.CLOSED);
         }
-
-        doClose();
-
-        _storeState.set(StoreState.CLOSED);
+        finally
+        {
+            _useOrCloseRWLock.writeLock().unlock();
+        }
     }
 
     protected void dropTables(final Connection connection) throws SQLException
@@ -200,6 +243,8 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
             getLogger().warn("Failed to drop preferences table", e);
         }
     }
+
+    protected abstract void doDelete();
 
     protected abstract void doClose();
 

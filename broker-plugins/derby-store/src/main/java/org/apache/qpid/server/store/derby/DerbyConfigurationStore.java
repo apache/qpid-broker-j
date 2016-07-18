@@ -275,7 +275,7 @@ public class DerbyConfigurationStore extends AbstractJDBCConfigurationStore
         }
 
         @Override
-        public void onDelete()
+        protected void doDelete()
         {
             try
             {
