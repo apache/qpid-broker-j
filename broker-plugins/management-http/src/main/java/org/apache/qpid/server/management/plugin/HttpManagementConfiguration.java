@@ -73,6 +73,10 @@ public interface HttpManagementConfiguration<X extends HttpManagementConfigurati
     @ManagedContextDefault( name = MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME)
     static final long DEFAULT_MAX_UPLOAD_SIZE = 100 * 1024;
 
+    String PREFERENCE_OPERTAION_TIMEOUT_CONTEXT_NAME = "qpid.httpManagement.preferenceOperationTimeout";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = PREFERENCE_OPERTAION_TIMEOUT_CONTEXT_NAME)
+    long DEFAULT_PREFERENCE_OPERTAION_TIMEOUT = 10000L;
 
     AuthenticationProvider getAuthenticationProvider(HttpServletRequest request);
 }

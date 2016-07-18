@@ -20,10 +20,12 @@
 
 package org.apache.qpid.server.model.testmodels.singleton;
 
+import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.awaitPreferenceFuture;
 import static org.mockito.Mockito.mock;
 
 import java.security.Principal;
 import java.security.PrivilegedAction;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -35,6 +37,8 @@ import java.util.UUID;
 
 import javax.security.auth.Subject;
 
+import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
+import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.preferences.Preference;
@@ -52,6 +56,8 @@ public class PreferencesTest extends QpidTestCase
     private final Model _model = TestModel.getInstance();
     private ConfiguredObject<?> _testObject;
     private Subject _testSubject;
+    private TaskExecutor _preferenceTaskExecutor;
+    private PreferenceStore _preferenceStore;
 
     @Override
     public void setUp() throws Exception
@@ -61,10 +67,21 @@ public class PreferencesTest extends QpidTestCase
         _testObject = _model.getObjectFactory()
                             .create(TestSingleton.class,
                                     Collections.<String, Object>singletonMap(ConfiguredObject.NAME, objectName));
+
+        _preferenceTaskExecutor = new CurrentThreadTaskExecutor();
+        _preferenceTaskExecutor.start();
+        _preferenceStore = mock(PreferenceStore.class);
         _testObject.setUserPreferences(new UserPreferencesImpl(
-                mock(PreferenceStore.class), Collections.<Preference>emptySet()
+                _preferenceTaskExecutor, _testObject, _preferenceStore, Collections.<Preference>emptySet()
         ));
         _testSubject = TestPrincipalUtils.createTestSubject(TEST_USERNAME);
+    }
+
+    @Override
+    public void tearDown() throws Exception
+    {
+        _preferenceTaskExecutor.stop();
+        super.tearDown();
     }
 
     public void testSimpleRoundTrip()
@@ -84,8 +101,8 @@ public class PreferencesTest extends QpidTestCase
             public Void run()
             {
                 Set<Preference> preferences = Collections.singleton(p);
-                _testObject.getUserPreferences().updateOrAppend(preferences);
-                assertEquals("roundtrip failed", preferences, _testObject.getUserPreferences().getPreferences());
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(preferences));
+                assertEquals("roundtrip failed", preferences, awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences()));
                 return null;
             }
         });
@@ -111,7 +128,7 @@ public class PreferencesTest extends QpidTestCase
                 Set<Preference> preferences = Collections.singleton(p);
                 try
                 {
-                    _testObject.getUserPreferences().updateOrAppend(preferences);
+                    awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(preferences));
                     fail("Saving of preferences owned by somebody else should not be allowed");
                 }
                 catch (SecurityException e)
@@ -155,8 +172,8 @@ public class PreferencesTest extends QpidTestCase
             public Void run()
             {
                 Set<Preference> preferences = Collections.singleton(testUser2Preference);
-                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(testUser2Preference));
-                Set<Preference> p2s = _testObject.getUserPreferences().getPreferences();
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Collections.singleton(testUser2Preference)));
+                Set<Preference> p2s = awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
                 assertEquals("Unexpected preferences for subject 2", preferences, p2s);
                 return null;
             }
@@ -191,10 +208,10 @@ public class PreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(p1));
-                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(p2));
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Collections.singleton(p1)));
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Collections.singleton(p2)));
 
-                Set<Preference> preferences = _testObject.getUserPreferences().getPreferences();
+                Set<Preference> preferences = awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
                 assertEquals("Unexpected number of preferences", 1, preferences.size());
                 Preference newPreference = preferences.iterator().next();
                 assertEquals("Unexpected preference id", p2.getId(), newPreference.getId());
@@ -231,10 +248,10 @@ public class PreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(p1));
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Collections.singleton(p1)));
                 try
                 {
-                    _testObject.getUserPreferences().updateOrAppend(Collections.singleton(p2));
+                    awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Collections.singleton(p2)));
                     fail("Type change should not be allowed");
                 }
                 catch (IllegalArgumentException e)
@@ -272,11 +289,11 @@ public class PreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(p1));
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Collections.singleton(p1)));
 
                 try
                 {
-                    _testObject.getUserPreferences().updateOrAppend(Collections.singleton(p2));
+                    awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Collections.singleton(p2)));
                     fail("Property with same name and same type should not be allowed");
                 }
                 catch (IllegalArgumentException e)
@@ -318,7 +335,7 @@ public class PreferencesTest extends QpidTestCase
                 preferences.add(p2);
                 try
                 {
-                    _testObject.getUserPreferences().updateOrAppend(preferences);
+                    awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(preferences));
                     fail("Property with same name and same type should not be allowed");
                 }
                 catch (IllegalArgumentException e)
@@ -371,10 +388,11 @@ public class PreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(p1));
-                _testObject.getUserPreferences().replace(Collections.singleton(p2));
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Collections.singleton(p1)));
+                awaitPreferenceFuture(_testObject.getUserPreferences().replace(Collections.singleton(p2)));
 
-                Collection<Preference> retrievedPreferences = _testObject.getUserPreferences().getPreferences();
+                Collection<Preference> retrievedPreferences =
+                        awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
                 assertEquals("Unexpected number of preferences", 1, retrievedPreferences.size());
                 assertEquals("Unexpected preference", p2, retrievedPreferences.iterator().next());
 
@@ -385,7 +403,331 @@ public class PreferencesTest extends QpidTestCase
         assertSinglePreference(testSubject2, unaffectedPreference);
     }
 
-    public void testDelete()
+    public void testDeleteAll() throws Exception
+    {
+        final Preference p1 = PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                null,
+                null,
+                "X-type-1",
+                "propName",
+                null,
+                TEST_USERNAME,
+                null,
+                Collections.<String, Object>emptyMap()));
+        final Preference p2 = PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                null,
+                null,
+                "X-type-2",
+                "propName",
+                null,
+                TEST_USERNAME,
+                null,
+                Collections.<String, Object>emptyMap()));
+        updateOrAppendAs(_testSubject, p1, p2);
+
+        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        {
+            @Override
+            public Void run()
+            {
+                awaitPreferenceFuture(_testObject.getUserPreferences().delete(null, null, null));
+                Set<Preference> result = awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
+                assertEquals("Unexpected number of preferences", 0, result.size());
+                return null;
+            }
+        });
+    }
+
+    public void testDeleteByType() throws Exception
+    {
+        final String deleteType = "X-type-1";
+        final Preference deletePreference =
+                PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                        null,
+                        null,
+                        deleteType,
+                        "propName",
+                        null,
+                        TEST_USERNAME,
+                        null,
+                        Collections.<String, Object>emptyMap()));
+        String unaffectedType = "X-type-2";
+        final Preference unaffectedPreference =
+                PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                        null,
+                        null,
+                        unaffectedType,
+                        "propName",
+                        null,
+                        TEST_USERNAME,
+                        null,
+                        Collections.<String, Object>emptyMap()));
+        updateOrAppendAs(_testSubject, deletePreference, unaffectedPreference);
+
+        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        {
+            @Override
+            public Void run()
+            {
+                awaitPreferenceFuture(_testObject.getUserPreferences().delete(deleteType, null, null));
+                Set<Preference> result = awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
+                assertEquals("Unexpected number of preferences", 1, result.size());
+                assertEquals("Unexpected preference Id",
+                             unaffectedPreference.getId(),
+                             result.iterator().next().getId());
+                return null;
+            }
+        });
+    }
+
+    public void testDeleteByTypeAndName() throws Exception
+    {
+        final String deleteType = "X-type-1";
+        final String deletePropertyName = "propName";
+        final Preference deletePreference =
+                PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                        null,
+                        null,
+                        deleteType,
+                        deletePropertyName,
+                        null,
+                        TEST_USERNAME,
+                        null,
+                        Collections.<String, Object>emptyMap()));
+        final Preference unaffectedPreference1 =
+                PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                        null,
+                        null,
+                        deleteType,
+                        "propName2",
+                        null,
+                        TEST_USERNAME,
+                        null,
+                        Collections.<String, Object>emptyMap()));
+        String unaffectedType = "X-type-2";
+        final Preference unaffectedPreference2 =
+                PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                        null,
+                        null,
+                        unaffectedType,
+                        deletePropertyName,
+                        null,
+                        TEST_USERNAME,
+                        null,
+                        Collections.<String, Object>emptyMap()));
+        updateOrAppendAs(_testSubject, deletePreference, unaffectedPreference1, unaffectedPreference2);
+
+        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        {
+            @Override
+            public Void run()
+            {
+                awaitPreferenceFuture(_testObject.getUserPreferences().delete(deleteType, deletePropertyName, null));
+                Set<Preference> result = awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
+                assertEquals("Unexpected number of preferences", 2, result.size());
+                Set<UUID> ids = new HashSet<>(result.size());
+                for (Preference p : result)
+                {
+                    ids.add(p.getId());
+                }
+                assertTrue(String.format("unaffectedPreference1 unexpectedly deleted"), ids.contains(unaffectedPreference1.getId()));
+                assertTrue(String.format("unaffectedPreference2 unexpectedly deleted"), ids.contains(unaffectedPreference2.getId()));
+                return null;
+            }
+        });
+    }
+
+    public void testDeleteById() throws Exception
+    {
+        final String deleteType = "X-type-1";
+        final Preference deletePreference =
+                PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                        null,
+                        null,
+                        deleteType,
+                        "propName",
+                        null,
+                        TEST_USERNAME,
+                        null,
+                        Collections.<String, Object>emptyMap()));
+        final Preference unaffectedPreference1 =
+                PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                        null,
+                        null,
+                        deleteType,
+                        "propName2",
+                        null,
+                        TEST_USERNAME,
+                        null,
+                        Collections.<String, Object>emptyMap()));
+        String unaffectedType = "X-type-2";
+        final Preference unaffectedPreference2 =
+                PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                        null,
+                        null,
+                        unaffectedType,
+                        "propName",
+                        null,
+                        TEST_USERNAME,
+                        null,
+                        Collections.<String, Object>emptyMap()));
+        updateOrAppendAs(_testSubject, deletePreference, unaffectedPreference1, unaffectedPreference2);
+
+        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        {
+            @Override
+            public Void run()
+            {
+                awaitPreferenceFuture(_testObject.getUserPreferences().delete(null, null, deletePreference.getId()));
+                Set<Preference> result = awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
+                assertEquals("Unexpected number of preferences", 2, result.size());
+                Set<UUID> ids = new HashSet<>(result.size());
+                for (Preference p : result)
+                {
+                    ids.add(p.getId());
+                }
+                assertTrue(String.format("unaffectedPreference1 unexpectedly deleted"), ids.contains(unaffectedPreference1.getId()));
+                assertTrue(String.format("unaffectedPreference2 unexpectedly deleted"), ids.contains(unaffectedPreference2.getId()));
+                return null;
+            }
+        });
+    }
+
+    public void testDeleteByTypeAndId() throws Exception
+    {
+        final String deleteType = "X-type-1";
+        final Preference deletePreference =
+                PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                        null,
+                        null,
+                        deleteType,
+                        "propName",
+                        null,
+                        TEST_USERNAME,
+                        null,
+                        Collections.<String, Object>emptyMap()));
+        final Preference unaffectedPreference1 =
+                PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                        null,
+                        null,
+                        deleteType,
+                        "propName2",
+                        null,
+                        TEST_USERNAME,
+                        null,
+                        Collections.<String, Object>emptyMap()));
+        String unaffectedType = "X-type-2";
+        final Preference unaffectedPreference2 =
+                PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                        null,
+                        null,
+                        unaffectedType,
+                        "propName",
+                        null,
+                        TEST_USERNAME,
+                        null,
+                        Collections.<String, Object>emptyMap()));
+        updateOrAppendAs(_testSubject, deletePreference, unaffectedPreference1, unaffectedPreference2);
+
+        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        {
+            @Override
+            public Void run()
+            {
+                awaitPreferenceFuture(_testObject.getUserPreferences().delete(deleteType, null, deletePreference.getId()));
+                Set<Preference> result = awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
+                assertEquals("Unexpected number of preferences", 2, result.size());
+                Set<UUID> ids = new HashSet<>(result.size());
+                for (Preference p : result)
+                {
+                    ids.add(p.getId());
+                }
+                assertTrue(String.format("unaffectedPreference1 unexpectedly deleted"), ids.contains(unaffectedPreference1.getId()));
+                assertTrue(String.format("unaffectedPreference2 unexpectedly deleted"), ids.contains(unaffectedPreference2.getId()));
+                return null;
+            }
+        });
+    }
+
+    public void testDeleteByTypeAndNameAndId() throws Exception
+    {
+        final String deleteType = "X-type-1";
+        final String deletePropertyName = "propName";
+        final Preference deletePreference =
+                PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                        null,
+                        null,
+                        deleteType,
+                        deletePropertyName,
+                        null,
+                        TEST_USERNAME,
+                        null,
+                        Collections.<String, Object>emptyMap()));
+        final Preference unaffectedPreference1 =
+                PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                        null,
+                        null,
+                        deleteType,
+                        "propName2",
+                        null,
+                        TEST_USERNAME,
+                        null,
+                        Collections.<String, Object>emptyMap()));
+        String unaffectedType = "X-type-2";
+        final Preference unaffectedPreference2 =
+                PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                        null,
+                        null,
+                        unaffectedType,
+                        deletePropertyName,
+                        null,
+                        TEST_USERNAME,
+                        null,
+                        Collections.<String, Object>emptyMap()));
+        updateOrAppendAs(_testSubject, deletePreference, unaffectedPreference1, unaffectedPreference2);
+
+        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        {
+            @Override
+            public Void run()
+            {
+                awaitPreferenceFuture(_testObject.getUserPreferences().delete(deleteType, deletePropertyName, deletePreference.getId()));
+                Set<Preference> result = awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
+                assertEquals("Unexpected number of preferences", 2, result.size());
+                Set<UUID> ids = new HashSet<>(result.size());
+                for (Preference p : result)
+                {
+                    ids.add(p.getId());
+                }
+                assertTrue(String.format("unaffectedPreference1 unexpectedly deleted"), ids.contains(unaffectedPreference1.getId()));
+                assertTrue(String.format("unaffectedPreference2 unexpectedly deleted"), ids.contains(unaffectedPreference2.getId()));
+                return null;
+            }
+        });
+    }
+
+    public void testDeleteByNameWithoutType() throws Exception
+    {
+        Subject.doAs(_testSubject, new PrivilegedAction<Void>()
+        {
+            @Override
+            public Void run()
+            {
+                try
+                {
+                    awaitPreferenceFuture(_testObject.getUserPreferences().delete(null, "test", null));
+                    fail("delete by name without type should not be allowed");
+                }
+                catch (IllegalArgumentException e)
+                {
+                    // pass
+                }
+                return null;
+            }
+        });
+    }
+
+    public void testDeleteViaReplace()
     {
         final String preferenceType = "X-testType";
         Subject testSubject2 = TestPrincipalUtils.createTestSubject(TEST_USERNAME2);
@@ -416,10 +758,11 @@ public class PreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(p1));
-                _testObject.getUserPreferences().replace(Collections.<Preference>emptySet());
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Collections.singleton(p1)));
+                awaitPreferenceFuture(_testObject.getUserPreferences().replace(Collections.<Preference>emptySet()));
 
-                Collection<Preference> retrievedPreferences = _testObject.getUserPreferences().getPreferences();
+                Collection<Preference> retrievedPreferences =
+                        awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
                 assertEquals("Unexpected number of preferences", 0, retrievedPreferences.size());
 
                 return null;
@@ -429,7 +772,7 @@ public class PreferencesTest extends QpidTestCase
         assertSinglePreference(testSubject2, unaffectedPreference);
     }
 
-    public void testDeleteByType()
+    public void testDeleteViaReplaceByType()
     {
         final String preferenceType = "X-testType";
         final String unaffectedPreferenceType = "X-unaffectedType";
@@ -474,11 +817,12 @@ public class PreferencesTest extends QpidTestCase
                 Set<Preference> preferences = new HashSet<>();
                 preferences.add(p1);
                 preferences.add(p2);
-                _testObject.getUserPreferences().updateOrAppend(preferences);
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(preferences));
 
-                _testObject.getUserPreferences().replaceByType(preferenceType, Collections.<Preference>emptySet());
+                awaitPreferenceFuture(_testObject.getUserPreferences().replaceByType(preferenceType, Collections.<Preference>emptySet()));
 
-                Collection<Preference> retrievedPreferences = _testObject.getUserPreferences().getPreferences();
+                Collection<Preference> retrievedPreferences =
+                        awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
                 assertEquals("Unexpected number of preferences", 1, retrievedPreferences.size());
                 assertTrue("Unexpected preference", retrievedPreferences.contains(p2));
                 return null;
@@ -488,7 +832,7 @@ public class PreferencesTest extends QpidTestCase
         assertSinglePreference(testSubject2, unaffectedPreference);
     }
 
-    public void testDeleteByTypeAndName()
+    public void testDeleteViaReplaceByTypeAndName()
     {
         final String preferenceType = "X-testType";
         Subject testSubject2 = TestPrincipalUtils.createTestSubject(TEST_USERNAME2);
@@ -534,11 +878,12 @@ public class PreferencesTest extends QpidTestCase
                 Set<Preference> preferences = new HashSet<>();
                 preferences.add(p1);
                 preferences.add(p2);
-                _testObject.getUserPreferences().updateOrAppend(preferences);
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(preferences));
 
-                _testObject.getUserPreferences().replaceByTypeAndName(preferenceType, "propName", null);
+                awaitPreferenceFuture(_testObject.getUserPreferences().replaceByTypeAndName(preferenceType, "propName", null));
 
-                Collection<Preference> retrievedPreferences = _testObject.getUserPreferences().getPreferences();
+                Collection<Preference> retrievedPreferences =
+                        awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
                 assertEquals("Unexpected number of preferences", 1, retrievedPreferences.size());
                 assertTrue("Unexpected preference", retrievedPreferences.contains(p2));
 
@@ -602,12 +947,13 @@ public class PreferencesTest extends QpidTestCase
                 Set<Preference> preferences = new HashSet<>();
                 preferences.add(p1);
                 preferences.add(p2);
-                _testObject.getUserPreferences().updateOrAppend(preferences);
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(preferences));
 
                 preferences = Collections.singleton(p3);
-                _testObject.getUserPreferences().replaceByType(replaceType, preferences);
+                awaitPreferenceFuture(_testObject.getUserPreferences().replaceByType(replaceType, preferences));
 
-                Set<Preference> retrievedPreferences = _testObject.getUserPreferences().getPreferences();
+                Set<Preference> retrievedPreferences =
+                        awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
                 assertEquals("Unexpected number of preferences", 2, retrievedPreferences.size());
                 assertTrue("Preference of different type was replaced", retrievedPreferences.contains(p2));
                 assertTrue("Preference was not replaced", retrievedPreferences.contains(p3));
@@ -684,11 +1030,12 @@ public class PreferencesTest extends QpidTestCase
                 preferences.add(p1);
                 preferences.add(p1b);
                 preferences.add(p2);
-                _testObject.getUserPreferences().updateOrAppend(preferences);
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(preferences));
 
-                _testObject.getUserPreferences().replaceByTypeAndName(replaceType, "propName", p3);
+                awaitPreferenceFuture(_testObject.getUserPreferences().replaceByTypeAndName(replaceType, "propName", p3));
 
-                Set<Preference> retrievedPreferences = _testObject.getUserPreferences().getPreferences();
+                Set<Preference> retrievedPreferences =
+                        awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
                 assertEquals("Unexpected number of preferences", 3, retrievedPreferences.size());
                 assertTrue("Preference of different name was replaced", retrievedPreferences.contains(p1b));
                 assertTrue("Preference of different type was replaced", retrievedPreferences.contains(p2));
@@ -720,7 +1067,7 @@ public class PreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(sharedPreference));
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Collections.singleton(sharedPreference)));
                 return null;
             }
         });
@@ -741,7 +1088,7 @@ public class PreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(notSharedPreference));
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Collections.singleton(notSharedPreference)));
                 return null;
             }
         });
@@ -762,9 +1109,10 @@ public class PreferencesTest extends QpidTestCase
             public Void run()
             {
 
-                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(p));
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Collections.singleton(p)));
 
-                Set<Preference> retrievedPreferences = _testObject.getUserPreferences().getVisiblePreferences();
+                Set<Preference> retrievedPreferences =
+                        awaitPreferenceFuture(_testObject.getUserPreferences().getVisiblePreferences());
                 assertEquals("Unexpected number of preferences", 2, retrievedPreferences.size());
                 assertTrue("Preference of my peer did not exist in visible set",
                            retrievedPreferences.contains(sharedPreference));
@@ -798,7 +1146,7 @@ public class PreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(sharedPreference));
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Collections.singleton(sharedPreference)));
                 return null;
             }
         });
@@ -819,9 +1167,10 @@ public class PreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(testUserPreference));
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Collections.singleton(testUserPreference)));
 
-                Set<Preference> retrievedPreferences = _testObject.getUserPreferences().getVisiblePreferences();
+                Set<Preference> retrievedPreferences =
+                        awaitPreferenceFuture(_testObject.getUserPreferences().getVisiblePreferences());
                 assertEquals("Unexpected number of preferences", 2, retrievedPreferences.size());
                 assertTrue("Preference of my peer did not exist in visible set",
                            retrievedPreferences.contains(sharedPreference));
@@ -906,14 +1255,14 @@ public class PreferencesTest extends QpidTestCase
         assertEquals("Unexpected preference attributes", expectedAttributes, p.getAttributes());
     }
 
-    private void updateOrAppendAs(final Subject testSubject, final Preference testUserPreference)
+    private void updateOrAppendAs(final Subject testSubject, final Preference... testUserPreference)
     {
         Subject.doAs(testSubject, new PrivilegedAction<Void>()
         {
             @Override
             public Void run()
             {
-                _testObject.getUserPreferences().updateOrAppend(Collections.singleton(testUserPreference));
+                awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Arrays.asList(testUserPreference)));
                 return null;
             }
         });
@@ -926,7 +1275,8 @@ public class PreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                Collection<Preference> retrievedPreferences = _testObject.getUserPreferences().getPreferences();
+                Collection<Preference> retrievedPreferences =
+                        awaitPreferenceFuture(_testObject.getUserPreferences().getPreferences());
                 assertEquals("Unexpected number of preferences", 1, retrievedPreferences.size());
                 assertEquals("Unexpected preference", preference, retrievedPreferences.iterator().next());
                 return null;

@@ -31,6 +31,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.PreferenceFactory;
@@ -39,6 +40,13 @@ import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 public class PreferencesRecoverer
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(PreferencesRecoverer.class);
+    private TaskExecutor _executor;
+
+    public PreferencesRecoverer(final TaskExecutor executor)
+    {
+        _executor = executor;
+    }
+
 
     public void recoverPreferences(ConfiguredObject<?> parent,
                                    Collection<PreferenceRecord> preferenceRecords,
@@ -111,7 +119,10 @@ public class PreferencesRecoverer
                 }
             }
         }
-        associatedObject.setUserPreferences(new UserPreferencesImpl(preferenceStore, recoveredPreferences));
+        associatedObject.setUserPreferences(new UserPreferencesImpl(_executor,
+                                                                    associatedObject,
+                                                                    preferenceStore,
+                                                                    recoveredPreferences));
 
         if (!(associatedObject instanceof PreferencesRoot))
         {

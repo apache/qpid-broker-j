@@ -27,8 +27,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Future;
 
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
+import org.apache.qpid.server.util.FutureHelper;
 
 public class PreferenceTestHelper
 {
@@ -79,4 +81,10 @@ public class PreferenceTestHelper
                          new HashMap<>(actualRecord.getAttributes()));
         }
     }
+
+    public static <T> T awaitPreferenceFuture(final Future<T> future)
+    {
+        return FutureHelper.<T, RuntimeException>await(future);
+    }
+
 }

@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,10 +40,14 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.server.util.FutureHelper;
 
 public class TaskExecutorImpl implements TaskExecutor
 {
@@ -54,7 +57,7 @@ public class TaskExecutorImpl implements TaskExecutor
 
     private volatile Thread _taskThread;
     private final AtomicBoolean _running = new AtomicBoolean();
-    private volatile ExecutorService _executor;
+    private volatile ListeningExecutorService _executor;
     private final ImmediateIfSameThreadExecutor _wrappedExecutor = new ImmediateIfSameThreadExecutor();
     private final String _name;
 
@@ -81,7 +84,7 @@ public class TaskExecutorImpl implements TaskExecutor
         if (_running.compareAndSet(false, true))
         {
             LOGGER.debug("Starting task executor {}", _name);
-            _executor = Executors.newFixedThreadPool(1, new ThreadFactory()
+            _executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1, new ThreadFactory()
             {
                 @Override
                 public Thread newThread(Runnable r)
@@ -89,7 +92,7 @@ public class TaskExecutorImpl implements TaskExecutor
                     _taskThread = new TaskThread(r, _name, TaskExecutorImpl.this);
                     return _taskThread;
                 }
-            });
+            }));
             LOGGER.debug("Task executor is started");
         }
     }
@@ -137,12 +140,12 @@ public class TaskExecutorImpl implements TaskExecutor
     }
 
     @Override
-    public <T, E extends Exception> Future<T> submit(Task<T, E> userTask) throws E
+    public <T, E extends Exception> ListenableFuture<T> submit(Task<T, E> userTask) throws E
     {
         return submitWrappedTask(new TaskLoggingWrapper<>(userTask));
     }
 
-    private <T, E extends Exception> Future<T> submitWrappedTask(TaskLoggingWrapper<T, E> task) throws E
+    private <T, E extends Exception> ListenableFuture<T> submitWrappedTask(TaskLoggingWrapper<T, E> task) throws E
     {
         checkState(task);
         if (isTaskExecutorThread())
@@ -152,7 +155,7 @@ public class TaskExecutorImpl implements TaskExecutor
                 LOGGER.trace("Running {} immediately", task);
             }
             T result = task.execute();
-            return new ImmediateFuture<>(result);
+            return Futures.immediateFuture(result);
         }
         else
         {
@@ -172,44 +175,11 @@ public class TaskExecutorImpl implements TaskExecutor
         _wrappedExecutor.execute(command);
     }
 
-
     @Override
     public <T, E extends Exception> T run(Task<T, E> userTask) throws CancellationException, E
     {
         TaskLoggingWrapper<T, E> task = new TaskLoggingWrapper<>(userTask);
-        try
-        {
-            Future<T> future = submitWrappedTask(task);
-            return future.get();
-        }
-        catch (InterruptedException e)
-        {
-            Thread.currentThread().interrupt();
-            throw new ServerScopedRuntimeException("Task execution was interrupted: " + task, e);
-        }
-        catch (ExecutionException e)
-        {
-            Throwable cause = e.getCause();
-            if (cause instanceof RuntimeException)
-            {
-                throw (RuntimeException) cause;
-            }
-            else if (cause instanceof Error)
-            {
-                throw (Error) cause;
-            }
-            else
-            {
-                try
-                {
-                    throw (E) cause;
-                }
-                catch (ClassCastException cce)
-                {
-                    throw new ServerScopedRuntimeException("Failed to execute user task: " + task, cause);
-                }
-            }
-        }
+        return FutureHelper.<T, E>await(submitWrappedTask(task));
     }
 
     private boolean isTaskExecutorThread()

@@ -23,7 +23,8 @@ package org.apache.qpid.server.configuration.updater;
 import java.security.Principal;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 public interface TaskExecutor extends Executor
 {
@@ -48,7 +49,7 @@ public interface TaskExecutor extends Executor
 
     <T, E extends Exception> T run(Task<T, E> task) throws CancellationException, E;
 
-    <T, E extends Exception> Future<T> submit(Task<T, E> task) throws CancellationException, E;
+    <T, E extends Exception> ListenableFuture<T> submit(Task<T, E> task) throws CancellationException, E;
 
     Factory getFactory();
 }

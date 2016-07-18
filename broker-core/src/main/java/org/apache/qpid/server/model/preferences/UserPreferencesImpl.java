@@ -22,7 +22,9 @@ package org.apache.qpid.server.model.preferences;
 
 import java.security.AccessController;
 import java.security.Principal;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -39,10 +41,11 @@ import java.util.UUID;
 import javax.security.auth.Subject;
 
 import com.google.common.collect.Ordering;
+import com.google.common.util.concurrent.ListenableFuture;
 
-
-
-
+import org.apache.qpid.server.configuration.updater.Task;
+import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceRecordImpl;
@@ -50,21 +53,22 @@ import org.apache.qpid.server.store.preferences.PreferenceStore;
 
 public class UserPreferencesImpl implements UserPreferences
 {
-    private final static Comparator<Preference> PREFERENCE_COMPARATOR = new Comparator<Preference>()
+    private static final Comparator<Preference> PREFERENCE_COMPARATOR = new Comparator<Preference>()
     {
         private final Ordering<Comparable> _ordering = Ordering.natural().nullsFirst();
+
         @Override
         public int compare(final Preference o1, final Preference o2)
         {
             int nameOrder = _ordering.compare(o1.getName(), o2.getName());
-            if(nameOrder != 0)
+            if (nameOrder != 0)
             {
                 return nameOrder;
             }
             else
             {
                 int typeOrder = _ordering.compare(o1.getType(), o2.getType());
-                if(typeOrder != 0)
+                if (typeOrder != 0)
                 {
                     return typeOrder;
                 }
@@ -79,13 +83,19 @@ public class UserPreferencesImpl implements UserPreferences
     private final Map<UUID, Preference> _preferences;
     private final Map<String, List<Preference>> _preferencesByName;
     private final PreferenceStore _preferenceStore;
+    private final TaskExecutor _executor;
+    private final ConfiguredObject<?> _associatedObject;
 
-    public UserPreferencesImpl(final PreferenceStore preferenceStore, final Collection<Preference> preferences)
+    public UserPreferencesImpl(final TaskExecutor executor,
+                               final ConfiguredObject<?> associatedObject,
+                               final PreferenceStore preferenceStore,
+                               final Collection<Preference> preferences)
     {
         _preferences = new HashMap<>();
         _preferencesByName = new HashMap<>();
         _preferenceStore = preferenceStore;
-
+        _executor = executor;
+        _associatedObject = associatedObject;
         for (Preference preference : preferences)
         {
             addPreference(preference);
@@ -93,7 +103,20 @@ public class UserPreferencesImpl implements UserPreferences
     }
 
     @Override
-    public void updateOrAppend(final Collection<Preference> preferences)
+    public ListenableFuture<Void> updateOrAppend(final Collection<Preference> preferences)
+    {
+        return _executor.submit(new PreferencesTask<Void>("updateOrAppend", preferences)
+        {
+            @Override
+            public Void doOperation()
+            {
+                doUpdateOrAppend(preferences);
+                return null;
+            }
+        });
+    }
+
+    private void doUpdateOrAppend(final Collection<Preference> preferences)
     {
         validateNewPreferencesForUpdate(preferences);
 
@@ -117,7 +140,19 @@ public class UserPreferencesImpl implements UserPreferences
     }
 
     @Override
-    public Set<Preference> getPreferences()
+    public ListenableFuture<Set<Preference>> getPreferences()
+    {
+        return _executor.submit(new PreferencesTask<Set<Preference>>("getPreferences")
+        {
+            @Override
+            public Set<Preference> doOperation()
+            {
+                return doGetPreferences();
+            }
+        });
+    }
+
+    private Set<Preference> doGetPreferences()
     {
         Principal currentPrincipal = getMainPrincipalOrThrow();
 
@@ -133,13 +168,34 @@ public class UserPreferencesImpl implements UserPreferences
     }
 
     @Override
-    public void replace(final Collection<Preference> preferences)
+    public ListenableFuture<Void> replace(final Collection<Preference> preferences)
     {
-        replaceByType(null, preferences);
+        return _executor.submit(new PreferencesTask<Void>("replace", preferences)
+        {
+            @Override
+            public Void doOperation()
+            {
+                doReplaceByType(null, preferences);
+                return null;
+            }
+        });
     }
 
     @Override
-    public void replaceByType(final String type, final Collection<Preference> preferences)
+    public ListenableFuture<Void> replaceByType(final String type, final Collection<Preference> preferences)
+    {
+        return _executor.submit(new PreferencesTask<Void>("replaceByType", type, preferences)
+        {
+            @Override
+            public Void doOperation()
+            {
+                doReplaceByType(type, preferences);
+                return null;
+            }
+        });
+    }
+
+    private void doReplaceByType(final String type, final Collection<Preference> preferences)
     {
         Principal currentPrincipal = getMainPrincipalOrThrow();
 
@@ -170,12 +226,27 @@ public class UserPreferencesImpl implements UserPreferences
 
         for (Preference preference : preferences)
         {
-           addPreference(preference);
+            addPreference(preference);
         }
     }
 
     @Override
-    public void replaceByTypeAndName(final String type, final String name, final Preference newPreference)
+    public ListenableFuture<Void> replaceByTypeAndName(final String type,
+                                                       final String name,
+                                                       final Preference newPreference)
+    {
+        return _executor.submit(new PreferencesTask<Void>("replaceByTypeAndName", type, name, newPreference)
+        {
+            @Override
+            public Void doOperation()
+            {
+                doReplaceByTypeAndName(type, name, newPreference);
+                return null;
+            }
+        });
+    }
+
+    private void doReplaceByTypeAndName(final String type, final String name, final Preference newPreference)
     {
         Principal currentPrincipal = getMainPrincipalOrThrow();
 
@@ -204,7 +275,6 @@ public class UserPreferencesImpl implements UserPreferences
                                          ? Collections.<PreferenceRecord>emptyList()
                                          : Collections.singleton(PreferenceRecordImpl.fromPreference(newPreference)));
 
-
         if (existingPreferenceId != null)
         {
             _preferences.remove(existingPreferenceId);
@@ -218,7 +288,69 @@ public class UserPreferencesImpl implements UserPreferences
     }
 
     @Override
-    public Set<Preference> getVisiblePreferences()
+    public ListenableFuture<Void> delete(final String type, final String name, final UUID id)
+    {
+        return _executor.submit(new PreferencesTask<Void>("delete", type, name, id)
+        {
+            @Override
+            public Void doOperation()
+            {
+                doDelete(type, name, id);
+                return null;
+            }
+        });
+    }
+
+    private void doDelete(final String type, final String name, final UUID id)
+    {
+        if (type == null && name != null)
+        {
+            throw new IllegalArgumentException("Cannot specify name without specifying type");
+        }
+
+        if (id != null)
+        {
+            final Set<Preference> allPreferences = doGetPreferences();
+            for (Preference preference : allPreferences)
+            {
+                if (id.equals(preference.getId()))
+                {
+                    if ((type == null || type.equals(preference.getType()))
+                        && (name == null || name.equals(preference.getName())))
+                    {
+                        doReplaceByTypeAndName(preference.getType(), preference.getName(), null);
+                    }
+                    break;
+                }
+            }
+        }
+        else
+        {
+            if (type != null && name != null)
+            {
+                doReplaceByTypeAndName(type, name, null);
+            }
+            else
+            {
+                doReplaceByType(type, Collections.<Preference>emptySet());
+            }
+        }
+    }
+
+    @Override
+    public ListenableFuture<Set<Preference>> getVisiblePreferences()
+    {
+        return _executor.submit(new PreferencesTask<Set<Preference>>("getVisiblePreferences")
+        {
+            @Override
+            public Set<Preference> doOperation()
+            {
+                return doGetVisiblePreferences();
+            }
+        });
+    }
+
+    private Set<Preference> doGetVisiblePreferences()
     {
         Set<Principal> currentPrincipals = getPrincipalsOrThrow();
 
@@ -430,5 +562,58 @@ public class UserPreferencesImpl implements UserPreferences
             }
         }
         return false;
+    }
+
+    private abstract class PreferencesTask<T> implements Task<T, RuntimeException>
+    {
+        private final Subject _subject;
+        private final String _action;
+        private final Object[] _arguments;
+        private String _argumentString;
+
+
+        private PreferencesTask(final String action, final Object... arguments)
+        {
+            _action = action;
+            _arguments = arguments;
+            _subject = Subject.getSubject(AccessController.getContext());
+        }
+
+        @Override
+        public T execute() throws RuntimeException
+        {
+            return Subject.doAs(_subject, new PrivilegedAction<T>()
+            {
+                @Override
+                public T run()
+                {
+                    return doOperation();
+                }
+            });
+        }
+
+        protected abstract T doOperation();
+
+        @Override
+        public String getObject()
+        {
+            return _associatedObject.getName();
+        }
+
+        @Override
+        public String getAction()
+        {
+            return _action;
+        }
+
+        @Override
+        public String getArguments()
+        {
+            if (_argumentString == null && _arguments != null)
+            {
+                _argumentString = _arguments.length == 1 ? String.valueOf(_arguments[0]) : Arrays.toString(_arguments);
+            }
+            return _argumentString;
+        }
     }
 }

@@ -16,6 +16,8 @@
  */
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
+import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.DEFAULT_PREFERENCE_OPERTAION_TIMEOUT;
+import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.PREFERENCE_OPERTAION_TIMEOUT_CONTEXT_NAME;
 import static org.apache.qpid.server.management.plugin.HttpManagementUtil.ensureFilenameIsRfc2183;
 
 import java.io.IOException;
@@ -58,6 +60,7 @@ import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.OperationTimeoutException;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
@@ -103,6 +106,7 @@ public class RestServlet extends AbstractServlet
     private final ConfiguredObjectToMapConverter _objectConverter = new ConfiguredObjectToMapConverter();
     private final boolean _hierarchyInitializationRequired;
     private volatile RequestInfoParser _requestInfoParser;
+    private RestUserPreferenceHandler _userPreferenceHandler;
 
     @SuppressWarnings("unused")
     public RestServlet()
@@ -128,6 +132,10 @@ public class RestServlet extends AbstractServlet
         }
         _requestInfoParser = new RequestInfoParser(_hierarchy);
         Handler.register();
+        Long preferenceOperationTimeout = getManagementConfiguration().getContextValue(Long.class, PREFERENCE_OPERTAION_TIMEOUT_CONTEXT_NAME);
+        _userPreferenceHandler = new RestUserPreferenceHandler(preferenceOperationTimeout == null
+                                                                       ? DEFAULT_PREFERENCE_OPERTAION_TIMEOUT
+                                                                       : preferenceOperationTimeout);
     }
 
     @SuppressWarnings("unchecked")
@@ -662,7 +670,7 @@ public class RestServlet extends AbstractServlet
                 final UserPreferences userPreferences = target.getUserPreferences();
                 try
                 {
-                    final Object preferences = new RestUserPreferenceHandler().handleGET(userPreferences, requestInfo);
+                    final Object preferences = _userPreferenceHandler.handleGET(userPreferences, requestInfo);
                     if (preferences == null || (preferences instanceof Collection
                                                 && ((Collection) preferences).isEmpty()) || (preferences instanceof Map
                                                                                              && ((Map) preferences).isEmpty()))
@@ -683,7 +691,7 @@ public class RestServlet extends AbstractServlet
             ConfiguredObject<?> target = allObjects.iterator().next();
             final UserPreferences userPreferences = target.getUserPreferences();
 
-            responseObject = new RestUserPreferenceHandler().handleGET(userPreferences, requestInfo);
+            responseObject = _userPreferenceHandler.handleGET(userPreferences, requestInfo);
         }
         sendJsonResponse(responseObject, request, response);
     }
@@ -694,19 +702,16 @@ public class RestServlet extends AbstractServlet
     {
         ConfiguredObject<?> target = getTarget(requestInfo);
 
-        final UserPreferences userPreferences = target.getUserPreferences();
-        final RestUserPreferenceHandler restUserPreferenceHandler = new RestUserPreferenceHandler();
-
         if ("POST".equals(request.getMethod()))
         {
             Object providedObject = getRequestProvidedObject(request, requestInfo, Object.class);
-            restUserPreferenceHandler.handlePOST(target, requestInfo, providedObject);
+            _userPreferenceHandler.handlePOST(target, requestInfo, providedObject);
         }
         else if ("PUT".equals(request.getMethod()))
         {
             Map<String, Object> providedObject = getRequestProvidedObject(request, requestInfo);
             final RestUserPreferenceHandler.ActionTaken actionTaken =
-                    restUserPreferenceHandler.handlePUT(target, requestInfo, providedObject);
+                    _userPreferenceHandler.handlePUT(target, requestInfo, providedObject);
 
             switch(actionTaken)
             {
@@ -1135,6 +1140,20 @@ public class RestServlet extends AbstractServlet
                 }
                 responseCode = SC_UNPROCESSABLE_ENTITY;
             }
+            else if (e instanceof OperationTimeoutException)
+            {
+                message = "Timeout occurred";
+                if (LOGGER.isDebugEnabled())
+                {
+                    LOGGER.debug(message, e);
+                }
+                else
+                {
+                    LOGGER.info(e.getMessage());
+                }
+
+                responseCode = HttpServletResponse.SC_BAD_GATEWAY;
+            }
             else if (e instanceof NoClassDefFoundError)
             {
                 message = "Not found: " + message;
@@ -1197,7 +1216,7 @@ public class RestServlet extends AbstractServlet
                 }
                 for (ConfiguredObject o : allObjects)
                 {
-                    new RestUserPreferenceHandler().handleDELETE(o.getUserPreferences(), requestInfo);
+                    _userPreferenceHandler.handleDELETE(o.getUserPreferences(), requestInfo);
                 }
                 break;
             }

@@ -15,30 +15,26 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
 
-package org.apache.qpid.server.model.preferences;
+package org.apache.qpid.server.model;
 
-import java.util.Collection;
-import java.util.Set;
-import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 
-import com.google.common.util.concurrent.ListenableFuture;
-
-public interface UserPreferences
+public class OperationTimeoutException extends RuntimeException
 {
-    ListenableFuture<Void> updateOrAppend(Collection<Preference> preferences);
+    public OperationTimeoutException(final String message)
+    {
+        super(message);
+    }
 
-    ListenableFuture<Set<Preference>> getPreferences();
+    public OperationTimeoutException(final String message, final Throwable cause)
+    {
+        super(message, cause);
+    }
 
-    ListenableFuture<Void> replace(Collection<Preference> preferences);
-
-    ListenableFuture<Void> replaceByType(String type, Collection<Preference> preferences);
-
-    ListenableFuture<Void> replaceByTypeAndName(String type, String name, Preference preference);
-
-    ListenableFuture<Set<Preference>> getVisiblePreferences();
-
-    ListenableFuture<Void> delete(String type, String name, UUID id);
+    public OperationTimeoutException(final Exception e)
+    {
+        super(e);
+    }
 }

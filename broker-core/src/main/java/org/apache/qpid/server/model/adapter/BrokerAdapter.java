@@ -62,6 +62,8 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.BrokerPrincipal;
+import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.QpidLoggerTurboFilter;
 import org.apache.qpid.server.logging.StartupAppender;
 import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
@@ -198,6 +200,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private final AddressSpaceRegistry _addressSpaceRegistry = new AddressSpaceRegistry();
     private ConfigurationChangeListener _accessControlProviderListener = new AccessControlProviderListener();
     private final AccessControl _accessControl;
+    private TaskExecutor _preferenceTaskExecutor;
 
     @ManagedObjectFactoryConstructor
     public BrokerAdapter(Map<String, Object> attributes,
@@ -422,6 +425,33 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         }
     }
 
+    @SuppressWarnings("unused")
+    @StateTransition( currentState = {State.ACTIVE, State.ERRORED}, desiredState = State.STOPPED )
+    private ListenableFuture<Void> doStop()
+    {
+        closePreferenceStore();
+        stopPreferenceTaskExecutor();
+        return Futures.immediateFuture(null);
+    }
+
+    private void closePreferenceStore()
+    {
+        PreferenceStore ps = _preferenceStore;
+        if (ps != null)
+        {
+            ps.close();
+        }
+    }
+
+    private void stopPreferenceTaskExecutor()
+    {
+        TaskExecutor preferenceTaskExecutor = _preferenceTaskExecutor;
+        if (preferenceTaskExecutor != null)
+        {
+            preferenceTaskExecutor.stop();
+        }
+    }
+
     @Override
     public void initiateShutdown()
     {
@@ -473,7 +503,10 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
         final PreferenceStoreUpdaterImpl updater = new PreferenceStoreUpdaterImpl();
         final Collection<PreferenceRecord> preferenceRecords = _preferenceStore.openAndLoad(updater);
-        new PreferencesRecoverer().recoverPreferences(this, preferenceRecords, _preferenceStore);
+        _preferenceTaskExecutor = new TaskExecutorImpl("broker-" + getName() + "-preferences", null);
+        _preferenceTaskExecutor.start();
+        PreferencesRecoverer preferencesRecoverer = new PreferencesRecoverer(_preferenceTaskExecutor);
+        preferencesRecoverer.recoverPreferences(this, preferenceRecords, _preferenceStore);
 
         if (isManagementMode())
         {
@@ -793,10 +826,8 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
         shutdownHouseKeeping();
 
-        if (_preferenceStore != null)
-        {
-            _preferenceStore.close();
-        }
+        closePreferenceStore();
+        stopPreferenceTaskExecutor();
 
         _eventLogger.message(BrokerMessages.STOPPED());
 

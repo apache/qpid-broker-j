@@ -18,6 +18,7 @@
  */
 package org.apache.qpid.server.model.preferences;
 
+import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.awaitPreferenceFuture;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -37,6 +38,8 @@ import com.google.common.collect.Sets;
 import org.hamcrest.Description;
 import org.mockito.ArgumentMatcher;
 
+import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
+import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.group.GroupPrincipal;
@@ -57,6 +60,7 @@ public class UserPreferencesTest extends QpidTestCase
     private PreferenceStore _preferenceStore;
     private UUID _testId;
     private AuthenticatedPrincipal _owner;
+    private TaskExecutor _preferenceTaskExecutor;
 
     @Override
     public void setUp() throws Exception
@@ -64,7 +68,12 @@ public class UserPreferencesTest extends QpidTestCase
         super.setUp();
         _configuredObject = mock(ConfiguredObject.class);
         _preferenceStore = mock(PreferenceStore.class);
-        _userPreferences = new UserPreferencesImpl(_preferenceStore, Collections.<Preference>emptyList());
+        _preferenceTaskExecutor = new CurrentThreadTaskExecutor();
+        _preferenceTaskExecutor.start();
+        _userPreferences = new UserPreferencesImpl(_preferenceTaskExecutor,
+                                                   _configuredObject,
+                                                   _preferenceStore,
+                                                   Collections.<Preference>emptyList());
         _groupPrincipal = new GroupPrincipal(MYGROUP);
         _owner = new AuthenticatedPrincipal(MYUSER);
         _subject = new Subject(true,
@@ -74,6 +83,12 @@ public class UserPreferencesTest extends QpidTestCase
         _testId = UUID.randomUUID();
     }
 
+    @Override
+    public void tearDown() throws Exception
+    {
+        _preferenceTaskExecutor.stop();
+        super.tearDown();
+    }
 
     public void testUpdateOrAppend() throws Exception
     {
@@ -87,7 +102,7 @@ public class UserPreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _userPreferences.updateOrAppend(Collections.singleton(preference));
+                awaitPreferenceFuture(_userPreferences.updateOrAppend(Collections.singleton(preference)));
                 return null;
             }
         });
@@ -108,7 +123,7 @@ public class UserPreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _userPreferences.replace(Collections.singleton(preference));
+                awaitPreferenceFuture(_userPreferences.replace(Collections.singleton(preference)));
                 return null;
             }
         });
@@ -136,8 +151,8 @@ public class UserPreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _userPreferences.updateOrAppend(Arrays.asList(queryPreference, dashboardPreference));
-                _userPreferences.replaceByType("query", Collections.singletonList(newQueryPreference));
+                awaitPreferenceFuture(_userPreferences.updateOrAppend(Arrays.asList(queryPreference, dashboardPreference)));
+                awaitPreferenceFuture(_userPreferences.replaceByType("query", Collections.singletonList(newQueryPreference)));
                 return null;
             }
         });
@@ -167,8 +182,8 @@ public class UserPreferencesTest extends QpidTestCase
             @Override
             public Void run()
             {
-                _userPreferences.updateOrAppend(Arrays.asList(queryPreference1, queryPreference2, dashboardPreference));
-                _userPreferences.replaceByTypeAndName("query", "test", newQueryPreference);
+                awaitPreferenceFuture(_userPreferences.updateOrAppend(Arrays.asList(queryPreference1, queryPreference2, dashboardPreference)));
+                awaitPreferenceFuture(_userPreferences.replaceByTypeAndName("query", "test", newQueryPreference));
                 return null;
             }
         });

@@ -26,16 +26,20 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.Subject;
 
 import com.google.common.base.Joiner;
+import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.server.util.FutureHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.PreferenceFactory;
@@ -43,6 +47,13 @@ import org.apache.qpid.server.model.preferences.UserPreferences;
 
 public class RestUserPreferenceHandler
 {
+    private final long _preferenceOperationTimeout;
+
+    public RestUserPreferenceHandler(final long preferenceOperationTimeout)
+    {
+        _preferenceOperationTimeout = preferenceOperationTimeout;
+    }
+
     public void handleDELETE(final UserPreferences userPreferences, final RequestInfo requestInfo)
     {
         if (userPreferences == null)
@@ -52,56 +63,30 @@ public class RestUserPreferenceHandler
 
         final List<String> preferencesParts = requestInfo.getPreferencesParts();
         final Map<String, List<String>> queryParameters = requestInfo.getQueryParameters();
-        String id = getIdFromQueryParameters(queryParameters);
+        UUID id = getIdFromQueryParameters(queryParameters);
 
-        if (id != null)
-        {
-            final Set<Preference> allPreferences = userPreferences.getPreferences();
-            for (Preference preference : allPreferences)
-            {
-                if (id.equals(preference.getId().toString()))
-                {
-                    String type = null;
-                    String name = null;
-                    if (preferencesParts.size() == 2)
-                    {
-                        type = preferencesParts.get(0);
-                        name = preferencesParts.get(1);
-                    }
-                    else if (preferencesParts.size() == 1)
-                    {
-                        type = preferencesParts.get(0);
-                    }
-                    if ((type == null || type.equals(preference.getType()))
-                        && (name == null || name.equals(preference.getName())))
-                    {
-                        userPreferences.replaceByTypeAndName(preference.getType(), preference.getName(), null);
-                    }
-                    return;
-                }
-            }
-        }
-
+        String type = null;
+        String name = null;
         if (preferencesParts.size() == 2)
         {
-            String type = preferencesParts.get(0);
-            String name = preferencesParts.get(1);
-            userPreferences.replaceByTypeAndName(type, name, null);
+            type = preferencesParts.get(0);
+            name = preferencesParts.get(1);
         }
         else if (preferencesParts.size() == 1)
         {
-            String type = preferencesParts.get(0);
-            userPreferences.replaceByType(type, Collections.<Preference>emptySet());
+            type = preferencesParts.get(0);
         }
         else if (preferencesParts.size() == 0)
         {
-            userPreferences.replace(Collections.<Preference>emptySet());
+            // pass
         }
         else
         {
             throw new IllegalArgumentException(String.format("unexpected path '%s'",
                                                              Joiner.on("/").join(preferencesParts)));
         }
+
+        awaitFuture(userPreferences.delete(type, name, id));
     }
 
     ActionTaken handlePUT(ConfiguredObject<?> target, RequestInfo requestInfo, Object providedObject)
@@ -134,7 +119,7 @@ public class RestUserPreferenceHandler
 
             ensureValidVisibilityList(preference.getVisibilityList());
 
-            userPreferences.updateOrAppend(Collections.singleton(preference));
+            awaitFuture(userPreferences.updateOrAppend(Collections.singleton(preference)));
 
             return providedUuid == null ? ActionTaken.CREATED : ActionTaken.UPDATED;
         }
@@ -154,6 +139,7 @@ public class RestUserPreferenceHandler
         }
 
         final List<String> preferencesParts = requestInfo.getPreferencesParts();
+        final Set<Preference> preferences = new LinkedHashSet<>();
 
         if (preferencesParts.size() == 1)
         {
@@ -164,7 +150,6 @@ public class RestUserPreferenceHandler
             }
             List<Object> providedObjects = (List<Object>) providedObject;
 
-            Set<Preference> preferences = new HashSet<>(providedObjects.size());
             for (Object preferenceObject : providedObjects)
             {
                 if (!(preferenceObject instanceof Map))
@@ -182,7 +167,6 @@ public class RestUserPreferenceHandler
                 preferences.add(preference);
             }
 
-            userPreferences.updateOrAppend(preferences);
         }
         else if (preferencesParts.size() == 0)
         {
@@ -192,7 +176,6 @@ public class RestUserPreferenceHandler
             }
             Map<String, Object> providedObjectMap = (Map<String, Object>) providedObject;
 
-            Set<Preference> preferences = new HashSet<>();
             for (String type : providedObjectMap.keySet())
             {
                 if (!(providedObjectMap.get(type) instanceof List))
@@ -220,14 +203,14 @@ public class RestUserPreferenceHandler
                     preferences.add(preference);
                 }
             }
-
-            userPreferences.updateOrAppend(preferences);
         }
         else
         {
             throw new IllegalArgumentException(String.format("unexpected path '%s'",
                                                              Joiner.on("/").join(preferencesParts)));
         }
+
+        awaitFuture(userPreferences.updateOrAppend(preferences));
     }
 
     Object handleGET(UserPreferences userPreferences, RequestInfo requestInfo)
@@ -239,22 +222,24 @@ public class RestUserPreferenceHandler
 
         final List<String> preferencesParts = requestInfo.getPreferencesParts();
         final Map<String, List<String>> queryParameters = requestInfo.getQueryParameters();
-        String id = getIdFromQueryParameters(queryParameters);
+        UUID id = getIdFromQueryParameters(queryParameters);
 
-        final Set<Preference> allPreferences;
+        final ListenableFuture<Set<Preference>> allPreferencesFuture;
         if (requestInfo.getType() == RequestInfo.RequestType.USER_PREFERENCES)
         {
-            allPreferences = userPreferences.getPreferences();
+            allPreferencesFuture = userPreferences.getPreferences();
         }
         else if (requestInfo.getType() == RequestInfo.RequestType.VISIBLE_PREFERENCES)
         {
-            allPreferences = userPreferences.getVisiblePreferences();
+            allPreferencesFuture = userPreferences.getVisiblePreferences();
         }
         else
         {
             throw new IllegalStateException(String.format(
                     "RestUserPreferenceHandler called with a unsupported request type: %s", requestInfo.getType()));
         }
+        final Set<Preference> allPreferences;
+        allPreferences = awaitFuture(allPreferencesFuture);
 
         if (preferencesParts.size() == 2)
         {
@@ -267,7 +252,7 @@ public class RestUserPreferenceHandler
             {
                 if (preference.getType().equals(type) && preference.getName().equals(name))
                 {
-                    if (id == null || id.equals(preference.getId().toString()))
+                    if (id == null || id.equals(preference.getId()))
                     {
                         foundPreference = preference;
                     }
@@ -307,7 +292,7 @@ public class RestUserPreferenceHandler
             {
                 if (preference.getType().equals(type))
                 {
-                    if (id == null || id.equals(preference.getId().toString()))
+                    if (id == null || id.equals(preference.getId()))
                     {
                         preferences.add(preference.getAttributes());
                     }
@@ -321,7 +306,7 @@ public class RestUserPreferenceHandler
 
             for (Preference preference : allPreferences)
             {
-                if (id == null || id.equals(preference.getId().toString()))
+                if (id == null || id.equals(preference.getId()))
                 {
                     final String type = preference.getType();
                     if (!preferences.containsKey(type))
@@ -342,14 +327,19 @@ public class RestUserPreferenceHandler
         }
     }
 
-    private String getIdFromQueryParameters(final Map<String, List<String>> queryParameters)
+    private <T> T awaitFuture(final ListenableFuture<T> future)
+    {
+        return FutureHelper.<T, RuntimeException>await(future, _preferenceOperationTimeout, TimeUnit.MILLISECONDS);
+    }
+
+    private UUID getIdFromQueryParameters(final Map<String, List<String>> queryParameters)
     {
         List<String> ids = queryParameters.get("id");
         if (ids != null && ids.size() > 1)
         {
             throw new IllegalArgumentException("Multiple ids in query string are not allowed");
         }
-        return (ids == null ? null : ids.get(0));
+        return (ids == null ? null : UUID.fromString(ids.get(0)));
     }
 
     private UUID getProvidedUuid(final Map<String, Object> providedObjectMap)

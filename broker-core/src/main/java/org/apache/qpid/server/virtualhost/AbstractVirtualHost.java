@@ -60,6 +60,8 @@ import org.apache.qpid.pool.SuppressingInheritedAccessControlContextThreadFactor
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.exchange.DefaultDestination;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.MessageStoreMessages;
@@ -122,6 +124,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final AccessControlContext _housekeepingJobContext;
     private final AccessControlContext _fileSystemSpaceCheckerJobContext;
     private final AtomicBoolean _acceptsConnections = new AtomicBoolean(false);
+    private TaskExecutor _preferenceTaskExecutor;
 
     private static enum BlockingType { STORE, FILESYSTEM };
 
@@ -1076,6 +1079,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _dtxRegistry.close();
         closeMessageStore();
         closePreferenceStore();
+        stopPreferenceTaskExecutor();
         shutdownHouseKeeping();
         closeNetworkConnectionScheduler();
         _eventLogger.message(VirtualHostMessages.CLOSED(getName()));
@@ -1657,11 +1661,20 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 closeNetworkConnectionScheduler();
                 closeMessageStore();
                 closePreferenceStore();
+                stopPreferenceTaskExecutor();
                 setState(State.STOPPED);
-
                 stopLogging(loggers);
             }
         });
+    }
+
+    private void stopPreferenceTaskExecutor()
+    {
+        TaskExecutor preferenceTaskExecutor = _preferenceTaskExecutor;
+        if (preferenceTaskExecutor != null)
+        {
+            preferenceTaskExecutor.stop();
+        }
     }
 
     private void closePreferenceStore()
@@ -2092,7 +2105,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             final PreferenceStoreUpdater updater = new PreferenceStoreUpdaterImpl();
             Collection<PreferenceRecord> records = _preferenceStore.openAndLoad(updater);
-            new PreferencesRecoverer().recoverPreferences(this, records, _preferenceStore);
+            _preferenceTaskExecutor = new TaskExecutorImpl("virtualhost-" + getName() + "-preferences", null);
+            _preferenceTaskExecutor.start();
+            PreferencesRecoverer preferencesRecoverer = new PreferencesRecoverer(_preferenceTaskExecutor);
+            preferencesRecoverer.recoverPreferences(this, records, _preferenceStore);
 
             initialiseHouseKeeping(getHousekeepingCheckPeriod());
             finalState = State.ACTIVE;

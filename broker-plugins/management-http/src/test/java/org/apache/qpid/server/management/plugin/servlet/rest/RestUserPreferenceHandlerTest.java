@@ -18,7 +18,9 @@
  */
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
+import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.DEFAULT_PREFERENCE_OPERTAION_TIMEOUT;
 import static org.apache.qpid.server.management.plugin.servlet.rest.RestUserPreferenceHandler.ActionTaken;
+import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.awaitPreferenceFuture;
 import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.createPreferenceAttributes;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -38,6 +40,8 @@ import javax.security.auth.Subject;
 
 import com.google.common.collect.Sets;
 
+import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
+import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.PreferenceFactory;
@@ -55,12 +59,13 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
     private static final String MYGROUP = "mygroup";
     private static final String MYUSER = "myuser";
 
-    private RestUserPreferenceHandler _handler = new RestUserPreferenceHandler();
+    private RestUserPreferenceHandler _handler = new RestUserPreferenceHandler(DEFAULT_PREFERENCE_OPERTAION_TIMEOUT);
     private ConfiguredObject<?> _configuredObject;
     private UserPreferences _userPreferences;
     private Subject _subject;
     private GroupPrincipal _groupPrincipal;
     private PreferenceStore _preferenceStore;
+    private TaskExecutor _preferenceTaskExecutor;
 
     @Override
     public void setUp() throws Exception
@@ -68,14 +73,25 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
         super.setUp();
         _configuredObject = mock(ConfiguredObject.class);
         _preferenceStore = mock(PreferenceStore.class);
-        _userPreferences =
-                new UserPreferencesImpl(_preferenceStore, Collections.<Preference>emptyList());
+        _preferenceTaskExecutor = new CurrentThreadTaskExecutor();
+        _preferenceTaskExecutor.start();
+        _userPreferences = new UserPreferencesImpl(_preferenceTaskExecutor,
+                                                   _configuredObject,
+                                                   _preferenceStore,
+                                                   Collections.<Preference>emptyList());
         _groupPrincipal = new GroupPrincipal(MYGROUP);
         _subject = new Subject(true,
                                Sets.newHashSet(new AuthenticatedPrincipal(MYUSER), _groupPrincipal),
                                Collections.emptySet(),
                                Collections.emptySet());
         when(_configuredObject.getUserPreferences()).thenReturn(_userPreferences);
+    }
+
+    @Override
+    public void tearDown() throws Exception
+    {
+        _preferenceTaskExecutor.stop();
+        super.tearDown();
     }
 
     public void testPutWithVisibilityList_ValidGroup() throws Exception
@@ -98,8 +114,9 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      _handler.handlePUT(_configuredObject, requestInfo, pref);
                              assertEquals(ActionTaken.CREATED, action);
 
-                             assertEquals("Unexpected number of preferences", 1, _userPreferences.getPreferences().size());
-                             Preference prefModel = _userPreferences.getPreferences().iterator().next();
+                             Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
+                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             Preference prefModel = preferences.iterator().next();
                              final Set<Principal> visibilityList = prefModel.getVisibilityList();
                              assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
                              Principal principal = visibilityList.iterator().next();
@@ -158,8 +175,9 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          {
                              _handler.handlePOST(_configuredObject, typeRequestInfo, Collections.singletonList(pref));
 
-                             assertEquals("Unexpected number of preferences", 1, _userPreferences.getPreferences().size());
-                             Preference prefModel = _userPreferences.getPreferences().iterator().next();
+                             Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
+                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             Preference prefModel = preferences.iterator().next();
                              final Set<Principal> visibilityList = prefModel.getVisibilityList();
                              assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
                              Principal principal = visibilityList.iterator().next();
@@ -188,8 +206,9 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      Collections.singletonMap("X-testtype2", Collections.singletonList(pref));
                              _handler.handlePOST(_configuredObject, rootRequestInfo, payload);
 
-                             assertEquals("Unexpected number of preferences", 1, _userPreferences.getPreferences().size());
-                             Preference prefModel = _userPreferences.getPreferences().iterator().next();
+                             Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
+                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             Preference prefModel = preferences.iterator().next();
                              final Set<Principal> visibilityList = prefModel.getVisibilityList();
                              assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
                              Principal principal = visibilityList.iterator().next();
@@ -285,7 +304,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      Collections.singleton(_groupPrincipal.getName()),
                                      Collections.<String, Object>emptyMap());
                              Preference preference = PreferenceFactory.create(_configuredObject, prefAttributes);
-                             _userPreferences.updateOrAppend(Collections.singleton(preference));
+                             awaitPreferenceFuture(_userPreferences.updateOrAppend(Collections.singleton(preference)));
 
                              Map<String, List<Map<String, Object>>> typeToPreferenceListMap =
                                      (Map<String, List<Map<String, Object>>>) _handler.handleGET(_userPreferences, rootRequestInfo);
@@ -332,7 +351,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      null,
                                      Collections.<String, Object>emptyMap());
                              Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
-                             _userPreferences.updateOrAppend(Arrays.asList(p1, p2));
+                             awaitPreferenceFuture(_userPreferences.updateOrAppend(Arrays.asList(p1, p2)));
                              UUID id = p1.getId();
 
                              final RequestInfo rootRequestInfo =
@@ -384,7 +403,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      null,
                                      Collections.<String, Object>emptyMap());
                              Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
-                             _userPreferences.updateOrAppend(Arrays.asList(p1, p2));
+                             awaitPreferenceFuture(_userPreferences.updateOrAppend(Arrays.asList(p1, p2)));
                              UUID id = p1.getId();
 
                              final RequestInfo rootRequestInfo =
@@ -395,7 +414,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
 
                              _handler.handleDELETE(_userPreferences, rootRequestInfo);
 
-                             final Set<Preference> retrievedPreferences = _userPreferences.getPreferences();
+                             final Set<Preference> retrievedPreferences = awaitPreferenceFuture(_userPreferences.getPreferences());
                              assertEquals("Unexpected number of preferences", 1, retrievedPreferences.size());
                              assertTrue("Unexpected type in p1 map", retrievedPreferences.contains(p2));
                              return null;
@@ -481,7 +500,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      Collections.<String, Object>emptyMap());
                              Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
                              preferences.add(p2);
-                             _userPreferences.updateOrAppend(preferences);
+                             awaitPreferenceFuture(_userPreferences.updateOrAppend(preferences));
                              return null;
                          }
                      }
@@ -551,7 +570,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      Collections.<String, Object>emptyMap());
                              Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
                              preferences.add(p2);
-                             _userPreferences.updateOrAppend(preferences);
+                             awaitPreferenceFuture(_userPreferences.updateOrAppend(preferences));
                              return null;
                          }
                      }
@@ -616,7 +635,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      Collections.<String, Object>emptyMap());
                              Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
                              preferences.add(p2);
-                             _userPreferences.updateOrAppend(preferences);
+                             awaitPreferenceFuture(_userPreferences.updateOrAppend(preferences));
                              return null;
                          }
                      }
@@ -659,13 +678,13 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      Collections.<String, Object>emptyMap());
                              Preference preference = PreferenceFactory.create(_configuredObject,
                                                                               preferenceAttributes);
-                             _userPreferences.updateOrAppend(Collections.singleton(preference));
-                             Set<Preference> retrievedPreferences = _userPreferences.getPreferences();
+                             awaitPreferenceFuture(_userPreferences.updateOrAppend(Collections.singleton(preference)));
+                             Set<Preference> retrievedPreferences = awaitPreferenceFuture(_userPreferences.getPreferences());
                              assertEquals("adding pref failed", 1, retrievedPreferences.size());
 
                              _handler.handleDELETE(_userPreferences, requestInfo);
 
-                             retrievedPreferences = _userPreferences.getPreferences();
+                             retrievedPreferences = awaitPreferenceFuture(_userPreferences.getPreferences());
                              assertEquals("Deletion of preference failed", 0, retrievedPreferences.size());
 
                              // this should be a noop
