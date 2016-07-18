@@ -632,7 +632,6 @@ define(["dojo/_base/declare",
                                             }
                                       });
                     var grid = new Grid({
-                        controller: this.controller,
                         management: this.management,
                         category: this.categoryName.toLowerCase(),
                         parentObject: this.parentObject,
@@ -674,6 +673,7 @@ define(["dojo/_base/declare",
                     grid.on('dgrid-columnreorder', lang.hitch(this, this._standardModeColumnOrderChanged));
                     grid.on('dgrid-columnstatechange', lang.hitch(this, this._standardModeColumnStateChanged));
                     grid.hiderToggleNode.title = "Remove columns";
+                    grid.on('rowBrowsed', lang.hitch(this, function(event){this.controller.showById(event.id);}));
                     this._resultsGrid = grid;
                 },
                 _queryCompleted: function (e)

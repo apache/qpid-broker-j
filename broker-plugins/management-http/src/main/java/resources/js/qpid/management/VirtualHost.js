@@ -351,7 +351,6 @@ define(["dojo/parser",
                 rowsPerPage: 10,
                 transformer: lang.hitch(this, this._transformConnectionData),
                 management: this.management,
-                controller: controller,
                 parentObject: this.modelObj,
                 category: "Connection",
                 selectClause: "id, name, principal, port.name AS port, transport, sessionCount, messagesIn, bytesIn, messagesOut, bytesOut",
@@ -386,6 +385,7 @@ define(["dojo/parser",
                 }
                 ]
             }, findNode("connections"));
+            this.connectionsGrid.on('rowBrowsed', function(event){controller.showById(event.id);});
             that.connectionsGrid.startup();
 
             // Add onShow handler to work around an issue with not rendering of grid columns before first update.

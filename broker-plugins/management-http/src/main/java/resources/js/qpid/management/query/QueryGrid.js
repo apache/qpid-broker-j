@@ -55,8 +55,6 @@ define(["dojo/_base/declare",
         return declare("qpid.management.query.QueryGrid",
             [Grid, Keyboard, Selection, Pagination, DijitRegistry, ColumnResizer],
             {
-                management: null,
-                controller: null,
                 detectChanges: false,
                 highlightUpdatedRows : false,
                 _store: null,
@@ -97,12 +95,12 @@ define(["dojo/_base/declare",
                 postCreate: function ()
                 {
                     this.inherited(arguments);
-                    this.on('.dgrid-row:dblclick', lang.hitch(this, this._openObjectTab));
+                    this.on('.dgrid-row:dblclick', lang.hitch(this, this._rowBrowsed));
                     this.on('.dgrid-row:keypress', lang.hitch(this, function (event)
                     {
                         if (event.keyCode === keys.ENTER)
                         {
-                            this._openObjectTab(event);
+                            this._rowBrowsed(event);
                         }
                     }));
 
@@ -214,18 +212,13 @@ define(["dojo/_base/declare",
                     this._store.orderBy = orderByExpression;
                     on.emit(this.domNode, "orderByChanged", {orderBy: orderByExpression});
                 },
-                _openObjectTab: function (event)
+                _rowBrowsed: function (event)
                 {
                     var row = this.row(event);
-                    var item = this.controller.structure.findById(row.id, null, "broker");
-                    if (item != null)
-                    {
-                        this.controller.show(item.type, item.name, item.parent, item.id);
-                    }
+                    on.emit(this.domNode, "rowBrowsed", {id: row.id});
                 },
                 _onFetchCompleted: function (event)
                  {
-                    var rowsPerPage = this.rowsPerPage;
                     if ( event.totalLength > 0 && event.results.length == 0)
                     {
                         this.gotoPage(Math.min(this._currentPage, Math.ceil(event.totalLength / this.rowsPerPage)) || 1);

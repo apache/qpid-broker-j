@@ -231,5 +231,14 @@ define(["dojo/dom",
             tabObject.tabId = newTabId;
         };
 
+        controller.showById = function(id)
+        {
+            var item = this.structure.findById(id);
+            if (item != null)
+            {
+                this.show(item.type, item.name, item.parent, item.id);
+            }
+        };
+
         return controller;
     });
