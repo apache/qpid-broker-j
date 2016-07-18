@@ -21,10 +21,82 @@
 define(["dojo/_base/lang"],
     function (lang)
     {
+        var traverseStructure = function traverseTree(structure, parent, visit)
+        {
+            var result = visit(parent);
+            if (result)
+            {
+                return result;
+            }
+            for (var fieldName in structure)
+            {
+                var fieldValue = structure[fieldName];
+                if (lang.isArray(fieldValue))
+                {
+                    var fieldType = fieldName.substring(0, fieldName.length - 1);
+                    for (var i = 0; i < fieldValue.length; i++)
+                    {
+                        var object = fieldValue[i];
+                        var item = {
+                            id: object.id,
+                            name: object.name,
+                            type: fieldType,
+                            parent: parent
+                        };
+                        result = traverseStructure(object, item, visit);
+                        if (result)
+                        {
+                            return result;
+                        }
+                    }
+                }
+            }
+            return false;
+        };
+
+        var findObjectById = function findObjectById(structureRoot, id)
+        {
+            return traverseStructure(
+                structureRoot,
+                {
+                    id: structureRoot.id,
+                    name: structureRoot.name,
+                    type: "broker"
+                },
+                function (item)
+                {
+                    if (item.id === id)
+                    {
+                        return item;
+                    }
+                });
+        };
+
+        var findObjectsByType = function findObjectsByType(structureRoot, type)
+        {
+            var items = [];
+            traverseStructure(
+                structureRoot,
+                {
+                    id: structureRoot.id,
+                    name: structureRoot.name,
+                    type: "broker"
+                },
+                function (item)
+                {
+                    if (item.type === type)
+                    {
+                        items.push(item);
+                    }
+                    return false;
+                });
+            return items;
+        };
+
         function Structure()
         {
             this.structure = null;
-        };
+        }
 
         Structure.prototype.update = function (structure)
         {
@@ -33,43 +105,12 @@ define(["dojo/_base/lang"],
 
         Structure.prototype.findById = function (id)
         {
-            var findObject = function findObject(structure, parent, type)
-            {
-                var item = {
-                    id: structure.id,
-                    name: structure.name,
-                    type: type,
-                    parent: parent
-                };
-                if (item.id == id)
-                {
-                    return item;
-                }
-                else
-                {
-                    for (var fieldName in structure)
-                    {
-                        var fieldValue = structure[fieldName];
-                        if (lang.isArray(fieldValue))
-                        {
-                            var fieldType = fieldName.substring(0, fieldName.length - 1);
-                            for (var i = 0; i < fieldValue.length; i++)
-                            {
-                                var object = fieldValue[i];
-                                var result = findObject(object, item, fieldType);
-                                if (result != null)
-                                {
-                                    return result;
-                                }
-                            }
-                        }
-                    }
-                    return null;
-                }
-            };
+            return findObjectById(this.structure, id);
+        };
 
-            return findObject(this.structure, null, "broker");
-
+        Structure.prototype.findByType = function (type)
+        {
+            return findObjectsByType(this.structure, type);
         };
 
         return Structure;

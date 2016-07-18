@@ -118,7 +118,8 @@ define(["dojo/query",
                     {
                         ready(function ()
                         {
-                            queryCreateDialogForm = new QueryCreateDialogForm({management: management});
+                            queryCreateDialogForm =
+                                new QueryCreateDialogForm({management: management, structure: controller.structure});
                             queryCreateDialogForm.on("create", function (e)
                             {
                                 queryCreateDialog.hide();
@@ -129,19 +130,14 @@ define(["dojo/query",
                                 queryCreateDialog.hide();
                             });
                             queryCreateDialog = new Dialog({title: "Create query", content: queryCreateDialogForm});
-                            queryCreateDialogForm.loadScope(function ()
-                            {
-                                queryCreateDialog.show();
-                            });
+                            queryCreateDialog.show();
                         });
                     });
             }
             else
             {
-                queryCreateDialogForm.loadScope(function ()
-                {
-                    queryCreateDialog.show();
-                });
+                queryCreateDialogForm.initScope();
+                queryCreateDialog.show();
             }
         },
         showQueryBrowser: function (e)

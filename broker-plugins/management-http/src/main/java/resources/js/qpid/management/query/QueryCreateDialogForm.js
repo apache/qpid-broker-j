@@ -58,6 +58,7 @@ define(["dojo/_base/declare",
             //Strip out the apache comment header from the template html as comments unsupported.
             templateString: template.replace(/<!--[\s\S]*?-->/g, ""),
 
+            structure: null,
             management: null,
 
             /**
@@ -74,47 +75,32 @@ define(["dojo/_base/declare",
                 this.inherited(arguments);
                 this._postCreate();
             },
-            // TODO eliminate duplication and avoid knowledge of management.
-            loadScope: function (scopeCallback)
+            initScope: function ()
             {
-                var result = this.management.query({
-                    select: "id, $parent.name as parentName, name",
-                    category: "virtualhost"
-                });
-                var that = this;
-                result.then(function (data)
-                    {
-                        that._scopeDataLoaded(data.results, scopeCallback);
-                    },
-                    function (error)
-                    {
-                        that._scopeDataLoaded([], scopeCallback);
-                    });
-            },
-            _scopeDataLoaded: function (data, scopeCallback)
-            {
-                var brokerItem = {id: "broker", name: "Broker"};
-                var defaultValue = undefined;
-                var items = [brokerItem];
+                var brokers = this.structure.findByType("broker");
+                var virtualHosts = this.structure.findByType("virtualhost");
+                var objects = brokers.concat(virtualHosts);
+
+                var items = [];
+                var brokerId = null;
                 this._scopeModelObjects = {};
-                this._scopeModelObjects[brokerItem.id] = {type: "broker"};
-                for (var i = 0; i < data.length; i++)
+                for (var i = 0; i < objects.length; i++)
                 {
-                    var name = data[i][2];
-                    var parentName = data[i][1];
+                    if (objects[i].type === "broker")
+                    {
+                        name = objects[i].name;
+                        brokerId = objects[i].id;
+                    }
+                    else
+                    {
+                        name = "VH:" + objects[i].parent.name + "/" + objects[i].name;
+                    }
+                    var id = objects[i].id;
                     items.push({
-                        id: data[i][0],
-                        name: "VH:" + parentName + "/" + name
+                        id: id,
+                        name: name
                     });
-                    this._scopeModelObjects[data[i][0]] = {
-                        name: name,
-                        type: "virtualhost",
-                        parent: {
-                            name: parentName,
-                            type: "virtualhostnode",
-                            parent: {type: "broker"}
-                        }
-                    };
+                    this._scopeModelObjects[id] = objects[i];
                 }
 
                 var scopeStore = new Memory({
@@ -122,23 +108,12 @@ define(["dojo/_base/declare",
                     idProperty: 'id'
                 });
                 this.scope.set("store", scopeStore);
-                if (defaultValue)
-                {
-                    this.scope.set("value", defaultValue.id);
-                    this.scope.set("disabled", true);
-                }
-                else
-                {
-                    this.scope.set("value", brokerItem.id);
-                }
+                this.scope.set("value", brokerId);
                 this._onChange();
-                if (scopeCallback)
-                {
-                    scopeCallback();
-                }
             },
             _postCreate: function ()
             {
+                this.initScope()
                 this.cancelButton.on("click", lang.hitch(this, this._onCancel));
                 this.okButton.on("click", lang.hitch(this, this._onFormSubmit));
                 this.scope.on("change", lang.hitch(this, this._onChange));
