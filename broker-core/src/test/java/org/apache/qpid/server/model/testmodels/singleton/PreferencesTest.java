@@ -1255,6 +1255,37 @@ public class PreferencesTest extends QpidTestCase
         assertEquals("Unexpected preference attributes", expectedAttributes, p.getAttributes());
     }
 
+    public void testSavingOtherUserPreference() throws Exception
+    {
+        final String testGroupName = "testGroup";
+        Subject user1Subject = TestPrincipalUtils.createTestSubject(TEST_USERNAME, testGroupName);
+
+        Map<String, Object> preferenceAttributes = PreferenceTestHelper.createPreferenceAttributes(
+                _testObject.getId(),
+                UUID.randomUUID(),
+                "X-PREF",
+                "prefname",
+                null,
+                TEST_USERNAME,
+                Collections.singleton(testGroupName),
+                Collections.<String,Object>emptyMap());
+        updateOrAppendAs(user1Subject, PreferenceFactory.recover(_testObject, preferenceAttributes));
+
+        Subject user2Subject = TestPrincipalUtils.createTestSubject(TEST_USERNAME2, testGroupName);
+        preferenceAttributes.put(Preference.OWNER_ATTRIBUTE, TEST_USERNAME2);
+        Preference stolenPreference = PreferenceFactory.recover(_testObject, preferenceAttributes);
+
+        try
+        {
+            updateOrAppendAs(user2Subject, stolenPreference);
+            fail("Steeling of other user preferences should not be allowed");
+        }
+        catch (SecurityException e)
+        {
+            // pass
+        }
+    }
+
     private void updateOrAppendAs(final Subject testSubject, final Preference... testUserPreference)
     {
         Subject.doAs(testSubject, new PrivilegedAction<Void>()

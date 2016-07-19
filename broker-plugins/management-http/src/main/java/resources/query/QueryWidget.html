@@ -19,15 +19,27 @@
 
 <div>
     <div data-dojo-type="dijit/Toolbar">
-        <div data-dojo-type="dijit/form/Button"
+        <div id="saveButton_${id}"
+             data-dojo-type="dijit/form/Button"
              data-dojo-attach-point="saveButton"
              data-dojo-props="iconClass: 'dijitIconSave'">Save</div>
-        <div data-dojo-type="dijit/form/Button"
+        <div data-dojo-attach-point="saveButtonTooltip"
+             data-dojo-type="dijit/Tooltip"
+             data-dojo-props="connectId:'saveButton_${id}',position:['below']">Save and share query</div>
+        <div id="cloneButton_${id}"
+             data-dojo-type="dijit/form/Button"
              data-dojo-attach-point="cloneButton"
              data-dojo-props="iconClass: 'dijitIconCopy'">Clone</div>
-        <div data-dojo-type="dijit/form/Button"
+        <div data-dojo-attach-point="cloneButtonTooltip"
+             data-dojo-type="dijit/Tooltip"
+             data-dojo-props="connectId:'cloneButton_${id}',position:['below']">Clone query into new one<br/>Note, group information is not cloned into new query.</div>
+        <div id="deleteButton_${id}"
+             data-dojo-type="dijit/form/Button"
              data-dojo-attach-point="deleteButton"
              data-dojo-props="iconClass: 'trashIcon ui-icon'">Delete</div>
+        <div data-dojo-attach-point="deleteButtonTooltip"
+             data-dojo-type="dijit/Tooltip"
+             data-dojo-props="connectId:'deleteButton_${id}',position:['below']">Delete query from preferences and close the tab</div>
         <div data-dojo-type="dijit/form/Button"
              data-dojo-attach-point="modeButton"
              data-dojo-props="iconClass: 'advancedViewIcon ui-icon', title:'Switch to \'Advanced View\' search using SQL-like expressions'"

@@ -442,6 +442,18 @@ public class UserPreferencesImpl implements UserPreferences
                 throw new SecurityException(String.format("Preference '%s' not owned by current user.",
                                                           preference.getId().toString()));
             }
+
+            if (preference.getId() != null)
+            {
+                Preference oldPreference = _preferences.get(preference.getId());
+                if (oldPreference != null && !principalsEqual(oldPreference.getOwner(), preference.getOwner()))
+                {
+                    throw new SecurityException(String.format(
+                            "Ownership of other user preference having id '%s' and name '%s' cannot be changed to current user",
+                            preference.getId().toString(),
+                            preference.getName()));
+                }
+            }
         }
     }
 

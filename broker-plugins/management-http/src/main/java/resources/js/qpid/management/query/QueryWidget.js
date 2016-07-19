@@ -293,6 +293,9 @@ define(["dojo/_base/declare",
                 saveButton: null,
                 cloneButton: null,
                 deleteButton: null,
+                saveButtonTooltip: null,
+                cloneButtonTooltip: null,
+                deleteButtonTooltip: null,
 
                 /**
                  * constructor parameter
@@ -310,6 +313,7 @@ define(["dojo/_base/declare",
                 _lastStandardModeSelect: null,
                 _lastHeaders: null,
                 _queryCloneDialogForm: null,
+                _ownQuery: false,
 
                 postCreate: function ()
                 {
@@ -350,6 +354,20 @@ define(["dojo/_base/declare",
                     this.saveButton.on("click", lang.hitch(this, this._saveQuery));
                     this.cloneButton.on("click", lang.hitch(this, this._cloneQuery));
                     this.deleteButton.on("click", lang.hitch(this, this._deleteQuery));
+
+                    this._ownQuery = !this.preference || !this.preference.owner || this.preference.owner === this.management.getAuthenticatedUser();
+                    this.saveButton.set("disabled", !this._ownQuery);
+                    this.deleteButton.set("disabled", !this._ownQuery || !(this.preference  && this.preference.id));
+
+                    if (!this._ownQuery)
+                    {
+                        this.saveButtonTooltip.set("label", "Shared query owned by someone else cannot be saved!"
+                                                            + "<br/>"
+                                                            + "Please clone query to make your own one.");
+                        this.deleteButtonTooltip.set("label", "Shared query owned by someone else cannot be deleted!"
+                                                            + "<br/>"
+                                                            + "Please clone query to make your own one.");
+                    }
 
                     // advanced mode widgets
                     this.advancedSelect.on("change", lang.hitch(this, this._advancedModeSelectChanged));
@@ -394,9 +412,6 @@ define(["dojo/_base/declare",
                     {
                         this._toggleSearchButton(true);
                     }
-
-                    // if the preference has an id, then we know it is in the store
-                    this.deleteButton.set("disabled", this.preference != null && this.preference.id != null ? false : true);
                 },
                 search: function ()
                 {
@@ -1045,6 +1060,10 @@ define(["dojo/_base/declare",
                     {
                         delete preference.id;
                     }
+                    if (preference.owner)
+                    {
+                        delete preference.owner;
+                    }
                     preference.value = this._getQuery();
                     this._queryCloneDialog.hide();
                     this.emit("clone", {preference: preference, parentObject: e.parentObject});
@@ -1085,10 +1104,13 @@ define(["dojo/_base/declare",
                 },
                 _queryChanged: function(query)
                 {
-                    var queryParameters = this._getQuery(query);
-                    var pref = lang.clone(this.preference);
-                    pref.value = queryParameters;
-                    this.emit("change", {preference: pref});
+                    if (this._ownQuery)
+                    {
+                        var queryParameters = this._getQuery(query);
+                        var pref = lang.clone(this.preference);
+                        pref.value = queryParameters;
+                        this.emit("change", {preference: pref});
+                    }
                 }
             });
 

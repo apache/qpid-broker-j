@@ -560,7 +560,7 @@ public class RestServlet extends AbstractServlet
         {
             super.service(request, response);
         }
-        catch (IllegalArgumentException | IllegalConfigurationException | IllegalStateException | AccessControlException
+        catch (IllegalArgumentException | IllegalConfigurationException | IllegalStateException | SecurityException
                 | IntegrityViolationException | IllegalStateTransitionException | NoClassDefFoundError  e)
         {
             setResponseStatus(request, response, e);
@@ -1101,9 +1101,9 @@ public class RestServlet extends AbstractServlet
     private void setResponseStatus(HttpServletRequest request, HttpServletResponse response, Throwable e)
             throws IOException
     {
-        if (e instanceof AccessControlException)
+        if (e instanceof SecurityException)
         {
-            LOGGER.debug("AccessControlException, sending {}", HttpServletResponse.SC_FORBIDDEN, e);
+            LOGGER.debug("{}, sending {}", e.getClass().getName(), HttpServletResponse.SC_FORBIDDEN, e);
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         }
         else
