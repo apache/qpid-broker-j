@@ -47,8 +47,8 @@
         <div class="clear"></div>
     </div>
 
+    <form data-dojo-attach-point="searchForm" data-dojo-type="dijit/form/Form">
     <div class="dijit queryToolBar">
-
         <span data-dojo-attach-point="standardSearch">
             <span data-dojo-type="qpid/management/query/DropDownSelect"
                  data-dojo-attach-point="standardSelectChooser"
@@ -59,14 +59,13 @@
                   data-dojo-attach-point="standardWhereChooser"
                   data-dojo-props="title: 'Specify Filtering Conditions',label:'Conditions'">
             </span>
-            <div data-dojo-type="dijit/form/Button"
+            <input type="submit"
+                 data-dojo-type="dijit/form/Button"
                  data-dojo-attach-point="standardSearchButton"
-                 data-dojo-props="title: 'Search'">Search</div>
+                 data-dojo-props="title: 'Search', label:'Search'"/>
             <div data-dojo-attach-point="standardWhereExpressionBuilder"
                  data-dojo-type="qpid/management/query/WhereExpression" class="dijitToolbar"></div>
         </span>
-
-
 
         <table data-dojo-attach-point="advancedSearch"  class="advancedSearchItem" style="display:none">
             <colgroup>
@@ -113,12 +112,14 @@
                                                 promptMessage: 'Use JMS filter syntax to specify where conditions'" rows="1"></textarea>
                 </td>
                 <td colspan="1">
-                    <div data-dojo-type="dijit/form/Button"
+                    <input type="submit"
+                         data-dojo-type="dijit/form/Button"
                          data-dojo-attach-point="advancedSearchButton"
-                         data-dojo-props="title: 'Search'">Search</div>
+                         data-dojo-props="title: 'Search', label:'Search'"/>
                 </td>
             </tr>
         </table>
     </div>
+    </form>
     <div data-dojo-attach-point="queryResultGrid"  jsid='grid'></div>
 </div>

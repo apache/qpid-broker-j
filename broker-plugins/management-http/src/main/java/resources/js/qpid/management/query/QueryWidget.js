@@ -28,6 +28,7 @@ define(["dojo/_base/declare",
         "dojo/text!query/QueryCloneDialogForm.html",
         "dojo/text!query/QuerySaveDialogForm.html",
         "dojo/store/Memory",
+        "dijit/registry",
         "dojox/html/entities",
         "dgrid/extensions/ColumnReorder",
         "dgrid/extensions/ColumnHider",
@@ -53,6 +54,7 @@ define(["dojo/_base/declare",
               queryCloneDialogFormTemplate,
               querySaveDialogFormTemplate,
               Memory,
+              registry,
               entities,
               ColumnReorder,
               ColumnHider,
@@ -296,6 +298,7 @@ define(["dojo/_base/declare",
                 saveButtonTooltip: null,
                 cloneButtonTooltip: null,
                 deleteButtonTooltip: null,
+                searchForm: null,
 
                 /**
                  * constructor parameter
@@ -386,8 +389,7 @@ define(["dojo/_base/declare",
                     this.standardWhereExpressionBuilder.on("change", lang.hitch(this, this._standardModeWhereChanged));
 
                     // search & mode buttons
-                    this.advancedSearchButton.on("click", lang.hitch(this, this.search));
-                    this.standardSearchButton.on("click", lang.hitch(this, this.search));
+                    this.searchForm.on("submit", lang.hitch(this, function(){this.search(); return false;}));
                     this.modeButton.on("click", lang.hitch(this, this._showModeSwitchWarningIfRequired));
 
                     var rowsPerPage = valuePresent && this.preference.value.limit ? this.preference.value.limit  : 100;
@@ -497,16 +499,27 @@ define(["dojo/_base/declare",
                 {
                     this._setSelectClause(this.advancedSelect.value);
                     this._queryChanged();
+                    this._submitIfEnterPressed();
                 },
                 _advancedModeWhereChanged: function ()
                 {
                     this._resultsGrid.setWhere(this.advancedWhere.value);
                     this._queryChanged();
+                    this._submitIfEnterPressed();
                 },
                 _advancedModeOrderByChanged: function ()
                 {
                     this._resultsGrid.setOrderBy(this.advancedOrderBy.value);
                     this._queryChanged();
+                    this._submitIfEnterPressed();
+                },
+                _submitIfEnterPressed: function ()
+                {
+                    if (this._enterPressed)
+                    {
+                        this._enterPressed = false;
+                        this.searchForm.submit();
+                    }
                 },
                 _toggleSearchButton: function (select)
                 {
@@ -847,10 +860,13 @@ define(["dojo/_base/declare",
                     {
                         evt.preventDefault();
                         evt.stopPropagation();
-                        this._setSelectClause(this.advancedSelect.value);
-                        this._resultsGrid.setWhere(this.advancedWhere.value);
-                        this._resultsGrid.setOrderBy(this.advancedOrderBy.value);
-                        this.search();
+
+                        // set flag for Enter being pressed
+                        this._enterPressed = true;
+
+                        // move focus out and back into widget to provoke triggering of on change event
+                        this.advancedSearchButton.focus();
+                        registry.getEnclosingWidget(evt.target).focus();
                     }
                 },
                 _modeChanged: function ()
