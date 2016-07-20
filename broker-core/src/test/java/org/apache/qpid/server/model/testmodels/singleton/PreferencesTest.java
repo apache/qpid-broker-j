@@ -37,6 +37,8 @@ import java.util.UUID;
 
 import javax.security.auth.Subject;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -108,7 +110,7 @@ public class PreferencesTest extends QpidTestCase
         });
     }
 
-    public void testOnlyAllowUpdateOwnedPreferences()
+    public void testProhibitNewPreferenceWithContradictingOwner()
     {
         final Preference p = PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                 null,
@@ -131,9 +133,9 @@ public class PreferencesTest extends QpidTestCase
                     awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(preferences));
                     fail("Saving of preferences owned by somebody else should not be allowed");
                 }
-                catch (SecurityException e)
+                catch (IllegalArgumentException e)
                 {
-                    // pass
+                    // PASS
                 }
                 return null;
             }
@@ -345,6 +347,55 @@ public class PreferencesTest extends QpidTestCase
                 return null;
             }
         });
+    }
+
+    public void testProhibitPreferenceStealing() throws Exception
+    {
+        final String testGroupName = "testGroup";
+        Subject user1Subject = TestPrincipalUtils.createTestSubject(TEST_USERNAME, testGroupName);
+
+        Map<String, Object> preferenceAttributes = PreferenceTestHelper.createPreferenceAttributes(
+                _testObject.getId(),
+                null,
+                "X-PREF",
+                "prefname",
+                null,
+                TEST_USERNAME,
+                Collections.singleton(testGroupName),
+                Collections.<String,Object>emptyMap());
+        final Preference originalPreference = PreferenceFactory.recover(_testObject, preferenceAttributes);
+        updateOrAppendAs(user1Subject, originalPreference);
+
+
+        Subject user2Subject = TestPrincipalUtils.createTestSubject(TEST_USERNAME2, testGroupName);
+        Subject.doAs(user2Subject, new PrivilegedAction<Void>()
+        {
+            @Override
+            public Void run()
+            {
+                final ListenableFuture<Set<Preference>> visiblePreferencesFuture = _testObject.getUserPreferences().getVisiblePreferences();
+                final Set<Preference> visiblePreferences = PreferenceTestHelper.awaitPreferenceFuture(visiblePreferencesFuture);
+                assertEquals("Unexpected number of visible preferences", 1, visiblePreferences.size());
+
+                final Preference target = visiblePreferences.iterator().next();
+                Map<String, Object> replacementAttributes = new HashMap(target.getAttributes());
+                replacementAttributes.put(Preference.OWNER_ATTRIBUTE, TEST_USERNAME2);
+
+                try
+                {
+                    awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Arrays.asList(PreferenceFactory.recover(_testObject, replacementAttributes))));
+                    fail("The stealing of a preference must be prohibited");
+                }
+                catch (SecurityException e)
+                {
+                    // pass
+                }
+
+                return null;
+            }
+        });
+
+        assertSinglePreference(user1Subject, originalPreference);
     }
 
     public void testReplace()
@@ -1253,37 +1304,6 @@ public class PreferencesTest extends QpidTestCase
         expectedAttributes.put("lastUpdatedDate", lastUpdatedDate);
         expectedAttributes.put("value", prefValueMap);
         assertEquals("Unexpected preference attributes", expectedAttributes, p.getAttributes());
-    }
-
-    public void testSavingOtherUserPreference() throws Exception
-    {
-        final String testGroupName = "testGroup";
-        Subject user1Subject = TestPrincipalUtils.createTestSubject(TEST_USERNAME, testGroupName);
-
-        Map<String, Object> preferenceAttributes = PreferenceTestHelper.createPreferenceAttributes(
-                _testObject.getId(),
-                UUID.randomUUID(),
-                "X-PREF",
-                "prefname",
-                null,
-                TEST_USERNAME,
-                Collections.singleton(testGroupName),
-                Collections.<String,Object>emptyMap());
-        updateOrAppendAs(user1Subject, PreferenceFactory.recover(_testObject, preferenceAttributes));
-
-        Subject user2Subject = TestPrincipalUtils.createTestSubject(TEST_USERNAME2, testGroupName);
-        preferenceAttributes.put(Preference.OWNER_ATTRIBUTE, TEST_USERNAME2);
-        Preference stolenPreference = PreferenceFactory.recover(_testObject, preferenceAttributes);
-
-        try
-        {
-            updateOrAppendAs(user2Subject, stolenPreference);
-            fail("Steeling of other user preferences should not be allowed");
-        }
-        catch (SecurityException e)
-        {
-            // pass
-        }
     }
 
     private void updateOrAppendAs(final Subject testSubject, final Preference... testUserPreference)

@@ -439,34 +439,36 @@ public class UserPreferencesImpl implements UserPreferences
             // validate owner
             if (!principalsEqual(currentPrincipal, preference.getOwner()))
             {
-                throw new SecurityException(String.format("Preference '%s' not owned by current user.",
+                throw new IllegalArgumentException(String.format("Preference owner contradicts the current user.",
                                                           preference.getId().toString()));
             }
 
-            if (preference.getId() != null)
-            {
-                Preference oldPreference = _preferences.get(preference.getId());
-                if (oldPreference != null && !principalsEqual(oldPreference.getOwner(), preference.getOwner()))
-                {
-                    throw new SecurityException(String.format(
-                            "Ownership of other user preference having id '%s' and name '%s' cannot be changed to current user",
-                            preference.getId().toString(),
-                            preference.getName()));
-                }
-            }
         }
     }
 
     private void checkForConflictWithExisting(final Collection<Preference> preferences)
     {
+        Principal currentPrincipal = getMainPrincipalOrThrow();
+
         for (Preference preference : preferences)
         {
             // check for conflicts with existing preferences
             final Preference storedPreference = _preferences.get(preference.getId());
-            if (storedPreference != null && !Objects.equals(storedPreference.getType(), preference.getType()))
+            if (storedPreference != null)
             {
-                throw new IllegalArgumentException("Cannot change type of preference");
+                if (!principalsEqual(storedPreference.getOwner(), currentPrincipal))
+                {
+                    throw new SecurityException(String.format(
+                            "Preference '%s' exists but is not owned by the current user.",
+                            preference.getId().toString()));
+                }
+
+                if (!Objects.equals(storedPreference.getType(), preference.getType()))
+                {
+                    throw new IllegalArgumentException("Cannot change type of preference");
+                }
             }
+
             List<Preference> preferencesWithSameName = _preferencesByName.get(preference.getName());
             if (preferencesWithSameName != null)
             {
