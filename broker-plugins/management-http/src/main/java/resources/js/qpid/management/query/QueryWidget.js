@@ -227,9 +227,9 @@ define(["dojo/_base/declare",
                 {
                     if (defaultValue)
                     {
-                        for (var filed in this._scopeModelObjects)
+                        for (var field in this._scopeModelObjects)
                         {
-                            var item = this._scopeModelObjects[filed];
+                            var item = this._scopeModelObjects[field];
                             if (item.id === defaultValue.id || (item.type === "broker" && defaultValue.type
                                                                                           === "broker"))
                             {
