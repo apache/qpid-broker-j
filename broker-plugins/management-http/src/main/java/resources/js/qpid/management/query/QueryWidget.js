@@ -355,7 +355,9 @@ define(["dojo/_base/declare",
                     this.cloneButton.on("click", lang.hitch(this, this._cloneQuery));
                     this.deleteButton.on("click", lang.hitch(this, this._deleteQuery));
 
-                    this._ownQuery = !this.preference || !this.preference.owner || this.preference.owner === this.management.getAuthenticatedUser();
+                    this._ownQuery = !this.preference
+                                     || !this.preference.owner
+                                     || this.preference.owner === this.management.getAuthenticatedUser().name;
                     this.saveButton.set("disabled", !this._ownQuery);
                     this.deleteButton.set("disabled", !this._ownQuery || !(this.preference  && this.preference.id));
 
