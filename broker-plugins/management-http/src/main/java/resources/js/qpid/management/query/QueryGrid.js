@@ -165,8 +165,12 @@ define(["dojo/_base/declare",
                 },
                 setOrderBy: function (orderBy)
                 {
-                    this._store.orderBy = orderBy;
-                    this._sort = [];
+                    // prevent resetting of sort array if orderBy is the same
+                    if (this._store.orderBy !== orderBy)
+                    {
+                        this._store.orderBy = orderBy;
+                        this._sort = [];
+                    }
                 },
                 setUseCachedResults: function (value)
                 {
@@ -176,6 +180,7 @@ define(["dojo/_base/declare",
                 {
                     this._sort = lang.clone(value);
                     this._store.orderBy = this._buildOrderBy(this._sort);
+                    return this._store.orderBy;
                 },
                 getSort: function ()
                 {

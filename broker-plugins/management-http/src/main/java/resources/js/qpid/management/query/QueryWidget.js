@@ -395,27 +395,33 @@ define(["dojo/_base/declare",
                     var rowsPerPage = valuePresent && this.preference.value.limit ? this.preference.value.limit  : 100;
                     var currentPage = valuePresent && this.preference.value.offset ?  this.preference.value.offset / rowsPerPage + 1: 1;
                     this._buildGrid(currentPage, rowsPerPage);
-                    this._initCategory(this.categoryName, !selectPresent);
+                    this._initStandardModeWidgets(this.categoryName, !selectPresent);
 
                     if (selectPresent)
                     {
+                        this._standardMode = false;
                         this._configureModalWidgets(false);
-                        this.advancedSelect._lastValueReported = this.preference.value.select;
-                        this.advancedWhere._lastValueReported = this.preference.value.where;
-                        this.advancedOrderBy._lastValueReported = this.preference.value.orderBy;
 
                         this.advancedSelect.set("value", this.preference.value.select);
-                        this.advancedWhere.set("value", this.preference.value.where);
-                        this.advancedOrderBy.set("value", this.preference.value.orderBy);
                         this._setSelectClause(this.advancedSelect.value);
-                        this._resultsGrid.setWhere(this.advancedWhere.value);
-                        this._resultsGrid.setOrderBy(this.advancedOrderBy.value);
+                        if (this.preference.value.where )
+                        {
+                            this.advancedWhere.set("value", this.preference.value.where);
+                            this._setWhereClause(this.advancedWhere.value);
+                        }
+                        if (this.preference.value.orderBy)
+                        {
+                            this.advancedOrderBy.set("value", this.preference.value.orderBy);
+                            this._setOrderByClause(this.advancedOrderBy.value);
+                        }
+
                         this._toggleSearchButton(this.preference.value.select);
                     }
                     else
                     {
                         this._toggleSearchButton(true);
                     }
+                    this._lastQuery = this._getQuery();
                 },
                 search: function ()
                 {
@@ -495,6 +501,16 @@ define(["dojo/_base/declare",
                     this._selectClause = select;
                     this._resultsGrid.setSelect(select ? select + ",id" : "");
                 },
+                _setWhereClause: function (where)
+                {
+                    this._whereClause = where;
+                    this._resultsGrid.setWhere(where);
+                },
+                _setOrderByClause: function (orderBy)
+                {
+                    this._orderByClause = orderBy;
+                    this._resultsGrid.setOrderBy(orderBy);
+                },
                 _advancedModeSelectChanged: function ()
                 {
                     this._setSelectClause(this.advancedSelect.value);
@@ -503,13 +519,13 @@ define(["dojo/_base/declare",
                 },
                 _advancedModeWhereChanged: function ()
                 {
-                    this._resultsGrid.setWhere(this.advancedWhere.value);
+                    this._setWhereClause(this.advancedWhere.value);
                     this._queryChanged();
                     this._submitIfEnterPressed();
                 },
                 _advancedModeOrderByChanged: function ()
                 {
-                    this._resultsGrid.setOrderBy(this.advancedOrderBy.value);
+                    this._setOrderByClause(this.advancedOrderBy.value);
                     this._queryChanged();
                     this._submitIfEnterPressed();
                 },
@@ -570,7 +586,7 @@ define(["dojo/_base/declare",
                             }
                         }
                     }
-                    this._resultsGrid.setSort(newSort);
+                    this._setOrderByClause(this._resultsGrid.setSort(newSort));
                 },
                 _processStandardModeSelectChange: function (selectedColumns)
                 {
@@ -640,7 +656,7 @@ define(["dojo/_base/declare",
                 },
                 _standardModeWhereChanged: function (result)
                 {
-                    this._resultsGrid.setWhere(result);
+                    this._setWhereClause(result);
                     this.search();
                     this._queryChanged();
                 },
@@ -697,7 +713,14 @@ define(["dojo/_base/declare",
                     grid.on('queryCompleted', lang.hitch(this, this._queryCompleted));
                     grid.on('orderByChanged', lang.hitch(this, function (event)
                     {
-                        this.advancedOrderBy.set("value", event.orderBy);
+                        if (this._standardMode)
+                        {
+                            this._setOrderByClause(event.orderBy);
+                        }
+                        else
+                        {
+                            this.advancedOrderBy.set("value", event.orderBy);
+                        }
                         this._queryChanged();
                     }));
                     grid.on('dgrid-columnreorder', lang.hitch(this, this._standardModeColumnOrderChanged));
@@ -824,16 +847,16 @@ define(["dojo/_base/declare",
                     }
                     return columns;
                 },
-                _initCategory: function (value, isNew)
+                _initStandardModeWidgets: function (category, isNew)
                 {
-                    var metadata = this._getCategoryMetadata(value);
+                    var metadata = this._getCategoryMetadata(category);
                     var columns, items, selectedItems;
                     if (metadata)
                     {
                         var data = this._combineTypeAttributesAndStatistics(metadata);
                         columns = data.asObject;
                         items = data.asArray;
-                        selectedItems = isNew ?  this.getDefaultColumns(value) : [];
+                        selectedItems = isNew ? this.getDefaultColumns(category) : [];
 
                         this.standardSelectChooser.set("data", {
                           items: items,
@@ -849,8 +872,11 @@ define(["dojo/_base/declare",
                         });
                         this._columns = columns;
                         this._lastStandardModeSelect = this.standardSelectChooser.get("selectedItems");
-                        var select = this._buildSelectExpression(this._lastStandardModeSelect);
-                        this._setSelectClause(select);
+                        if (isNew)
+                        {
+                            var select = this._buildSelectExpression(this._lastStandardModeSelect);
+                            this._setSelectClause(select);
+                        }
                     }
                 },
                 _advancedModeKeyPressed: function (evt)
@@ -875,16 +901,9 @@ define(["dojo/_base/declare",
                     this._configureModalWidgets(this._standardMode);
                     if (!this._standardMode)
                     {
-                        var selectValue = this._buildSelectExpression(this.standardSelectChooser.get("selectedItems"));
-                        var whereValue = this._resultsGrid.getWhere();
-                        var orderByValue = this._resultsGrid.getOrderBy();
-
-                        this.advancedSelect._lastValueReported = selectValue;
-                        this.advancedWhere._lastValueReported = whereValue;
-                        this.advancedOrderBy._lastValueReported = orderByValue;
-                        this.advancedSelect.set("value", selectValue);
-                        this.advancedOrderBy.set("value", orderByValue);
-                        this.advancedWhere.set("value", whereValue);
+                        this.advancedSelect.set("value", this._selectClause);
+                        this.advancedOrderBy.set("value", this._orderByClause);
+                        this.advancedWhere.set("value", this._whereClause);
 
                         // rebuild columns to disable column reordering and removal
                         if (this._lastHeaders && this._lastHeaders.length)
@@ -905,9 +924,8 @@ define(["dojo/_base/declare",
                         this._lastHeaders = [];
                         var select = this._buildSelectExpression(this._lastStandardModeSelect);
                         this._setSelectClause(select);
-                        this._resultsGrid.setWhere("");
-                        this._resultsGrid.setOrderBy("");
-                        this._resultsGrid.setSort([]);
+                        this._setWhereClause("");
+                        this._setOrderByClause("");
                         this._toggleSearchButton(select);
                         this._resultsGrid.hiderToggleNode.style.display = '';
                         this.search();
@@ -1013,18 +1031,14 @@ define(["dojo/_base/declare",
                         asObject: columnsObject
                     };
                 },
-                _getQuery: function (queryObject)
+                _getQuery: function ()
                 {
-                    var query = {
-                        where: "",
-                        orderBy: ""
+                    return {
+                        select: this._selectClause,
+                        where: this._whereClause,
+                        orderBy: this._orderByClause,
+                        category: this.categoryName
                     };
-
-                    lang.mixin(query, queryObject || this._resultsGrid.getQuery());
-
-                    query.select = this._selectClause;
-                    query.category = this.categoryName;
-                    return query;
                 },
                 _saveQuery: function ()
                 {
@@ -1065,24 +1079,7 @@ define(["dojo/_base/declare",
                 },
                 _onQueryClone: function (e)
                 {
-                    var preference = lang.clone(this.preference);
-                    if (preference.visibilityList)
-                    {
-                        delete preference.visibilityList;
-                    }
-                    if (preference.name)
-                    {
-                        delete preference.name;
-                    }
-                    if (preference.id)
-                    {
-                        delete preference.id;
-                    }
-                    if (preference.owner)
-                    {
-                        delete preference.owner;
-                    }
-                    preference.value = this._getQuery();
+                    var preference = {type: "query", value: this._getQuery()};
                     this._queryCloneDialog.hide();
                     this.emit("clone", {preference: preference, parentObject: e.parentObject});
                 },
@@ -1120,14 +1117,21 @@ define(["dojo/_base/declare",
                 {
                     return this.management.getPreference(this.parentObject, "query", name)
                 },
-                _queryChanged: function(query)
+                _queryChanged: function()
                 {
                     if (this._ownQuery)
                     {
-                        var queryParameters = this._getQuery(query);
-                        var pref = lang.clone(this.preference);
-                        pref.value = queryParameters;
-                        this.emit("change", {preference: pref});
+                        var query = this._getQuery();
+
+                        if (this._lastQuery.orderBy !== query.orderBy
+                            || this._lastQuery.where !== query.where
+                            || this._lastQuery.select !== query.select)
+                        {
+                            var pref = lang.clone(this.preference);
+                            pref.value = query;
+                            this._lastQuery = lang.clone(query);
+                            this.emit("change", {preference: pref});
+                        }
                     }
                 }
             });
