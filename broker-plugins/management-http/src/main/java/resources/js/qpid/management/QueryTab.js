@@ -27,17 +27,17 @@ define(["dojo/parser",
         "dojo/domReady!"],
     function (parser, query, json, util, template, QueryWidget)
     {
-        function getPath(parentObject)
+        function getPath(object)
         {
-            if (parentObject)
+            if (object && object.parent)
             {
-                var type = parentObject.type.charAt(0).toUpperCase() + parentObject.type.substring(1);
-                var val = parentObject.name;
-                for (var i = parentObject.parent; i && i.name; i = i.parent)
+                var type = object.type.charAt(0).toUpperCase() + object.type.substring(1);
+                var val = object.name;
+                for (var i = object.parent; i && i.parent; i = i.parent)
                 {
                     val = i.name + "/" + val;
                 }
-                return type + ":" + val;
+                return " (" + type + ":" + val + ")" ;
             }
             return "";
         }
@@ -60,7 +60,7 @@ define(["dojo/parser",
             }
             var name = this.preference.id ? this.preference.name : "New";
             var prefix = this.preference.id && !changed ? "" : "*";
-            var path = this.parent && this.parent.name ? " (" + getPath(this.parent)+ ")" : "";
+            var path = getPath(this.parent);
             return prefix + category + " query:" + name + path;
         };
 
