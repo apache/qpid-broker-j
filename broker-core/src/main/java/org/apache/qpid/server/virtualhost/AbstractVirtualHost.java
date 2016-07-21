@@ -368,6 +368,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
 
         validateConnectionThreadPoolSettings(this);
+        validateMessageStoreCreation();
     }
 
     @Override

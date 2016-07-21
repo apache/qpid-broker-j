@@ -21,10 +21,10 @@
 package org.apache.qpid.server.virtualhost;
 
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -197,14 +197,17 @@ public class AbstractVirtualHostTest extends QpidTestCase
             {
                 return  store;
             }
+
+            @Override
+            protected void onExceptionInOpen(final RuntimeException e)
+            {
+                fail("open failed");
+            }
         };
 
         host.open();
         assertEquals("Unexpected host state", State.ACTIVE, host.getState());
-        verify(store).openMessageStore(host);
-
-        // make sure that method AbstractVirtualHost.onExceptionInOpen was not called
-        verify(store, times(0)).closeMessageStore();
+        verify(store, atLeastOnce()).openMessageStore(host);
         host.close();
     }
 
