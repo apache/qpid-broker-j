@@ -491,13 +491,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return _messageStore;
     }
 
-    @Override
-    public void validateOnCreate()
-    {
-        super.validateOnCreate();
-        validateMessageStoreCreation();
-    }
-
     private void validateConnectionThreadPoolSettings(VirtualHost<?> virtualHost)
     {
         if (virtualHost.getConnectionThreadPoolSize() < 1)

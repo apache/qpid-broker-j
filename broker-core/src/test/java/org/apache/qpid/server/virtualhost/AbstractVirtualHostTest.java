@@ -119,7 +119,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
         }
     }
 
-    public void testValidateOnCreateFails()
+    public void testValidateMessageStoreCreationFails()
     {
         Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME, getTestName());
 
@@ -134,7 +134,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
 
         try
         {
-            host.validateOnCreate();
+            host.validateMessageStoreCreation();
             fail("Validation on creation should fail");
         }
         catch(IllegalConfigurationException e)
@@ -147,7 +147,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
         }
     }
 
-    public void testValidateOnCreateSucceeds()
+    public void testValidateMessageStoreCreationSucceeds()
     {
         Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME, getTestName());
         final MessageStore store = mock(MessageStore.class);
@@ -160,7 +160,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
             }
         };
 
-        host.validateOnCreate();
+        host.validateMessageStoreCreation();
         verify(store).openMessageStore(host);
         verify(store).closeMessageStore();
         host.close();
