@@ -52,7 +52,7 @@ public interface HttpManagementConfiguration<X extends HttpManagementConfigurati
     @ManagedAttribute( defaultValue = "[\"HEAD\",\"GET\",\"POST\"]", validValues = {"org.apache.qpid.server.management.plugin.HttpManagement#getAllAvailableCorsMethodCombinations()"} )
     public Set<String> getCorsAllowMethods();
 
-    @ManagedAttribute( defaultValue = "Content-Type,Accept,Origin,X-Requested-With" )
+    @ManagedAttribute( defaultValue = "Content-Type,Accept,Origin,X-Requested-With,X-Range" )
     public String getCorsAllowHeaders();
 
     @ManagedAttribute( defaultValue = "true" )
