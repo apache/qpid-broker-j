@@ -691,6 +691,12 @@ public abstract class QueueEntryImpl implements QueueEntry
         return _state.isDispensed();
     }
 
+    @Override
+    public boolean isHeld()
+    {
+        return checkHeld(System.currentTimeMillis());
+    }
+
     public int getDeliveryCount()
     {
         return _deliveryCount == -1 ? 0 : _deliveryCount;

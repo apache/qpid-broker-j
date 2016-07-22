@@ -21,6 +21,7 @@
 package org.apache.qpid.server.message;
 
 import java.util.Collections;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -46,6 +47,7 @@ public class MessageInfoImpl implements MessageInfo
     private final long _id;
     private final Map<String, Object> _headers;
     private final String _initialRoutingAddress;
+    private final Date _notValidBefore;
 
     public MessageInfoImpl(final MessageInstance instance, final boolean includeHeaders)
     {
@@ -71,15 +73,19 @@ public class MessageInfoImpl implements MessageInfo
                 : messageHeader.getTimestamp();
         _type = messageHeader.getType();
         _userId = messageHeader.getUserId();
-        _state = instance.isAvailable()
-                ? "Available"
-                : instance.isAcquired()
-                        ? "Acquired"
-                        : "";
+        if (instance.isAvailable())
+        {
+            _state = instance.isHeld() ? "Held" : "Available";
+        }
+        else
+        {
+            _state = instance.isAcquired() ? "Acquired" : "";
+        }
         _deliveryCount = instance.getDeliveryCount();
         _size = message.getSize();
         _id = message.getMessageNumber();
         _initialRoutingAddress = message.getInitialRoutingAddress();
+        _notValidBefore = new Date(messageHeader.getNotValidBefore());
 
         if(includeHeaders)
         {
@@ -209,6 +215,12 @@ public class MessageInfoImpl implements MessageInfo
     public Map<String, Object> getHeaders()
     {
         return _headers;
+    }
+
+    @Override
+    public Date getNotValidBefore()
+    {
+        return new Date(_notValidBefore.getTime());
     }
 
     public String getInitialRoutingAddress()

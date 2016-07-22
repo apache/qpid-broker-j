@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.message;
 
+import java.util.Date;
 import java.util.Map;
 
 import org.apache.qpid.server.model.ManagedAttributeValueType;
@@ -46,4 +47,5 @@ public interface MessageInfo
     String getType();
     String getUserId();
     Map<String,Object> getHeaders();
+    Date getNotValidBefore();
 }

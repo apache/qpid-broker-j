@@ -237,6 +237,12 @@ class ManagementResponse implements MessageInstance
     }
 
     @Override
+    public boolean isHeld()
+    {
+        return false;
+    }
+
+    @Override
     public ServerMessage getMessage()
     {
         return _message;

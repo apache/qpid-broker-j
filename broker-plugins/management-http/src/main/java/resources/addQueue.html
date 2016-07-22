@@ -326,6 +326,18 @@
                               title: 'Controls where a shared groups feature is enabled'"/>
                     </div>
                 </div>
+                    <div class="clear">
+                        <div class="formLabel-labelCell">Hold on Publish Enabled?</div>
+                        <div class="formLabel-controlCell">
+                            <input type="checkbox" id="formAddQueue.holdOnPublishEnabled"
+                                   dojoType="dijit.form.CheckBox"
+                                   data-dojo-props="
+                              name: 'holdOnPublishEnabled',
+                              value: 'holdOnPublishEnabled',
+                              checked: false,
+                              title: 'If enabled the messages on the queue will be inspected for the x-qpid-not-valid-before header/annotation'"/>
+                        </div>
+                    </div>
                 </fieldset>
                 <div class="clear"></div>
             </div>

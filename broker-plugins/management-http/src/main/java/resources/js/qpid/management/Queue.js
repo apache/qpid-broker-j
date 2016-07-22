@@ -402,6 +402,7 @@ define(["dojo/_base/declare",
                         "queueFlowResumeSizeBytes",
                         "queueFlowControlSizeBytes",
                         "maximumDeliveryAttempts",
+                        "holdOnPublishEnabled",
                         "oldestMessageAge"]);
 
             that.queueData = {}
@@ -498,6 +499,7 @@ define(["dojo/_base/declare",
             var maximumDeliveryAttempts = this.queueData["maximumDeliveryAttempts"];
             this.maximumDeliveryAttempts.innerHTML =
                 entities.encode(String(maximumDeliveryAttempts == 0 ? "" : maximumDeliveryAttempts));
+            this.holdOnPublishEnabled.innerHTML = entities.encode(String(this.queueData["holdOnPublishEnabled"]));
         };
 
         QueueUpdater.prototype.update = function (callback)

@@ -197,6 +197,13 @@ public class MockMessageInstance implements MessageInstance
     {
         return false;
     }
+
+    @Override
+    public boolean isHeld()
+    {
+        return false;
+    }
+
     @Override
     public int getDeliveryCount()
     {

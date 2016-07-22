@@ -1235,6 +1235,12 @@ class ManagementNode implements MessageSource, MessageDestination
         }
 
         @Override
+        public boolean isHeld()
+        {
+            return false;
+        }
+
+        @Override
         public ServerMessage getMessage()
         {
             return _message;

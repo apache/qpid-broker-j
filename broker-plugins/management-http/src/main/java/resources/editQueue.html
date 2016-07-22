@@ -281,6 +281,17 @@
                                       trim: true"/>
                         </div>
                     </div>
+                        <div class="clear">
+                            <div class="formLabel-labelCell">Hold on Publish Enabled?</div>
+                            <div class="formLabel-controlCell">
+                                <input type="checkbox" id="formEditQueue.holdOnPublishEnabled"
+                                       dojoType="dijit.form.CheckBox"
+                                       data-dojo-props="
+                              name: 'holdOnPublishEnabled',
+                              value: 'holdOnPublishEnabled',
+                              title: 'If enabled the messages on the queue will be inspected for the x-qpid-not-valid-before header/annotation'"/>
+                            </div>
+                        </div>
                     </fieldset>
                     <div class="clear"></div>
                 </div>

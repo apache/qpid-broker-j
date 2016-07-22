@@ -528,6 +528,12 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
+        public boolean isHeld()
+        {
+            return false;
+        }
+
+        @Override
         public ServerMessage getMessage()
         {
             return _message;

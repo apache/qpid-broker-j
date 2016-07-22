@@ -258,6 +258,8 @@ public interface MessageInstance
 
     boolean isDeleted();
 
+    boolean isHeld();
+
     ServerMessage getMessage();
 
     InstanceProperties getInstanceProperties();
