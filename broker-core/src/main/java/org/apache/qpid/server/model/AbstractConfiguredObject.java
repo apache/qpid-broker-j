@@ -2603,7 +2603,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
-    protected void forceUpdateAllSecureAttributes()
+    public void forceUpdateAllSecureAttributes()
     {
         applyToChildren(new Action<ConfiguredObject<?>>()
         {
@@ -3100,6 +3100,12 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     private AncestorAttributeResolver getAncestorAttributeResolver()
     {
         return _ancestorAttributeResolver;
+    }
+
+    @Override
+    public boolean hasEncrypter()
+    {
+        return _encrypter != null;
     }
 
     @Override

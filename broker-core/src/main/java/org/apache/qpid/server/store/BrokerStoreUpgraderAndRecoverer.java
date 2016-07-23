@@ -896,11 +896,11 @@ public class BrokerStoreUpgraderAndRecoverer
         return brokerRecord;
     }
 
-    public Broker<?> perform()
+    public Broker<?> perform(final ConfiguredObjectRecord... initialRecords)
     {
         final DurableConfigurationStore store = _systemConfig.getConfigurationStore();
-        List<ConfiguredObjectRecord> upgradedRecords = upgrade(store);
-        new GenericRecoverer(_systemConfig).recover(upgradedRecords);
+        List<ConfiguredObjectRecord> upgradedRecords = upgrade(store, initialRecords);
+        new GenericRecoverer(_systemConfig).recover(upgradedRecords, false);
 
         final StoreConfigurationChangeListener configChangeListener = new StoreConfigurationChangeListener(store);
         applyRecursively(_systemConfig.getBroker(), new RecursiveAction<ConfiguredObject<?>>()
@@ -921,10 +921,11 @@ public class BrokerStoreUpgraderAndRecoverer
         return _systemConfig.getBroker();
     }
 
-    List<ConfiguredObjectRecord> upgrade(final DurableConfigurationStore store)
+    List<ConfiguredObjectRecord> upgrade(final DurableConfigurationStore store,
+                                         final ConfiguredObjectRecord... initialRecords)
     {
         GenericStoreUpgrader upgrader = new GenericStoreUpgrader(Broker.class.getSimpleName(), Broker.MODEL_VERSION, store, _upgraders);
-        upgrader.upgrade();
+        boolean isNew = upgrader.upgrade(initialRecords);
         return upgrader.getRecords();
     }
 

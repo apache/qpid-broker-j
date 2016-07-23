@@ -30,13 +30,10 @@ public interface DurableConfigurationStore
     /**
      * Initializes and opens the configuration store.
      * @param parent
-     * @param overwrite
-     * @param initialRecords
+     *
      *
      */
-    void openConfigurationStore(ConfiguredObject<?> parent,
-                                final boolean overwrite,
-                                final ConfiguredObjectRecord... initialRecords) throws StoreException;
+    void init(ConfiguredObject<?> parent) throws StoreException;
 
     /**
      * Requests that the store performs any upgrade work on the store's structure. If there is no
@@ -52,9 +49,12 @@ public interface DurableConfigurationStore
      * Visit all configured object records with given handler.
      *
      * @param handler a handler to invoke on each configured object record
+     * @param initialRecords
      * @throws StoreException
      */
-    void visitConfiguredObjectRecords(ConfiguredObjectRecordHandler handler) throws StoreException;
+    boolean openConfigurationStore(ConfiguredObjectRecordHandler handler, final ConfiguredObjectRecord... initialRecords) throws StoreException;
+
+    void reload(ConfiguredObjectRecordHandler handler) throws StoreException;
 
     /**
      * Makes the specified object persistent.

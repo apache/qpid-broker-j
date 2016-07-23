@@ -67,6 +67,7 @@ import org.apache.qpid.server.logging.messages.ConfigStoreMessages;
 import org.apache.qpid.server.logging.messages.HighAvailabilityMessages;
 import org.apache.qpid.server.logging.subjects.BDBHAVirtualHostNodeLogSubject;
 import org.apache.qpid.server.logging.subjects.GroupLogSubject;
+import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -78,7 +79,6 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
@@ -347,7 +347,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         _lastRole.set(NodeRole.WAITING);
         attributeSet(ROLE, _role, NodeRole.WAITING);
 
-        getConfigurationStore().openConfigurationStore(this, false);
+        getConfigurationStore().init(this);
 
         getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.CREATED());
         getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.STORE_LOCATION(getStorePath()));
@@ -624,16 +624,29 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     {
         try
         {
+            boolean createDefaultExchanges = false;
             closeVirtualHostIfExist().get();
-
-            getConfigurationStore().upgradeStoreStructure();
-
             getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.RECOVERY_START());
             VirtualHostStoreUpgraderAndRecoverer upgraderAndRecoverer = new VirtualHostStoreUpgraderAndRecoverer(this);
-            upgraderAndRecoverer.perform(getConfigurationStore());
+            if(getConfigurationStore().isOpen())
+            {
+                upgraderAndRecoverer.reloadAndRecover(getConfigurationStore());
+            }
+            else
+            {
+                ConfiguredObjectRecord[] initialRecords = getInitialRecords();
+                if(upgraderAndRecoverer.upgradeAndRecover(getConfigurationStore(), initialRecords))
+                {
+                    setAttributes(Collections.<String, Object>singletonMap(VIRTUALHOST_INITIAL_CONFIGURATION, "{}"));
+                    createDefaultExchanges = initialRecords == null || initialRecords.length == 0;
+                }
+
+            }
+
             getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.RECOVERY_COMPLETE());
 
             VirtualHost<?>  host = getVirtualHost();
+
 
             if (host == null)
             {
@@ -641,39 +654,12 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                 {
                     LOGGER.debug("Creating new virtualhost with name : " + getGroupName());
                 }
-                ConfiguredObjectRecord[] initialRecords = getInitialRecords();
-                if(initialRecords != null && initialRecords.length > 0)
-                {
-                    getConfigurationStore().update(true, initialRecords);
-                    getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.RECOVERY_START());
-                    upgraderAndRecoverer = new VirtualHostStoreUpgraderAndRecoverer(this);
-                    upgraderAndRecoverer.perform(getConfigurationStore());
-                    getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.RECOVERY_COMPLETE());
-                    setAttributes(Collections.<String, Object>singletonMap(VIRTUALHOST_INITIAL_CONFIGURATION, "{}"));
-                    host = getVirtualHost();
-                    if(host != null)
-                    {
-                        final VirtualHost<?> recoveredHost = host;
-                        Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
-                        {
-                            @Override
-                            public Object run()
-                            {
-                                recoveredHost.open();
-                                return null;
-                            }
-                        });
-                    }
-                }
-                else
-                {
-                    Map<String, Object> hostAttributes = new HashMap<>();
+                Map<String, Object> hostAttributes = new HashMap<>();
 
-                    hostAttributes.put(VirtualHost.MODEL_VERSION, BrokerModel.MODEL_VERSION);
-                    hostAttributes.put(VirtualHost.NAME, getGroupName());
-                    hostAttributes.put(VirtualHost.TYPE, BDBHAVirtualHostImpl.VIRTUAL_HOST_TYPE);
-                    host = createChild(VirtualHost.class, hostAttributes);
-                }
+                hostAttributes.put(VirtualHost.MODEL_VERSION, BrokerModel.MODEL_VERSION);
+                hostAttributes.put(VirtualHost.NAME, getGroupName());
+                hostAttributes.put(VirtualHost.TYPE, BDBHAVirtualHostImpl.VIRTUAL_HOST_TYPE);
+                host = createChild(VirtualHost.class, hostAttributes);
 
             }
             else
@@ -684,6 +670,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                 }
 
                 final VirtualHost<?> recoveredHost = host;
+                recoveredHost.setFirstOpening(createDefaultExchanges);
                 Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
                 {
                     @Override

@@ -663,9 +663,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         }
 
         @Override
-        public void openConfigurationStore(ConfiguredObject<?> parent,
-                                           final boolean overwrite,
-                                           final ConfiguredObjectRecord... initialRecords) throws StoreException
+        public void init(ConfiguredObject<?> parent) throws StoreException
         {
         }
 
@@ -702,14 +700,24 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         }
 
         @Override
-        public void visitConfiguredObjectRecords(ConfiguredObjectRecordHandler handler) throws StoreException
+        public boolean openConfigurationStore(ConfiguredObjectRecordHandler handler,
+                                              final ConfiguredObjectRecord... initialRecords) throws StoreException
         {
-            handler.begin();
             for (ConfiguredObjectRecord record : records)
             {
                 handler.handle(record);
             }
-            handler.end();
+            return false;
+        }
+
+
+        @Override
+        public void reload(ConfiguredObjectRecordHandler handler) throws StoreException
+        {
+            for (ConfiguredObjectRecord record : records)
+            {
+                handler.handle(record);
+            }
         }
     }
 }

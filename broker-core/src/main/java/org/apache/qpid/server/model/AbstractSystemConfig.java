@@ -209,18 +209,8 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
             _configurationStore = new ManagementModeStoreHandler(_configurationStore, this);
         }
 
-        try
-        {
-            _configurationStore.openConfigurationStore(this,
-                                                       false,
-                                                       convertToConfigurationRecords(getInitialConfigurationLocation(),
-                                                                                     this));
-            _configurationStore.upgradeStoreStructure();
-        }
-        catch (IOException e)
-        {
-            throw new IllegalArgumentException(e);
-        }
+        _configurationStore.init(this);
+        _configurationStore.upgradeStoreStructure();
     }
 
     @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.ACTIVE)
@@ -244,7 +234,15 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
 
         BrokerStoreUpgraderAndRecoverer upgrader = new BrokerStoreUpgraderAndRecoverer(this);
-        upgrader.perform();
+        try
+        {
+            upgrader.perform(convertToConfigurationRecords(getInitialConfigurationLocation(),
+                                                           this));
+        }
+        catch (IOException e)
+        {
+            throw new IllegalArgumentException(e);
+        }
 
         final Broker broker = getBroker();
 

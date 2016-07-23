@@ -83,6 +83,7 @@ public class ExceptionHandlingFilter implements Filter
         catch (RuntimeException e)
         {
             LOGGER.error("Unexpected exception in servlet '{}': ", requestURI, e);
+            LOGGER.error("Stack trace: ", e);
             throw e;
         }
     }

@@ -176,6 +176,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private final AccessControl _accessControl;
 
+    private volatile boolean _createDefaultExchanges;
+
 
     private final AccessControl<SecurityToken> _systemUserAllowed = new AccessControl<SecurityToken>()
     {
@@ -333,6 +335,19 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             ((CompoundAccessControl)_accessControl).setAccessControls(accessControls);
 
         }
+    }
+
+    @Override
+    protected void onCreate()
+    {
+        super.onCreate();
+        _createDefaultExchanges = getChildren(Exchange.class).isEmpty() && getChildren(Queue.class).isEmpty();
+    }
+
+    @Override
+    public void setFirstOpening(boolean firstOpening)
+    {
+        _createDefaultExchanges = firstOpening;
     }
 
     public void onValidate()
@@ -603,15 +618,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     protected abstract MessageStore createMessageStore();
-
-    protected boolean isStoreEmpty()
-    {
-        final IsStoreEmptyHandler isStoreEmptyHandler = new IsStoreEmptyHandler();
-
-        getDurableConfigurationStore().visitConfiguredObjectRecords(isStoreEmptyHandler);
-
-        return isStoreEmptyHandler.isEmpty();
-    }
 
     private ListenableFuture<List<Void>> createDefaultExchanges()
     {
@@ -1267,35 +1273,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         if (state == State.ERRORED)
         {
             _eventLogger.message(VirtualHostMessages.ERRORED(getName()));
-        }
-    }
-
-    private static class IsStoreEmptyHandler implements ConfiguredObjectRecordHandler
-    {
-        private boolean _empty = true;
-
-        @Override
-        public void begin()
-        {
-        }
-
-        @Override
-        public boolean handle(final ConfiguredObjectRecord record)
-        {
-            // if there is a non vhost record then the store is not empty and we can stop looking at the records
-            _empty = record.getType().equals(VirtualHost.class.getSimpleName());
-            return _empty;
-        }
-
-        @Override
-        public void end()
-        {
-
-        }
-
-        public boolean isEmpty()
-        {
-            return _empty;
         }
     }
 
@@ -2054,13 +2031,14 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         getBroker().assignTargetSizes();
 
-        if (isStoreEmpty())
+        if (_createDefaultExchanges)
         {
             return doAfter(createDefaultExchanges(), new Runnable()
             {
                 @Override
                 public void run()
                 {
+                    _createDefaultExchanges = false;
                     postCreateDefaultExchangeTasks();
                 }
             });
@@ -2131,32 +2109,24 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     {
         resetStatistics();
 
+
         final List<ConfiguredObjectRecord> records = new ArrayList<>();
 
         // Transitioning to STOPPED will have closed all our children.  Now we are transition
         // back to ACTIVE, we need to recover and re-open them.
 
-        getDurableConfigurationStore().visitConfiguredObjectRecords(new ConfiguredObjectRecordHandler()
+        getDurableConfigurationStore().reload(new ConfiguredObjectRecordHandler()
         {
-            @Override
-            public void begin()
-            {
-            }
 
             @Override
-            public boolean handle(final ConfiguredObjectRecord record)
+            public void handle(final ConfiguredObjectRecord record)
             {
                 records.add(record);
-                return true;
             }
 
-            @Override
-            public void end()
-            {
-            }
         });
 
-        new GenericRecoverer(this).recover(records);
+        new GenericRecoverer(this).recover(records, false);
 
         final List<ListenableFuture<Void>> childOpenFutures = new ArrayList<>();
 

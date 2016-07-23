@@ -137,7 +137,7 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         setUpVisit(_hostRecord, queue, dlq, dle, queueBinding, dlqBinding);
 
         VirtualHostStoreUpgraderAndRecoverer upgraderAndRecoverer = new VirtualHostStoreUpgraderAndRecoverer(_virtualHostNode);
-        upgraderAndRecoverer.perform(_durableConfigurationStore);
+        upgraderAndRecoverer.upgradeAndRecover(_durableConfigurationStore);
 
         final VirtualHost<?>  host = _virtualHostNode.getVirtualHost();
         Subject.doAs(_systemSubject, new PrivilegedAction<Void>()
@@ -180,7 +180,7 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         setUpVisit(_hostRecord, queue, exchange, queueBinding1, queueBinding2);
 
         VirtualHostStoreUpgraderAndRecoverer upgraderAndRecoverer = new VirtualHostStoreUpgraderAndRecoverer(_virtualHostNode);
-        upgraderAndRecoverer.perform(_durableConfigurationStore);
+        upgraderAndRecoverer.upgradeAndRecover(_durableConfigurationStore);
 
         final VirtualHost<?>  host = _virtualHostNode.getVirtualHost();
         Subject.doAs(_systemSubject, new PrivilegedAction<Void>()
@@ -281,15 +281,13 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
             {
                 Iterator<ConfiguredObjectRecord> iterator = asList(records).iterator();
                 ConfiguredObjectRecordHandler handler = (ConfiguredObjectRecordHandler) invocation.getArguments()[0];
-                handler.begin();
                 boolean handlerContinue = true;
-                while(iterator.hasNext() && handlerContinue)
+                while(iterator.hasNext())
                 {
-                    handlerContinue = handler.handle(iterator.next());
+                    handler.handle(iterator.next());
                 }
-                handler.end();
                 return null;
             }
-        }).when(_durableConfigurationStore).visitConfiguredObjectRecords(any(ConfiguredObjectRecordHandler.class));
+        }).when(_durableConfigurationStore).openConfigurationStore(any(ConfiguredObjectRecordHandler.class));
     }
 }

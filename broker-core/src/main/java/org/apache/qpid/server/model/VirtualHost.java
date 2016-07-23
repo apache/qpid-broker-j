@@ -218,6 +218,8 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     String getLocalAddress(String routingAddress);
 
+    void setFirstOpening(boolean firstOpening);
+
     interface Transaction
     {
         void dequeue(QueueEntry entry);

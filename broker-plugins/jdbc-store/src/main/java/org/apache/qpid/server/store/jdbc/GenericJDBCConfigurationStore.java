@@ -19,6 +19,10 @@
 package org.apache.qpid.server.store.jdbc;
 
 
+import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.CLOSED;
+import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.CONFIGURED;
+import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.OPEN;
+
 import java.io.File;
 import java.nio.charset.Charset;
 import java.sql.Blob;
@@ -37,7 +41,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.plugin.JDBCConnectionProviderFactory;
 import org.apache.qpid.server.store.AbstractJDBCConfigurationStore;
-import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreProvider;
 import org.apache.qpid.server.store.StoreException;
@@ -54,10 +57,8 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GenericJDBCConfigurationStore.class);
 
-    private final AtomicBoolean _configurationStoreOpen = new AtomicBoolean();
     private final MessageStore _providedMessageStore = new ProvidedMessageStore();
     private final PreferenceStore _providedPreferenceStore = new ProvidedPreferenceStore();
-
     private String _connectionURL;
     private ConnectionProvider _connectionProvider;
 
@@ -75,80 +76,76 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
     }
 
     @Override
-    public void openConfigurationStore(ConfiguredObject<?> parent,
-                                       final boolean overwrite,
-                                       final ConfiguredObjectRecord... initialRecords)
+    public void init(ConfiguredObject<?> parent)
             throws StoreException
     {
-        if (_configurationStoreOpen.compareAndSet(false,  true))
+        changeState(CONFIGURED, OPEN);
+
+        _parent = parent;
+
+        JDBCSettings settings = (JDBCSettings) parent;
+        _connectionURL = settings.getConnectionUrl();
+
+        JDBCDetails details = JDBCDetails.getDetailsForJdbcUrl(_connectionURL, parent);
+
+        if (!details.isKnownVendor() && getLogger().isInfoEnabled())
         {
-            _parent = parent;
-
-            JDBCSettings settings = (JDBCSettings)parent;
-            _connectionURL = settings.getConnectionUrl();
-
-            JDBCDetails details = JDBCDetails.getDetailsForJdbcUrl(_connectionURL, parent);
-
-            if (!details.isKnownVendor() && getLogger().isInfoEnabled())
-            {
-                getLogger().info("Do not recognize vendor from connection URL: " + _connectionURL
-                                + " Using fallback settings " + details);
-            }
-            if (details.isOverridden() && getLogger().isInfoEnabled())
-            {
-                getLogger().info("One or more JDBC details were overridden from context. "
-                               +  " Using settings : " + details);
-            }
-
-            String connectionPoolType = settings.getConnectionPoolType() == null ? DefaultConnectionProviderFactory.TYPE : settings.getConnectionPoolType();
-
-            JDBCConnectionProviderFactory connectionProviderFactory =
-                    JDBCConnectionProviderFactory.FACTORIES.get(connectionPoolType);
-            if(connectionProviderFactory == null)
-            {
-                LOGGER.warn("Unknown connection pool type: "
-                             + connectionPoolType
-                             + ".  no connection pooling will be used");
-                connectionProviderFactory = new DefaultConnectionProviderFactory();
-            }
-
-            try
-            {
-                Map<String, String> providerAttributes = new HashMap<>();
-                Set<String> providerAttributeNames = new HashSet<String>(connectionProviderFactory.getProviderAttributeNames());
-                providerAttributeNames.retainAll(parent.getContextKeys(false));
-                for(String attr : providerAttributeNames)
-                {
-                    providerAttributes.put(attr, parent.getContextValue(String.class, attr));
-                }
-
-                _connectionProvider = connectionProviderFactory.getConnectionProvider(_connectionURL,
-                                                                                      settings.getUsername(),
-                                                                                      settings.getPassword(),
-                                                                                      providerAttributes);
-            }
-            catch (SQLException e)
-            {
-                throw new StoreException("Failed to create connection provider for connectionUrl: " + _connectionURL +
-                                            " and username: " + settings.getUsername(), e);
-            }
-            _blobType = details.getBlobType();
-            _varBinaryType = details.getVarBinaryType();
-            _useBytesMethodsForBlob = details.isUseBytesMethodsForBlob();
-            _bigIntType = details.getBigintType();
-
-            createOrOpenConfigurationStoreDatabase(overwrite);
-            if(hasNoConfigurationEntries())
-            {
-                update(true, initialRecords);
-            }
+            getLogger().info("Do not recognize vendor from connection URL: " + _connectionURL
+                             + " Using fallback settings " + details);
         }
+        if (details.isOverridden() && getLogger().isInfoEnabled())
+        {
+            getLogger().info("One or more JDBC details were overridden from context. "
+                             + " Using settings : " + details);
+        }
+
+        String connectionPoolType = settings.getConnectionPoolType() == null
+                ? DefaultConnectionProviderFactory.TYPE
+                : settings.getConnectionPoolType();
+
+        JDBCConnectionProviderFactory connectionProviderFactory =
+                JDBCConnectionProviderFactory.FACTORIES.get(connectionPoolType);
+        if (connectionProviderFactory == null)
+        {
+            LOGGER.warn("Unknown connection pool type: "
+                        + connectionPoolType
+                        + ".  no connection pooling will be used");
+            connectionProviderFactory = new DefaultConnectionProviderFactory();
+        }
+
+        try
+        {
+            Map<String, String> providerAttributes = new HashMap<>();
+            Set<String> providerAttributeNames =
+                    new HashSet<String>(connectionProviderFactory.getProviderAttributeNames());
+            providerAttributeNames.retainAll(parent.getContextKeys(false));
+            for (String attr : providerAttributeNames)
+            {
+                providerAttributes.put(attr, parent.getContextValue(String.class, attr));
+            }
+
+            _connectionProvider = connectionProviderFactory.getConnectionProvider(_connectionURL,
+                                                                                  settings.getUsername(),
+                                                                                  settings.getPassword(),
+                                                                                  providerAttributes);
+        }
+        catch (SQLException e)
+        {
+            throw new StoreException("Failed to create connection provider for connectionUrl: " + _connectionURL +
+                                     " and username: " + settings.getUsername(), e);
+        }
+        _blobType = details.getBlobType();
+        _varBinaryType = details.getVarBinaryType();
+        _useBytesMethodsForBlob = details.isUseBytesMethodsForBlob();
+        _bigIntType = details.getBigintType();
+
+        createOrOpenConfigurationStoreDatabase();
+
     }
 
     @Override
     public void upgradeStoreStructure() throws StoreException
     {
-        checkConfigurationStoreOpen();
         upgradeIfNecessary(_parent);
     }
 
@@ -161,17 +158,15 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
     @Override
     public void closeConfigurationStore() throws StoreException
     {
-        if (_configurationStoreOpen.compareAndSet(true, false))
+        try
         {
-            try
-            {
-                _connectionProvider.close();
-            }
-            catch (SQLException e)
-            {
-                throw new StoreException("Unable to close connection provider ", e);
-            }
+            _connectionProvider.close();
         }
+        catch (SQLException e)
+        {
+            throw new StoreException("Unable to close connection provider ", e);
+        }
+        setState(State.CLOSED);
     }
 
     @Override
@@ -225,15 +220,6 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
             Blob dataAsBlob = rs.getBlob(col);
             return dataAsBlob.getBytes(1,(int) dataAsBlob.length());
 
-        }
-    }
-
-    @Override
-    protected void checkConfigurationStoreOpen()
-    {
-        if (!_configurationStoreOpen.get())
-        {
-            throw new IllegalStateException("Configuration store is not open");
         }
     }
 
@@ -364,4 +350,6 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
             // noop
         }
     }
+
+
 }

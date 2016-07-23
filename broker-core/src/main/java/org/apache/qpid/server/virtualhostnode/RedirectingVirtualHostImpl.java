@@ -515,4 +515,9 @@ class RedirectingVirtualHostImpl
                                         + " does not permit this operation.");
     }
 
+    @Override
+    public void setFirstOpening(final boolean firstOpening)
+    {
+
+    }
 }

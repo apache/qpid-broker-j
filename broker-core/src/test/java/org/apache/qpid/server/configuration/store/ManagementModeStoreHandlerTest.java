@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -103,19 +104,17 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
                     public Object answer(final InvocationOnMock invocation) throws Throwable
                     {
                         ConfiguredObjectRecordHandler recoverer = recovererArgumentCaptor.getValue();
-                        if(recoverer.handle(_root))
-                        {
-                            recoverer.handle(_portEntry);
-                        }
-                        return null;
+                        recoverer.handle(_root);
+                        recoverer.handle(_portEntry);
+                        return false;
                     }
                 }
-                ).when(_store).visitConfiguredObjectRecords(recovererArgumentCaptor.capture());
+                ).when(_store).openConfigurationStore(recovererArgumentCaptor.capture());
         _options = new BrokerOptions();
 
         _handler = new ManagementModeStoreHandler(_store, _systemConfig);;
 
-        _handler.openConfigurationStore(_systemConfig, false);
+        _handler.init(_systemConfig);
     }
 
     private ManagementModeStoreHandler createManagementModeStoreHandler()
@@ -155,42 +154,87 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         super.tearDown();
     }
 
-    private ConfiguredObjectRecord getRootEntry()
+    private Collection<ConfiguredObjectRecord> openAndGetRecords()
     {
-        BrokerFinder brokerFinder = new BrokerFinder();
-        _handler.visitConfiguredObjectRecords(brokerFinder);
-        return brokerFinder.getBrokerRecord();
+        final Collection<ConfiguredObjectRecord> records = new ArrayList<>();
+        _handler.openConfigurationStore(new ConfiguredObjectRecordHandler()
+        {
+
+            @Override
+            public void handle(final ConfiguredObjectRecord record)
+            {
+                records.add(record);
+            }
+
+        });
+        return records;
     }
 
-    private ConfiguredObjectRecord getEntry(UUID id)
+    private ConfiguredObjectRecord getRootEntry(Collection<ConfiguredObjectRecord> records)
     {
-        RecordFinder recordFinder = new RecordFinder(id);
-        _handler.visitConfiguredObjectRecords(recordFinder);
-        return recordFinder.getFoundRecord();
+        for(ConfiguredObjectRecord record : records)
+        {
+            if (record.getType().equals(Broker.class.getSimpleName()))
+            {
+                return record;
+            }
+        }
+        return null;
     }
 
-    private Collection<UUID> getChildrenIds(ConfiguredObjectRecord record)
+    private ConfiguredObjectRecord getEntry(Collection<ConfiguredObjectRecord> records, UUID id)
     {
-        ChildFinder childFinder = new ChildFinder(record);
-        _handler.visitConfiguredObjectRecords(childFinder);
-        return childFinder.getChildIds();
+        for(ConfiguredObjectRecord record : records)
+        {
+            if (record.getId().equals(id))
+            {
+                return record;
+            }
+        }
+        return null;
+    }
+
+    private Collection<UUID> getChildrenIds(Collection<ConfiguredObjectRecord> records, ConfiguredObjectRecord parent)
+    {
+        Collection<UUID> childIds = new HashSet<>();
+
+        for(ConfiguredObjectRecord record : records)
+        {
+
+            if (record.getParents() != null)
+            {
+                for (UUID parentId : record.getParents().values())
+                {
+                    if (parentId.equals(parent.getId()))
+                    {
+                        childIds.add(record.getId());
+                    }
+                }
+
+            }
+        }
+
+        return childIds;
     }
 
     public void testGetRootEntryWithEmptyOptions()
     {
-        ConfiguredObjectRecord root = getRootEntry();
+        Collection<ConfiguredObjectRecord> records = openAndGetRecords();
+        ConfiguredObjectRecord root = getRootEntry(records);
         assertEquals("Unexpected root id", _rootId, root.getId());
-        assertEquals("Unexpected children", Collections.singleton(_portEntryId), getChildrenIds(root));
+        assertEquals("Unexpected children", Collections.singleton(_portEntryId), getChildrenIds(records, root));
     }
 
     public void testGetRootEntryWithHttpPortOverriden()
     {
         _options.setManagementModeHttpPortOverride(9090);
         _handler = createManagementModeStoreHandler();
-        _handler.openConfigurationStore(_systemConfig, false);
-        ConfiguredObjectRecord root = getRootEntry();
+        _handler.init(_systemConfig);
+        Collection<ConfiguredObjectRecord> records = openAndGetRecords();
+
+        ConfiguredObjectRecord root = getRootEntry(records);
         assertEquals("Unexpected root id", _rootId, root.getId());
-        Collection<UUID> childrenIds = getChildrenIds(root);
+        Collection<UUID> childrenIds = getChildrenIds(records, root);
         assertEquals("Unexpected children size", 2, childrenIds.size());
         assertTrue("Store port entry id is not found", childrenIds.contains(_portEntryId));
     }
@@ -199,27 +243,32 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
     {
         _options.setManagementModeHttpPortOverride(1000);
         _handler = createManagementModeStoreHandler();
-        _handler.openConfigurationStore(_systemConfig, false);
+        _handler.init(_systemConfig);
+        Collection<ConfiguredObjectRecord> records = openAndGetRecords();
 
-        ConfiguredObjectRecord root = getRootEntry();
+        ConfiguredObjectRecord root = getRootEntry(records);
         assertEquals("Unexpected root id", _rootId, root.getId());
-        Collection<UUID> childrenIds = getChildrenIds(root);
+        Collection<UUID> childrenIds = getChildrenIds(records, root);
         assertEquals("Unexpected children size", 2, childrenIds.size());
         assertTrue("Store port entry id is not found", childrenIds.contains(_portEntryId));
     }
 
     public void testGetEntryByRootId()
     {
-        ConfiguredObjectRecord root = getEntry(_rootId);
+        Collection<ConfiguredObjectRecord> records = openAndGetRecords();
+
+        ConfiguredObjectRecord root = getEntry(records, _rootId);
         assertEquals("Unexpected root id", _rootId, root.getId());
-        assertEquals("Unexpected children", Collections.singleton(_portEntryId), getChildrenIds(root));
+        assertEquals("Unexpected children", Collections.singleton(_portEntryId), getChildrenIds(records, root));
     }
 
     public void testGetEntryByPortId()
     {
-        ConfiguredObjectRecord portEntry = getEntry(_portEntryId);
+        Collection<ConfiguredObjectRecord> records = openAndGetRecords();
+
+        ConfiguredObjectRecord portEntry = getEntry(records, _portEntryId);
         assertEquals("Unexpected entry id", _portEntryId, portEntry.getId());
-        assertTrue("Unexpected children", getChildrenIds(portEntry).isEmpty());
+        assertTrue("Unexpected children", getChildrenIds(records, portEntry).isEmpty());
         assertEquals("Unexpected state", State.QUIESCED, portEntry.getAttributes().get(Port.STATE));
     }
 
@@ -227,12 +276,13 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
     {
         _options.setManagementModeHttpPortOverride(9090);
         _handler = createManagementModeStoreHandler();
-        _handler.openConfigurationStore(_systemConfig, false);
+        _handler.init(_systemConfig);
 
+        Collection<ConfiguredObjectRecord> records = openAndGetRecords();
 
-        UUID optionsPort = getOptionsPortId();
-        ConfiguredObjectRecord portEntry = getEntry(optionsPort);
-        assertCLIPortEntry(portEntry, optionsPort, Protocol.HTTP);
+        UUID optionsPort = getOptionsPortId(records);
+        ConfiguredObjectRecord portEntry = getEntry(records, optionsPort);
+        assertCLIPortEntry(records, portEntry, optionsPort, Protocol.HTTP);
     }
 
     public void testHttpPortEntryIsQuiesced()
@@ -242,10 +292,11 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         when(_portEntry.getAttributes()).thenReturn(attributes);
         _options.setManagementModeHttpPortOverride(9090);
         _handler = createManagementModeStoreHandler();
-        _handler.openConfigurationStore(_systemConfig, false);
+        _handler.init(_systemConfig);
 
+        Collection<ConfiguredObjectRecord> records = openAndGetRecords();
 
-        ConfiguredObjectRecord portEntry = getEntry(_portEntryId);
+        ConfiguredObjectRecord portEntry = getEntry(records, _portEntryId);
         assertEquals("Unexpected state", State.QUIESCED, portEntry.getAttributes().get(Port.STATE));
     }
 
@@ -274,17 +325,13 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
                     public Object answer(final InvocationOnMock invocation) throws Throwable
                     {
                         ConfiguredObjectRecordHandler recoverer = recovererArgumentCaptor.getValue();
-                        if(recoverer.handle(_root))
-                        {
-                            if(recoverer.handle(_portEntry))
-                            {
-                                recoverer.handle(virtualHost);
-                            }
-                        }
-                        return null;
+                        recoverer.handle(_root);
+                        recoverer.handle(_portEntry);
+                        recoverer.handle(virtualHost);
+                        return false;
                     }
                 }
-                ).when(_store).visitConfiguredObjectRecords(recovererArgumentCaptor.capture());
+                ).when(_store).openConfigurationStore(recovererArgumentCaptor.capture());
 
         State expectedState = mmQuiesceVhosts ? State.QUIESCED : null;
         if(mmQuiesceVhosts)
@@ -293,9 +340,10 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         }
 
         _handler = createManagementModeStoreHandler();
-        _handler.openConfigurationStore(_systemConfig, false);
+        _handler.init(_systemConfig);
+        Collection<ConfiguredObjectRecord> records = openAndGetRecords();
 
-        ConfiguredObjectRecord hostEntry = getEntry(virtualHostId);
+        ConfiguredObjectRecord hostEntry = getEntry(records, virtualHostId);
         Map<String, Object> hostAttributes = new HashMap<String, Object>(hostEntry.getAttributes());
         assertEquals("Unexpected state", expectedState, hostAttributes.get(VirtualHost.STATE));
         hostAttributes.remove(VirtualHost.STATE);
@@ -303,10 +351,13 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
     }
 
     @SuppressWarnings("unchecked")
-    private void assertCLIPortEntry(ConfiguredObjectRecord portEntry, UUID optionsPort, Protocol protocol)
+    private void assertCLIPortEntry(final Collection<ConfiguredObjectRecord> records,
+                                    ConfiguredObjectRecord portEntry,
+                                    UUID optionsPort,
+                                    Protocol protocol)
     {
         assertEquals("Unexpected entry id", optionsPort, portEntry.getId());
-        assertTrue("Unexpected children", getChildrenIds(portEntry).isEmpty());
+        assertTrue("Unexpected children", getChildrenIds(records, portEntry).isEmpty());
         Map<String, Object> attributes = portEntry.getAttributes();
         assertEquals("Unexpected name", "MANAGEMENT-MODE-PORT-" + protocol.name(), attributes.get(Port.NAME));
         assertEquals("Unexpected protocol", Collections.singleton(protocol), new HashSet<Protocol>(
@@ -317,13 +368,14 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
     {
         _options.setManagementModeHttpPortOverride(1000);
         _handler = createManagementModeStoreHandler();
-        _handler.openConfigurationStore(_systemConfig, false);
+        _handler.init(_systemConfig);
+        Collection<ConfiguredObjectRecord> records = openAndGetRecords();
 
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Port.NAME, "TEST");
         ConfiguredObjectRecord
                 configurationEntry = new ConfiguredObjectRecordImpl(_portEntryId, Port.class.getSimpleName(), attributes,
-                Collections.singletonMap(Broker.class.getSimpleName(), getRootEntry().getId()));
+                Collections.singletonMap(Broker.class.getSimpleName(), getRootEntry(records).getId()));
         _handler.create(configurationEntry);
         verify(_store).create(any(ConfiguredObjectRecord.class));
     }
@@ -332,9 +384,10 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
     {
         _options.setManagementModeHttpPortOverride(1000);
         _handler = createManagementModeStoreHandler();
-        _handler.openConfigurationStore(_systemConfig, false);
+        _handler.init(_systemConfig);
+        Collection<ConfiguredObjectRecord> records = openAndGetRecords();
 
-        ConfiguredObjectRecord root = getRootEntry();
+        ConfiguredObjectRecord root = getRootEntry(records);
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Broker.NAME, "TEST");
         ConfiguredObjectRecord
@@ -347,15 +400,16 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
     {
         _options.setManagementModeHttpPortOverride(1000);
         _handler = createManagementModeStoreHandler();
-        _handler.openConfigurationStore(_systemConfig, false);
+        _handler.init(_systemConfig);
+        Collection<ConfiguredObjectRecord> records = openAndGetRecords();
 
-        UUID portId = getOptionsPortId();
+        UUID portId = getOptionsPortId(records);
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Port.NAME, "TEST");
         ConfiguredObjectRecord
                 configurationEntry = new ConfiguredObjectRecordImpl(portId, Port.class.getSimpleName(), attributes,
                                                                     Collections.singletonMap(Broker.class.getSimpleName(),
-                                                                                             getRootEntry().getId()));
+                                                                                             getRootEntry(records).getId()));
         try
         {
             _handler.update(false, configurationEntry);
@@ -371,7 +425,8 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
     {
         _options.setManagementModeHttpPortOverride(1000);
         _handler = createManagementModeStoreHandler();
-        _handler.openConfigurationStore(_systemConfig, false);
+        _handler.init(_systemConfig);
+        Collection<ConfiguredObjectRecord> records = openAndGetRecords();
 
         ConfiguredObjectRecord record = new ConfiguredObjectRecord()
         {
@@ -407,9 +462,10 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
     {
         _options.setManagementModeHttpPortOverride(1000);
         _handler = createManagementModeStoreHandler();
-        _handler.openConfigurationStore(_systemConfig, false);
+        _handler.init(_systemConfig);
+        Collection<ConfiguredObjectRecord> records = openAndGetRecords();
 
-        UUID portId = getOptionsPortId();
+        UUID portId = getOptionsPortId(records);
         ConfiguredObjectRecord record = mock(ConfiguredObjectRecord.class);
         when(record.getId()).thenReturn(portId);
         try
@@ -423,11 +479,12 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         }
     }
 
-    private UUID getOptionsPortId()
+    private UUID getOptionsPortId(Collection<ConfiguredObjectRecord> records)
     {
-        ConfiguredObjectRecord root = getRootEntry();
+
+        ConfiguredObjectRecord root = getRootEntry(records);
         assertEquals("Unexpected root id", _rootId, root.getId());
-        Collection<UUID> childrenIds = getChildrenIds(root);
+        Collection<UUID> childrenIds = getChildrenIds(records, root);
 
         childrenIds.remove(_portEntryId);
         UUID optionsPort = childrenIds.iterator().next();
@@ -435,116 +492,4 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
     }
 
 
-    private class BrokerFinder implements ConfiguredObjectRecordHandler
-    {
-        private ConfiguredObjectRecord _brokerRecord;
-        private int _version;
-
-        @Override
-        public void begin()
-        {
-        }
-
-        @Override
-        public boolean handle(final ConfiguredObjectRecord object)
-        {
-            if(object.getType().equals(Broker.class.getSimpleName()))
-            {
-                _brokerRecord = object;
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public void end()
-        {
-        }
-
-        public ConfiguredObjectRecord getBrokerRecord()
-        {
-            return _brokerRecord;
-        }
-    }
-
-    private class RecordFinder implements ConfiguredObjectRecordHandler
-    {
-        private final UUID _id;
-        private ConfiguredObjectRecord _foundRecord;
-
-        private RecordFinder(final UUID id)
-        {
-            _id = id;
-        }
-
-        @Override
-        public void begin()
-        {
-        }
-
-        @Override
-        public boolean handle(final ConfiguredObjectRecord object)
-        {
-            if(object.getId().equals(_id))
-            {
-                _foundRecord = object;
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public void end()
-        {
-        }
-
-        public ConfiguredObjectRecord getFoundRecord()
-        {
-            return _foundRecord;
-        }
-    }
-
-    private class ChildFinder implements ConfiguredObjectRecordHandler
-    {
-        private final Collection<UUID> _childIds = new HashSet<UUID>();
-        private final ConfiguredObjectRecord _parent;
-
-        private ChildFinder(final ConfiguredObjectRecord parent)
-        {
-            _parent = parent;
-        }
-
-        @Override
-        public void begin()
-        {
-        }
-
-        @Override
-        public boolean handle(final ConfiguredObjectRecord object)
-        {
-
-            if(object.getParents() != null)
-            {
-                for(UUID parent : object.getParents().values())
-                {
-                    if(parent.equals(_parent.getId()))
-                    {
-                        _childIds.add(object.getId());
-                    }
-                }
-
-            }
-            return true;
-        }
-
-        @Override
-        public void end()
-        {
-        }
-
-        public Collection<UUID> getChildIds()
-        {
-            return _childIds;
-        }
-    }
 }

@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.messages.ConfigStoreMessages;
+import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.RemoteReplicationNode;
@@ -77,19 +78,8 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
             LOGGER.debug("Activating virtualhost node " + this);
         }
 
-        try
-        {
-            ConfiguredObjectRecord[] initialRecords = getInitialRecords();
-            getConfigurationStore().openConfigurationStore(this, false, initialRecords);
-            if(initialRecords != null && initialRecords.length > 0)
-            {
-                setAttributes(Collections.<String, Object>singletonMap(VIRTUALHOST_INITIAL_CONFIGURATION, "{}"));
-            }
-        }
-        catch (IOException e)
-        {
-            throw new IllegalConfigurationException("Could not process initial configuration", e);
-        }
+        getConfigurationStore().init(this);
+
 
         getConfigurationStore().upgradeStoreStructure();
 
@@ -100,7 +90,21 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
         getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.RECOVERY_START());
 
         VirtualHostStoreUpgraderAndRecoverer upgrader = new VirtualHostStoreUpgraderAndRecoverer(this);
-        upgrader.perform(getConfigurationStore());
+        ConfiguredObjectRecord[] initialRecords  = null;
+        try
+        {
+            initialRecords = getInitialRecords();
+        }
+        catch (IOException e)
+        {
+            throw new IllegalConfigurationException("Could not process initial configuration", e);
+        }
+
+        final boolean isNew = upgrader.upgradeAndRecover(getConfigurationStore(), initialRecords);
+        if(initialRecords.length > 0)
+        {
+            setAttributes(Collections.<String, Object>singletonMap(VIRTUALHOST_INITIAL_CONFIGURATION, "{}"));
+        }
 
         getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.RECOVERY_COMPLETE());
 
@@ -109,16 +113,18 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
         if (host != null)
         {
             final VirtualHost<?> recoveredHost = host;
-            final ListenableFuture<Void> openFuture = Subject.doAs(getSubjectWithAddedSystemRights(),
-                                                                   new PrivilegedAction<ListenableFuture<Void>>()
-                                                                   {
-                                                                       @Override
-                                                                       public ListenableFuture<Void> run()
-                                                                       {
-                                                                           return recoveredHost.openAsync();
+            final ListenableFuture<Void> openFuture;
+            recoveredHost.setFirstOpening(isNew && initialRecords.length == 0);
+            openFuture = Subject.doAs(getSubjectWithAddedSystemRights(),
+                                      new PrivilegedAction<ListenableFuture<Void>>()
+                                      {
+                                          @Override
+                                          public ListenableFuture<Void> run()
+                                          {
+                                              return recoveredHost.openAsync();
 
-                                                                       }
-                                                                   });
+                                          }
+                                      });
             return openFuture;
         }
         else
@@ -188,7 +194,7 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
         {
             try
             {
-                store.openConfigurationStore(this, false);
+                store.init(this);
             }
             catch (Exception e)
             {

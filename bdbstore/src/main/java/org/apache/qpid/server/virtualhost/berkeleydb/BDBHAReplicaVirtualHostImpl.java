@@ -502,4 +502,9 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
                                         + " does not permit this operation.");
     }
 
+    @Override
+    public void setFirstOpening(final boolean firstOpening)
+    {
+
+    }
 }

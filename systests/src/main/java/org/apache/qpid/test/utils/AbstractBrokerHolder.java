@@ -169,19 +169,19 @@ public abstract class AbstractBrokerHolder implements BrokerHolder
         start(options);
         if (_amqpPort <= 0)
         {
-            _amqpPort = scrubPortFromLog(_logFile, _amqpTcpPortRegExp);
+            _amqpPort = scrapePortFromLog(_logFile, _amqpTcpPortRegExp);
         }
         if (_amqpTlsPort <= 0)
         {
-            _amqpTlsPort = scrubPortFromLog(_logFile, _amqpTlsPortRegExp);
+            _amqpTlsPort = scrapePortFromLog(_logFile, _amqpTlsPortRegExp);
         }
         if (_httpPort <= 0)
         {
-            _httpPort = scrubPortFromLog(_logFile, _httpTcpPortRegExp);
+            _httpPort = scrapePortFromLog(_logFile, _httpTcpPortRegExp);
         }
         if (_httpsPort <= 0)
         {
-            _httpsPort = scrubPortFromLog(_logFile, _httpTlsPortRegExp);
+            _httpsPort = scrapePortFromLog(_logFile, _httpTlsPortRegExp);
         }
     }
 
@@ -246,7 +246,7 @@ public abstract class AbstractBrokerHolder implements BrokerHolder
         return options;
     }
 
-    private int scrubPortFromLog(final File logFile, final String portRegEx) throws IOException
+    private int scrapePortFromLog(final File logFile, final String portRegEx) throws IOException
     {
         final String logPrefix = getLogPrefix();
         Pattern portPattern = Pattern.compile(portRegEx);

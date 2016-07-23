@@ -37,6 +37,8 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -46,7 +48,7 @@ import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 
 public class JsonFileConfigStore extends AbstractJsonFileStore implements DurableConfigurationStore
 {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(JsonFileConfigStore.class);
 
     private static final Comparator<Class<? extends ConfiguredObject>> CATEGORY_CLASS_COMPARATOR =
             new Comparator<Class<? extends ConfiguredObject>>()
@@ -78,6 +80,10 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
 
     private ConfiguredObject<?> _parent;
 
+    private enum State { CLOSED, CONFIGURED, OPEN };
+    private State _state = State.CLOSED;
+    private final Object _lock = new Object();
+
     public JsonFileConfigStore(Class<? extends ConfiguredObject> rootClass)
     {
         super();
@@ -92,57 +98,73 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
     }
 
     @Override
-    public void openConfigurationStore(ConfiguredObject<?> parent,
-                                       final boolean overwrite,
-                                       final ConfiguredObjectRecord... initialRecords)
+    public void init(ConfiguredObject<?> parent)
     {
-        _parent = parent;
-        _classNameMapping = generateClassNameMap(_parent.getModel(), _rootClass);
-        FileBasedSettings fileBasedSettings = (FileBasedSettings)_parent;
-        setup(parent.getName(), fileBasedSettings.getStorePath(), parent.getContextValue(String.class, BrokerProperties.POSIX_FILE_PERMISSIONS),
-              Collections.emptyMap());
-        load(overwrite, initialRecords);
+        assertState(State.CLOSED);
+            _parent = parent;
+            _classNameMapping = generateClassNameMap(_parent.getModel(), _rootClass);
+            FileBasedSettings fileBasedSettings = (FileBasedSettings) _parent;
+            setup(parent.getName(),
+                  fileBasedSettings.getStorePath(),
+                  parent.getContextValue(String.class, BrokerProperties.POSIX_FILE_PERMISSIONS),
+                  Collections.emptyMap());
+        changeState(State.CLOSED, State.CONFIGURED);
+
     }
 
     @Override
-    public void visitConfiguredObjectRecords(ConfiguredObjectRecordHandler handler)
+    public boolean openConfigurationStore(ConfiguredObjectRecordHandler handler,
+                                          final ConfiguredObjectRecord... initialRecords)
     {
-        handler.begin();
+        changeState(State.CONFIGURED, State.OPEN);
+        boolean isNew = load(initialRecords);
         List<ConfiguredObjectRecord> records = new ArrayList<ConfiguredObjectRecord>(_objectsById.values());
         for(ConfiguredObjectRecord record : records)
         {
-            boolean shouldContinue = handler.handle(record);
-            if (!shouldContinue)
-            {
-                break;
-            }
+            handler.handle(record);
         }
-        handler.end();
+        return isNew;
     }
 
-    protected void load(final boolean overwrite, final ConfiguredObjectRecord[] initialRecords)
+    @Override
+    public void reload(ConfiguredObjectRecordHandler handler)
+    {
+        assertState(State.OPEN);
+        _idsByType.clear();
+        _objectsById.clear();
+        load();
+        List<ConfiguredObjectRecord> records = new ArrayList<ConfiguredObjectRecord>(_objectsById.values());
+        for(ConfiguredObjectRecord record : records)
+        {
+            handler.handle(record);
+        }
+    }
+
+
+    protected boolean load(final ConfiguredObjectRecord... initialRecords)
     {
         final File configFile = getConfigFile();
         try
         {
+            LOGGER.debug("Loading file {}", configFile.getCanonicalPath());
+
             boolean updated = false;
             Collection<ConfiguredObjectRecord> records = Collections.emptyList();
-            if(!overwrite)
-            {
-                ConfiguredObjectRecordConverter configuredObjectRecordConverter =
-                        new ConfiguredObjectRecordConverter(_parent.getModel());
+            ConfiguredObjectRecordConverter configuredObjectRecordConverter =
+                    new ConfiguredObjectRecordConverter(_parent.getModel());
 
-                records = configuredObjectRecordConverter.readFromJson(_rootClass, _parent, new FileReader(configFile));
-            }
+            records = configuredObjectRecordConverter.readFromJson(_rootClass, _parent, new FileReader(configFile));
 
             if(records.isEmpty())
             {
+                LOGGER.debug("File contains no records - using initial configuration");
                 records = Arrays.asList(initialRecords);
                 updated = true;
             }
 
             for(ConfiguredObjectRecord record : records)
             {
+                LOGGER.debug("Loading record (Category: {} \t Name: {} \t ID: {}", record.getType(), record.getAttributes().get("name"), record.getId());
                 _objectsById.put(record.getId(), record);
                 List<UUID> idsForType = _idsByType.get(record.getType());
                 if (idsForType == null)
@@ -150,12 +172,17 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
                     idsForType = new ArrayList<>();
                     _idsByType.put(record.getType(), idsForType);
                 }
+                if(idsForType.contains(record.getId()))
+                {
+                    throw new IllegalArgumentException("Duplicate id for record " + record);
+                }
                 idsForType.add(record.getId());
             }
             if(updated)
             {
                 save();
             }
+            return updated;
         }
         catch (IOException e)
         {
@@ -166,6 +193,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
     @Override
     public synchronized void create(ConfiguredObjectRecord record) throws StoreException
     {
+        assertState(State.OPEN);
         if(_objectsById.containsKey(record.getId()))
         {
             throw new StoreException("Object with id " + record.getId() + " already exists");
@@ -197,6 +225,10 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
             {
                 throw new IllegalStateException("Only a single root entry of type " + _rootClass.getSimpleName() + " can exist in the store.");
             }
+            if(idsForType.contains(record.getId()))
+            {
+                throw new IllegalArgumentException("Duplicate id for record " + record);
+            }
 
             idsForType.add(record.getId());
 
@@ -222,7 +254,6 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
     {
         UUID rootId = getRootId();
         final Map<String, Object> data;
-
         if (rootId == null)
         {
             data = Collections.emptyMap();
@@ -308,6 +339,8 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
     @Override
     public synchronized UUID[] remove(final ConfiguredObjectRecord... objects) throws StoreException
     {
+        assertState(State.OPEN);
+
         if (objects.length == 0)
         {
             return new UUID[0];
@@ -332,6 +365,8 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
     public synchronized void update(final boolean createIfNecessary, final ConfiguredObjectRecord... records)
             throws StoreException
     {
+        assertState(State.OPEN);
+
         if (records.length == 0)
         {
             return;
@@ -381,6 +416,11 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
                     idsForType = new ArrayList<UUID>();
                     _idsByType.put(type, idsForType);
                 }
+                if(idsForType.contains(record.getId()))
+                {
+                    throw new IllegalArgumentException("Duplicate id for record " + record);
+                }
+
                 idsForType.add(id);
             }
         }
@@ -391,6 +431,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
     @Override
     public void closeConfigurationStore()
     {
+
         try
         {
             cleanup();
@@ -399,6 +440,10 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
         {
             _idsByType.clear();
             _objectsById.clear();
+            synchronized (_lock)
+            {
+                _state = State.CLOSED;
+            }
         }
     }
 
@@ -431,4 +476,25 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
     {
         return _objectMapper;
     }
+
+    private void assertState(State state)
+    {
+        synchronized (_lock)
+        {
+            if(_state != state)
+            {
+                throw new IllegalStateException("The store must be in state " + state + " to perform this operation, but it is in state " + _state + " instead");
+            }
+        }
+    }
+
+    private void changeState(State oldState, State newState)
+    {
+        synchronized (_lock)
+        {
+            assertState(oldState);
+            _state = newState;
+        }
+    }
+
 }

@@ -103,7 +103,6 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         FileUtils.delete(new File(_storePath), true);
 
         _handler = mock(ConfiguredObjectRecordHandler.class);
-        when(_handler.handle(any(ConfiguredObjectRecord.class))).thenReturn(true);
 
         _bindingArgs = new HashMap<String, Object>();
         String argKey = AMQPFilterTypes.JMS_SELECTOR.toString();
@@ -113,7 +112,16 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         _parent = createVirtualHostNode(_storePath, _factory);
 
         _configStore = createConfigStore();
-        _configStore.openConfigurationStore(_parent, false);
+        _configStore.init(_parent);
+        _configStore.openConfigurationStore(new ConfiguredObjectRecordHandler()
+        {
+
+            @Override
+            public void handle(final ConfiguredObjectRecord record)
+            {
+            }
+
+        });
         _rootRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), VirtualHost.class.getSimpleName(), Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "vhost"));
         _configStore.create(_rootRecord);
     }
@@ -146,7 +154,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         _configStore.create(exchange.asObjectRecord());
 
         reopenStore();
-        _configStore.visitConfiguredObjectRecords(_handler);
+        _configStore.openConfigurationStore(_handler);
 
         verify(_handler).handle(matchesRecord(_exchangeId, EXCHANGE,
                 map( org.apache.qpid.server.model.Exchange.NAME, getName(),
@@ -196,7 +204,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         _configStore.create(binding.asObjectRecord());
 
         reopenStore();
-        _configStore.visitConfiguredObjectRecords(_handler);
+        _configStore.openConfigurationStore(_handler);
 
         Map<String,Object> map = new HashMap<String, Object>();
         map.put(Binding.NAME, ROUTING_KEY);
@@ -302,7 +310,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         _configStore.create(queue.asObjectRecord());
 
         reopenStore();
-        _configStore.visitConfiguredObjectRecords(_handler);
+        _configStore.openConfigurationStore(_handler);
 
         Map<String, Object> queueAttributes = new HashMap<String, Object>();
         queueAttributes.put(Queue.NAME, getName());
@@ -323,7 +331,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         _configStore.create(queue.asObjectRecord());
 
         reopenStore();
-        _configStore.visitConfiguredObjectRecords(_handler);
+        _configStore.openConfigurationStore(_handler);
 
         Map<String,Object> queueAttributes = new HashMap<String, Object>();
 
@@ -343,7 +351,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         _configStore.create(queue.asObjectRecord());
 
         reopenStore();
-        _configStore.visitConfiguredObjectRecords(_handler);
+        _configStore.openConfigurationStore(_handler);
 
         Map<String, Object> queueAttributes = new HashMap<String, Object>();
         queueAttributes.put(Queue.NAME, getName());
@@ -379,7 +387,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         _configStore.update(false, queue.asObjectRecord());
 
         reopenStore();
-        _configStore.visitConfiguredObjectRecords(_handler);
+        _configStore.openConfigurationStore(_handler);
 
         Map<String,Object> queueAttributes = new HashMap<String, Object>();
 
@@ -406,7 +414,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         _configStore.update(false, queue.asObjectRecord());
 
         reopenStore();
-        _configStore.visitConfiguredObjectRecords(_handler);
+        _configStore.openConfigurationStore(_handler);
 
         Map<String,Object> queueAttributes = new HashMap<String, Object>();
 
@@ -534,7 +542,7 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
     {
         closeConfigStore();
         _configStore = createConfigStore();
-        _configStore.openConfigurationStore(_parent, false);
+        _configStore.init(_parent);
     }
 
     protected abstract DurableConfigurationStore createConfigStore() throws Exception;

@@ -372,7 +372,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         Map<String, Object> attributes = Collections.<String, Object>singletonMap(TestVirtualHostNode.NAME, nodeName);
 
         final DurableConfigurationStore store = mock(DurableConfigurationStore.class);
-        doThrow(new RuntimeException("Cannot open store")).when(store).openConfigurationStore(any(ConfiguredObject.class), any(boolean.class));
+        doThrow(new RuntimeException("Cannot open store")).when(store).init(any(ConfiguredObject.class));
         AbstractStandardVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
 
         try
@@ -421,7 +421,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         AbstractStandardVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
 
         node.create();
-        verify(store, times(2)).openConfigurationStore(node, false); // once of validation, once for real
+        verify(store, times(2)).init(node); // once of validation, once for real
         verify(store, times(1)).closeConfigurationStore();
         node.close();
     }
@@ -480,7 +480,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         Map<String, Object> attributes = Collections.<String, Object>singletonMap(TestVirtualHostNode.NAME, nodeName);
 
         final DurableConfigurationStore store = mock(DurableConfigurationStore.class);
-        doThrow(new RuntimeException("Cannot open store")).when(store).openConfigurationStore(any(ConfiguredObject.class), any(boolean.class));
+        doThrow(new RuntimeException("Cannot open store")).when(store).init(any(ConfiguredObject.class));
         AbstractStandardVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
         node.open();
         assertEquals("Unexpected node state", State.ERRORED, node.getState());
@@ -495,11 +495,11 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         Map<String, Object> attributes = Collections.<String, Object>singletonMap(TestVirtualHostNode.NAME, nodeName);
 
         DurableConfigurationStore store = mock(DurableConfigurationStore.class);
-        doThrow(new RuntimeException("Cannot open store")).when(store).openConfigurationStore(any(ConfiguredObject.class), any(boolean.class));
+        doThrow(new RuntimeException("Cannot open store")).when(store).init(any(ConfiguredObject.class));
         AbstractVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
         node.open();
         assertEquals("Unexpected node state", State.ERRORED, node.getState());
-        doNothing().when(store).openConfigurationStore(any(ConfiguredObject.class), any(boolean.class));
+        doNothing().when(store).init(any(ConfiguredObject.class));
 
         node.setAttributes(Collections.<String, Object>singletonMap(VirtualHostNode.DESIRED_STATE, State.ACTIVE));
         assertEquals("Unexpected state", State.ACTIVE, node.getState());
@@ -512,11 +512,11 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         Map<String, Object> attributes = Collections.<String, Object>singletonMap(TestVirtualHostNode.NAME, nodeName);
 
         DurableConfigurationStore store = mock(DurableConfigurationStore.class);
-        doThrow(new RuntimeException("Cannot open store")).when(store).openConfigurationStore(any(ConfiguredObject.class), any(boolean.class));
+        doThrow(new RuntimeException("Cannot open store")).when(store).init(any(ConfiguredObject.class));
         AbstractVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
         node.open();
         assertEquals("Unexpected node state", State.ERRORED, node.getState());
-        doNothing().when(store).openConfigurationStore(any(ConfiguredObject.class), any(boolean.class));
+        doNothing().when(store).init(any(ConfiguredObject.class));
 
         node.start();
         assertEquals("Unexpected state", State.ACTIVE, node.getState());
@@ -542,14 +542,14 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         return new NullMessageStore(){
 
             @Override
-            public void visitConfiguredObjectRecords(ConfiguredObjectRecordHandler handler) throws StoreException
+            public boolean openConfigurationStore(ConfiguredObjectRecordHandler handler,
+                                                  final ConfiguredObjectRecord... initialRecords) throws StoreException
             {
-                handler.begin();
                 if (record != null)
                 {
                     handler.handle(record);
                 }
-                handler.end();
+                return false;
             }
         };
     }

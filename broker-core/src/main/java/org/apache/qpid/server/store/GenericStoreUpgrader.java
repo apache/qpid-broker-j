@@ -58,30 +58,15 @@ public class GenericStoreUpgrader
         return new ArrayList<ConfiguredObjectRecord>(_records.values());
     }
 
-    public void upgrade()
+    public boolean upgrade(final ConfiguredObjectRecord... initialRecords)
     {
-        ConfiguredObjectRecordHandler handler = new ConfiguredObjectRecordHandler()
-        {
-            @Override
-            public void begin()
-            {
-            }
+        RecordCollectionHandler handler = new RecordCollectionHandler();
 
-            @Override
-            public boolean handle(final ConfiguredObjectRecord record)
-            {
-                _records.put(record.getId(), record);
-                return true;
-            }
+        boolean isNewStore = _store.openConfigurationStore(handler, initialRecords);
 
-            @Override
-            public void end()
-            {
-                performUpgrade();
-            }
-        };
+        performUpgrade();
 
-        _store.visitConfiguredObjectRecords(handler);
+        return isNewStore;
     }
 
     private void performUpgrade()
@@ -168,5 +153,16 @@ public class GenericStoreUpgrader
             }
         }
         return BrokerModel.MODEL_VERSION;
+    }
+
+    private class RecordCollectionHandler implements ConfiguredObjectRecordHandler
+    {
+
+        @Override
+        public void handle(final ConfiguredObjectRecord record)
+        {
+            _records.put(record.getId(), record);
+        }
+
     }
 }

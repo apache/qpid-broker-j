@@ -34,6 +34,10 @@ public abstract class AbstractMemoryStore implements DurableConfigurationStore, 
     private final MessageStore _messageStore = new MemoryMessageStore();
     private final Class<? extends ConfiguredObject> _rootClass;
 
+    enum State { CLOSED, CONFIGURED, OPEN };
+
+    private State _state = State.CLOSED;
+    private final Object _lock = new Object();
 
     private final ConcurrentMap<UUID, ConfiguredObjectRecord> _configuredObjectRecords = new ConcurrentHashMap<UUID, ConfiguredObjectRecord>();
 
@@ -45,6 +49,7 @@ public abstract class AbstractMemoryStore implements DurableConfigurationStore, 
     @Override
     public void create(ConfiguredObjectRecord record)
     {
+        assertState(State.OPEN);
         if (_configuredObjectRecords.putIfAbsent(record.getId(), record) != null)
         {
             throw new StoreException("Record with id " + record.getId() + " is already present");
@@ -54,6 +59,7 @@ public abstract class AbstractMemoryStore implements DurableConfigurationStore, 
     @Override
     public void update(boolean createIfNecessary, ConfiguredObjectRecord... records)
     {
+        assertState(State.OPEN);
         for (ConfiguredObjectRecord record : records)
         {
             if(createIfNecessary)
@@ -74,6 +80,7 @@ public abstract class AbstractMemoryStore implements DurableConfigurationStore, 
     @Override
     public UUID[] remove(final ConfiguredObjectRecord... objects)
     {
+        assertState(State.OPEN);
         List<UUID> removed = new ArrayList<UUID>();
         for (ConfiguredObjectRecord record : objects)
         {
@@ -86,14 +93,9 @@ public abstract class AbstractMemoryStore implements DurableConfigurationStore, 
     }
 
     @Override
-    public void openConfigurationStore(ConfiguredObject<?> parent,
-                                       final boolean overwrite,
-                                       final ConfiguredObjectRecord... initialRecords)
+    public void init(ConfiguredObject<?> parent)
     {
-        for(ConfiguredObjectRecord record : initialRecords)
-        {
-            _configuredObjectRecords.put(record.getId(), record);
-        }
+        changeState(State.CLOSED, State.CONFIGURED);
     }
 
     @Override
@@ -105,23 +107,44 @@ public abstract class AbstractMemoryStore implements DurableConfigurationStore, 
     @Override
     public void closeConfigurationStore()
     {
+        synchronized (_lock)
+        {
+            _state = State.CLOSED;
+        }
         _configuredObjectRecords.clear();
     }
 
 
     @Override
-    public void visitConfiguredObjectRecords(ConfiguredObjectRecordHandler handler) throws StoreException
+    public boolean openConfigurationStore(ConfiguredObjectRecordHandler handler,
+                                          final ConfiguredObjectRecord... initialRecords) throws StoreException
     {
-        handler.begin();
-        for (ConfiguredObjectRecord record : _configuredObjectRecords.values())
+        changeState(State.CONFIGURED, State.OPEN);
+        boolean isNew = _configuredObjectRecords.isEmpty();
+        if(isNew)
         {
-            if (!handler.handle(record))
+            for(ConfiguredObjectRecord record : initialRecords)
             {
-                break;
+                _configuredObjectRecords.put(record.getId(), record);
             }
         }
-        handler.end();
+        for (ConfiguredObjectRecord record : _configuredObjectRecords.values())
+        {
+            handler.handle(record);
+        }
+        return isNew;
     }
+
+    @Override
+    public void reload(ConfiguredObjectRecordHandler handler) throws StoreException
+    {
+        assertState(State.OPEN);
+        for (ConfiguredObjectRecord record : _configuredObjectRecords.values())
+        {
+            handler.handle(record);
+        }
+    }
+
 
     @Override
     public MessageStore getMessageStore()
@@ -132,6 +155,32 @@ public abstract class AbstractMemoryStore implements DurableConfigurationStore, 
     @Override
     public void onDelete(ConfiguredObject<?> parent)
     {
+    }
+
+    private void assertState(State state)
+    {
+        synchronized (_lock)
+        {
+            if(_state != state)
+            {
+                throw new IllegalStateException("The store must be in state " + state + " to perform this operation, but it is in state " + _state + " instead");
+            }
+        }
+    }
+
+    private void changeState(State oldState, State newState)
+    {
+        synchronized (_lock)
+        {
+            assertState(oldState);
+            _state = newState;
+        }
+    }
+
+
+    public List<ConfiguredObjectRecord> getConfiguredObjectRecords()
+    {
+        return new ArrayList<>(_configuredObjectRecords.values());
     }
 
 }

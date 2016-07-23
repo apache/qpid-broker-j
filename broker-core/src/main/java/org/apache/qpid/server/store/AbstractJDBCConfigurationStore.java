@@ -20,6 +20,9 @@
 */
 package org.apache.qpid.server.store;
 
+import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.CONFIGURED;
+import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.OPEN;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.sql.Connection;
@@ -39,9 +42,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 
@@ -82,16 +82,47 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                                                                           + " where child_id = ?";
     private static final String SELECT_FROM_CONFIGURED_OBJECT_HIERARCHY = "SELECT child_id, parent_type, parent_id FROM " + CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME;
 
-    @Override
-    public void visitConfiguredObjectRecords(ConfiguredObjectRecordHandler handler)
-    {
-        checkConfigurationStoreOpen();
+    public enum State { CLOSED, CONFIGURED, OPEN };
+    private State _state = State.CLOSED;
+    private final Object _lock = new Object();
 
+
+
+    @Override
+    public boolean openConfigurationStore(ConfiguredObjectRecordHandler handler,
+                                          final ConfiguredObjectRecord... initialRecords)
+    {
+        changeState(CONFIGURED, OPEN);
         try
         {
-            handler.begin();
-            doVisitAllConfiguredObjectRecords(handler);
-            handler.end();
+            Collection<? extends ConfiguredObjectRecord> records = doVisitAllConfiguredObjectRecords(handler);
+            boolean isNew = records.isEmpty();
+
+            if(isNew)
+            {
+                records = Arrays.asList(initialRecords);
+                try
+                {
+                    try (Connection conn = newConnection())
+                    {
+                        for (ConfiguredObjectRecord record : records)
+                        {
+                            updateConfiguredObject(record, true, conn);
+                        }
+                        conn.commit();
+                    }
+                }
+                catch (SQLException e)
+                {
+                    throw new StoreException("Error updating configured objects in database: " + e.getMessage(), e);
+                }
+            }
+
+            for(ConfiguredObjectRecord record : records)
+            {
+                handler.handle(record);
+            }
+            return isNew;
         }
         catch (SQLException e)
         {
@@ -99,12 +130,30 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
         }
     }
 
-    private void doVisitAllConfiguredObjectRecords(ConfiguredObjectRecordHandler handler) throws SQLException
+    @Override
+    public void reload(final ConfiguredObjectRecordHandler handler) throws StoreException
     {
-        Connection conn = newAutoCommitConnection();
+        assertState(State.OPEN);
+        try
+        {
+            Collection<? extends ConfiguredObjectRecord> records = doVisitAllConfiguredObjectRecords(handler);
+
+            for(ConfiguredObjectRecord record : records)
+            {
+                handler.handle(record);
+            }
+        }
+        catch (SQLException e)
+        {
+            throw new StoreException("Cannot visit configured object records", e);
+        }
+    }
+
+    private Collection<ConfiguredObjectRecordImpl> doVisitAllConfiguredObjectRecords(ConfiguredObjectRecordHandler handler) throws SQLException
+    {
         Map<UUID, ConfiguredObjectRecordImpl> configuredObjects = new HashMap<UUID, ConfiguredObjectRecordImpl>();
         final ObjectMapper objectMapper = new ObjectMapper();
-        try
+        try (Connection conn = newAutoCommitConnection())
         {
             PreparedStatement stmt = conn.prepareStatement(SELECT_FROM_CONFIGURED_OBJECTS);
             try
@@ -120,17 +169,9 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                         final ConfiguredObjectRecordImpl configuredObjectRecord =
                                 new ConfiguredObjectRecordImpl(UUID.fromString(id), objectType,
                                                                objectMapper.readValue(attributes, Map.class));
-                        configuredObjects.put(configuredObjectRecord.getId(),configuredObjectRecord);
+                        configuredObjects.put(configuredObjectRecord.getId(), configuredObjectRecord);
 
                     }
-                }
-                catch (JsonMappingException e)
-                {
-                    throw new StoreException("Error recovering persistent state: " + e.getMessage(), e);
-                }
-                catch (JsonParseException e)
-                {
-                    throw new StoreException("Error recovering persistent state: " + e.getMessage(), e);
                 }
                 catch (IOException e)
                 {
@@ -148,8 +189,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
             stmt = conn.prepareStatement(SELECT_FROM_CONFIGURED_OBJECT_HIERARCHY);
             try
             {
-                ResultSet rs = stmt.executeQuery();
-                try
+                try (ResultSet rs = stmt.executeQuery())
                 {
                     while (rs.next())
                     {
@@ -160,15 +200,11 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                         ConfiguredObjectRecordImpl child = configuredObjects.get(childId);
                         ConfiguredObjectRecordImpl parent = configuredObjects.get(parentId);
 
-                        if(child != null && parent != null)
+                        if (child != null && parent != null)
                         {
                             child.addParent(parentType, parent);
                         }
                     }
-                }
-                finally
-                {
-                    rs.close();
                 }
             }
             finally
@@ -177,22 +213,9 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
             }
 
         }
-        finally
-        {
-            conn.close();
-        }
+        return configuredObjects.values();
 
-        for(ConfiguredObjectRecord record : configuredObjects.values())
-        {
-            boolean shouldContinue = handler.handle(record);
-            if (!shouldContinue)
-            {
-                break;
-            }
-        }
     }
-
-    protected abstract void checkConfigurationStoreOpen();
 
     protected void upgradeIfNecessary(ConfiguredObject<?> parent) throws StoreException
     {
@@ -408,15 +431,15 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
     protected abstract String getSqlBigIntType();
 
 
-    protected void createOrOpenConfigurationStoreDatabase(final boolean clear) throws StoreException
+    protected void createOrOpenConfigurationStoreDatabase() throws StoreException
     {
         Connection conn = null;
         try
         {
             conn = newAutoCommitConnection();
 
-            createConfiguredObjectsTable(conn, clear);
-            createConfiguredObjectHierarchyTable(conn, clear);
+            createConfiguredObjectsTable(conn);
+            createConfiguredObjectHierarchyTable(conn);
         }
         catch (SQLException e)
         {
@@ -444,7 +467,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
         }
     }
 
-    private void createConfiguredObjectsTable(final Connection conn, final boolean clear) throws SQLException
+    private void createConfiguredObjectsTable(final Connection conn) throws SQLException
     {
         if(!tableExists(CONFIGURED_OBJECTS_TABLE_NAME, conn))
         {
@@ -457,16 +480,9 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                              + ",  PRIMARY KEY (id))");
             }
         }
-        else if(clear)
-        {
-            try (Statement stmt = conn.createStatement())
-            {
-                stmt.execute("DELETE FROM " + CONFIGURED_OBJECTS_TABLE_NAME);
-            }
-        }
     }
 
-    private void createConfiguredObjectHierarchyTable(final Connection conn, final boolean clear) throws SQLException
+    private void createConfiguredObjectHierarchyTable(final Connection conn) throws SQLException
     {
         if(!tableExists(CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME, conn))
         {
@@ -474,13 +490,6 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
             {
                 stmt.execute("CREATE TABLE " + CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME
                              + " ( child_id VARCHAR(36) not null, parent_type varchar(255), parent_id VARCHAR(36),  PRIMARY KEY (child_id, parent_type))");
-            }
-        }
-        else if(clear)
-        {
-            try (Statement stmt = conn.createStatement())
-            {
-                stmt.execute("DELETE FROM " + CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME);
             }
         }
     }
@@ -521,7 +530,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
     @Override
     public void create(ConfiguredObjectRecord object) throws StoreException
     {
-        checkConfigurationStoreOpen();
+        assertState(OPEN);
         try
         {
             Connection conn = newConnection();
@@ -594,44 +603,29 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
         return connection;
     }
 
-    protected boolean hasNoConfigurationEntries()
-    {
-        ConfiguredObjectRecordPresenceDetector recordPresenceDetector = new ConfiguredObjectRecordPresenceDetector();
-        visitConfiguredObjectRecords(recordPresenceDetector);
-
-        return !recordPresenceDetector.isRecordsPresent();
-    }
-
     protected abstract Connection getConnection() throws SQLException;
 
     private void insertConfiguredObject(ConfiguredObjectRecord configuredObject, final Connection conn) throws StoreException
     {
         try
         {
-            PreparedStatement stmt = conn.prepareStatement(FIND_CONFIGURED_OBJECT);
-            try
+            try (PreparedStatement stmt = conn.prepareStatement(FIND_CONFIGURED_OBJECT))
             {
                 stmt.setString(1, configuredObject.getId().toString());
-                ResultSet rs = stmt.executeQuery();
                 boolean exists;
-                try
+                try (ResultSet rs = stmt.executeQuery())
                 {
                     exists = rs.next();
 
                 }
-                finally
-                {
-                    rs.close();
-                }
                 // If we don't have any data in the result set then we can add this configured object
                 if (!exists)
                 {
-                    PreparedStatement insertStmt = conn.prepareStatement(INSERT_INTO_CONFIGURED_OBJECTS);
-                    try
+                    try (PreparedStatement insertStmt = conn.prepareStatement(INSERT_INTO_CONFIGURED_OBJECTS))
                     {
                         insertStmt.setString(1, configuredObject.getId().toString());
                         insertStmt.setString(2, configuredObject.getType());
-                        if(configuredObject.getAttributes() == null)
+                        if (configuredObject.getAttributes() == null)
                         {
                             insertStmt.setNull(3, Types.BLOB);
                         }
@@ -646,34 +640,14 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                         }
                         insertStmt.execute();
                     }
-                    finally
-                    {
-                        insertStmt.close();
-                    }
 
                     writeHierarchy(configuredObject, conn);
                 }
 
             }
-            finally
-            {
-                stmt.close();
-            }
 
         }
-        catch (JsonMappingException e)
-        {
-            throw new StoreException("Error inserting of configured object " + configuredObject + " into database: " + e.getMessage(), e);
-        }
-        catch (JsonGenerationException e)
-        {
-            throw new StoreException("Error inserting of configured object " + configuredObject + " into database: " + e.getMessage(), e);
-        }
-        catch (IOException e)
-        {
-            throw new StoreException("Error inserting of configured object " + configuredObject + " into database: " + e.getMessage(), e);
-        }
-        catch (SQLException e)
+        catch (IOException | SQLException e)
         {
             throw new StoreException("Error inserting of configured object " + configuredObject + " into database: " + e.getMessage(), e);
         }
@@ -682,26 +656,21 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
     @Override
     public UUID[] remove(ConfiguredObjectRecord... objects) throws StoreException
     {
-        checkConfigurationStoreOpen();
+        assertState(OPEN);
 
         Collection<UUID> removed = new ArrayList<UUID>(objects.length);
         try
         {
 
-            Connection conn = newAutoCommitConnection();
-            try
+            try (Connection conn = newAutoCommitConnection())
             {
-                for(ConfiguredObjectRecord record : objects)
+                for (ConfiguredObjectRecord record : objects)
                 {
-                    if(removeConfiguredObject(record.getId(), conn) != 0)
+                    if (removeConfiguredObject(record.getId(), conn) != 0)
                     {
                         removed.add(record.getId());
                     }
                 }
-            }
-            finally
-            {
-                conn.close();
             }
         }
         catch (SQLException e)
@@ -741,21 +710,16 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
     @Override
     public void update(boolean createIfNecessary, ConfiguredObjectRecord... records) throws StoreException
     {
-        checkConfigurationStoreOpen();
+        assertState(OPEN);
         try
         {
-            Connection conn = newConnection();
-            try
+            try (Connection conn = newConnection())
             {
-                for(ConfiguredObjectRecord record : records)
+                for (ConfiguredObjectRecord record : records)
                 {
                     updateConfiguredObject(record, createIfNecessary, conn);
                 }
                 conn.commit();
-            }
-            finally
-            {
-                conn.close();
             }
         }
         catch (SQLException e)
@@ -769,19 +733,16 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                                         Connection conn)
             throws SQLException, StoreException
     {
-        PreparedStatement stmt = conn.prepareStatement(FIND_CONFIGURED_OBJECT);
-        try
+        try (PreparedStatement stmt = conn.prepareStatement(FIND_CONFIGURED_OBJECT))
         {
             stmt.setString(1, configuredObject.getId().toString());
-            ResultSet rs = stmt.executeQuery();
-            try
+            try (ResultSet rs = stmt.executeQuery())
             {
 
                 final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
                 if (rs.next())
                 {
-                    PreparedStatement stmt2 = conn.prepareStatement(UPDATE_CONFIGURED_OBJECTS);
-                    try
+                    try (PreparedStatement stmt2 = conn.prepareStatement(UPDATE_CONFIGURED_OBJECTS))
                     {
                         stmt2.setString(1, configuredObject.getType());
                         if (configuredObject.getAttributes() != null)
@@ -798,19 +759,14 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                         stmt2.setString(3, configuredObject.getId().toString());
                         stmt2.execute();
                     }
-                    finally
-                    {
-                        stmt2.close();
-                    }
                 }
-                else if(createIfNecessary)
+                else if (createIfNecessary)
                 {
-                    PreparedStatement insertStmt = conn.prepareStatement(INSERT_INTO_CONFIGURED_OBJECTS);
-                    try
+                    try (PreparedStatement insertStmt = conn.prepareStatement(INSERT_INTO_CONFIGURED_OBJECTS))
                     {
                         insertStmt.setString(1, configuredObject.getId().toString());
                         insertStmt.setString(2, configuredObject.getType());
-                        if(configuredObject.getAttributes() == null)
+                        if (configuredObject.getAttributes() == null)
                         {
                             insertStmt.setNull(3, Types.BLOB);
                         }
@@ -823,42 +779,24 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                         }
                         insertStmt.execute();
                     }
-                    finally
-                    {
-                        insertStmt.close();
-                    }
                     writeHierarchy(configuredObject, conn);
                 }
             }
-            finally
-            {
-                rs.close();
-            }
-        }
-        catch (JsonMappingException e)
-        {
-            throw new StoreException("Error updating configured object " + configuredObject + " in database: " + e.getMessage(), e);
-        }
-        catch (JsonGenerationException e)
-        {
-            throw new StoreException("Error updating configured object " + configuredObject + " in database: " + e.getMessage(), e);
         }
         catch (IOException e)
         {
-            throw new StoreException("Error updating configured object " + configuredObject + " in database: " + e.getMessage(), e);
-        }
-        finally
-        {
-            stmt.close();
+            throw new StoreException("Error updating configured object "
+                                     + configuredObject
+                                     + " in database: "
+                                     + e.getMessage(), e);
         }
     }
 
     private void writeHierarchy(final ConfiguredObjectRecord configuredObject, final Connection conn) throws SQLException, StoreException
     {
-        PreparedStatement insertStmt = conn.prepareStatement(INSERT_INTO_CONFIGURED_OBJECT_HIERARCHY);
-        try
+        try (PreparedStatement insertStmt = conn.prepareStatement(INSERT_INTO_CONFIGURED_OBJECT_HIERARCHY))
         {
-            for(Map.Entry<String,UUID> parentEntry : configuredObject.getParents().entrySet())
+            for (Map.Entry<String, UUID> parentEntry : configuredObject.getParents().entrySet())
             {
                 insertStmt.setString(1, configuredObject.getId().toString());
                 insertStmt.setString(2, parentEntry.getKey());
@@ -866,10 +804,6 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
                 insertStmt.execute();
             }
-        }
-        finally
-        {
-            insertStmt.close();
         }
     }
 
@@ -969,32 +903,33 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
         }
     }
 
-    private static class ConfiguredObjectRecordPresenceDetector implements ConfiguredObjectRecordHandler
+    private final void assertState(State state)
     {
-        private boolean _recordsPresent;
-
-        @Override
-        public void begin()
+        synchronized (_lock)
         {
-
-        }
-
-        @Override
-        public boolean handle(final ConfiguredObjectRecord record)
-        {
-            _recordsPresent = true;
-            return false;
-        }
-
-        @Override
-        public void end()
-        {
-
-        }
-
-        public boolean isRecordsPresent()
-        {
-            return _recordsPresent;
+            if(_state != state)
+            {
+                throw new IllegalStateException("The store must be in state " + state + " to perform this operation, but it is in state " + _state + " instead");
+            }
         }
     }
+
+    protected final void changeState(State oldState, State newState)
+    {
+        synchronized (_lock)
+        {
+            assertState(oldState);
+            _state = newState;
+        }
+    }
+
+    protected final void setState(State newState)
+    {
+        synchronized (_lock)
+        {
+            _state = newState;
+        }
+    }
+
+
 }

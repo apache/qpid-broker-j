@@ -80,7 +80,6 @@ public class JsonFileConfigStoreTest extends QpidTestCase
         _store = new JsonFileConfigStore(VirtualHost.class);
 
         _handler = mock(ConfiguredObjectRecordHandler.class);
-        when(_handler.handle(any(ConfiguredObjectRecord.class))).thenReturn(true);
     }
 
     @Override
@@ -102,7 +101,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
 
         try
         {
-            _store.openConfigurationStore(_parent, false);
+            _store.init(_parent);
             fail("Store should not successfully configure if there is no path set");
         }
         catch (ServerScopedRuntimeException e)
@@ -117,7 +116,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
         when(_parent.getStorePath()).thenReturn(System.getProperty("file.separator"));
         try
         {
-            _store.openConfigurationStore(_parent, false);
+            _store.init(_parent);
             fail("Store should not successfully configure if there is an invalid path set");
         }
         catch (ServerScopedRuntimeException e)
@@ -128,32 +127,40 @@ public class JsonFileConfigStoreTest extends QpidTestCase
 
     public void testVisitEmptyStore()
     {
-        _store.openConfigurationStore(_parent, false);
-        _store.visitConfiguredObjectRecords(_handler);
+        _store.init(_parent);
+        _store.openConfigurationStore(_handler);
 
         InOrder inorder = inOrder(_handler);
-        inorder.verify(_handler).begin();
         inorder.verify(_handler,times(0)).handle(any(ConfiguredObjectRecord.class));
-        inorder.verify(_handler).end();
 
         _store.closeConfigurationStore();
     }
 
     public void testInsertAndUpdateTopLevelObject() throws Exception
     {
-        _store.openConfigurationStore(_parent, false);
+        _store.init(_parent);
+        _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
         createRootRecord();
         _store.closeConfigurationStore();
 
-        _store.openConfigurationStore(_parent, false);
+        _store.init(_parent);
+        _store.openConfigurationStore(new ConfiguredObjectRecordHandler()
+        {
+
+            @Override
+            public void handle(final ConfiguredObjectRecord record)
+            {
+            }
+
+        });
         Map<String, Object> newAttributes = new HashMap<String, Object>(_rootRecord.getAttributes());
         newAttributes.put("attributeName", "attributeValue");
         _store.update(false, new ConfiguredObjectRecordImpl(_rootRecord.getId(), _rootRecord.getType(), newAttributes));
         _store.closeConfigurationStore();
 
-        _store.openConfigurationStore(_parent, false);
+        _store.init(_parent);
 
-        _store.visitConfiguredObjectRecords(_handler);
+        _store.openConfigurationStore(_handler);
 
         Map<String, Object> expectedAttributes = new HashMap<String, Object>(newAttributes);
         verify(_handler, times(1)).handle(matchesRecord(_rootRecord.getId(), _rootRecord.getType(), expectedAttributes));
@@ -162,7 +169,8 @@ public class JsonFileConfigStoreTest extends QpidTestCase
 
     public void testCreateObject() throws Exception
     {
-        _store.openConfigurationStore(_parent, false);
+        _store.init(_parent);
+        _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
         createRootRecord();
 
         final UUID queueId = new UUID(0, 1);
@@ -172,9 +180,9 @@ public class JsonFileConfigStoreTest extends QpidTestCase
         _store.create(new ConfiguredObjectRecordImpl(queueId, queueType, queueAttr, getRootAsParentMap()));
         _store.closeConfigurationStore();
 
-        _store.openConfigurationStore(_parent, false);
+        _store.init(_parent);
 
-        _store.visitConfiguredObjectRecords(_handler);
+        _store.openConfigurationStore(_handler);
         verify(_handler).handle(matchesRecord(queueId, queueType, queueAttr));
         verify(_handler).handle(matchesRecord(ANY_UUID, VIRTUAL_HOST_TYPE, ANY_MAP));
         _store.closeConfigurationStore();
@@ -182,7 +190,8 @@ public class JsonFileConfigStoreTest extends QpidTestCase
 
     public void testCreateAndUpdateObject() throws Exception
     {
-        _store.openConfigurationStore(_parent, false);
+        _store.init(_parent);
+        _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
         createRootRecord();
 
         final UUID queueId = new UUID(0, 1);
@@ -197,8 +206,8 @@ public class JsonFileConfigStoreTest extends QpidTestCase
 
         _store.closeConfigurationStore();
 
-        _store.openConfigurationStore(_parent, false);
-        _store.visitConfiguredObjectRecords(_handler);
+        _store.init(_parent);
+        _store.openConfigurationStore(_handler);
         verify(_handler, times(1)).handle(matchesRecord(queueId, queueType, queueAttr));
         _store.closeConfigurationStore();
     }
@@ -206,7 +215,8 @@ public class JsonFileConfigStoreTest extends QpidTestCase
 
     public void testCreateAndRemoveObject() throws Exception
     {
-        _store.openConfigurationStore(_parent, false);
+        _store.init(_parent);
+        _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
         createRootRecord();
 
         final UUID queueId = new UUID(0, 1);
@@ -221,15 +231,16 @@ public class JsonFileConfigStoreTest extends QpidTestCase
 
         _store.closeConfigurationStore();
 
-        _store.openConfigurationStore(_parent, false);
-        _store.visitConfiguredObjectRecords(_handler);
+        _store.init(_parent);
+        _store.openConfigurationStore(_handler);
         verify(_handler, times(1)).handle(matchesRecord(ANY_UUID, VIRTUAL_HOST_TYPE, ANY_MAP));
         _store.closeConfigurationStore();
     }
 
     public void testCreateUnknownObjectType() throws Exception
     {
-        _store.openConfigurationStore(_parent, false);
+        _store.init(_parent);
+        _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
         createRootRecord();
 
         try
@@ -245,7 +256,8 @@ public class JsonFileConfigStoreTest extends QpidTestCase
 
     public void testTwoObjectsWithSameId() throws Exception
     {
-        _store.openConfigurationStore(_parent, false);
+        _store.init(_parent);
+        _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
         createRootRecord();
 
         final UUID id = UUID.randomUUID();
@@ -268,7 +280,8 @@ public class JsonFileConfigStoreTest extends QpidTestCase
 
     public void testObjectWithoutName() throws Exception
     {
-        _store.openConfigurationStore(_parent, false);
+        _store.init(_parent);
+        _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
         createRootRecord();
 
         final UUID id = UUID.randomUUID();
@@ -287,7 +300,8 @@ public class JsonFileConfigStoreTest extends QpidTestCase
 
     public void testObjectWithNonStringName() throws Exception
     {
-        _store.openConfigurationStore(_parent, false);
+        _store.init(_parent);
+        _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
         createRootRecord();
 
         final UUID id = UUID.randomUUID();
@@ -306,7 +320,8 @@ public class JsonFileConfigStoreTest extends QpidTestCase
 
     public void testChangeTypeOfObject() throws Exception
     {
-        _store.openConfigurationStore(_parent, false);
+        _store.init(_parent);
+        _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
         createRootRecord();
 
         final UUID id = UUID.randomUUID();
@@ -314,7 +329,8 @@ public class JsonFileConfigStoreTest extends QpidTestCase
                                                      Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "queue"),
                                                      getRootAsParentMap()));
         _store.closeConfigurationStore();
-        _store.openConfigurationStore(_parent, false);
+        _store.init(_parent);
+        _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
 
         try
         {
@@ -331,13 +347,13 @@ public class JsonFileConfigStoreTest extends QpidTestCase
 
     public void testLockFileGuaranteesExclusiveAccess() throws Exception
     {
-        _store.openConfigurationStore(_parent, false);
+        _store.init(_parent);
 
         JsonFileConfigStore secondStore = new JsonFileConfigStore(VirtualHost.class);
 
         try
         {
-            secondStore.openConfigurationStore(_parent, false);
+            secondStore.init(_parent);
             fail("Should not be able to open a second store with the same path");
         }
         catch(ServerScopedRuntimeException e)
@@ -345,7 +361,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
             // pass
         }
         _store.closeConfigurationStore();
-        secondStore.openConfigurationStore(_parent, false);
+        secondStore.init(_parent);
     }
 
     public void testStoreFileLifecycle()
@@ -358,7 +374,7 @@ public class JsonFileConfigStoreTest extends QpidTestCase
         assertFalse("JSON backup should not exist", expectedJsonFileBak.exists());
         assertFalse("JSON lock should not exist", expectedJsonFileLck.exists());
 
-        _store.openConfigurationStore(_parent, false);
+        _store.init(_parent);
         assertTrue("JSON store should exist after open", expectedJsonFile.exists());
         assertFalse("JSON backup should not exist after open", expectedJsonFileBak.exists());
         assertTrue("JSON lock should exist", expectedJsonFileLck.exists());
@@ -374,7 +390,8 @@ public class JsonFileConfigStoreTest extends QpidTestCase
 
     public void testCreatedNestedObjects() throws Exception
     {
-        _store.openConfigurationStore(_parent, false);
+        _store.init(_parent);
+        _store.openConfigurationStore(mock(ConfiguredObjectRecordHandler.class));
         createRootRecord();
 
         final UUID queueId = new UUID(0, 1);
@@ -424,8 +441,8 @@ public class JsonFileConfigStoreTest extends QpidTestCase
                                                binding2Parents);
         _store.update(true, bindingRecord, binding2Record);
         _store.closeConfigurationStore();
-        _store.openConfigurationStore(_parent, false);
-        _store.visitConfiguredObjectRecords(_handler);
+        _store.init(_parent);
+        _store.openConfigurationStore(_handler);
         verify(_handler).handle(matchesRecord(queueId, "Queue", queueAttr));
         verify(_handler).handle(matchesRecord(queue2Id, "Queue", queue2Attr));
         verify(_handler).handle(matchesRecord(exchangeId, "Exchange", exchangeAttr));

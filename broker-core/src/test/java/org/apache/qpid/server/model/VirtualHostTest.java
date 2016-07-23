@@ -208,29 +208,39 @@ public class VirtualHostTest extends QpidTestCase
         assertEquals("Unexpected number of queues before stop", 1, virtualHost.getChildren(Queue.class).size());
         assertEquals("Unexpected number of exchanges before stop", 5, virtualHost.getChildren(Exchange.class).size());
 
+        final List<ConfiguredObjectRecord> allObjects = new ArrayList<>();
+        allObjects.add(virtualHostCor);
+        allObjects.add(queueCor);
+        for(Exchange e : virtualHost.getChildren(Exchange.class))
+        {
+            allObjects.add(e.asObjectRecord());
+        }
+
+
         virtualHost.stop();
         assertEquals("Unexpected state", State.STOPPED, virtualHost.getState());
         assertEquals("Unexpected number of queues after stop", 0, virtualHost.getChildren(Queue.class).size());
         assertEquals("Unexpected number of exchanges after stop", 0, virtualHost.getChildren(Exchange.class).size());
 
+
         // Setup an answer that will return the configured object records
         doAnswer(new Answer()
         {
-            final Iterator<ConfiguredObjectRecord> corIterator = asList(queueCor, exchangeCor, virtualHostCor).iterator();
+            final Iterator<ConfiguredObjectRecord> corIterator = allObjects.iterator();
 
             @Override
             public Object answer(final InvocationOnMock invocation) throws Throwable
             {
                 ConfiguredObjectRecordHandler handler = (ConfiguredObjectRecordHandler) invocation.getArguments()[0];
                 boolean handlerContinue = true;
-                while(corIterator.hasNext() && handlerContinue)
+                while(corIterator.hasNext())
                 {
-                    handlerContinue = handler.handle(corIterator.next());
+                    handler.handle(corIterator.next());
                 }
 
                 return null;
             }
-        }).when(_configStore).visitConfiguredObjectRecords(any(ConfiguredObjectRecordHandler.class));
+        }).when(_configStore).reload(any(ConfiguredObjectRecordHandler.class));
 
         virtualHost.start();
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());

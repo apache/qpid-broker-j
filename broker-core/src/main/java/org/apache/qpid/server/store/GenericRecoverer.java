@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.updater.Task;
+import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -49,14 +50,14 @@ public class GenericRecoverer
         _root = root;
     }
 
-    public void recover(final List<ConfiguredObjectRecord> records)
+    public void recover(final List<ConfiguredObjectRecord> records, final boolean isNew)
     {
         _root.getTaskExecutor().run(new Task<Void, RuntimeException>()
         {
             @Override
             public Void execute()
             {
-                performRecover(records);
+                performRecover(records, isNew);
                 return null;
             }
 
@@ -80,7 +81,7 @@ public class GenericRecoverer
         });
     }
 
-    private void performRecover(List<ConfiguredObjectRecord> records)
+    private void performRecover(List<ConfiguredObjectRecord> records, final boolean isNew)
     {
         if (LOGGER.isDebugEnabled())
         {
@@ -88,7 +89,7 @@ public class GenericRecoverer
         }
 
         records = resolveDiscontinuity(records);
-        resolveObjects(_root, records);
+        resolveObjects(_root, records, isNew);
     }
 
     private List<ConfiguredObjectRecord> resolveDiscontinuity(final List<ConfiguredObjectRecord> records)
@@ -141,7 +142,9 @@ public class GenericRecoverer
         return false;
     }
 
-    private void resolveObjects(ConfiguredObject<?> parentObject, List<ConfiguredObjectRecord> records)
+    private void resolveObjects(ConfiguredObject<?> parentObject,
+                                List<ConfiguredObjectRecord> records,
+                                final boolean isNew)
     {
         ConfiguredObjectFactory factory = parentObject.getObjectFactory();
         Map<UUID, ConfiguredObject<?>> resolvedObjects = new HashMap<UUID, ConfiguredObject<?>>();
@@ -184,7 +187,10 @@ public class GenericRecoverer
                     {
                         updatesMade = true;
                         ConfiguredObject<?> resolved = recovered.resolve();
-                        resolved.decryptSecrets();
+                        if(!isNew)
+                        {
+                            resolved.decryptSecrets();
+                        }
                         resolvedObjects.put(resolved.getId(), resolved);
                     }
                     else

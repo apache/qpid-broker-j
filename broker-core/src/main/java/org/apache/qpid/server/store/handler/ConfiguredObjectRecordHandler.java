@@ -24,7 +24,6 @@ import org.apache.qpid.server.store.ConfiguredObjectRecord;
 
 public interface ConfiguredObjectRecordHandler
 {
-    void begin();
 
     /**
      * Handles the given record.
@@ -32,7 +31,6 @@ public interface ConfiguredObjectRecordHandler
      * @param record
      * @return false is returned if the handler does not wish to handle other record, true otherwise
      */
-    boolean handle(ConfiguredObjectRecord record);
+    void handle(ConfiguredObjectRecord record);
 
-    void end();
 }

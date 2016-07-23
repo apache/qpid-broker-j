@@ -20,12 +20,16 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
+import static org.apache.qpid.server.store.berkeleydb.BDBConfigurationStore.State.CLOSED;
+import static org.apache.qpid.server.store.berkeleydb.BDBConfigurationStore.State.CONFIGURED;
+import static org.apache.qpid.server.store.berkeleydb.BDBConfigurationStore.State.OPEN;
 import static org.apache.qpid.server.store.berkeleydb.BDBUtils.DEFAULT_DATABASE_CONFIG;
 import static org.apache.qpid.server.store.berkeleydb.BDBUtils.abortTransactionSafely;
 import static org.apache.qpid.server.store.berkeleydb.BDBUtils.closeCursorSafely;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -71,7 +75,9 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
     private static final String CONFIGURED_OBJECTS_DB_NAME = "CONFIGURED_OBJECTS";
     private static final String CONFIGURED_OBJECT_HIERARCHY_DB_NAME = "CONFIGURED_OBJECT_HIERARCHY";
 
-    private final AtomicBoolean _configurationStoreOpen = new AtomicBoolean();
+    enum State { CLOSED, CONFIGURED, OPEN };
+    private State _state = State.CLOSED;
+    private final Object _lock = new Object();
 
     private final EnvironmentFacadeFactory _environmentFacadeFactory;
 
@@ -82,8 +88,6 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
 
     private ConfiguredObject<?> _parent;
     private final Class<? extends ConfiguredObject> _rootClass;
-    private boolean _overwrite;
-    private ConfiguredObjectRecord[] _initialRecords;
 
     public BDBConfigurationStore(final Class<? extends ConfiguredObject> rootClass)
     {
@@ -97,34 +101,42 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
     }
 
     @Override
-    public void openConfigurationStore(ConfiguredObject<?> parent,
-                                       final boolean overwrite,
-                                       final ConfiguredObjectRecord... initialRecords)
+    public void init(ConfiguredObject<?> parent)
     {
-        if (_configurationStoreOpen.compareAndSet(false,  true))
+        synchronized (_lock)
         {
-            _parent = parent;
-
-            if (_environmentFacade == null)
+            if(_state == OPEN && _parent == parent)
             {
-                _environmentFacade = _environmentFacadeFactory.createEnvironmentFacade(parent);
-                _overwrite = overwrite;
-                _initialRecords = initialRecords;
+                _state = CONFIGURED;
+            }
+            else if(_state == CONFIGURED && _parent == parent)
+            {
+                _state = CONFIGURED;
             }
             else
             {
-                throw new IllegalStateException("The database have been already opened as message store");
+                changeState(CLOSED, CONFIGURED);
+                _parent = parent;
+
+                if (_environmentFacade == null)
+                {
+                    _environmentFacade = _environmentFacadeFactory.createEnvironmentFacade(parent);
+                }
+                else
+                {
+                    throw new IllegalStateException("The database have been already opened as message store");
+                }
             }
         }
+
     }
 
-    private void clearConfigurationRecords()
+    public String getState()
     {
-        checkConfigurationStoreOpen();
-
-        _environmentFacade.clearDatabase(CONFIGURED_OBJECTS_DB_NAME, DEFAULT_DATABASE_CONFIG);
-        _environmentFacade.clearDatabase(CONFIGURED_OBJECT_HIERARCHY_DB_NAME, DEFAULT_DATABASE_CONFIG);
+        return _state.toString();
     }
+
+
 
     @Override
     public void upgradeStoreStructure() throws StoreException
@@ -132,32 +144,59 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
         try
         {
             _environmentFacade.upgradeIfNecessary(_parent);
-            if(_overwrite)
-            {
-                clearConfigurationRecords();
-                _overwrite = false;
-            }
-            if(getConfiguredObjectsDb().count() == 0l)
-            {
-                update(true, _initialRecords);
-            }
-            _initialRecords = new ConfiguredObjectRecord[0];
         }
         catch (RuntimeException e)
         {
             throw _environmentFacade.handleDatabaseException("Cannot upgrade store", e);
         }
     }
-    @Override
-    public void visitConfiguredObjectRecords(ConfiguredObjectRecordHandler handler)
-    {
-        checkConfigurationStoreOpen();
 
+    @Override
+    public boolean openConfigurationStore(ConfiguredObjectRecordHandler handler,
+                                          final ConfiguredObjectRecord... initialRecords)
+    {
+        changeState(CONFIGURED, OPEN);
         try
         {
-            handler.begin();
-            doVisitAllConfiguredObjectRecords(handler);
-            handler.end();
+            Collection<? extends ConfiguredObjectRecord> records = doVisitAllConfiguredObjectRecords();
+
+            boolean empty = records.isEmpty();
+
+            if(empty)
+            {
+                records = Arrays.asList(initialRecords);
+
+                com.sleepycat.je.Transaction txn = null;
+                try
+                {
+                    txn = _environmentFacade.beginTransaction(null);
+                    for(ConfiguredObjectRecord record : records)
+                    {
+                        update(true, record, txn);
+                    }
+                    txn.commit();
+                    txn = null;
+                }
+                catch (RuntimeException e)
+                {
+                    throw _environmentFacade.handleDatabaseException("Error updating configuration details within the store: " + e,e);
+                }
+                finally
+                {
+                    if (txn != null)
+                    {
+                        abortTransactionSafely(txn, _environmentFacade);
+                    }
+                }
+
+
+            }
+
+            for (ConfiguredObjectRecord record : records)
+            {
+                handler.handle(record);
+            }
+            return empty;
         }
         catch (RuntimeException e)
         {
@@ -165,7 +204,29 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
         }
     }
 
-    private void doVisitAllConfiguredObjectRecords(ConfiguredObjectRecordHandler handler)
+    @Override
+    public void reload(ConfiguredObjectRecordHandler handler)
+    {
+        assertState(OPEN);
+
+        try
+        {
+            Collection<? extends ConfiguredObjectRecord> records = doVisitAllConfiguredObjectRecords();
+
+            for (ConfiguredObjectRecord record : records)
+            {
+                handler.handle(record);
+
+            }
+        }
+        catch (RuntimeException e)
+        {
+            throw _environmentFacade.handleDatabaseException("Cannot visit configured object records", e);
+        }
+    }
+
+
+    private Collection<? extends ConfiguredObjectRecord> doVisitAllConfiguredObjectRecords()
     {
         Map<UUID, BDBConfiguredObjectRecord> configuredObjects = new HashMap<UUID, BDBConfiguredObjectRecord>();
         Cursor objectsCursor = null;
@@ -208,15 +269,7 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
             closeCursorSafely(objectsCursor, _environmentFacade);
             closeCursorSafely(hierarchyCursor, _environmentFacade);
         }
-
-        for (ConfiguredObjectRecord record : configuredObjects.values())
-        {
-            boolean shouldContinue = handler.handle(record);
-            if (!shouldContinue)
-            {
-                break;
-            }
-        }
+        return configuredObjects.values();
 
     }
 
@@ -228,13 +281,16 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
     @Override
     public void closeConfigurationStore() throws StoreException
     {
-        if (_configurationStoreOpen.compareAndSet(true, false))
+        synchronized (_lock)
         {
-            if (!_providedMessageStore.isMessageStoreOpen())
-            {
-                closeEnvironment();
-            }
+            _state = CLOSED;
         }
+
+        if (!_providedMessageStore.isMessageStoreOpen())
+        {
+            closeEnvironment();
+        }
+
     }
 
     private void closeEnvironment()
@@ -256,7 +312,7 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
     @Override
     public void create(ConfiguredObjectRecord configuredObject) throws StoreException
     {
-        checkConfigurationStoreOpen();
+        assertState(OPEN);
 
         if (LOGGER.isDebugEnabled())
         {
@@ -288,7 +344,7 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
     @Override
     public UUID[] remove(final ConfiguredObjectRecord... objects) throws StoreException
     {
-        checkConfigurationStoreOpen();
+        assertState(OPEN);
 
         com.sleepycat.je.Transaction txn = null;
         try
@@ -324,7 +380,7 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
     @Override
     public void update(boolean createIfNecessary, ConfiguredObjectRecord... records) throws StoreException
     {
-        checkConfigurationStoreOpen();
+        assertState(OPEN);
 
         com.sleepycat.je.Transaction txn = null;
         try
@@ -477,14 +533,6 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
         return _providedPreferenceStore;
     }
 
-    private void checkConfigurationStoreOpen()
-    {
-        if (!isConfigurationStoreOpen())
-        {
-            throw new IllegalStateException("Configuration store is not open");
-        }
-    }
-
     @Override
     public void onDelete(ConfiguredObject<?> parent)
     {
@@ -504,11 +552,6 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
                 LOGGER.info("Failed to delete the store at location " + storePath);
             }
         }
-    }
-
-    private boolean isConfigurationStoreOpen()
-    {
-        return _configurationStoreOpen.get();
     }
 
     private Database getConfiguredObjectsDb()
@@ -649,4 +692,35 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
             return LOGGER;
         }
     }
+
+    private void assertState(State state)
+    {
+        synchronized (_lock)
+        {
+            if(_state != state)
+            {
+                throw new IllegalStateException("The store must be in state " + state + " to perform this operation, but it is in state " + _state + " instead");
+            }
+        }
+    }
+
+    private void changeState(State oldState, State newState)
+    {
+        synchronized (_lock)
+        {
+            assertState(oldState);
+            _state = newState;
+        }
+    }
+
+
+    public boolean isOpen()
+    {
+        synchronized (_lock)
+        {
+            return _state == OPEN;
+        }
+    }
+
+
 }

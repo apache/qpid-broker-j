@@ -268,6 +268,7 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
 
     void delete();
 
+    boolean hasEncrypter();
     void decryptSecrets();
 
     UserPreferences getUserPreferences();

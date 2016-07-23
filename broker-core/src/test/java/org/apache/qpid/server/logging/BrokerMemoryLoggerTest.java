@@ -71,7 +71,7 @@ public class BrokerMemoryLoggerTest extends QpidTestCase
         when(_brokerEntry.getAttributes()).thenReturn(attributesMap);
         when(_brokerEntry.getParents()).thenReturn(Collections.singletonMap(SystemConfig.class.getSimpleName(), _systemConfig.getId()));
         GenericRecoverer recoverer = new GenericRecoverer(_systemConfig);
-        recoverer.recover(Arrays.asList(_brokerEntry));
+        recoverer.recover(Arrays.asList(_brokerEntry), false);
     }
 
     public void testCreateDeleteBrokerMemoryLogger()

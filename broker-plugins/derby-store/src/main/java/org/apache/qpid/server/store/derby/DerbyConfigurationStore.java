@@ -21,19 +21,20 @@
 package org.apache.qpid.server.store.derby;
 
 
+
+import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.*;
+
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.AbstractJDBCConfigurationStore;
-import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.FileBasedSettings;
 import org.apache.qpid.server.store.MessageStore;
@@ -52,7 +53,7 @@ public class DerbyConfigurationStore extends AbstractJDBCConfigurationStore
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(DerbyConfigurationStore.class);
 
-    private final AtomicBoolean _configurationStoreOpen = new AtomicBoolean();
+
     private final ProvidedMessageStore _providedMessageStore = new ProvidedMessageStore();
     private final ProvidedPreferenceStore _providedPreferenceStore = new ProvidedPreferenceStore();
 
@@ -67,38 +68,30 @@ public class DerbyConfigurationStore extends AbstractJDBCConfigurationStore
     }
 
     @Override
-    public void openConfigurationStore(ConfiguredObject<?> parent,
-                                       final boolean overwrite,
-                                       final ConfiguredObjectRecord... initialRecords)
+    public void init(ConfiguredObject<?> parent)
             throws StoreException
     {
-        if (_configurationStoreOpen.compareAndSet(false,  true))
+        changeState(CLOSED, CONFIGURED);
         {
             _parent = parent;
             DerbyUtils.loadDerbyDriver();
 
             _connectionURL = DerbyUtils.createConnectionUrl(parent.getName(), ((FileBasedSettings)_parent).getStorePath());
 
-            createOrOpenConfigurationStoreDatabase(overwrite);
+            createOrOpenConfigurationStoreDatabase();
 
-            if(hasNoConfigurationEntries())
-            {
-                update(true, initialRecords);
-            }
         }
     }
 
     @Override
     public void upgradeStoreStructure() throws StoreException
     {
-        checkConfigurationStoreOpen();
         upgradeIfNecessary(_parent);
     }
 
     @Override
     protected Connection getConnection() throws SQLException
     {
-        checkConfigurationStoreOpen();
         return DriverManager.getConnection(_connectionURL);
     }
 
@@ -110,17 +103,8 @@ public class DerbyConfigurationStore extends AbstractJDBCConfigurationStore
             throw new IllegalStateException("Cannot close the store as the provided message store is still open");
         }
 
-        if (_configurationStoreOpen.compareAndSet(true,  false))
-        {
-            try
-            {
-                DerbyUtils.shutdownDatabase(_connectionURL);
-            }
-            catch (SQLException e)
-            {
-                throw new StoreException("Error closing configuration store", e);
-            }
-        }
+        setState(CLOSED);
+
     }
 
     @Override
@@ -189,15 +173,6 @@ public class DerbyConfigurationStore extends AbstractJDBCConfigurationStore
     protected boolean tableExists(final String tableName, final Connection conn) throws SQLException
     {
         return DerbyUtils.tableExists(tableName, conn);
-    }
-
-    @Override
-    protected void checkConfigurationStoreOpen()
-    {
-        if (!_configurationStoreOpen.get())
-        {
-            throw new IllegalStateException("Configuration store is not open");
-        }
     }
 
     @Override

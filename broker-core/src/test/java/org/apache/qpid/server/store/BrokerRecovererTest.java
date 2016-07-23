@@ -301,7 +301,7 @@ public class BrokerRecovererTest extends QpidTestCase
     private void resolveObjects(ConfiguredObjectRecord... records)
     {
         GenericRecoverer recoverer = new GenericRecoverer(_systemConfig);
-        recoverer.recover(Arrays.asList(records));
+        recoverer.recover(Arrays.asList(records), false);
     }
 
 }

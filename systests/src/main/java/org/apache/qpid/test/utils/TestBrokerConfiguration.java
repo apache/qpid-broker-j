@@ -40,6 +40,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -82,9 +85,11 @@ public class TestBrokerConfiguration
     private final TaskExecutor _taskExecutor;
     private final String _storeType;
 
-    private DurableConfigurationStore _store;
+    private AbstractMemoryStore _store;
     private boolean _saved;
     private File _passwdFile;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(TestBrokerConfiguration.class);
 
     public TestBrokerConfiguration(String storeType, String initialStoreLocation)
     {
@@ -122,41 +127,33 @@ public class TestBrokerConfiguration
             _store = new AbstractMemoryStore(Broker.class){};
 
             ConfiguredObjectRecord[] initialRecords = records.toArray(new ConfiguredObjectRecord[records.size()]);
-            _store.openConfigurationStore(parentObject,false, initialRecords);
+            _store.init(parentObject);
+
+            _store.openConfigurationStore(new ConfiguredObjectRecordHandler()
+            {
+                @Override
+                public void handle(ConfiguredObjectRecord record)
+                {
+                    Map<String, Object> attributes = record.getAttributes();
+                    String rawType = (String)attributes.get("type");
+                    if (rawType != null)
+                    {
+                        String interpolatedType = Strings.expand(rawType, false, Strings.ENV_VARS_RESOLVER, Strings.JAVA_SYS_PROPS_RESOLVER);
+                        if (!interpolatedType.equals(rawType))
+                        {
+                            setObjectAttribute(record, "type", interpolatedType);
+                        }
+                    }
+                }
+
+            }, initialRecords);
         }
         catch (IOException e)
         {
             throw new RuntimeException("Unable to load initial store", e);
         }
 
-        _store.visitConfiguredObjectRecords(new ConfiguredObjectRecordHandler()
-        {
-            @Override
-            public boolean handle(ConfiguredObjectRecord record)
-            {
-                Map<String, Object> attributes = record.getAttributes();
-                String rawType = (String)attributes.get("type");
-                if (rawType != null)
-                {
-                    String interpolatedType = Strings.expand(rawType, false, Strings.ENV_VARS_RESOLVER, Strings.JAVA_SYS_PROPS_RESOLVER);
-                    if (!interpolatedType.equals(rawType))
-                    {
-                        setObjectAttribute(record, "type", interpolatedType);
-                    }
-                }
-                return true;
-            }
 
-            @Override
-            public void end()
-            {
-            }
-
-            @Override
-            public void begin()
-            {
-            }
-        });
     }
 
     public boolean setBrokerAttribute(String name, Object value)
@@ -214,33 +211,44 @@ public class TestBrokerConfiguration
         DurableConfigurationStore configurationStore = parentObject.getConfigurationStore();
         configurationStore.closeConfigurationStore();
 
-        final List<ConfiguredObjectRecord> initialRecords = new ArrayList<>();
-        _store.visitConfiguredObjectRecords(new ConfiguredObjectRecordHandler()
-        {
-            @Override
-            public void begin()
-            {
+        final List<ConfiguredObjectRecord> records = getConfiguredObjectRecords();
 
-            }
 
-            @Override
-            public boolean handle(final ConfiguredObjectRecord record)
-            {
-                initialRecords.add(record);
-                return true;
-            }
+        configurationStore.init(parentObject);
 
-            @Override
-            public void end()
-            {
+        clearStore(configurationStore);
 
-            }
-        });
+        configurationStore.update(true, records.toArray(new ConfiguredObjectRecord[records.size()]));
 
-        configurationStore.openConfigurationStore(parentObject,true,initialRecords.toArray(new ConfiguredObjectRecord[initialRecords.size()]));
+
         configurationStore.closeConfigurationStore();
         parentObject.close();
         return true;
+    }
+
+    public void clearStore(final DurableConfigurationStore configurationStore)
+    {
+        final List<ConfiguredObjectRecord> recordsToDelete = new ArrayList<>();
+        configurationStore.openConfigurationStore(new ConfiguredObjectRecordHandler()
+        {
+
+            @Override
+            public void handle(final ConfiguredObjectRecord record)
+            {
+                recordsToDelete.add(record);
+            }
+
+        });
+        if(!recordsToDelete.isEmpty())
+        {
+            configurationStore.remove(recordsToDelete.toArray(new ConfiguredObjectRecord[recordsToDelete.size()]));
+        }
+    }
+
+    public List<ConfiguredObjectRecord> getConfiguredObjectRecords()
+    {
+        return _store.getConfiguredObjectRecords();
+
     }
 
     public UUID[] removeObjectConfiguration(final Class<? extends ConfiguredObject> category,
@@ -255,32 +263,16 @@ public class TestBrokerConfiguration
             {
                 final List<ConfiguredObjectRecord> aliasRecords = new ArrayList<>();
                 // remove vhost aliases associated with the vhost
-                final ConfiguredObjectRecordHandler visitor = new ConfiguredObjectRecordHandler()
+
+                for(ConfiguredObjectRecord record : getConfiguredObjectRecords())
                 {
-                    @Override
-                    public void begin()
-                    {
-
-                    }
-
-                    @Override
-                    public boolean handle(final ConfiguredObjectRecord record)
-                    {
-                        if (record.getType().equals(VirtualHostAlias.class.getSimpleName())
+                    if (record.getType().equals(VirtualHostAlias.class.getSimpleName())
                             && name.equals(record.getAttributes().get(ConfiguredObject.NAME)))
-                        {
-                            aliasRecords.add(record);
-                        }
-                        return true;
-                    }
-
-                    @Override
-                    public void end()
                     {
-
+                        aliasRecords.add(record);
                     }
-                };
-                _store.visitConfiguredObjectRecords(visitor);
+                }
+
                 _store.remove(aliasRecords.toArray(new ConfiguredObjectRecord[aliasRecords.size()]));
             }
             return _store.remove(entry);
@@ -365,9 +357,18 @@ public class TestBrokerConfiguration
 
     private ConfiguredObjectRecord findObject(final Class<? extends ConfiguredObject> category, final String objectName)
     {
-        final RecordFindingVisitor visitor = new RecordFindingVisitor(category, objectName);
-        _store.visitConfiguredObjectRecords(visitor);
-        return visitor.getFoundRecord();
+        Collection<ConfiguredObjectRecord> records = getConfiguredObjectRecords();
+        for(ConfiguredObjectRecord record : records)
+        {
+            if (record.getType().equals(category.getSimpleName())
+                && (objectName == null
+                    || objectName.equals(record.getAttributes().get(ConfiguredObject.NAME))))
+            {
+                return record;
+            }
+        }
+        return null;
+
     }
 
     private void addObjectConfiguration(UUID id, String type, Map<String, Object> attributes)
@@ -479,44 +480,4 @@ public class TestBrokerConfiguration
         }
     }
 
-    private static class RecordFindingVisitor implements ConfiguredObjectRecordHandler
-    {
-        private final Class<? extends ConfiguredObject> _category;
-        private final String _objectName;
-        public ConfiguredObjectRecord _foundRecord;
-
-        public RecordFindingVisitor(final Class<? extends ConfiguredObject> category, final String objectName)
-        {
-            _category = category;
-            _objectName = objectName;
-        }
-
-        @Override
-        public void begin()
-        {
-        }
-
-        @Override
-        public boolean handle(final ConfiguredObjectRecord object)
-        {
-            if (object.getType().equals(_category.getSimpleName())
-                && (_objectName == null
-                    || _objectName.equals(object.getAttributes().get(ConfiguredObject.NAME))))
-            {
-                _foundRecord = object;
-                return false;
-            }
-            return true;
-        }
-
-        @Override
-        public void end()
-        {
-        }
-
-        public ConfiguredObjectRecord getFoundRecord()
-        {
-            return _foundRecord;
-        }
-    }
 }

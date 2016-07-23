@@ -20,12 +20,14 @@
  */
 package org.apache.qpid.server.store;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
@@ -34,6 +36,7 @@ import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.store.StoreConfigurationChangeListener;
 import org.apache.qpid.server.filter.FilterSupport;
+import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -44,6 +47,7 @@ import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
+import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.util.Action;
 
 public class VirtualHostStoreUpgraderAndRecoverer
@@ -569,15 +573,39 @@ public class VirtualHostStoreUpgraderAndRecoverer
 
     }
 
-    public void perform(final DurableConfigurationStore durableConfigurationStore)
+    public boolean upgradeAndRecover(final DurableConfigurationStore durableConfigurationStore,
+                                     final ConfiguredObjectRecord... initialRecords)
     {
         String virtualHostCategory = VirtualHost.class.getSimpleName();
         GenericStoreUpgrader upgraderHandler = new GenericStoreUpgrader(virtualHostCategory, VirtualHost.MODEL_VERSION, durableConfigurationStore, _upgraders);
-        upgraderHandler.upgrade();
+        boolean isNew = upgraderHandler.upgrade(initialRecords);
 
-        new GenericRecoverer(_virtualHostNode).recover(upgraderHandler.getRecords());
+        List<ConfiguredObjectRecord> records = upgraderHandler.getRecords();
+        recover(durableConfigurationStore, records, isNew);
+        return isNew;
+    }
 
-        final StoreConfigurationChangeListener configChangeListener = new StoreConfigurationChangeListener(durableConfigurationStore);
+    public void reloadAndRecover(final DurableConfigurationStore durableConfigurationStore)
+    {
+        final List<ConfiguredObjectRecord> records = new ArrayList<>();
+        durableConfigurationStore.reload(new ConfiguredObjectRecordHandler()
+        {
+            @Override
+            public void handle(final ConfiguredObjectRecord record)
+            {
+                records.add(record);
+            }
+        });
+        recover(durableConfigurationStore, records, false);
+    }
+
+    private void recover(final DurableConfigurationStore durableConfigurationStore,
+                         final List<ConfiguredObjectRecord> records, final boolean isNew)
+    {
+        new GenericRecoverer(_virtualHostNode).recover(records, isNew);
+
+        final StoreConfigurationChangeListener
+                configChangeListener = new StoreConfigurationChangeListener(durableConfigurationStore);
         if(_virtualHostNode.getVirtualHost() != null)
         {
             applyRecursively(_virtualHostNode.getVirtualHost(), new Action<ConfiguredObject<?>>()
@@ -648,6 +676,13 @@ public class VirtualHostStoreUpgraderAndRecoverer
 
             }
         });
+        if(isNew)
+        {
+            if(_virtualHostNode instanceof AbstractConfiguredObject)
+            {
+                ((AbstractConfiguredObject)_virtualHostNode).forceUpdateAllSecureAttributes();
+            }
+        }
     }
 
     private void applyRecursively(final ConfiguredObject<?> object, final Action<ConfiguredObject<?>> action)
