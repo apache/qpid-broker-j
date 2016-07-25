@@ -932,4 +932,14 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
     }
 
 
+    protected final void doIfNotState(State state, Runnable action)
+    {
+        synchronized (_lock)
+        {
+            if(_state != state)
+            {
+                action.run();
+            }
+        }
+    }
 }

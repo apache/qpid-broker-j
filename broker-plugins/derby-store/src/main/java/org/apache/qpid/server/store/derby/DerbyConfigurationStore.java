@@ -102,7 +102,23 @@ public class DerbyConfigurationStore extends AbstractJDBCConfigurationStore
         {
             throw new IllegalStateException("Cannot close the store as the provided message store is still open");
         }
+       
+        doIfNotState(CLOSED, new Runnable() 
+                             {
+                                 @Override
+                                 public void run()
+                                 {
+                                     try
+                                     {
+                                         DerbyUtils.shutdownDatabase(_connectionURL);
+                                     }
+                                     catch (SQLException e)
+                                     {
+                                         throw new StoreException("Error closing configuration store", e);
+                                     }
 
+                                 }
+                             }); 
         setState(CLOSED);
 
     }
