@@ -38,11 +38,11 @@ import javax.security.sasl.SaslServer;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.oauth2.cloudfoundry.CloudFoundryOAuth2IdentityResolverService;
-import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
@@ -224,6 +224,38 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         AuthenticationResult authenticationResult =
                 _authProvider.authenticateViaAccessToken(TEST_INVALID_ACCESS_TOKEN);
         assertFailure(authenticationResult, "invalid_token");
+    }
+
+    public void testFailAuthenticateViaInvalidAccessTokenWithCache() throws Exception
+    {
+        OAuth2MockEndpoint mockIdentityResolverEndpoint = createMockIdentityResolverEndpoint();
+        _server.setEndpoints(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
+                                                      mockIdentityResolverEndpoint));
+        mockIdentityResolverEndpoint.putExpectedParameter("token", TEST_INVALID_ACCESS_TOKEN);
+
+        // populate cache
+        mockIdentityResolverEndpoint.setResponse(400, "{\"error\":\"invalid_token\"}");
+        _authProvider.authenticateViaAccessToken(TEST_INVALID_ACCESS_TOKEN);
+
+        // hit cache
+        mockIdentityResolverEndpoint.setResponse(200, String.format("{\"user_name\":\"%s\"}", TEST_USER_NAME));
+        AuthenticationResult authenticationResult = _authProvider.authenticateViaAccessToken(TEST_INVALID_ACCESS_TOKEN);
+        assertFailure(authenticationResult, "invalid_token");
+    }
+
+    public void testAuthenticateViaAccessTokenWithCache() throws Exception
+    {
+        OAuth2MockEndpoint mockIdentityResolverEndpoint = createMockIdentityResolverEndpoint();
+        _server.setEndpoints(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
+                                                      mockIdentityResolverEndpoint));
+
+        // populate cache
+        _authProvider.authenticateViaAccessToken(TEST_VALID_ACCESS_TOKEN);
+
+        // hit cache
+        mockIdentityResolverEndpoint.setResponse(500, "{\"error\":\"result should have been cached\"}");
+        AuthenticationResult authenticationResult = _authProvider.authenticateViaAccessToken(TEST_VALID_ACCESS_TOKEN);
+        assertSuccess(authenticationResult);
     }
 
     private void assertSuccess(final AuthenticationResult authenticationResult)

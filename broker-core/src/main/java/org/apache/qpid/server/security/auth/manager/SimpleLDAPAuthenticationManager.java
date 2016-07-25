@@ -22,7 +22,6 @@ package org.apache.qpid.server.security.auth.manager;
 
 import java.util.List;
 
-import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
@@ -34,7 +33,7 @@ import org.apache.qpid.server.model.TrustStore;
                 type = "SimpleLDAP",
                 description = SimpleLDAPAuthenticationManager.CLASS_DESCRIPTION )
 public interface SimpleLDAPAuthenticationManager<X extends SimpleLDAPAuthenticationManager<X>>
-        extends AuthenticationProvider<X>,
+        extends CachingAuthenticationProvider<X>,
                 UsernamePasswordAuthenticationProvider<X>,
                 PreferencesSupportingAuthenticationProvider
 {

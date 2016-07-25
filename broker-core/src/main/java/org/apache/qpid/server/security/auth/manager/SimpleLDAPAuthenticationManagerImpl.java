@@ -33,6 +33,9 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import javax.naming.AuthenticationException;
 import javax.naming.Context;
@@ -55,8 +58,9 @@ import javax.security.sasl.AuthorizeCallback;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +71,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.server.security.CryptoUtil;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
@@ -74,6 +79,7 @@ import org.apache.qpid.server.security.auth.manager.ldap.AbstractLDAPSSLSocketFa
 import org.apache.qpid.server.security.auth.manager.ldap.LDAPSSLSocketFactoryGenerator;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainPasswordCallback;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainSaslServer;
+import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.apache.qpid.server.util.CipherSuiteAndProtocolRestrictingSSLSocketFactory;
 import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.StringUtil;
@@ -142,6 +148,8 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     private List<String> _tlsCipherSuiteWhiteList;
     private List<String> _tlsCipherSuiteBlackList;
 
+    private Cache<String, AuthenticationResult> _authenticationCache;
+
     /**
      * Dynamically created SSL Socket Factory implementation.
      */
@@ -186,6 +194,19 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         _tlsProtocolBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
         _tlsCipherSuiteWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
         _tlsCipherSuiteBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
+
+        Long cacheMaxSize = getContextValue(Long.class, AUTHORISATION_CACHE_MAX_SIZE);
+        Long cacheExpirationTime = getContextValue(Long.class, AUTHORISATION_CACHE_EXPIRATION_TIME);
+        if (cacheMaxSize == null || cacheMaxSize <= 0 || cacheExpirationTime == null || cacheExpirationTime <= 0)
+        {
+            _logger.debug("disabling authentication result caching");
+            cacheMaxSize = 0L;
+            cacheExpirationTime = 1L;
+        }
+        _authenticationCache = CacheBuilder.newBuilder()
+                                           .maximumSize(cacheMaxSize)
+                                           .expireAfterWrite(cacheExpirationTime, TimeUnit.SECONDS)
+                                           .build();
     }
 
     @Override
@@ -320,21 +341,22 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     @Override
     public AuthenticationResult authenticate(String username, String password)
     {
-        String nameFromId;
+        return getOrLoadAuthenticationResult(username, password);
+    }
+
+    private AuthenticationResult doLDAPNameAuthentication(String userId, String password)
+    {
+        final String name;
         try
         {
-            nameFromId = getNameFromId(username);
+            name = getNameFromId(userId);
         }
         catch (NamingException e)
         {
-            _logger.warn("Retrieving LDAP name for user '{}' resulted in error.", username, e);
+            _logger.warn("Retrieving LDAP name for user '{}' resulted in error.", userId, e);
             return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
         }
-        return doLDAPNameAuthentication(nameFromId, password);
-    }
 
-    private AuthenticationResult doLDAPNameAuthentication(String name, String password)
-    {
         if(name == null)
         {
             //The search didn't return anything, class as not-authenticated before it NPEs below
@@ -384,6 +406,26 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
             {
                 closeSafely(ctx);
             }
+        }
+    }
+
+    private AuthenticationResult getOrLoadAuthenticationResult(final String userId, final String password)
+    {
+        String credentialDigest = CryptoUtil.sha256Hex(userId, password);
+        try
+        {
+            return _authenticationCache.get(credentialDigest, new Callable<AuthenticationResult>()
+            {
+                @Override
+                public AuthenticationResult call()
+                {
+                    return doLDAPNameAuthentication(userId, password);
+                }
+            });
+        }
+        catch (ExecutionException e)
+        {
+            throw new RuntimeException("Unexpected checked Exception while authenticating", e.getCause());
         }
     }
 
@@ -618,33 +660,25 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         @Override
         public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException
         {
-            String name = null;
+            String userId = null;
             String password = null;
             AuthenticationResult authenticated = null;
             for(Callback callback : callbacks)
             {
                 if (callback instanceof NameCallback)
                 {
-                    String id = ((NameCallback) callback).getDefaultName();
-                    try
-                    {
-                        name = getNameFromId(id);
-                    }
-                    catch (NamingException e)
-                    {
-                        _logger.warn("SASL Authentication Exception", e);
-                    }
+                    userId = ((NameCallback) callback).getDefaultName();
                     if(password != null)
                     {
-                        authenticated = doLDAPNameAuthentication(name, password);
+                        authenticated = getOrLoadAuthenticationResult(userId, password);
                     }
                 }
                 else if (callback instanceof PlainPasswordCallback)
                 {
                     password = ((PlainPasswordCallback)callback).getPlainPassword();
-                    if(name != null)
+                    if (userId != null)
                     {
-                        authenticated = doLDAPNameAuthentication(name, password);
+                        authenticated = getOrLoadAuthenticationResult(userId, password);
                         if(authenticated.getStatus()== AuthenticationResult.AuthenticationStatus.SUCCESS)
                         {
                             ((PlainPasswordCallback)callback).setAuthenticated(true);
