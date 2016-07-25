@@ -19,22 +19,19 @@
  *
  */
 define(["dojo/_base/declare",
-        "dojo/_base/array",
-        "dojo/dom-construct",
-        "dojo/parser",
-        "dojo/query",
-        "dojo/dom-style",
+        "dojo/_base/lang",
+        "dojo/Evented",
         "dojo/store/Memory",
-        "dijit/_WidgetBase",
-        "dijit/registry",
         "dojo/text!common/TimeZoneSelector.html",
-        "dijit/form/ComboBox",
+        "dijit/_WidgetBase",
+        "dijit/_TemplatedMixin",
+        "dijit/_WidgetsInTemplateMixin",
         "dijit/form/FilteringSelect",
         "dijit/form/CheckBox",
         "dojox/validate/us",
         "dojox/validate/web",
         "dojo/domReady!"],
-    function (declare, array, domConstruct, parser, query, domStyle, Memory, _WidgetBase, registry, template)
+    function (declare, lang, Evented, Memory, template)
     {
 
         var preferencesRegions = ["Africa",
@@ -50,10 +47,7 @@ define(["dojo/_base/declare",
 
         function initSupportedRegions()
         {
-            var supportedRegions = [{
-                "id": "undefined",
-                "name": "Undefined"
-            }];
+            var supportedRegions = [];
             for (var j = 0; j < preferencesRegions.length; j++)
             {
                 supportedRegions.push({
@@ -64,168 +58,118 @@ define(["dojo/_base/declare",
             return supportedRegions;
         }
 
-        return declare("qpid.common.TimeZoneSelector", [_WidgetBase], {
+        return declare("qpid.common.TimeZoneSelector", [dijit._WidgetBase,
+                                                        dijit._TemplatedMixin,
+                                                        dijit._WidgetsInTemplateMixin,
+                                                        Evented], {
+            templateString: template.replace(/<!--[\s\S]*?-->/g, ""),
 
+            /**
+             * template fields
+             */
             value: null,
-            domNode: null,
-            _regionSelector: null,
-            _citySelector: null,
-            _utcSelector: null,
+            regionSelector: null,
+            citySelector: null,
+            utcSelector: null,
 
-            constructor: function (args)
-            {
-                this._args = args;
-                this.timezones = args.timezones;
-            },
-
-            buildRendering: function ()
-            {
-                this.domNode = domConstruct.create("div", {innerHTML: template});
-                parser.parse(this.domNode);
-            },
+            /**
+             * internal fields
+             */
+            _supportedRegions: null,
 
             postCreate: function ()
             {
                 this.inherited(arguments);
 
-                var self = this;
-                if (this._args.labelStyle)
-                {
-                    var nl = query(".labelClass", this.domNode);
-                    array.forEach(nl, function (entry, i)
-                    {
-                        domStyle.set(entry, self._args.labelStyle)
-                    });
-                }
-                var supportedTimeZones = this.timezones;
+                this.citySelector.set("searchAttr", "city");
+                this.citySelector.set("query", {region: /.*/});
+                this.citySelector.set("labelAttr", "city");
+                this._supportedRegions = initSupportedRegions();
+                this.regionSelector.set("store", new Memory({data: this._supportedRegions}));
 
-                this._utcSelector = registry.byNode(query(".utcSelector", this.domNode)[0]);
-                this._citySelector = registry.byNode(query(".timezoneCity", this.domNode)[0]);
-                this._citySelector.set("searchAttr", "city");
-                this._citySelector.set("query", {region: /.*/});
-                this._citySelector.set("labelAttr", "city");
-                if (this.timezones)
+                this.utcSelector.on("change", lang.hitch(this, function (value)
                 {
-                    this._setTimezonesAttr(this.timezones);
-                }
-
-                this._regionSelector = registry.byNode(query(".timezoneRegion", this.domNode)[0]);
-                var supportedRegions = initSupportedRegions();
-                this._regionSelector.set("store", new Memory({data: supportedRegions}));
-
-                this._utcSelector.on("change", function (value)
-                {
-                    var checked = this.get("checked");
+                    var checked = this.utcSelector.get("checked");
+                    this.citySelector.set("disabled", checked);
+                    this.regionSelector.set("disabled", checked);
                     if (checked)
                     {
-                        self.value = "UTC";
+                        this.value = "UTC";
+                        this.regionSelector.reset();
+                        this.citySelector.reset();
+                        this._handleOnChange(this.value);
                     }
                     else
                     {
-                        if (self._citySelector.value && self._regionSelector.value)
-                        {
-                            self.value = self._citySelector.value;
-                        }
-                        else
-                        {
-                            self.value = null;
-                        }
+                        this._defaultRegionAndCity();
                     }
-                    self._citySelector.set("disabled", checked);
-                    self._regionSelector.set("disabled", checked);
-                    self._handleOnChange(self.value);
-                });
-                this._regionSelector.on("change", function (value)
-                {
-                    if (value == "undefined")
-                    {
-                        self._citySelector.set("disabled", true);
-                        self._citySelector.query.region = /.*/;
-                        self.value = null;
-                        self._citySelector.set("value", null);
-                        self._handleOnChange(self.value);
-                    }
-                    else
-                    {
-                        self._citySelector.set("disabled", false);
-                        self._citySelector.query.region = value || /.*/;
-                        if (this.timeZone)
-                        {
-                            self._citySelector.set("value", this.timeZone);
-                            this.timeZone = null;
-                        }
-                        else
-                        {
-                            self._citySelector.set("value", null);
-                        }
-                    }
-                });
 
-                this._citySelector.on("change", function (value)
+                }));
+                this.regionSelector.on("change", lang.hitch(this, function (value)
                 {
-                    self.value = value;
-                    self._handleOnChange(value);
-                });
+                    if (value)
+                    {
+                        this.citySelector.set("disabled", false);
+                        this.citySelector.query.region = value;
+                        var store = this.citySelector.get("store");
+                        var cities = store.query({region: value});
+                        this.citySelector.set("value", cities[0].id, true);
+                    }
+                }));
 
-                this._setValueAttr(this._args.value);
+                this.citySelector.on("change", lang.hitch(this, function (value)
+                {
+                    if (value)
+                    {
+                        this.value = value;
+                        this._handleOnChange(value);
+                    }
+                }));
+            },
+
+            _defaultRegionAndCity: function ()
+            {
+                var firstRegion = this._supportedRegions[0];
+                this.regionSelector.set("value", firstRegion.id, false);
+                var store = this.citySelector.get("store");
+                var cities = store.query({region: firstRegion.id});
+                this.citySelector.set("value", cities[0].id, true);
             },
 
             _setTimezonesAttr: function (supportedTimeZones)
             {
-                this._citySelector.set("store", new Memory({data: supportedTimeZones}));
-                if (this._args.name)
-                {
-                    this._citySelector.set("name", this._args.name);
-                }
+                this.citySelector.set("store", new Memory({data: supportedTimeZones}));
             },
 
             _setValueAttr: function (value)
             {
+                this._lastValueReported = value;
                 if (value)
                 {
                     if (value == "UTC")
                     {
-                        this._utcSelector.set("checked", true);
+                        this.utcSelector.set("checked", true);
                     }
                     else
                     {
-                        this._utcSelector.set("checked", false);
+                        this.utcSelector.set("checked", false);
                         var elements = value.split("/");
                         if (elements.length > 1)
                         {
-                            this._regionSelector.timeZone = value;
-                            this._regionSelector.set("value", elements[0]);
-                            this._citySelector.set("value", value);
+                            this.regionSelector.timeZone = value;
+                            this.regionSelector.set("value", elements[0], false);
+                            this.citySelector.set("value", value, true);
                         }
                         else
                         {
-                            this._regionSelector.set("value", "undefined");
+                            this._defaultRegionAndCity();
                         }
                     }
                 }
                 else
                 {
-                    this._utcSelector.set("checked", false);
-                    this._regionSelector.set("value", "undefined");
+                    this._defaultRegionAndCity();
                 }
-                this.value = value;
-                this._handleOnChange(value);
-            },
-
-            destroy: function ()
-            {
-                if (this.domNode)
-                {
-                    this.domNode.destroy();
-                    this.domNode = null;
-                }
-                _regionSelector: null;
-                _citySelector: null;
-                _utcSelector: null;
-            },
-
-            onChange: function (newValue)
-            {
             },
 
             _handleOnChange: function (newValue)
@@ -233,15 +177,7 @@ define(["dojo/_base/declare",
                 if (this._lastValueReported != newValue)
                 {
                     this._lastValueReported = newValue;
-                    if (this._onChangeHandle)
-                    {
-                        this._onChangeHandle.remove();
-                    }
-                    this._onChangeHandle = this.defer(function ()
-                    {
-                        this._onChangeHandle = null;
-                        this.onChange(newValue);
-                    });
+                    this.emit("change", newValue);
                 }
             }
 

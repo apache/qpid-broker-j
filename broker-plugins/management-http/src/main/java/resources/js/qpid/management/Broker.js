@@ -406,7 +406,7 @@ define(["dojo/parser",
                         var idx = evt.rowIndex, theItem = this.getItem(idx);
                         if (theItem.vhId)
                         {
-                            that.showVirtualHost(theItem, that.brokerObj);
+                            that.showVirtualHost(theItem);
                         }
                     });
                 }, gridProperties, EnhancedGrid, true);
@@ -437,7 +437,7 @@ define(["dojo/parser",
                 var data = that.vhostsGrid.grid.selection.getSelected();
                 if (data.length == 1)
                 {
-                    that.showVirtualHost(data[0], that.brokerObj);
+                    that.showVirtualHost(data[0]);
                     that.vhostsGrid.grid.selection.clear();
                 }
             });
@@ -448,7 +448,7 @@ define(["dojo/parser",
                 if (data.length == 1)
                 {
                     var item = data[0];
-                    that.controller.show("virtualhostnode", item.name, that.brokerObj, item.id);
+                    that.controller.showById(item.id);
                     that.vhostsGrid.grid.selection.clear();
                 }
             });
@@ -588,9 +588,8 @@ define(["dojo/parser",
             {
                 connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
                 {
-                    var idx = evt.rowIndex, theItem = this.getItem(idx);
-                    var name = obj.dataStore.getValue(theItem, "name");
-                    that.controller.show("port", name, that.brokerObj, theItem.id);
+                    var theItem = this.getItem(evt.rowIndex);
+                    that.controller.showById(theItem.id);
                 });
             }, gridProperties, EnhancedGrid);
 
@@ -641,9 +640,8 @@ define(["dojo/parser",
                 {
                     connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
                     {
-                        var idx = evt.rowIndex, theItem = this.getItem(idx);
-                        var name = obj.dataStore.getValue(theItem, "name");
-                        that.controller.show("authenticationprovider", name, that.brokerObj, theItem.id);
+                        var theItem = this.getItem(evt.rowIndex);
+                        that.controller.showById(theItem.id);
                     });
                 }, gridProperties, EnhancedGrid);
 
@@ -668,9 +666,8 @@ define(["dojo/parser",
                 {
                     connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
                     {
-                        var idx = evt.rowIndex, theItem = this.getItem(idx);
-                        var name = obj.dataStore.getValue(theItem, "name");
-                        that.controller.show("keystore", name, that.brokerObj, theItem.id);
+                        var theItem = this.getItem(evt.rowIndex);
+                        that.controller.showById(theItem.id);
                     });
                 }, gridProperties, EnhancedGrid);
 
@@ -703,9 +700,8 @@ define(["dojo/parser",
                 {
                     connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
                     {
-                        var idx = evt.rowIndex, theItem = this.getItem(idx);
-                        var name = obj.dataStore.getValue(theItem, "name");
-                        that.controller.show("truststore", name, that.brokerObj, theItem.id);
+                        var theItem = this.getItem(evt.rowIndex);
+                        that.controller.showById(theItem.id);
                     });
                 }, gridProperties, EnhancedGrid);
             this.groupProvidersGrid =
@@ -725,9 +721,8 @@ define(["dojo/parser",
                 {
                     connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
                     {
-                        var idx = evt.rowIndex, theItem = this.getItem(idx);
-                        var name = obj.dataStore.getValue(theItem, "name");
-                        that.controller.show("groupprovider", name, that.brokerObj, theItem.id);
+                        var theItem = this.getItem(evt.rowIndex);
+                        that.controller.showById(theItem.id);
                     });
                 }, gridProperties, EnhancedGrid);
             this.accessControlProvidersGrid =
@@ -751,9 +746,8 @@ define(["dojo/parser",
                 {
                     connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
                     {
-                        var idx = evt.rowIndex, theItem = this.getItem(idx);
-                        var name = obj.dataStore.getValue(theItem, "name");
-                        that.controller.show("accesscontrolprovider", name, that.brokerObj, theItem.id);
+                        var theItem = this.getItem(evt.rowIndex);
+                        that.controller.showById(theItem.id);
                     });
                 }, gridProperties, EnhancedGrid);
 
@@ -789,9 +783,8 @@ define(["dojo/parser",
             {
                 connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
                 {
-                    var idx = evt.rowIndex, theItem = this.getItem(idx);
-                    var name = obj.dataStore.getValue(theItem, "name");
-                    that.controller.show("brokerlogger", name, that.brokerObj, theItem.id);
+                    var theItem = this.getItem(evt.rowIndex);
+                    that.controller.showById(theItem.id);
                 });
             }, gridProperties, EnhancedGrid);
             this.update(function ()
@@ -800,14 +793,9 @@ define(["dojo/parser",
             });
         }
 
-        BrokerUpdater.prototype.showVirtualHost = function (item, brokerObj)
+        BrokerUpdater.prototype.showVirtualHost = function (item)
         {
-            var nodeObject = {
-                type: "virtualhostnode",
-                name: item.name,
-                parent: brokerObj
-            };
-            this.controller.show("virtualhost", item.vhId ? item.vhName : item.name, nodeObject, item.vhId);
+            this.controller.showById(item.vhId);
         }
 
         BrokerUpdater.prototype.updateHeader = function ()

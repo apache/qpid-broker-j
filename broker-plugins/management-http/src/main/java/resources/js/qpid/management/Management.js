@@ -483,13 +483,14 @@ define(["dojo/_base/lang",
         Management.prototype.init = function (callback)
         {
             var that = this;
+            // todo : change invoked methods to return promise and execute requests in parallel using promise.all
             this.getAuthenticatedUserAndGroups(function()
             {
                 that.loadMetadata(function ()
                 {
                     that.loadTimezones(function ()
                     {
-                        that.loadUserPreferences(callback);
+                        that.loadUserPreferences().then(callback, callback);
                     });
                 });
             });
@@ -558,12 +559,12 @@ define(["dojo/_base/lang",
 
         // summary:
         //  Loads user preferences and store them under 'userPreferences' field as object of type qpid.management.UserPreferences
-        //  Callback is invoked on both successful and unsuccessful preferences request
+        //  Returns promise
         //
-        Management.prototype.loadUserPreferences = function (callback)
+        Management.prototype.loadUserPreferences = function ()
         {
             this.userPreferences = new UserPreferences(this);
-            this.userPreferences.load(callback, callback);
+            return this.userPreferences.load();
         };
 
         var saslServiceUrl = "service/sasl";
@@ -662,11 +663,22 @@ define(["dojo/_base/lang",
            return this.put({url: url}, preference);
         };
 
+        Management.prototype.savePreferences = function(parentObject, preferences)
+        {
+            var url =  this.buildPreferenceUrl(parentObject);
+            return this.post({url: url}, preferences);
+        };
 
         Management.prototype.getPreference = function(parentObject, type, name)
         {
            var url =  this.buildPreferenceUrl(parentObject, type, name);
            return this.get({url: url});
+        };
+
+        Management.prototype.getPreferenceById = function(parentObject, preferenceId)
+        {
+            var url =  this.buildPreferenceUrl(parentObject, null, null, true, preferenceId);
+            return this.get({url: url});
         };
 
         Management.prototype.getUserPreferences = function(parentObject, type)
@@ -687,12 +699,23 @@ define(["dojo/_base/lang",
            return this.del({url: url});
         };
 
-        Management.prototype.buildPreferenceUrl = function (parentObject, type, name, visiblePreferences)
+        Management.prototype.buildPreferenceUrl = function (parentObject, type, name, visiblePreferences, id)
         {
-            return this.objectToURL(parentObject)
-                   + (visiblePreferences ? "/visiblepreferences/" : "/userpreferences/")
-                   + encodeURIComponent(encodeURIComponent(type))
-                   + (name ? "/" + encodeURIComponent(encodeURIComponent(name)) : "" );
+            var url = this.objectToURL(parentObject);
+            url = url + (visiblePreferences ? "/visiblepreferences" : "/userpreferences");
+            if (type)
+            {
+                url = url + "/" + encodeURIComponent(encodeURIComponent(type));
+                if (name)
+                {
+                    url = url + "/" + encodeURIComponent(encodeURIComponent(name));
+                }
+            }
+            else if (id)
+            {
+                url = url + "?id=" + encodeURIComponent(encodeURIComponent(id));
+            }
+            return url;
         };
 
         Management.prototype.getGroups = function ()

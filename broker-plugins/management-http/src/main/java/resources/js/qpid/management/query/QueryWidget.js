@@ -452,11 +452,7 @@ define(["dojo/_base/declare",
                 },
                 _showModeSwitchWarningIfRequired: function ()
                 {
-                    var userPreferences = this.management.userPreferences;
-                    var displayWarning = (!userPreferences || !userPreferences.query
-                                          || (userPreferences.query.displaySwitchModeWarning == undefined
-                                          || userPreferences.query.displaySwitchModeWarning));
-                    if (this._standardMode && displayWarning && QueryWidget.showWarningOnModeChange)
+                    if (this._standardMode && QueryWidget.showWarningOnModeChange)
                     {
                         if (!this._switchModeWarningDialog)
                         {
@@ -470,22 +466,7 @@ define(["dojo/_base/declare",
                             }, domConstruct.create("div"));
                             this._switchModeWarningDialog.on("execute", lang.hitch(this, function (stopDisplaying)
                             {
-                                if (stopDisplaying)
-                                {
-                                    if (!userPreferences.query)
-                                    {
-                                        userPreferences.query = {};
-                                    }
-                                    userPreferences.query.displaySwitchModeWarning = false;
-                                    userPreferences.save({query: userPreferences.query}, null, function (error)
-                                    {
-                                        console.log("Saving user preferences failed: " + error);
-                                    });
-                                }
-                                else
-                                {
-                                    QueryWidget.showWarningOnModeChange = false;
-                                }
+                                QueryWidget.showWarningOnModeChange = !stopDisplaying;
                                 this._modeChanged();
                             }));
                         }

@@ -36,11 +36,11 @@ define([], function ()
     var timer = setInterval(invokeUpdates, updatePeriod * 1000);
 
     var updateIntervalListener = {
-        onPreferencesChange: function (preferences)
+        onPreferenceChange: function (preference)
         {
-            if (preferences.updatePeriod && preferences.updatePeriod != updatePeriod)
+            if (preference.value && preference.value.updatePeriod && preference.value.updatePeriod != updatePeriod)
             {
-                updatePeriod = preferences.updatePeriod;
+                updatePeriod = preference.value.updatePeriod;
                 clearInterval(timer);
                 timer = setInterval(invokeUpdates, updatePeriod * 1000);
             }
@@ -50,7 +50,7 @@ define([], function ()
     return {
         registerUpdateIntervalListener: function (userPreferences)
         {
-            userPreferences.addListener(updateIntervalListener);
+            userPreferences.addListener(updateIntervalListener, userPreferences.updatePeriodPreferenceName);
         },
         add: function (obj)
         {

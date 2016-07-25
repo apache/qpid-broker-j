@@ -24,7 +24,7 @@ define(["dojo/_base/lang",
         "qpid/common/util",
         "qpid/management/controller",
         "dojo/ready",
-        "dojo/domReady!"], function (lang, query, Tree, util, controller, ready)
+        "dojo/domReady!"], function (lang, query, Tree, util, controller)
 {
 
     function TreeViewModel(management, node)
@@ -296,135 +296,7 @@ define(["dojo/_base/lang",
 
     TreeViewModel.prototype.relocate = function (theItem)
     {
-
-        function findItemDetails(theItem, details, type, object, parent)
-        {
-            if (theItem.id == object.id)
-            {
-                details.type = type;
-                details[type] = object.name;
-                details.parent = parent;
-            }
-            else
-            {
-                var parentObject = {
-                    type: type,
-                    name: object.name
-                };
-                if (parent)
-                {
-                    parentObject.parent = parent;
-                }
-                // iterate over children
-                for (var propName in object)
-                {
-                    if (object.hasOwnProperty(propName))
-                    {
-                        var prop = object[propName];
-                        if (util.isArray(prop))
-                        {
-                            for (var i = 0; i < prop.length; i++)
-                            {
-                                findItemDetails(theItem,
-                                    details,
-                                    propName.substring(0, propName.length - 1),
-                                    prop[i],
-                                    parentObject);
-
-                                if (details.type)
-                                {
-                                    break;
-                                }
-                            }
-                        }
-                        if (details.type)
-                        {
-                            break;
-                        }
-                    }
-                }
-
-                if (!details.type)
-                {
-                    details[type] = null;
-                }
-            }
-        }
-
-        var details = new Object();
-        findItemDetails(theItem, details, "broker", this.model, null);
-
-        if (details.type == "broker")
-        {
-            controller.show("broker", "", null, theItem.id);
-        }
-        else if (details.type == "virtualhost")
-        {
-            controller.show("virtualhost", details.virtualhost, details.parent, theItem.id);
-        }
-        else if (details.type == "exchange")
-        {
-            controller.show("exchange", details.exchange, details.parent, theItem.id);
-        }
-        else if (details.type == "queue")
-        {
-            controller.show("queue", details.queue, details.parent, theItem.id);
-        }
-        else if (details.type == "connection")
-        {
-            controller.show("connection", details.connection, details.parent, theItem.id);
-        }
-        else if (details.type == 'port')
-        {
-            controller.show("port", details.port, details.parent, theItem.id);
-        }
-        else if (details.type == 'authenticationprovider')
-        {
-            controller.show("authenticationprovider", details.authenticationprovider, details.parent, theItem.id);
-        }
-        else if (details.type == 'groupprovider')
-        {
-            controller.show("groupprovider", details.groupprovider, details.parent, theItem.id);
-        }
-        else if (details.type == 'group')
-        {
-            controller.show("group", details.group, details.parent, theItem.id);
-        }
-        else if (details.type == 'keystore')
-        {
-            controller.show("keystore", details.keystore, details.parent, theItem.id);
-        }
-        else if (details.type == 'truststore')
-        {
-            controller.show("truststore", details.truststore, details.parent, theItem.id);
-        }
-        else if (details.type == 'accesscontrolprovider')
-        {
-            controller.show("accesscontrolprovider", details.accesscontrolprovider, details.parent, theItem.id);
-        }
-        else if (details.type == 'plugin')
-        {
-            controller.show("plugin", details.plugin, {
-                type: "broker",
-                name: ""
-            }, theItem.id);
-        }
-        else if (details.type == "preferencesprovider")
-        {
-            controller.show("preferencesprovider", details.preferencesprovider, details.parent, theItem.id);
-        }
-        else if (details.type == "virtualhostnode")
-        {
-            controller.show("virtualhostnode", details.virtualhostnode, details.parent, theItem.id);
-        }
-        else if (details.type == "brokerlogger")
-        {
-            controller.show("brokerlogger", details.brokerlogger, details.parent, theItem.id);
-        }
-        else if (details.type == "virtualhostlogger")
-        {
-            controller.show("virtualhostlogger", details.virtualhostlogger, details.parent, theItem.id);
-        }
+        controller.showById(theItem.id);
     };
 
     TreeViewModel.prototype.update = function (data)
@@ -452,42 +324,6 @@ define(["dojo/_base/lang",
 
         }), true);
         tree.startup();
-        try
-        {
-            controller.show("broker", "");
-
-            var tabs = management.userPreferences.tabs;
-            if (tabs)
-            {
-                for (var i in tabs)
-                {
-                    var tab = tabs[i], modelObject;
-                    if (tab.objectType != "broker")
-                    {
-                        if (tab.objectId)
-                        {
-                            modelObject = this.fetchItemByIdentity(tab.objectId);
-                            if (modelObject)
-                            {
-                                this.relocate(modelObject);
-                            }
-                            else
-                            {
-                                this.management.userPreferences.removeTab(tab);
-                            }
-                        }
-                        else
-                        {
-                            controller.show(tab.objectType, "");
-                        }
-                    }
-                }
-            }
-        }
-        catch (e)
-        {
-            console.error(e);
-        }
     };
 
     return TreeViewModel;

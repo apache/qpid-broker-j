@@ -107,7 +107,21 @@ define(["dojo/_base/array", "dojox/lang/functional/object"], function (array, fo
     {
         var metaData = this.getMetaData(category, type);
         return metaData ? metaData.validChildTypes[childCategory] : [];
-    }
+    };
+
+    Metadata.prototype.isCategory = function (category)
+    {
+        var categoryLower = category ? category.toLowerCase() : null;
+        for (var fieldName in this.metadata)
+        {
+            if (new String(fieldName).toLowerCase() === categoryLower)
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+
 
     return Metadata;
 });

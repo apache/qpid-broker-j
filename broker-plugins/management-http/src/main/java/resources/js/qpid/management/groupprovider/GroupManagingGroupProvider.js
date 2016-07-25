@@ -103,9 +103,8 @@ define(["dojo/dom",
                     {
                         connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
                         {
-                            var idx = evt.rowIndex, theItem = this.getItem(idx);
-                            var name = obj.dataStore.getValue(theItem, "name");
-                            that.controller.show("group", name, groupProviderObj, theItem.id);
+                            var theItem = this.getItem(evt.rowIndex);
+                            that.controller.showById(theItem.id);
                         });
                     }, gridProperties, EnhancedGrid);
                     var addGroupButton = query(".addGroupButton", node)[0];

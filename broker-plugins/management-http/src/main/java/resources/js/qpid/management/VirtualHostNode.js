@@ -158,12 +158,12 @@ define(["dojo/parser",
             {
                 updater.add(that.vhostNodeUpdater);
             });
-        }
+        };
 
         VirtualHostNode.prototype.showVirtualHost = function (item)
         {
-            this.controller.show("virtualhost", item.name, this.modelObj, item.id);
-        }
+            this.controller.showById(item.id);
+        };
 
         VirtualHostNode.prototype.close = function ()
         {
@@ -173,10 +173,10 @@ define(["dojo/parser",
         VirtualHostNode.prototype.destroy = function ()
         {
             this.close();
-            this.contentPane.onClose()
+            this.contentPane.onClose();
             this.controller.tabContainer.removeChild(this.contentPane);
             this.contentPane.destroyRecursive();
-        }
+        };
 
         function Updater(virtualHostNode)
         {

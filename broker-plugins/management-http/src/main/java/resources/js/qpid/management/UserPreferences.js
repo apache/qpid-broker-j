@@ -18,92 +18,108 @@
  * under the License.
  *
  */
-define(["dojo/date", "dojo/date/locale", "dojo/number"], function (date, locale, number)
+define(["dojo/_base/lang",
+        "dojo/Deferred",
+        "dojo/date",
+        "dojo/date/locale",
+        "dojo/number"], function (lang, Deferred, date, locale, number)
 {
-
+    var timeZonePreferenceName = "Time Zone";
+    var updatePeriodPreferenceName = "Update Period";
+    var tabsPreferenceName = "Tabs";
+    var defaultPreferences = [
+        {name: timeZonePreferenceName, type: "X-TimeZone", value: {timeZone: "UTC"} },
+        {name: updatePeriodPreferenceName, type: "X-UpdatePeriod", value: {updatePeriod: 5} },
+        {name: tabsPreferenceName, type: "X-Tabs", value: {tabs: []} }
+    ];
     function UserPreferences(management)
     {
-        this.listeners = [];
-        /* set time zone to 'UTC' by default*/
-        this.timeZone = "UTC";
-        this.tabs = [];
-        this.management = management;
+        this.timeZonePreferenceName = timeZonePreferenceName;
+        this.updatePeriodPreferenceName = updatePeriodPreferenceName;
+        this.tabsPreferenceName = tabsPreferenceName;
         this.preferences = {};
-    }
-
-    UserPreferences.prototype.load = function (successCallback, failureCallback)
-    {
-        var that = this;
-        this.management.get({url: "service/preferences"})
-            .then(function (preferences)
-            {
-                that.preferences = preferences;
-                for (var name in preferences)
-                {
-                    that[name] = preferences[name];
-                }
-                if (successCallback)
-                {
-                    successCallback();
-                }
-            }, function (error)
-            {
-                that.preferencesError = error;
-                if (failureCallback)
-                {
-                    failureCallback();
-                }
-            });
-    }
-
-    UserPreferences.prototype.save = function (preferences, successCallback, failureCallback)
-    {
-        var that = this;
-        this.management.post({url: "service/preferences"}, preferences)
-            .then(function (x)
-            {
-                that.preferences = preferences;
-                for (var name in preferences)
-                {
-                    if (preferences.hasOwnProperty(name))
-                    {
-                        that[name] = preferences[name];
-                    }
-                }
-                that._notifyListeners(preferences);
-                if (successCallback)
-                {
-                    successCallback(preferences);
-                }
-            }, failureCallback);
-    };
-
-    var fields = ["preferencesError", "management", "listeners"];
-    UserPreferences.prototype.resetPreferences = function ()
-    {
-        var preferences = {};
-        for (var name in this)
+        for(var i = 0; i< defaultPreferences.length; i++)
         {
-            if (this.hasOwnProperty(name) && typeof this[name] != "function")
-            {
-                if (fields.indexOf(name) != -1)
-                {
-                    continue;
-                }
-                this[name] = null;
-                preferences[name] = undefined;
-                delete preferences[name];
-            }
+            var preference = defaultPreferences[i];
+            this.preferences[preference.name] = preference;
         }
-        this.timeZone = "UTC";
-        this.preferences = preferences;
-        this._notifyListeners(preferences);
+        this.management = management;
+        this.listeners = {};
+    }
+
+    UserPreferences.prototype.load = function ()
+    {
+        var deferred = new Deferred();
+        management.getUserPreferences({type: "broker"}).then(lang.hitch(this, function (preferences)
+        {
+            this._init(preferences);
+            deferred.resolve(preferences);
+        }),lang.hitch(this, function (error)
+        {
+            this.lastError = error;
+            deferred.reject(error);
+        }));
+        return deferred.promise;
     };
 
-    UserPreferences.prototype.addListener = function (obj)
+    UserPreferences.prototype.getLastError = function ()
     {
-        this.listeners.push(obj);
-        this._notifyListener(obj, this.preferences);
+        return this.lastError;
+    };
+
+    UserPreferences.prototype._init= function(preferences)
+    {
+        var timezone = preferences["X-TimeZone"];
+        if (timezone && timezone[0])
+        {
+            this.preferences[timeZonePreferenceName] = timezone[0];
+        }
+        var tabs = preferences["X-Tabs"];
+        if (tabs && tabs[0])
+        {
+            this.preferences[tabsPreferenceName] = tabs[0];
+        }
+        var updatePeriod = preferences["X-UpdatePeriod"];
+        if (updatePeriod && updatePeriod[0])
+        {
+            this.preferences[updatePeriodPreferenceName] = updatePeriod[0];
+        }
+    };
+
+    UserPreferences.prototype.save = function (preferences)
+    {
+        var deferred = new Deferred();
+        var result = this.management.savePreferences({type: "broker"}, preferences);
+        result.then(lang.hitch(this, function ()
+        {
+            deferred.resolve(preferences);
+            this._notifyListeners(preferences);
+        }), lang.hitch(this, function (error)
+        {
+            this.lastError = error;
+            deferred.reject(error);
+        }));
+        return deferred.promise;
+    };
+
+    UserPreferences.prototype.addListener = function (listener, preferenceName)
+    {
+        var preference = this.preferences[preferenceName];
+        if (preference)
+        {
+            var preferenceListeners = this.listeners[preferenceName];
+            if (!preferenceListeners)
+            {
+                preferenceListeners = [];
+                this.listeners[preferenceName] = preferenceListeners;
+            }
+            preferenceListeners.push(listener);
+            this._notifyListener(listener, preference);
+        }
+        else
+        {
+            throw new Error("Unsupported preference '" + preferenceName + "'");
+        }
     };
 
     UserPreferences.prototype.removeListener = function (obj)
@@ -120,17 +136,30 @@ define(["dojo/date", "dojo/date/locale", "dojo/number"], function (date, locale,
 
     UserPreferences.prototype._notifyListeners = function (preferences)
     {
-        for (var i = 0; i < this.listeners.length; i++)
+        for( var type in preferences)
         {
-            this._notifyListener(this.listeners[i], preferences);
+            var typeList = preferences[type];
+            for(var i = 0; i < typeList.length; i++)
+            {
+                var preference = typeList[i];
+                var name = preference.name;
+                var listenerList = this.listeners[name];
+                if (listenerList)
+                {
+                    for(var j=0; j < listenerList.length; j++)
+                    {
+                        this._notifyListener(listenerList[j], preference);
+                    }
+                }
+            }
         }
     };
 
-    UserPreferences.prototype._notifyListener = function (listener, preferences)
+    UserPreferences.prototype._notifyListener = function (listener, preference)
     {
         try
         {
-            listener.onPreferencesChange(preferences);
+            listener.onPreferenceChange(preference);
         }
         catch (e)
         {
@@ -141,11 +170,17 @@ define(["dojo/date", "dojo/date/locale", "dojo/number"], function (date, locale,
         }
     };
 
+    UserPreferences.prototype.getPreferenceByName= function(preferenceName)
+    {
+        return this.preferences[preferenceName];
+    };
+
     UserPreferences.prototype.getTimeZoneInfo = function (timeZoneName)
     {
-        if (!timeZoneName && this.timeZone)
+        var timeZonePreference = this.getPreferenceByName(timeZonePreferenceName);
+        if (!timeZoneName && timeZonePreference.value && timeZonePreference.value.timeZone)
         {
-            timeZoneName = this.timeZone;
+            timeZoneName = timeZonePreference.value.timeZone;
         }
 
         if (!timeZoneName)
@@ -234,27 +269,46 @@ define(["dojo/date", "dojo/date/locale", "dojo/number"], function (date, locale,
 
     UserPreferences.prototype.appendTab = function (tab)
     {
-        if (!this.tabs)
-        {
-            this.tabs = [];
-        }
         if (!this.isTabStored(tab))
         {
-            this.tabs.push(tab);
-            this.save({tabs: this.tabs});
+            var tabsPreference = this.getPreferenceByName(this.tabsPreferenceName);
+            var tabs;
+            if (tabsPreference.value && tabsPreference.value.tabs)
+            {
+                tabs = tabsPreference.value.tabs;
+            }
+            else
+            {
+                tabs = [];
+                tabsPreference.value = {"tabs": tabs};
+            }
+            tabs.push({tabType: tab.tabType, configuredObjectId: tab.configuredObjectId, preferenceId: tab.preferenceId});
+            this._savePreference(tabsPreference);
         }
     };
 
     UserPreferences.prototype.removeTab = function (tab)
     {
-        if (this.tabs)
+        if (this.isTabStored(tab))
         {
             var index = this._getTabIndex(tab);
             if (index != -1)
             {
-                this.tabs.splice(index, 1);
-                this.save({tabs: this.tabs});
+                var tabsPreference = this.getPreferenceByName(this.tabsPreferenceName);
+                tabsPreference.value.tabs.splice(index, 1);
+                this._savePreference(tabsPreference);
             }
+        }
+    };
+
+    UserPreferences.prototype._savePreference = function (preference)
+    {
+        var preferences = {};
+        preferences[preference.type] = [preference];
+        var result = this.save(preferences);
+        if (!preference.id)
+        {
+            result.then(lang.hitch(this, this.load));
         }
     };
 
@@ -266,12 +320,16 @@ define(["dojo/date", "dojo/date/locale", "dojo/number"], function (date, locale,
     UserPreferences.prototype._getTabIndex = function (tab)
     {
         var index = -1;
-        if (this.tabs)
+        var tabsPreference = this.getPreferenceByName(this.tabsPreferenceName);
+        if (tabsPreference && tabsPreference.value && tabsPreference.value.tabs)
         {
-            for (var i = 0; i < this.tabs.length; i++)
+            var tabs = tabsPreference.value.tabs;
+            for (var i = 0; i < tabs.length; i++)
             {
-                var t = this.tabs[i];
-                if (t.objectId == tab.objectId && t.objectType == tab.objectType)
+                var t = tabs[i];
+                if (t.configuredObjectId === tab.configuredObjectId
+                    && t.tabType === tab.tabType
+                    && (!tab.preferenceId && !t.preferenceId || tab.preferenceId === t.preferenceId ))
                 {
                     index = i;
                     break;
@@ -279,7 +337,72 @@ define(["dojo/date", "dojo/date/locale", "dojo/number"], function (date, locale,
             }
         }
         return index;
-    }
+    };
+
+    UserPreferences.prototype.getSavedTabs = function ()
+    {
+        var tabsPreference = this.getPreferenceByName(this.tabsPreferenceName);
+        if (tabsPreference && tabsPreference.value && tabsPreference.value.tabs)
+        {
+            return lang.clone(tabsPreference.value.tabs);
+        }
+        return [];
+    };
+
+    var preferencesDialog = null, userPreferenceForm = null;
+    UserPreferences.prototype.showEditor = function ()
+    {
+        this.load().then(lang.hitch(this, function ()
+            {
+                var tzp = this.getPreferenceByName(timeZonePreferenceName);
+                var upp = this.getPreferenceByName(updatePeriodPreferenceName);
+                if (preferencesDialog)
+                {
+                    userPreferenceForm.set("timezone", tzp.value ? tzp.value.timeZone : "UTC");
+                    userPreferenceForm.set("updatePeriod", upp.value ? upp.value.updatePeriod : 5, false);
+                    preferencesDialog.show();
+                }
+                else
+                {
+                    require(["dojo/_base/lang", "qpid/management/userpreference/UserPreferenceForm", "dijit/Dialog"],
+                        lang.hitch(this, function (lang, UserPreferenceForm, Dialog)
+                        {
+                            userPreferenceForm = new UserPreferenceForm({});
+                            preferencesDialog = new Dialog({title: "User preferences", content: userPreferenceForm});
+                            userPreferenceForm.set("timezones", this.management.timezone.getAllTimeZones());
+                            userPreferenceForm.set("timezone", tzp.value ? tzp.value.timeZone : "UTC");
+                            userPreferenceForm.set("updatePeriod", upp.value ? upp.value.updatePeriod : 5, false);
+                            userPreferenceForm.on("cancel", lang.hitch(this, function ()
+                            {
+                                preferencesDialog.hide();
+                            }));
+                            userPreferenceForm.on("save", lang.hitch(this, function (event)
+                            {
+                                var timeZonePreference = this.getPreferenceByName(timeZonePreferenceName);
+                                var updatePeriodPreference = this.getPreferenceByName(updatePeriodPreferenceName);
+                                var preferences = {};
+                                if (event.preferences.timeZone)
+                                {
+                                    timeZonePreference.value = {timeZone: event.preferences.timeZone};
+                                    preferences[timeZonePreference.type] = [timeZonePreference];
+                                }
+                                if (event.preferences.updatePeriod)
+                                {
+                                    updatePeriodPreference.value = {updatePeriod: event.preferences.updatePeriod};
+                                    preferences[updatePeriodPreference.type] = [updatePeriodPreference];
+                                }
+
+                                this.save(preferences)
+                                    .then(lang.hitch(this, function ()
+                                    {
+                                        preferencesDialog.hide();
+                                    }));
+                            }));
+                            preferencesDialog.show();
+                        }));
+                }
+            }));
+    };
 
     return UserPreferences;
 });

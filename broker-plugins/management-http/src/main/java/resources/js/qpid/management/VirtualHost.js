@@ -318,9 +318,8 @@ define(["dojo/parser",
             {
                 connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
                 {
-                    var idx = evt.rowIndex, theItem = this.getItem(idx);
-                    var queueName = obj.dataStore.getValue(theItem, "name");
-                    controller.show("queue", queueName, vhost, theItem.id);
+                    var theItem = this.getItem(evt.rowIndex);
+                    controller.showById(theItem.id);
                 });
             }, gridProperties, EnhancedGrid);
 
@@ -340,9 +339,8 @@ define(["dojo/parser",
             {
                 connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
                 {
-                    var idx = evt.rowIndex, theItem = this.getItem(idx);
-                    var exchangeName = obj.dataStore.getValue(theItem, "name");
-                    controller.show("exchange", exchangeName, vhost, theItem.id);
+                    var theItem = this.getItem(evt.rowIndex);
+                    controller.showById(theItem.id);
                 });
             }, gridProperties, EnhancedGrid);
 
@@ -421,9 +419,8 @@ define(["dojo/parser",
             {
                 connect.connect(obj.grid, "onRowDblClick", obj.grid, function (evt)
                 {
-                    var idx = evt.rowIndex, theItem = this.getItem(idx);
-                    var name = obj.dataStore.getValue(theItem, "name");
-                    controller.show("virtualhostlogger", name, vhost, theItem.id);
+                    var theItem = this.getItem(evt.rowIndex);
+                    controller.showById(theItem.id);
                 });
             }, gridProperties, EnhancedGrid);
 

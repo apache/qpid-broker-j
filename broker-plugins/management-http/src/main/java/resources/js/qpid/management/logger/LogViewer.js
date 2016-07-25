@@ -215,7 +215,7 @@ define(["dojo/_base/xhr",
             };
             this.grid.on("styleRow", onStyleRow);
             this.grid.startup();
-            userPreferences.addListener(this);
+            userPreferences.addListener(this, userPreferences.timeZonePreferenceName);
         }
         catch (err)
         {
@@ -226,7 +226,7 @@ define(["dojo/_base/xhr",
         }
     };
 
-    LogViewer.prototype.onPreferencesChange = function (data)
+    LogViewer.prototype.onPreferenceChange = function (data)
     {
         var userPreferences = this.management.userPreferences;
         currentTimeZone = userPreferences.getTimeZoneDescription();

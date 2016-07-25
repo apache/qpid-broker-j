@@ -62,7 +62,15 @@ define(["dojo/parser",
             this.queryBrowserWidget.on("openQuery",
                 function (event)
                 {
-                    that.controller.show("query", event.preference, event.parentObject, event.preference.id);
+                    var tabData = {
+                        tabType: "query",
+                        data: event.preference,
+                        name: event.preference.name,
+                        parent: event.parentObject,
+                        configuredObjectId: event.parentObject.id,
+                        preferenceId: event.preference.id
+                    };
+                    that.controller.showTab(tabData);
                 });
             this.queryBrowserWidget.startup();
 

@@ -29,7 +29,6 @@ define(["dojo/query",
         "dojo/domReady!"], function (query, registry, entities, Structure, updater, Management, util, Dialog)
 {
 
-    var preferencesDialog = null;
     var helpURL = null;
     var queryCreateDialog = null;
     var queryCreateDialogForm = null;
@@ -37,22 +36,7 @@ define(["dojo/query",
     return {
         showPreferencesDialog: function ()
         {
-            if (preferencesDialog == null)
-            {
-                var management = this.management;
-                require(["qpid/management/Preferences", "dojo/ready"], function (PreferencesDialog, ready)
-                {
-                    ready(function ()
-                    {
-                        preferencesDialog = new PreferencesDialog(management);
-                        preferencesDialog.showDialog();
-                    });
-                });
-            }
-            else
-            {
-                preferencesDialog.showDialog();
-            }
+            this.management.userPreferences.showEditor();
         },
         getHelpUrl: function (callback)
         {
@@ -123,7 +107,14 @@ define(["dojo/query",
                             queryCreateDialogForm.on("create", function (e)
                             {
                                 queryCreateDialog.hide();
-                                controller.show("query", e.preference, e.parentObject);
+                                var tabData = {
+                                    tabType: "query",
+                                    parent: e.parentObject,
+                                    configuredObjectId: e.parentObject.id,
+                                    data: e.preference,
+                                    preferenceId: e.preference.id
+                                };
+                                controller.showTab(tabData);
                             });
                             queryCreateDialogForm.on("cancel", function (e)
                             {
@@ -142,7 +133,9 @@ define(["dojo/query",
         },
         showQueryBrowser: function (e)
         {
-            this.controller.show("queryBrowser", "QueueBrowser");
+            this.controller.showTab({
+                tabType: "queryBrowser"
+            });
         },
         init: function (controller, TreeView)
         {

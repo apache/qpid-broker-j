@@ -214,7 +214,6 @@ define(["dojo/_base/declare",
                         event.stop(evt);
                         editQueue.show(that.management, that.modelObj);
                     });
-                    userPreferences.addListener(that);
                     that.queueUpdater.update(function ()
                     {
                         updater.add(that.queueUpdater);
@@ -321,12 +320,6 @@ define(["dojo/_base/declare",
         Queue.prototype.close = function ()
         {
             updater.remove(this.queueUpdater);
-            this.management.userPreferences.removeListener(this);
-        };
-
-        Queue.prototype.onPreferencesChange = function (data)
-        {
-            //this.grid._refresh();
         };
 
         var queueTypeKeys = {

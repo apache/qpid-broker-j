@@ -19,13 +19,16 @@
  *
  */
 define(["dojo/parser",
+        "dojo/_base/lang",
+        "dojo/promise/all",
+        "dojo/Deferred",
         "dojo/query",
         "dojo/json",
         "qpid/common/util",
         "dojo/text!showQueryTab.html",
         "qpid/management/query/QueryWidget",
         "dojo/domReady!"],
-    function (parser, query, json, util, template, QueryWidget)
+    function (parser, lang, all, Deferred, query, json, util, template, QueryWidget)
     {
         function getPath(object)
         {
@@ -42,41 +45,80 @@ define(["dojo/parser",
             return "";
         }
 
-        function QueryTab(data, parent, controller)
+        function QueryTab(name, parent, controller)
         {
             this.controller = controller;
             this.management = controller.management;
             this.parent = parent;
-            this.preference = data;
         }
 
         QueryTab.prototype.getTitle = function (changed)
         {
-            var category = "";
-            if (this.preference && this.preference.value && this.preference.value.category)
+            if (this.tabData.preferenceId && !this.tabData.data)
             {
-                category = this.preference.value.category;
+                return "Loading...";
+            }
+            var category = "";
+            if (this.tabData.data && this.tabData.data.value && this.tabData.data.value.category)
+            {
+                category = this.tabData.data.value.category;
                 category = category.charAt(0).toUpperCase() + category.substring(1);
             }
-            var name = this.preference.id ? this.preference.name : "New";
-            var prefix = this.preference.id && !changed ? "" : "*";
+            var name = this.tabData.data.name ? this.tabData.data.name : "New";
+            var prefix = this.tabData.data.name && !changed ? "" : "*";
             var path = getPath(this.parent);
             return prefix + category + " query:" + name + path;
         };
 
         QueryTab.prototype.open = function (contentPane)
         {
-            var that = this;
             this.contentPane = contentPane;
             contentPane.containerNode.innerHTML = template;
-            parser.parse(contentPane.containerNode)
-                .then(function (instances)
+            var parserPromise = parser.parse(contentPane.containerNode);
+            var preferencePromise = null;
+            if (this.tabData.preferenceId && !this.tabData.data)
+            {
+                preferencePromise = this.management.getPreferenceById(this.parent, this.tabData.preferenceId);
+            }
+            else
+            {
+                var deferred = new Deferred();
+                var obj = {};
+                obj[this.tabData.data.type] = [this.tabData.data];
+                deferred.resolve(obj);
+                preferencePromise = deferred.promise;
+            }
+            all({parser: parserPromise, preference: preferencePromise})
+                .then(lang.hitch(this, function (data)
                 {
-                    that.onOpen(contentPane.containerNode)
-                }, function (e)
+                    for (var type in data.preference)
+                    {
+                        var preferences = data.preference[type];
+                        if (preferences[0])
+                        {
+                            this.tabData.data = preferences[0];
+                        }
+                        if (preferences.length !== 1)
+                        {
+                            console.warn("Unexpected number of preferences returned for id "
+                                         + this.tabData.preferenceId);
+                        }
+                    }
+
+                    if (this.tabData.data)
+                    {
+                        this.onOpen(contentPane.containerNode)
+                    }
+                    else
+                    {
+                        this.management.userPreferences.removeTab(this.tabData);
+                        this.destroy();
+                    }
+
+                }), lang.hitch(this, function (e)
                 {
-                    console.error("Unexpected error on parsing query tab template", e);
-                });
+                    this.management.errorHandler(e);
+                }));
         };
 
         QueryTab.prototype.onOpen = function (containerNode)
@@ -85,33 +127,35 @@ define(["dojo/parser",
             this.queryWidget = new QueryWidget({
                 management: this.management,
                 parentObject: this.parent,
-                preference: this.preference,
+                preference: this.tabData.data,
                 controller: this.controller
             }, this.queryWidgetNode);
-            var that = this;
-            this.queryWidget.on("save", function(e)
+            this.contentPane.set("title", this.getTitle());
+            this.queryWidget.on("save", lang.hitch(this, function(e)
             {
-                if (that.preference.name != e.preference.name)
-                {
-                    that.controller.update(that, e.preference.name, that.parent, e.preference.id);
-                }
-                that.preference = e.preference;
-                var title = that.getTitle();
-                that.contentPane.set("title", title);
-            });
-            this.queryWidget.on("change", function(e)
+                this.tabData.data = e.preference;
+                var title = this.getTitle();
+                this.contentPane.set("title", title);
+            }));
+            this.queryWidget.on("change", lang.hitch(this, function(e)
             {
-                var title = that.getTitle(true);
-                that.contentPane.set("title", title);
-            });
-            this.queryWidget.on("delete", function(e)
+                var title = this.getTitle(true);
+                this.contentPane.set("title", title);
+            }));
+            this.queryWidget.on("delete", lang.hitch(this, function(e)
             {
-                that.destroy();
-            });
-            this.queryWidget.on("clone", function(e)
+                this.management.userPreferences.removeTab(this.tabData);
+                this.destroy();
+            }));
+            this.queryWidget.on("clone", lang.hitch(this, function(e)
             {
-                that.controller.show("query", e.preference, e.parentObject);
-            });
+                this.controller.showTab({
+                    tabType: "query",
+                    data: e.preference,
+                    parent: e.parentObject,
+                    configuredObjectId: e.parentObject.id
+                });
+            }));
             this.queryWidget.startup();
         };
 

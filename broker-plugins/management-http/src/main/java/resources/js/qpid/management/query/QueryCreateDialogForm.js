@@ -24,6 +24,7 @@ define(["dojo/_base/declare",
         "dojo/text!query/QueryCreateDialogForm.html",
         "dojo/Evented",
         "dojo/store/Memory",
+        "dojox/uuid/generateRandomUuid",
         "dijit/form/Form",
         "dijit/form/Button",
         "dijit/form/FilteringSelect",
@@ -33,7 +34,7 @@ define(["dojo/_base/declare",
         "dijit/_WidgetsInTemplateMixin",
         "dojox/validate/us",
         "dojox/validate/web",
-        "dojo/domReady!"], function (declare, lang, template, Evented, Memory)
+        "dojo/domReady!"], function (declare, lang, template, Evented, Memory, generateRandomUuid)
 {
     var getCategoryMetadata = function (management, value)
     {
@@ -113,7 +114,7 @@ define(["dojo/_base/declare",
             },
             _postCreate: function ()
             {
-                this.initScope()
+                this.initScope();
                 this.cancelButton.on("click", lang.hitch(this, this._onCancel));
                 this.okButton.on("click", lang.hitch(this, this._onFormSubmit));
                 this.scope.on("change", lang.hitch(this, this._onChange));
@@ -137,7 +138,7 @@ define(["dojo/_base/declare",
                     if (getCategoryMetadata(this.management, category))
                     {
                         var data = {
-                            preference: {value: {category: category}},
+                            preference: {value: {category: category}, id : generateRandomUuid()},
                             parentObject: this._scopeModelObjects[this.scope.value]
                         };
                         this.emit("create", data);
