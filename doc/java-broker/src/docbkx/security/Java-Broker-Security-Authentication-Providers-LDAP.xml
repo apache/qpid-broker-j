@@ -102,5 +102,13 @@
     <para> If the search returns a match, or is configured in <literal>bind without search</literal>
         mode, the Authentication Provider then attempts to bind to the LDAP server with the given name
         and the password. Note that <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJdkDocUrl}javax/naming/Context.html#SECURITY_AUTHENTICATION">simple security
-            authentication</link> is used so the Directory receives the password in the clear. </para>
+            authentication</link> is used so the Directory receives the password in the clear.
+    </para>
+    <para>
+        By default, this authentication provider caches the result of an authentication for a short period of time. This
+        reduces the load on the Directory service if the same credentials are presented frequently within a short
+        period of time.  The length of time a result will be cached is defined by context variable
+        <literal>qpid.auth.cache.expirationTime</literal> (default to 600 seconds). The cache can be disabled by
+        setting the cache size to 0.
+    </para>
 </section>

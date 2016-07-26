@@ -19,7 +19,7 @@
 
 package org.apache.qpid.server.security;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -28,7 +28,7 @@ import javax.xml.bind.DatatypeConverter;
 
 public class CryptoUtil
 {
-    private static final String UTF8 = StandardCharsets.UTF_8.name();
+    private static final Charset UTF8 = StandardCharsets.UTF_8;
 
     public static String sha256Hex(final String... content)
     {
@@ -42,20 +42,11 @@ public class CryptoUtil
             throw new RuntimeException("JVM is non compliant. Seems to not support SHA-256.");
         }
 
-        byte[] credentialDigest;
-        try
+        for (String part : content)
         {
-            for (String part : content)
-            {
-                md.update(part.getBytes(UTF8));
-            }
-            credentialDigest = md.digest();
+            md.update(part.getBytes(UTF8));
         }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException("JVM is non compliant. Seems to not support UTF-8.");
-        }
-        return DatatypeConverter.printHexBinary(credentialDigest);
+        return DatatypeConverter.printHexBinary(md.digest());
     }
 
 }
