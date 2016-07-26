@@ -49,16 +49,12 @@ define(["dojo/_base/xhr",
               template)
     {
 
-        function Exchange(name, parent, controller)
+        function Exchange(kwArgs)
         {
-            this.name = name;
-            this.controller = controller;
-            this.management = controller.management;
-            this.modelObj = {
-                type: "exchange",
-                name: name,
-                parent: parent
-            };
+            this.controller = kwArgs.controller;
+            this.modelObj = kwArgs.tabData.modelObject;
+            this.management = this.controller.management;
+            this.name = this.modelObj.name;
         }
 
         Exchange.prototype.getExchangeName = function ()

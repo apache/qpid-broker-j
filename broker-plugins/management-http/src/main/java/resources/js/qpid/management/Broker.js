@@ -88,15 +88,12 @@ define(["dojo/parser",
                                     "connection.sessionCountLimit",
                                     "connection.heartBeatDelay"];
 
-        function Broker(name, parent, controller)
+        function Broker(kwArgs)
         {
-            this.name = name;
-            this.controller = controller;
-            this.management = controller.management;
-            this.modelObj = {
-                type: "broker",
-                name: name
-            };
+            this.controller = kwArgs.controller;
+            this.modelObj = kwArgs.tabData.modelObject;
+            this.management = this.controller.management;
+            this.name = this.modelObj.name;
         }
 
         Broker.prototype.getTitle = function ()

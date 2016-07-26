@@ -51,16 +51,12 @@ define(["dojo/parser",
               template)
     {
 
-        function VirtualHostNode(name, parent, controller)
+        function VirtualHostNode(kwArgs)
         {
-            this.name = name;
-            this.controller = controller;
-            this.management = controller.management;
-            this.modelObj = {
-                type: "virtualhostnode",
-                name: name,
-                parent: parent
-            };
+            this.controller = kwArgs.controller;
+            this.modelObj = kwArgs.tabData.modelObject;
+            this.management = this.controller.management;
+            this.name = this.modelObj.name;
         }
 
         VirtualHostNode.prototype.getTitle = function ()

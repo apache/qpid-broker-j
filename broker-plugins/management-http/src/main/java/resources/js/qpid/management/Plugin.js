@@ -31,16 +31,12 @@ define(["dojo/parser",
     function (parser, query, connect, properties, util, registry, event, entities, template)
     {
 
-        function Plugin(name, parent, controller)
+        function Plugin(kwArgs)
         {
-            this.name = name;
-            this.controller = controller;
-            this.management = controller.management;
-            this.modelObj = {
-                type: "plugin",
-                name: name,
-                parent: parent
-            };
+            this.controller = kwArgs.controller;
+            this.modelObj = kwArgs.tabData.modelObject;
+            this.management = this.controller.management;
+            this.name = this.modelObj.name;
         }
 
         Plugin.prototype.getTitle = function ()

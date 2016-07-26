@@ -43,16 +43,12 @@ define(["dojo/parser",
               template)
     {
 
-        function Connection(name, parent, controller)
+        function Connection(kwArgs)
         {
-            this.name = name;
-            this.controller = controller;
-            this.management = controller.management;
-            this.modelObj = {
-                type: "connection",
-                name: name,
-                parent: parent
-            };
+            this.controller = kwArgs.controller;
+            this.modelObj = kwArgs.tabData.modelObject;
+            this.management = this.controller.management;
+            this.name = this.modelObj.name;
         }
 
         Connection.prototype.getTitle = function ()

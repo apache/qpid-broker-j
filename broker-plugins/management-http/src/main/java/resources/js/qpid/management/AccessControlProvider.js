@@ -47,15 +47,12 @@ define(["dojo/parser",
               template)
     {
 
-        function AccessControlProvider(name, parent, controller)
+        function AccessControlProvider(kwArgs)
         {
-            this.name = name;
-            this.controller = controller;
-            this.modelObj = {
-                type: "accesscontrolprovider",
-                name: name,
-                parent: parent
-            };
+            this.controller = kwArgs.controller;
+            this.modelObj = kwArgs.tabData.modelObject;
+            this.management = this.controller.management;
+            this.name = this.modelObj.name;
         }
 
         AccessControlProvider.prototype.getTitle = function ()

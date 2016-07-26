@@ -282,7 +282,16 @@ define(["dojo/_base/lang",
                 tabs = [];
                 tabsPreference.value = {"tabs": tabs};
             }
-            tabs.push({tabType: tab.tabType, configuredObjectId: tab.configuredObjectId, preferenceId: tab.preferenceId});
+            var storedTab = {tabType: tab.tabType};
+            if (tab.modelObject && tab.modelObject.id)
+            {
+                storedTab.configuredObjectId = tab.modelObject.id;
+            }
+            if (tab.preferenceId)
+            {
+                storedTab.preferenceId = tab.preferenceId;
+            }
+            tabs.push(storedTab);
             this._savePreference(tabsPreference);
         }
     };
@@ -323,13 +332,13 @@ define(["dojo/_base/lang",
         var tabsPreference = this.getPreferenceByName(this.tabsPreferenceName);
         if (tabsPreference && tabsPreference.value && tabsPreference.value.tabs)
         {
-            var tabs = tabsPreference.value.tabs;
-            for (var i = 0; i < tabs.length; i++)
+            var savedTabs = tabsPreference.value.tabs;
+            for (var i = 0; i < savedTabs.length; i++)
             {
-                var t = tabs[i];
-                if (t.configuredObjectId === tab.configuredObjectId
-                    && t.tabType === tab.tabType
-                    && (!tab.preferenceId && !t.preferenceId || tab.preferenceId === t.preferenceId ))
+                var savedTab = savedTabs[i];
+                if (savedTab.tabType === tab.tabType
+                    && ((!savedTab.configuredObjectId && !tab.modelObject) || (savedTab.configuredObjectId && tab.modelObject && savedTab.configuredObjectId === tab.modelObject.id))
+                    && (!tab.preferenceId && !savedTab.preferenceId || tab.preferenceId === savedTab.preferenceId ))
                 {
                     index = i;
                     break;

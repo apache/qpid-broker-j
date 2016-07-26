@@ -34,16 +34,12 @@ define(["dojo/dom",
     function (dom, parser, query, connect, registry, entities, properties, updater, util, formatter, addPort, template)
     {
 
-        function Port(name, parent, controller)
+        function Port(kwArgs)
         {
-            this.name = name;
-            this.controller = controller;
-            this.management = controller.management;
-            this.modelObj = {
-                type: "port",
-                name: name,
-                parent: parent
-            };
+            this.controller = kwArgs.controller;
+            this.modelObj = kwArgs.tabData.modelObject;
+            this.management = this.controller.management;
+            this.name = this.modelObj.name;
         }
 
         Port.prototype.getTitle = function ()

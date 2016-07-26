@@ -109,8 +109,7 @@ define(["dojo/query",
                                 queryCreateDialog.hide();
                                 var tabData = {
                                     tabType: "query",
-                                    parent: e.parentObject,
-                                    configuredObjectId: e.parentObject.id,
+                                    modelObject: e.parentObject,
                                     data: e.preference,
                                     preferenceId: e.preference.id
                                 };

@@ -53,16 +53,12 @@ define(["dojo/parser",
               template)
     {
 
-        function AuthenticationProvider(name, parent, controller)
+        function AuthenticationProvider(kwArgs)
         {
-            this.name = name;
-            this.controller = controller;
-            this.management = management;
-            this.modelObj = {
-                type: "authenticationprovider",
-                name: name,
-                parent: parent
-            };
+            this.controller = kwArgs.controller;
+            this.modelObj = kwArgs.tabData.modelObject;
+            this.management = this.controller.management;
+            this.name = this.modelObj.name;
         }
 
         AuthenticationProvider.prototype.getTitle = function ()

@@ -49,20 +49,16 @@ define(["dojo/parser",
               addLogInclusionRule)
     {
 
-        function Logger(name, parent, controller)
+        function Logger(kwArgs)
         {
-            this.name = name;
-            this.controller = controller;
-            this.management = controller.management;
-            var isBrokerParent = parent.type == "broker";
-            this.category = isBrokerParent ? "BrokerLogger" : "VirtualHostLogger";
-            this.logInclusionRuleCategory = isBrokerParent ? "BrokerLogInclusionRule" : "VirtualHostLogInclusionRule";
-            this.modelObj = {
-                type: this.category.toLowerCase(),
-                name: name,
-                parent: parent
-            };
-            this.userFriendlyName = (isBrokerParent ? "Broker Logger" : "Virtual Host Logger");
+            this.controller = kwArgs.controller;
+            this.modelObj = kwArgs.tabData.modelObject;
+            this.management = this.controller.management;
+            this.name = this.modelObj.name;
+            var isBrokerLogger = this.modelObj.type == "brokerlogger";
+            this.category = isBrokerLogger ? "BrokerLogger" : "VirtualHostLogger";
+            this.logInclusionRuleCategory = isBrokerLogger ? "BrokerLogInclusionRule" : "VirtualHostLogInclusionRule";
+            this.userFriendlyName = (isBrokerLogger ? "Broker Logger" : "Virtual Host Logger");
         }
 
         Logger.prototype.getTitle = function ()

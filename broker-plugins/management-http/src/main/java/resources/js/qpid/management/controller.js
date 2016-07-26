@@ -112,9 +112,9 @@ define(["dojo/dom",
             {
                 return tabData.preferenceId;
             }
-            else if (tabData.configuredObjectId)
+            else if (tabData.modelObject && tabData.modelObject.id)
             {
-                return tabData.configuredObjectId;
+                return tabData.modelObject.id;
             }
             else
             {
@@ -124,14 +124,12 @@ define(["dojo/dom",
 
         controller.showById = function(id)
         {
-            var item = this.structure.findById(id);
-            if (item != null)
+            var modelObject = this.structure.findById(id);
+            if (modelObject != null)
             {
                 this.showTab({
-                    tabType: item.type,
-                    name: item.name,
-                    parent: item.parent,
-                    configuredObjectId: item.id
+                    tabType: modelObject.type,
+                    modelObject: modelObject
                 });
             }
         };
@@ -139,8 +137,6 @@ define(["dojo/dom",
         controller.showTab = function (tabData)
         {
             var tabType = tabData.tabType;
-            var name = tabData.name;
-            var parent = tabData.parent;
 
             var that = this;
             var tabObjectId = generateTabObjId(tabData);
@@ -155,9 +151,10 @@ define(["dojo/dom",
                 var Constructor = constructors[tabType];
                 if (Constructor)
                 {
-                    tabObject = new Constructor(name, parent, this);
-                    tabObject.tabId = tabObjectId;
-                    tabObject.tabData = tabData;
+                    tabObject = new Constructor({
+                        tabData: tabData,
+                        controller: this
+                    });
                     this.viewedObjects[tabObjectId] = tabObject;
 
                     var contentPane = new ContentPane({
@@ -167,7 +164,7 @@ define(["dojo/dom",
                         onClose: function ()
                         {
                             tabObject.close();
-                            delete that.viewedObjects[tabObject.tabId];
+                            delete that.viewedObjects[tabObjectId];
                             return true;
                         }
                     });
@@ -176,7 +173,7 @@ define(["dojo/dom",
                     if (tabType != "broker")
                     {
                         var preferencesCheckBox = new dijit.form.CheckBox({
-                            checked: userPreferences.isTabStored(tabObject.tabData),
+                            checked: userPreferences.isTabStored(tabData),
                             title: "If checked the tab will be restored on next login"
                         });
                         var tabs = this.tabContainer.tablist.getChildren();
@@ -185,11 +182,11 @@ define(["dojo/dom",
                         {
                             if (value)
                             {
-                                userPreferences.appendTab(tabObject.tabData);
+                                userPreferences.appendTab(tabData);
                             }
                             else
                             {
-                                userPreferences.removeTab(tabObject.tabData);
+                                userPreferences.removeTab(tabData);
                             }
                         });
                     }
@@ -216,36 +213,37 @@ define(["dojo/dom",
                     controller.showById(brokers[0].id);
                 }
 
-                var tabs = management.userPreferences.getSavedTabs();
-                if (tabs)
+                var savedTabs = management.userPreferences.getSavedTabs();
+                if (savedTabs)
                 {
-                    for (var i in tabs)
+                    for (var i in savedTabs)
                     {
-                        var tab = tabs[i];
-                        if (tab.configuredObjectId)
+                        var savedTab = savedTabs[i];
+                        if (savedTab.configuredObjectId)
                         {
-                            var modelObject = structure.findById(tab.configuredObjectId);
+                            var modelObject = structure.findById(savedTab.configuredObjectId);
                             if (modelObject)
                             {
-                                if (management.metadata.isCategory(tab.tabType))
+                                var tabData = {
+                                    tabType: savedTab.tabType,
+                                    modelObject: modelObject
+                                };
+
+                                if (savedTab.preferenceId)
                                 {
-                                    tab.name = modelObject.name;
-                                    tab.parent = modelObject.parent;
+                                    tabData["preferenceId"] = savedTab.preferenceId;
                                 }
-                                else
-                                {
-                                    tab.parent = modelObject;
-                                }
-                                controller.showTab(tab);
+
+                                controller.showTab(tabData);
                             }
                             else
                             {
-                                management.userPreferences.removeTab(tab);
+                                management.userPreferences.removeTab(savedTab);
                             }
                         }
                         else
                         {
-                            controller.showTab(tab);
+                            controller.showTab(savedTab);
                         }
                     }
                 }
@@ -278,16 +276,6 @@ define(["dojo/dom",
 
                 openTabs(controller, management, structure);
             }));
-        };
-
-        controller.update = function(tabObject, tabData)
-        {
-            var tabId = tabObject.tabId;
-            delete this.viewedObjects[tabId];
-            var newTabId = generateTabObjId(tabData.tabType, tabData.name, tabData.parent);
-            this.viewedObjects[newTabId] = tabObject;
-            tabObject.tabData.preferenceId = tabData.preferenceId;
-            tabObject.tabId = newTabId;
         };
 
         return controller;

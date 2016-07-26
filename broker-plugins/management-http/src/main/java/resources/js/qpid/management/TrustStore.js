@@ -34,21 +34,17 @@ define(["dojo/dom",
     function (dom, parser, query, connect, registry, entities, properties, updater, util, formatter, addStore, template)
     {
 
-        function TrustStore(name, parent, controller)
+        function TrustStore(kwArgs)
         {
-            this.keyStoreName = name;
-            this.controller = controller;
-            this.modelObj = {
-                type: "truststore",
-                name: name,
-                parent: parent
-            };
-            this.management = controller.management;
+            this.controller = kwArgs.controller;
+            this.modelObj = kwArgs.tabData.modelObject;
+            this.management = this.controller.management;
+            this.name = this.modelObj.name;
         }
 
         TrustStore.prototype.getTitle = function ()
         {
-            return "TrustStore: " + this.keyStoreName;
+            return "TrustStore: " + this.name;
         };
 
         TrustStore.prototype.open = function (contentPane)

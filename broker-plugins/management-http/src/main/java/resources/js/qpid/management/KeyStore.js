@@ -34,21 +34,17 @@ define(["dojo/dom",
     function (dom, parser, query, connect, registry, entities, properties, updater, util, formatter, addStore, template)
     {
 
-        function KeyStore(name, parent, controller)
+        function KeyStore(kwArgs)
         {
-            this.keyStoreName = name;
-            this.controller = controller;
-            this.management = controller.management;
-            this.modelObj = {
-                type: "keystore",
-                name: name,
-                parent: parent
-            };
+            this.controller = kwArgs.controller;
+            this.modelObj = kwArgs.tabData.modelObject;
+            this.management = this.controller.management;
+            this.name = this.modelObj.name;
         }
 
         KeyStore.prototype.getTitle = function ()
         {
-            return "KeyStore: " + this.keyStoreName;
+            return "KeyStore: " + this.name;
         };
 
         KeyStore.prototype.open = function (contentPane)
@@ -183,7 +179,7 @@ define(["dojo/dom",
 
         KeyStore.prototype.deleteKeyStore = function ()
         {
-            if (confirm("Are you sure you want to delete key store '" + this.keyStoreName + "'?"))
+            if (confirm("Are you sure you want to delete key store '" + this.name + "'?"))
             {
                 var that = this;
                 this.management.remove(this.modelObj)

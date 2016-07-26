@@ -57,16 +57,12 @@ define(["dojo/parser",
               showGroup)
     {
 
-        function Group(name, parent, controller)
+        function Group(kwArgs)
         {
-            this.name = name;
-            this.controller = controller;
-            this.management = management;
-            this.modelObj = {
-                type: "group",
-                name: name,
-                parent: parent
-            };
+            this.controller = kwArgs.controller;
+            this.modelObj = kwArgs.tabData.modelObject;
+            this.management = this.controller.management;
+            this.name = this.modelObj.name;
         }
 
         Group.prototype.getGroupName = function ()

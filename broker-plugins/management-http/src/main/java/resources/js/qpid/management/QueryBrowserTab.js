@@ -25,10 +25,10 @@ define(["dojo/parser",
         "dojo/domReady!"],
     function (parser, query, template, QueryBrowserWidget, updater)
     {
-        function QueryBrowserTab(name, parent, controller)
+        function QueryBrowserTab(kwArgs)
         {
-            this.controller = controller;
-            this.management = controller.management;
+            this.controller = kwArgs.controller;
+            this.management = this.controller.management;
         }
 
         QueryBrowserTab.prototype.getTitle = function (changed)
@@ -65,9 +65,7 @@ define(["dojo/parser",
                     var tabData = {
                         tabType: "query",
                         data: event.preference,
-                        name: event.preference.name,
-                        parent: event.parentObject,
-                        configuredObjectId: event.parentObject.id,
+                        modelObject: event.parentObject,
                         preferenceId: event.preference.id
                     };
                     that.controller.showTab(tabData);

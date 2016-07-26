@@ -45,11 +45,12 @@ define(["dojo/parser",
             return "";
         }
 
-        function QueryTab(name, parent, controller)
+        function QueryTab(kwArgs)
         {
-            this.controller = controller;
-            this.management = controller.management;
-            this.parent = parent;
+            this.controller = kwArgs.controller;
+            this.tabData = kwArgs.tabData;
+            this.parent = kwArgs.tabData.modelObject;
+            this.management = this.controller.management;
         }
 
         QueryTab.prototype.getTitle = function (changed)
@@ -152,8 +153,7 @@ define(["dojo/parser",
                 this.controller.showTab({
                     tabType: "query",
                     data: e.preference,
-                    parent: e.parentObject,
-                    configuredObjectId: e.parentObject.id
+                    modelObject: e.parentObject
                 });
             }));
             this.queryWidget.startup();

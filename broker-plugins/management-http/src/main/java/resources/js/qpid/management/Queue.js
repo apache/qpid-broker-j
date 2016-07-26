@@ -65,16 +65,12 @@ define(["dojo/_base/declare",
               template)
     {
 
-        function Queue(name, parent, controller)
+        function Queue(kwArgs)
         {
-            this.name = name;
-            this.controller = controller;
-            this.management = controller.management;
-            this.modelObj = {
-                type: "queue",
-                name: name,
-                parent: parent
-            };
+            this.controller = kwArgs.controller;
+            this.modelObj = kwArgs.tabData.modelObject;
+            this.management = this.controller.management;
+            this.name = this.modelObj.name;
         }
 
         Queue.prototype.getQueueName = function ()
