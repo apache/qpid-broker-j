@@ -28,17 +28,17 @@ import java.util.Map;
 public class MessageInfoImpl implements MessageInfo
 {
     private final String _deliveredTo;
-    private final long _arrivalTime;
+    private final Date _arrivalTime;
     private final boolean _persistent;
     private final String _messageId;
-    private final Long _expirationTime;
+    private final Date _expirationTime;
     private final String _applicationId;
     private final String _correlationId;
     private final String _encoding;
     private final String _mimeType;
     private final byte _priority;
     private final String _replyTo;
-    private final Long _timestamp;
+    private final Date _timestamp;
     private final String _type;
     private final String _userId;
     private final String _state;
@@ -56,21 +56,17 @@ public class MessageInfoImpl implements MessageInfo
 
         _deliveredTo = instance.getDeliveredConsumer() == null ? null : String.valueOf(instance.getDeliveredConsumer()
                                                                                                 .getConsumerNumber());
-        _arrivalTime = message.getArrivalTime();
+        _arrivalTime = message.getArrivalTime() == 0L ? null : new Date(message.getArrivalTime());
         _persistent = message.isPersistent();
         _messageId = messageHeader.getMessageId();
-        _expirationTime = messageHeader.getExpiration() == 0l
-                ? null
-                : messageHeader.getExpiration();
+        _expirationTime = messageHeader.getExpiration() == 0L ? null : new Date(messageHeader.getExpiration());
         _applicationId = messageHeader.getAppId();
         _correlationId = messageHeader.getCorrelationId();
         _encoding = messageHeader.getEncoding();
         _mimeType = messageHeader.getMimeType();
         _priority = messageHeader.getPriority();
         _replyTo = messageHeader.getReplyTo();
-        _timestamp = messageHeader.getTimestamp() == 0l
-                ? null
-                : messageHeader.getTimestamp();
+        _timestamp = messageHeader.getTimestamp() == 0L ? null : new Date(messageHeader.getTimestamp());
         _type = messageHeader.getType();
         _userId = messageHeader.getUserId();
         if (instance.isAvailable())
@@ -85,7 +81,7 @@ public class MessageInfoImpl implements MessageInfo
         _size = message.getSize();
         _id = message.getMessageNumber();
         _initialRoutingAddress = message.getInitialRoutingAddress();
-        _notValidBefore = new Date(messageHeader.getNotValidBefore());
+        _notValidBefore = messageHeader.getNotValidBefore() == 0L ? null : new Date(messageHeader.getNotValidBefore());
 
         if(includeHeaders)
         {
@@ -134,9 +130,9 @@ public class MessageInfoImpl implements MessageInfo
     }
 
     @Override
-    public long getArrivalTime()
+    public Date getArrivalTime()
     {
-        return _arrivalTime;
+        return _arrivalTime == null ? null : new Date(_arrivalTime.getTime());
     }
 
     @Override
@@ -152,9 +148,9 @@ public class MessageInfoImpl implements MessageInfo
     }
 
     @Override
-    public Long getExpirationTime()
+    public Date getExpirationTime()
     {
-        return _expirationTime;
+        return _expirationTime == null ? null : new Date(_expirationTime.getTime());
     }
 
     @Override
@@ -194,9 +190,9 @@ public class MessageInfoImpl implements MessageInfo
     }
 
     @Override
-    public Long getTimestamp()
+    public Date getTimestamp()
     {
-        return _timestamp;
+        return _timestamp == null ? null : new Date(_timestamp.getTime());
     }
 
     @Override
@@ -220,7 +216,7 @@ public class MessageInfoImpl implements MessageInfo
     @Override
     public Date getNotValidBefore()
     {
-        return new Date(_notValidBefore.getTime());
+        return _notValidBefore == null ? null : new Date(_notValidBefore.getTime());
     }
 
     public String getInitialRoutingAddress()
