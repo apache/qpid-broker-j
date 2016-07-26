@@ -23,10 +23,9 @@ package org.apache.qpid.server.security.auth.manager;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
-import org.apache.qpid.server.model.PreferencesSupportingAuthenticationProvider;
 
 @ManagedObject( category = false, type = "External" )
-public interface ExternalAuthenticationManager<T extends ExternalAuthenticationManager<T>> extends AuthenticationProvider<T>, PreferencesSupportingAuthenticationProvider
+public interface ExternalAuthenticationManager<T extends ExternalAuthenticationManager<T>> extends AuthenticationProvider<T>
 {
     String PROVIDER_TYPE = "External";
     String ATTRIBUTE_USE_FULL_DN = "useFullDN";

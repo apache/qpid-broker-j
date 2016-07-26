@@ -593,6 +593,66 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertTrue("Port was not removed", ports.isEmpty());
     }
 
+    public void testUpgradeRemovePreferencesProviderNonJsonLikeStore()
+    {
+        _brokerRecord.getAttributes().put("modelVersion", "6.0");
+
+        Map<String, Object> authenticationProvider = new HashMap<>();
+        authenticationProvider.put("name", "anonymous");
+        authenticationProvider.put("type", "Anonymous");
+
+        ConfiguredObjectRecord authenticationProviderRecord = new ConfiguredObjectRecordImpl(
+                UUID.randomUUID(),
+                "AuthenticationProvider",
+                authenticationProvider,
+                Collections.singletonMap("Broker", _brokerRecord.getId()));
+
+        ConfiguredObjectRecord preferencesProviderRecord = new ConfiguredObjectRecordImpl(
+                UUID.randomUUID(),
+                "PreferencesProvider",
+                Collections.<String, Object>emptyMap(),
+                Collections.singletonMap("AuthenticationProvider", authenticationProviderRecord.getId()));
+
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord,
+                                                                          authenticationProviderRecord,
+                                                                          preferencesProviderRecord);
+
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+
+        List<ConfiguredObjectRecord> preferencesProviders = findRecordByType("PreferencesProvider", records);
+        assertTrue("PreferencesProvider was not removed", preferencesProviders.isEmpty());
+
+        List<ConfiguredObjectRecord> authenticationProviders = findRecordByType("AuthenticationProvider", records);
+        assertEquals("AuthenticationProvider was removed", 1, authenticationProviders.size());
+    }
+
+    public void testUpgradeRemovePreferencesProviderJsonLikeStore()
+    {
+        _brokerRecord.getAttributes().put("modelVersion", "6.0");
+
+        Map<String, Object> authenticationProvider = new HashMap<>();
+        authenticationProvider.put("name", "anonymous");
+        authenticationProvider.put("type", "Anonymous");
+        authenticationProvider.put("preferencesproviders", Collections.emptyMap());
+
+        ConfiguredObjectRecord authenticationProviderRecord = new ConfiguredObjectRecordImpl(
+                UUID.randomUUID(),
+                "AuthenticationProvider",
+                authenticationProvider,
+                Collections.singletonMap("Broker", _brokerRecord.getId()));
+
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, authenticationProviderRecord);
+
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+
+        List<ConfiguredObjectRecord> authenticationProviders = findRecordByType("AuthenticationProvider", records);
+        assertEquals("AuthenticationProviders was removed", 1, authenticationProviders.size());
+        assertFalse("PreferencesProvider was not removed",
+                    authenticationProviders.get(0).getAttributes().containsKey("preferencesproviders"));
+    }
+
     private void upgradeBrokerRecordAndAssertUpgradeResults()
     {
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord);

@@ -32,7 +32,6 @@ define(["dojo/dom",
         "dojo/dom-style",
         "qpid/common/util",
         "dojo/text!addAuthenticationProvider.html",
-        "qpid/management/preferencesprovider/PreferencesProviderForm",
         /* dojox/ validate resources */
         "dojox/validate/us",
         "dojox/validate/web",
@@ -81,10 +80,6 @@ define(["dojo/dom",
                 var that = this;
                 this.authenticationProviderName = registry.byId("addAuthenticationProvider.name");
                 this.authenticationProviderName.set("regExpGen", util.nameOrContextVarRegexp);
-                this.authenticationProviderName.on("change", function (newValue)
-                {
-                    that.preferencesProviderForm.setPreferencesProviderName(newValue);
-                });
 
                 this.dialog = registry.byId("addAuthenticationProvider");
                 this.addButton = registry.byId("addAuthenticationProvider.addButton");
@@ -106,8 +101,6 @@ define(["dojo/dom",
                     that._authenticationProviderTypeChanged(type);
                 });
 
-                this.preferencesProviderForm = new qpid.preferencesprovider.PreferencesProviderForm({disabled: true});
-                this.preferencesProviderForm.placeAt(dom.byId("addPreferencesProvider.form"));
                 this.context = registry.byId("addAuthenticationProvider.context");
             },
             show: function (management, modelObj, effectiveData)
@@ -115,7 +108,6 @@ define(["dojo/dom",
                 this.management = management;
                 this.modelObj = modelObj;
                 this.authenticationProviderForm.reset();
-                this.preferencesProviderForm.setMetadata(management.metadata);
 
                 this.supportedAuthenticationProviderTypes =
                     management.metadata.getTypesForCategory("AuthenticationProvider");
@@ -136,15 +128,6 @@ define(["dojo/dom",
 
                         that.authenticationProviderType.set("disabled", true);
                         that.authenticationProviderName.set("disabled", true);
-                        if (actualData.preferencesproviders && actualData.preferencesproviders[0])
-                        {
-                            that.preferencesProviderForm.setData(actualData.preferencesproviders[0]);
-                        }
-                        else
-                        {
-                            that.preferencesProviderForm.reset();
-                            that.preferencesProviderForm.setPreferencesProviderName(actualData.name);
-                        }
                         that.authenticationProviderName.set("value", actualData.name);
                         that.context.setData(actualData.context, effectiveData.context, data.inheritedActual.context);
                         that._show();
@@ -153,7 +136,6 @@ define(["dojo/dom",
                 }
                 else
                 {
-                    this.preferencesProviderForm.reset();
                     this.authenticationProviderType.set("disabled", false);
                     this.authenticationProviderName.set("disabled", false);
                     this.initialData = {};
@@ -187,7 +169,7 @@ define(["dojo/dom",
             },
             _submit: function ()
             {
-                if (this.authenticationProviderForm.validate() && this.preferencesProviderForm.validate())
+                if (this.authenticationProviderForm.validate())
                 {
                     var authenticationProviderData = util.getFormWidgetValues(this.authenticationProviderForm,
                         this.initialData);
@@ -205,54 +187,18 @@ define(["dojo/dom",
                     var hideDialog = function (x)
                     {
                         that.dialog.hide();
-                    }
-
-                    var savePreferences = function (x)
-                    {
-                        that.preferencesProviderForm.submit(function (preferencesProviderData)
-                        {
-                            if (that.preferencesProviderForm.data)
-                            {
-                                // update request
-                                var name = that.preferencesProviderForm.getPreferencesProviderName();
-
-                                var modelObj = {
-                                    name: name,
-                                    type: "preferencesprovider",
-                                    parent: that.modelObj
-                                };
-                                that.management.update(modelObj, preferencesProviderData)
-                                    .then(hideDialog);
-                            }
-                            else
-                            {
-                                var authProviderModelObj = that.modelObj;
-                                if (authProviderModelObj.type != "authenticationprovider")
-                                {
-                                    authProviderModelObj = {
-                                        name: authenticationProviderData.name,
-                                        type: "authenticationprovider",
-                                        parent: that.modelObj
-                                    };
-                                }
-                                that.management.create("preferencesprovider",
-                                    authProviderModelObj,
-                                    preferencesProviderData)
-                                    .then(hideDialog);
-                            }
-                        }, hideDialog);
-                    }
+                    };
 
                     if (this.initialData && this.initialData.id)
                     {
                         // update request
                         this.management.update(that.modelObj, authenticationProviderData)
-                            .then(savePreferences);
+                            .then(hideDialog);
                     }
                     else
                     {
                         this.management.create("authenticationprovider", that.modelObj, authenticationProviderData)
-                            .then(savePreferences);
+                            .then(hideDialog);
                     }
                 }
                 else
@@ -275,15 +221,6 @@ define(["dojo/dom",
                     item.destroyRecursive();
                 });
                 construct.empty(typeFieldsContainer);
-                var supportsPreferencesProvider = false;
-                if (type && this.management)
-                {
-                    supportsPreferencesProvider = this.management.metadata.implementsManagedInterface(
-                        "AuthenticationProvider",
-                        type,
-                        "PreferencesSupportingAuthenticationProvider");
-                }
-                this.preferencesProviderForm.set("disabled", !type || !supportsPreferencesProvider);
                 if (type)
                 {
                     var that = this;

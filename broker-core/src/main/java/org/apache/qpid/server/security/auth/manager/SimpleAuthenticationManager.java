@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedObject;
-import org.apache.qpid.server.model.PreferencesSupportingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainPasswordCallback;
@@ -52,8 +51,7 @@ import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServerSourceAdap
 
 @ManagedObject( category = false, type = "Simple", register = false )
 public class SimpleAuthenticationManager extends AbstractAuthenticationManager<SimpleAuthenticationManager>
-        implements UsernamePasswordAuthenticationProvider<SimpleAuthenticationManager>,
-                   PreferencesSupportingAuthenticationProvider
+        implements UsernamePasswordAuthenticationProvider<SimpleAuthenticationManager>
 {
     private static final Logger _logger = LoggerFactory.getLogger(SimpleAuthenticationManager.class);
 

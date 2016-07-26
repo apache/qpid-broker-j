@@ -512,6 +512,20 @@ public class BrokerStoreUpgraderAndRecoverer
                         getNextUpgrader().configuredObject(record);
                     }
                 }
+                else if (record.getType().equals("AuthenticationProvider") && attributes.containsKey("preferencesproviders"))
+                {
+                    // removing of Preferences Provider from AuthenticationProvider attribute for JSON configuration store
+                    Map<String, Object> updatedAttributes = new LinkedHashMap<>(attributes);
+                    updatedAttributes.remove("preferencesproviders");
+                    record = new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
+                    getUpdateMap().put(record.getId(), record);
+                    getNextUpgrader().configuredObject(record);
+                }
+                else if (record.getType().equals("PreferencesProvider"))
+                {
+                    // removing of f Preferences Provider record for non-JSON configuration store
+                    getDeleteMap().put(record.getId(), record);
+                }
                 else
                 {
                     getNextUpgrader().configuredObject(record);

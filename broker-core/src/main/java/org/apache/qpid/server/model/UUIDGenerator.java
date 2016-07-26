@@ -93,8 +93,4 @@ public class UUIDGenerator
         return createUUID(type, childName);
     }
 
-    public static UUID generatePreferencesProviderUUID(String preferencesProviderName, String authenticationProviderName)
-    {
-        return createUUID(PreferencesProvider.class.getName(), authenticationProviderName, preferencesProviderName);
-    }
 }

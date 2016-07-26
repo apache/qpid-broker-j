@@ -26,7 +26,6 @@ import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
-import org.apache.qpid.server.model.PreferencesSupportingAuthenticationProvider;
 import org.apache.qpid.server.model.TrustStore;
 
 @ManagedObject( category = false,
@@ -34,8 +33,7 @@ import org.apache.qpid.server.model.TrustStore;
                 description = SimpleLDAPAuthenticationManager.CLASS_DESCRIPTION )
 public interface SimpleLDAPAuthenticationManager<X extends SimpleLDAPAuthenticationManager<X>>
         extends CachingAuthenticationProvider<X>,
-                UsernamePasswordAuthenticationProvider<X>,
-                PreferencesSupportingAuthenticationProvider
+                UsernamePasswordAuthenticationProvider<X>
 {
     String CLASS_DESCRIPTION = "Authentication provider that delegates authentication decisions to a Directory"
                                + " supporting the LDAP protocol.";

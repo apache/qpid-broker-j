@@ -197,7 +197,6 @@ class LegacyAccessControlAdapter
     private boolean isBrokerType(Class<? extends ConfiguredObject> category)
     {
         return Broker.class.isAssignableFrom(category) ||
-               PreferencesProvider.class.isAssignableFrom(category) ||
                BrokerLogInclusionRule.class.isAssignableFrom(category) ||
                VirtualHostAlias.class.isAssignableFrom(category) ||
                ( !VirtualHostNode.class.isAssignableFrom(category) && getModel().getChildTypes(Broker.class).contains(category));

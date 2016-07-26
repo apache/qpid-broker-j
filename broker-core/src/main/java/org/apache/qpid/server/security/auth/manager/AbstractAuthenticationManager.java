@@ -22,7 +22,6 @@ package org.apache.qpid.server.security.auth.manager;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -35,15 +34,12 @@ import org.apache.qpid.server.logging.messages.AuthenticationProviderMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.Port;
-import org.apache.qpid.server.model.PreferencesProvider;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.VirtualHostAlias;
@@ -58,7 +54,6 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
 
     private final Broker<?> _broker;
     private final EventLogger _eventLogger;
-    private PreferencesProvider<?> _preferencesProvider;
 
     @ManagedAttributeField
     private List<String> _secureOnlyMechanisms;
@@ -79,11 +74,6 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     public void onValidate()
     {
         super.onValidate();
-        Collection<PreferencesProvider> prefsProviders = getChildren(PreferencesProvider.class);
-        if(prefsProviders != null && prefsProviders.size() > 1)
-        {
-            throw new IllegalConfigurationException("Only one preference provider can be configured for an authentication provider");
-        }
 
         if(!isDurable())
         {
@@ -97,17 +87,6 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     }
 
     @Override
-    protected void onOpen()
-    {
-        super.onOpen();
-        Collection<PreferencesProvider> prefsProviders = getChildren(PreferencesProvider.class);
-        if(prefsProviders != null && !prefsProviders.isEmpty())
-        {
-            _preferencesProvider = prefsProviders.iterator().next();
-        }
-    }
-
-    @Override
     public Collection<VirtualHostAlias> getVirtualHostPortBindings()
     {
         return null;
@@ -117,39 +96,6 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     public SubjectCreator getSubjectCreator(final boolean secure)
     {
         return new SubjectCreator(this, _broker.getGroupProviders(), secure);
-    }
-
-    @Override
-    public PreferencesProvider<?> getPreferencesProvider()
-    {
-        return _preferencesProvider;
-    }
-
-    @Override
-    public void setPreferencesProvider(final PreferencesProvider<?> preferencesProvider)
-    {
-        _preferencesProvider = preferencesProvider;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass, Map<String, Object> attributes, ConfiguredObject... otherParents)
-    {
-        if(childClass == PreferencesProvider.class)
-        {
-            attributes = new HashMap<>(attributes);
-            return doAfter(getObjectFactory().createAsync(PreferencesProvider.class, attributes, this),
-                           new CallableWithArgument<ListenableFuture<C>, PreferencesProvider>()
-                           {
-                               @Override
-                               public ListenableFuture<C> call(final PreferencesProvider preferencesProvider) throws Exception
-                               {
-                                   _preferencesProvider = preferencesProvider;
-                                   return Futures.immediateFuture((C)preferencesProvider);
-                               }
-                           });
-        }
-        throw new IllegalArgumentException("Cannot create child of class " + childClass.getSimpleName());
     }
 
     @StateTransition( currentState = State.UNINITIALIZED, desiredState = State.QUIESCED )
@@ -204,70 +150,40 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     private ListenableFuture<Void> performDelete()
     {
         final SettableFuture<Void> futureResult = SettableFuture.create();
-        final ListenableFuture<Void> preferenceDeleteFuture;
-        if (_preferencesProvider != null)
+        Futures.addCallback(closeAsync(), new FutureCallback<Void>()
         {
-            preferenceDeleteFuture = _preferencesProvider.deleteAsync();
-        }
-        else
-        {
-            preferenceDeleteFuture = Futures.immediateFuture(null);
-        }
-
-        Futures.addCallback(preferenceDeleteFuture, new FutureCallback<Void>()
-        {
-
             @Override
             public void onSuccess(final Void result)
             {
-                closeAndDelete();
+                try
+                {
+                    tidyUp();
+                    futureResult.set(null);
+                }
+                catch (Exception e)
+                {
+                    futureResult.setException(e);
+                }
             }
 
             @Override
             public void onFailure(final Throwable t)
             {
-                LOGGER.warn("Failed to delete preference provider : {}", _preferencesProvider.getName(), t);
-                closeAndDelete();
+                try
+                {
+                    tidyUp();
+                }
+                finally
+                {
+                    futureResult.setException(t);
+                }
             }
 
-            private void closeAndDelete()
+            private void tidyUp()
             {
-                Futures.addCallback(closeAsync(), new FutureCallback<Void>()
-                {
-                    @Override
-                    public void onSuccess(final Void result)
-                    {
-                        try
-                        {
-                            tidyUp();
-                            futureResult.set(null);
-                        }
-                        catch (Exception e)
-                        {
-                            futureResult.setException(e);
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(final Throwable t)
-                    {
-                        try
-                        {
-                            tidyUp();
-                        }
-                        finally
-                        {
-                            futureResult.setException(t);
-                        }
-                    }
-
-                    private void tidyUp()
-                    {
-                        deleted();
-                        setState(State.DELETED);
-                        _eventLogger.message(AuthenticationProviderMessages.DELETE(getName()));
-                    }
-                });
+                deleted();
+                setState(State.DELETED);
+                _eventLogger.message(AuthenticationProviderMessages.DELETE(getName()));
             }
         });
 

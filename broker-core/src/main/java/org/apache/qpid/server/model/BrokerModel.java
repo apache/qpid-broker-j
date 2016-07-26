@@ -52,6 +52,7 @@ public final class BrokerModel extends Model
      *     Make Connections children of Ports instead of VHosts
      *     Bring model version and Qpid version into sync
      * 6.1 Remove JMX
+     *     Remove PreferencesProvider
      */
     public static final int MODEL_MAJOR_VERSION = 6;
     public static final int MODEL_MINOR_VERSION = 1;
@@ -102,7 +103,6 @@ public final class BrokerModel extends Model
         addRelationship(Port.class, Connection.class);
 
         addRelationship(AuthenticationProvider.class, User.class);
-        addRelationship(AuthenticationProvider.class, PreferencesProvider.class);
 
         addRelationship(GroupProvider.class, Group.class);
         addRelationship(Group.class, GroupMember.class);

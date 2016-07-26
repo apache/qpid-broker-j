@@ -45,39 +45,31 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.configuration.store.StoreConfigurationChangeListener;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.NoopConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ExternalFileBasedAuthenticationManager;
 import org.apache.qpid.server.model.ManagedAttributeField;
-import org.apache.qpid.server.model.PreferencesProvider;
-import org.apache.qpid.server.model.PreferencesSupportingAuthenticationProvider;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.User;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.database.PrincipalDatabase;
-import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.util.FileHelper;
 
 public abstract class PrincipalDatabaseAuthenticationManager<T extends PrincipalDatabaseAuthenticationManager<T>>
         extends AbstractAuthenticationManager<T>
-        implements ExternalFileBasedAuthenticationManager<T>, PreferencesSupportingAuthenticationProvider
+        implements ExternalFileBasedAuthenticationManager<T>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PrincipalDatabaseAuthenticationManager.class);
 
 
     private final Map<Principal, PrincipalAdapter> _userMap = new ConcurrentHashMap<Principal, PrincipalAdapter>();
-    private final DurableConfigurationStore _durableConfigurationStore;
-    private final StoreConfigurationChangeListener _durableConfigurationStoreChangeListener;
 
     private PrincipalDatabase _principalDatabase;
     @ManagedAttributeField
@@ -86,32 +78,6 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     protected PrincipalDatabaseAuthenticationManager(final Map<String, Object> attributes, final Broker broker)
     {
         super(attributes, broker);
-        SystemConfig<?> systemConfig = getModel().getAncestor(SystemConfig.class, this);
-        _durableConfigurationStore = systemConfig.getConfigurationStore();
-        _durableConfigurationStoreChangeListener = new StoreConfigurationChangeListener(_durableConfigurationStore);
-
-        addChangeListener(new NoopConfigurationChangeListener()
-        {
-            @Override
-            public void childRemoved(ConfiguredObject<?> object, ConfiguredObject<?> child)
-            {
-                if (child instanceof PreferencesProvider && child.isDurable())
-                {
-                    _durableConfigurationStore.remove(child.asObjectRecord());
-                    child.removeChangeListener(_durableConfigurationStoreChangeListener);
-                }
-            }
-
-            @Override
-            public void childAdded(ConfiguredObject<?> object, ConfiguredObject<?> child)
-            {
-                if (child instanceof PreferencesProvider && child.isDurable())
-                {
-                    _durableConfigurationStore.create(child.asObjectRecord());
-                    child.addChangeListener(_durableConfigurationStoreChangeListener);
-                }
-            }
-        });
     }
 
     @Override
@@ -152,12 +118,6 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     {
         super.onOpen();
         initialise();
-        PreferencesProvider<?> preferencesProvider = getPreferencesProvider();
-        if (preferencesProvider != null)
-        {
-            // set store listener to save any attribute changes
-            preferencesProvider.addChangeListener(_durableConfigurationStoreChangeListener);
-        }
     }
 
     @Override
@@ -507,11 +467,6 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
             {
                 String userName = _user.getName();
                 deleteUserFromDatabase(userName);
-                PreferencesProvider preferencesProvider = getPreferencesProvider();
-                if (preferencesProvider != null)
-                {
-                    preferencesProvider.deletePreferences(userName);
-                }
                 deleted();
                 setState(State.DELETED);
             }
@@ -521,57 +476,6 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
             }
             return Futures.immediateFuture(null);
         }
-
-        @Override
-        public Map<String, Object> getPreferences()
-        {
-            PreferencesProvider preferencesProvider = getPreferencesProvider();
-            if (preferencesProvider == null)
-            {
-                return null;
-            }
-            return preferencesProvider.getPreferences(this.getName());
-        }
-
-        @Override
-        public Object getPreference(String name)
-        {
-            Map<String, Object> preferences = getPreferences();
-            if (preferences == null)
-            {
-                return null;
-            }
-            return preferences.get(name);
-        }
-
-        @Override
-        public Map<String, Object> setPreferences(Map<String, Object> preferences)
-        {
-            PreferencesProvider preferencesProvider = getPreferencesProvider();
-            if (preferencesProvider == null)
-            {
-                return null;
-            }
-            return preferencesProvider.setPreferences(this.getName(), preferences);
-        }
-
-        @Override
-        public boolean deletePreferences()
-        {
-            PreferencesProvider preferencesProvider = getPreferencesProvider();
-            if (preferencesProvider == null)
-            {
-                return false;
-            }
-            String[] deleted = preferencesProvider.deletePreferences(this.getName());
-            return deleted.length == 1;
-        }
-
-        private PreferencesProvider getPreferencesProvider()
-        {
-            return PrincipalDatabaseAuthenticationManager.this.getPreferencesProvider();
-        }
-
     }
 
     private static Map<String, Object> createPrincipalAttributes(PrincipalDatabaseAuthenticationManager manager, final Principal user)

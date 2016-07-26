@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
@@ -28,11 +27,9 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.PreferencesProvider;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.User;
@@ -105,58 +102,6 @@ class ManagedUser extends AbstractConfiguredObject<ManagedUser> implements User<
     public void setPassword(final String password)
     {
         setAttributes(Collections.<String, Object>singletonMap(User.PASSWORD, password));
-
-    }
-
-    @Override
-    public <C extends ConfiguredObject> Collection<C> getChildren(final Class<C> clazz)
-    {
-        return Collections.emptySet();
-    }
-
-    @Override
-    public Map<String, Object> getPreferences()
-    {
-        PreferencesProvider<?> preferencesProvider = _authenticationManager.getPreferencesProvider();
-        if (preferencesProvider == null)
-        {
-            return null;
-        }
-        return preferencesProvider.getPreferences(this.getName());
-    }
-
-    @Override
-    public Object getPreference(String name)
-    {
-        Map<String, Object> preferences = getPreferences();
-        if (preferences == null)
-        {
-            return null;
-        }
-        return preferences.get(name);
-    }
-
-    @Override
-    public Map<String, Object> setPreferences(Map<String, Object> preferences)
-    {
-        PreferencesProvider<?> preferencesProvider = _authenticationManager.getPreferencesProvider();
-        if (preferencesProvider == null)
-        {
-            return null;
-        }
-        return preferencesProvider.setPreferences(this.getName(), preferences);
-    }
-
-    @Override
-    public boolean deletePreferences()
-    {
-        PreferencesProvider preferencesProvider = _authenticationManager.getPreferencesProvider();
-        if (preferencesProvider == null)
-        {
-            return false;
-        }
-        String[] deleted = preferencesProvider.deletePreferences(this.getName());
-        return deleted.length == 1;
     }
 
 }

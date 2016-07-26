@@ -32,7 +32,6 @@ define(["dojo/parser",
         "dojo/dom-style",
         "dojox/html/entities",
         "dojo/dom",
-        "qpid/management/PreferencesProvider",
         "qpid/management/authenticationprovider/PrincipalDatabaseAuthenticationManager",
         "dojo/text!showAuthProvider.html",
         "dojo/domReady!"],
@@ -50,7 +49,6 @@ define(["dojo/parser",
               domStyle,
               entities,
               dom,
-              PreferencesProvider,
               PrincipalDatabaseAuthenticationManager,
               template)
     {
@@ -114,27 +112,6 @@ define(["dojo/parser",
                             authProviderUpdater.managingUsersUI.update(authProviderUpdater.authProviderData);
                         }
 
-                        var supportsPreferencesProvider = that.management.metadata.implementsManagedInterface(
-                            "AuthenticationProvider",
-                            authProviderUpdater.authProviderData.type,
-                            "PreferencesSupportingAuthenticationProvider");
-                        if (!supportsPreferencesProvider)
-                        {
-                            var preferencesPanel = query(".preferencesPanel", contentPane.containerNode);
-                            if (preferencesPanel && preferencesPanel[0])
-                            {
-                                var preferencesProviderPanel = registry.byNode(preferencesPanel[0]);
-                                domStyle.set(preferencesProviderPanel.domNode, "display", "none");
-                            }
-                        }
-                        else
-                        {
-                            var preferencesProviderData = authProviderUpdater.authProviderData.preferencesproviders
-                                ? authProviderUpdater.authProviderData.preferencesproviders[0]
-                                : null;
-                            authProviderUpdater.updatePreferencesProvider(preferencesProviderData);
-                        }
-
                         updater.add(that.authProviderUpdater);
                     });
                 });
@@ -176,40 +153,7 @@ define(["dojo/parser",
             this.type = query(".type", node)[0];
             this.state = query(".state", node)[0];
             this.tabObject = authenticationProvider;
-            this.preferencesProviderType = dom.byId("preferencesProviderType");
-            this.preferencesProviderName = dom.byId("preferencesProviderName");
-            this.preferencesProviderState = dom.byId("preferencesProviderState");
-            this.editPreferencesProviderButton = query(".editPreferencesProviderButton", node)[0];
-            this.deletePreferencesProviderButton = query(".deletePreferencesProviderButton", node)[0];
-            this.preferencesProviderAttributes = dom.byId("preferencesProviderAttributes")
-            this.preferencesNode = query(".preferencesProviderDetails", node)[0];
             this.authenticationProviderDetailsContainer = query(".authenticationProviderDetails", node)[0];
-        }
-
-        AuthProviderUpdater.prototype.updatePreferencesProvider = function (preferencesProviderData)
-        {
-            if (preferencesProviderData)
-            {
-                if (!this.preferencesProvider)
-                {
-                    var preferencesProvider = new PreferencesProvider(preferencesProviderData.name, this.authProviderData);
-                    preferencesProvider.init(this.preferencesNode, this);
-                    this.preferencesProvider = preferencesProvider;
-                }
-                this.preferencesProvider.update(preferencesProviderData);
-            }
-            else
-            {
-                if (this.preferencesProvider)
-                {
-                    this.preferencesProvider.update(null);
-                }
-            }
-        };
-
-        AuthProviderUpdater.prototype.onPreferencesProviderDeleted = function ()
-        {
-            this.preferencesProvider = null;
         }
 
         AuthProviderUpdater.prototype.updateHeader = function ()
@@ -289,19 +233,7 @@ define(["dojo/parser",
                     }
                 }
             }
-            var preferencesProviderData = data.preferencesproviders ? data.preferencesproviders[0] : null;
-            try
-            {
-                this.updatePreferencesProvider(preferencesProviderData);
-            }
-            catch (e)
-            {
-                if (console)
-                {
-                    console.error(e);
-                }
-            }
-        }
+        };
 
         return AuthenticationProvider;
     });

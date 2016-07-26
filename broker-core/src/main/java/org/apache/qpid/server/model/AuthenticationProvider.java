@@ -45,18 +45,6 @@ public interface AuthenticationProvider<X extends AuthenticationProvider<X>> ext
     SubjectCreator getSubjectCreator(final boolean secure);
 
     /**
-     * Returns the preferences provider associated with this authentication provider
-     * @return PreferencesProvider
-     */
-    PreferencesProvider<?> getPreferencesProvider();
-
-    /**
-     * Sets the preferences provider
-     * @param preferencesProvider
-     */
-    void setPreferencesProvider(PreferencesProvider<?> preferencesProvider);
-
-    /**
      * Gets the SASL mechanisms known to this manager.
      *
      * @return SASL mechanism names, space separated.

@@ -21,26 +21,15 @@
 
 package org.apache.qpid.server.model;
 
-import java.util.Map;
-
 @ManagedObject
 public interface User<X extends User<X>> extends ConfiguredObject<X>
 {
     String STATE           = "state";
     String PASSWORD        = "password";
 
-    // Attributes
-
     @ManagedAttribute( secure = true )
     String getPassword();
 
-    public void setPassword(String password);
+    void setPassword(String password);
 
-    public Map<String, Object> getPreferences();
-
-    public Object getPreference(String name);
-
-    public Map<String, Object> setPreferences(Map<String, Object> preferences);
-
-    public boolean deletePreferences();
 }

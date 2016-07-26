@@ -83,7 +83,6 @@ import org.apache.qpid.server.management.plugin.servlet.RootServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.ApiDocsServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.BrokerQueryServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.JsonValueServlet;
-import org.apache.qpid.server.management.plugin.servlet.rest.LoggedOnUserPreferencesServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LogoutServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.MetaDataServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.QueueReportServlet;
@@ -91,7 +90,6 @@ import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.SaslServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.StructureServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.TimeZoneServlet;
-import org.apache.qpid.server.management.plugin.servlet.rest.UserPreferencesServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.VirtualHostQueryServlet;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -350,8 +348,6 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             root.addServlet(apiDocsServlet, path + "/");
         }
 
-        root.addServlet(new ServletHolder(new UserPreferencesServlet()), "/service/userpreferences/*");
-        root.addServlet(new ServletHolder(new LoggedOnUserPreferencesServlet()), "/service/preferences");
         root.addServlet(new ServletHolder(new StructureServlet()), "/service/structure");
         root.addServlet(new ServletHolder(new QueueReportServlet()), "/service/queuereport/*");
 

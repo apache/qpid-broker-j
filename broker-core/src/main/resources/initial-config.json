@@ -24,12 +24,7 @@
   "authenticationproviders" : [ {
     "name" : "passwordFile",
     "type" : "PlainPasswordFile",
-    "path" : "${qpid.home_dir}${file.separator}etc${file.separator}passwd",
-    "preferencesproviders" : [{
-        "name": "fileSystemPreferences",
-        "type": "FileSystemPreferences",
-        "path" : "${qpid.work_dir}${file.separator}user.preferences.json"
-    }]
+    "path" : "${qpid.home_dir}${file.separator}etc${file.separator}passwd"
   } ],
     "brokerloggers" : [ {
     "name" : "logfile",

@@ -397,15 +397,6 @@ public class TestBrokerConfiguration
         _saved = saved;
     }
 
-    public void addPreferencesProviderConfiguration(String authenticationProvider, Map<String, Object> attributes)
-    {
-        ConfiguredObjectRecord authProviderRecord = findObject(AuthenticationProvider.class, authenticationProvider);
-        ConfiguredObjectRecord pp = new ConfiguredObjectRecordImpl(UUIDGenerator.generateRandomUUID(),
-                                                                   PreferencesProvider.class.getSimpleName(), attributes, Collections.singletonMap(AuthenticationProvider.class.getSimpleName(),authProviderRecord.getId()));
-
-        _store.create(pp);
-    }
-
     public Map<String,Object> getObjectAttributes(final Class<? extends ConfiguredObject> category, final String name)
     {
         return findObject(category, name).getAttributes();
