@@ -77,12 +77,12 @@ define(["dojo/parser",
                 {
                     that.queryBrowserWidget.resize();
                 });
-            updater.add(this.queryBrowserWidget);
+            updater.add(this);
         };
 
         QueryBrowserTab.prototype.close = function ()
         {
-            updater.remove(this.queryBrowserWidget);
+            updater.remove(this);
             if (this.queryBrowserWidget)
             {
                 this.queryBrowserWidget.destroyRecursive();
@@ -96,6 +96,14 @@ define(["dojo/parser",
             this.contentPane.onClose();
             this.controller.tabContainer.removeChild(this.contentPane);
             this.contentPane.destroyRecursive();
+        };
+
+        QueryBrowserTab.prototype.update = function()
+        {
+            if (this.contentPane.selected)
+            {
+                this.queryBrowserWidget.update();
+            }
         };
 
         return QueryBrowserTab;
