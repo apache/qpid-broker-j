@@ -21,6 +21,7 @@
 package org.apache.qpid.server.management.plugin.report;
 
 import java.nio.ByteBuffer;
+import java.util.Date;
 
 public interface ReportableMessage
 {
@@ -28,15 +29,15 @@ public interface ReportableMessage
 
     ReportableMessageHeader getMessageHeader();
 
-    public ByteBuffer getContent();
+    ByteBuffer getContent();
 
     boolean isPersistent();
 
     long getSize();
 
-    long getExpiration();
+    Date getExpiration();
 
     long getMessageNumber();
 
-    long getArrivalTime();
+    Date getArrivalTime();
 }

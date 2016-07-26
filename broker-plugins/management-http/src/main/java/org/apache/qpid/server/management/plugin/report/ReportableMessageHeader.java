@@ -21,13 +21,14 @@
 package org.apache.qpid.server.management.plugin.report;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.Set;
 
 public interface ReportableMessageHeader
 {
     String getCorrelationId();
 
-    long getExpiration();
+    Date getExpiration();
 
     String getUserId();
 
@@ -41,7 +42,7 @@ public interface ReportableMessageHeader
 
     byte getPriority();
 
-    long getTimestamp();
+    Date getTimestamp();
 
     String getType();
 

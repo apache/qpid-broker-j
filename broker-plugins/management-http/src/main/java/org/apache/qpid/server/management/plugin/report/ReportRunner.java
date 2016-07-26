@@ -63,7 +63,6 @@ public class ReportRunner<T>
             Float.class,
             Double.class,
             UUID.class,
-            Date.class,
             String.class
                                                                                           ));
 
@@ -259,9 +258,9 @@ public class ReportRunner<T>
             }
 
             @Override
-            public long getExpiration()
+            public Date getExpiration()
             {
-                return messageInfo.getExpirationTime() == null ? 0l : messageInfo.getExpirationTime();
+                return messageInfo.getExpirationTime();
             }
 
             @Override
@@ -271,7 +270,7 @@ public class ReportRunner<T>
             }
 
             @Override
-            public long getArrivalTime()
+            public Date getArrivalTime()
             {
                 return messageInfo.getArrivalTime();
             }
@@ -289,9 +288,9 @@ public class ReportRunner<T>
             }
 
             @Override
-            public long getExpiration()
+            public Date getExpiration()
             {
-                return messageInfo.getExpirationTime() == null ? 0l : messageInfo.getExpirationTime();
+                return messageInfo.getExpirationTime();
             }
 
             @Override
@@ -331,7 +330,7 @@ public class ReportRunner<T>
             }
 
             @Override
-            public long getTimestamp()
+            public Date getTimestamp()
             {
                 return messageInfo.getTimestamp();
             }
@@ -403,6 +402,10 @@ public class ReportRunner<T>
                 copy.put(makeImmutable(entry.getKey()),makeImmutable(entry.getValue()));
             }
             return copy;
+        }
+        else if(value instanceof Date)
+        {
+            return new Date(((Date) value).getTime());
         }
         else return null;
     }
