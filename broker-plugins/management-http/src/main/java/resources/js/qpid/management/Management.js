@@ -30,7 +30,7 @@ define(["dojo/_base/lang",
         "qpid/common/metadata",
         "qpid/common/timezone",
         "qpid/management/UserPreferences"],
-    function (lang, all, array, xhr, ioQuery, json, Promise, Deferred, sasl, Metadata, Timezone, UserPreferences)
+    function (lang, all, array, xhr, ioQuery, json, Promise, Deferred, saslAuthenticator, Metadata, Timezone, UserPreferences)
     {
 
         function shallowCopy(source, target, excludes)
@@ -475,28 +475,21 @@ define(["dojo/_base/lang",
                 baseUrl = baseUrl + "/";
             }
             return baseUrl + url;
-        }
+        };
 
         // summary:
         //  Loads meta data, time zones, user preferences and invokes callback functions after loading user preferences
         //
         Management.prototype.init = function (callback)
         {
-            var that = this;
-            // todo : change invoked methods to return promise and execute requests in parallel using promise.all
-            this.getAuthenticatedUserAndGroups(function()
-            {
-                that.loadMetadata(function ()
-                {
-                    that.loadTimezones(function ()
-                    {
-                        that.loadUserPreferences().then(callback, callback);
-                    });
-                });
-            });
+            var userAndGroupsDetails = this.getAuthenticatedUserAndGroups();
+            var metadata = this.loadMetadata();
+            var timezones = this.loadTimezones();
+            var userPreferences = this.loadUserPreferences();
+            all([userAndGroupsDetails, metadata, timezones, userPreferences]).then(callback, callback);
         };
 
-        Management.prototype.getAuthenticatedUserAndGroups = function (callback)
+        Management.prototype.getAuthenticatedUserAndGroups = function ()
         {
             var baseUrl = this.objectToURL({type : "broker"});
 
@@ -512,49 +505,35 @@ define(["dojo/_base/lang",
                 }
             };
 
-            all({
+            return all({
                 user: userPromise,
                 groups: groupsPromise
-            })
-                .then(lang.hitch(this, complete), lang.hitch(this, this.errorHandler))
-                .then(lang.hitch(callback));
+            }).then(lang.hitch(this, complete), lang.hitch(this, this.errorHandler));
 
         };
 
         // summary:
         //  Loads meta data and store it under 'metadata' field as object of type qpid.common.metadata object.
-        //  When meta data are loaded successfully a callback function is executed, otherwise default error handler is invoked
         //
-        Management.prototype.loadMetadata = function (callback)
+        Management.prototype.loadMetadata = function ()
         {
-            var that = this;
-            this.get({url: "service/metadata"})
-                .then(function (data)
+            return this.get({url: "service/metadata"})
+                .then(lang.hitch(this, function (data)
                 {
-                    that.metadata = new Metadata(data);
-                    if (callback)
-                    {
-                        callback();
-                    }
-                });
+                    this.metadata = new Metadata(data);
+                }));
         };
 
         // summary:
         //  Loads timezones and store them under 'timezone' field as  object of type qpid.common.timezone object
-        //  When timezones are loaded successfully a callback function is executed, otherwise default error handler is invoked
         //
-        Management.prototype.loadTimezones = function (callback)
+        Management.prototype.loadTimezones = function ()
         {
-            var that = this;
-            that.get({url: "service/timezones"})
-                .then(function (timezones)
+            return this.get({url: "service/timezones"})
+                .then(lang.hitch(this, function (timezones)
                 {
-                    that.timezone = new Timezone(timezones);
-                    if (callback)
-                    {
-                        callback();
-                    }
-                });
+                    this.timezone = new Timezone(timezones);
+                }));
         };
 
         // summary:
@@ -572,7 +551,7 @@ define(["dojo/_base/lang",
         Management.prototype.getSaslStatus = function ()
         {
             return this.get({url: saslServiceUrl});
-        }
+        };
 
         Management.prototype.sendSaslResponse = function (response)
         {
@@ -618,7 +597,7 @@ define(["dojo/_base/lang",
                     }
                     else
                     {
-                        sasl.authenticate(data.mechanisms, that)
+                        saslAuthenticator.authenticate(data.mechanisms, that)
                             .then(successCallback, failureCallback);
                     }
                 }, failureCallback);
