@@ -119,7 +119,7 @@ public class AuthenticationResultCacher
             if (connectionPrincipals != null && !connectionPrincipals.isEmpty())
             {
                 ConnectionPrincipal connectionPrincipal = connectionPrincipals.iterator().next();
-                md.update(connectionPrincipal.getRemoteAddress().toString().getBytes());
+                md.update(connectionPrincipal.getRemoteAddress().toString().getBytes(UTF8));
             }
 
             for (String part : content)
