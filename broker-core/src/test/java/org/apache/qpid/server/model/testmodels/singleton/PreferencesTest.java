@@ -59,7 +59,6 @@ public class PreferencesTest extends QpidTestCase
     private ConfiguredObject<?> _testObject;
     private Subject _testSubject;
     private TaskExecutor _preferenceTaskExecutor;
-    private PreferenceStore _preferenceStore;
 
     @Override
     public void setUp() throws Exception
@@ -72,9 +71,9 @@ public class PreferencesTest extends QpidTestCase
 
         _preferenceTaskExecutor = new CurrentThreadTaskExecutor();
         _preferenceTaskExecutor.start();
-        _preferenceStore = mock(PreferenceStore.class);
+        PreferenceStore preferenceStore = mock(PreferenceStore.class);
         _testObject.setUserPreferences(new UserPreferencesImpl(
-                _preferenceTaskExecutor, _testObject, _preferenceStore, Collections.<Preference>emptySet()
+                _preferenceTaskExecutor, _testObject, preferenceStore, Collections.<Preference>emptySet()
         ));
         _testSubject = TestPrincipalUtils.createTestSubject(TEST_USERNAME);
     }
@@ -386,7 +385,7 @@ public class PreferencesTest extends QpidTestCase
                     awaitPreferenceFuture(_testObject.getUserPreferences().updateOrAppend(Arrays.asList(PreferenceFactory.recover(_testObject, replacementAttributes))));
                     fail("The stealing of a preference must be prohibited");
                 }
-                catch (SecurityException e)
+                catch (IllegalArgumentException e)
                 {
                     // pass
                 }
@@ -396,6 +395,100 @@ public class PreferencesTest extends QpidTestCase
         });
 
         assertSinglePreference(user1Subject, originalPreference);
+    }
+
+    public void testProhibitDuplicateId() throws Exception
+    {
+        final String prefType = "X-testType";
+        final String prefName = "prop1";
+        final Preference testUserPreference =
+                PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                        null,
+                        null,
+                        prefType,
+                        prefName,
+                        null,
+                        TEST_USERNAME,
+                        null,
+                        Collections.<String, Object>emptyMap()));
+
+        updateOrAppendAs(_testSubject, testUserPreference);
+
+        Subject user2Subject = TestPrincipalUtils.createTestSubject(TEST_USERNAME2);
+        final Preference testUserPreference2 =
+                PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
+                        null,
+                        testUserPreference.getId(),
+                        prefType,
+                        prefName,
+                        "new preference",
+                        TEST_USERNAME2,
+                        null,
+                        Collections.<String, Object>emptyMap()));
+        try
+        {
+            updateOrAppendAs(user2Subject, testUserPreference2);
+            fail("duplicate id should be prohibited");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // pass
+        }
+
+        try
+        {
+            Subject.doAs(user2Subject, new PrivilegedAction<Void>()
+            {
+                @Override
+                public Void run()
+                {
+                    awaitPreferenceFuture(_testObject.getUserPreferences().replace(Arrays.asList(testUserPreference2)));
+                    return null;
+                }
+            });
+            fail("duplicate id should be prohibited");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // pass
+        }
+
+        try
+        {
+            Subject.doAs(user2Subject, new PrivilegedAction<Void>()
+            {
+                @Override
+                public Void run()
+                {
+                    awaitPreferenceFuture(_testObject.getUserPreferences().replaceByType(testUserPreference.getType(), Arrays.asList(testUserPreference2)));
+                    return null;
+                }
+            });
+            fail("duplicate id should be prohibited");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // pass
+        }
+
+
+        try
+        {
+            Subject.doAs(user2Subject, new PrivilegedAction<Void>()
+            {
+                @Override
+                public Void run()
+                {
+                    awaitPreferenceFuture(_testObject.getUserPreferences().replaceByTypeAndName(testUserPreference.getType(), testUserPreference.getName(), testUserPreference2));
+                    return null;
+                }
+            });
+            fail("duplicate id should be prohibited");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // pass
+        }
     }
 
     public void testReplace()

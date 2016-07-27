@@ -89,7 +89,7 @@ public class RestUserPreferenceHandler
         awaitFuture(userPreferences.delete(type, name, id));
     }
 
-    ActionTaken handlePUT(ConfiguredObject<?> target, RequestInfo requestInfo, Object providedObject)
+    void handlePUT(ConfiguredObject<?> target, RequestInfo requestInfo, Object providedObject)
     {
         UserPreferences userPreferences = target.getUserPreferences();
         if (userPreferences == null)
@@ -99,14 +99,14 @@ public class RestUserPreferenceHandler
 
         final List<String> preferencesParts = requestInfo.getPreferencesParts();
 
-        if (!(providedObject instanceof Map))
-        {
-            throw new IllegalArgumentException("expected object");
-        }
-        Map<String, Object> providedAttributes = (Map<String, Object>) providedObject;
-
         if (preferencesParts.size() == 2)
         {
+            if (!(providedObject instanceof Map))
+            {
+                throw new IllegalArgumentException("expected object");
+            }
+            Map<String, Object> providedAttributes = (Map<String, Object>) providedObject;
+
             String type = preferencesParts.get(0);
             String name = preferencesParts.get(1);
 
@@ -119,9 +119,30 @@ public class RestUserPreferenceHandler
 
             ensureValidVisibilityList(preference.getVisibilityList());
 
-            awaitFuture(userPreferences.updateOrAppend(Collections.singleton(preference)));
+            awaitFuture(userPreferences.replaceByTypeAndName(type, name , preference));
+        }
+        else if (preferencesParts.size() == 1)
+        {
+            String type = preferencesParts.get(0);
 
-            return providedUuid == null ? ActionTaken.CREATED : ActionTaken.UPDATED;
+            if (!(providedObject instanceof List))
+            {
+                throw new IllegalArgumentException("expected a list of objects");
+            }
+
+            List<Preference> replacementPreferences = validateAndConvert(target, type, (List<Object>) providedObject);
+            awaitFuture(userPreferences.replaceByType(type, replacementPreferences));
+        }
+        else if (preferencesParts.size() == 0)
+        {
+            if (!(providedObject instanceof Map))
+            {
+                throw new IllegalArgumentException("expected object");
+            }
+
+            List<Preference> replacementPreferences = validateAndConvert(target, (Map<String, Object>) providedObject);
+
+            awaitFuture(userPreferences.replace(replacementPreferences));
         }
         else
         {
@@ -148,24 +169,7 @@ public class RestUserPreferenceHandler
             {
                 throw new IllegalArgumentException("expected a list of objects");
             }
-            List<Object> providedObjects = (List<Object>) providedObject;
-
-            for (Object preferenceObject : providedObjects)
-            {
-                if (!(preferenceObject instanceof Map))
-                {
-                    throw new IllegalArgumentException("expected a list of objects");
-                }
-                Map<String, Object> preferenceAttributes = (Map<String, Object>) preferenceObject;
-
-                ensureAttributeMatches(preferenceAttributes, "type", type);
-
-                Preference preference = PreferenceFactory.create(target, preferenceAttributes);
-
-                ensureValidVisibilityList(preference.getVisibilityList());
-
-                preferences.add(preference);
-            }
+            preferences.addAll(validateAndConvert(target, type, (List<Object>) providedObject));
 
         }
         else if (preferencesParts.size() == 0)
@@ -174,35 +178,8 @@ public class RestUserPreferenceHandler
             {
                 throw new IllegalArgumentException("expected object");
             }
-            Map<String, Object> providedObjectMap = (Map<String, Object>) providedObject;
 
-            for (String type : providedObjectMap.keySet())
-            {
-                if (!(providedObjectMap.get(type) instanceof List))
-                {
-                    final String errorMessage = String.format("expected a list of objects for attribute '%s'", type);
-                    throw new IllegalArgumentException(errorMessage);
-                }
-
-                for (Object preferenceObject : (List<Object>) providedObjectMap.get(type))
-                {
-                    if (!(preferenceObject instanceof Map))
-                    {
-                        final String errorMessage =
-                                String.format("encountered non preference object in list of type '%s'", type);
-                        throw new IllegalArgumentException(errorMessage);
-                    }
-                    Map<String, Object> preferenceAttributes = (Map<String, Object>) preferenceObject;
-
-                    ensureAttributeMatches(preferenceAttributes, "type", type);
-
-                    Preference preference = PreferenceFactory.create(target, preferenceAttributes);
-
-                    ensureValidVisibilityList(preference.getVisibilityList());
-
-                    preferences.add(preference);
-                }
-            }
+            preferences.addAll(validateAndConvert(target, (Map<String, Object>) providedObject));
         }
         else
         {
@@ -332,6 +309,65 @@ public class RestUserPreferenceHandler
         return FutureHelper.<T, RuntimeException>await(future, _preferenceOperationTimeout, TimeUnit.MILLISECONDS);
     }
 
+    private List<Preference> validateAndConvert(final ConfiguredObject<?> target, final Map<String, Object> providedObjectMap)
+    {
+        List<Preference> replacementPreferences = new ArrayList<>();
+        for (String type : providedObjectMap.keySet())
+        {
+
+            if (!(providedObjectMap.get(type) instanceof List))
+            {
+                final String errorMessage = String.format("expected a list of objects for attribute '%s'", type);
+                throw new IllegalArgumentException(errorMessage);
+            }
+
+            for (Object preferenceObject : (List<Object>) providedObjectMap.get(type))
+            {
+                if (!(preferenceObject instanceof Map))
+                {
+                    final String errorMessage =
+                            String.format("encountered non preference object in list of type '%s'", type);
+                    throw new IllegalArgumentException(errorMessage);
+                }
+                Map<String, Object> preferenceAttributes = (Map<String, Object>) preferenceObject;
+
+                ensureAttributeMatches(preferenceAttributes, "type", type);
+
+                Preference preference = PreferenceFactory.create(target, preferenceAttributes);
+
+                ensureValidVisibilityList(preference.getVisibilityList());
+
+                replacementPreferences.add(preference);
+            }
+        }
+        return replacementPreferences;
+    }
+
+    private List<Preference> validateAndConvert(final ConfiguredObject<?> target,
+                                                final String type,
+                                                final List<Object> providedObjects)
+    {
+        List<Preference> replacementPreferences = new ArrayList<>();
+
+        for (Object preferenceObject : providedObjects)
+        {
+            if (!(preferenceObject instanceof Map))
+            {
+                throw new IllegalArgumentException("expected a list of objects");
+            }
+            Map<String, Object> preferenceAttributes = (Map<String, Object>) preferenceObject;
+
+            ensureAttributeMatches(preferenceAttributes, "type", type);
+
+            Preference preference = PreferenceFactory.create(target, preferenceAttributes);
+
+            ensureValidVisibilityList(preference.getVisibilityList());
+
+            replacementPreferences.add(preference);
+        }
+        return replacementPreferences;
+    }
+
     private UUID getIdFromQueryParameters(final Map<String, List<String>> queryParameters)
     {
         List<String> ids = queryParameters.get("id");
@@ -414,11 +450,5 @@ public class RestUserPreferenceHandler
             throw new IllegalArgumentException(errorMessage);
         }
         return (String) providedValue;
-    }
-
-    enum ActionTaken
-    {
-        CREATED,
-        UPDATED
     }
 }

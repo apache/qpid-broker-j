@@ -19,6 +19,7 @@
 
 package org.apache.qpid.systest.rest;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -55,7 +56,7 @@ public class UserPreferencesRestTest extends QpidRestTestCase
         prefAttributes.put(Preference.VALUE_ATTRIBUTE, prefValueAttributes);
 
         String fullUrl = String.format("broker/userpreferences/%s/%s", prefType, prefName);
-        getRestTestHelper().submitRequest(fullUrl, "PUT", prefAttributes, HttpServletResponse.SC_CREATED);
+        getRestTestHelper().submitRequest(fullUrl, "PUT", prefAttributes, HttpServletResponse.SC_OK);
 
         Map<String, Object> prefDetails = getRestTestHelper().getJsonAsMap(fullUrl);
 
@@ -85,7 +86,7 @@ public class UserPreferencesRestTest extends QpidRestTestCase
     {
         getRestTestHelper().submitRequest("groupprovider/temp", "PUT", Collections.singletonMap(GroupProvider.TYPE, GroupProviderImpl.CONFIG_TYPE), HttpServletResponse.SC_CREATED);
         getRestTestHelper().createGroup("test", "temp");
-        getRestTestHelper().createNewGroupMember("temp", "test", "webadmin");
+        getRestTestHelper().createNewGroupMember("temp", "test", RestTestHelper.DEFAULT_USERNAME);
         getRestTestHelper().createNewGroupMember("temp", "test", "admin");
 
         String preferenceType = "X-Type-" + getTestName();
@@ -95,7 +96,7 @@ public class UserPreferencesRestTest extends QpidRestTestCase
         preferenceAttributes.put(Preference.TYPE_ATTRIBUTE, preferenceType);
         preferenceAttributes.put(Preference.NAME_ATTRIBUTE, preferenceName);
         preferenceAttributes.put(Preference.DESCRIPTION_ATTRIBUTE, "");
-        preferenceAttributes.put(Preference.OWNER_ATTRIBUTE, "webadmin");
+        preferenceAttributes.put(Preference.OWNER_ATTRIBUTE, RestTestHelper.DEFAULT_USERNAME);
         preferenceAttributes.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList("test"));
         preferenceAttributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
 
@@ -105,7 +106,7 @@ public class UserPreferencesRestTest extends QpidRestTestCase
         getRestTestHelper().setUsernameAndPassword("admin", "admin");
 
         preferenceAttributes.put(Preference.OWNER_ATTRIBUTE, "admin");
-        getRestTestHelper().submitRequest(fullUrl, "PUT", preferenceAttributes, HttpServletResponse.SC_FORBIDDEN);
+        getRestTestHelper().submitRequest(fullUrl, "PUT", preferenceAttributes, 422);
     }
 
     public void testPutQueryPreferenceRoundTrip() throws Exception
@@ -124,7 +125,7 @@ public class UserPreferencesRestTest extends QpidRestTestCase
         prefAttributes.put(Preference.VALUE_ATTRIBUTE, prefValueAttributes);
 
         String fullUrl = String.format("broker/userpreferences/%s/%s", prefType, prefName);
-        getRestTestHelper().submitRequest(fullUrl, "PUT", prefAttributes, HttpServletResponse.SC_CREATED);
+        getRestTestHelper().submitRequest(fullUrl, "PUT", prefAttributes, HttpServletResponse.SC_OK);
 
         Map<String, Object> prefDetails = getRestTestHelper().getJsonAsMap(fullUrl);
 
@@ -251,7 +252,7 @@ public class UserPreferencesRestTest extends QpidRestTestCase
                    pref2Names.contains(pref2Name) && pref2Names.contains(pref3Name));
     }
 
-    public void testPutUpdate() throws Exception
+    public void testPutReplaceOne() throws Exception
     {
         final String prefName = "mypref";
         final String prefDescription = "mydesc";
@@ -262,7 +263,7 @@ public class UserPreferencesRestTest extends QpidRestTestCase
 
         prefAttributes.put("value", Collections.emptyMap());
         String fullUrl = String.format("broker/userpreferences/%s/%s", prefType, prefName);
-        getRestTestHelper().submitRequest(fullUrl, "PUT", prefAttributes, HttpServletResponse.SC_CREATED);
+        getRestTestHelper().submitRequest(fullUrl, "PUT", prefAttributes, HttpServletResponse.SC_OK);
 
         Map<String, Object> storedPreference = getRestTestHelper().getJsonAsMap(fullUrl);
 
@@ -277,6 +278,81 @@ public class UserPreferencesRestTest extends QpidRestTestCase
 
         assertEquals("Unexpected id on updated pref", storedPreference.get(Preference.ID_ATTRIBUTE), rereadPrefDetails.get(Preference.ID_ATTRIBUTE));
         assertEquals("Unexpected description on updated pref", "new description", rereadPrefDetails.get(Preference.DESCRIPTION_ATTRIBUTE));
+    }
+
+    public void testPutReplaceMany() throws Exception
+    {
+        final String pref1Name = "mypref1";
+        final String pref1Type = "X-testtype1";
+        final String pref2Name = "mypref2";
+        final String pref2Type = "X-testtype2";
+
+        String rootUrl = "broker/userpreferences";
+
+        {
+            // Create two preferences (of different types)
+
+            Map<String, Object> pref1Attributes = new HashMap<>();
+            pref1Attributes.put(Preference.NAME_ATTRIBUTE, pref1Name);
+            pref1Attributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+            pref1Attributes.put(Preference.TYPE_ATTRIBUTE, pref1Type);
+
+            Map<String, Object> pref2Attributes = new HashMap<>();
+            pref2Attributes.put(Preference.NAME_ATTRIBUTE, pref2Name);
+            pref2Attributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+            pref2Attributes.put(Preference.TYPE_ATTRIBUTE, pref2Type);
+
+            final Map<String, List<Map<String, Object>>> payload = new HashMap<>();
+            payload.put(pref1Type, Lists.newArrayList(pref1Attributes));
+            payload.put(pref2Type, Lists.newArrayList(pref2Attributes));
+
+            getRestTestHelper().submitRequest(rootUrl, "PUT", payload, HttpServletResponse.SC_OK);
+        }
+
+        Map<String, List<Map<String, Object>>> original = getRestTestHelper().getJson(rootUrl, Map.class);
+        assertEquals("Unexpected number of types in root map", 2, original.size());
+
+        assertEquals("Unexpected number of " + pref1Type + " preferences", 1, original.get(pref1Type).size());
+        assertEquals(pref1Type + " preference has unexpected name", pref1Name, original.get(pref1Type).iterator().next().get(Preference.NAME_ATTRIBUTE));
+
+        assertEquals("Unexpected number of " + pref2Type + " preferences", 1, original.get(pref2Type).size());
+        assertEquals(pref2Type + " preference has unexpected name", pref2Name, original.get(pref2Type).iterator().next().get(Preference.NAME_ATTRIBUTE));
+
+        final String pref3Name = "mypref3";
+        final String pref4Name = "mypref4";
+        final String pref3Type = "X-testtype3";
+
+        {
+            // Replace all the preferences with ones that partially overlap the existing set:
+            // The preference of type X-testtype1 is replaced
+            // The preference of type X-testtype2 is removed
+            // A preference of type X-testtype3 is added
+
+            Map<String, Object> pref3Attributes = new HashMap<>();
+            pref3Attributes.put(Preference.NAME_ATTRIBUTE, pref3Name);
+            pref3Attributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+            pref3Attributes.put(Preference.TYPE_ATTRIBUTE, pref1Type);
+
+            Map<String, Object> pref4Attributes = new HashMap<>();
+            pref4Attributes.put(Preference.NAME_ATTRIBUTE, pref4Name);
+            pref4Attributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+            pref4Attributes.put(Preference.TYPE_ATTRIBUTE, pref3Type);
+
+            final Map<String, List<Map<String, Object>>> payload = new HashMap<>();
+            payload.put(pref1Type, Lists.newArrayList(pref3Attributes));
+            payload.put(pref3Type, Lists.newArrayList(pref4Attributes));
+
+            getRestTestHelper().submitRequest(rootUrl, "PUT", payload, HttpServletResponse.SC_OK);
+        }
+
+        Map<String, List<Map<String, Object>>> reread = getRestTestHelper().getJson(rootUrl, Map.class);
+        assertEquals("Unexpected number of types in root map after replacement", 2, reread.size());
+
+        assertEquals("Unexpected number of " + pref1Type + " preferences", 1, reread.get(pref1Type).size());
+        assertEquals(pref1Type + " preference has unexpected name", pref3Name, reread.get(pref1Type).iterator().next().get(Preference.NAME_ATTRIBUTE));
+
+        assertEquals("Unexpected number of " + pref3Type + " preferences", 1, reread.get(pref3Type).size());
+        assertEquals(pref3Type + " preference has unexpected name", pref4Name, reread.get(pref3Type).iterator().next().get(Preference.NAME_ATTRIBUTE));
     }
 
     public void testPostUpdate() throws Exception
@@ -340,7 +416,7 @@ public class UserPreferencesRestTest extends QpidRestTestCase
         prefAttributes.put(Preference.DESCRIPTION_ATTRIBUTE, prefDescription);
         prefAttributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
         String fullUrl = String.format("broker/userpreferences/%s/%s", prefType, prefName);
-        getRestTestHelper().submitRequest(fullUrl, "PUT", prefAttributes, HttpServletResponse.SC_CREATED);
+        getRestTestHelper().submitRequest(fullUrl, "PUT", prefAttributes, HttpServletResponse.SC_OK);
 
         getRestTestHelper().getJsonAsMap(fullUrl);
 

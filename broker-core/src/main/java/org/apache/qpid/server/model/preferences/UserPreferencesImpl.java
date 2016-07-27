@@ -396,6 +396,7 @@ public class UserPreferencesImpl implements UserPreferences
         }
         checkForValidPrincipal(preferences);
         checkForConflictWithinCollection(preferences);
+        checkForIdUniqueness(preferences);
     }
 
     private void validateNewPreferencesForReplaceByTypeAndName(final String type,
@@ -421,6 +422,7 @@ public class UserPreferencesImpl implements UserPreferences
                     newPreference.getName()));
         }
         checkForValidPrincipal(Collections.singleton(newPreference));
+        checkForIdUniqueness(Collections.singleton(newPreference));
     }
 
     private void validateNewPreferencesForUpdate(final Collection<Preference> preferences)
@@ -428,6 +430,25 @@ public class UserPreferencesImpl implements UserPreferences
         checkForValidPrincipal(preferences);
         checkForConflictWithExisting(preferences);
         checkForConflictWithinCollection(preferences);
+    }
+
+    private void checkForIdUniqueness(final Collection<Preference> preferences)
+    {
+        Principal currentPrincipal = getMainPrincipalOrThrow();
+
+        for (Preference preference : preferences)
+        {
+            if (preference.getId() != null && _preferences.containsKey(preference.getId()))
+            {
+                Preference existingPreference = _preferences.get(preference.getId());
+                if (!preference.getType().equals(existingPreference.getType())
+                    || !principalsEqual(existingPreference.getOwner(), currentPrincipal))
+                {
+                    throw new IllegalArgumentException(String.format("Preference Id '%s' already exists",
+                                                                     preference.getId()));
+                }
+            }
+        }
     }
 
     private void checkForValidPrincipal(final Collection<Preference> preferences)
@@ -458,7 +479,7 @@ public class UserPreferencesImpl implements UserPreferences
             {
                 if (!principalsEqual(storedPreference.getOwner(), currentPrincipal))
                 {
-                    throw new SecurityException(String.format(
+                    throw new IllegalArgumentException(String.format(
                             "Preference '%s' exists but is not owned by the current user.",
                             preference.getId().toString()));
                 }

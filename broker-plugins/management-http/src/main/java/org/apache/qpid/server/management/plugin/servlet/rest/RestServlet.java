@@ -702,29 +702,14 @@ public class RestServlet extends AbstractServlet
     {
         ConfiguredObject<?> target = getTarget(requestInfo);
 
+        final Object providedObject = getRequestProvidedObject(request, requestInfo, Object.class);
         if ("POST".equals(request.getMethod()))
         {
-            Object providedObject = getRequestProvidedObject(request, requestInfo, Object.class);
             _userPreferenceHandler.handlePOST(target, requestInfo, providedObject);
         }
         else if ("PUT".equals(request.getMethod()))
         {
-            Map<String, Object> providedObject = getRequestProvidedObject(request, requestInfo);
-            final RestUserPreferenceHandler.ActionTaken actionTaken =
-                    _userPreferenceHandler.handlePUT(target, requestInfo, providedObject);
-
-            switch(actionTaken)
-            {
-                case CREATED:
-                    response.setHeader("Location", request.getRequestURL().toString());
-                    response.setStatus(HttpServletResponse.SC_CREATED);
-                    break;
-                case UPDATED:
-                    response.setStatus(HttpServletResponse.SC_OK);
-                    break;
-                default:
-                    throw new IllegalStateException("Unexpected action taken value : " + actionTaken);
-            }
+            _userPreferenceHandler.handlePUT(target, requestInfo, providedObject);
         }
         else
         {

@@ -19,7 +19,6 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import static org.apache.qpid.server.management.plugin.HttpManagementConfiguration.DEFAULT_PREFERENCE_OPERTAION_TIMEOUT;
-import static org.apache.qpid.server.management.plugin.servlet.rest.RestUserPreferenceHandler.ActionTaken;
 import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.awaitPreferenceFuture;
 import static org.apache.qpid.server.model.preferences.PreferenceTestHelper.createPreferenceAttributes;
 import static org.mockito.Mockito.mock;
@@ -38,6 +37,7 @@ import java.util.UUID;
 
 import javax.security.auth.Subject;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -110,9 +110,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                          @Override
                          public Void run()
                          {
-                             final ActionTaken action =
-                                     _handler.handlePUT(_configuredObject, requestInfo, pref);
-                             assertEquals(ActionTaken.CREATED, action);
+                             _handler.handlePUT(_configuredObject, requestInfo, pref);
 
                              Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
                              assertEquals("Unexpected number of preferences", 1, preferences.size());
@@ -152,6 +150,232 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              {
                                  // pass
                              }
+                             return null;
+                         }
+                     }
+                    );
+    }
+
+    public void testPutByTypeAndName() throws Exception
+    {
+        final String prefName = "myprefname";
+        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
+                                                                                 Arrays.asList("X-testtype",
+                                                                                               prefName));
+
+        final Map<String, Object> pref = new HashMap<>();
+        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+
+        Subject.doAs(_subject, new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             _handler.handlePUT(_configuredObject, requestInfo, pref);
+
+                             Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
+                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             Preference prefModel = preferences.iterator().next();
+                             assertEquals("Unexpected preference name", prefName, prefModel.getName());
+                             return null;
+                         }
+                     }
+                    );
+    }
+
+    public void testReplaceViaPutByTypeAndName() throws Exception
+    {
+        final String prefName = "myprefname";
+        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
+                                                                                 Arrays.asList("X-testtype",
+                                                                                               prefName));
+
+        final Map<String, Object> pref = new HashMap<>();
+        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+
+        final Preference createdPreference = Subject.doAs(_subject, new PrivilegedAction<Preference>()
+                                                          {
+                                                              @Override
+                                                              public Preference run()
+                                                              {
+                                                                  _handler.handlePUT(_configuredObject, requestInfo, pref);
+
+                                                                  Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
+                                                                  assertEquals("Unexpected number of preferences", 1, preferences.size());
+                                                                  Preference prefModel = preferences.iterator().next();
+                                                                  assertEquals("Unexpected preference name", prefName, prefModel.getName());
+                                                                  return prefModel;
+                                                              }
+                                                          }
+                                                         );
+
+        final Map<String, Object> replacementPref = new HashMap<>();
+        replacementPref.put(Preference.ID_ATTRIBUTE, createdPreference.getId().toString());
+        replacementPref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        final String changedDescription = "Replace that maintains id";
+        replacementPref.put(Preference.DESCRIPTION_ATTRIBUTE, changedDescription);
+
+        Subject.doAs(_subject, new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             _handler.handlePUT(_configuredObject, requestInfo, replacementPref);
+
+                             Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
+                             assertEquals("Unexpected number of preferences after update", 1, preferences.size());
+                             Preference updatedPref = preferences.iterator().next();
+                             assertEquals("Unexpected preference id", createdPreference.getId(), updatedPref.getId());
+                             assertEquals("Unexpected preference name", prefName, updatedPref.getName());
+                             assertEquals("Unexpected preference description", changedDescription, updatedPref.getDescription());
+                             return null;
+                         }
+                     }
+                    );
+
+        replacementPref.remove(Preference.ID_ATTRIBUTE);
+        final String changedDescription2 = "Replace that omits id";
+        replacementPref.put(Preference.DESCRIPTION_ATTRIBUTE, changedDescription2);
+
+        Subject.doAs(_subject, new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             _handler.handlePUT(_configuredObject, requestInfo, replacementPref);
+
+                             Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
+                             assertEquals("Unexpected number of preferences after update", 1, preferences.size());
+                             Preference updatedPref = preferences.iterator().next();
+                             assertFalse("Replace without id should create new id",
+                                         createdPreference.getId().equals(updatedPref.getId()));
+                             assertEquals("Unexpected preference name", prefName, updatedPref.getName());
+                             assertEquals("Unexpected preference description", changedDescription2, updatedPref.getDescription());
+                             return null;
+                         }
+                     }
+                    );
+    }
+
+    public void testReplaceViaPutByType() throws Exception
+    {
+        final String prefName = "myprefname";
+        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
+                                                                                 Arrays.asList("X-testtype"));
+
+        final Map<String, Object> pref = new HashMap<>();
+        pref.put(Preference.NAME_ATTRIBUTE, prefName);
+        pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+
+        Subject.doAs(_subject, new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             _handler.handlePUT(_configuredObject, requestInfo, Lists.newArrayList(pref));
+
+                             Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
+                             assertEquals("Unexpected number of preferences", 1, preferences.size());
+                             Preference prefModel = preferences.iterator().next();
+                             assertEquals("Unexpected preference name", prefName, prefModel.getName());
+                             return null;
+                         }
+                     }
+                    );
+
+        final String replacementPref1Name = "myprefreplacement1";
+        final String replacementPref2Name = "myprefreplacement2";
+
+        final Map<String, Object> replacementPref1 = new HashMap<>();
+        replacementPref1.put(Preference.NAME_ATTRIBUTE, replacementPref1Name);
+        replacementPref1.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+
+        final Map<String, Object> replacementPref2 = new HashMap<>();
+        replacementPref2.put(Preference.NAME_ATTRIBUTE, replacementPref2Name);
+        replacementPref2.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+
+        Subject.doAs(_subject, new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             _handler.handlePUT(_configuredObject, requestInfo, Lists.newArrayList(replacementPref1, replacementPref2));
+
+                             Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
+                             assertEquals("Unexpected number of preferences after update", 2, preferences.size());
+                             Set<String> prefNames = new HashSet<>(preferences.size());
+                             for (Preference pref : preferences)
+                             {
+                                 prefNames.add(pref.getName());
+                             }
+                             assertTrue("Replacement preference " + replacementPref1Name + " not found.", prefNames.contains(replacementPref1Name));
+                             assertTrue("Replacement preference " + replacementPref2Name + " not found.", prefNames.contains(replacementPref2Name));
+                             return null;
+                         }
+                     }
+                    );
+    }
+
+    public void testReplaceAllViaPut() throws Exception
+    {
+        final String pref1Name = "mypref1name";
+        final String pref1Type = "X-testtype1";
+        final String pref2Name = "mypref2name";
+        final String pref2Type = "X-testtype2";
+
+        final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
+                                                                                 Collections.<String>emptyList());
+
+        final Map<String, Object> pref1 = new HashMap<>();
+        pref1.put(Preference.NAME_ATTRIBUTE, pref1Name);
+        pref1.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref1.put(Preference.TYPE_ATTRIBUTE, pref1Type);
+
+        final Map<String, Object> pref2 = new HashMap<>();
+        pref2.put(Preference.NAME_ATTRIBUTE, pref2Name);
+        pref2.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        pref2.put(Preference.TYPE_ATTRIBUTE, pref2Type);
+
+        final Map<String, List<Map<String, Object>>> payload = new HashMap<>();
+        payload.put(pref1Type, Collections.singletonList(pref1));
+        payload.put(pref2Type, Collections.singletonList(pref2));
+
+        Subject.doAs(_subject, new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             _handler.handlePUT(_configuredObject, requestInfo, payload);
+
+                             Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
+                             assertEquals("Unexpected number of preferences", 2, preferences.size());
+                             return null;
+                         }
+                     }
+                    );
+
+        final String replacementPref1Name = "myprefreplacement1";
+
+        final Map<String, Object> replacementPref1 = new HashMap<>();
+        replacementPref1.put(Preference.NAME_ATTRIBUTE, replacementPref1Name);
+        replacementPref1.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
+        replacementPref1.put(Preference.TYPE_ATTRIBUTE, pref1Type);
+
+        payload.clear();
+        payload.put(pref1Type, Collections.singletonList(replacementPref1));
+
+        Subject.doAs(_subject, new PrivilegedAction<Void>()
+                     {
+                         @Override
+                         public Void run()
+                         {
+                             _handler.handlePUT(_configuredObject, requestInfo, payload);
+
+                             Set<Preference> preferences = awaitPreferenceFuture(_userPreferences.getPreferences());
+                             assertEquals("Unexpected number of preferences after update", 1, preferences.size());
+                             Preference prefModel = preferences.iterator().next();
+
+                             assertEquals("Unexpected preference name", replacementPref1Name, prefModel.getName());
                              return null;
                          }
                      }
