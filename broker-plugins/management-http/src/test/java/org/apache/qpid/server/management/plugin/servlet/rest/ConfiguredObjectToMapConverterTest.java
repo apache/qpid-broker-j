@@ -383,110 +383,62 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
 
     public void testExcludeInheritedContext()
     {
+        setTestSystemProperty("qpid.test.name", getTestName());
+        setTestSystemProperty("qpid.test.name2", "${qpid.test.name}2");
         Model model = org.apache.qpid.server.model.testmodels.hierarchy.TestModel.getInstance();
         final Map<String, Object> carAttributes = new HashMap<>();
         carAttributes.put(ConfiguredObject.NAME, "myCar");
-        carAttributes.put(ConfiguredObject.CONTEXT, Collections.singletonMap("parentTest", "parentTestValue"));
-        TestCar car = model.getObjectFactory().create(TestCar.class,
-                                                      carAttributes);
+        Map<String, String> carContext = new HashMap<>();
+        carContext.put("parentTest", "carTestValue");
+        carContext.put("parentTestExpression", "${parentTest}-${qpid.test.name2}");
+        carAttributes.put(ConfiguredObject.CONTEXT, carContext);
+        TestCar car = model.getObjectFactory().create(TestCar.class, carAttributes);
         final Map<String, Object> engineAttributes = new HashMap<>();
         engineAttributes.put(ConfiguredObject.NAME, "myEngine");
         engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
-        engineAttributes.put(ConfiguredObject.CONTEXT, Collections.singletonMap("test", "testValue"));
+        Map<String, String> engineContext = new HashMap<>();
+        engineContext.put("test", "testValue-${parentTestExpression}");
+        engineAttributes.put(ConfiguredObject.CONTEXT, engineContext);
         TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
 
-        Map<String, Object> resultMap = _converter.convertObjectToMap(engine,
-                                                                      ConfiguredObject.class,
-                                                                      new ConfiguredObjectToMapConverter.ConverterOptions(
-                                                                              1,
-                                                                              false,
-                                                                              false,
-                                                                              0,
-                                                                              false,
-                                                                              false));
+        ConfiguredObjectToMapConverter.ConverterOptions options = new ConfiguredObjectToMapConverter.ConverterOptions(
+                1,
+                false,
+                false,
+                0,
+                false,
+                false);
+        Map<String, Object> resultMap = _converter.convertObjectToMap(engine, TestEngine.class, options);
         Object contextValue = resultMap.get("context");
         assertTrue("Unexpected type of context", contextValue instanceof Map);
-        assertTrue("Unexpected size of context", ((Map)contextValue).size() > 1);
-        assertEquals("Unexpected context content", "testValue", ((Map)contextValue).get("test"));
-        assertEquals("Unexpected context content", "parentTestValue", ((Map)contextValue).get("parentTest"));
+        Map<String,String> context = (Map<String, String>)contextValue;
+        assertTrue("Unexpected size of context", context.size() >= 5);
+        assertEquals("Unexpected engine context content",
+                     "testValue-carTestValue-" + getTestName() + "2",
+                     ((Map) contextValue).get("test"));
+        assertEquals("Unexpected car context content", "carTestValue", context.get("parentTest"));
+        assertEquals("Unexpected car context content",
+                     "carTestValue-" + getTestName() + "2",
+                     context.get("parentTestExpression"));
 
-        resultMap = _converter.convertObjectToMap(engine,
-                                                  ConfiguredObject.class,
-                                                  new ConfiguredObjectToMapConverter.ConverterOptions(1,
-                                                                                                      false,
-                                                                                                      false,
-                                                                                                      0,
-                                                                                                      false,
-                                                                                                      true));
+        assertEquals("Unexpected system context content", getTestName(), context.get("qpid.test.name"));
+        assertEquals("Unexpected system context content",
+                     getTestName() + "2",
+                     context.get("qpid.test.name2"));
+
+        options = new ConfiguredObjectToMapConverter.ConverterOptions(
+                1,
+                false,
+                false,
+                0,
+                false,
+                true);
+        resultMap = _converter.convertObjectToMap(engine, TestEngine.class, options);
         contextValue = resultMap.get("context");
         assertTrue("Unexpected type of context", contextValue instanceof Map);
-        assertEquals("Unexpected size of context", 1, ((Map)contextValue).size());
-        assertEquals("Unexpected context content","testValue", ((Map)contextValue).get("test"));
-
-
-
-
-
-        /*
-
-
-
-//        Model model = createTestModel();
-        ConfiguredObjectTypeRegistry typeRegistry = model.getTypeRegistry();
-        Map<String, ConfiguredObjectAttribute<?, ?>> attributeTypes = typeRegistry.getAttributeTypes(TestChild.class);
-        ConfiguredObjectAttribute contextAttribute = mock(ConfiguredObjectMethodAttribute.class);
-        when(attributeTypes.get(eq("context"))).thenReturn(contextAttribute);
-
-        TestChild mockChild = mock(TestChild.class);
-        when(mockChild.getModel()).thenReturn(model);
-        when(mockChild.getCategoryClass()).thenReturn(TestChild.class);
-        when(mockChild.getParent(Matchers.<Class>any())).thenReturn(_configuredObject);
-        when(_configuredObject.getModel()).thenReturn(model);
-        when(_configuredObject.getChildren(TestChild.class)).thenReturn(Arrays.asList(mockChild));
-        when(model.getParentTypes(TestChild.class)).thenReturn(Collections.<Class<? extends ConfiguredObject>>singleton(TestChild.class));
-        when(_configuredObject.getCategoryClass()).thenReturn(TestChild.class);
-
-
-        // set encoded value
-        final Map<String,String> context = new HashMap<>();
-        context.put("test", "testValue");
-        configureMockToReturnOneAttribute(mockChild, "context", context);
-        when(mockChild.getContextKeys(anyBoolean())).thenReturn(context.keySet());
-        when(mockChild.getContextValue(String.class, "test")).thenReturn(context.get("test"));
-
-        final Map<String, String> parentContext = new HashMap<>();
-        parentContext.put("parentTest", "parentTestValue");
-        configureMockToReturnOneAttribute(_configuredObject, "context", parentContext);
-        when(_configuredObject.getContextKeys(anyBoolean())).thenReturn(parentContext.keySet());
-        when(_configuredObject.getContextValue(String.class, "parentTest")).thenReturn(parentContext.get("parentTest"));
-
-        Map<String, Object> resultMap = _converter.convertObjectToMap(mockChild,
-                                                                      ConfiguredObject.class,
-                                                                      new ConfiguredObjectToMapConverter.ConverterOptions(
-                                                                              1,
-                                                                              false,
-                                                                              false,
-                                                                              0,
-                                                                              false,
-                                                                              false));
-        Object contextValue = resultMap.get("context");
-        assertTrue("Unexpected type of context", contextValue instanceof Map);
-        assertEquals("Unexpected size of context", 2, ((Map)contextValue).size());
-        assertEquals("Unexpected context content", "testValue", ((Map)contextValue).get("test"));
-        assertEquals("Unexpected context content", "parentTestValue", ((Map)contextValue).get("parentTest"));
-
-        resultMap = _converter.convertObjectToMap(mockChild,
-                                                  ConfiguredObject.class,
-                                                  new ConfiguredObjectToMapConverter.ConverterOptions(1,
-                                                                                                      false,
-                                                                                                      false,
-                                                                                                      0,
-                                                                                                      false,
-                                                                                                      true));
-        contextValue = resultMap.get("context");
-        assertTrue("Unexpected type of context", contextValue instanceof Map);
-        assertEquals("Unexpected size of context", 1, ((Map)contextValue).size());
-        assertEquals("Unexpected context content","testValue", ((Map)contextValue).get("test"));*/
+        context = (Map<String, String>)contextValue;
+        assertEquals("Unexpected size of context", 1, context.size());
+        assertEquals("Unexpected context content", "testValue-carTestValue-" + getTestName() + "2", context.get("test"));
     }
 
     private Model createTestModel()

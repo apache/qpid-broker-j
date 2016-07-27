@@ -110,14 +110,9 @@ public class ConfiguredObjectToMapConverter
                 }
                 else if (ConfiguredObject.CONTEXT.equals(name))
                 {
-                    Map<String, Object> contextValues = new HashMap<>();
-                    if (!converterOptions.isExcludeInheritedContext())
-                    {
-                        contextValues.putAll(confObject.getModel().getTypeRegistry().getDefaultContext());
-                        contextValues.putAll(System.getenv());
-                        contextValues.putAll((Map) System.getProperties());
-                    }
-                    collectContext(contextValues, confObject, converterOptions);
+                    Map<String, Object> contextValues = collectContext(confObject,
+                                                                       converterOptions.isExcludeInheritedContext(),
+                                                                       converterOptions.isUseActualValues());
 
                     if (!contextValues.isEmpty())
                     {
@@ -196,35 +191,58 @@ public class ConfiguredObjectToMapConverter
         }
     }
 
-    private void collectContext(Map<String, Object> contextValues, ConfiguredObject<?> confObject, ConverterOptions options)
+    private Map<String, Object> collectContext(ConfiguredObject<?> configuredObject,
+                                               boolean excludeInheritedContext,
+                                               boolean useActualValues)
     {
-        Model model = confObject.getModel();
-        Object value = confObject.getActualAttributes().get(ConfiguredObject.CONTEXT);
-        if (!options.isExcludeInheritedContext())
+        Map<String, Object> actualContext = new HashMap<>();
+        if (excludeInheritedContext)
         {
-            Collection<Class<? extends ConfiguredObject>> parents = model.getParentTypes(confObject.getCategoryClass());
-            if(parents != null && !parents.isEmpty())
+            Object value = configuredObject.getActualAttributes().get(ConfiguredObject.CONTEXT);
+            if (value instanceof Map)
             {
-                ConfiguredObject parent = confObject.getParent(parents.iterator().next());
-                if(parent != null)
-                {
-                    collectContext(contextValues, parent, options);
-                }
+                actualContext.putAll((Map<String, String>) value);
             }
         }
+        else
+        {
+            actualContext.putAll(configuredObject.getModel().getTypeRegistry().getDefaultContext());
+            actualContext.putAll(System.getenv());
+            actualContext.putAll((Map) System.getProperties());
+            collectInheritedActualContext(configuredObject, actualContext);
+        }
+
+        if (useActualValues)
+        {
+            return actualContext;
+        }
+        else
+        {
+            Map<String, Object> effectiveContext = new HashMap<>();
+            for (String contextKey : actualContext.keySet())
+            {
+                effectiveContext.put(contextKey, configuredObject.getContextValue(String.class, contextKey));
+            }
+            return effectiveContext;
+        }
+    }
+
+    private void collectInheritedActualContext(ConfiguredObject<?> confObject, Map<String, Object> contextValues)
+    {
+        Model model = confObject.getModel();
+        Collection<Class<? extends ConfiguredObject>> parents = model.getParentTypes(confObject.getCategoryClass());
+        if(parents != null && !parents.isEmpty())
+        {
+            ConfiguredObject parent = confObject.getParent(parents.iterator().next());
+            if(parent != null)
+            {
+                collectInheritedActualContext(parent, contextValues);
+            }
+        }
+        Object value = confObject.getActualAttributes().get(ConfiguredObject.CONTEXT);
         if (value instanceof Map)
         {
-            if (options.isUseActualValues())
-            {
-                contextValues.putAll((Map<String,String>)value);
-            }
-            else
-            {
-                for (String contextKey : ((Map<String,String>)value).keySet())
-                {
-                    contextValues.put(contextKey, confObject.getContextValue(String.class, contextKey));
-                }
-            }
+            contextValues.putAll((Map<String, Object>)value);
         }
     }
 

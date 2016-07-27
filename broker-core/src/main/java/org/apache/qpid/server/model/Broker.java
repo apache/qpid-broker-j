@@ -63,6 +63,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String STORE_FILESYSTEM_MAX_USAGE_PERCENT = "store.filesystem.maxUsagePercent";
     String QPID_AMQP_PORT = "qpid.amqp_port";
     String QPID_HTTP_PORT = "qpid.http_port";
+    String QPID_HELP_URL = "qpid.helpURL";
 
     String NETWORK_BUFFER_SIZE = "qpid.broker.networkBufferSize";
     // network buffer should at least hold a SSL/TLS frame which in jdk1.8 is 33305 bytes
@@ -104,6 +105,9 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     @ManagedContextDefault(name = CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST)
     String DEFAULT_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST = "[]";
+
+    @ManagedContextDefault(name = QPID_HELP_URL)
+    String DEFAULT_HELP_URL = "http://qpid.apache.org/releases/qpid-java-${qpid.version}/java-broker/book/index.html";
 
     @DerivedAttribute
     String getBuildVersion();
@@ -194,6 +198,9 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     @DerivedAttribute(description = "JVM arguments specified on startup")
     List<String> getJvmArguments();
+
+    @DerivedAttribute(description = "URL to broker help")
+    String getHelpURL();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
                       units = StatisticUnit.COUNT,

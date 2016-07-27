@@ -20,8 +20,10 @@
  */
 package org.apache.qpid.systest.rest;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -45,6 +47,22 @@ public class BrokerRestTest extends QpidRestTestCase
     private static final String BROKER_PORTS_ATTRIBUTE = "ports";
     private static final String BROKER_VIRTUALHOST_NODES_ATTRIBUTE = "virtualhostnodes";
     private static final String BROKER_STATISTICS_ATTRIBUTE = "statistics";
+    private static final String SYSTEM_PROPERTY_NAME = "qpid.rest.test.name";
+    private static final String SYSTEM_PROPERTY2_NAME = "qpid.rest.test.var";
+    private static final String SYSTEM_PROPERTY2_VALUE = "Test name is ${qpid.rest.test.name}";
+
+    @Override
+    public void setUp() throws Exception
+    {
+        HashMap<String, String> _testSystemContext = new HashMap<>();
+        _testSystemContext.put(SYSTEM_PROPERTY_NAME, getTestName());
+        _testSystemContext.put(SYSTEM_PROPERTY2_NAME, SYSTEM_PROPERTY2_VALUE);
+        for (Map.Entry<String,String> testContextEntry: _testSystemContext.entrySet())
+        {
+            setSystemProperty(testContextEntry.getKey(), testContextEntry.getValue());
+        }
+        super.setUp();
+    }
 
     public void testGet() throws Exception
     {
@@ -142,6 +160,72 @@ public class BrokerRestTest extends QpidRestTestCase
                          AbstractServlet.SC_UNPROCESSABLE_ENTITY, response);
         }
 
+    }
+
+    public void testActualInheritedContext() throws IOException
+    {
+        Map<String, Object> brokerDetails =
+                getRestTestHelper().getJsonAsSingletonList("broker?inheritedActuals=true&actuals=true");
+        Map<String, String> brokerContext = (Map<String, String>) brokerDetails.get("context");
+        assertEquals("Unexpected test context variable value", getTestName(), brokerContext.get(SYSTEM_PROPERTY_NAME));
+        assertEquals("Unexpected test context expression value",
+                     SYSTEM_PROPERTY2_VALUE,
+                     brokerContext.get(SYSTEM_PROPERTY2_NAME));
+    }
+
+    public void testEffectiveInheritedContext() throws IOException
+    {
+        Map<String, Object> brokerDetails =
+                getRestTestHelper().getJsonAsSingletonList("broker?inheritedActuals=false&actuals=false");
+        Map<String, String> brokerContext = (Map<String, String>) brokerDetails.get("context");
+        assertEquals("Unexpected test context variable value", getTestName(), brokerContext.get("qpid.rest.test.name"));
+        assertEquals("Unexpected test context expression value",
+                     "Test name is " + getTestName(),
+                     brokerContext.get("qpid.rest.test.var"));
+    }
+
+    public void testActualNotInheritedContext() throws IOException
+    {
+        Map<String, Object> brokerDetails =
+                getRestTestHelper().getJsonAsSingletonList("broker?excludeInheritedContext=true&actuals=true");
+
+        assertFalse("Unexpected context", brokerDetails.containsKey("context"));
+
+        Map<String, Object> attributes = Collections.<String, Object>singletonMap(
+                "context",
+                Collections.singletonMap("qpid.rest.test.var2", "${qpid.rest.test.var}2"));
+        getRestTestHelper().submitRequest("broker", "POST", attributes);
+
+        brokerDetails =
+                getRestTestHelper().getJsonAsSingletonList("broker?excludeInheritedContext=true&actuals=true");
+        Map<String, Object> brokerContext = new HashMap<>((Map<String, Object>) brokerDetails.get("context"));
+        Map<String, String> expectedContext = new HashMap<>();
+        expectedContext.put("qpid.rest.test.var2", "${qpid.rest.test.var}2");
+
+        assertEquals("Unexpected context", expectedContext, brokerContext);
+    }
+
+    public void testEffectiveNotInheritedContext() throws IOException
+    {
+        Map<String, Object> brokerDetails =
+                getRestTestHelper().getJsonAsSingletonList("broker?excludeInheritedContext=true&actuals=false");
+
+        assertFalse("Unexpected context", brokerDetails.containsKey("context"));
+
+        Map<String, Object> attributes = Collections.<String, Object>singletonMap(
+                "context",
+                Collections.singletonMap("qpid.rest.test.var2", "${qpid.rest.test.var}2"));
+        getRestTestHelper().submitRequest("broker", "POST", attributes);
+
+        brokerDetails =
+                getRestTestHelper().getJsonAsSingletonList("broker?excludeInheritedContext=true&actuals=false");
+
+        Map<String, String> expectedContext = new HashMap<>();
+        Map<String, Object> brokerContext = new HashMap<>((Map<String, Object>) brokerDetails.get("context"));
+
+        expectedContext.put("qpid.rest.test.var2", "Test name is " + getTestName() + "2");
+
+        assertEquals("Unexpected context", expectedContext, brokerContext);
     }
 
     private Map<String, Object> getValidBrokerAttributes()

@@ -40,17 +40,17 @@ define(["dojo/query",
         },
         getHelpUrl: function (callback)
         {
-            this.management.load({type: "broker"}, {depth: 0})
+            this.management.load({type: "broker"}, {depth: 0, excludeInheritedContext: true})
                 .then(function (data)
                 {
                     var broker = data[0];
-                    if ("context" in broker && "qpid.helpURL" in broker["context"])
+                    if (broker.helpURL)
                     {
-                        helpURL = broker["context"]["qpid.helpURL"];
+                        helpURL = broker.helpURL;
                     }
                     else
                     {
-                        helpURL = "http://qpid.apache.org/";
+                        helpURL = "http://qpid.apache.org/components/java-broker/index.html";
                     }
                     if (callback)
                     {
@@ -67,7 +67,7 @@ define(["dojo/query",
                     'height=600,width=600,scrollbars=1,location=1,resizable=1,status=0,toolbar=0,titlebar=1,menubar=0',
                     true);
                 newWindow.focus();
-            }
+            };
 
             if (helpURL)
             {
@@ -87,7 +87,7 @@ define(["dojo/query",
                     'height=800,width=800,scrollbars=1,location=1,resizable=1,status=0,toolbar=1,titlebar=1,menubar=1',
                     true);
                 newWindow.focus();
-            }
+            };
 
             openWindow("/apidocs");
         },

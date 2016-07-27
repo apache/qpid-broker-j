@@ -201,6 +201,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private ConfigurationChangeListener _accessControlProviderListener = new AccessControlProviderListener();
     private final AccessControl _accessControl;
     private TaskExecutor _preferenceTaskExecutor;
+    private String _helpURL;
 
     @ManagedObjectFactoryConstructor
     public BrokerAdapter(Map<String, Object> attributes,
@@ -486,6 +487,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             getEventLogger().message(BrokerMessages.FAILED_CHILDREN(failedChildren.toString()));
         }
 
+        _helpURL = getContextValue(String.class, QPID_HELP_URL);
         final boolean brokerShutdownOnErroredChild = getContextValue(Boolean.class,
                                                                      BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD);
         if (!_parent.isManagementMode() && brokerShutdownOnErroredChild && hasBrokerAnyErroredChildren)
@@ -1265,6 +1267,12 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     public List<String> getJvmArguments()
     {
         return _jvmArguments;
+    }
+
+    @Override
+    public String getHelpURL()
+    {
+        return _helpURL;
     }
 
     @Override
