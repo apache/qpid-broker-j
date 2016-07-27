@@ -35,8 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
@@ -44,8 +42,6 @@ import javax.xml.bind.DatatypeConverter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,9 +53,9 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
-import org.apache.qpid.server.security.CryptoUtil;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.AbstractAuthenticationManager;
+import org.apache.qpid.server.security.auth.manager.AuthenticationResultCacher;
 import org.apache.qpid.server.util.ConnectionBuilder;
 import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -115,7 +111,7 @@ public class OAuth2AuthenticationProviderImpl
     private int _connectTimeout;
     private int _readTimeout;
 
-    Cache<String, AuthenticationResult> _authenticationCache;
+    private AuthenticationResultCacher _authenticationResultCacher;
 
     @ManagedObjectFactoryConstructor
     protected OAuth2AuthenticationProviderImpl(final Map<String, Object> attributes,
@@ -137,18 +133,19 @@ public class OAuth2AuthenticationProviderImpl
         _connectTimeout = getContextValue(Integer.class, AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT);
         _readTimeout = getContextValue(Integer.class, AUTHENTICATION_OAUTH2_READ_TIMEOUT);
 
-        Long cacheMaxSize = getContextValue(Long.class, AUTHORISATION_CACHE_MAX_SIZE);
-        Long cacheExpirationTime = getContextValue(Long.class, AUTHORISATION_CACHE_EXPIRATION_TIME);
-        if (cacheMaxSize == null || cacheMaxSize <= 0 || cacheExpirationTime == null || cacheExpirationTime <= 0)
+        Integer cacheMaxSize = getContextValue(Integer.class, AUTHENTICATION_CACHE_MAX_SIZE);
+        Long cacheExpirationTime = getContextValue(Long.class, AUTHENTICATION_CACHE_EXPIRATION_TIME);
+        Integer cacheIterationCount = getContextValue(Integer.class, AUTHENTICATION_CACHE_ITERATION_COUNT);
+        if (cacheMaxSize == null || cacheMaxSize <= 0
+            || cacheExpirationTime == null || cacheExpirationTime <= 0
+            || cacheIterationCount == null || cacheIterationCount < 0)
         {
             LOGGER.debug("disabling authentication result caching");
-            cacheMaxSize = 0L;
+            cacheMaxSize = 0;
             cacheExpirationTime = 1L;
+            cacheIterationCount = 0;
         }
-        _authenticationCache = CacheBuilder.newBuilder()
-                                           .maximumSize(cacheMaxSize)
-                                           .expireAfterWrite(cacheExpirationTime, TimeUnit.SECONDS)
-                                           .build();
+        _authenticationResultCacher = new AuthenticationResultCacher(cacheMaxSize, cacheExpirationTime, cacheIterationCount);
     }
 
     @Override
@@ -361,32 +358,24 @@ public class OAuth2AuthenticationProviderImpl
     @Override
     public AuthenticationResult authenticateViaAccessToken(final String accessToken)
     {
-        final String credentialDigest = CryptoUtil.sha256Hex(accessToken);
-        try
+        return _authenticationResultCacher.getOrLoad(new String[]{accessToken}, new Callable<AuthenticationResult>()
         {
-            return _authenticationCache.get(credentialDigest, new Callable<AuthenticationResult>()
+            @Override
+            public AuthenticationResult call()
             {
-                @Override
-                public AuthenticationResult call()
+                try
                 {
-                    try
-                    {
-                        final Principal userPrincipal = _identityResolverService.getUserPrincipal(OAuth2AuthenticationProviderImpl.this, accessToken);
-                        OAuth2UserPrincipal oauthUserPrincipal = new OAuth2UserPrincipal(userPrincipal.getName(), accessToken);
-                        return new AuthenticationResult(oauthUserPrincipal);
-                    }
-                    catch (IOException | IdentityResolverException e)
-                    {
-                        LOGGER.error("Call to identity resolver failed", e);
-                        return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
-                    }
+                    final Principal userPrincipal = _identityResolverService.getUserPrincipal(OAuth2AuthenticationProviderImpl.this, accessToken);
+                    OAuth2UserPrincipal oauthUserPrincipal = new OAuth2UserPrincipal(userPrincipal.getName(), accessToken);
+                    return new AuthenticationResult(oauthUserPrincipal);
                 }
-            });
-        }
-        catch (ExecutionException e)
-        {
-            throw new RuntimeException("Unexpected checked Exception while authenticating", e.getCause());
-        }
+                catch (IOException | IdentityResolverException e)
+                {
+                    LOGGER.error("Call to identity resolver failed", e);
+                    return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
+                }
+            }
+        });
     }
 
     @Override

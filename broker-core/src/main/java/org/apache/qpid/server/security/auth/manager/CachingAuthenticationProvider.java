@@ -24,15 +24,21 @@ import org.apache.qpid.server.model.ManagedContextDefault;
 
 public interface CachingAuthenticationProvider<X extends AuthenticationProvider<X>> extends AuthenticationProvider<X>
 {
-    String AUTHORISATION_CACHE_MAX_SIZE = "qpid.auth.cache.size";
+    String AUTHENTICATION_CACHE_MAX_SIZE = "qpid.auth.cache.size";
     @SuppressWarnings("unused")
-    @ManagedContextDefault(name = AUTHORISATION_CACHE_MAX_SIZE,
+    @ManagedContextDefault(name = AUTHENTICATION_CACHE_MAX_SIZE,
             description = "Upper bound of authentication results the AuthenticationProvider will cache.")
-    long DEFAULT_AUTHORISATION_CACHE_MAX_SIZE = 100;
+    int DEFAULT_AUTHENTICATION_CACHE_MAX_SIZE = 100;
 
-    String AUTHORISATION_CACHE_EXPIRATION_TIME = "qpid.auth.cache.expirationTime";
+    String AUTHENTICATION_CACHE_EXPIRATION_TIME = "qpid.auth.cache.expiration_time";
     @SuppressWarnings("unused")
-    @ManagedContextDefault(name = AUTHORISATION_CACHE_EXPIRATION_TIME,
+    @ManagedContextDefault(name = AUTHENTICATION_CACHE_EXPIRATION_TIME,
             description = "How long cached credentials are valid in seconds.")
-    long DEFAULT_AUTHORISATION_CACHE_EXPIRATION_TIME = 10 * 60;
+    long DEFAULT_AUTHENTICATION_CACHE_EXPIRATION_TIME = 10 * 60L;
+
+    String AUTHENTICATION_CACHE_ITERATION_COUNT = "qpid.auth.cache.iteration_count";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = AUTHENTICATION_CACHE_ITERATION_COUNT,
+            description = "Number of rounds of hashing to apply to the credentials before using them in the cache.")
+    int DEFAULT_AUTHENTICATION_CACHE_ITERATION_COUNT = 4096;
 }

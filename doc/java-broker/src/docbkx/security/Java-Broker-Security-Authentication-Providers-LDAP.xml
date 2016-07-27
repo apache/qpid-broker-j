@@ -108,7 +108,7 @@
         By default, this authentication provider caches the result of an authentication for a short period of time. This
         reduces the load on the Directory service if the same credentials are presented frequently within a short
         period of time.  The length of time a result will be cached is defined by context variable
-        <literal>qpid.auth.cache.expirationTime</literal> (default to 600 seconds). The cache can be disabled by
-        setting the cache size to 0.
+        <literal>qpid.auth.cache.expiration_time</literal> (default to 600 seconds).  The cache can be disabled by
+        setting the context variable <literal>qpid.auth.cache.size</literal> to 0.
     </para>
 </section>

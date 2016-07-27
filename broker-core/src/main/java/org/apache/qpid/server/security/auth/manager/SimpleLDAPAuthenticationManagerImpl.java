@@ -34,8 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import javax.naming.AuthenticationException;
 import javax.naming.Context;
@@ -58,8 +56,6 @@ import javax.security.sasl.AuthorizeCallback;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +67,6 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.TrustStore;
-import org.apache.qpid.server.security.CryptoUtil;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
@@ -148,7 +143,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     private List<String> _tlsCipherSuiteWhiteList;
     private List<String> _tlsCipherSuiteBlackList;
 
-    private Cache<String, AuthenticationResult> _authenticationCache;
+    private AuthenticationResultCacher _authenticationResultCacher;
 
     /**
      * Dynamically created SSL Socket Factory implementation.
@@ -195,18 +190,19 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         _tlsCipherSuiteWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
         _tlsCipherSuiteBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
 
-        Long cacheMaxSize = getContextValue(Long.class, AUTHORISATION_CACHE_MAX_SIZE);
-        Long cacheExpirationTime = getContextValue(Long.class, AUTHORISATION_CACHE_EXPIRATION_TIME);
-        if (cacheMaxSize == null || cacheMaxSize <= 0 || cacheExpirationTime == null || cacheExpirationTime <= 0)
+        Integer cacheMaxSize = getContextValue(Integer.class, AUTHENTICATION_CACHE_MAX_SIZE);
+        Long cacheExpirationTime = getContextValue(Long.class, AUTHENTICATION_CACHE_EXPIRATION_TIME);
+        Integer cacheIterationCount = getContextValue(Integer.class, AUTHENTICATION_CACHE_ITERATION_COUNT);
+        if (cacheMaxSize == null || cacheMaxSize <= 0
+            || cacheExpirationTime == null || cacheExpirationTime <= 0
+            || cacheIterationCount == null || cacheIterationCount < 0)
         {
             _logger.debug("disabling authentication result caching");
-            cacheMaxSize = 0L;
+            cacheMaxSize = 0;
             cacheExpirationTime = 1L;
+            cacheIterationCount = 0;
         }
-        _authenticationCache = CacheBuilder.newBuilder()
-                                           .maximumSize(cacheMaxSize)
-                                           .expireAfterWrite(cacheExpirationTime, TimeUnit.SECONDS)
-                                           .build();
+        _authenticationResultCacher = new AuthenticationResultCacher(cacheMaxSize, cacheExpirationTime, cacheIterationCount);
     }
 
     @Override
@@ -411,22 +407,14 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
 
     private AuthenticationResult getOrLoadAuthenticationResult(final String userId, final String password)
     {
-        String credentialDigest = CryptoUtil.sha256Hex(userId, password);
-        try
+        return _authenticationResultCacher.getOrLoad(new String[]{userId, password}, new Callable<AuthenticationResult>()
         {
-            return _authenticationCache.get(credentialDigest, new Callable<AuthenticationResult>()
+            @Override
+            public AuthenticationResult call()
             {
-                @Override
-                public AuthenticationResult call()
-                {
-                    return doLDAPNameAuthentication(userId, password);
-                }
-            });
-        }
-        catch (ExecutionException e)
-        {
-            throw new RuntimeException("Unexpected checked Exception while authenticating", e.getCause());
-        }
+                return doLDAPNameAuthentication(userId, password);
+            }
+        });
     }
 
     private boolean isGroupSearchRequired()
