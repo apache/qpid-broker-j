@@ -2937,12 +2937,12 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     protected final AccessControlContext getSystemTaskControllerContext(String taskName, Principal principal)
     {
         final Subject subject = getSystemTaskSubject(taskName, principal);
-        final AccessControlContext acc = AccessController.getContext();
         return AccessController.doPrivileged
                 (new PrivilegedAction<AccessControlContext>()
                 {
                     public AccessControlContext run()
                     {
+                        final AccessControlContext acc = AccessController.getContext();
                         if (subject == null)
                             return new AccessControlContext(acc, null);
                         else
@@ -2950,7 +2950,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                     (acc,
                                      new SubjectDomainCombiner(subject));
                     }
-                });
+                }, null);
     }
 
     protected Subject getSystemTaskSubject(String taskName)
