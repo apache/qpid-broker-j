@@ -44,11 +44,11 @@ import org.apache.qpid.server.virtualhostnode.TestVirtualHostNode;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 
-public class BrokerAdapterTest extends QpidTestCase
+public class BrokerImplTest extends QpidTestCase
 {
     private TaskExecutorImpl _taskExecutor;
     private SystemConfig _systemConfig;
-    private BrokerAdapter _brokerAdapter;
+    private BrokerImpl _brokerImpl;
 
     @Override
     public void setUp() throws Exception
@@ -72,9 +72,9 @@ public class BrokerAdapterTest extends QpidTestCase
     {
         try
         {
-            if (_brokerAdapter != null)
+            if (_brokerImpl != null)
             {
-                _brokerAdapter.close();
+                _brokerImpl.close();
             }
 
             if (_taskExecutor != null)
@@ -122,14 +122,14 @@ public class BrokerAdapterTest extends QpidTestCase
 
         // testing unsuccessful case
         attributes.put(Broker.CONTEXT, Collections.singletonMap(Broker.NETWORK_BUFFER_SIZE, Broker.MINIMUM_NETWORK_BUFFER_SIZE - 1));
-        _brokerAdapter = new BrokerAdapter(attributes, _systemConfig);
-        _brokerAdapter.open();
+        _brokerImpl = new BrokerImpl(attributes, _systemConfig);
+        _brokerImpl.open();
         assertEquals("Broker open should fail with network buffer size less then minimum",
                      State.ERRORED,
-                     _brokerAdapter.getState());
+                     _brokerImpl.getState());
         assertEquals("Unexpected buffer size",
                      Broker.DEFAULT_NETWORK_BUFFER_SIZE,
-                     _brokerAdapter.getNetworkBufferSize());
+                     _brokerImpl.getNetworkBufferSize());
     }
 
     private void doAssignTargetSizeTest(final long[] virtualHostQueueSizes, final long flowToDiskThreshold)
@@ -139,17 +139,17 @@ public class BrokerAdapterTest extends QpidTestCase
         attributes.put(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
         attributes.put(Broker.DURABLE, true);
         attributes.put("context", Collections.singletonMap(Broker.BROKER_FLOW_TO_DISK_THRESHOLD, flowToDiskThreshold));
-        _brokerAdapter = new BrokerAdapter(attributes, _systemConfig);
-        _brokerAdapter.open();
-        assertEquals("Unexpected broker state", State.ACTIVE, _brokerAdapter.getState());
+        _brokerImpl = new BrokerImpl(attributes, _systemConfig);
+        _brokerImpl.open();
+        assertEquals("Unexpected broker state", State.ACTIVE, _brokerImpl.getState());
 
         for(int i=0; i < virtualHostQueueSizes.length; i++)
         {
-            createVhnWithVh(_brokerAdapter, i, virtualHostQueueSizes[i]);
+            createVhnWithVh(_brokerImpl, i, virtualHostQueueSizes[i]);
         }
 
         long totalAssignedTargetSize = 0;
-        for(VirtualHostNode<?> vhn : _brokerAdapter.getVirtualHostNodes())
+        for(VirtualHostNode<?> vhn : _brokerImpl.getVirtualHostNodes())
         {
             long targetSize = vhn.getVirtualHost().getTargetSize();
             assertTrue("A virtualhost's target size cannot be zero", targetSize > 0);
@@ -157,18 +157,18 @@ public class BrokerAdapterTest extends QpidTestCase
         }
 
         long diff = Math.abs(flowToDiskThreshold - totalAssignedTargetSize);
-        long tolerance = _brokerAdapter.getVirtualHostNodes().size() * 2;
+        long tolerance = _brokerImpl.getVirtualHostNodes().size() * 2;
         assertTrue(String.format("Assigned target size not within expected tolerance. Diff %d Tolerance %d", diff, tolerance), diff < tolerance);
     }
 
-    private void createVhnWithVh(final BrokerAdapter brokerAdapter, int nameSuffix, final long totalQueueSize)
+    private void createVhnWithVh(final BrokerImpl brokerImpl, int nameSuffix, final long totalQueueSize)
     {
         final Map<String, Object> vhnAttributes = new HashMap<>();
         vhnAttributes.put(VirtualHostNode.TYPE, TestVirtualHostNode.VIRTUAL_HOST_NODE_TYPE);
         vhnAttributes.put(VirtualHostNode.NAME, "testVhn" + nameSuffix);
 
         final DurableConfigurationStore store = mock(DurableConfigurationStore.class);
-        TestVirtualHostNode vhn = new TestVirtualHostNode(brokerAdapter, vhnAttributes, store);
+        TestVirtualHostNode vhn = new TestVirtualHostNode(brokerImpl, vhnAttributes, store);
         vhn.create();
 
 

@@ -51,6 +51,6 @@ public class JsonSystemConfigImpl extends AbstractSystemConfig<JsonSystemConfigI
 
     protected JsonFileConfigStore createStoreObject()
     {
-        return new JsonFileConfigStore(Broker.class);
+        return new JsonFileConfigStore(null);
     }
 }

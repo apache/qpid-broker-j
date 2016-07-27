@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.store;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,12 +40,14 @@ import org.apache.qpid.server.configuration.store.StoreConfigurationChangeListen
 import org.apache.qpid.server.logging.LogLevel;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ContainerStoreUpgraderAndRecoverer;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHostAlias;
+import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.util.Action;
 
-public class BrokerStoreUpgraderAndRecoverer
+public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAndRecoverer<Broker>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BrokerStoreUpgraderAndRecoverer.class);
 
@@ -910,14 +913,15 @@ public class BrokerStoreUpgraderAndRecoverer
         return brokerRecord;
     }
 
-    public Broker<?> perform(final ConfiguredObjectRecord... initialRecords)
+    public Broker<?> upgradeAndRecover(List<ConfiguredObjectRecord> records)
     {
         final DurableConfigurationStore store = _systemConfig.getConfigurationStore();
-        List<ConfiguredObjectRecord> upgradedRecords = upgrade(store, initialRecords);
+
+        List<ConfiguredObjectRecord> upgradedRecords = upgrade(store, records);
         new GenericRecoverer(_systemConfig).recover(upgradedRecords, false);
 
         final StoreConfigurationChangeListener configChangeListener = new StoreConfigurationChangeListener(store);
-        applyRecursively(_systemConfig.getBroker(), new RecursiveAction<ConfiguredObject<?>>()
+        applyRecursively(_systemConfig.getChild(Broker.class), new RecursiveAction<ConfiguredObject<?>>()
         {
             @Override
             public void performAction(final ConfiguredObject<?> object)
@@ -932,14 +936,14 @@ public class BrokerStoreUpgraderAndRecoverer
             }
         });
 
-        return _systemConfig.getBroker();
+        return _systemConfig.getChild(Broker.class);
     }
 
     List<ConfiguredObjectRecord> upgrade(final DurableConfigurationStore store,
-                                         final ConfiguredObjectRecord... initialRecords)
+                                         final List<ConfiguredObjectRecord> records)
     {
         GenericStoreUpgrader upgrader = new GenericStoreUpgrader(Broker.class.getSimpleName(), Broker.MODEL_VERSION, store, _upgraders);
-        boolean isNew = upgrader.upgrade(initialRecords);
+        upgrader.upgrade(records);
         return upgrader.getRecords();
     }
 

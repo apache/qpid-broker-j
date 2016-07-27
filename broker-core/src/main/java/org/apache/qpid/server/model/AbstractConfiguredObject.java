@@ -75,7 +75,6 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.preferences.UserPreferences;
-import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
@@ -142,7 +141,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     private final Class<? extends ConfiguredObject> _category;
     private final Class<? extends ConfiguredObject> _typeClass;
     private final Class<? extends ConfiguredObject> _bestFitInterface;
-    private final Model _model;
+    private volatile Model _model;
     private final boolean _managesChildStorage;
 
 
@@ -320,12 +319,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             attributes.put(TYPE, _type);
         }
 
-        for (Class<? extends ConfiguredObject> childClass : getModel().getChildTypes(getCategoryClass()))
-        {
-            _children.put(childClass, new CopyOnWriteArrayList<ConfiguredObject<?>>());
-            _childrenById.put(childClass, new ConcurrentHashMap<UUID, ConfiguredObject<?>>());
-            _childrenByName.put(childClass, new ConcurrentHashMap<String, ConfiguredObject<?>>());
-        }
+        populateChildTypeMaps();
 
         for(Map.Entry<Class<? extends ConfiguredObject>, ConfiguredObject<?>> entry : parents.entrySet())
         {
@@ -377,6 +371,33 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                        + getClass().getName());
                 }
             }
+        }
+    }
+
+    protected final void updateModel(Model model)
+    {
+        if(this instanceof DynamicModel && _children.isEmpty() && _model.getChildTypes(getCategoryClass()).isEmpty() && Model.isSpecialization(_model, model, getCategoryClass()))
+        {
+            _model = model;
+            populateChildTypeMaps();
+        }
+        else
+        {
+            throw new IllegalStateException("Cannot change the model of a class which does not implement DynamicModel, or has defined child types");
+        }
+    }
+
+    private void populateChildTypeMaps()
+    {
+        if(!(_children.isEmpty() && _childrenById.isEmpty() && _childrenByName.isEmpty()))
+        {
+            throw new IllegalStateException("Cannot update the child type maps on a class with pre-existing child types");
+        }
+        for (Class<? extends ConfiguredObject> childClass : getModel().getChildTypes(getCategoryClass()))
+        {
+            _children.put(childClass, new CopyOnWriteArrayList<ConfiguredObject<?>>());
+            _childrenById.put(childClass, new ConcurrentHashMap<UUID, ConfiguredObject<?>>());
+            _childrenByName.put(childClass, new ConcurrentHashMap<String, ConfiguredObject<?>>());
         }
     }
 
@@ -1545,7 +1566,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     @Override
     public final ConfiguredObjectFactory getObjectFactory()
     {
-        return _model.getObjectFactory();
+        return getModel().getObjectFactory();
     }
 
     @Override
@@ -1890,7 +1911,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     public final Collection<String> getAttributeNames()
     {
-        return _model.getTypeRegistry().getAttributeNames(getClass());
+        return getTypeRegistry().getAttributeNames(getClass());
     }
 
     @Override
@@ -2245,7 +2266,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     @Override
     public <C extends ConfiguredObject> Collection<C> getChildren(final Class<C> clazz)
     {
-        return Collections.unmodifiableList((List<? extends C>) _children.get(clazz));
+        Collection<ConfiguredObject<?>> children = _children.get(clazz);
+        return Collections.unmodifiableList((List<? extends C>) children);
     }
 
     @Override
@@ -2789,8 +2811,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return (ConfiguredObject<?>) Proxy.newProxyInstance(getClass().getClassLoader(),
                                                             new Class<?>[]{category},
                                                             new AuthorisationProxyInvocationHandler(attributes,
-                                                                    getModel().getTypeRegistry().getAttributeTypes(category),
-                                                                    category, parent, otherParents));
+                                                                                                    getTypeRegistry().getAttributeTypes(category),
+                                                                                                    category, parent, otherParents));
     }
 
     protected final <C extends ConfiguredObject<?>> void authoriseCreateChild(Class<C> childClass, Map<String, Object> attributes, ConfiguredObject... otherParents) throws AccessControlException
@@ -3043,7 +3065,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     @Override
     public Map<String, Object> getStatistics()
     {
-        Collection<ConfiguredObjectStatistic> stats = _model.getTypeRegistry().getStatistics(getClass());
+        Collection<ConfiguredObjectStatistic> stats = getTypeRegistry().getStatistics(getClass());
         Map<String,Object> map = new HashMap<>();
         for(ConfiguredObjectStatistic stat : stats)
         {
@@ -3082,7 +3104,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     @Override
     public Set<String> getContextKeys(final boolean excludeSystem)
     {
-        Map<String,String> inheritedContext = new HashMap<>(_model.getTypeRegistry().getDefaultContext());
+        Map<String,String> inheritedContext = new HashMap<>(getTypeRegistry().getDefaultContext());
         if(!excludeSystem)
         {
             inheritedContext.putAll(System.getenv());
@@ -3090,6 +3112,11 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
         generateInheritedContext(getModel(), this, inheritedContext);
         return Collections.unmodifiableSet(inheritedContext.keySet());
+    }
+
+    private ConfiguredObjectTypeRegistry getTypeRegistry()
+    {
+        return getModel().getTypeRegistry();
     }
 
     private OwnAttributeResolver getOwnAttributeResolver()

@@ -36,6 +36,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -52,6 +54,7 @@ import org.apache.qpid.server.model.JsonSystemConfigImpl;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
@@ -140,6 +143,12 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
             @Override
             protected void onClose()
             {
+            }
+
+            @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)
+            protected ListenableFuture<Void> startQuiesced()
+            {
+                return Futures.immediateFuture(null);
             }
         };
         _systemConfig.open();

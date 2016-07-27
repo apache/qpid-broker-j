@@ -38,6 +38,7 @@ import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.JsonSystemConfigImpl;
+import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.GenericRecoverer;
@@ -60,7 +61,13 @@ public class BrokerMemoryLoggerTest extends QpidTestCase
         _taskExecutor.start();
         _systemConfig = new JsonSystemConfigImpl(_taskExecutor,
                                                  mock(EventLogger.class),
-                                                 null, new BrokerOptions().convertToSystemConfigAttributes());
+                                                 null, new BrokerOptions().convertToSystemConfigAttributes())
+                        {
+                            {
+                                updateModel(BrokerModel.getInstance());
+                            }
+                        };
+
 
         when(_brokerEntry.getId()).thenReturn(_brokerId);
         when(_brokerEntry.getType()).thenReturn(Broker.class.getSimpleName());
@@ -79,7 +86,7 @@ public class BrokerMemoryLoggerTest extends QpidTestCase
         final String brokerLoggerName = "TestBrokerLogger";
         ch.qos.logback.classic.Logger rootLogger =
                 (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        Broker broker = _systemConfig.getBroker();
+        Broker broker = _systemConfig.getChild(Broker.class);
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(ConfiguredObject.NAME, brokerLoggerName);
         attributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
@@ -107,7 +114,7 @@ public class BrokerMemoryLoggerTest extends QpidTestCase
     {
         final String brokerLoggerName = "TestBrokerLogger";
 
-        Broker broker = _systemConfig.getBroker();
+        Broker broker = _systemConfig.getChild(Broker.class);
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(ConfiguredObject.NAME, brokerLoggerName);
         attributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);

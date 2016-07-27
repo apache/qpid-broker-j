@@ -204,7 +204,7 @@ public class Broker
                                                   _systemPrincipal,
                                                   options.convertToSystemConfigAttributes());
         _systemConfig.open();
-        if (_systemConfig.getBroker().getState() == State.ERRORED)
+        if (_systemConfig.getChild(org.apache.qpid.server.model.Broker.class).getState() == State.ERRORED)
         {
             throw new RuntimeException("Closing broker as it cannot operate due to errors");
         }

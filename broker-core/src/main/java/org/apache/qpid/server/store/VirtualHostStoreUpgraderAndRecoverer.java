@@ -577,11 +577,21 @@ public class VirtualHostStoreUpgraderAndRecoverer
                                      final ConfiguredObjectRecord... initialRecords)
     {
         String virtualHostCategory = VirtualHost.class.getSimpleName();
-        GenericStoreUpgrader upgraderHandler = new GenericStoreUpgrader(virtualHostCategory, VirtualHost.MODEL_VERSION, durableConfigurationStore, _upgraders);
-        boolean isNew = upgraderHandler.upgrade(initialRecords);
+        final List<ConfiguredObjectRecord> records = new ArrayList<>();
+        boolean isNew = durableConfigurationStore.openConfigurationStore(new ConfiguredObjectRecordHandler()
+        {
+            @Override
+            public void handle(final ConfiguredObjectRecord record)
+            {
+                records.add(record);
+            }
+        }, initialRecords);
 
-        List<ConfiguredObjectRecord> records = upgraderHandler.getRecords();
-        recover(durableConfigurationStore, records, isNew);
+        GenericStoreUpgrader upgraderHandler = new GenericStoreUpgrader(virtualHostCategory, VirtualHost.MODEL_VERSION, durableConfigurationStore, _upgraders);
+        upgraderHandler.upgrade(records);
+
+        List<ConfiguredObjectRecord> upgradedRecords = upgraderHandler.getRecords();
+        recover(durableConfigurationStore, upgradedRecords, isNew);
         return isNew;
     }
 

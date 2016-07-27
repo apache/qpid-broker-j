@@ -102,9 +102,9 @@ import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
 import org.apache.qpid.util.SystemUtils;
 
 @ManagedObject( category = false, type = "Broker" )
-public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> implements Broker<BrokerAdapter>, StatisticsGatherer
+public class BrokerImpl extends AbstractConfiguredObject<BrokerImpl> implements Broker<BrokerImpl>, StatisticsGatherer
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BrokerAdapter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BrokerImpl.class);
 
     private static final Pattern MODEL_VERSION_PATTERN = Pattern.compile("^\\d+\\.\\d+$");
 
@@ -204,8 +204,8 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private String _helpURL;
 
     @ManagedObjectFactoryConstructor
-    public BrokerAdapter(Map<String, Object> attributes,
-                         SystemConfig parent)
+    public BrokerImpl(Map<String, Object> attributes,
+                      SystemConfig parent)
     {
         super(parentsMap(parent), attributes);
         _parent = parent;
@@ -1517,7 +1517,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         @Override
         public Broker<?> getBroker()
         {
-            return BrokerAdapter.this;
+            return BrokerImpl.this;
         }
     }
 
@@ -1538,7 +1538,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             if(object.getCategoryClass() == Broker.class && child.getCategoryClass() == AccessControlProvider.class)
             {
                 child.addChangeListener(this);
-                BrokerAdapter.this.updateAccessControl();
+                BrokerImpl.this.updateAccessControl();
             }
         }
 
@@ -1547,7 +1547,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         {
             if(object.getCategoryClass() == Broker.class && child.getCategoryClass() == AccessControlProvider.class)
             {
-                BrokerAdapter.this.updateAccessControl();
+                BrokerImpl.this.updateAccessControl();
             }
         }
 
@@ -1559,7 +1559,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         {
             if(object.getCategoryClass() == AccessControlProvider.class && !_bulkChanges.contains(object))
             {
-                BrokerAdapter.this.updateAccessControl();
+                BrokerImpl.this.updateAccessControl();
             }
         }
 
@@ -1578,7 +1578,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             if(object.getCategoryClass() == AccessControlProvider.class)
             {
                 _bulkChanges.remove(object);
-                BrokerAdapter.this.updateAccessControl();
+                BrokerImpl.this.updateAccessControl();
             }
         }
     }

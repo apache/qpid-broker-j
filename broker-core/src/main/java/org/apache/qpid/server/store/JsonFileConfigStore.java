@@ -20,9 +20,11 @@
  */
 package org.apache.qpid.server.store;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,7 +45,10 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
+import org.apache.qpid.server.model.ContainerType;
+import org.apache.qpid.server.model.DynamicModel;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 
 public class JsonFileConfigStore extends AbstractJsonFileStore implements DurableConfigurationStore
@@ -74,9 +79,9 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
 
     private final Map<UUID, ConfiguredObjectRecord> _objectsById = new HashMap<UUID, ConfiguredObjectRecord>();
     private final Map<String, List<UUID>> _idsByType = new HashMap<String, List<UUID>>();
-    private final Class<? extends ConfiguredObject> _rootClass;
+    private volatile Class<? extends ConfiguredObject> _rootClass;
     private final ObjectMapper _objectMapper;
-    private Map<String,Class<? extends ConfiguredObject>> _classNameMapping;
+    private volatile Map<String,Class<? extends ConfiguredObject>> _classNameMapping;
 
     private ConfiguredObject<?> _parent;
 
@@ -101,13 +106,14 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
     public void init(ConfiguredObject<?> parent)
     {
         assertState(State.CLOSED);
-            _parent = parent;
-            _classNameMapping = generateClassNameMap(_parent.getModel(), _rootClass);
-            FileBasedSettings fileBasedSettings = (FileBasedSettings) _parent;
-            setup(parent.getName(),
-                  fileBasedSettings.getStorePath(),
-                  parent.getContextValue(String.class, BrokerProperties.POSIX_FILE_PERMISSIONS),
-                  Collections.emptyMap());
+        _parent = parent;
+        _classNameMapping = generateClassNameMap(_parent.getModel(), _rootClass);
+
+        FileBasedSettings fileBasedSettings = (FileBasedSettings) _parent;
+        setup(parent.getName(),
+              fileBasedSettings.getStorePath(),
+              parent.getContextValue(String.class, BrokerProperties.POSIX_FILE_PERMISSIONS),
+              Collections.emptyMap());
         changeState(State.CLOSED, State.CONFIGURED);
 
     }
@@ -155,11 +161,45 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
 
             records = configuredObjectRecordConverter.readFromJson(_rootClass, _parent, new FileReader(configFile));
 
+            if(_rootClass == null)
+            {
+                _rootClass = configuredObjectRecordConverter.getRootClass();
+                _classNameMapping = generateClassNameMap(configuredObjectRecordConverter.getModel(), _rootClass);
+            }
+
             if(records.isEmpty())
             {
                 LOGGER.debug("File contains no records - using initial configuration");
                 records = Arrays.asList(initialRecords);
                 updated = true;
+                if (_rootClass == null)
+                {
+                    String containerTypeName = ((DynamicModel) _parent).getDefaultContainerType();
+                    ConfiguredObjectRecord rootRecord = null;
+                    for(ConfiguredObjectRecord record : records)
+                    {
+                        if(record.getParents() == null || record.getParents().isEmpty())
+                        {
+                            rootRecord = record;
+                            break;
+                        }
+                    }
+                    if (rootRecord != null && rootRecord.getAttributes().get(ConfiguredObject.TYPE) instanceof String)
+                    {
+                        containerTypeName = rootRecord.getAttributes().get(ConfiguredObject.TYPE).toString();
+                    }
+
+                    QpidServiceLoader loader = new QpidServiceLoader();
+                    final ContainerType<?> containerType =
+                            loader.getInstancesByType(ContainerType.class).get(containerTypeName);
+
+                    if (containerType != null)
+                    {
+                        _rootClass = containerType.getCategoryClass();
+                        _classNameMapping = generateClassNameMap(containerType.getModel(), containerType.getCategoryClass());
+                    }
+
+                }
             }
 
             for(ConfiguredObjectRecord record : records)
@@ -459,13 +499,16 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
                                                                                       final Class<? extends ConfiguredObject> clazz)
     {
         Map<String,Class<? extends ConfiguredObject>>map = new HashMap<String, Class<? extends ConfiguredObject>>();
-        map.put(clazz.getSimpleName(), clazz);
-        Collection<Class<? extends ConfiguredObject>> childClasses = model.getChildTypes(clazz);
-        if(childClasses != null)
+        if(clazz != null)
         {
-            for(Class<? extends ConfiguredObject> childClass : childClasses)
+            map.put(clazz.getSimpleName(), clazz);
+            Collection<Class<? extends ConfiguredObject>> childClasses = model.getChildTypes(clazz);
+            if (childClasses != null)
             {
-                map.putAll(generateClassNameMap(model, childClass));
+                for (Class<? extends ConfiguredObject> childClass : childClasses)
+                {
+                    map.putAll(generateClassNameMap(model, childClass));
+                }
             }
         }
         return map;

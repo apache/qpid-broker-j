@@ -58,15 +58,15 @@ public class GenericStoreUpgrader
         return new ArrayList<ConfiguredObjectRecord>(_records.values());
     }
 
-    public boolean upgrade(final ConfiguredObjectRecord... initialRecords)
+    public void upgrade(List<ConfiguredObjectRecord> records)
     {
-        RecordCollectionHandler handler = new RecordCollectionHandler();
-
-        boolean isNewStore = _store.openConfigurationStore(handler, initialRecords);
-
+        _records.clear();
+        for(ConfiguredObjectRecord record : records)
+        {
+            _records.put(record.getId(), record);
+        }
         performUpgrade();
 
-        return isNewStore;
     }
 
     private void performUpgrade()

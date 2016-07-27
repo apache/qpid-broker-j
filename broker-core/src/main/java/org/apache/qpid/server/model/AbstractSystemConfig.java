@@ -28,9 +28,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.Principal;
 import java.security.PrivilegedAction;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -55,10 +57,10 @@ import org.apache.qpid.server.logging.MessageLogger;
 import org.apache.qpid.server.logging.SystemOutMessageLogger;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
-import org.apache.qpid.server.store.BrokerStoreUpgraderAndRecoverer;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordConverter;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.store.preferences.NoopPreferenceStoreFactoryService;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
@@ -66,7 +68,7 @@ import org.apache.qpid.server.store.preferences.PreferenceStoreFactoryService;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
-        extends AbstractConfiguredObject<X> implements SystemConfig<X>
+        extends AbstractConfiguredObject<X> implements SystemConfig<X>, DynamicModel
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractSystemConfig.class);
 
@@ -100,6 +102,9 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     @ManagedAttributeField
     private PreferenceStoreAttributes _preferenceStoreAttributes;
 
+    @ManagedAttributeField
+    private String _defaultContainerType;
+
     private final Thread _shutdownHook = new Thread(new ShutdownService(), "QpidBrokerShutdownHook");
 
     public AbstractSystemConfig(final TaskExecutor taskExecutor,
@@ -109,7 +114,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     {
         super(parentsMap(),
               updateAttributes(attributes),
-              taskExecutor, BrokerModel.getInstance());
+              taskExecutor, SystemConfigBootstrapModel.getInstance());
         _eventLogger = eventLogger;
         _systemPrincipal = systemPrincipal;
         getTaskExecutor().start();
@@ -180,9 +185,9 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     }
 
     @Override
-    public Broker getBroker()
+    public <C extends ConfiguredObject<C>> C getChild(Class<C> childClass)
     {
-        Collection<Broker> children = getChildren(Broker.class);
+        Collection<C> children = getChildren(childClass);
         if(children == null || children.isEmpty())
         {
             return null;
@@ -193,6 +198,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         }
         return children.iterator().next();
     }
+
 
     @Override
     protected void onOpen()
@@ -217,6 +223,118 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     protected ListenableFuture<Void> activate()
     {
         final EventLogger eventLogger = _eventLogger;
+        final EventLogger startupLogger = initiateStartupLogging();
+
+
+        try
+        {
+            final Container<?> container = initateStoreAndRecovery();
+
+            container.setEventLogger(startupLogger);
+            final SettableFuture<Void> returnVal = SettableFuture.create();
+            Futures.addCallback(container.openAsync(), new FutureCallback()
+                                {
+                                    @Override
+                                    public void onSuccess(final Object result)
+                                    {
+                                        State state = container.getState();
+                                        if (state == State.ACTIVE)
+                                        {
+                                            startupLogger.message(BrokerMessages.READY());
+                                            container.setEventLogger(eventLogger);
+                                            returnVal.set(null);
+                                        }
+                                        else
+                                        {
+                                            returnVal.setException(new ServerScopedRuntimeException("Broker failed reach ACTIVE state (state is " + state + ")"));
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onFailure(final Throwable t)
+                                    {
+                                        returnVal.setException(t);
+                                    }
+                                }, getTaskExecutor()
+                               );
+
+            return returnVal;
+        }
+        catch (IOException e)
+        {
+            throw new IllegalArgumentException(e);
+        }
+
+
+    }
+
+    private Container<?> initateStoreAndRecovery() throws IOException
+    {
+        ConfiguredObjectRecord[] initialRecords = convertToConfigurationRecords(getInitialConfigurationLocation()
+                                                                               );
+        final DurableConfigurationStore store = getConfigurationStore();
+        final List<ConfiguredObjectRecord> records = new ArrayList<>();
+
+        boolean isNew = store.openConfigurationStore(new ConfiguredObjectRecordHandler()
+        {
+            @Override
+            public void handle(final ConfiguredObjectRecord record)
+            {
+                records.add(record);
+            }
+        }, initialRecords);
+
+        String containerTypeName = getDefaultContainerType();
+        for(ConfiguredObjectRecord record : records)
+        {
+            if(record.getParents() == null || record.getParents().isEmpty())
+            {
+                containerTypeName = record.getType();
+                break;
+            }
+        }
+        QpidServiceLoader loader = new QpidServiceLoader();
+        final ContainerType<?> containerType = loader.getInstancesByType(ContainerType.class).get(containerTypeName);
+
+        if(containerType != null)
+        {
+            updateModel(containerType.getModel());
+            containerType.getRecoverer(this).upgradeAndRecover(records);
+
+        }
+        else
+        {
+            throw new IllegalConfigurationException("Unknown container type '" + containerTypeName + "'");
+        }
+
+        final Class categoryClass = containerType.getCategoryClass();
+        return (Container<?>) getChild(categoryClass);
+    }
+
+
+    @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)
+    protected ListenableFuture<Void> startQuiesced()
+    {
+        final EventLogger startupLogger = initiateStartupLogging();
+
+        try
+        {
+            final Container<?> container = initateStoreAndRecovery();
+
+            container.setEventLogger(startupLogger);
+            return Futures.immediateFuture(null);
+        }
+        catch (IOException e)
+        {
+            throw new IllegalArgumentException(e);
+        }
+
+
+    }
+
+    private EventLogger initiateStartupLogging()
+    {
+        final EventLogger eventLogger = _eventLogger;
 
         final EventLogger startupLogger;
         if (isStartupLoggedToSystemOut())
@@ -231,51 +349,9 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         {
             startupLogger = eventLogger;
         }
-
-
-        BrokerStoreUpgraderAndRecoverer upgrader = new BrokerStoreUpgraderAndRecoverer(this);
-        try
-        {
-            upgrader.perform(convertToConfigurationRecords(getInitialConfigurationLocation(),
-                                                           this));
-        }
-        catch (IOException e)
-        {
-            throw new IllegalArgumentException(e);
-        }
-
-        final Broker broker = getBroker();
-
-        broker.setEventLogger(startupLogger);
-        final SettableFuture<Void> returnVal = SettableFuture.create();
-        Futures.addCallback(broker.openAsync(), new FutureCallback()
-                            {
-                                @Override
-                                public void onSuccess(final Object result)
-                                {
-                                    State state = broker.getState();
-                                    if (state == State.ACTIVE)
-                                    {
-                                        startupLogger.message(BrokerMessages.READY());
-                                        broker.setEventLogger(eventLogger);
-                                        returnVal.set(null);
-                                    }
-                                    else
-                                    {
-                                        returnVal.setException(new ServerScopedRuntimeException("Broker failed reach ACTIVE state (state is " + state + ")"));
-                                    }
-                                }
-
-                                @Override
-                                public void onFailure(final Throwable t)
-                                {
-                                    returnVal.setException(t);
-                                }
-                            }, getTaskExecutor()
-                           );
-
-        return returnVal;
+        return startupLogger;
     }
+
 
     @Override
     protected final boolean rethrowRuntimeExceptionsOnOpen()
@@ -291,10 +367,9 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         return _configurationStore;
     }
 
-    private ConfiguredObjectRecord[] convertToConfigurationRecords(final String initialConfigurationLocation,
-                                                                   final SystemConfig systemConfig) throws IOException
+    private ConfiguredObjectRecord[] convertToConfigurationRecords(final String initialConfigurationLocation) throws IOException
     {
-        ConfiguredObjectRecordConverter converter = new ConfiguredObjectRecordConverter(BrokerModel.getInstance());
+        ConfiguredObjectRecordConverter converter = new ConfiguredObjectRecordConverter(getModel());
 
         Reader reader;
 
@@ -311,8 +386,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         try
         {
             Collection<ConfiguredObjectRecord> records =
-                    converter.readFromJson(org.apache.qpid.server.model.Broker.class,
-                                           systemConfig, reader);
+                    converter.readFromJson(null, this, reader);
             return records.toArray(new ConfiguredObjectRecord[records.size()]);
         }
         finally
@@ -321,6 +395,12 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         }
 
 
+    }
+
+    @Override
+    public String getDefaultContainerType()
+    {
+        return _defaultContainerType;
     }
 
     @Override

@@ -106,7 +106,8 @@ public class BrokerTest extends QpidTestCase
     {
         String startupConsoleAppenderLogPrefix = getTestName() + "__$$ ";
         byte[] outputBytes = startBrokerAndCollectSystemOutput(startupConsoleAppenderLogPrefix);
-        assertFalse("Detected unexpected startup console appender prefix", new String(outputBytes).contains(startupConsoleAppenderLogPrefix));
+        String outputString = new String(outputBytes);
+        assertFalse("Detected unexpected startup console appender prefix", outputString.contains(startupConsoleAppenderLogPrefix));
     }
 
     public void testConsoleLogsOnUnsuccessfulStartup() throws Exception

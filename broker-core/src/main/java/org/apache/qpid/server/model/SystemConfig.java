@@ -43,6 +43,9 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
     @ManagedContextDefault(name = BrokerProperties.POSIX_FILE_PERMISSIONS)
     String DEFAULT_POSIX_FILE_PERMISSIONS = "rw-r-----";
 
+    @ManagedAttribute(immutable = true, defaultValue = Broker.BROKER_TYPE)
+    String getDefaultContainerType();
+
     @ManagedAttribute(defaultValue = "false")
     boolean isManagementMode();
 
@@ -67,7 +70,7 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
 
     EventLogger getEventLogger();
 
-    Broker getBroker();
+    <C extends ConfiguredObject<C>> C getChild(Class<C> childClass);
 
     DurableConfigurationStore getConfigurationStore();
 }

@@ -41,7 +41,7 @@ import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.model.adapter.BrokerAdapter;
+import org.apache.qpid.server.model.adapter.BrokerImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 
@@ -49,7 +49,7 @@ public class DerbyVirtualHostNodeTest extends QpidTestCase
 {
     private TaskExecutor _taskExecutor;
     private File _workDir;
-    private Broker<BrokerAdapter> _broker;
+    private Broker<BrokerImpl> _broker;
 
     @Override
     public void setUp() throws Exception
@@ -160,7 +160,7 @@ public class DerbyVirtualHostNodeTest extends QpidTestCase
         }
     }
 
-    private BrokerAdapter createBroker()
+    private BrokerImpl createBroker()
     {
         Map<String, Object> brokerAttributes = Collections.<String, Object>singletonMap(Broker.NAME, "Broker");
         SystemConfig parent = BrokerTestHelper.mockWithSystemPrincipal(SystemConfig.class, mock(Principal.class));
@@ -170,7 +170,7 @@ public class DerbyVirtualHostNodeTest extends QpidTestCase
         when(parent.getChildExecutor()).thenReturn(_taskExecutor);
         when(parent.getModel()).thenReturn(BrokerModel.getInstance());
         when(parent.getObjectFactory()).thenReturn(new ConfiguredObjectFactoryImpl(BrokerModel.getInstance()));
-        BrokerAdapter broker = new BrokerAdapter(brokerAttributes, parent);
+        BrokerImpl broker = new BrokerImpl(brokerAttributes, parent);
         broker.start();
         return broker;
     }

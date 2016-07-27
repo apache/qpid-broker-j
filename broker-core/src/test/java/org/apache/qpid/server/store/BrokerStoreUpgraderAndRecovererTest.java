@@ -106,7 +106,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, virtualHostRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         ConfiguredObjectRecord upgradedVirtualHostNodeRecord = findRecordById(virtualHostRecord.getId(), records);
         assertEquals("Unexpected type", "VirtualHostNode", upgradedVirtualHostNodeRecord.getType());
@@ -134,6 +134,21 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertBrokerRecord(records);
     }
 
+    private List<ConfiguredObjectRecord> upgrade(final DurableConfigurationStore dcs,
+                                                 final BrokerStoreUpgraderAndRecoverer recoverer)
+    {
+        final List<ConfiguredObjectRecord> records = new ArrayList<>();
+        dcs.openConfigurationStore(new ConfiguredObjectRecordHandler()
+        {
+            @Override
+            public void handle(final ConfiguredObjectRecord record)
+            {
+                records.add(record);
+            }
+        });
+        return recoverer.upgrade(dcs, records);
+    }
+
     public void testUpgradeVirtualHostWithJDBCStoreAndDefaultPool()
     {
         Map<String, Object> hostAttributes = new HashMap<>();
@@ -156,7 +171,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, virtualHostRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         ConfiguredObjectRecord upgradedVirtualHostNodeRecord = findRecordById(virtualHostRecord.getId(), records);
         assertEquals("Unexpected type", "VirtualHostNode", upgradedVirtualHostNodeRecord.getType());
@@ -198,7 +213,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, virtualHostRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         ConfiguredObjectRecord upgradedVirtualHostNodeRecord = findRecordById(virtualHostRecord.getId(), records);
         assertEquals("Unexpected type", "VirtualHostNode", upgradedVirtualHostNodeRecord.getType());
@@ -232,7 +247,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, virtualHostRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         ConfiguredObjectRecord upgradedVirtualHostNodeRecord = findRecordById(virtualHostRecord.getId(), records);
         assertEquals("Unexpected type", "VirtualHostNode", upgradedVirtualHostNodeRecord.getType());
@@ -272,7 +287,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, virtualHostRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         ConfiguredObjectRecord upgradedVirtualHostNodeRecord = findRecordById(virtualHostRecord.getId(), records);
         assertEquals("Unexpected type", "VirtualHostNode", upgradedVirtualHostNodeRecord.getType());
@@ -312,7 +327,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, virtualHostRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         ConfiguredObjectRecord upgradedVirtualHostNodeRecord = findRecordById(virtualHostRecord.getId(), records);
         assertEquals("Unexpected type", "VirtualHostNode", upgradedVirtualHostNodeRecord.getType());
@@ -409,7 +424,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         assertTrue("No virtualhostalias rescords should be returned",
                 findRecordByType("VirtualHostAlias", records).isEmpty());
@@ -429,7 +444,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         assertFalse("VirtualHostAlias rescords should be returned",
                 findRecordByType("VirtualHostAlias", records).isEmpty());
@@ -451,7 +466,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         assertTrue("No virtualhostalias rescords should be returned",
                 findRecordByType("VirtualHostAlias", records).isEmpty());
@@ -473,7 +488,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         List<ConfiguredObjectRecord> ports = findRecordByType("Port", records);
         assertEquals("Unexpected port size", 1, ports.size());
@@ -500,7 +515,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         List<ConfiguredObjectRecord> plugins = findRecordByType("Plugin", records);
         assertTrue("JMX Plugin was not removed", plugins.isEmpty());
@@ -522,7 +537,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         List<ConfiguredObjectRecord> ports = findRecordByType("Port", records);
         assertTrue("Port was not removed", ports.isEmpty());
@@ -543,7 +558,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         List<ConfiguredObjectRecord> ports = findRecordByType("Port", records);
         assertTrue("Port was not removed", ports.isEmpty());
@@ -565,7 +580,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         List<ConfiguredObjectRecord> ports = findRecordByType("Port", records);
         assertTrue("Port was not removed", ports.isEmpty());
@@ -587,7 +602,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         List<ConfiguredObjectRecord> ports = findRecordByType("Port", records);
         assertTrue("Port was not removed", ports.isEmpty());
@@ -618,7 +633,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
                                                                           preferencesProviderRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         List<ConfiguredObjectRecord> preferencesProviders = findRecordByType("PreferencesProvider", records);
         assertTrue("PreferencesProvider was not removed", preferencesProviders.isEmpty());
@@ -645,7 +660,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, authenticationProviderRecord);
 
         BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
 
         List<ConfiguredObjectRecord> authenticationProviders = findRecordByType("AuthenticationProvider", records);
         assertEquals("AuthenticationProviders was removed", 1, authenticationProviders.size());
@@ -656,7 +671,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
     private void upgradeBrokerRecordAndAssertUpgradeResults()
     {
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord);
-        List<ConfiguredObjectRecord> records = new BrokerStoreUpgraderAndRecoverer(_systemConfig).upgrade(dcs);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, new BrokerStoreUpgraderAndRecoverer(_systemConfig));
 
         assertVirtualHost(records, true);
         assertBrokerRecord(records);

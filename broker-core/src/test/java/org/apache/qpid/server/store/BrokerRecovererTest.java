@@ -39,6 +39,7 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.model.JsonSystemConfigImpl;
+import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
@@ -63,7 +64,13 @@ public class BrokerRecovererTest extends QpidTestCase
         _taskExecutor.start();
         _systemConfig = new JsonSystemConfigImpl(_taskExecutor,
                                                  mock(EventLogger.class),
-                                                 null, new BrokerOptions().convertToSystemConfigAttributes());
+                                                 null, new BrokerOptions().convertToSystemConfigAttributes())
+        {
+
+            {
+                updateModel(BrokerModel.getInstance());
+            }
+        };
 
         when(_brokerEntry.getId()).thenReturn(_brokerId);
         when(_brokerEntry.getType()).thenReturn(Broker.class.getSimpleName());
@@ -114,7 +121,7 @@ public class BrokerRecovererTest extends QpidTestCase
         when(_brokerEntry.getAttributes()).thenReturn(entryAttributes);
 
         resolveObjects(_brokerEntry);
-        Broker<?> broker = _systemConfig.getBroker();
+        Broker<?> broker = _systemConfig.getChild(Broker.class);
 
         assertNotNull(broker);
 
@@ -173,7 +180,7 @@ public class BrokerRecovererTest extends QpidTestCase
                 portId,
                 5672,
                 "authProvider"));
-        Broker<?> broker = _systemConfig.getBroker();
+        Broker<?> broker = _systemConfig.getChild(Broker.class);
 
 
         assertNotNull(broker);
@@ -187,7 +194,7 @@ public class BrokerRecovererTest extends QpidTestCase
         UUID authProviderId = UUID.randomUUID();
 
         resolveObjects(_brokerEntry, createAuthProviderRecord(authProviderId, "authProvider"));
-        Broker<?> broker = _systemConfig.getBroker();
+        Broker<?> broker = _systemConfig.getChild(Broker.class);
 
 
         assertNotNull(broker);
@@ -209,7 +216,7 @@ public class BrokerRecovererTest extends QpidTestCase
                                       createPortRecord(portId, 5672, "authProvider"),
                                       createAuthProviderRecord(authProvider2Id, "authProvider2"),
                                       createPortRecord(port2Id, 5673, "authProvider2"));
-        Broker<?> broker = _systemConfig.getBroker();
+        Broker<?> broker = _systemConfig.getChild(Broker.class);
 
 
         assertNotNull(broker);
@@ -227,7 +234,7 @@ public class BrokerRecovererTest extends QpidTestCase
         UUID authProviderId = UUID.randomUUID();
 
         resolveObjects(_brokerEntry, createGroupProviderRecord(authProviderId, "groupProvider"));
-        Broker<?> broker = _systemConfig.getBroker();
+        Broker<?> broker = _systemConfig.getChild(Broker.class);
 
 
         assertNotNull(broker);
@@ -250,7 +257,7 @@ public class BrokerRecovererTest extends QpidTestCase
             when(_brokerEntry.getAttributes()).thenReturn(brokerAttributes);
 
             resolveObjects(_brokerEntry);
-            Broker<?> broker = _systemConfig.getBroker();
+            Broker<?> broker = _systemConfig.getChild(Broker.class);
             broker.open();
             assertEquals("Unexpected broker state", State.ERRORED, broker.getState());
         }

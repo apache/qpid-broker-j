@@ -30,12 +30,13 @@ import java.util.concurrent.TimeUnit;
 import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
-import org.apache.qpid.server.model.adapter.BrokerAdapter;
+import org.apache.qpid.server.model.adapter.BrokerImpl;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 
-@ManagedObject( defaultType = "Broker" )
-public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventLoggerProvider, StatisticsGatherer
+@ManagedObject( defaultType = Broker.BROKER_TYPE)
+public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventLoggerProvider, StatisticsGatherer, Container<X>
 {
+    String BROKER_TYPE = "Broker";
 
     String BUILD_VERSION = "buildVersion";
     String OPERATING_SYSTEM = "operatingSystem";
@@ -80,7 +81,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String DEFAULT_HTTP_PORT_NUMBER = "8080";
 
     @ManagedContextDefault(name = BROKER_FLOW_TO_DISK_THRESHOLD)
-    long DEFAULT_FLOW_TO_DISK_THRESHOLD = (long)(0.4 * (double) BrokerAdapter.getMaxDirectMemorySize());
+    long DEFAULT_FLOW_TO_DISK_THRESHOLD = (long)(0.4 * (double) BrokerImpl.getMaxDirectMemorySize());
 
     @ManagedContextDefault(name = CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT)
     long DEFAULT_CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT = 5000l;
@@ -169,7 +170,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedContextDefault(name = BROKER_DIRECT_BYTE_BUFFER_POOL_SIZE)
     int DEFAULT_BROKER_DIRECT_BYTE_BUFFER_POOL_SIZE = 1024;
 
-    @ManagedAttribute(validValues = {"org.apache.qpid.server.model.adapter.BrokerAdapter#getAvailableConfigurationEncrypters()"})
+    @ManagedAttribute(validValues = {"org.apache.qpid.server.model.adapter.BrokerImpl#getAvailableConfigurationEncrypters()"})
     String getConfidentialConfigurationEncryptionProvider();
 
     @DerivedAttribute( persist = true )

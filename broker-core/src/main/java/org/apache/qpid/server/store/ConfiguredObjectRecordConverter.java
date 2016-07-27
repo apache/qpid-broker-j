@@ -34,11 +34,16 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ContainerType;
+import org.apache.qpid.server.model.DynamicModel;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.plugin.QpidServiceLoader;
 
 public class ConfiguredObjectRecordConverter
 {
-    private final Model _model;
+    private Model _model;
+    private Class<? extends ConfiguredObject> _rootClass;
+
 
     private static interface NameToIdResolver
     {
@@ -50,8 +55,18 @@ public class ConfiguredObjectRecordConverter
         _model = model;
     }
 
-    public Collection<ConfiguredObjectRecord> readFromJson(final Class<? extends ConfiguredObject> rootClass,
-                                                           final ConfiguredObject<?> parent, final Reader reader) throws IOException
+    public Class<? extends ConfiguredObject> getRootClass()
+    {
+        return _rootClass;
+    }
+
+    public Model getModel()
+    {
+        return _model;
+    }
+
+    public Collection<ConfiguredObjectRecord> readFromJson(Class<? extends ConfiguredObject> rootClass,
+                                                           ConfiguredObject<?> parent, Reader reader) throws IOException
     {
         Map<UUID, ConfiguredObjectRecord> objectsById = new HashMap<>();
 
@@ -60,8 +75,30 @@ public class ConfiguredObjectRecordConverter
         Map data = objectMapper.readValue(reader, Map.class);
         if(!data.isEmpty())
         {
+            if(rootClass == null && parent instanceof DynamicModel)
+            {
+                String containerTypeName = ((DynamicModel) parent).getDefaultContainerType();
+                if (data.get(ConfiguredObject.TYPE) instanceof String)
+                {
+                    containerTypeName = data.get(ConfiguredObject.TYPE).toString();
+                }
+
+                QpidServiceLoader loader = new QpidServiceLoader();
+                final ContainerType<?> containerType =
+                        loader.getInstancesByType(ContainerType.class).get(containerTypeName);
+
+                if (containerType != null)
+                {
+                    _model = containerType.getModel();
+                    rootClass = containerType.getCategoryClass();
+                }
+            }
+
             Collection<NameToIdResolver> unresolved =
                     loadChild(rootClass, data, parent.getCategoryClass(), parent.getId(), objectsById);
+
+            _rootClass = rootClass;
+
 
             Iterator<NameToIdResolver> iterator = unresolved.iterator();
             while(iterator.hasNext())

@@ -21,6 +21,7 @@
 
 package org.apache.qpid.server.model;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -192,4 +193,28 @@ public abstract class Model
 
     public abstract ConfiguredObjectTypeRegistry getTypeRegistry();
 
+    public static boolean isSpecialization(final Model model,
+                                           final Model specialization,
+                                           final Class<? extends ConfiguredObject> specializationPoint)
+    {
+        if(model.getSupportedCategories().contains(specializationPoint)
+               && specialization.getSupportedCategories().containsAll(model.getSupportedCategories())
+               && model.getChildTypes(specializationPoint).isEmpty())
+        {
+            final Collection<Class<? extends ConfiguredObject>> modelSupportedCategories = new ArrayList<>(model.getSupportedCategories());
+            modelSupportedCategories.remove(specializationPoint);
+            for(Class<? extends ConfiguredObject> category : modelSupportedCategories)
+            {
+                if(!model.getChildTypes(category).equals(specialization.getChildTypes(category)))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 }
