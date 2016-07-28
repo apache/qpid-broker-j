@@ -39,6 +39,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.model.ManageableMessage;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
@@ -295,6 +296,13 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     public Connection<?> getConnection(String name)
     {
         return null;
+    }
+
+    @Override
+    public int publishMessage(final ManageableMessage message)
+    {
+        throwUnsupportedForReplica();
+        return 0;
     }
 
     @Override

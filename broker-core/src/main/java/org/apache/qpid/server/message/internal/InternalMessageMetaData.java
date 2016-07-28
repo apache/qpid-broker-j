@@ -94,6 +94,11 @@ public class InternalMessageMetaData implements StorableMessageMetaData
 
     }
 
+    InternalMessageHeader getHeader()
+    {
+        return _header;
+    }
+
     @Override
     public void clearEncodedForm()
     {

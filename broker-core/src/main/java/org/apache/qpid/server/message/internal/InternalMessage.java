@@ -64,6 +64,7 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
     {
         super(msg, null);
         _contentSize = msg.getMetaData().getContentSize();
+        _header = msg.getMetaData().getHeader();
         Collection<QpidByteBuffer> bufs = msg.getContent(0, _contentSize);
 
         try(ObjectInputStream is = new ObjectInputStream(new ByteBufferInputStream(ByteBufferUtils.combine(bufs))))
@@ -117,9 +118,9 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
         return _messageBody;
     }
 
-    private static InternalMessage createMessage(final MessageStore store,
-                                                 final AMQMessageHeader header,
-                                                 final Serializable bodyObject, final boolean persistent)
+    public static InternalMessage createMessage(final MessageStore store,
+                                                final AMQMessageHeader header,
+                                                final Serializable bodyObject, final boolean persistent)
     {
         InternalMessageHeader internalHeader;
         if(header instanceof InternalMessageHeader)

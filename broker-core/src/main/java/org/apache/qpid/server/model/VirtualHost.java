@@ -194,6 +194,9 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     @ManagedOperation(nonModifying = true)
     Connection<?> getConnection(@Param(name="name") String name);
 
+    @ManagedOperation
+    int publishMessage(@Param(name = "message")ManageableMessage message);
+
     void start();
 
     void stop();

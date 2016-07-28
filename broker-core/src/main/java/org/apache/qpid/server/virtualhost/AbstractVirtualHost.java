@@ -23,12 +23,14 @@ package org.apache.qpid.server.virtualhost;
 import static java.util.Collections.newSetFromMap;
 
 import java.io.File;
+import java.io.Serializable;
 import java.security.AccessControlContext;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,6 +47,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import javax.security.auth.Subject;
+import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
@@ -67,10 +70,13 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.MessageStoreMessages;
 import org.apache.qpid.server.logging.messages.VirtualHostMessages;
 import org.apache.qpid.server.logging.subjects.MessageStoreLogSubject;
+import org.apache.qpid.server.message.AMQMessageHeader;
+import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageNode;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -86,6 +92,7 @@ import org.apache.qpid.server.security.CompoundAccessControl;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
+import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
@@ -699,6 +706,81 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
+    public int publishMessage(@Param(name = "message") final ManageableMessage message)
+    {
+        MessageDestination destination = getAttainedMessageDestination(message.getAddress());
+        if(destination == null)
+        {
+            destination = getDefaultDestination();
+        }
+
+        final AMQMessageHeader header = new MessageHeaderImpl(message);
+
+        Serializable body = null;
+        Object messageContent = message.getContent();
+        if(messageContent != null)
+        {
+            if(messageContent instanceof Map || messageContent instanceof List)
+            {
+                body = (Serializable)messageContent;
+            }
+            else if(messageContent instanceof String)
+            {
+                if(message.getMimeType() != null || message.getEncoding() != null)
+                {
+                    try
+                    {
+                        body = DatatypeConverter.parseBase64Binary((String)messageContent);
+
+                    }
+                    catch(IllegalArgumentException e)
+                    {
+                        body = (String) messageContent;
+                    }
+                }
+                else
+                {
+                    body = (String) messageContent;
+                }
+            }
+            else
+            {
+                throw new IllegalArgumentException("The message content (if present) can only be a string, map or list");
+            }
+        }
+
+        InternalMessage internalMessage = InternalMessage.createMessage(getMessageStore(), header, body, message.isPersistent());
+        AutoCommitTransaction txn = new AutoCommitTransaction(getMessageStore());
+        final InstanceProperties instanceProperties =
+                new InstanceProperties()
+                {
+                    @Override
+                    public Object getProperty(final Property prop)
+                    {
+                        switch (prop)
+                        {
+                            case EXPIRATION:
+                                Date expiration = message.getExpiration();
+                                return expiration == null ? 0 : expiration.getTime();
+                            case IMMEDIATE:
+                                return false;
+                            case PERSISTENT:
+                                return message.isPersistent();
+                            case MANDATORY:
+                                return false;
+                            case REDELIVERED:
+                                return false;
+                            default:
+                                return null;
+                        }
+                    }
+                };
+
+        return destination.send(internalMessage, message.getAddress(), instanceProperties, txn, null);
+
+    }
+
+    @Override
     protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass, Map<String, Object> attributes, ConfiguredObject... otherParents)
     {
         checkVHostStateIsActive();
@@ -1282,6 +1364,118 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public String getRedirectHost(final AmqpPort<?> port)
     {
         return null;
+    }
+
+    private static class MessageHeaderImpl implements AMQMessageHeader
+    {
+        private final String _userName;
+        private final long _timestamp;
+        private final ManageableMessage _message;
+
+        public MessageHeaderImpl(final ManageableMessage message)
+        {
+            _message = message;
+            _userName = AuthenticatedPrincipal.getCurrentUser().getName();
+            _timestamp = System.currentTimeMillis();
+        }
+
+        @Override
+        public String getCorrelationId()
+        {
+            return _message.getCorrelationId();
+        }
+
+        @Override
+        public long getExpiration()
+        {
+            Date expiration = _message.getExpiration();
+            return expiration == null ? 0 : expiration.getTime();
+        }
+
+        @Override
+        public String getUserId()
+        {
+            return _userName;
+        }
+
+        @Override
+        public String getAppId()
+        {
+            return null;
+        }
+
+        @Override
+        public String getMessageId()
+        {
+            return _message.getMessageId();
+        }
+
+        @Override
+        public String getMimeType()
+        {
+            return _message.getMimeType();
+        }
+
+        @Override
+        public String getEncoding()
+        {
+            return _message.getEncoding();
+        }
+
+        @Override
+        public byte getPriority()
+        {
+            return (byte) _message.getPriority();
+        }
+
+        @Override
+        public long getTimestamp()
+        {
+            return _timestamp;
+        }
+
+        @Override
+        public long getNotValidBefore()
+        {
+            final Date notValidBefore = _message.getNotValidBefore();
+            return notValidBefore == null ? 0 : notValidBefore.getTime();
+        }
+
+        @Override
+        public String getType()
+        {
+            return null;
+        }
+
+        @Override
+        public String getReplyTo()
+        {
+            return _message.getReplyTo();
+        }
+
+        @Override
+        public Object getHeader(final String name)
+        {
+            return _message.getHeaders().get(name);
+        }
+
+        @Override
+        public boolean containsHeaders(final Set<String> names)
+        {
+            return _message.getHeaders().keySet().containsAll(names);
+        }
+
+        @Override
+        public boolean containsHeader(final String name)
+        {
+            return _message.getHeaders().keySet().contains(name);
+        }
+
+        @Override
+        public Collection<String> getHeaderNames()
+        {
+            return Collections.unmodifiableCollection(_message.getHeaders().keySet());
+        }
     }
 
     private class TargetSizeAssigningListener implements ConfigurationChangeListener
