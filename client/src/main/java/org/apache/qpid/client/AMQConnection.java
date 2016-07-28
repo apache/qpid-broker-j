@@ -189,7 +189,9 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         @Override
         public Thread newThread(final Runnable r)
         {
-            Thread thread = new Thread(r, "Connection_" + AMQConnection.this._connectionNumber + "_task");
+            final String name = "Connection_" + AMQConnection.this._connectionNumber + "_task";
+            _logger.debug("Creating connection pooled thread '{}'", name);
+            Thread thread = new Thread(r, name);
             if (!thread.isDaemon())
             {
                 thread.setDaemon(true);
@@ -1125,7 +1127,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         close(DEFAULT_CLOSE_TIMEOUT);
     }
 
-    public void close(long timeout) throws JMSException
+    private void close(long timeout) throws JMSException
     {
         boolean closed;
 
@@ -1134,19 +1136,26 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
             closed = setClosed();
         }
 
-        if (!closed)
+        try
         {
-            List<AMQSession> sessions = new ArrayList<>(_sessions.values());
+            if (!closed)
+            {
+                List<AMQSession> sessions = new ArrayList<>(_sessions.values());
 
-            setClosing(true);
-            try
-            {
-                doClose(sessions, timeout);
+                setClosing(true);
+                try
+                {
+                    doClose(sessions, timeout);
+                }
+                finally
+                {
+                    setClosing(false);
+                }
             }
-            finally
-            {
-                setClosing(false);
-            }
+        }
+        finally
+        {
+            shutdownTaskPool();
         }
     }
 
@@ -1171,14 +1180,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
             {
                 try
                 {
-                    try
-                    {
-                        closeAllSessions(null, timeout);
-                    }
-                    finally
-                    {
-                        shutdownTaskPool();
-                    }
+                    closeAllSessions(null, timeout);
                 }
                 catch (JMSException e)
                 {
