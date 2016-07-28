@@ -301,10 +301,10 @@ public class ConnectionTest extends QpidBrokerTestCase
         setTestSystemProperty(ClientProperties.QPID_VERIFY_CLIENT_ID, "true");
 
         BrokerDetails broker = getBroker();
+        Connection con = new AMQConnection(broker.toString(), "guest", "guest",
+                                           "client_id", "test");
         try
         {
-            Connection con = new AMQConnection(broker.toString(), "guest", "guest",
-                                        "client_id", "test");
 
             Connection con2 = new AMQConnection(broker.toString(), "guest", "guest",
                                         "client_id", "test");
@@ -316,6 +316,13 @@ public class ConnectionTest extends QpidBrokerTestCase
         {
             assertTrue("Incorrect exception thrown: " + e.getMessage(),
                        e.getMessage().contains("ClientID must be unique"));
+        }
+        finally
+        {
+            if (con != null)
+            {
+                con.close();
+            }
         }
     }
 
@@ -330,18 +337,31 @@ public class ConnectionTest extends QpidBrokerTestCase
         setTestSystemProperty(ClientProperties.QPID_VERIFY_CLIENT_ID, "true");
 
         BrokerDetails broker = getBroker();
+        Connection con = null;
+        Connection con2 = null;
         try
         {
-            Connection con = new AMQConnection(broker.toString(), "guest", "guest",
+            con = new AMQConnection(broker.toString(), "guest", "guest",
                                         "client_id", "test");
 
-            Connection con2 = new AMQConnection(broker.toString(), "admin", "admin",
+            con2 = new AMQConnection(broker.toString(), "admin", "admin",
                                         "client_id", "test");
         }
         catch (Exception e)
         {
             fail("Unexpected exception thrown, client id was not unique but usernames were different! "
                  + e.getMessage());
+        }
+        finally
+        {
+            if (con != null)
+            {
+                con.close();
+            }
+            if (con2 != null)
+            {
+                con2.close();
+            }
         }
     }
 
