@@ -30,8 +30,8 @@
     </parent>
 
     <artifactId>qpid-java-doc-jms-client-0-8</artifactId>
-    <name>Qpid Java Jms Client 0-8 Docbook</name>
-    <description>Qpid Java Jms Client 0-8 Documentation</description>
+    <name>Apache Qpid JMS Client for AMQP 0-8, 0-9 and 0-9-1 Docbook</name>
+    <description>Apache Qpid JMS client for AMQP 0-8, 0-9 and 0-9-1 Documentation</description>
 
     <profiles>
         <profile>

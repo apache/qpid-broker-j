@@ -18,9 +18,9 @@
 # under the License.
 #
 
-echo "Remove existing java broker keystore"
+echo "Remove existing keystore for Apache Qpid Broker for Java "
 rm java_broker_keystore.jks
-echo "Re-create java broker keystore by importing RootCA certificate"
+echo "Re-create keystore for Apache Qpid Broker for Java  by importing RootCA certificate"
 keytool -import -v -keystore java_broker_keystore.jks -storepass password -alias RootCA -file CA_db/rootca.crt 
 echo "Generate certificate key 'java-broker'"
 keytool -genkey -alias java-broker -keyalg RSA -sigalg SHA1withRSA -validity 720 -keystore java_broker_keystore.jks -storepass password -dname "CN=localhost, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown, C=Unknown"

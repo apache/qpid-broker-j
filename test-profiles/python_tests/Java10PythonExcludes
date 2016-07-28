@@ -20,10 +20,10 @@
 // QPID-7181 Causes a Broker crash
 qpid_tests.broker_1_0.selector.SelectorTests.test_special_fields
 
-// Java Broker currently fails to select messages matching JMSDestination = 'a'
+// Broker for Java currently fails to select messages matching JMSDestination = 'a'
 qpid_tests.broker_1_0.selector.SelectorTests.test_jms_header_names
 
-// Java Broker currently rejects the transfer. Don't think x-amqp-to is implemented.
+// Broker for Java currently rejects the transfer. Don't think x-amqp-to is implemented.
 qpid_tests.broker_1_0.general.GeneralTests.test_anonymous_relay
 
 

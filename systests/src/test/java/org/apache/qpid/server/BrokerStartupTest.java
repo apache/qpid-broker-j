@@ -29,7 +29,7 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 /**
- * Series of tests to validate the external Java broker starts up as expected.
+ * Series of tests to validate the external Apache Qpid Broker for Java starts up as expected.
  */
 public class BrokerStartupTest extends AbstractTestLogging
 {

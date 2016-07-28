@@ -21,13 +21,13 @@
 -->
 
 <book xmlns="http://docbook.org/ns/docbook" version="5.0">
-  <title>Qpid AMQP 0-10 JMS Client</title>
+  <title>Apache Qpid JMS Client for AMQP 0-10</title>
 
     <chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-10-Example">
       <title>HelloWorld Example</title>
 
       <para>The following program shows how to send and receive a
-      message using the Qpid AMQP 0-10 JMS client. JMS programs typically use
+      message using the Apache Qpid JMS client for AMQP 0-10 . JMS programs typically use
       JNDI to obtain connection factory and destination objects which
       the application needs. In this way the configuration is kept
       separate from the application code itself.</para>
@@ -38,7 +38,7 @@
       destination from the JNDI context. Then we create a producer and
       a consumer, send a message with the producer and receive it with
       the consumer. This code should be straightforward for anyone
-      familiar with Java JMS.</para>
+      familiar with JMS.</para>
 
       <example>
 	<title>"Hello world!" in Java</title>
@@ -173,11 +173,11 @@ destination.topicExchange = amq.topic <co xml:id="hello-properties-destination" 
 
 
     <chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-10-Configuring">
-      <title>Configuring the JMS Client</title>
+      <title>Configuring the Client</title>
 
     <section xml:id="JMS-Client-0-10-Configuring-Overview">
      <title>Overview</title>
-      <para>This chapter covers various configuration details for the Qpid AMQP 0-10 JMS client, from the basics of setting up the client
+      <para>This chapter covers various configuration details for the Apache Qpid JMS Client for AMQP 0-10, from the basics of setting up the client
       using JNDI in <xref linkend="JMS-Client-0-10-Configuring-JNDI"/>, to the various configuration options avilable to
       customize it's behaviour at different levels of granualarity, e.g:</para>
 
@@ -220,7 +220,7 @@ destination.topicExchange = amq.topic <co xml:id="hello-properties-destination" 
       <section>
         <title>Properties File Format</title>
       <para>
-	Apache Qpid defines JNDI properties that can be used to specify JMS Connections and Destinations. Here is a typical JNDI properties file:
+	The Client defines JNDI properties that can be used to specify JMS Connections and Destinations. Here is a typical JNDI properties file:
       </para>
 
       <example>
@@ -293,7 +293,7 @@ destination.topicExchange = amq.topic</programlisting>
 		    address string.
 
 		    <footnote><para>Binding URLs, which were used in
-		    earlier versions of the Qpid Java JMS client, can
+		    earlier versions of the Client, can
 		    still be used instead of address
 		    strings.</para></footnote>
 		  </para>
@@ -2127,8 +2127,8 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 		  <entry>
               The delay (in milliseconds) between the time a message is sent by a MessageProducer, and
 			  the earliest time it becomes visible to consumers on any queue onto which it has been placed. Note that
-			  this value only has an affect on brokers which support the feature (currently only the Qpid Java
-			  Broker), and only on queues where delivery delay has been enabled.
+			  this value only has an affect on brokers which support the feature (currently only the Apache Qpid
+			  Broker for Java), and only on queues where delivery delay has been enabled.
 		  </entry>
 	    </row>
 		  </tbody>
@@ -2269,7 +2269,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
     <chapter xml:id="JMS-Client-0-10-Miscellaneous">
      <title>Miscellaneous</title>
      <section xml:id="JMS-Client-0-10-Miscellaneous-Message-Properties">
-      <title>Java JMS Message Properties</title>
+      <title>JMS Message Properties</title>
 
       <para>The following table shows how Qpid Messaging API message
       properties are mapped to AMQP 0-10 message properties and
@@ -2281,11 +2281,11 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
       <varname>delivery-properties</varname> struct.</para>
 
       <table>
-        <title>Java JMS Mapping to AMQP 0-10 Message Properties</title>
+        <title>JMS Mapping to AMQP 0-10 Message Properties</title>
         <tgroup cols="2">
           <thead>
 	    <row>
-	      <entry>Java JMS Message Property</entry>
+	      <entry>JMS Message Property</entry>
 	      <entry>AMQP 0-10 Property<footnote><para>In these entries, <literal>mp</literal> refers to an AMQP message property, and <literal>dp</literal> refers to an AMQP delivery property.</para></footnote></entry>
 
 	    </row>
@@ -2295,7 +2295,7 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
 	      <entry>JMSMessageID</entry><entry>mp.message_id</entry>
 	    </row>
 	    <row>
-	      <entry>qpid.subject<footnote><para>This is a custom JMS property, set automatically by the Java JMS client implementation.</para></footnote></entry><entry>mp.application_headers["qpid.subject"]</entry>
+	      <entry>qpid.subject<footnote><para>This is a custom JMS property, set automatically by the JMS client implementation.</para></footnote></entry><entry>mp.application_headers["qpid.subject"]</entry>
 	    </row>
 	    <row>
 	      <entry>JMSXUserID</entry><entry>mp.user_id</entry>
@@ -2333,10 +2333,10 @@ spout - -content "$(cat rdu.xml | sed -e 's/70/45/')" xml/weather
     <section xml:id="JMS-Client-0-10-Miscellaneous-MapMessages">
       <title>JMS MapMessage Types</title>
 
-      <para>Qpid supports the Java JMS <classname>MapMessage</classname> interface, which provides support for maps in messages. The following code shows how to send a <classname>MapMessage</classname> in Java JMS.</para>
+      <para>Qpid supports the JMS <classname>MapMessage</classname> interface, which provides support for maps in messages. The following code shows how to send a <classname>MapMessage</classname> in JMS.</para>
 
       <example>
-	<title>Sending a Java JMS MapMessage</title>
+	<title>Sending a JMS MapMessage</title>
 	<programlisting>
 	import java.util.ArrayList;
 	import java.util.HashMap;

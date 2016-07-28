@@ -526,7 +526,7 @@ public class SSLTest extends QpidBrokerTestCase
     }
     private boolean shouldPerformTest()
     {
-        // We run the SSL tests on all the Java broker profiles
+        // We run the SSL tests on all profiles for the Apache Qpid Broker for Java
         if(isJavaBroker())
         {
             setTestClientSystemProperty(PROFILE_USE_SSL, "true");

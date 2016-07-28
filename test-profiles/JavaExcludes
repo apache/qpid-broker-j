@@ -20,7 +20,7 @@
 // QPID-1823: this takes ages to run
 org.apache.qpid.client.SessionCreateTest#*
 
-//QPID-2845: The queue policy types used by the C++ broker are not currently supported by the Java broker
+//QPID-2845: The queue policy types used by the C++ broker are not currently supported by the Apache Qpid Broker for Java
 org.apache.qpid.test.client.queue.QueuePolicyTest#testRingPolicy
 org.apache.qpid.test.client.queue.QueuePolicyTest#testRejectPolicy
 

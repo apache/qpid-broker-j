@@ -25,7 +25,7 @@
   </parent>
 
   <artifactId>qpid-jca</artifactId>
-  <name>Qpid JCA</name>
+  <name>Apache Qpid JCA</name>
   <description>J2EE Connector Architecture code</description>
 
   <dependencies>

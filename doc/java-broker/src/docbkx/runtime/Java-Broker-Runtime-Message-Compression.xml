@@ -22,7 +22,7 @@
 
 <section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Runtime-Message-Compression">
  <title>Message Compression</title>
- <para>The Java Broker supports<footnote><para>Message compression is not yet supported for the 1.0
+ <para>The Apache Qpid Broker for Java supports<footnote><para>Message compression is not yet supported for the 1.0
     protocol.</para></footnote> message compression. This feature works in co-operation with Qpid
   Clients implementing the same feature.</para>
  <para>Once the feature is enabled (using Broker context variable

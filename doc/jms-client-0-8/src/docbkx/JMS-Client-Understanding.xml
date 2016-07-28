@@ -21,16 +21,16 @@
 -->
 
 <chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-8-Client-Understanding">
-  <title>Understanding the Qpid JMS client</title>
+  <title>Understanding the Client</title>
   <section xml:id="JMS-Client-0-8-Client-Understanding-Overview">
     <title>Overview</title>
-    <para>The Qpid JMS client provides a JMS 1.1 compliant implementation. As such, the primary
+    <para>The Client provides a JMS 1.1 compliant implementation. As such, the primary
       source of documentation is the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJmsSpec}">JMS specification</link> and the
         <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}/javax/jms/package-summary.html">JMS javadocs</link>. This
       documentation assumes the reader has familiarity with these resources.</para>
-    <para>The remainder of this section describes how the Qpid JMS client behaves and the effect(s)
+    <para>The remainder of this section describes how the Client behaves and the effect(s)
       making JMS method calls will have on the Broker. </para>
-    <para>There areas where the Qpid JMS client provides features beyond those required for JMS
+    <para>There areas where the Client provides features beyond those required for JMS
       compliance. These are described in the sections that follow.</para>
     <para>These sections are also used to bring out differences that may surprise those moving from
       JMS implementations provided by other vendors.</para>
@@ -49,12 +49,12 @@
       allows an application to create a <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}javax/jms/Connection.html">Connection</link>.</para>
     <para>The application obtains the ConnectionFactory from an <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}javax/naming/InitialContext.html">InitialContext</link>. The
       InitialContext is itself obtained from an InitialContextFactory. </para>
-    <para>The Qpid JMS client provides a single implementation of the InitialContextFactory in class
+    <para>The Client provides a single implementation of the InitialContextFactory in class
         <literal>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</literal>. This
       implementation is backed by a <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}java/util/Properties.html">Properties</link> object which can of course be loaded from an external properties file,
       or created programatically.</para>
     <para>The examples in the previous chapter illustrated the Java code required to <link linkend="JMS-Client-0-8-Examples-PTP">create the InitialContext</link> and an <link linkend="JMS-Client-0-8-Examples-PTP-PropertiesFile">example properties file</link>.</para>
-    <para>The Qpid JMS client also provides an alternate connection factory implementation providing a
+    <para>The Client also provides an alternate connection factory implementation providing a
       connection pool. This can be useful when utilsing frameworks such as Spring.
       <xref linkend="JMS-Client-0-8-Appendix-PooledConnecytionFactory"/>.</para>
     <figure>
@@ -65,7 +65,7 @@
         </imageobject>
       </mediaobject>
     </figure>
-    <para>Note that the Qpid Broker does not present a JNDI interface to the application.</para>
+    <para>Note that the Apache Qpid Broker for Java does not present a JNDI interface to the application.</para>
   </section>
   <section xml:id="JMS-Client-0-8-Client-Understanding-Connection">
     <title>Connection</title>
@@ -132,7 +132,7 @@ amqp://username:password@clientid/test
     </section>
     <section xml:id="JMS-Client-0-8-Client-Understanding-Connection-Heartbeating">
       <title>Heartbeating</title>
-      <para>Qpid connections support heartbeating. When enabled, the Qpid JMS client and Broker
+      <para>Qpid connections support heartbeating. When enabled, the Client and Broker
         exchange a heartbeat during periods of inactivity. This allows both peers to discover if the
         TCP/IP connection becomes inoperable in a timely manner.</para>
       <para>This feature is sometimes useful in applications that must traverse firewalls as the
@@ -156,7 +156,7 @@ amqp://guest:guest@clientid/?brokerlist='localhost:5672?heartbeat='5''
     </section>
     <section xml:id="JMS-Client-0-8-Client-Understanding-Connection-SSL">
       <title>SSL</title>
-      <para>The Qpid JMS client supports connections encrypted using Secure Socket Layer (SSL) and
+      <para>The Client supports connections encrypted using Secure Socket Layer (SSL) and
         SSL-Client Authentication. SSL is configured using Connection URL. To use SSL, SSL must be
         be configured on the Broker.</para>
       <para>Some example Connection URLs using SSL follow:</para>
@@ -318,7 +318,7 @@ amqp://guest:guest@clientid/?brokerlist='localhost:5671?client_cert_path='/path/
     </section>
     <section xml:id="JMS-Client-0-8-Client-Understanding-Session-CreateQueue">
       <title>CreateQueue</title>
-      <para>In the Qpid JMS client, <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}javax/jms/Session.html#createQueue(java.lang.String)">Session#createQueue()</link> accepts either a queue name, or a Binding URL. If only name
+      <para>In the Client, <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}javax/jms/Session.html#createQueue(java.lang.String)">Session#createQueue()</link> accepts either a queue name, or a Binding URL. If only name
         is specified the destination will be resolved into binding URL:
         direct://amq.direct//&lt;queue name&gt;?routingkey=&apos;&lt;queue name&gt;&apos;&amp;durable=&apos;true&apos;. </para>
       <para>Calling Session#createQueue() has no effect on the Broker.</para>
@@ -327,7 +327,7 @@ amqp://guest:guest@clientid/?brokerlist='localhost:5671?client_cert_path='/path/
     </section>
     <section xml:id="JMS-Client-0-8-Client-Understanding-Session-CreateTopic">
       <title>CreateTopic</title>
-      <para>In the Qpid JMS client, <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}javax/jms/Session.html#createTopic(java.lang.String)">Session#createTopic()</link> accepts either a topic name, or a Binding URL. If only name
+      <para>In the Client, <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}javax/jms/Session.html#createTopic(java.lang.String)">Session#createTopic()</link> accepts either a topic name, or a Binding URL. If only name
         is specified the destination will be resolved into binding URL: topic://amq.topic//&lt;topic
         name&gt;?routingkey=&apos;&lt;topic name&gt;&apos;.</para>
       <para>Calling Session#createTopic() has no effect on the Broker.</para>
@@ -343,11 +343,11 @@ amqp://guest:guest@clientid/?brokerlist='localhost:5671?client_cert_path='/path/
       and a <emphasis>routing key</emphasis> included with each message.</para>
     <para>To understand how this mechanism is used to deliver messages to queues and topics, see
         <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJavaBrokerBook}Java-Broker-Concepts-Exchanges.html">Exchanges</link>
-      within the Java Broker book.</para>
+      within the Apache Qpid Broker for Java book.</para>
     <para>It is important to understand that when synchronous publish is not exlicitly enabled,
       <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}javax/jms/MessageProducer.html#send(javax.jms.Message)">MessageProducer#send()</link> is <emphasis>asynchronous</emphasis> in nature. When #send()
       returns to the application, the application cannot be certain if the Broker has received the
-      message. The Qpid JMS client may not have yet started to send the message, the message could
+      message. The Client may not have yet started to send the message, the message could
       residing in a TCP/IP buffer, or the messages could be in some intermediate buffer within the
       Broker. If the application requires certainty the message has been received by the Broker, a
         <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}javax/jms/Session.html#SESSION_TRANSACTED">transactional
@@ -387,7 +387,7 @@ amqp://guest:guest@clientid/?brokerlist='localhost:5671?client_cert_path='/path/
         requires support for the corresponding feature by the Broker.</para>
       <para>To enable or disable from the client, use the Connection URL option <link linkend="JMS-Client-0-8-Connection-URL-ConnectionOptions-CloseWhenNoRoute"><literal>closeWhenNoRoute</literal></link>.</para>
       <para>See <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJavaBrokerBook}Java-Broker-Runtime-Close-Connection-When-No-Route.html">
-          Closing client connections on unroutable mandatory messages</link> within the Java Broker
+          Closing client connections on unroutable mandatory messages</link> within the Apache Qpid Broker for Java
         book for full details of the functioning of this feature.</para>
     </section>
     <section xml:id="JMS-Client-0-8-Client-Understanding-MessageProducer-ImmediateMessage">
@@ -414,7 +414,7 @@ amqp://guest:guest@clientid/?brokerlist='localhost:5671?client_cert_path='/path/
         feature requires support for the corresponding feature by the Broker.</para>
       <para>To control the timeout use System property <link linkend="JMS-Client-0-8-System-Properties-FlowControlWaitFailure"><literal>qpid.flow_control_wait_failure</literal></link>. To control the frequency with
         which warnings are logged whilst a Session is blocked, use System property <link linkend="JMS-Client-0-8-System-Properties-FlowControlWaitNotifyPeriod"><literal>qpid.flow_control_wait_notify_period</literal></link></para>
-      <para>See <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJavaBrokerBook}Java-Broker-Runtime-Disk-Space-Management.html#Qpid-Producer-Flow-Control"> Producer Flow Control</link> within the Java Broker book for full details of the
+      <para>See <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJavaBrokerBook}Java-Broker-Runtime-Disk-Space-Management.html#Qpid-Producer-Flow-Control"> Producer Flow Control</link> within the Apache Qpid Broker for Java book for full details of the
         functioning of this feature.</para>
     </section>
   </section>
@@ -447,7 +447,7 @@ amqp://guest:guest@clientid/?brokerlist='localhost:5671?client_cert_path='/path/
     </section>
     <section xml:id="JMS-Client-0-8-Client-Understanding-MessageConsumer-TopicSubscriptions">
       <title>Topic Subscriptions</title>
-      <para>The Qpid JMS client implements each subscription to a Topic as separate queue on the
+      <para>The Client implements each subscription to a Topic as separate queue on the
         Broker. From the perspective of the JMS application this implementational detail is
         irrelevant: the application never needs to directly address these queues. However, these
         details are important when considering Management and Operational concerns.</para>
@@ -480,7 +480,7 @@ amqp://guest:guest@clientid/?brokerlist='localhost:5671?client_cert_path='/path/
       <para>When using this feature, the application must either set system property <link linkend="JMS-Client-0-8-System-Properties-RejectBehaviour">qpid.reject.behaviour</link> or
         the Binding URL option <link linkend="JMS-Client-0-8-Binding-URL-Options-RejectBehaviour"><literal>rejectbehaviour</literal></link> to the value
         <literal>server</literal>.</para>
-      <para>See <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJavaBrokerBook}Java-Broker-Runtime-Handling-Undeliverable-Messages.html#Java-Broker-Runtime-Handling-Undeliverable-Messages-Maximum-Delivery-Count"> Handling Undeliverable Messages</link> within the Java Broker book for full details of
+      <para>See <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJavaBrokerBook}Java-Broker-Runtime-Handling-Undeliverable-Messages.html#Java-Broker-Runtime-Handling-Undeliverable-Messages-Maximum-Delivery-Count"> Handling Undeliverable Messages</link> within the Apache Qpid Broker for Java book for full details of
         the functioning of this feature.</para>
       <note>
         <para>The optional JMS message header <literal>JMSXDeliveryCount</literal> is
@@ -490,7 +490,7 @@ amqp://guest:guest@clientid/?brokerlist='localhost:5671?client_cert_path='/path/
   </section>
   <section xml:id="JMS-Client-0-8-Client-Understanding-Destinations">
     <title>Destinations</title>
-    <para>A Destination is either a Queue or Topic. In the Qpid JMS client a Destination
+    <para>A Destination is either a Queue or Topic. In the Client a Destination
       encapsulates a Binding URL. In simple terms, the Binding URL comprises of an exchange, queue
       and a routing key. Binding URLs are described fully by <xref linkend="JMS-Client-0-8-Binding-URL"/>. </para>
     <para>In many cases, applications do not need to deal directly with Binding URLs, instead they

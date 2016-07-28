@@ -51,7 +51,7 @@ the configuration properties from the ResourceAdapter or provide specific proper
 the defaults.
 
 While some of the properties from the three components are specific to the JCA adapter, a majority of the
-properties directly correspond the the Qpid JMS client. As such, familiarity with the Qpid JMS Client is strongly
+properties directly correspond the the Apache Qpid JMS client for AMQP 0-9-1/0-10. As such, familiarity with it is strongly
 encouraged. Similarly, familiarity with the JCA 1.5 specification is encouraged though not strictly required.
 
 The ResourceAdapter JavaBean
@@ -201,7 +201,8 @@ The QpidQueue and QpidTopic AdminObjects allow binding JMS destintations into th
 objects support one property:
 
 DestinationAddress
-    The address string of the destination. Please see the Qpid JMS client documentation for valid values.
+    The address string of the destination. For valid values please see documentation for
+    the Apache Qpid JMS client for AMQP 0-9-1/0-10.
 
 Example:
    DestinationAddress=hello.Queue;{create:always, node:{type:queue, x-declare:{auto-delete:true}}}
@@ -218,7 +219,8 @@ this sort is used by Swing or other non-managed clients not requiring JCA. The Q
 provides one property
 
 ConnectionURL
-    This is the url used to configure the connection factory. Please see the Qpid JMS client documentation for
+    This is the url used to configure the connection factory. Please see documentation for
+    the Apache Qpid JMS client for AMQP 0-9-1/0-10.
     The QpidConnectionFactoryProxy allows for a non-JCA ConnectionFactory to be bound into the JNDI tree. This
     ConnectionFactory can in turn be used outside of the application server. Typically a ConnectionFactory of
     this sort is used by Java Swing or other non-managed clients not requiring JCA. One one property is

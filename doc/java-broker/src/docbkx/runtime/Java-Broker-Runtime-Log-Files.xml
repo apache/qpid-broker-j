@@ -22,7 +22,7 @@
 
 <section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Runtime-Logging">
   <title>Logging</title>
-  <para>This section describes the flexible logging capabilities of the Java Broker.</para>
+  <para>This section describes the flexible logging capabilities of the Apache Qpid Broker for Java.</para>
   <para>
     <itemizedlist>
       <listitem>

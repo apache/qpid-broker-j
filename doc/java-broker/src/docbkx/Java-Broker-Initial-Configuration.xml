@@ -65,7 +65,7 @@
             </itemizedlist>
         </para>
 
-        <para> Broker startup involves two configuration related items, the 'Initial Configuration'
+        <para>Broker startup involves two configuration related items, the 'Initial Configuration'
             and the Configuration Store. When the broker is started, if a Configuration Store does
             not exist at the current <link linkend="Java-Broker-Initial-Configuration-Location">store location</link> then one will be initialised with the current <link linkend="Java-Broker-Initial-Configuration-Initial-Config-Location">'Initial
                 Configuration'</link>. Unless otherwise requested to <link linkend="Java-Broker-Initial-Configuration-Location">overwrite the configuration

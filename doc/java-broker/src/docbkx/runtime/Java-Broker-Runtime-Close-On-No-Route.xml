@@ -30,7 +30,7 @@
         in either message being bounced back (if it is mandatory or immediate) or discarded on broker side otherwise.
     </para>
     <para>
-        When a 'mandatory' message is returned back, the Qpid JMS client conveys this by delivering
+        When a 'mandatory' message is returned back, the Apache Qpid JMS client for AMQP 0-9-1/0-10 conveys this by delivering
         an <emphasis>AMQNoRouteException</emphasis> through the configured ExceptionListener on the Connection.
         This does not cause channel or connection closure, however it requires a special exception handling
         on client side in order to deal with <emphasis>AMQNoRouteExceptions</emphasis>.
@@ -39,7 +39,7 @@
     </para>
     <para>
         In order to simplify application handling of scenarios where 'mandatory' messages
-        are being sent to queues which do not actually exist, the Java Broker can be configured such that
+        are being sent to queues which do not actually exist, the Apache Qpid Broker for Java can be configured such that
         it will respond to this situation by closing the connection
         rather than returning the unroutable message to the client as it normally should.
         From the application perspective, this will result in failure of synchronous operations in progress such as a session commit() call.
@@ -47,7 +47,7 @@
     <note>
         <para>This feature affects only transacted sessions.</para>
         <para>
-            Qpid JMS client sends 'mandatory' messages when using Queue destinations
+            The Apache Qpid JMS client for AMQP 0-9-1/0-10 sends 'mandatory' messages when using Queue destinations
             and 'non-mandatory' messages when using Topic destinations.
         </para>
     </note>

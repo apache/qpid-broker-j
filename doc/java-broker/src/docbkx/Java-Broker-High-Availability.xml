@@ -39,9 +39,9 @@
   </section>
 
   <section xml:id="Java-Broker-High-Availability-OverviewOfHA">
-    <title>Overview of HA within the Java Broker</title>
-    <para>The Java Broker provides a HA implementation offering an <emphasis role="bold">Active/Passive</emphasis> mode of operation. When using HA, many instances of the Java
-      Broker work together to form an high availability group of two or more nodes.</para>
+    <title>High Availability Overview</title>
+    <para>The Broker provides a HA implementation offering an <emphasis role="bold">Active/Passive</emphasis> mode of operation.
+      When using HA, many instances of the Broker work together to form an high availability group of two or more nodes.</para>
     <para>The remainder of this section now talks about the specifics of how HA is achieved in terms
       of the <link linkend="Java-Broker-Concepts">concepts</link> introduced earlier in this
       book.</para>
@@ -66,7 +66,7 @@
       master currently resides. When in replica role, the node sole responsibility is to consume a
       replication stream in order that it remains up to date with the master.</para>
     <para>Messaging clients discover the active virtualhost.This can be achieved using a static
-      technique (for instance, a failover url (a feature of a Qpid Java Client)), or a dynamic one
+      technique (for instance, a failover url (a feature of a Apache Qpid JMS Client for AMQP 0-9-1/0-10)), or a dynamic one
       utilising some kind of proxy or virtual IP (VIP).</para>
     <para>The figure that follows illustrates a group formed of three virtualhost nodes from three
       separate Broker instances. A client is connected to the virtualhost node that is in the master
@@ -87,8 +87,8 @@
       this leverages the HA capabilities of the Berkeley DB JE edition. BDB JE is an <link linkend="Java-Broker-Miscellaneous-Installing-Oracle-BDB-JE">optional dependency</link> of
       the Broker.</para>
     <note>
-      <para>The Java Broker HA solution is incompatible with the HA solution offered by the CPP
-        Broker. It is not possible to co-locate Java and CPP Brokers within the same group.</para>
+      <para>The HA solution from the Apache Qpid Broker for Java is incompatible with the HA solution offered by the CPP
+        Broker. It is not possible to co-locate Broker for Java and CPP Brokers within the same group.</para>
     </note>
   </section>
   <section xml:id="Java-Broker-High-Availability-CreatingGroup">

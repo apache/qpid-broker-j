@@ -40,13 +40,13 @@ org.apache.qpid.test.unit.close.JavaServerCloseRaceConditionTest#*
 //QPID-1864: rollback with subscriptions does not work in 0-10 yet
 org.apache.qpid.test.client.RollbackOrderTest#testOrderingAfterRollbackOnMessage
 
-//QPID-3422: test fails because ring queue is not implemented on java broker
+//QPID-3422: test fails because ring queue is not implemented on Broker for Java
 org.apache.qpid.test.client.destination.AddressBasedDestinationTest#testBrowseMode
 
 // QPID-3133: On 0-10, the exception listener is currently not invoked when reconnection fails to occurs. 
 org.apache.qpid.server.failover.FailoverMethodTest#*
 
-// QPID-3392: the Java broker does not yet implement exchange creation arguments
+// QPID-3392: the Broker for Java does not yet implement exchange creation arguments
 org.apache.qpid.test.client.destination.AddressBasedDestinationTest#testCreateExchangeWithArgs
 org.apache.qpid.test.client.destination.AddressBasedDestinationTest#testSessionCreateTopicWithExchangeArgs
 
@@ -65,7 +65,7 @@ org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testFlowContro
 // QPID-3604: Immediate Prefetch no longer supported by 0-10
 org.apache.qpid.client.AsynchMessageListenerTest#testImmediatePrefetchWithMessageListener
 
-// Java 0-10 client does not support re-binding the queue to the same exchange
+// JMS 0-10 client does not support re-binding the queue to the same exchange
 org.apache.qpid.server.queue.QueueBindTest#testQueueCanBeReboundOnTopicExchange
 
 org.apache.qpid.test.unit.client.AMQSessionTest#testQueueDepthForQueueThatDoesNotExistLegacyBehaviour_08_091
@@ -78,7 +78,7 @@ org.apache.qpid.client.SyncPublishTest#*
 org.apache.qpid.client.failover.FailoverBehaviourTest#testConnectionCloseInterruptsFailover
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testConnectionCloseInterruptsFailover
 
-// This test does not make sense because on 0-10 maxFrameSize is 64kB and the Java Broker sets the networkBufferSize to a minimum of 64kB.
+// This test does not make sense because on 0-10 maxFrameSize is 64kB and the Broker for Java sets the networkBufferSize to a minimum of 64kB.
 org.apache.qpid.transport.MaxFrameSizeTest#testTooLargeFrameSize
 
 org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_08091_HeadersFillContentHeaderFrame

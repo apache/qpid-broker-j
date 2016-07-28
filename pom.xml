@@ -29,9 +29,9 @@
   <version>6.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>Qpid Java Build</name>
+  <name>Apache Qpid for Java</name>
   <url>http://qpid.apache.org/components</url>
-  <description>Apache Qpid Java Components</description>
+  <description>Apache Qpid for Java</description>
   <inceptionYear>2006</inceptionYear>
 
   <issueManagement>

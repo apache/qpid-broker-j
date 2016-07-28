@@ -30,7 +30,7 @@ attrvalue = None
 try:
   import argparse
 
-  parser = argparse.ArgumentParser(description='Adds (or updates) a attribute name/value pair of an existing object within a Java Broker config.json')
+  parser = argparse.ArgumentParser(description='Adds (or updates) a attribute name/value pair of an existing object within an Apache Qpid Broker for Java config.json')
   parser.add_argument("objectname", help='Name of the object e.g. httpManagement')
   parser.add_argument("attrname", help='Name of the attribute to add or update e.g. httpBasicAuthenticationEnabled')
   parser.add_argument("attrvalue", help='Value of the attribute e.g. true')

@@ -44,9 +44,9 @@ From: 'QOS.ch' (http://www.qos.ch)
     License: MIT License  (http://www.opensource.org/licenses/mit-license.php)
 
 From: 'The Apache Software Foundation' (http://www.apache.org/)
-  - Qpid AMQP 0-x JMS Client (http://qpid.apache.org/components/qpid-client) org.apache.qpid:qpid-client:jar
+  - Apache Qpid JMS Client for AMQP 0-9-1/0-10 (http://qpid.apache.org/components/qpid-client) org.apache.qpid:qpid-client:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid Common (http://qpid.apache.org/components/management/qpid-common) org.apache.qpid:qpid-common:jar
+  - Apache Qpid Common (http://qpid.apache.org/components/management/qpid-common) org.apache.qpid:qpid-common:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 

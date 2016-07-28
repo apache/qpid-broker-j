@@ -21,7 +21,7 @@
 -->
 
 <book xmlns="http://docbook.org/ns/docbook" version="5.0">
-    <title>Qpid JMS Client for AMQP protocols 0-8, 0-9 and 0-9-1</title>
+    <title>Apache Qpid JMS Client for AMQP protocols 0-8, 0-9 and 0-9-1</title>
 
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="JMS-Client-Introduction.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="JMS-Client-Document-Scope-And-Intended-Audience.xml"/>

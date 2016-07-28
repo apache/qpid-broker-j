@@ -23,8 +23,8 @@
 <section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Security-Authentication-Providers">
   <title>Authentication Providers</title>
 
-  <para> In order to successfully establish a connection to the Java Broker, the connection must be
-    authenticated. The Java Broker supports a number of different authentication schemes, each with
+  <para> In order to successfully establish a connection to the Broker, the connection must be
+    authenticated. The Broker supports a number of different authentication schemes, each with
     its own "authentication provider". Any number of Authentication Providers can be configured on
     the Broker at the same time. </para>
 

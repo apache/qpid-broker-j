@@ -26,7 +26,7 @@
   </parent>
 
   <artifactId>qpid-broker-plugins-access-control</artifactId>
-  <name>Qpid Access Control Broker Plug-in</name>
+  <name>Apache Qpid Access Control Broker Plug-in</name>
   <description>Access Control broker plug-in</description>
 
   <properties>

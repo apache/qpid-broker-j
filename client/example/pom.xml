@@ -26,7 +26,7 @@
   </parent>
 
   <artifactId>qpid-client-examples</artifactId>
-  <name>Qpid AMQP 0-x JMS Client Examples</name>
+  <name>Apache Qpid Client for AMQP 0-9-1/0-10 Examples</name>
   <description>JMS client examples.</description>
 
   <dependencies>

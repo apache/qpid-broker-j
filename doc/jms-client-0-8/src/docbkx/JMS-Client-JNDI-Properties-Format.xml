@@ -23,7 +23,7 @@
 <chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-8-JNDI-Properties-Format">
   <title>JNDI Properties Format</title>
 
-  <para>The Qpid JMS Client comes with own JNDI context factory
+  <para>The Client comes with own JNDI context factory
       <literal>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</literal> which utilises a
     Java properties file for declaring the JMS administered objects: connection factories, queues,
     topics and destinations. It uses the following syntax:</para>

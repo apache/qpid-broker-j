@@ -24,7 +24,7 @@
   <title>REST API</title>
   <section xml:id="Java-Broker-Management-Channel-REST-API-Introduction">
     <title>Introduction</title>
-    <para>This section describes the REST API provided by the Java Broker. The REST API is intended
+    <para>This section describes the REST API provided by the Apache Qpid Broker for Java. The REST API is intended
       for use by developers who wish to automate the management or monitoring of the Qpid Broker. It
       is also very useful for adhoc monitoring on the command line using tools such as
         <literal>curl</literal>.</para>
@@ -44,7 +44,7 @@
   </section>
   <section xml:id="Java-Broker-Management-Channel-REST-API-APIDocs">
     <title>REST API documentation</title>
-    <para>REST API documentation is available on-line from any Java Broker at location
+    <para>REST API documentation is available on-line from any Broker at location
         <literal>/apidocs</literal>. It is also linked from the menu of the Web Management Console.
     </para>
   </section>
@@ -344,7 +344,7 @@ curl --user admin -X PUT  -d '{}' http://localhost:8080/api/latest/binding/&lt;v
 
   <section xml:id="Java-Broker-Management-Channel-REST-API-CORS">
     <title>Cross Origin Resource Sharing (CORS)</title>
-    <para> The Qpid Java broker supports Cross Origin Resource Sharing (CORS)
+    <para> The Broker supports Cross Origin Resource Sharing (CORS)
       to allow web management consoles other than the one embedded in the
       broker to use the REST API.  This feature must be enabled by configuring
       the CORS Allow Origins and related attributes on the

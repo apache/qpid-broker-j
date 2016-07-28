@@ -267,7 +267,7 @@ public class ClientProperties
      * behaviour.
      *
      * Setting this system property true restores the old behaviour.  It also avoids the isBound with a null exchange
-     * that causes an error in the Java Broker (0.28 and earlier).
+     * that causes an error in the Apache Qpid Broker for Java (0.28 and earlier).
      */
     public static final String QPID_USE_LEGACY_GETQUEUEDEPTH_BEHAVIOUR = "qpid.use_legacy_getqueuedepth_behavior";
 

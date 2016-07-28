@@ -22,11 +22,11 @@
 
 <chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Introduction">
   <title>Introduction</title>
-  <para>The Java Broker is a powerful open-source message broker that implements all versions of the
-      <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.amqp.org"> Advanced Message Queuing Protocol (AMQP)</link>. The Java
-    Broker is actually one of two message brokers provided by the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://qpid.apache.org">Apache Qpid project</link>: the Java Broker and the C++
+  <para>The Apache Qpid Broker for Java is a powerful open-source message broker that implements all versions of the
+      <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.amqp.org"> Advanced Message Queuing Protocol (AMQP)</link>. The Apache Qpid Broker for Java
+    is actually one of two message brokers provided by the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://qpid.apache.org">Apache Qpid project</link>: Broker for Java and the C++
     Broker.</para>
-  <para>This document relates to the Java Broker. The <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidCppBook}">C++ Broker is
+  <para>This document relates to the Apache Qpid Broker for Java. The <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidCppBook}">C++ Broker is
     described separately</link>.</para>
   <para><emphasis>Headline features</emphasis></para>
   <itemizedlist mark="circle">

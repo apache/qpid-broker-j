@@ -24,12 +24,12 @@
   <title>Getting the Client And Dependencies</title>
   <section xml:id="JMS-Client-0-8-JMS-Getting-And-Dependencies-Getting">
     <title>Getting the Client</title>
-    <para>The Qpid JMS client is available as a bundle or from ${qpidMavenRepoDesc}.</para>
-    <para>The bundle (a .tar.gz) includes the Qpid JMS client itself (formed by two JAR: qpid-client
+    <para>The Apache Qpid JMS client for AMQP 0-9-1/0-10 is available as a bundle or from ${qpidMavenRepoDesc}.</para>
+    <para>The bundle (a .tar.gz) includes the Client itself (formed by two JAR: qpid-client
       and qpid-common) together with slf4j-api, and geronimo-jms_1.1_spec. There is also a qpid-all
       JAR artifact that, for convenience, includes a manifest classpath that references the other
       JARs. The bundle is available from <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidDownloadUrl}">${qpidDownloadUrlDesc}</link>.</para>
-    <para>The Qpid JMS client is also available from ${qpidMavenRepoDesc}. Add the following
+    <para>The Client is also available from ${qpidMavenRepoDesc}. Add the following
       dependency:</para>
     <screen>
     &lt;dependency&gt;
@@ -42,7 +42,7 @@
   </section>
   <section xml:id="JMS-Client-0-8-JMS-Getting-And-Dependencies-Dependencies">
     <title>Dependencies</title>
-    <para>The Qpid JMS client has minimal set of external dependencies. </para>
+    <para>The Client has minimal set of external dependencies. </para>
     <para> It requires: <itemizedlist>
         <listitem>
           <para>JDK 1.7 or higher.</para>

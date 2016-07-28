@@ -463,7 +463,7 @@
     </title>
     <para>
       Here are some example ACLs illustrating common use cases.
-      In addition, note that the Java broker provides a complete example ACL file, located at etc/broker_example.acl.
+      In addition, note that the Broker provides a complete example ACL file, located at etc/broker_example.acl.
     </para>
     <section role="h4" xml:id="Java-Broker-Security-ACLs-WorkedExample1">
       <title>

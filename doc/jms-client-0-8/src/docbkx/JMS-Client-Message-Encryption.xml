@@ -33,9 +33,9 @@
     </para>
     <para>
         Neither JMS nor AMQP provide any defined mechanism for message encryption, however it is possible for any
-        application to build a message encryption scheme on top of a JMS API. For convenience the Qpid JMS client
+        application to build a message encryption scheme on top of a JMS API. For convenience the Client
         provides a built in mechanism for encryption and decrypting messages. This mechanism is currently only
-        implemented in the Qpid JMS client for AMQP 0-8/0-9/0-9-1/0-10.  If you use a different client you will be
+        implemented in the Client for AMQP 0-8/0-9/0-9-1/0-10. If you use a different client you will be
         unable to read encrypted messages.
     </para>
 
@@ -53,7 +53,7 @@
         </para>
         <para>
             In order to send an encrypted message it is necessary to know the Certificates of the intended recipients.
-            Certificates can be distributed either through out-of-band mechanisms, or the Qpid Java Broker can be used
+            Certificates can be distributed either through out-of-band mechanisms, or the Apache Qpid Broker for Java can be used
             to distribute them to clients.
         </para>
         <para>
@@ -83,7 +83,7 @@
             <programlisting>amqp://username:password@clientid/test?brokerlist='tcp://localhost:5672?encryption_trust_store='/home/qpid/certificates.jks'&amp;encryption_trust_store_password='password''</programlisting>
             <para>
                 Alternatively, where available, you can configure the broker to distribute certificates from a trust
-                store (this is currently only available in the Java Broker). In order to use this method, the broker
+                store (this is currently only available in the Apache Qpid Broker for Java). In order to use this method, the broker
                 details in the connection url must contain the correctly configured
                 <link linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionRemoteTrustStore">encryption_remote_trust_store</link>
                 option. Such a connection URL might look somthing like:

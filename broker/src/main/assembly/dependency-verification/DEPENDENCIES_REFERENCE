@@ -78,39 +78,39 @@ From: 'The Apache Software Foundation' (http://www.apache.org)
 From: 'The Apache Software Foundation' (http://www.apache.org/)
   - Commons CLI (http://commons.apache.org/cli/) commons-cli:commons-cli:jar:1.2
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid BDB Message Store (http://qpid.apache.org/components/qpid-bdbstore) org.apache.qpid:qpid-bdbstore:jar
+  - Apache Qpid BDB Message Store Broker Plug-in (http://qpid.apache.org/components/qpid-bdbstore) org.apache.qpid:qpid-bdbstore:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid Java Broker Core (http://qpid.apache.org/components/qpid-broker-core) org.apache.qpid:qpid-broker-core:jar
+  - Apache Qpid Broker Core (http://qpid.apache.org/components/qpid-broker-core) org.apache.qpid:qpid-broker-core:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid Access Control Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-access-control) org.apache.qpid:qpid-broker-plugins-access-control:jar
+  - Apache Qpid Access Control Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-access-control) org.apache.qpid:qpid-broker-plugins-access-control:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid AMQP 0-10 Protocol Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-0-10-protocol) org.apache.qpid:qpid-broker-plugins-amqp-0-10-protocol:jar
+  - Apache Qpid AMQP 0-10 Protocol Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-0-10-protocol) org.apache.qpid:qpid-broker-plugins-amqp-0-10-protocol:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid AMQP 0-8 Protocol Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-0-8-protocol) org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:jar
+  - Apache Qpid AMQP 0-8 Protocol Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-0-8-protocol) org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid AMQP 1-0 Protocol Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-1-0-protocol) org.apache.qpid:qpid-broker-plugins-amqp-1-0-protocol:jar
+  - Apache Qpid AMQP 1-0 Protocol Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-1-0-protocol) org.apache.qpid:qpid-broker-plugins-amqp-1-0-protocol:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid AMQP 0-10 to 1-0 Message Conversion Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-msg-conv-0-10-to-1-0) org.apache.qpid:qpid-broker-plugins-amqp-msg-conv-0-10-to-1-0:jar
+  - Apache Qpid AMQP 0-10 to 1-0 Message Conversion Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-msg-conv-0-10-to-1-0) org.apache.qpid:qpid-broker-plugins-amqp-msg-conv-0-10-to-1-0:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid AMQP 0-8 to 0-10 Message Conversion Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-msg-conv-0-8-to-0-10) org.apache.qpid:qpid-broker-plugins-amqp-msg-conv-0-8-to-0-10:jar
+  - Apache Qpid AMQP 0-8 to 0-10 Message Conversion Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-msg-conv-0-8-to-0-10) org.apache.qpid:qpid-broker-plugins-amqp-msg-conv-0-8-to-0-10:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid AMQP 0-8 to 1-0 Message Conversion Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-msg-conv-0-8-to-1-0) org.apache.qpid:qpid-broker-plugins-amqp-msg-conv-0-8-to-1-0:jar
+  - Apache Qpid AMQP 0-8 to 1-0 Message Conversion Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-amqp-msg-conv-0-8-to-1-0) org.apache.qpid:qpid-broker-plugins-amqp-msg-conv-0-8-to-1-0:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid Derby Message Store (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-derby-store) org.apache.qpid:qpid-broker-plugins-derby-store:jar
+  - Apache Qpid Derby Message Store Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-derby-store) org.apache.qpid:qpid-broker-plugins-derby-store:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid JDBC Message Store Connection Pooling Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-jdbc-provider-bone) org.apache.qpid:qpid-broker-plugins-jdbc-provider-bone:jar
+  - Apache Qpid JDBC Message Store Connection Pooling Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-jdbc-provider-bone) org.apache.qpid:qpid-broker-plugins-jdbc-provider-bone:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid JDBC Message Store Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-jdbc-store) org.apache.qpid:qpid-broker-plugins-jdbc-store:jar
+  - Apache Qpid JDBC Message Store Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-jdbc-store) org.apache.qpid:qpid-broker-plugins-jdbc-store:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid HTTP Management Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-management-http) org.apache.qpid:qpid-broker-plugins-management-http:jar
+  - Apache Qpid HTTP Management Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-management-http) org.apache.qpid:qpid-broker-plugins-management-http:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid Memory Message Store Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-memory-store) org.apache.qpid:qpid-broker-plugins-memory-store:jar
+  - Apache Qpid Memory Message Store Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-memory-store) org.apache.qpid:qpid-broker-plugins-memory-store:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid WebSocket Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-websocket) org.apache.qpid:qpid-broker-plugins-websocket:jar
+  - Apache Qpid WebSocket Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-websocket) org.apache.qpid:qpid-broker-plugins-websocket:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid Common (http://qpid.apache.org/components/management/qpid-common) org.apache.qpid:qpid-common:jar
+  - Apache Qpid Common (http://qpid.apache.org/components/management/qpid-common) org.apache.qpid:qpid-common:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid Management Common (http://qpid.apache.org/components/management/qpid-management-common) org.apache.qpid:qpid-management-common:jar
+  - Apache Qpid Management Common (http://qpid.apache.org/components/management/qpid-management-common) org.apache.qpid:qpid-management-common:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 From: 'The Dojo Foundation' (http://dojotoolkit.org/foundation)

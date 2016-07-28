@@ -26,7 +26,7 @@
   </parent>
 
   <artifactId>qpid-broker-plugins-derby-store</artifactId>
-  <name>Qpid Derby Message Store</name>
+  <name>Apache Qpid Derby Message Store Broker Plug-in</name>
   <description>Apache Derby DB message store broker plug-in</description>
 
   <dependencies>
