@@ -297,242 +297,249 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         this(new AMQConnectionURL(connection));
     }
 
-    /**
-     * TODO Some horrible stuff going on here with setting exceptions to be non-null to detect if an exception
-     * was thrown during the connection! Intention not clear. Use a flag anyway, not exceptions... Will fix soon.
-     */
     public AMQConnection(ConnectionURL connectionURL) throws QpidException
     {
-        if (connectionURL == null)
+        boolean success = false;
+        try
         {
-            throw new IllegalArgumentException("Connection must be specified");
-        }
-
-        if (_logger.isDebugEnabled())
-        {
-            _logger.debug("Connection(" + _connectionNumber + "):" + connectionURL);
-        }
-
-        // set this connection maxPrefetch
-        if (connectionURL.getOption(ConnectionURL.OPTIONS_MAXPREFETCH) != null)
-        {
-            _maxPrefetch = Integer.parseInt(connectionURL.getOption(ConnectionURL.OPTIONS_MAXPREFETCH));
-        }
-        else
-        {
-            // use the default value set for all connections
-            _maxPrefetch = Integer.parseInt(System.getProperties().getProperty(ClientProperties.MAX_PREFETCH_PROP_NAME,
-                    ClientProperties.MAX_PREFETCH_DEFAULT));
-        }
-
-        if (connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_PERSISTENCE) != null)
-        {
-            _syncPersistence =
-                Boolean.parseBoolean(connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_PERSISTENCE));
-            _logger.warn("sync_persistence is a deprecated property, " +
-            		"please use sync_publish={persistent|all} instead");
-        }
-        else
-        {
-            // use the default value set for all connections
-            _syncPersistence = Boolean.getBoolean(ClientProperties.SYNC_PERSISTENT_PROP_NAME);
-            if (_syncPersistence)
+            if (connectionURL == null)
             {
+                throw new IllegalArgumentException("Connection must be specified");
+            }
+
+            if (_logger.isDebugEnabled())
+            {
+                _logger.debug("Connection(" + _connectionNumber + "):" + connectionURL);
+            }
+
+            // set this connection maxPrefetch
+            if (connectionURL.getOption(ConnectionURL.OPTIONS_MAXPREFETCH) != null)
+            {
+                _maxPrefetch = Integer.parseInt(connectionURL.getOption(ConnectionURL.OPTIONS_MAXPREFETCH));
+            }
+            else
+            {
+                // use the default value set for all connections
+                _maxPrefetch = Integer.parseInt(System.getProperties().getProperty(ClientProperties.MAX_PREFETCH_PROP_NAME,
+                        ClientProperties.MAX_PREFETCH_DEFAULT));
+            }
+
+            if (connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_PERSISTENCE) != null)
+            {
+                _syncPersistence =
+                    Boolean.parseBoolean(connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_PERSISTENCE));
                 _logger.warn("sync_persistence is a deprecated property, " +
                         "please use sync_publish={persistent|all} instead");
             }
-        }
-
-        if (connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_ACK) != null)
-        {
-            _syncAck = Boolean.parseBoolean(connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_ACK));
-        }
-        else
-        {
-            // use the default value set for all connections
-            _syncAck = Boolean.getBoolean(ClientProperties.SYNC_ACK_PROP_NAME);
-        }
-
-        if (connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_CLIENT_ACK) != null)
-        {
-            _syncClientAck = Boolean.parseBoolean(connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_CLIENT_ACK));
-        }
-        else
-        {
-            String legacyProperty = System.getProperty("qpid.sync_after_client.ack");
-            if (legacyProperty != null)
+            else
             {
-                _logger.warn("'qpid.sync_after_client.ack' is a deprecated system property, " +
-                             "please use '{}' instead", ClientProperties.SYNC_CLIENT_ACK);
+                // use the default value set for all connections
+                _syncPersistence = Boolean.getBoolean(ClientProperties.SYNC_PERSISTENT_PROP_NAME);
+                if (_syncPersistence)
+                {
+                    _logger.warn("sync_persistence is a deprecated property, " +
+                            "please use sync_publish={persistent|all} instead");
+                }
             }
-            _syncClientAck = Boolean.parseBoolean(System.getProperty(ClientProperties.SYNC_CLIENT_ACK,
-                                                                     legacyProperty != null ? legacyProperty : "true"));
-        }
 
-        if (connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_PUBLISH) != null)
-        {
-            _syncPublish = connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_PUBLISH);
-        }
-        else
-        {
-            // use the default value set for all connections
-            _syncPublish = System.getProperty((ClientProperties.SYNC_PUBLISH_PROP_NAME),_syncPublish);
-        }
+            if (connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_ACK) != null)
+            {
+                _syncAck = Boolean.parseBoolean(connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_ACK));
+            }
+            else
+            {
+                // use the default value set for all connections
+                _syncAck = Boolean.getBoolean(ClientProperties.SYNC_ACK_PROP_NAME);
+            }
 
-        if (connectionURL.getOption(ConnectionURL.OPTIONS_POPULATE_USER_ID) != null)
-        {
-            _populateUserId = Boolean.parseBoolean(connectionURL.getOption(ConnectionURL.OPTIONS_POPULATE_USER_ID));
-        }
+            if (connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_CLIENT_ACK) != null)
+            {
+                _syncClientAck = Boolean.parseBoolean(connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_CLIENT_ACK));
+            }
+            else
+            {
+                String legacyProperty = System.getProperty("qpid.sync_after_client.ack");
+                if (legacyProperty != null)
+                {
+                    _logger.warn("'qpid.sync_after_client.ack' is a deprecated system property, " +
+                                 "please use '{}' instead", ClientProperties.SYNC_CLIENT_ACK);
+                }
+                _syncClientAck = Boolean.parseBoolean(System.getProperty(ClientProperties.SYNC_CLIENT_ACK,
+                                                                         legacyProperty != null ? legacyProperty : "true"));
+            }
 
-        if (connectionURL.getOption(ConnectionURL.OPTIONS_USE_LEGACY_MAP_MESSAGE_FORMAT) != null)
-        {
-            _useLegacyMapMessageFormat =  Boolean.parseBoolean(
-                    connectionURL.getOption(ConnectionURL.OPTIONS_USE_LEGACY_MAP_MESSAGE_FORMAT));
-        }
-        else
-        {
-            // use the default value set for all connections
-            _useLegacyMapMessageFormat = Boolean.getBoolean(ClientProperties.USE_LEGACY_MAP_MESSAGE_FORMAT);
-        }
+            if (connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_PUBLISH) != null)
+            {
+                _syncPublish = connectionURL.getOption(ConnectionURL.OPTIONS_SYNC_PUBLISH);
+            }
+            else
+            {
+                // use the default value set for all connections
+                _syncPublish = System.getProperty((ClientProperties.SYNC_PUBLISH_PROP_NAME),_syncPublish);
+            }
 
-        if (connectionURL.getOption(ConnectionURL.OPTIONS_USE_LEGACY_STREAM_MESSAGE_FORMAT) != null)
-        {
-            _useLegacyStreamMessageFormat =  Boolean.parseBoolean(
-                    connectionURL.getOption(ConnectionURL.OPTIONS_USE_LEGACY_STREAM_MESSAGE_FORMAT));
-        }
-        else
-        {
-            // use the default value set for all connections
-            _useLegacyStreamMessageFormat = System.getProperty(ClientProperties.USE_LEGACY_STREAM_MESSAGE_FORMAT) == null ?
-                    true : Boolean.getBoolean(ClientProperties.USE_LEGACY_STREAM_MESSAGE_FORMAT);
-        }
+            if (connectionURL.getOption(ConnectionURL.OPTIONS_POPULATE_USER_ID) != null)
+            {
+                _populateUserId = Boolean.parseBoolean(connectionURL.getOption(ConnectionURL.OPTIONS_POPULATE_USER_ID));
+            }
 
-        if(connectionURL.getOption(ConnectionURL.OPTIONS_VERIFY_QUEUE_ON_SEND) != null)
-        {
-            _validateQueueOnSend = Boolean.parseBoolean(
-                                connectionURL.getOption(ConnectionURL.OPTIONS_VERIFY_QUEUE_ON_SEND));
-        }
-        else
-        {
-            _validateQueueOnSend =
-                Boolean.parseBoolean(System.getProperty(ClientProperties.VERIFY_QUEUE_ON_SEND, "false"));
-        }
+            if (connectionURL.getOption(ConnectionURL.OPTIONS_USE_LEGACY_MAP_MESSAGE_FORMAT) != null)
+            {
+                _useLegacyMapMessageFormat =  Boolean.parseBoolean(
+                        connectionURL.getOption(ConnectionURL.OPTIONS_USE_LEGACY_MAP_MESSAGE_FORMAT));
+            }
+            else
+            {
+                // use the default value set for all connections
+                _useLegacyMapMessageFormat = Boolean.getBoolean(ClientProperties.USE_LEGACY_MAP_MESSAGE_FORMAT);
+            }
 
-        if(connectionURL.getOption(ConnectionURL.OPTIONS_COMPRESS_MESSAGES) != null)
-        {
-            _compressMessages = Boolean.parseBoolean(connectionURL.getOption(ConnectionURL.OPTIONS_COMPRESS_MESSAGES));
-        }
-        else
-        {
-            _compressMessages =
-                    Boolean.parseBoolean(System.getProperty(ClientProperties.CONNECTION_OPTION_COMPRESS_MESSAGES,
-                                         String.valueOf(ClientProperties.DEFAULT_CONNECTION_OPTION_COMPRESS_MESSAGES)));
-        }
+            if (connectionURL.getOption(ConnectionURL.OPTIONS_USE_LEGACY_STREAM_MESSAGE_FORMAT) != null)
+            {
+                _useLegacyStreamMessageFormat =  Boolean.parseBoolean(
+                        connectionURL.getOption(ConnectionURL.OPTIONS_USE_LEGACY_STREAM_MESSAGE_FORMAT));
+            }
+            else
+            {
+                // use the default value set for all connections
+                _useLegacyStreamMessageFormat = System.getProperty(ClientProperties.USE_LEGACY_STREAM_MESSAGE_FORMAT) == null ?
+                        true : Boolean.getBoolean(ClientProperties.USE_LEGACY_STREAM_MESSAGE_FORMAT);
+            }
 
+            if(connectionURL.getOption(ConnectionURL.OPTIONS_VERIFY_QUEUE_ON_SEND) != null)
+            {
+                _validateQueueOnSend = Boolean.parseBoolean(
+                                    connectionURL.getOption(ConnectionURL.OPTIONS_VERIFY_QUEUE_ON_SEND));
+            }
+            else
+            {
+                _validateQueueOnSend =
+                    Boolean.parseBoolean(System.getProperty(ClientProperties.VERIFY_QUEUE_ON_SEND, "false"));
+            }
 
-        if(connectionURL.getOption(ConnectionURL.OPTIONS_MESSAGES_COMPRESSION_THRESHOLD_SIZE) != null)
-        {
-            _messageCompressionThresholdSize = Integer.valueOf(connectionURL.getOption(ConnectionURL.OPTIONS_MESSAGES_COMPRESSION_THRESHOLD_SIZE));
-        }
-        else
-        {
-            _messageCompressionThresholdSize = Integer.getInteger(ClientProperties.CONNECTION_OPTION_MESSAGE_COMPRESSION_THRESHOLD_SIZE,
-                                                                ClientProperties.DEFAULT_MESSAGE_COMPRESSION_THRESHOLD_SIZE);
-        }
-        if(_messageCompressionThresholdSize <= 0)
-        {
-            _messageCompressionThresholdSize = Integer.MAX_VALUE;
-        }
+            if(connectionURL.getOption(ConnectionURL.OPTIONS_COMPRESS_MESSAGES) != null)
+            {
+                _compressMessages = Boolean.parseBoolean(connectionURL.getOption(ConnectionURL.OPTIONS_COMPRESS_MESSAGES));
+            }
+            else
+            {
+                _compressMessages =
+                        Boolean.parseBoolean(System.getProperty(ClientProperties.CONNECTION_OPTION_COMPRESS_MESSAGES,
+                                             String.valueOf(ClientProperties.DEFAULT_CONNECTION_OPTION_COMPRESS_MESSAGES)));
+            }
 
-        String amqpVersion = System.getProperty((ClientProperties.AMQP_VERSION), "0-10");
-        if (_logger.isDebugEnabled())
-        {
-            _logger.debug("AMQP version " + amqpVersion);
+            if(connectionURL.getOption(ConnectionURL.OPTIONS_MESSAGES_COMPRESSION_THRESHOLD_SIZE) != null)
+            {
+                _messageCompressionThresholdSize = Integer.valueOf(connectionURL.getOption(ConnectionURL.OPTIONS_MESSAGES_COMPRESSION_THRESHOLD_SIZE));
+            }
+            else
+            {
+                _messageCompressionThresholdSize = Integer.getInteger(ClientProperties.CONNECTION_OPTION_MESSAGE_COMPRESSION_THRESHOLD_SIZE,
+                                                                    ClientProperties.DEFAULT_MESSAGE_COMPRESSION_THRESHOLD_SIZE);
+            }
+            if(_messageCompressionThresholdSize <= 0)
+            {
+                _messageCompressionThresholdSize = Integer.MAX_VALUE;
+            }
+
+            String amqpVersion = System.getProperty((ClientProperties.AMQP_VERSION), "0-10");
+            if (_logger.isDebugEnabled())
+            {
+                _logger.debug("AMQP version " + amqpVersion);
+            }
+
+            _failoverPolicy = new FailoverPolicy(connectionURL, this);
+            if ("0-8".equals(amqpVersion))
+            {
+                _delegate = new AMQConnectionDelegate_8_0(this);
+            }
+            else if ("0-9".equals(amqpVersion))
+            {
+                _delegate = new AMQConnectionDelegate_0_9(this);
+            }
+            else if ("0-91".equals(amqpVersion) || "0-9-1".equals(amqpVersion))
+            {
+                _delegate = new AMQConnectionDelegate_0_91(this);
+            }
+            else
+            {
+                _delegate = new AMQConnectionDelegate_0_10(this);
+            }
+
+            _connectionURL = connectionURL;
+
+            _clientName = connectionURL.getClientName();
+            _username = connectionURL.getUsername();
+            _password = connectionURL.getPassword();
+
+            setVirtualHost(connectionURL.getVirtualHost());
+
+            if (connectionURL.getDefaultQueueExchangeName() != null)
+            {
+                _defaultQueueExchangeName = connectionURL.getDefaultQueueExchangeName();
+            }
+
+            if (connectionURL.getDefaultTopicExchangeName() != null)
+            {
+                _defaultTopicExchangeName = connectionURL.getDefaultTopicExchangeName();
+            }
+
+            if (connectionURL.getTemporaryQueueExchangeName() != null)
+            {
+                _temporaryQueueExchangeName = connectionURL.getTemporaryQueueExchangeName();
+            }
+
+            if (connectionURL.getTemporaryTopicExchangeName() != null)
+            {
+                _temporaryTopicExchangeName = connectionURL.getTemporaryTopicExchangeName();
+            }
+
+            _protocolHandler = new AMQProtocolHandler(this);
+
+            if (_logger.isDebugEnabled())
+            {
+                _logger.debug("Connecting with ProtocolHandler Version:"+_protocolHandler.getProtocolVersion());
+            }
+
+            // We are not currently connected
+            setConnected(false);
+
+            if (_clientName != null)
+            {
+                makeConnection();
+            }
+
+            _connectionMetaData = new QpidConnectionMetaData();
+
+            if (connectionURL.getOption(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST) != null)
+            {
+                String whiteListedClassHierarchiesString = connectionURL.getOption(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST);
+                _whiteListedClassHierarchies = Arrays.asList(whiteListedClassHierarchiesString.split(","));
+            }
+            else
+            {
+                final String defaultWhiteListedClassHierarchiesString = System.getProperty(CommonProperties.QPID_SECURITY_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST, "*");
+                _whiteListedClassHierarchies = Arrays.asList(defaultWhiteListedClassHierarchiesString.split(","));
+            }
+
+            if (connectionURL.getOption(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_BLACK_LIST) != null)
+            {
+                String blackListedClassHierarchiesString = connectionURL.getOption(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_BLACK_LIST);
+                _blackListedClassHierarchies = Arrays.asList(blackListedClassHierarchiesString.split(","));
+            }
+            else
+            {
+                final String defaultBlackListedClassHierarchiesString = System.getProperty(CommonProperties.QPID_SECURITY_OBJECT_MESSAGE_CLASS_HIERARCHY_BLACK_LIST, "");
+                _blackListedClassHierarchies = Arrays.asList(defaultBlackListedClassHierarchiesString.split(","));
+            }
+            success = true;
         }
-
-        _failoverPolicy = new FailoverPolicy(connectionURL, this);
-        if ("0-8".equals(amqpVersion))
+        finally
         {
-            _delegate = new AMQConnectionDelegate_8_0(this);
-        }
-        else if ("0-9".equals(amqpVersion))
-        {
-            _delegate = new AMQConnectionDelegate_0_9(this);
-        }
-        else if ("0-91".equals(amqpVersion) || "0-9-1".equals(amqpVersion))
-        {
-            _delegate = new AMQConnectionDelegate_0_91(this);
-        }
-        else
-        {
-            _delegate = new AMQConnectionDelegate_0_10(this);
-        }
-
-        _connectionURL = connectionURL;
-
-        _clientName = connectionURL.getClientName();
-        _username = connectionURL.getUsername();
-        _password = connectionURL.getPassword();
-
-        setVirtualHost(connectionURL.getVirtualHost());
-
-        if (connectionURL.getDefaultQueueExchangeName() != null)
-        {
-            _defaultQueueExchangeName = connectionURL.getDefaultQueueExchangeName();
-        }
-
-        if (connectionURL.getDefaultTopicExchangeName() != null)
-        {
-            _defaultTopicExchangeName = connectionURL.getDefaultTopicExchangeName();
-        }
-
-        if (connectionURL.getTemporaryQueueExchangeName() != null)
-        {
-            _temporaryQueueExchangeName = connectionURL.getTemporaryQueueExchangeName();
-        }
-
-        if (connectionURL.getTemporaryTopicExchangeName() != null)
-        {
-            _temporaryTopicExchangeName = connectionURL.getTemporaryTopicExchangeName();
-        }
-
-        _protocolHandler = new AMQProtocolHandler(this);
-
-        if (_logger.isDebugEnabled())
-        {
-        	_logger.debug("Connecting with ProtocolHandler Version:"+_protocolHandler.getProtocolVersion());
-        }
-
-        // We are not currently connected
-        setConnected(false);
-
-        if(_clientName != null)
-        {
-            makeConnection();
-        }
-
-        _connectionMetaData = new QpidConnectionMetaData();
-
-        if (connectionURL.getOption(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST) != null)
-        {
-            String whiteListedClassHierarchiesString = connectionURL.getOption(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST);
-            _whiteListedClassHierarchies = Arrays.asList(whiteListedClassHierarchiesString.split(","));
-        }
-        else
-        {
-            final String defaultWhiteListedClassHierarchiesString = System.getProperty(CommonProperties.QPID_SECURITY_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST, "*");
-            _whiteListedClassHierarchies = Arrays.asList(defaultWhiteListedClassHierarchiesString.split(","));
-        }
-
-        if (connectionURL.getOption(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_BLACK_LIST) != null)
-        {
-            String blackListedClassHierarchiesString = connectionURL.getOption(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_BLACK_LIST);
-            _blackListedClassHierarchies = Arrays.asList(blackListedClassHierarchiesString.split(","));
-        }
-        else
-        {
-            final String defaultBlackListedClassHierarchiesString = System.getProperty(CommonProperties.QPID_SECURITY_OBJECT_MESSAGE_CLASS_HIERARCHY_BLACK_LIST, "");
-            _blackListedClassHierarchies = Arrays.asList(defaultBlackListedClassHierarchiesString.split(","));
+            if (!success)
+            {
+                shutdownTaskPool();
+            }
         }
     }
 
