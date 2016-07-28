@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -228,7 +227,7 @@ public class SpawnedBrokerHolder extends AbstractBrokerHolder
             _process.destroy();
 
             reapChildProcess();
-            waitUntilPortsAreFree();
+            waitUntilPortsAreFreeIfRequired();
         }
     }
 
@@ -370,7 +369,7 @@ public class SpawnedBrokerHolder extends AbstractBrokerHolder
 
         reapChildProcess();
 
-        waitUntilPortsAreFree();
+        waitUntilPortsAreFreeIfRequired();
     }
 
     private void sendSigkillForImmediateShutdown(Integer pid)

@@ -152,6 +152,7 @@ public class QpidTestCase extends TestCase
             }
             else
             {
+                overrideTestSystemProperties();
                 super.run(testResult);
             }
         }
@@ -160,6 +161,7 @@ public class QpidTestCase extends TestCase
             _logger.info(ClassicConstants.FINALIZE_SESSION_MARKER, "Shutting down sub-appender");
             _currentInstance = null;
             MDC.remove(CLASS_QUALIFIED_TEST_NAME);
+            revertTestSystemProperties();
         }
     }
 
@@ -280,13 +282,11 @@ public class QpidTestCase extends TestCase
     {
         _logger.info("========== start " + getTestName() + " ==========");
         super.setUp();
-        overrideTestSystemProperties();
     }
 
     protected void tearDown() throws Exception
     {
         _logger.info("========== tearDown " + getTestName() + " ==========");
-        revertTestSystemProperties();
         for (Runnable runnable : _tearDownRegistry)
         {
             runnable.run();

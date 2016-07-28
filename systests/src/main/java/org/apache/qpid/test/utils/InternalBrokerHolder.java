@@ -109,7 +109,7 @@ public class InternalBrokerHolder extends AbstractBrokerHolder
                     return null;
                 }
             });
-            waitUntilPortsAreFree();
+            waitUntilPortsAreFreeIfRequired();
             LOGGER.info("Broker instance shutdown");
         }
         else

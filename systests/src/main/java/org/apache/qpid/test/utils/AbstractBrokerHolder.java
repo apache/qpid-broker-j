@@ -60,6 +60,7 @@ public abstract class AbstractBrokerHolder implements BrokerHolder
     private int _httpPort;
     private int _amqpTlsPort;
     private int _httpsPort;
+    private boolean _waitForPorts;
 
     public AbstractBrokerHolder(int port, String classQualifiedTestName, File logFile)
     {
@@ -77,6 +78,7 @@ public abstract class AbstractBrokerHolder implements BrokerHolder
                 System.getProperty("broker.amqpTlsPortRegEx", "BRK-1002 : Starting : Listening on SSL port (\\d+)");
         _httpTlsPortRegExp = System.getProperty("broker.httpTlsPortRegEx",
                                                 "MNG-1002 : Starting : HTTP : Listening on SSL port (\\d+)");
+        _waitForPorts = !Boolean.getBoolean("qpid.test_nowait_for_ports");
 
         try
         {
@@ -204,14 +206,17 @@ public abstract class AbstractBrokerHolder implements BrokerHolder
         return _classQualifiedTestName;
     }
 
-    protected void waitUntilPortsAreFree()
+    void waitUntilPortsAreFreeIfRequired()
     {
-        Set<Integer> ports = new HashSet<>();
-        ports.add(getAmqpPort());
-        ports.add(getAmqpTlsPort());
-        ports.add(getHttpPort());
-        ports.add(getHttpsPort());
-        new PortHelper().waitUntilPortsAreFree(ports);
+        if (_waitForPorts)
+        {
+            Set<Integer> ports = new HashSet<>();
+            ports.add(getAmqpPort());
+            ports.add(getAmqpTlsPort());
+            ports.add(getHttpPort());
+            ports.add(getHttpsPort());
+            new PortHelper().waitUntilPortsAreFree(ports);
+        }
     }
 
     abstract protected String getLogPrefix();

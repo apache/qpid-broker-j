@@ -104,8 +104,6 @@ public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements C
             brokerHolder.start();
 
             _brokerHolders[i] = brokerHolder;
-
-            revertSystemProperties();
         }
 
         _connectionURL = new AMQConnectionURL(generateUrlString(NUMBER_OF_BROKERS));
