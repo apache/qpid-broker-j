@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.transport.network.security;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
@@ -40,6 +40,7 @@ import org.apache.qpid.transport.network.security.sasl.SASLSender;
 import org.apache.qpid.transport.network.security.ssl.SSLReceiver;
 import org.apache.qpid.transport.network.security.ssl.SSLSender;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
+import org.apache.qpid.util.Strings;
 
 public class SecurityLayerFactory
 {
@@ -67,6 +68,7 @@ public class SecurityLayerFactory
 
     static class SSLSecurityLayer implements SecurityLayer
     {
+        private static final Pattern JSON_ARRAY_PATTERN = Pattern.compile("\\s*\\[(\\s|.)*\\]\\s*");
 
         private final SSLEngine _engine;
         private final SSLStatus _sslStatus = new SSLStatus();
@@ -102,18 +104,22 @@ public class SecurityLayerFactory
                 _hostname = settings.getHost();
             }
 
-            List<String> protocolWhiteList =
-                    getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST,
-                                            CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST_DEFAULT);
-            List<String> protocolBlackList =
-                    getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST,
-                                            CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST_DEFAULT);
-            List<String> cipherSuiteWhiteList =
-                    getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST,
-                                            CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST_DEFAULT);
-            List<String> cipherSuiteBlackList =
-                    getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST,
-                                            CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST_DEFAULT);
+            List<String> protocolWhiteList = getSystemPropertyAsList(
+                    CommonProperties.QPID_CLIENT_SECURITY_TLS_PROTOCOL_WHITE_LIST,
+                    CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST,
+                    CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST_DEFAULT);
+            List<String> protocolBlackList = getSystemPropertyAsList(
+                    CommonProperties.QPID_CLIENT_SECURITY_TLS_PROTOCOL_BLACK_LIST,
+                    CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST,
+                    CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST_DEFAULT);
+            List<String> cipherSuiteWhiteList = getSystemPropertyAsList(
+                    CommonProperties.QPID_CLIENT_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST,
+                    CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST,
+                    CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST_DEFAULT);
+            List<String> cipherSuiteBlackList = getSystemPropertyAsList(
+                    CommonProperties.QPID_CLIENT_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST,
+                    CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST,
+                    CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST_DEFAULT);
             try
             {
                 _engine = sslCtx.createSSLEngine();
@@ -128,15 +134,26 @@ public class SecurityLayerFactory
 
         }
 
-        private List<String> getSystemPropertyAsList(final String propertyName, final String defaultValue)
+        private List<String> getSystemPropertyAsList(final String propertyName,
+                                                     final String alternatePropertyName,
+                                                     final String defaultValue)
         {
-            String listAsString = System.getProperty(propertyName, defaultValue);
-            List<String> listOfStrings = Collections.emptyList();
-            if(listAsString != null && !"".equals(listAsString))
+            String listAsString;
+            Properties systemProperties = System.getProperties();
+            if (systemProperties.containsKey(propertyName))
             {
-                listOfStrings = Arrays.asList(listAsString.split("\\s*,\\s*"));
+                listAsString = systemProperties.getProperty(propertyName);
             }
-            return listOfStrings;
+            else if (systemProperties.containsKey(alternatePropertyName)
+                     && !JSON_ARRAY_PATTERN.matcher(systemProperties.getProperty(alternatePropertyName)).matches())
+            {
+                listAsString = systemProperties.getProperty(alternatePropertyName);
+            }
+            else
+            {
+                listAsString = defaultValue;
+            }
+            return Strings.split(listAsString);
         }
 
         public ByteBufferSender sender(ByteBufferSender delegate)

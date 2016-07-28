@@ -22,8 +22,10 @@ package org.apache.qpid.util;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -315,6 +317,15 @@ public final class Strings
     public static final String join(String sep, Object[] items)
     {
         return join(sep, Arrays.asList(items));
+    }
+
+    public static final List<String> split(String listAsString)
+    {
+        if(listAsString != null && !"".equals(listAsString))
+        {
+            return Arrays.asList(listAsString.split("\\s*,\\s*"));
+        }
+        return Collections.emptyList();
     }
 
     public static String printMap(Map<String,Object> map)
