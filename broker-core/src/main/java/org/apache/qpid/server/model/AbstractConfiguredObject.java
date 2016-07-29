@@ -2942,13 +2942,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 {
                     public AccessControlContext run()
                     {
-                        final AccessControlContext acc = AccessController.getContext();
-                        if (subject == null)
-                            return new AccessControlContext(acc, null);
-                        else
-                            return new AccessControlContext
-                                    (acc,
-                                     new SubjectDomainCombiner(subject));
+                        return new AccessControlContext
+                                (AccessController.getContext(),
+                                 new SubjectDomainCombiner(subject));
                     }
                 }, null);
     }
