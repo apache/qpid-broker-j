@@ -30,7 +30,6 @@ import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedOperation;
 import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.RuleOutcome;
 
 @ManagedObject( category = false, type= RuleBasedAccessControlProvider.RULE_BASED_TYPE)
 public interface RuleBasedAccessControlProvider<X extends RuleBasedAccessControlProvider<X>> extends AccessControlProvider<X>
@@ -39,15 +38,15 @@ public interface RuleBasedAccessControlProvider<X extends RuleBasedAccessControl
     String DEFAULT_RESULT= "defaultResult";
     String RULES = "rules";
 
-    @ManagedAttribute( mandatory = true, defaultValue = "DENIED", validValues = { "ALLOWED", "DENIED" })
+    @ManagedAttribute( mandatory = true, defaultValue = "DENIED", validValues = { "ALLOWED", "DENIED" }, description = "the default resil to use if no rules match the requested operation")
     Result getDefaultResult();
 
-    @ManagedAttribute( mandatory = true, defaultValue = "[ { \"identity\" : \"ALL\", \"objectType\" : \"ALL\", \"operation\" : \"ALL\", \"attributes\" : {}, \"outcome\" : \"ALLOW\"} ]")
+    @ManagedAttribute( mandatory = true, defaultValue = "[ { \"identity\" : \"ALL\", \"objectType\" : \"ALL\", \"operation\" : \"ALL\", \"attributes\" : {}, \"outcome\" : \"ALLOW\"} ]", description = "the ordered list of ACL rules")
     List<AclRule> getRules();
 
-    @ManagedOperation
+    @ManagedOperation(description = "Load access control rules from a file in the legacy access control rule format")
     void loadFromFile(@Param(name = "path")String path);
 
-    @ManagedOperation(nonModifying = true)
+    @ManagedOperation(nonModifying = true, description = "Extract the access control rules in the legacy access control rule format")
     Content extractRules();
 }

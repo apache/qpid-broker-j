@@ -18,7 +18,7 @@
  *
  *
  */
-package org.apache.qpid.server.security.access;
+package org.apache.qpid.server.security.access.plugins;
 
 /**
  * An enumeration of all possible outcomes that can be applied to an access control v2 rule.

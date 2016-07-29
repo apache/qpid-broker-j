@@ -22,7 +22,7 @@ package org.apache.qpid.systest.rest.acl;
 
 
 
-import static org.apache.qpid.server.security.access.RuleOutcome.*;
+import static org.apache.qpid.server.security.access.plugins.RuleOutcome.*;
 import static org.apache.qpid.server.security.access.config.LegacyOperation.*;
 import static org.apache.qpid.server.security.access.config.ObjectType.*;
 
@@ -35,8 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHostAccessControlProvider;
-import org.apache.qpid.server.security.access.Operation;
-import org.apache.qpid.server.security.access.RuleOutcome;
+import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 import org.apache.qpid.server.security.access.config.LegacyOperation;
 import org.apache.qpid.server.security.access.config.ObjectProperties;
 import org.apache.qpid.server.security.access.config.ObjectType;

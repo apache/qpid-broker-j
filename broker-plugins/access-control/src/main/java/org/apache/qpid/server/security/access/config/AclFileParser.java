@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.RuleOutcome;
+import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 
 public final class AclFileParser
 {

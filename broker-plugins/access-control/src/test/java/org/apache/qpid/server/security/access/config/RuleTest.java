@@ -20,7 +20,7 @@ package org.apache.qpid.server.security.access.config;
 
 import static org.mockito.Mockito.*;
 
-import org.apache.qpid.server.security.access.RuleOutcome;
+import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 
 import org.apache.qpid.test.utils.QpidTestCase;
 

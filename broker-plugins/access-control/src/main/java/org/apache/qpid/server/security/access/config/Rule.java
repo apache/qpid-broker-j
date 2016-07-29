@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import org.apache.qpid.server.security.access.RuleOutcome;
+import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 
 /**
  * An access control v2 rule.

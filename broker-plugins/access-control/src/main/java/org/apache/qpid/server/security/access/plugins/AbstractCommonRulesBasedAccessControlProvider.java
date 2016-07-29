@@ -39,7 +39,6 @@ import org.apache.qpid.server.model.CustomRestHeaders;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.RestContentHeader;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.RuleOutcome;
 import org.apache.qpid.server.security.access.config.AclAction;
 import org.apache.qpid.server.security.access.config.AclFileParser;
 import org.apache.qpid.server.security.access.config.AclRulePredicates;

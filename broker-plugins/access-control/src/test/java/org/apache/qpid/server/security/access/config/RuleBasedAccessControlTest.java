@@ -37,7 +37,7 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.UnitTestMessageLogger;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.access.RuleOutcome;
+import org.apache.qpid.server.security.access.plugins.RuleOutcome;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.test.utils.QpidTestCase;

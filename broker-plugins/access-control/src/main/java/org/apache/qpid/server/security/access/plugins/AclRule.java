@@ -27,7 +27,6 @@ import org.apache.qpid.server.model.ManagedAttributeValueType;
 import org.apache.qpid.server.security.access.config.ObjectProperties;
 import org.apache.qpid.server.security.access.config.ObjectType;
 import org.apache.qpid.server.security.access.config.LegacyOperation;
-import org.apache.qpid.server.security.access.RuleOutcome;
 
 @ManagedAttributeValueType
 public interface AclRule extends ManagedAttributeValue
