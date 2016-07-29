@@ -89,7 +89,6 @@ class LegacyAccessControlAdapter
     {
         if (isAllowedOperation(operation, configuredObject))
         {
-            // creation of remote replication node is out of control for user of this broker
             return Result.ALLOWED;
         }
 
