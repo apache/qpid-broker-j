@@ -71,12 +71,6 @@ public class ACLFileAccessControlProviderImpl
     }
 
     @Override
-    protected void onOpen()
-    {
-        super.onOpen();
-    }
-
-    @Override
     public void reload()
     {
         authorise(Operation.UPDATE);

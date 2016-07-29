@@ -81,12 +81,12 @@ public class RuleBasedAccessControlTest extends QpidTestCase
         RuleSetCreator rsc = new RuleSetCreator();
 
         // Rule expressed with username
-        rsc.grant(0, "user1", RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+        rsc.addRule(0, "user1", RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
         // Rules expressed with groups
-        rsc.grant(1, ALLOWED_GROUP, RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
-        rsc.grant(2, DENIED_GROUP, RuleOutcome.DENY, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+        rsc.addRule(1, ALLOWED_GROUP, RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+        rsc.addRule(2, DENIED_GROUP, RuleOutcome.DENY, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
         // Catch all rule
-        rsc.grant(3, Rule.ALL, RuleOutcome.DENY_LOG, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
+        rsc.addRule(3, Rule.ALL, RuleOutcome.DENY_LOG, LegacyOperation.ACCESS, ObjectType.VIRTUALHOST, ObjectProperties.EMPTY);
 
         return rsc.createRuleSet(provider);
     }
@@ -178,7 +178,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
         final RuleSetCreator rs = new RuleSetCreator();
 
         // grant user4 access right on any method in any component
-        rs.grant(1, "user4", RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.METHOD, new ObjectProperties(ObjectProperties.WILD_CARD));
+        rs.addRule(1, "user4", RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.METHOD, new ObjectProperties(ObjectProperties.WILD_CARD));
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user4"), new PrivilegedAction<Object>()
         {
@@ -206,7 +206,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
         // grant user5 access right on any methods in "Test" component
         ObjectProperties ruleProperties = new ObjectProperties(ObjectProperties.WILD_CARD);
         ruleProperties.put(ObjectProperties.Property.COMPONENT, "Test");
-        rs.grant(1, "user5", RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.METHOD, ruleProperties);
+        rs.addRule(1, "user5", RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.METHOD, ruleProperties);
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user5"), new PrivilegedAction<Object>()
         {
@@ -308,7 +308,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
         // grant user6 access right on "getAttribute" method in "Test" component
         ObjectProperties ruleProperties = new ObjectProperties("getAttribute");
         ruleProperties.put(ObjectProperties.Property.COMPONENT, "Test");
-        rs.grant(1, "user6", RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.METHOD, ruleProperties);
+        rs.addRule(1, "user6", RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.METHOD, ruleProperties);
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user6"), new PrivilegedAction<Object>()
         {
@@ -343,7 +343,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
         final RuleSetCreator rs = new RuleSetCreator();
 
         // grant user8 all rights on method queryNames in all component
-        rs.grant(1, "user8", RuleOutcome.ALLOW, LegacyOperation.ALL, ObjectType.METHOD, new ObjectProperties("queryNames"));
+        rs.addRule(1, "user8", RuleOutcome.ALLOW, LegacyOperation.ALL, ObjectType.METHOD, new ObjectProperties("queryNames"));
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user8"), new PrivilegedAction<Object>()
         {
@@ -382,7 +382,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
         final RuleSetCreator rs = new RuleSetCreator();
 
         // grant user9 all rights on any method in all component
-        rs.grant(1, "user9", RuleOutcome.ALLOW, LegacyOperation.ALL, ObjectType.METHOD, new ObjectProperties());
+        rs.addRule(1, "user9", RuleOutcome.ALLOW, LegacyOperation.ALL, ObjectType.METHOD, new ObjectProperties());
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user9"), new PrivilegedAction<Object>()
         {
@@ -424,7 +424,7 @@ public class RuleBasedAccessControlTest extends QpidTestCase
         ruleProperties.put(ObjectProperties.Property.COMPONENT, "Test");
         ruleProperties.put(ObjectProperties.Property.NAME, "getAttribute*");
 
-        rs.grant(1, "user9", RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.METHOD, ruleProperties);
+        rs.addRule(1, "user9", RuleOutcome.ALLOW, LegacyOperation.ACCESS, ObjectType.METHOD, ruleProperties);
         configureAccessControl(rs.createRuleSet(mock(EventLoggerProvider.class)));
         Subject.doAs(TestPrincipalUtils.createTestSubject("user9"), new PrivilegedAction<Object>()
         {

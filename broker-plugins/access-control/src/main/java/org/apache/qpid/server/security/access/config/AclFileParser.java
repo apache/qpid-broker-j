@@ -275,14 +275,14 @@ public final class AclFileParser
 
         if (args.size() == 3)
         {
-            ruleSetCreator.grant(number, identity, outcome, operation);
+            ruleSetCreator.addRule(number, identity, outcome, operation);
         }
         else
         {
             ObjectType object = ObjectType.valueOf(args.get(3).toUpperCase());
             AclRulePredicates predicates = toRulePredicates(args.subList(4, args.size()), line);
 
-            ruleSetCreator.grant(number, identity, outcome, operation, object, predicates);
+            ruleSetCreator.addRule(number, identity, outcome, operation, object, predicates);
         }
     }
 
@@ -360,11 +360,6 @@ public final class AclFileParser
             properties.put(key, value);
         }
         return properties;
-    }
-
-    private static int getLine(final StreamTokenizer tokenizer)
-    {
-        return tokenizer.lineno() - 1;
     }
 
 }

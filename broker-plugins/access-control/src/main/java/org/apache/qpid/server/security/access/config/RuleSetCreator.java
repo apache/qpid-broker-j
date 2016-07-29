@@ -43,29 +43,29 @@ final class RuleSetCreator
         return !_rules.containsKey(number);
     }
 
-    void grant(Integer number, String identity, RuleOutcome ruleOutcome, LegacyOperation operation)
+    void addRule(Integer number, String identity, RuleOutcome ruleOutcome, LegacyOperation operation)
     {
         AclAction action = new AclAction(operation);
         addRule(number, identity, ruleOutcome, action);
     }
 
-    void grant(Integer number,
-               String identity,
-               RuleOutcome ruleOutcome,
-               LegacyOperation operation,
-               ObjectType object,
-               ObjectProperties properties)
+    void addRule(Integer number,
+                 String identity,
+                 RuleOutcome ruleOutcome,
+                 LegacyOperation operation,
+                 ObjectType object,
+                 ObjectProperties properties)
     {
         AclAction action = new AclAction(operation, object, properties);
         addRule(number, identity, ruleOutcome, action);
     }
 
-    void grant(Integer number,
-               String identity,
-               RuleOutcome ruleOutcome,
-               LegacyOperation operation,
-               ObjectType object,
-               AclRulePredicates predicates)
+    void addRule(Integer number,
+                 String identity,
+                 RuleOutcome ruleOutcome,
+                 LegacyOperation operation,
+                 ObjectType object,
+                 AclRulePredicates predicates)
     {
         AclAction aclAction = new AclAction(operation, object, predicates);
         addRule(number, identity, ruleOutcome, aclAction);
