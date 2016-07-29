@@ -201,7 +201,7 @@ public class BrokerImpl extends AbstractConfiguredObject<BrokerImpl> implements 
     private ConfigurationChangeListener _accessControlProviderListener = new AccessControlProviderListener();
     private final AccessControl _accessControl;
     private TaskExecutor _preferenceTaskExecutor;
-    private String _helpURL;
+    private String _documentationUrl;
 
     @ManagedObjectFactoryConstructor
     public BrokerImpl(Map<String, Object> attributes,
@@ -487,7 +487,7 @@ public class BrokerImpl extends AbstractConfiguredObject<BrokerImpl> implements 
             getEventLogger().message(BrokerMessages.FAILED_CHILDREN(failedChildren.toString()));
         }
 
-        _helpURL = getContextValue(String.class, QPID_HELP_URL);
+        _documentationUrl = getContextValue(String.class, QPID_DOCUMENTATION_URL);
         final boolean brokerShutdownOnErroredChild = getContextValue(Boolean.class,
                                                                      BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD);
         if (!_parent.isManagementMode() && brokerShutdownOnErroredChild && hasBrokerAnyErroredChildren)
@@ -1269,10 +1269,9 @@ public class BrokerImpl extends AbstractConfiguredObject<BrokerImpl> implements 
         return _jvmArguments;
     }
 
-    @Override
-    public String getHelpURL()
+    public String getDocumentationUrl()
     {
-        return _helpURL;
+        return _documentationUrl;
     }
 
     @Override

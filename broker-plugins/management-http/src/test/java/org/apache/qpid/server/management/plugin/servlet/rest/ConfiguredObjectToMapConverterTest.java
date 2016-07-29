@@ -48,6 +48,23 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class ConfiguredObjectToMapConverterTest extends QpidTestCase
 {
+    private static final String TEST_SYSTEM_PROPERTY1_NAME = "qpid.test.name";
+    private static final String TEST_SYSTEM_PROPERTY1_ACTUAL_VALUE = "context-test";
+    private static final String TEST_SYSTEM_PROPERTY2_NAME = "qpid.test.name2";
+    private static final String TEST_SYSTEM_PROPERTY2_ACTUAL_VALUE = "${" + TEST_SYSTEM_PROPERTY1_NAME + "}-value2";
+    private static final String TEST_SYSTEM_PROPERTY2_EFFECTIVE_VALUE = TEST_SYSTEM_PROPERTY1_ACTUAL_VALUE + "-value2";
+    private static final String PARENT_CONTEXT_PROPERTY1_NAME = "parentTest";
+    private static final String PARENT_CONTEXT_PROPERTY1_ACTUAL_VALUE = "carTestValue";
+    private static final String PARENT_CONTEXT_PROPERTY2_NAME = "parentTestExpression";
+    private static final String PARENT_CONTEXT_PROPERTY2_ACTUAL_VALUE =
+            "${" + PARENT_CONTEXT_PROPERTY1_NAME + "}-${" + TEST_SYSTEM_PROPERTY2_NAME + "}";
+    private static final String PARENT_CONTEXT_PROPERTY2_EFFECTIVE_VALUE =
+            PARENT_CONTEXT_PROPERTY1_ACTUAL_VALUE + "-" + TEST_SYSTEM_PROPERTY2_EFFECTIVE_VALUE;
+    private static final String CHILD_CONTEXT_PROPERTY_NAME = "test";
+    private static final String CHILD_CONTEXT_PROPERTY_ACTUAL_VALUE =
+            "test-${" + PARENT_CONTEXT_PROPERTY2_NAME + "}";
+    private static final String CHILD_CONTEXT_PROPERTY_EFFECTIVE_VALUE =
+            "test-" + PARENT_CONTEXT_PROPERTY2_EFFECTIVE_VALUE;
     private ConfiguredObjectToMapConverter _converter = new ConfiguredObjectToMapConverter();
     private ConfiguredObject _configuredObject = mock(ConfiguredObject.class);
 
@@ -381,26 +398,9 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         assertEquals("*****", ((Map) attrs).get("secureAttribute"));
     }
 
-    public void testExcludeInheritedContext()
+    public void testIncludeInheritedContextAndEffective()
     {
-        setTestSystemProperty("qpid.test.name", getTestName());
-        setTestSystemProperty("qpid.test.name2", "${qpid.test.name}2");
-        Model model = org.apache.qpid.server.model.testmodels.hierarchy.TestModel.getInstance();
-        final Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, "myCar");
-        Map<String, String> carContext = new HashMap<>();
-        carContext.put("parentTest", "carTestValue");
-        carContext.put("parentTestExpression", "${parentTest}-${qpid.test.name2}");
-        carAttributes.put(ConfiguredObject.CONTEXT, carContext);
-        TestCar car = model.getObjectFactory().create(TestCar.class, carAttributes);
-        final Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, "myEngine");
-        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
-        Map<String, String> engineContext = new HashMap<>();
-        engineContext.put("test", "testValue-${parentTestExpression}");
-        engineAttributes.put(ConfiguredObject.CONTEXT, engineContext);
-        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
-
+        TestEngine engine = createEngineWithContext();
         ConfiguredObjectToMapConverter.ConverterOptions options = new ConfiguredObjectToMapConverter.ConverterOptions(
                 1,
                 false,
@@ -409,36 +409,117 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
                 false,
                 false);
         Map<String, Object> resultMap = _converter.convertObjectToMap(engine, TestEngine.class, options);
-        Object contextValue = resultMap.get("context");
-        assertTrue("Unexpected type of context", contextValue instanceof Map);
-        Map<String,String> context = (Map<String, String>)contextValue;
+        Map<String, String> context = getContext(resultMap);
+
         assertTrue("Unexpected size of context", context.size() >= 5);
         assertEquals("Unexpected engine context content",
-                     "testValue-carTestValue-" + getTestName() + "2",
-                     ((Map) contextValue).get("test"));
-        assertEquals("Unexpected car context content", "carTestValue", context.get("parentTest"));
+                     CHILD_CONTEXT_PROPERTY_EFFECTIVE_VALUE,
+                     context.get(CHILD_CONTEXT_PROPERTY_NAME));
         assertEquals("Unexpected car context content",
-                     "carTestValue-" + getTestName() + "2",
-                     context.get("parentTestExpression"));
-
-        assertEquals("Unexpected system context content", getTestName(), context.get("qpid.test.name"));
+                     PARENT_CONTEXT_PROPERTY1_ACTUAL_VALUE, context.get(PARENT_CONTEXT_PROPERTY1_NAME));
+        assertEquals("Unexpected car context content",
+                     PARENT_CONTEXT_PROPERTY2_EFFECTIVE_VALUE,
+                     context.get(PARENT_CONTEXT_PROPERTY2_NAME));
         assertEquals("Unexpected system context content",
-                     getTestName() + "2",
-                     context.get("qpid.test.name2"));
+                     TEST_SYSTEM_PROPERTY1_ACTUAL_VALUE,
+                     context.get(TEST_SYSTEM_PROPERTY1_NAME));
+        assertEquals("Unexpected system context content",
+                     TEST_SYSTEM_PROPERTY2_EFFECTIVE_VALUE,
+                     context.get(TEST_SYSTEM_PROPERTY2_NAME));
+    }
 
-        options = new ConfiguredObjectToMapConverter.ConverterOptions(
+    public void testIncludeInheritedContextAndActual()
+    {
+        TestEngine engine = createEngineWithContext();
+        ConfiguredObjectToMapConverter.ConverterOptions options = new ConfiguredObjectToMapConverter.ConverterOptions(
+                1,
+                true,
+                false,
+                0,
+                false,
+                false);
+        Map<String, Object> resultMap = _converter.convertObjectToMap(engine, TestEngine.class, options);
+        Map<String, String> context = getContext(resultMap);
+        assertTrue("Unexpected size of context", context.size() >= 5);
+        assertEquals("Unexpected engine context content",
+                     CHILD_CONTEXT_PROPERTY_ACTUAL_VALUE,
+                     context.get(CHILD_CONTEXT_PROPERTY_NAME));
+        assertEquals("Unexpected car context content",
+                     PARENT_CONTEXT_PROPERTY1_ACTUAL_VALUE, context.get(PARENT_CONTEXT_PROPERTY1_NAME));
+        assertEquals("Unexpected car context content",
+                     PARENT_CONTEXT_PROPERTY2_ACTUAL_VALUE,
+                     context.get(PARENT_CONTEXT_PROPERTY2_NAME));
+        assertEquals("Unexpected system context content",
+                     TEST_SYSTEM_PROPERTY1_ACTUAL_VALUE,
+                     context.get(TEST_SYSTEM_PROPERTY1_NAME));
+        assertEquals("Unexpected system context content",
+                     TEST_SYSTEM_PROPERTY2_ACTUAL_VALUE,
+                     context.get(TEST_SYSTEM_PROPERTY2_NAME));
+    }
+
+    public void testExcludeInheritedContextAndEffective()
+    {
+        TestEngine engine = createEngineWithContext();
+        ConfiguredObjectToMapConverter.ConverterOptions options = new ConfiguredObjectToMapConverter.ConverterOptions(
                 1,
                 false,
                 false,
                 0,
                 false,
                 true);
-        resultMap = _converter.convertObjectToMap(engine, TestEngine.class, options);
-        contextValue = resultMap.get("context");
-        assertTrue("Unexpected type of context", contextValue instanceof Map);
-        context = (Map<String, String>)contextValue;
+        Map<String, Object> resultMap = _converter.convertObjectToMap(engine, TestEngine.class, options);
+        Map<String, String> context = getContext(resultMap);
         assertEquals("Unexpected size of context", 1, context.size());
-        assertEquals("Unexpected context content", "testValue-carTestValue-" + getTestName() + "2", context.get("test"));
+        assertEquals("Unexpected context content",
+                     CHILD_CONTEXT_PROPERTY_EFFECTIVE_VALUE,
+                     context.get(CHILD_CONTEXT_PROPERTY_NAME));
+    }
+
+    public void testExcludeInheritedContextAndActual()
+    {
+        TestEngine engine = createEngineWithContext();
+        ConfiguredObjectToMapConverter.ConverterOptions options = new ConfiguredObjectToMapConverter.ConverterOptions(
+                1,
+                true,
+                false,
+                0,
+                false,
+                true);
+        Map<String, Object> resultMap = _converter.convertObjectToMap(engine, TestEngine.class, options);
+        Map<String, String> context = getContext(resultMap);
+        assertEquals("Unexpected size of context", 1, context.size());
+        assertEquals("Unexpected context content",
+                     CHILD_CONTEXT_PROPERTY_ACTUAL_VALUE,
+                     context.get(CHILD_CONTEXT_PROPERTY_NAME));
+    }
+
+    private Map<String, String> getContext(final Map<String, Object> resultMap)
+    {
+        Object contextValue = resultMap.get(ConfiguredObject.CONTEXT);
+        assertTrue("Unexpected type of context", contextValue instanceof Map);
+        Map<String, String> context = (Map<String, String>) contextValue;
+        return context;
+    }
+
+    private TestEngine createEngineWithContext()
+    {
+        setTestSystemProperty(TEST_SYSTEM_PROPERTY1_NAME, TEST_SYSTEM_PROPERTY1_ACTUAL_VALUE);
+        setTestSystemProperty(TEST_SYSTEM_PROPERTY2_NAME, TEST_SYSTEM_PROPERTY2_ACTUAL_VALUE);
+        Model model = org.apache.qpid.server.model.testmodels.hierarchy.TestModel.getInstance();
+        final Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, "myCar");
+        Map<String, String> carContext = new HashMap<>();
+        carContext.put(PARENT_CONTEXT_PROPERTY1_NAME, PARENT_CONTEXT_PROPERTY1_ACTUAL_VALUE);
+        carContext.put(PARENT_CONTEXT_PROPERTY2_NAME, PARENT_CONTEXT_PROPERTY2_ACTUAL_VALUE);
+        carAttributes.put(ConfiguredObject.CONTEXT, carContext);
+        TestCar car = model.getObjectFactory().create(TestCar.class, carAttributes);
+        final Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, "myEngine");
+        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+        Map<String, String> engineContext = new HashMap<>();
+        engineContext.put(CHILD_CONTEXT_PROPERTY_NAME, CHILD_CONTEXT_PROPERTY_ACTUAL_VALUE);
+        engineAttributes.put(ConfiguredObject.CONTEXT, engineContext);
+        return (TestEngine) car.createChild(TestEngine.class, engineAttributes);
     }
 
     private Model createTestModel()
