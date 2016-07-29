@@ -130,7 +130,7 @@ The above XML defines a JMS Queue which is bound into JNDI as
 queue/HelloQueue
 
 This destination can be retrieved from JNDI and be used for the consumption or production of messages. The desinationAddress property
-can be customized for your environment. Please see the Qpid Java Client documentation for specific configuration options.
+can be customized for your environment. For specific configuration options please see documentation for the Apache Qpid JMS Client for AMQP 0-9-1/0-10.
 
   <mbean code="org.jboss.resource.deployment.AdminObject"
          name="qpid.jca:name=HelloTopic">
@@ -148,7 +148,7 @@ The above XML defines a JMS Topic which is bound into JNDI as
 HelloTopic
 
 This destination can be retrieved from JNDI and be used for the consumption or production of messages. The desinationAddress property
-can be customized for your environment. Please see the Qpid Java Client documentation for specific configuration options.
+can be customized for your environment. For specific configuration options please see documentation for Apache Qpid JMS Client for AMQP 0-9-1/0-10.
 
 
   <mbean code="org.jboss.resource.deployment.AdminObject"
@@ -173,8 +173,7 @@ The standard method for inbound communication is the MessageDrivenBean architect
 via the ActivationSpec mechanism. Please see the general README.tx file for an explanation of the
 QpidActivationSpec, as well as general inbound connectivity options.
 
-An ActivationSpec can either be configured via the Java Annotation mechanism, or in the ejb-jar.xml deployment
-descriptor.
+An ActivationSpec can either be configured via the Java Annotation mechanism, or in the ejb-jar.xml deployment descriptor.
 
 Summary
 =======

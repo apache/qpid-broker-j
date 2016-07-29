@@ -74,7 +74,7 @@ public class ClientDelegate extends ConnectionDelegate
 
         clientProperties.put(ConnectionStartProperties.SESSION_FLOW, 1);
         clientProperties.put(ConnectionStartProperties.PID, ConnectionStartProperties.getPID());
-        clientProperties.put(ConnectionStartProperties.PROCESS, System.getProperty(ClientProperties.PROCESS_NAME, "Qpid Java Client"));
+        clientProperties.put(ConnectionStartProperties.PROCESS, System.getProperty(ClientProperties.PROCESS_NAME, "Apache Qpid JMS Client for AMQP 0-9-1/0-10"));
         clientProperties.put(ConnectionStartProperties.VERSION_0_10, CommonProperties.getReleaseVersion());
         clientProperties.put(ConnectionStartProperties.PRODUCT, CommonProperties.getProductName());
         clientProperties.put(ConnectionStartProperties.PLATFORM, ConnectionStartProperties.getPlatformInfo());

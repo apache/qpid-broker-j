@@ -1,7 +1,7 @@
 Introduction
 ============
 
-The Test kit for the java client consists of 2 components.
+The Test kit for the Apache Qpid JMS Client for AMQP 0-9-1/0-10 consists of 2 components.
 
 1) A Simple Perf Test that can be used to,
    a) Run a predefined perf report consisting of 8 use cases (see below)

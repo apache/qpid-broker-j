@@ -40,7 +40,7 @@ keytool --list --keystore java_broker_keystore.jks -storepass password
 read -p "Press [Enter] key to continue..."
 echo "Remove existing client keystore"
 rm java_client_keystore.jks
-echo "Re-create java client keystore by importing RootCA certificate"
+echo "Re-create client keystore by importing RootCA certificate"
 keytool -import -v -keystore java_client_keystore.jks -storepass password -alias RootCA -file CA_db/rootca.crt
 
 echo "Generate key for certificate 'app2'"

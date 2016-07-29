@@ -122,7 +122,7 @@ The provided clients and supported options are listed below.
 
 QpidTestClient
 ==============
-As previously mentioned, the Qpid JCA example provides an RMI/JMS Java client to test
+As previously mentioned, the Qpid JCA example provides an RMI/JMS client to test
 the application. Executing the command
 
 ant-run client
