@@ -25,7 +25,7 @@
   </parent>
 
   <artifactId>qpid-common</artifactId>
-  <name>Qpid Common</name>
+  <name>Apache Qpid Common</name>
   <description>Common functionality</description>
 
   <properties>

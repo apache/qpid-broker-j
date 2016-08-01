@@ -709,7 +709,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         producer.close();
 
         // should be 5 or 10 messages on queue now
-        // (5 for the java broker due to use of server side selectors, and 10 for the cpp broker due to client side selectors only)
+        // (5 for the Apache Qpid Broker for Java due to use of server side selectors, and 10 for the cpp broker due to client side selectors only)
         AMQQueue queue = new AMQQueue("amq.topic", "clientid" + ":" + "sameMessageSelector");
         assertEquals("Queue depth is wrong", isJavaBroker() ? 5 : 10, ((AMQSession<?, ?>) session).getQueueDepth(queue, true));
 
@@ -799,7 +799,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         producer.send(msg);
 
         // should be 1 or 2 messages on queue now
-        // (1 for the java broker due to use of server side selectors, and 2 for the cpp broker due to client side selectors only)
+        // (1 for the Apache Qpid Broker for Java due to use of server side selectors, and 2 for the cpp broker due to client side selectors only)
         AMQQueue queue = new AMQQueue("amq.topic", "clientid" + ":" + "testResubscribeWithChangedSelectorNoClose");
         assertEquals("Queue depth is wrong", isJavaBroker() ? 1 : 2, ((AMQSession<?, ?>) session).getQueueDepth(queue, true));
 
@@ -867,7 +867,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         producer.send(msg);
 
         // should be 1 or 2 messages on queue now
-        // (1 for the java broker due to use of server side selectors, and 2 for the cpp broker due to client side selectors only)
+        // (1 for the Apache Qpid Broker for Java due to use of server side selectors, and 2 for the cpp broker due to client side selectors only)
         AMQQueue queue = new AMQQueue("amq.topic", "clientid" + ":" + "subscriptionName");
         assertEquals("Queue depth is wrong", isJavaBroker() ? 1 : 2, ((AMQSession<?, ?>) session).getQueueDepth(queue, true));
         
@@ -980,7 +980,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
      * Tests that if no-local is in use, that the messages are delivered when
      * the client reconnects.
      *
-     * Currently fails on the Java Broker due to QPID-3605.
+     * Currently fails on the Apache Qpid Broker for Java due to QPID-3605.
      */
     public void testNoLocalMessagesNotDeliveredAfterReconnection() throws Exception
     {

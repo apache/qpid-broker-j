@@ -24,14 +24,14 @@
   <title>Installation</title>
   <section role="h2" xml:id="Java-Broker-Installation-Introduction">
     <title>Introduction</title>
-    <para>This document describes how to install the Java Broker on both Windows and UNIX
+    <para>This document describes how to install the Apache Qpid Broker for Java on both Windows and UNIX
       platforms.</para>
   </section>
   <section role="h2" xml:id="Java-Broker-Installation-Prerequistes">
     <title>Prerequisites</title>
     <section role="h3" xml:id="Java-Broker-Installation-Prerequistes-Java">
       <title>Java Platform</title>
-      <para> The Java Broker is an 100% Java implementation and as such it can be used on any
+      <para> The Apache Qpid Broker for Java is an 100% Java implementation and as such it can be used on any
         operating system supporting Java 1.7  or higher<footnote><para>Java Cryptography Extension (JCE)
           Unlimited Strength policy file are required for some features</para></footnote>. This includes Linux, Solaris, Mac OS X, and
         Windows XP/Vista/7/8.</para>
@@ -43,8 +43,8 @@
     </section>
     <section role="h3" xml:id="Java-Broker-Installation-Prerequistes-Disk">
       <title>Disk</title>
-      <para>The Java Broker installation requires approximately 20MB of free disk space.</para>
-      <para>The Java Broker also requires a working directory. The working directory is used for the
+      <para>The Broker installation requires approximately 20MB of free disk space.</para>
+      <para>The Broker also requires a working directory. The working directory is used for the
         message store, that is, the area of the file-system used to record messages
         whilst they are passing through the Broker. The working directory is also used for the
         default location of the log file. The size of the working directory will depend on the how
@@ -68,8 +68,7 @@
       <title>Operating System Account</title>
       <para>Installation or operation of Qpid does <emphasis>not</emphasis> require a privileged
         account (i.e. root on UNIX platforms or Administrator on Windows). However it is suggested
-        that you use an dedicated account (e.g. qpid) for the installation and operation of the Java
-        Broker.</para>
+        that you use an dedicated account (e.g. qpid) for the installation and operation of the Broker.</para>
     </section>
   </section>
 
@@ -77,7 +76,7 @@
     <title>Download</title>
     <section role="h3" xml:id="Java-Broker-Installation-Download-Release">
       <title>Broker Release</title>
-      <para>You can download the latest Java broker package from the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidDownloadUrl}">Download Page</link>. </para>
+      <para>You can download the latest Broker package from the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidDownloadUrl}">Download Page</link>. </para>
       <para> It is recommended that you confirm the integrity of the download by verifying the PGP
         signature matches that available on the site. Instructions are given on the download page.
       </para>
@@ -120,7 +119,7 @@
         Control Panel.</para>
       <screen>set QPID_WORK=C:\qpidwork</screen>
       <para>If the directory referred to by <link linkend="Java-Broker-Appendix-Environment-Variables-Qpid-Work">QPID_WORK</link> does not
-        exist, the Java Broker will attempt to create it on start-up.</para>
+        exist, the Broker will attempt to create it on start-up.</para>
     </section>
   </section>
 
@@ -160,7 +159,7 @@ drwxrwxr-x. 2 alex alex  4096 Nov 25 11:43 lib
       <screen>export QPID_WORK=/var/qpidwork
       </screen>
       <para>If the directory referred to by <link linkend="Java-Broker-Appendix-Environment-Variables-Qpid-Work">QPID_WORK</link> does not
-        exist, the Java Broker will attempt to create it on start-up. </para>
+        exist, the Broker will attempt to create it on start-up. </para>
     </section>
   </section>
   <section role="h2" xml:id="Java-Broker-Installation-OptionalDependencies">

@@ -22,7 +22,7 @@
 
 <chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-8-System-Properties">
 	<title>System Properties</title>
-	<para>The following system properties affect the behaviour of the Qpid JMS client. System
+	<para>The following system properties affect the behaviour of the Client. System
 		properties are global in nature so affect all Qpid interactions made from within the same
 		JVM. For many options, there are equivalent <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link> options allowing the option to be controlled at the level of the
 		Connection.</para>

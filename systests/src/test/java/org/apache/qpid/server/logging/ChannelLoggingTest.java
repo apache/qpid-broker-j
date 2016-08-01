@@ -113,7 +113,7 @@ public class ChannelLoggingTest extends AbstractTestLogging
 
     /**
      * Description:
-     * The Java Broker implements consumer flow control for all ack modes except
+     * The Apache Qpid Broker for Java implements consumer flow control for all ack modes except
      * No-Ack. When a client connects the session's flow is initially set to
      * Stopped. Verify this message appears
      *
@@ -170,7 +170,7 @@ public class ChannelLoggingTest extends AbstractTestLogging
 
     /**
      * Description:
-     * The Java Broker implements consumer flow control for all ack modes except
+     * The Apache Qpid Broker for Java implements consumer flow control for all ack modes except
      * No-Ack. When the client first attempts to receive a message then the Flow
      * status of the Session is set to Started.
      *

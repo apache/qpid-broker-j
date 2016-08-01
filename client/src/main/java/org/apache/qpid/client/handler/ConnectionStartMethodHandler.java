@@ -164,7 +164,7 @@ public class ConnectionStartMethodHandler implements StateAwareMethodListener<Co
                 clientProperties.setString(ConnectionStartProperties.PLATFORM,
                         ConnectionStartProperties.getPlatformInfo());
                 clientProperties.setString(ConnectionStartProperties.PROCESS,
-                        System.getProperty(ClientProperties.PROCESS_NAME, "Qpid Java Client"));
+                        System.getProperty(ClientProperties.PROCESS_NAME, "Apache Qpid JMS Client for AMQP 0-9-1/0-10"));
                 clientProperties.setInteger(ConnectionStartProperties.PID,
                         ConnectionStartProperties.getPID());
 

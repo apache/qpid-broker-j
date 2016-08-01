@@ -27,7 +27,7 @@
   <artifactId>qpid-systests-parent</artifactId>
   <version>6.0.5-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>Qpid Java System Test Parent</name>
+  <name>Apache Qpid System Test Parent</name>
   <description>Parent POM for Qpid system testing modules</description>
 
   <properties>

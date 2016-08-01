@@ -220,7 +220,7 @@ class SoakTest(JavaClientTest):
         else:
             "Print no error !" 
 
-        # grace period for java clients to get the failover properly setup.
+        # grace period for clients to get the failover properly setup.
         time.sleep(30) 
         error_msg= None
         # Kill original brokers, start new ones.

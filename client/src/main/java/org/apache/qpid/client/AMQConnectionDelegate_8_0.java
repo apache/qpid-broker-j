@@ -456,8 +456,8 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
      */
     public boolean isSupportedServerFeature(String featureName)
     {
-        // The Qpid Java Broker 0-8..0-9-1 does not advertise features by the qpid.features property, so for now
-        // we just hardcode JMS selectors as supported.
+        // The Apache Qpid Broker for Java does not advertise features by the qpid.features property
+        // for AMQP protocols 0-8..0-9-1 , so for now we just hardcode JMS selectors as supported.
         return ServerPropertyNames.FEATURE_QPID_JMS_SELECTOR.equals(featureName);
     }
 

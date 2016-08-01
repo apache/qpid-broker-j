@@ -31,8 +31,8 @@
     </parent>
 
     <artifactId>qpid-java-doc-perftests</artifactId>
-    <name>Qpid Java Perftest Docbook</name>
-    <description>Qpid Java Perftest Documentation</description>
+    <name>Apache Qpid Performance Test Docbook</name>
+    <description>Apache Qpid Performance Test Documentation</description>
 
     <profiles>
         <profile>

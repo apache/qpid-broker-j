@@ -26,7 +26,7 @@
   </parent>
 
   <artifactId>qpid-broker-plugins-memory-store</artifactId>
-  <name>Qpid Memory Message Store Broker Plug-in</name>
+  <name>Apache Qpid Memory Message Store Broker Plug-in</name>
   <description>Memory message store broker plug-in</description>
 
   <dependencies>

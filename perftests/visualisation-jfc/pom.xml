@@ -26,7 +26,7 @@
   </parent>
 
   <artifactId>qpid-perftests-visualisation-jfc</artifactId>
-  <name>Qpid Performance Tests Visualisation JFC</name>
+  <name>Apache Qpid Performance Tests Visualisation JFC</name>
   <description>Performance testing visualisation using JFreeChart</description>
 
   <dependencies>

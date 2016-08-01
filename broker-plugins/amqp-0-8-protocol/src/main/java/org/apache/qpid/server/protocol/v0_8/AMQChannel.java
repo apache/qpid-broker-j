@@ -2447,7 +2447,7 @@ public class AMQChannel
                 }
                 else
                 {
-                    // Since the Java client abuses the reject flag for requeing after rollback, we won't set reject here
+                    // Since the JMS client abuses the reject flag for requeing after rollback, we won't set reject here
                     // as it would prevent redelivery
                     // message.reject();
 

@@ -1,4 +1,4 @@
-AMQP Common Java API
+Apache Qpid Common
 
-Common generated functionality for AMQP Java client and broker. See the 
-readme in the client and broker directories.
+Common generated functionality for Apache Qpid JMS Client and Broker for Java.
+See the readme in the client and broker directories.

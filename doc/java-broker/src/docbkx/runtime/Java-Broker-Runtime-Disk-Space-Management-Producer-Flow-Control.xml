@@ -26,7 +26,7 @@
     <section role="h2" xml:id="Java-Broker-Runtime-Disk-Space-Management-Producer-Flow-Control-GeneralInformation">
         <title>General Information</title>
         <para>
-            The Java Broker supports a flow control mechanism to which can be used to prevent either a single queue
+            The Apache Qpid Broker for Java supports a flow control mechanism to which can be used to prevent either a single queue
             or a virtualhost exceeding configured limits.  These two mechanisms are described
             next.
         </para>

@@ -21,7 +21,7 @@
 -->
 
 <book xmlns="http://docbook.org/ns/docbook" version="5.0">
-  <title>JMS Performance Test Framework</title>
+  <title>Apache Qpid JMS Performance Test Framework</title>
   <chapter>
     <para>
       The distributed test (aka Perf Test) framework was written for

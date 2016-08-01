@@ -25,7 +25,7 @@
   </parent>
 
   <artifactId>qpid-client</artifactId>
-  <name>Qpid AMQP 0-x JMS Client</name>
+  <name>Apache Qpid JMS Client for AMQP 0-9-1/0-10</name>
   <description>JMS client supporting AMQP 0-8, 0-9, 0-9-1 and 0-10.</description>
 
   <properties>

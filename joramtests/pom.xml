@@ -29,7 +29,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>joramtests</artifactId>
-    <name>Qpid Joram JMS Tests</name>
+    <name>Apache Qpid Joram JMS Tests</name>
     <description>Integration test suite utilising the Joram JMS test suite.</description>
 
     <properties>

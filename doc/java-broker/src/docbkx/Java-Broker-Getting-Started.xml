@@ -26,7 +26,7 @@
   <section role="h2" xml:id="Java-Broker-Getting-Started-Introduction">
     <title>Introduction</title>
     <para>
-      This section describes how to start and stop the Java Broker, and outlines the various command line options.
+      This section describes how to start and stop the Broker, and outlines the various command line options.
     </para>
     <para>
       For additional details about the broker configuration store and related command line arguments see
@@ -81,7 +81,7 @@
   </section>
   <section role="h2" xml:id="Java-Broker-Getting-Started-Logging">
     <title>Log file</title>
-    <para>The Java Broker writes a log file to record both details of its normal operation and any exceptional
+    <para>The Broker writes a log file to record both details of its normal operation and any exceptional
       conditions.  By default the log file is written within the log subdirectory beneath the work directory
       - <computeroutput>$QPID_WORK/log/qpid.log</computeroutput> (UNIX) and
       <computeroutput>%QPID_WORK%\log\qpid.log</computeroutput> (Windows).</para>
@@ -89,7 +89,7 @@
   </section>
   <section role="h2" xml:id="Java-Broker-Getting-Started-CommandLine">
     <title>Using the command line</title>
-    <para>The Java Broker understands a number of command line options which may be used to customise the configuration.</para>
+    <para>The Broker understands a number of command line options which may be used to customise the configuration.</para>
     <para>
       For additional details about the broker configuration and related command line arguments see
       <xref linkend="Java-Broker-Initial-Configuration"/>.

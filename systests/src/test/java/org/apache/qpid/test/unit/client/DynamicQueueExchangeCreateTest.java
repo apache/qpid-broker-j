@@ -226,7 +226,7 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
         consumer.close();
 
         // Temporarily workaround the fact that exchange deletion is not completely atomic
-        // in the Java Broker.
+        // in the Apache Qpid Broker for Java.
         long timeout = System.currentTimeMillis() + 10000;
         boolean exchangeExists = true;
         while (timeout > System.currentTimeMillis() && exchangeExists)

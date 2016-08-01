@@ -26,7 +26,7 @@
     </parent>
 
     <artifactId>qpid-broker-plugins-websocket</artifactId>
-    <name>Qpid WebSocket Broker Plug-in</name>
+    <name>Apache Qpid WebSocket Broker Plug-in</name>
     <description>WebSocket broker plug-in</description>
 
     <dependencies>

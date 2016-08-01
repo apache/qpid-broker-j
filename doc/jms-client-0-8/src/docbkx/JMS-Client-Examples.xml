@@ -23,13 +23,13 @@
 <chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-8-Examples">
 	<title>Examples</title>
 
-	<para>The following programs shows how to send and receive messages using the Qpid JMS client.
+	<para>The following programs shows how to send and receive messages using the Client.
 		The first program illustrates a <emphasis>point to point</emphasis> example, the second, a
 		pubish/subscribe example. </para>
 	<para>Both examples show the use JNDI to obtain connection factory and destination objects which
 		the application needs. In this way the configuration is kept separate from the application
 		code itself.</para>
-	<para>The example code will be straightforward for anyone familiar with Java JMS. Readers in
+	<para>The example code will be straightforward for anyone familiar with JMS. Readers in
 		need of an introduction are directed towards <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJmsTutorial}">Oracle's JMS
 			tutorial</link>.</para>
 	<section xml:id="JMS-Client-0-8-Examples-PTP">

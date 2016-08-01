@@ -144,8 +144,8 @@
                 <entry><para>long </para></entry>
                 <entry><para>The delay (in milliseconds) between the time a message is sent by a MessageProducer, and
                     the earliest time it becomes visible to consumers on any queue onto which it has been placed. Note that
-                    this value only has an affect on brokers which support the feature (currently only the Qpid Java
-                    Broker), and only on queues where delivery delay has been enabled.</para></entry>
+                    this value only has an affect on brokers which support the feature (currently only the Apache Qpid
+                    Broker for Java), and only on queues where delivery delay has been enabled.</para></entry>
             </row>
         </tbody>
       </tgroup>

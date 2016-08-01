@@ -26,8 +26,8 @@
     </parent>
 
     <artifactId>qpid-broker-plugins-management-amqp</artifactId>
-    <name>Qpid AMQP Management Protocol Broker Plug-in</name>
-    <description>Qpid AMQP Management broker plug-in</description>
+    <name>Apache Qpid AMQP Management Protocol Broker Plug-in</name>
+    <description>Apache Qpid AMQP Management broker plug-in</description>
 
     <dependencies>
         <dependency>

@@ -72,7 +72,7 @@
             <para>None</para>
           </entry>
           <entry>
-            <para>This is the preferred mechanism for passing Java <link linkend="Java-Broker-Appendix-System-Properties">system properties</link> to the
+            <para>This is the preferred mechanism for passing <link linkend="Java-Broker-Appendix-System-Properties">Java system properties</link> to the
               Broker. The value must be a list of system properties each separate by a space.
                   <literal>-D<replaceable>name1</replaceable>=<replaceable>value1</replaceable>
                   -D<replaceable>name2</replaceable>=<replaceable>value2</replaceable></literal>.

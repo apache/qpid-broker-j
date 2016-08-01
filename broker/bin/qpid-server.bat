@@ -18,7 +18,7 @@
 @REM
 
 @echo off
-REM Script to run the Qpid Java Broker
+REM Script to run the Apache Qpid Broker for Java
 
 SETLOCAL
 

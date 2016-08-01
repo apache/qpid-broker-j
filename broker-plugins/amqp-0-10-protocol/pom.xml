@@ -26,7 +26,7 @@
   </parent>
 
   <artifactId>qpid-broker-plugins-amqp-0-10-protocol</artifactId>
-  <name>Qpid AMQP 0-10 Protocol Plug-in</name>
+  <name>Apache Qpid AMQP 0-10 Protocol Plug-in</name>
   <description>AMQP 0-10 protocol broker plug-in</description>
 
   <dependencies>

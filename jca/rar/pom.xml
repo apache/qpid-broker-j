@@ -27,7 +27,7 @@
 
   <artifactId>qpid-ra</artifactId>
   <packaging>rar</packaging>
-  <name>Qpid Resource Adaptor</name>
+  <name>Apache Qpid Resource Adaptor</name>
   <description>Resource Adaptor</description>
 
   <dependencies>
