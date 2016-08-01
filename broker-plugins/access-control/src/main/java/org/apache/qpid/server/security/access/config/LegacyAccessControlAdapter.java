@@ -68,7 +68,8 @@ class LegacyAccessControlAdapter
                                                                     "dumpHeap",
                                                                     "performGC",
                                                                     "getThreadStackTraces",
-                                                                    "findThreadStackTraces")));
+                                                                    "findThreadStackTraces",
+                                                                    "extractConfig")));
 
     private final LegacyAccessControl _accessControl;
     private final Model _model;

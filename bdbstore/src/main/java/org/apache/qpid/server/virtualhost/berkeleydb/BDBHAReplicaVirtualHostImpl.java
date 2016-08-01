@@ -452,6 +452,12 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
+    public Map<String, Object> extractConfig(boolean includeSecureAttributes)
+    {
+        return Collections.emptyMap();
+    }
+
+    @Override
     public List<String> getEnabledConnectionValidators()
     {
         return _enabledConnectionValidators;

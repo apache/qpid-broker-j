@@ -23,6 +23,7 @@ package org.apache.qpid.server.model;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -188,6 +189,12 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     @ManagedOperation(nonModifying = true, description = "Initiates an orderly shutdown of the Broker.")
     void initiateShutdown();
+
+    @ManagedOperation(nonModifying = true, description = "Extract configuration")
+    Map<String,Object> extractConfig(@Param(name="includeSecureAttributes",
+                                            description = "include attributes that may contain passwords or other"
+                                                          + " confidential information",
+                                            defaultValue = "false") boolean includeSecureAttributes);
 
     @DerivedAttribute(description = "Maximum heap memory size")
     long getMaximumHeapMemorySize();

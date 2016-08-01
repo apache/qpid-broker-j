@@ -813,6 +813,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
+    public Map<String, Object> extractConfig(boolean includeSecureAttributes)
+    {
+        return (new ConfigurationExtractor()).extractConfig(this, includeSecureAttributes);
+    }
+
+    @Override
     public boolean authoriseCreateConnection(final AMQPConnection<?> connection)
     {
         authorise(Operation.ACTION("connect"));

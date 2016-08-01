@@ -311,6 +311,12 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
+    public Map<String, Object> extractConfig(boolean includeSecureAttributes)
+    {
+        return Collections.emptyMap();
+    }
+
+    @Override
     public int publishMessage(final ManageableMessage message)
     {
         throwUnsupportedForRedirector();

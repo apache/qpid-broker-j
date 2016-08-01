@@ -381,6 +381,12 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         _parent.closeAsync();
     }
 
+    @Override
+    public Map<String, Object> extractConfig(final boolean includeSecureAttributes)
+    {
+        return (new ConfigurationExtractor()).extractConfig(this, includeSecureAttributes);
+    }
+
     private void performActivation()
     {
         boolean hasBrokerAnyErroredChildren = false;

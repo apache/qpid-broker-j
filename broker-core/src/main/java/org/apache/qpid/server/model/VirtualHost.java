@@ -26,6 +26,7 @@ import java.security.AccessControlContext;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 
@@ -196,6 +197,12 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     @ManagedOperation
     int publishMessage(@Param(name = "message")ManageableMessage message);
+
+    @ManagedOperation(nonModifying = true, description = "Extract configuration")
+    Map<String,Object> extractConfig(@Param(name="includeSecureAttributes",
+                                            description = "include attributes that may contain passwords or other "
+                                                          + "confidential information",
+                                            defaultValue = "false") boolean includeSecureAttributes);
 
     void start();
 
