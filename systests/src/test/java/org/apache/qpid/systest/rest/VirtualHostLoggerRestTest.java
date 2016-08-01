@@ -28,9 +28,11 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.server.logging.VirtualHostFileLogger;
+import org.apache.qpid.server.logging.logback.VirtualHostFileLogger;
+import org.apache.qpid.server.logging.logback.VirtualHostNameAndLevelLogInclusionRule;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHostLogInclusionRule;
 import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.util.LogMonitor;
 
@@ -54,6 +56,7 @@ public class VirtualHostLoggerRestTest extends QpidRestTestCase
         Map<String, Object> virtualHostRuleAttributes = new HashMap<>();
         virtualHostRuleAttributes.put("name", loggerRuleName);
         virtualHostRuleAttributes.put("level", "DEBUG");
+        virtualHostRuleAttributes.put("type", VirtualHostNameAndLevelLogInclusionRule.TYPE);
 
         String loggerRuleRestUrlBase = "virtualhostloginclusionrule/" + TEST1_VIRTUALHOST + "/" + TEST1_VIRTUALHOST + "/" + loggerName;
         String loggerRuleRestUrl = loggerRuleRestUrlBase + "/" + loggerRuleName;

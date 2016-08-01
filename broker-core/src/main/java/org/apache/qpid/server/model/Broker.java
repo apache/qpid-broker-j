@@ -168,7 +168,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedContextDefault(name = BROKER_DIRECT_BYTE_BUFFER_POOL_SIZE)
     int DEFAULT_BROKER_DIRECT_BYTE_BUFFER_POOL_SIZE = 1024;
 
-    @ManagedAttribute(validValues = {"org.apache.qpid.server.model.adapter.BrokerImpl#getAvailableConfigurationEncrypters()"})
+    @ManagedAttribute(validValues = {"org.apache.qpid.server.model.BrokerImpl#getAvailableConfigurationEncrypters()"})
     String getConfidentialConfigurationEncryptionProvider();
 
     @DerivedAttribute( persist = true )

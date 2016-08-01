@@ -20,12 +20,7 @@
  */
 package org.apache.qpid.server.logging;
 
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.filter.Filter;
-
 public interface LogInclusionRule
 {
-    Filter<ILoggingEvent> asFilter();
-
     String getName();
 }

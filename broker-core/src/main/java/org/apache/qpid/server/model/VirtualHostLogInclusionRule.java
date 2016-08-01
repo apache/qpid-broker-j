@@ -21,9 +21,8 @@
 package org.apache.qpid.server.model;
 
 import org.apache.qpid.server.logging.LogInclusionRule;
-import org.apache.qpid.server.logging.VirtualHostNameAndLevelLogInclusionRule;
 
-@ManagedObject(defaultType = VirtualHostNameAndLevelLogInclusionRule.TYPE)
+@ManagedObject
 public interface VirtualHostLogInclusionRule<X extends VirtualHostLogInclusionRule<X>> extends ConfiguredObject<X>, LogInclusionRule
 {
 }

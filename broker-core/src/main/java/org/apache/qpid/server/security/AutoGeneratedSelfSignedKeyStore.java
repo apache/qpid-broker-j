@@ -20,9 +20,6 @@
  */
 package org.apache.qpid.server.security;
 
-import java.util.Collection;
-
-import org.apache.qpid.server.logging.LogRecord;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.KeyStore;

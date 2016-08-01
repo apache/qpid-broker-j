@@ -80,6 +80,8 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     private final EventLogger _eventLogger;
 
     private volatile DurableConfigurationStore _configurationStore;
+    private Runnable _onContainerResolveTask;
+    private Runnable _onContainerCloseTask;
 
     @ManagedAttributeField
     private boolean _managementMode;
@@ -472,6 +474,26 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         return _systemPrincipal;
     }
 
+    public Runnable getOnContainerResolveTask()
+    {
+        return _onContainerResolveTask;
+    }
+
+    @Override
+    public void setOnContainerResolveTask(final Runnable onContainerResolveTask)
+    {
+        _onContainerResolveTask = onContainerResolveTask;
+    }
+
+    public Runnable getOnContainerCloseTask()
+    {
+        return _onContainerCloseTask;
+    }
+
+    public void setOnContainerCloseTask(final Runnable onContainerCloseTask)
+    {
+        _onContainerCloseTask = onContainerCloseTask;
+    }
 
     private class ShutdownService implements Runnable
     {

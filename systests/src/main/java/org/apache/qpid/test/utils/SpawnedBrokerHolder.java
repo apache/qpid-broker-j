@@ -37,8 +37,8 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.configuration.BrokerProperties;
-import org.apache.qpid.server.logging.BrokerLogbackSocketLogger;
-import org.apache.qpid.server.logging.BrokerNameAndLevelLogInclusionRule;
+import org.apache.qpid.server.logging.logback.BrokerLogbackSocketLogger;
+import org.apache.qpid.server.logging.logback.BrokerNameAndLevelLogInclusionRule;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.model.BrokerLogInclusionRule;
 import org.apache.qpid.server.model.BrokerLogger;

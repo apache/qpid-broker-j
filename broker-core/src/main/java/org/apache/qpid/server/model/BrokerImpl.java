@@ -20,19 +20,6 @@
  */
 package org.apache.qpid.server.model;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.management.BufferPoolMXBean;
-import java.lang.management.LockInfo;
-import java.lang.management.ManagementFactory;
-import java.lang.management.MonitorInfo;
-import java.lang.management.PlatformManagedObject;
-import java.lang.management.RuntimeMXBean;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.nio.charset.Charset;
 import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.Principal;
@@ -44,16 +31,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
@@ -64,8 +48,6 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.BrokerPrincipal;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
-import org.apache.qpid.server.logging.QpidLoggerTurboFilter;
-import org.apache.qpid.server.logging.StartupAppender;
 import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.CompoundAccessControl;
@@ -79,7 +61,7 @@ import org.apache.qpid.server.store.preferences.PreferencesRoot;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdaterImpl;
 import org.apache.qpid.server.store.preferences.PreferencesRecoverer;
 import org.apache.qpid.server.util.HousekeepingExecutor;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,8 +71,6 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.logging.messages.VirtualHostMessages;
-import org.apache.qpid.server.plugin.ConfigurationSecretEncrypterFactory;
-import org.apache.qpid.server.plugin.PluggableFactoryLoader;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.SystemNodeCreator;
 import org.apache.qpid.server.security.auth.manager.SimpleAuthenticationManager;
@@ -254,17 +234,13 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     {
         super.postResolveChildren();
 
-        ch.qos.logback.classic.Logger rootLogger =
-                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-
-        StartupAppender startupAppender = (StartupAppender) rootLogger.getAppender(StartupAppender.class.getName());
-        if (startupAppender != null)
-        {
-            rootLogger.detachAppender(startupAppender);
-            startupAppender.stop();
-        }
 
         final SystemConfig parent = getParent(SystemConfig.class);
+        Runnable task =  parent.getOnContainerResolveTask();
+        if(task != null)
+        {
+            task.run();
+        }
         addChangeListener(_accessControlProviderListener);
         _eventLogger.message(BrokerMessages.CONFIG(parent instanceof FileBasedSettings
                                                            ? ((FileBasedSettings) parent).getStorePath()
@@ -732,8 +708,11 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         }
         finally
         {
-            // uninstall Qpid turbo filter
-            QpidLoggerTurboFilter.uninstallFromRootContext();
+            Runnable task = _parent.getOnContainerCloseTask();
+            if(task != null)
+            {
+                task.run();
+            }
         }
     }
 

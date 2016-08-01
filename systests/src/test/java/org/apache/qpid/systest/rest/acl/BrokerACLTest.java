@@ -28,9 +28,9 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.server.logging.BrokerFileLogger;
-import org.apache.qpid.server.logging.BrokerMemoryLogger;
-import org.apache.qpid.server.logging.BrokerNameAndLevelLogInclusionRule;
+import org.apache.qpid.server.logging.logback.BrokerFileLogger;
+import org.apache.qpid.server.logging.logback.BrokerMemoryLogger;
+import org.apache.qpid.server.logging.logback.BrokerNameAndLevelLogInclusionRule;
 import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet;
 import org.apache.qpid.server.model.AccessControlProvider;

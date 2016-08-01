@@ -73,4 +73,12 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
     <C extends ConfiguredObject<C>> C getChild(Class<C> childClass);
 
     DurableConfigurationStore getConfigurationStore();
+
+    Runnable getOnContainerResolveTask();
+
+    void setOnContainerResolveTask(Runnable runnable);
+
+    Runnable getOnContainerCloseTask();
+
+    void setOnContainerCloseTask(Runnable runnable);
 }
