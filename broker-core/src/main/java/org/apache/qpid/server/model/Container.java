@@ -24,5 +24,13 @@ import org.apache.qpid.server.logging.EventLogger;
 
 public interface Container<C extends ConfiguredObject<C>> extends ConfiguredObject<C>
 {
+    String CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER = "confidentialConfigurationEncryptionProvider";
+
     void setEventLogger(EventLogger startupLogger);
+
+    EventLogger getEventLogger();
+
+    int getNetworkBufferSize();
+
+    AuthenticationProvider<?> getManagementModeAuthenticationProvider();
 }

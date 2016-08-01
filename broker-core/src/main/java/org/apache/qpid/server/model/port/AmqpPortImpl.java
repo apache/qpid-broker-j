@@ -114,7 +114,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     private final AtomicInteger _connectionCount = new AtomicInteger();
     private final AtomicBoolean _connectionCountWarningGiven = new AtomicBoolean();
 
-    private final Broker<?> _broker;
+    private final Container<?> _container;
     private final int _connectionWarnCount;
     private final AtomicBoolean _closing = new AtomicBoolean();
     private final SettableFuture _noConnectionsRemain = SettableFuture.create();
@@ -123,10 +123,10 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     private volatile long _protocolHandshakeTimeout;
 
     @ManagedObjectFactoryConstructor
-    public AmqpPortImpl(Map<String, Object> attributes, Broker<?> broker)
+    public AmqpPortImpl(Map<String, Object> attributes, Container<?> container)
     {
-        super(attributes, broker);
-        _broker = broker;
+        super(attributes, container);
+        _container = container;
         _connectionWarnCount = getContextValue(Integer.class, OPEN_CONNECTIONS_WARN_PERCENT);
     }
 
@@ -241,7 +241,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     @Override
     protected State onActivate()
     {
-        if(_broker.isManagementMode())
+        if(getAncestor(SystemConfig.class).isManagementMode())
         {
             return State.QUIESCED;
         }
@@ -283,7 +283,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
                 _transport.start();
                 for (Transport transport : getTransports())
                 {
-                    _broker.getEventLogger()
+                    _container.getEventLogger()
                             .message(BrokerMessages.LISTENING(String.valueOf(transport),
                                                               _transport.getAcceptingPort()));
                 }
@@ -291,7 +291,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
             }
             catch (PortBindFailureException e)
             {
-                _broker.getEventLogger().message(PortMessages.BIND_FAILED(getType().toUpperCase(),getPort()));
+                _container.getEventLogger().message(PortMessages.BIND_FAILED(getType().toUpperCase(), getPort()));
                 throw e;
             }
         }
@@ -317,7 +317,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         {
             for(Transport transport : getTransports())
             {
-                _broker.getEventLogger().message(BrokerMessages.SHUTTING_DOWN(String.valueOf(transport), _transport.getAcceptingPort()));
+                _container.getEventLogger().message(BrokerMessages.SHUTTING_DOWN(String.valueOf(transport), _transport.getAcceptingPort()));
             }
 
 
@@ -328,7 +328,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     @Override
     public int getNetworkBufferSize()
     {
-        return _broker.getNetworkBufferSize();
+        return _container.getNetworkBufferSize();
     }
 
     @Override
@@ -589,8 +589,8 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
            && openConnections > (maxOpenConnections * _connectionWarnCount) / 100
            && _connectionCountWarningGiven.compareAndSet(false, true))
         {
-            _broker.getEventLogger().message(new PortLogSubject(this),
-                                             PortMessages.CONNECTION_COUNT_WARN(openConnections,
+            _container.getEventLogger().message(new PortLogSubject(this),
+                                                PortMessages.CONNECTION_COUNT_WARN(openConnections,
                                                                                 _connectionWarnCount,
                                                                                 maxOpenConnections));
         }
@@ -628,14 +628,14 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         String addressString = remoteSocketAddress.toString();
         if (_closing.get())
         {
-            _broker.getEventLogger().message(new PortLogSubject(this),
-                                             PortMessages.CONNECTION_REJECTED_CLOSED(addressString));
+            _container.getEventLogger().message(new PortLogSubject(this),
+                                                PortMessages.CONNECTION_REJECTED_CLOSED(addressString));
             return false;
         }
         else if (_maxOpenConnections > 0 && _connectionCount.get() >= _maxOpenConnections)
         {
-            _broker.getEventLogger().message(new PortLogSubject(this),
-                                             PortMessages.CONNECTION_REJECTED_TOO_MANY(addressString,
+            _container.getEventLogger().message(new PortLogSubject(this),
+                                                PortMessages.CONNECTION_REJECTED_TOO_MANY(addressString,
                                                                                        _maxOpenConnections));
             return false;
         }

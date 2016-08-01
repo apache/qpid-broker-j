@@ -198,7 +198,7 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     @Override
     protected Appender<ILoggingEvent> createAppenderInstance(Context loggerContext)
     {
-        SystemConfig<?> systemConfig = (SystemConfig<?>)getParent(Broker.class).getParent(SystemConfig.class);
+        SystemConfig<?> systemConfig = getAncestor(SystemConfig.class);
         _logbackStatusListener = new BrokerFileLoggerStatusListener(this, systemConfig);
         _statusManager = loggerContext.getStatusManager();
         _statusManager.add(_logbackStatusListener);

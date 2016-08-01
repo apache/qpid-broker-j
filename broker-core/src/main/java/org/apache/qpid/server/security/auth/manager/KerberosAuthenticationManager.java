@@ -33,7 +33,7 @@ import javax.security.sasl.Sasl;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 
-import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -47,9 +47,9 @@ public class KerberosAuthenticationManager extends AbstractAuthenticationManager
     private final CallbackHandler _callbackHandler = new GssApiCallbackHandler();
 
     @ManagedObjectFactoryConstructor
-    protected KerberosAuthenticationManager(final Map<String, Object> attributes, final Broker broker)
+    protected KerberosAuthenticationManager(final Map<String, Object> attributes, final Container<?> container)
     {
-        super(attributes, broker);
+        super(attributes, container);
     }
 
     @Override

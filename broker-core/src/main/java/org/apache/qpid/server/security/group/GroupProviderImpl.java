@@ -32,6 +32,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.Group;
 import org.apache.qpid.server.model.GroupManagingGroupProvider;
 import org.apache.qpid.server.model.GroupMember;
@@ -48,10 +49,9 @@ public class GroupProviderImpl extends AbstractConfiguredObject<GroupProviderImp
     public static final String CONFIG_TYPE = "ManagedGroupProvider";
 
     @ManagedObjectFactoryConstructor
-    public GroupProviderImpl(Map<String, Object> attributes,
-                                      Broker broker)
+    public GroupProviderImpl(Map<String, Object> attributes, Container<?> container)
     {
-        super(parentsMap(broker), attributes);
+        super(parentsMap(container), attributes);
     }
 
 

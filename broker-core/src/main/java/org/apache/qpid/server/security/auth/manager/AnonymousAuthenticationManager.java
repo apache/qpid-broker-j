@@ -29,7 +29,7 @@ import javax.security.auth.Subject;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 
-import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -55,9 +55,9 @@ public class AnonymousAuthenticationManager extends AbstractAuthenticationManage
     public static final AuthenticationResult ANONYMOUS_AUTHENTICATION = new AuthenticationResult(ANONYMOUS_PRINCIPAL);
 
     @ManagedObjectFactoryConstructor
-    protected AnonymousAuthenticationManager(final Map<String, Object> attributes, final Broker broker)
+    protected AnonymousAuthenticationManager(final Map<String, Object> attributes, final Container<?> container)
     {
-        super(attributes, broker);
+        super(attributes, container);
     }
 
     @Override

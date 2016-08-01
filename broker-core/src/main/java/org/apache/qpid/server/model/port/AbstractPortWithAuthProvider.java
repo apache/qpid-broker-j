@@ -29,27 +29,31 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.Transport;
 
 abstract public class AbstractPortWithAuthProvider<X extends AbstractPortWithAuthProvider<X>> extends AbstractPort<X> implements PortWithAuthProvider<X>
 {
+    private final Container<?> _container;
     @ManagedAttributeField
     private AuthenticationProvider _authenticationProvider;
 
     public AbstractPortWithAuthProvider(final Map<String, Object> attributes,
-                                        final Broker<?> broker)
+                                        final Container<?> container)
     {
-        super(attributes, broker);
+        super(attributes, container);
+        _container = container;
     }
 
     public AuthenticationProvider getAuthenticationProvider()
     {
-        Broker<?> broker = getParent(Broker.class);
-        if(broker.isManagementMode())
+        SystemConfig<?> systemConfig = getAncestor(SystemConfig.class);
+        if(systemConfig.isManagementMode())
         {
-            return broker.getManagementModeAuthenticationProvider();
+            return _container.getManagementModeAuthenticationProvider();
         }
         return _authenticationProvider;
     }

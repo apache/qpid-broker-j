@@ -39,8 +39,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.Group;
 import org.apache.qpid.server.model.GroupMember;
 import org.apache.qpid.server.model.GroupProvider;
@@ -48,6 +48,7 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.group.FileGroupDatabase;
 import org.apache.qpid.server.security.group.GroupPrincipal;
@@ -59,7 +60,7 @@ public class FileBasedGroupProviderImpl
     public static final String GROUP_FILE_PROVIDER_TYPE = "GroupFile";
     private static Logger LOGGER = LoggerFactory.getLogger(FileBasedGroupProviderImpl.class);
 
-    private final Broker<?> _broker;
+    private final Container<?> _container;
 
     private FileGroupDatabase _groupDatabase;
 
@@ -68,17 +69,17 @@ public class FileBasedGroupProviderImpl
 
     @ManagedObjectFactoryConstructor
     public FileBasedGroupProviderImpl(Map<String, Object> attributes,
-                                      Broker broker)
+                                      Container<?> container)
     {
-        super(parentsMap(broker), attributes);
+        super(parentsMap(container), attributes);
 
 
-        _broker = broker;
+        _container = container;
     }
 
     public void onValidate()
     {
-        Collection<GroupProvider<?>> groupProviders = _broker.getGroupProviders();
+        Collection<GroupProvider> groupProviders = _container.getChildren(GroupProvider.class);
         for(GroupProvider<?> provider : groupProviders)
         {
             if(provider instanceof FileBasedGroupProvider && provider != this)
@@ -262,7 +263,7 @@ public class FileBasedGroupProviderImpl
         }
         else
         {
-            if (_broker.isManagementMode())
+            if (getAncestor(SystemConfig.class).isManagementMode())
             {
                         LOGGER.warn("Failed to activate group provider: " + getName());
             }

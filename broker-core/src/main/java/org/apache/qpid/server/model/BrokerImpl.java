@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model.adapter;
+package org.apache.qpid.server.model;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -89,7 +89,6 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.logging.messages.VirtualHostMessages;
-import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.plugin.ConfigurationSecretEncrypterFactory;
 import org.apache.qpid.server.plugin.PluggableFactoryLoader;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
@@ -102,7 +101,7 @@ import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
 import org.apache.qpid.util.SystemUtils;
 
 @ManagedObject( category = false, type = "Broker" )
-public class BrokerImpl extends AbstractConfiguredObject<BrokerImpl> implements Broker<BrokerImpl>, StatisticsGatherer
+public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<BrokerImpl>, StatisticsGatherer
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BrokerImpl.class);
 
@@ -157,9 +156,6 @@ public class BrokerImpl extends AbstractConfiguredObject<BrokerImpl> implements 
             CONNECTION_HEART_BEAT_DELAY, STATISTICS_REPORTING_PERIOD };
 
 
-    private SystemConfig<?> _parent;
-    private EventLogger _eventLogger;
-
     private AuthenticationProvider<?> _managementModeAuthenticationProvider;
 
     private Timer _reportingTimer;
@@ -180,23 +176,12 @@ public class BrokerImpl extends AbstractConfiguredObject<BrokerImpl> implements 
     private boolean _statisticsReportingResetEnabled;
     @ManagedAttributeField
     private boolean _messageCompressionEnabled;
-    @ManagedAttributeField
-    private int _housekeepingThreadCount;
 
     private PreferenceStore _preferenceStore;
-
-    @ManagedAttributeField(beforeSet = "preEncrypterProviderSet", afterSet = "postEncrypterProviderSet")
-    private String _confidentialConfigurationEncryptionProvider;
-    private String _preConfidentialConfigurationEncryptionProvider;
 
     private final boolean _virtualHostPropertiesNodeEnabled;
     private Collection<BrokerLogger> _brokerLoggersToClose;
     private int _networkBufferSize = DEFAULT_NETWORK_BUFFER_SIZE;
-    private final long _maximumHeapSize = Runtime.getRuntime().maxMemory();
-    private final long _maximumDirectMemorySize = getMaxDirectMemorySize();
-    private final BufferPoolMXBean _bufferPoolMXBean;
-    private final List<String> _jvmArguments;
-    private HousekeepingExecutor _houseKeepingTaskExecutor;
     private final AddressSpaceRegistry _addressSpaceRegistry = new AddressSpaceRegistry();
     private ConfigurationChangeListener _accessControlProviderListener = new AccessControlProviderListener();
     private final AccessControl _accessControl;
@@ -207,9 +192,7 @@ public class BrokerImpl extends AbstractConfiguredObject<BrokerImpl> implements 
     public BrokerImpl(Map<String, Object> attributes,
                       SystemConfig parent)
     {
-        super(parentsMap(parent), attributes);
-        _parent = parent;
-        _eventLogger = parent.getEventLogger();
+        super(parentsMap(parent), attributes, parent);
         _principal = new BrokerPrincipal(this);
 
         if (parent.isManagementMode())
@@ -230,50 +213,12 @@ public class BrokerImpl extends AbstractConfiguredObject<BrokerImpl> implements 
         QpidServiceLoader qpidServiceLoader = new QpidServiceLoader();
         final Set<String> systemNodeCreatorTypes = qpidServiceLoader.getInstancesByType(SystemNodeCreator.class).keySet();
         _virtualHostPropertiesNodeEnabled = systemNodeCreatorTypes.contains(VirtualHostPropertiesNodeCreator.TYPE);
-        if(attributes.get(CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER) != null )
-        {
-
-            final String encryptionProviderType = String.valueOf(attributes.get(CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER));
-            updateEncrypter(encryptionProviderType);
-            _confidentialConfigurationEncryptionProvider = encryptionProviderType;
-        }
         _messagesDelivered = new StatisticsCounter("messages-delivered");
         _dataDelivered = new StatisticsCounter("bytes-delivered");
         _messagesReceived = new StatisticsCounter("messages-received");
         _dataReceived = new StatisticsCounter("bytes-received");
 
-        BufferPoolMXBean bufferPoolMXBean = null;
-        List<BufferPoolMXBean> bufferPoolMXBeans = ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);
-        for(BufferPoolMXBean mBean : bufferPoolMXBeans)
-        {
-            if (mBean.getName().equals("direct"))
-            {
-                bufferPoolMXBean = mBean;
-                break;
-            }
-        }
-        _bufferPoolMXBean = bufferPoolMXBean;
-        _jvmArguments = ManagementFactory.getRuntimeMXBean().getInputArguments();
-    }
 
-    private void updateEncrypter(final String encryptionProviderType)
-    {
-        if(encryptionProviderType != null && !"".equals(encryptionProviderType.trim()))
-        {
-            PluggableFactoryLoader<ConfigurationSecretEncrypterFactory> factoryLoader =
-                    new PluggableFactoryLoader<>(ConfigurationSecretEncrypterFactory.class);
-            ConfigurationSecretEncrypterFactory factory = factoryLoader.get(encryptionProviderType);
-            if (factory == null)
-            {
-                throw new IllegalConfigurationException("Unknown Configuration Secret Encryption method "
-                                                        + encryptionProviderType);
-            }
-            setEncrypter(factory.createEncrypter(this));
-        }
-        else
-        {
-            setEncrypter(null);
-        }
     }
 
     private void registerSystemAddressSpaces()
@@ -533,43 +478,6 @@ public class BrokerImpl extends AbstractConfiguredObject<BrokerImpl> implements 
     }
 
     @Override
-    public String getBuildVersion()
-    {
-        return CommonProperties.getBuildVersion();
-    }
-
-    @Override
-    public String getOperatingSystem()
-    {
-        return SystemUtils.getOSString();
-    }
-
-    @Override
-    public String getPlatform()
-    {
-        return System.getProperty("java.vendor") + " "
-                      + System.getProperty("java.runtime.version", System.getProperty("java.version"));
-    }
-
-    @Override
-    public String getProcessPid()
-    {
-        return SystemUtils.getProcessPid();
-    }
-
-    @Override
-    public String getProductVersion()
-    {
-        return CommonProperties.getReleaseVersion();
-    }
-
-    @Override
-    public int getNumberOfCores()
-    {
-        return Runtime.getRuntime().availableProcessors();
-    }
-
-    @Override
     public int getConnection_sessionCountLimit()
     {
         return _connection_sessionCountLimit;
@@ -603,24 +511,6 @@ public class BrokerImpl extends AbstractConfiguredObject<BrokerImpl> implements 
     public boolean isMessageCompressionEnabled()
     {
         return _messageCompressionEnabled;
-    }
-
-    @Override
-    public String getConfidentialConfigurationEncryptionProvider()
-    {
-        return _confidentialConfigurationEncryptionProvider;
-    }
-
-    @Override
-    public int getHousekeepingThreadCount()
-    {
-        return _housekeepingThreadCount;
-    }
-
-    @Override
-    public String getModelVersion()
-    {
-        return BrokerModel.MODEL_VERSION;
     }
 
     @Override
@@ -940,18 +830,6 @@ public class BrokerImpl extends AbstractConfiguredObject<BrokerImpl> implements 
     }
 
     @Override
-    public EventLogger getEventLogger()
-    {
-        return _eventLogger;
-    }
-
-    @Override
-    public void setEventLogger(final EventLogger eventLogger)
-    {
-        _eventLogger = eventLogger;
-    }
-
-    @Override
     protected void onExceptionInOpen(RuntimeException e)
     {
         _eventLogger.message(BrokerMessages.FATAL_ERROR(e.getMessage()));
@@ -1100,233 +978,15 @@ public class BrokerImpl extends AbstractConfiguredObject<BrokerImpl> implements 
         return _managementModeAuthenticationProvider;
     }
 
-    @SuppressWarnings("unused")
-    private void preEncrypterProviderSet()
-    {
-        _preConfidentialConfigurationEncryptionProvider = _confidentialConfigurationEncryptionProvider;
-    }
-
-    @SuppressWarnings("unused")
-    private void postEncrypterProviderSet()
-    {
-        if (!Objects.equals(_preConfidentialConfigurationEncryptionProvider,
-                            _confidentialConfigurationEncryptionProvider))
-        {
-            updateEncrypter(_confidentialConfigurationEncryptionProvider);
-            forceUpdateAllSecureAttributes();
-        }
-    }
-
-    @SuppressWarnings("unused")
-    public static Collection<String> getAvailableConfigurationEncrypters()
-    {
-        return (new QpidServiceLoader()).getInstancesByType(ConfigurationSecretEncrypterFactory.class).keySet();
-    }
-
-    public static long getMaxDirectMemorySize()
-    {
-        long maxMemory = 0;
-        try
-        {
-            ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
-            Class<?> hotSpotDiagnosticMXBeanClass = Class.forName("com.sun.management.HotSpotDiagnosticMXBean", true, systemClassLoader);
-            Class<?> vmOptionClass = Class.forName("com.sun.management.VMOption", true, systemClassLoader);
-
-            Object hotSpotDiagnosticMXBean = ManagementFactory.getPlatformMXBean((Class<? extends PlatformManagedObject>)hotSpotDiagnosticMXBeanClass);
-            Method getVMOption = hotSpotDiagnosticMXBeanClass.getDeclaredMethod("getVMOption", String.class);
-            Object vmOption = getVMOption.invoke(hotSpotDiagnosticMXBean, "MaxDirectMemorySize");
-            Method getValue = vmOptionClass.getDeclaredMethod("getValue");
-            String maxDirectMemoryAsString = (String)getValue.invoke(vmOption);
-            maxMemory = Long.parseLong(maxDirectMemoryAsString);
-        }
-        catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException e)
-        {
-            LOGGER.debug("Cannot determine direct memory max size using com.sun.management.HotSpotDiagnosticMXBean: " + e.getMessage());
-        }
-        catch (InvocationTargetException e)
-        {
-            throw new ServerScopedRuntimeException("Unexpected exception in evaluation of MaxDirectMemorySize with HotSpotDiagnosticMXBean", e.getTargetException());
-        }
-
-        if (maxMemory == 0)
-        {
-            Pattern maxDirectMemorySizeArgumentPattern = Pattern.compile("^\\s*-XX:MaxDirectMemorySize\\s*=\\s*(\\d+)\\s*([KkMmGgTt]?)\\s*$");
-            RuntimeMXBean RuntimemxBean = ManagementFactory.getRuntimeMXBean();
-            List<String> inputArguments = RuntimemxBean.getInputArguments();
-            boolean argumentFound = false;
-            for (String argument : inputArguments)
-            {
-                Matcher matcher = maxDirectMemorySizeArgumentPattern.matcher(argument);
-                if (matcher.matches())
-                {
-                    argumentFound = true;
-                    maxMemory = Long.parseLong(matcher.group(1));
-                    String unit = matcher.group(2);
-                    char unitChar = "".equals(unit) ? 0 : unit.charAt(0);
-                    switch (unitChar)
-                    {
-                        case 'k':
-                        case 'K':
-                            maxMemory *= 1024l;
-                            break;
-                        case 'm':
-                        case 'M':
-                            maxMemory *= 1024l * 1024l;
-                            break;
-                        case 'g':
-                        case 'G':
-                            maxMemory *= 1024l * 1024l * 1024l;
-                            break;
-                        case 't':
-                        case 'T':
-                            maxMemory *= 1024l * 1024l * 1024l * 1024l;
-                            break;
-                        case 0:
-                            // noop
-                            break;
-                        default:
-                            throw new IllegalStateException("Unexpected unit character in MaxDirectMemorySize argument : " + argument);
-                    }
-                    // do not break; continue. Oracle and IBM JVMs use the last value when argument is specified multiple times
-                }
-            }
-
-            if (maxMemory == 0)
-            {
-                if (argumentFound)
-                {
-                    throw new IllegalArgumentException("Qpid Broker cannot operate with 0 direct memory. Please, set JVM argument MaxDirectMemorySize to non-zero value");
-                }
-                else
-                {
-                    maxMemory = Runtime.getRuntime().maxMemory();
-                }
-            }
-        }
-
-        return maxMemory;
-    }
-
     @Override
     public int getNetworkBufferSize()
     {
         return _networkBufferSize;
     }
 
-    @Override
-    public int getNumberOfLiveThreads()
-    {
-        return ManagementFactory.getThreadMXBean().getThreadCount();
-    }
-
-    @Override
-    public long getMaximumHeapMemorySize()
-    {
-        return _maximumHeapSize;
-    }
-
-    @Override
-    public long getUsedHeapMemorySize()
-    {
-        return Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-    }
-
-    @Override
-    public long getMaximumDirectMemorySize()
-    {
-        return _maximumDirectMemorySize;
-    }
-
-    @Override
-    public long getUsedDirectMemorySize()
-    {
-        if (_bufferPoolMXBean == null)
-        {
-            return -1;
-        }
-        return _bufferPoolMXBean.getMemoryUsed();
-    }
-
-    @Override
-    public long getDirectMemoryTotalCapacity()
-    {
-        if (_bufferPoolMXBean == null)
-        {
-            return -1;
-        }
-        return _bufferPoolMXBean.getTotalCapacity();
-    }
-
-    @Override
-    public int getNumberOfObjectsPendingFinalization()
-    {
-        return ManagementFactory.getMemoryMXBean().getObjectPendingFinalizationCount();
-    }
-
-    @Override
-    public List<String> getJvmArguments()
-    {
-        return _jvmArguments;
-    }
-
     public String getDocumentationUrl()
     {
         return _documentationUrl;
-    }
-
-    @Override
-    public void performGC()
-    {
-        getEventLogger().message(BrokerMessages.OPERATION("performGC"));
-        System.gc();
-    }
-
-    @Override
-    public Content getThreadStackTraces(boolean appendToLog)
-    {
-        getEventLogger().message(BrokerMessages.OPERATION("getThreadStackTraces"));
-        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-        ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(true, true);
-        StringBuilder threadDump = new StringBuilder();
-        for (ThreadInfo threadInfo : threadInfos)
-        {
-            threadDump.append(getThreadStackTraces(threadInfo));
-        }
-        long[] deadLocks = threadMXBean.findDeadlockedThreads();
-        if (deadLocks != null && deadLocks.length > 0)
-        {
-            ThreadInfo[] deadlockedThreads = threadMXBean.getThreadInfo(deadLocks);
-            threadDump.append(System.lineSeparator()).append("Deadlock is detected!").append(System.lineSeparator());
-            for (ThreadInfo threadInfo : deadlockedThreads)
-            {
-                threadDump.append(getThreadStackTraces(threadInfo));
-            }
-        }
-        String threadStackTraces = threadDump.toString();
-        if (appendToLog)
-        {
-            LOGGER.warn("Thread dump:{} {}", System.lineSeparator(), threadStackTraces);
-        }
-        return new ThreadStackContent(threadStackTraces);
-    }
-
-    @Override
-    public Content findThreadStackTraces(String threadNameFindExpression)
-    {
-        getEventLogger().message(BrokerMessages.OPERATION("findThreadStackTraces"));
-        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-        ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(true, true);
-        StringBuilder threadDump = new StringBuilder();
-        Pattern pattern = threadNameFindExpression == null || threadNameFindExpression.equals("") ? null : Pattern.compile(
-                threadNameFindExpression);
-        for (ThreadInfo threadInfo : threadInfos)
-        {
-            if (pattern== null || pattern.matcher(threadInfo.getThreadName()).find())
-            {
-                threadDump.append(getThreadStackTraces(threadInfo));
-            }
-        }
-        return new ThreadStackContent(threadDump.toString());
     }
 
     @Override
@@ -1348,79 +1008,6 @@ public class BrokerImpl extends AbstractConfiguredObject<BrokerImpl> implements 
         return currentPrincipals;
     }
 
-    private String getThreadStackTraces(final ThreadInfo threadInfo)
-    {
-        String lineSeparator = System.lineSeparator();
-        StringBuilder dump = new StringBuilder();
-        dump.append("\"").append(threadInfo.getThreadName()).append("\"").append(" Id=")
-            .append(threadInfo.getThreadId()).append( " ").append(threadInfo.getThreadState());
-        if (threadInfo.getLockName() != null)
-        {
-            dump.append(" on ").append(threadInfo.getLockName());
-        }
-        if (threadInfo.getLockOwnerName() != null)
-        {
-            dump.append(" owned by \"").append(threadInfo.getLockOwnerName())
-                .append("\" Id=").append(threadInfo.getLockOwnerId());
-        }
-        if (threadInfo.isSuspended())
-        {
-            dump.append(" (suspended)");
-        }
-        if (threadInfo.isInNative())
-        {
-            dump.append(" (in native)");
-        }
-        dump.append(lineSeparator);
-        StackTraceElement[] stackTrace = threadInfo.getStackTrace();
-        for (int i = 0; i < stackTrace.length; i++)
-        {
-            StackTraceElement stackTraceElement = stackTrace[i];
-            dump.append("    at ").append(stackTraceElement.toString()).append(lineSeparator);
-
-            LockInfo lockInfo = threadInfo.getLockInfo();
-            if (i == 0 && lockInfo != null)
-            {
-                Thread.State threadState = threadInfo.getThreadState();
-                switch (threadState)
-                {
-                    case BLOCKED:
-                        dump.append("    -  blocked on ").append(lockInfo).append(lineSeparator);
-                        break;
-                    case WAITING:
-                        dump.append("    -  waiting on ").append(lockInfo).append(lineSeparator);
-                        break;
-                    case TIMED_WAITING:
-                        dump.append("    -  waiting on ").append(lockInfo).append(lineSeparator);
-                        break;
-                    default:
-                }
-            }
-
-            for (MonitorInfo mi : threadInfo.getLockedMonitors())
-            {
-                if (mi.getLockedStackDepth() == i)
-                {
-                    dump.append("    -  locked ").append(mi).append(lineSeparator);
-                }
-            }
-        }
-
-        LockInfo[] locks = threadInfo.getLockedSynchronizers();
-        if (locks.length > 0)
-        {
-            dump.append(lineSeparator).append("    Number of locked synchronizers = ").append(locks.length);
-            dump.append(lineSeparator);
-            for (LockInfo li : locks)
-            {
-                dump.append("    - " + li);
-                dump.append(lineSeparator);
-            }
-        }
-        dump.append(lineSeparator);
-        return dump.toString();
-    }
-
     protected void shutdownHouseKeeping()
     {
         if(_houseKeepingTaskExecutor != null)
@@ -1439,49 +1026,6 @@ public class BrokerImpl extends AbstractConfiguredObject<BrokerImpl> implements 
                 LOGGER.warn("Interrupted during Housekeeping shutdown:", e);
                 Thread.currentThread().interrupt();
             }
-        }
-    }
-
-    @Override
-    public ScheduledFuture<?> scheduleHouseKeepingTask(long period, final TimeUnit unit, Runnable task)
-    {
-        return _houseKeepingTaskExecutor.scheduleAtFixedRate(task, period / 2, period, unit);
-    }
-
-    @Override
-    public ScheduledFuture<?> scheduleTask(long delay, final TimeUnit unit, Runnable task)
-    {
-        return _houseKeepingTaskExecutor.schedule(task, delay, unit);
-    }
-
-    public static class ThreadStackContent implements Content, CustomRestHeaders
-    {
-        private final String _threadStackTraces;
-
-        public ThreadStackContent(final String threadStackTraces)
-        {
-            _threadStackTraces = threadStackTraces;
-        }
-
-        @Override
-        public void write(final OutputStream outputStream) throws IOException
-        {
-            if (_threadStackTraces != null)
-            {
-                outputStream.write(_threadStackTraces.getBytes(Charset.forName("UTF-8")));
-            }
-        }
-
-        @Override
-        public void release()
-        {
-            // noop; nothing to release
-        }
-
-        @RestContentHeader("Content-Type")
-        public String getContentType()
-        {
-            return "text/plain;charset=utf-8";
         }
     }
 

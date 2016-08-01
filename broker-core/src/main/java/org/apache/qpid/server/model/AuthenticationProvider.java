@@ -33,8 +33,6 @@ import org.apache.qpid.server.security.auth.AuthenticationResult;
 @ManagedObject( creatable = false )
 public interface AuthenticationProvider<X extends AuthenticationProvider<X>> extends ConfiguredObject<X>
 {
-    //children
-    Collection<VirtualHostAlias> getVirtualHostPortBindings();
 
     /**
      * A temporary method to create SubjectCreator.

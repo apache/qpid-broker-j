@@ -36,8 +36,8 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.updater.Task;
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.model.User;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -51,9 +51,9 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
     protected Map<String, ManagedUser> _users = new ConcurrentHashMap<>();
 
     protected ConfigModelPasswordManagingAuthenticationProvider(final Map<String, Object> attributes,
-                                                                final Broker broker)
+                                                                final Container<?> container)
     {
-        super(attributes, broker);
+        super(attributes, container);
     }
 
     ManagedUser getUser(final String username)

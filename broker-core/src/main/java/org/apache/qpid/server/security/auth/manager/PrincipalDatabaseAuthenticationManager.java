@@ -48,8 +48,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ExternalFileBasedAuthenticationManager;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.State;
@@ -75,7 +75,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     @ManagedAttributeField
     private String _path;
 
-    protected PrincipalDatabaseAuthenticationManager(final Map<String, Object> attributes, final Broker broker)
+    protected PrincipalDatabaseAuthenticationManager(final Map<String, Object> attributes, final Container<?> broker)
     {
         super(attributes, broker);
     }

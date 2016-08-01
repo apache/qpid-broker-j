@@ -287,7 +287,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         String containerTypeName = getDefaultContainerType();
         for(ConfiguredObjectRecord record : records)
         {
-            if(record.getParents() == null || record.getParents().isEmpty())
+            if(record.getParents() != null && record.getParents().size() == 1 && getId().equals(record.getParents().get(SystemConfig.class.getSimpleName())))
             {
                 containerTypeName = record.getType();
                 break;

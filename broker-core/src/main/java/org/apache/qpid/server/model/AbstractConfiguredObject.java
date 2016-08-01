@@ -1900,6 +1900,12 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return (T) _parents.get(clazz);
     }
 
+    public final <T extends ConfiguredObject> T getAncestor(final Class<T> clazz)
+    {
+        return getModel().getAncestor(clazz, this);
+    }
+
+
     private <T extends ConfiguredObject> void addParent(Class<T> clazz, T parent)
     {
         synchronized (_parents)

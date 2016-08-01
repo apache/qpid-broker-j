@@ -51,6 +51,7 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
@@ -93,9 +94,9 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
     private int _readTimeout;
 
     @ManagedObjectFactoryConstructor
-    public CloudFoundryDashboardManagementGroupProviderImpl(Map<String, Object> attributes, Broker broker)
+    public CloudFoundryDashboardManagementGroupProviderImpl(Map<String, Object> attributes, Container<?> container)
     {
-        super(parentsMap(broker), attributes);
+        super(parentsMap(container), attributes);
     }
 
     @Override

@@ -48,6 +48,7 @@ import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -77,12 +78,14 @@ public class PortFactoryTest extends QpidTestCase
     @Override
     protected void setUp() throws Exception
     {
+        SystemConfig systemConfig = mock(SystemConfig.class);
         _portNumber = findFreePort();
         TaskExecutor executor = CurrentThreadTaskExecutor.newStartedInstance();
         when(_authProvider.getName()).thenReturn(_authProviderName);
         when(_broker.getChildren(eq(AuthenticationProvider.class))).thenReturn(Collections.singleton(_authProvider));
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
+        when(_broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
 
         ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(_broker.getObjectFactory()).thenReturn(objectFactory);

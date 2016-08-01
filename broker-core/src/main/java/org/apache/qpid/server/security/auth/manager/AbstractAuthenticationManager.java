@@ -37,12 +37,14 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Container;
+import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.model.VirtualHostAlias;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.port.AbstractPortWithAuthProvider;
 import org.apache.qpid.server.security.SubjectCreator;
 
@@ -52,7 +54,7 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractAuthenticationManager.class);
 
-    private final Broker<?> _broker;
+    private final Container<?> _container;
     private final EventLogger _eventLogger;
 
     @ManagedAttributeField
@@ -62,11 +64,11 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     private List<String> _disabledMechanisms;
 
 
-    protected AbstractAuthenticationManager(final Map<String, Object> attributes, final Broker<?> broker)
+    protected AbstractAuthenticationManager(final Map<String, Object> attributes, final Container<?> container)
     {
-        super(parentsMap(broker), attributes);
-        _broker = broker;
-        _eventLogger = _broker.getEventLogger();
+        super(parentsMap(container), attributes);
+        _container = container;
+        _eventLogger = _container.getEventLogger();
         _eventLogger.message(AuthenticationProviderMessages.CREATE(getName()));
     }
 
@@ -81,21 +83,11 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
         }
     }
 
-    protected final Broker getBroker()
-    {
-        return _broker;
-    }
-
-    @Override
-    public Collection<VirtualHostAlias> getVirtualHostPortBindings()
-    {
-        return null;
-    }
-
     @Override
     public SubjectCreator getSubjectCreator(final boolean secure)
     {
-        return new SubjectCreator(this, _broker.getGroupProviders(), secure);
+        Collection children = _container.getChildren(GroupProvider.class);
+        return new SubjectCreator(this, children, secure);
     }
 
     @StateTransition( currentState = State.UNINITIALIZED, desiredState = State.QUIESCED )
@@ -115,7 +107,7 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
         catch(RuntimeException e)
         {
             setState(State.ERRORED);
-            if (_broker.isManagementMode())
+            if (getAncestor(SystemConfig.class).isManagementMode())
             {
                 LOGGER.warn("Failed to activate authentication provider: " + getName(), e);
             }
@@ -134,7 +126,7 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
         String providerName = getName();
 
         // verify that provider is not in use
-        Collection<Port<?>> ports = new ArrayList<>(_broker.getPorts());
+        Collection<Port> ports = new ArrayList<>(_container.getChildren(Port.class));
         for (Port<?> port : ports)
         {
             if(port instanceof AbstractPortWithAuthProvider

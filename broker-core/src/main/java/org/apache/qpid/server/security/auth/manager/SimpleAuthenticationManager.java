@@ -40,7 +40,7 @@ import javax.security.sasl.SaslServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
@@ -64,9 +64,9 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
     private final ScramSaslServerSourceAdapter _scramSha1Adapter;
     private final ScramSaslServerSourceAdapter _scramSha256Adapter;
 
-    public SimpleAuthenticationManager(final Map<String, Object> attributes, final Broker broker)
+    public SimpleAuthenticationManager(final Map<String, Object> attributes, final Container<?> container)
     {
-        super(attributes, broker);
+        super(attributes, container);
         ScramSaslServerSourceAdapter.PasswordSource passwordSource =
                 new ScramSaslServerSourceAdapter.PasswordSource()
                 {

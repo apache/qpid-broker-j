@@ -47,8 +47,8 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.TrustStore;
@@ -115,9 +115,9 @@ public class OAuth2AuthenticationProviderImpl
 
     @ManagedObjectFactoryConstructor
     protected OAuth2AuthenticationProviderImpl(final Map<String, Object> attributes,
-                                               final Broker<?> broker)
+                                               final Container<?> container)
     {
-        super(attributes, broker);
+        super(attributes, container);
     }
 
     @Override

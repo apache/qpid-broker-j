@@ -46,7 +46,9 @@ import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AmqpPortImplTest extends QpidTestCase
@@ -62,8 +64,9 @@ public class AmqpPortImplTest extends QpidTestCase
         super.setUp();
         _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         Model model = BrokerModel.getInstance();
-
+        SystemConfig systemConfig = mock(SystemConfig.class);
         _broker = BrokerTestHelper.mockWithSystemPrincipal(Broker.class, mock(Principal.class));
+        when(_broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getModel()).thenReturn(model);
@@ -74,6 +77,7 @@ public class AmqpPortImplTest extends QpidTestCase
         AuthenticationProvider<?> provider = mock(AuthenticationProvider.class);
         when(provider.getName()).thenReturn(AUTHENTICATION_PROVIDER_NAME);
         when(provider.getParent(Broker.class)).thenReturn(_broker);
+        when(provider.getParent(Container.class)).thenReturn(_broker);
         when(provider.getMechanisms()).thenReturn(Arrays.asList("PLAIN"));
         when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(Collections.<AuthenticationProvider>singleton(provider));
         when(_broker.getChildByName(AuthenticationProvider.class, AUTHENTICATION_PROVIDER_NAME)).thenReturn(provider);

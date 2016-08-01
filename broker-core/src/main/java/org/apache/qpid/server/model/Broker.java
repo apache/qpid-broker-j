@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
-import org.apache.qpid.server.model.adapter.BrokerImpl;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 
 @ManagedObject( defaultType = Broker.BROKER_TYPE)
@@ -47,7 +46,6 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String STATISTICS_REPORTING_RESET_ENABLED = "statisticsReportingResetEnabled";
     String STORE_PATH = "storePath";
     String MODEL_VERSION = "modelVersion";
-    String CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER = "confidentialConfigurationEncryptionProvider";
     String PREFERENCE_STORE_ATTRIBUTES   = "preferenceStoreAttributes";
 
     String CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT = "channel.flowControlEnforcementTimeout";

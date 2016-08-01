@@ -34,6 +34,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.PortMessages;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +50,7 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.util.ParameterizedTypes;
@@ -57,7 +59,7 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractPort.class);
 
-    private final Broker<?> _broker;
+    private final Container<?> _container;
     private final EventLogger _eventLogger;
 
     @ManagedAttributeField
@@ -82,12 +84,12 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     private List<String> _tlsCipherSuiteBlackList;
 
     public AbstractPort(Map<String, Object> attributes,
-                        Broker<?> broker)
+                        Container<?> container)
     {
-        super(parentsMap(broker), attributes);
+        super(parentsMap(container), attributes);
 
-        _broker = broker;
-        _eventLogger = broker.getEventLogger();
+        _container = container;
+        _eventLogger = container.getEventLogger();
         _eventLogger.message(PortMessages.CREATE(getName()));
     }
 
@@ -118,7 +120,7 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
             throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
         }
 
-        for (Port p : _broker.getPorts())
+        for (Port p : _container.getChildren(Port.class))
         {
             if (p.getPort() == getPort() && p.getPort() != 0 && p != this)
             {
@@ -186,7 +188,7 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
             int newPort = updated.getPort();
             if (getPort() != newPort)
             {
-                for (Port p : _broker.getPorts())
+                for (Port p : _container.getChildren(Port.class))
                 {
                     if (p.getPort() == newPort)
                     {
@@ -323,34 +325,6 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     public String toString()
     {
         return getCategoryClass().getSimpleName() + "[id=" + getId() + ", name=" + getName() + ", type=" + getType() +  ", port=" + getPort() + "]";
-    }
-
-
-    protected void validateOnlyOneInstance()
-    {
-        Broker<?> broker = getParent(Broker.class);
-        if(!broker.isManagementMode())
-        {
-            //ManagementMode needs this relaxed to allow its overriding management ports to be inserted.
-
-            //Enforce only a single port of each management protocol, as the plugins will only use one.
-            Collection<Port<?>> existingPorts = new HashSet<Port<?>>(broker.getPorts());
-            existingPorts.remove(this);
-
-            for (Port<?> existingPort : existingPorts)
-            {
-                Collection<Protocol> portProtocols = existingPort.getProtocols();
-                if (portProtocols != null)
-                {
-                    final ArrayList<Protocol> intersection = new ArrayList<>(portProtocols);
-                    intersection.retainAll(getProtocols());
-                    if(!intersection.isEmpty())
-                    {
-                        throw new IntegrityViolationException("Port for protocols " + intersection + " already exists. Only one management port per protocol can be created.");
-                    }
-                }
-            }
-        }
     }
 
 }

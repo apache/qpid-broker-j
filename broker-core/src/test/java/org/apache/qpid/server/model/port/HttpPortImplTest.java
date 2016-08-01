@@ -36,6 +36,7 @@ import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class HttpPortImplTest extends QpidTestCase
@@ -51,8 +52,9 @@ public class HttpPortImplTest extends QpidTestCase
         super.setUp();
         _taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         Model model = BrokerModel.getInstance();
-
+        SystemConfig systemConfig = mock(SystemConfig.class);
         _broker = mock(Broker.class);
+        when(_broker.getParent(SystemConfig.class)).thenReturn(systemConfig);
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getModel()).thenReturn(model);

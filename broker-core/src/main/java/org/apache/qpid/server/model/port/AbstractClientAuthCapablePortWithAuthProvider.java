@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
@@ -44,7 +45,7 @@ abstract public class AbstractClientAuthCapablePortWithAuthProvider<X extends Ab
     private TrustStore<?> _clientCertRecorder;
 
     public AbstractClientAuthCapablePortWithAuthProvider(final Map<String, Object> attributes,
-                                                         final Broker<?> broker)
+                                                         final Container<?> broker)
     {
         super(attributes, broker);
     }
