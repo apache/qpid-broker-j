@@ -113,5 +113,53 @@ define(["dojo/_base/lang"],
             return findObjectsByType(this.structure, type);
         };
 
+        Structure.prototype.getScopeItems = function ()
+        {
+            var brokers = this.findByType("broker");
+            var virtualHosts = this.findByType("virtualhost");
+            var objects = brokers.concat(virtualHosts);
+
+            var items = [];
+            var scopeModelObjects = {};
+            for (var i = 0; i < objects.length; i++)
+            {
+                if (objects[i].type === "broker")
+                {
+                    name = objects[i].name;
+                    brokerId = objects[i].id;
+                }
+                else
+                {
+                    name = "VH:" + objects[i].parent.name + "/" + objects[i].name;
+                }
+                var id = objects[i].id;
+                items.push({
+                    id: id,
+                    name: name
+                });
+                scopeModelObjects[id] = objects[i];
+            }
+
+            return {
+                scopeModelObjects: scopeModelObjects,
+                items: items
+            };
+        };
+
+        Structure.prototype.getHierarchicalName = function (object)
+        {
+            if (object && object.parent)
+            {
+                var type = object.type.charAt(0).toUpperCase() + object.type.substring(1);
+                var val = object.name;
+                for (var i = object.parent; i && i.parent; i = i.parent)
+                {
+                    val = i.name + "/" + val;
+                }
+                return " (" + type + ":" + val + ")" ;
+            }
+            return "";
+        };
+
         return Structure;
     });

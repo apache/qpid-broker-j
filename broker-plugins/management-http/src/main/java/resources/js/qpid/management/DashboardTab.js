@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -25,12 +24,12 @@ define(["dojo/parser",
         "dojo/query",
         "dojo/json",
         "qpid/common/util",
-        "dojo/text!showQueryTab.html",
-        "qpid/management/query/QueryWidget",
+        "dojo/text!showDashboardTab.html",
         "dojo/domReady!"],
-    function (parser, lang, all, Deferred, query, json, util, template, QueryWidget)
+    function (parser, lang, all, Deferred, query, json, util, template)
     {
-        function QueryTab(kwArgs)
+
+        function DashboardTab(kwArgs)
         {
             this.controller = kwArgs.controller;
             this.tabData = kwArgs.tabData;
@@ -38,25 +37,19 @@ define(["dojo/parser",
             this.management = this.controller.management;
         }
 
-        QueryTab.prototype.getTitle = function (changed)
+        DashboardTab.prototype.getTitle = function (changed)
         {
             if (this.tabData.preferenceId && !this.tabData.data)
             {
                 return "Loading...";
             }
-            var category = "";
-            if (this.tabData.data && this.tabData.data.value && this.tabData.data.value.category)
-            {
-                category = this.tabData.data.value.category;
-                category = category.charAt(0).toUpperCase() + category.substring(1);
-            }
             var name = this.tabData.data.name ? this.tabData.data.name : "New";
             var prefix = this.tabData.data.name && !changed ? "" : "*";
             var path = this.controller.structure.getHierarchicalName(this.parent);
-            return prefix + category + " query:" + name + path;
+            return prefix + "Dashboard:" + name + path;
         };
 
-        QueryTab.prototype.open = function (contentPane)
+        DashboardTab.prototype.open = function (contentPane)
         {
             this.contentPane = contentPane;
             contentPane.containerNode.innerHTML = template;
@@ -107,54 +100,21 @@ define(["dojo/parser",
                 }));
         };
 
-        QueryTab.prototype.onOpen = function (containerNode)
+        DashboardTab.prototype.onOpen = function (containerNode)
         {
-            this.queryWidgetNode = query(".queryWidgetNode", containerNode)[0];
-            this.queryWidget = new QueryWidget({
-                management: this.management,
-                parentObject: this.parent,
-                preference: this.tabData.data,
-                controller: this.controller
-            }, this.queryWidgetNode);
-            this.contentPane.set("title", this.getTitle());
-            this.queryWidget.on("save", lang.hitch(this, function(e)
-            {
-                this.tabData.data = e.preference;
-                var title = this.getTitle();
-                this.contentPane.set("title", title);
-            }));
-            this.queryWidget.on("change", lang.hitch(this, function(e)
-            {
-                var title = this.getTitle(true);
-                this.contentPane.set("title", title);
-            }));
-            this.queryWidget.on("delete", lang.hitch(this, function(e)
-            {
-                this.management.userPreferences.removeTab(this.tabData);
-                this.destroy();
-            }));
-            this.queryWidget.on("clone", lang.hitch(this, function(e)
-            {
-                this.controller.showTab({
-                    preferenceId: e.preference.id,
-                    tabType: "query",
-                    data: e.preference,
-                    modelObject: e.parentObject
-                });
-            }));
-            this.queryWidget.startup();
+            this.dashboardWidgetNode = query(".dashboardWidgetNode", containerNode)[0];
         };
 
-        QueryTab.prototype.close = function ()
+        DashboardTab.prototype.close = function ()
         {
-            if (this.queryWidget != null)
+            if (this.dashboardWidget != null)
             {
-                this.queryWidget.destroyRecursive();
-                this.queryWidget = null;
+                this.dashboardWidget.destroyRecursive();
+                this.dashboardWidget = null;
             }
         };
 
-        QueryTab.prototype.destroy = function ()
+        DashboardTab.prototype.destroy = function ()
         {
             this.close();
             this.contentPane.onClose();
@@ -162,5 +122,5 @@ define(["dojo/parser",
             this.contentPane.destroyRecursive();
         };
 
-        return QueryTab;
+        return DashboardTab;
     });

@@ -32,6 +32,8 @@ define(["dojo/query",
     var documentationUrl = null;
     var queryCreateDialog = null;
     var queryCreateDialogForm = null;
+    var dashboardCreateDialog = null;
+    var dashboardCreateDialogForm = null;
 
     var openWindow = function (url, title)
     {
@@ -119,6 +121,51 @@ define(["dojo/query",
         {
             this.controller.showTab({
                 tabType: "queryBrowser"
+            });
+        },
+        showDashboardCreateDialog: function (e)
+        {
+            var management = this.management;
+            var controller = this.controller;
+            if (dashboardCreateDialog == null)
+            {
+                require(["qpid/management/dashboard/DashboardCreateDialogForm", "dojo/ready"],
+                    function (DashboardCreateDialogForm, ready)
+                    {
+                        ready(function ()
+                        {
+                            dashboardCreateDialogForm =
+                                new DashboardCreateDialogForm({management: management, structure: controller.structure});
+                            dashboardCreateDialogForm.on("create", function (e)
+                            {
+                                dashboardCreateDialog.hide();
+                                var tabData = {
+                                    tabType: "dashboard",
+                                    modelObject: e.parentObject,
+                                    data: e.preference,
+                                    preferenceId: e.preference.id
+                                };
+                                controller.showTab(tabData);
+                            });
+                            dashboardCreateDialogForm.on("cancel", function (e)
+                            {
+                                dashboardCreateDialog.hide();
+                            });
+                            dashboardCreateDialog = new Dialog({title: "Create dashboard", content: dashboardCreateDialogForm});
+                            dashboardCreateDialog.show();
+                        });
+                    });
+            }
+            else
+            {
+                dashboardCreateDialogForm.initScope();
+                dashboardCreateDialog.show();
+            }
+        },
+        showDashboardBrowser: function (e)
+        {
+            this.controller.showTab({
+                tabType: "dashboardBrowser"
             });
         },
         init: function (controller, TreeView)

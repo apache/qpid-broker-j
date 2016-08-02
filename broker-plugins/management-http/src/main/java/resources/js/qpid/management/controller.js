@@ -42,6 +42,7 @@ define(["dojo/dom",
         "qpid/management/Logger",
         "qpid/management/QueryTab",
         "qpid/management/QueryBrowserTab",
+        "qpid/management/DashboardTab",
         "qpid/common/util",
         "dojo/ready",
         "dojox/uuid/generateRandomUuid",
@@ -70,6 +71,7 @@ define(["dojo/dom",
               Logger,
               QueryTab,
               QueryBrowserTab,
+              DashboardTab,
               util,
               ready)
     {
@@ -93,6 +95,7 @@ define(["dojo/dom",
             brokerlogger: Logger,
             virtualhostlogger: Logger,
             query: QueryTab,
+            dashboard: DashboardTab,
             queryBrowser: QueryBrowserTab
         };
 

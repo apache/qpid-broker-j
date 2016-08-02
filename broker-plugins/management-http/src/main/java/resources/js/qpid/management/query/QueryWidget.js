@@ -30,6 +30,7 @@ define(["dojo/_base/declare",
         "dojo/store/Memory",
         "dijit/registry",
         "dojox/html/entities",
+        "dojox/uuid/generateRandomUuid",
         "dgrid/extensions/ColumnReorder",
         "dgrid/extensions/ColumnHider",
         "qpid/management/query/QueryGrid",
@@ -56,6 +57,7 @@ define(["dojo/_base/declare",
               Memory,
               registry,
               entities,
+              generateRandomUuid,
               ColumnReorder,
               ColumnHider,
               QueryGrid)
@@ -183,6 +185,11 @@ define(["dojo/_base/declare",
                 okButton: null,
                 cancelButton: null,
 
+                /**
+                 * constructor
+                 */
+                structure: null,
+
                 // internal fields
                 _scopeModelObjects: {},
 
@@ -197,41 +204,23 @@ define(["dojo/_base/declare",
                     this.cloneQueryForm.on("submit", lang.hitch(this, this._onFormSubmit));
                     this.scope.on("change", lang.hitch(this, this._onChange));
                 },
-                _setScopeItemsAttr: function (items)
+                _initScopeItems: function (defaultValue)
                 {
-                    this._scopeModelObjects = {};
-                    var options = [];
-                    for (var i = 0; i < items.length; i++)
-                    {
-                        var name = null, id = items[i].id;
-                        if (items[i].type === "broker")
-                        {
-                            name = items[i].name;
-                        }
-                        else
-                        {
-                            name = "VH:" + items[i].parent.name + "/" + items[i].name;
-                        }
-
-                        this._scopeModelObjects[id] = items[i];
-                        options.push({id: id, name: name});
-                    }
+                    var scopeItems = this.structure.getScopeItems();
+                    this._scopeModelObjects = scopeItems.scopeModelObjects;
 
                     var scopeStore = new Memory({
-                        data: options,
+                        data: scopeItems.items,
                         idProperty: 'id'
                     });
                     this.scope.set("store", scopeStore);
-                },
-                _setDefaultScopeItemAttr: function (defaultValue)
-                {
+
                     if (defaultValue)
                     {
                         for (var field in this._scopeModelObjects)
                         {
                             var item = this._scopeModelObjects[field];
-                            if (item.id === defaultValue.id || (item.type === "broker" && defaultValue.type
-                                                                                          === "broker"))
+                            if (item.id === defaultValue.id)
                             {
                                 this.scope.set("value", item.id);
                                 break;
@@ -239,7 +228,6 @@ define(["dojo/_base/declare",
                         }
                     }
                 },
-
                 _onCancel: function (data)
                 {
                     this.emit("cancel");
@@ -342,7 +330,7 @@ define(["dojo/_base/declare",
                     this._lastHeaders = [];
 
                     // lifecycle UI
-                    this._queryCloneDialogForm = new QueryCloneDialogForm();
+                    this._queryCloneDialogForm = new QueryCloneDialogForm({structure : this.controller.structure});
                     this._queryCloneDialog =
                         new dijit.Dialog({title: "Clone query", content: this._queryCloneDialogForm});
                     this._queryCloneDialogForm.on("clone", lang.hitch(this, this._onQueryClone));
@@ -1051,16 +1039,12 @@ define(["dojo/_base/declare",
                 },
                 _cloneQuery: function ()
                 {
-                    var brokers = this.controller.structure.findByType("broker");
-                    var virtualHosts = this.controller.structure.findByType("virtualhost");
-                    var objects = brokers.concat(virtualHosts);
-                    this._queryCloneDialogForm.set("scopeItems", objects);
-                    this._queryCloneDialogForm.set("defaultScopeItem", this.parentObject);
+                    this._queryCloneDialogForm._initScopeItems(this.parentObject);
                     this._queryCloneDialog.show();
                 },
                 _onQueryClone: function (e)
                 {
-                    var preference = {type: "query", value: this._getQuery()};
+                    var preference = {id : generateRandomUuid(), type: "query", value: this._getQuery()};
                     this._queryCloneDialog.hide();
                     this.emit("clone", {preference: preference, parentObject: e.parentObject});
                 },

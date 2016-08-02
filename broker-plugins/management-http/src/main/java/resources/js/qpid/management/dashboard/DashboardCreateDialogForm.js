@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,7 +20,7 @@
 
 define(["dojo/_base/declare",
         "dojo/_base/lang",
-        "dojo/text!query/QueryCreateDialogForm.html",
+        "dojo/text!dashboard/DashboardCreateDialogForm.html",
         "dojo/Evented",
         "dojo/store/Memory",
         "dojox/uuid/generateRandomUuid",
@@ -36,21 +35,8 @@ define(["dojo/_base/declare",
         "dojox/validate/web",
         "dojo/domReady!"], function (declare, lang, template, Evented, Memory, generateRandomUuid)
 {
-    var getCategoryMetadata = function (management, value)
-    {
-        if (value)
-        {
-            var category = value.charAt(0)
-                               .toUpperCase() + value.substring(1);
-            return management.metadata.metadata[category];
-        }
-        else
-        {
-            return undefined;
-        }
-    };
 
-    return declare("qpid.management.query.QueryCreateDialogForm",
+    return declare("qpid.management.dashboard.DashboardCreateDialogForm",
         [dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
         {
             /**
@@ -66,10 +52,9 @@ define(["dojo/_base/declare",
              * template attach points
              */
             scope: null,
-            category: null,
             okButton: null,
             cancelButton: null,
-            createQueryForm: null,
+            createDashboardForm: null,
 
             postCreate: function ()
             {
@@ -95,7 +80,6 @@ define(["dojo/_base/declare",
                 this.cancelButton.on("click", lang.hitch(this, this._onCancel));
                 this.okButton.on("click", lang.hitch(this, this._onFormSubmit));
                 this.scope.on("change", lang.hitch(this, this._onChange));
-                this.category.on("change", lang.hitch(this, this._onChange));
             },
             _onCancel: function (data)
             {
@@ -103,27 +87,18 @@ define(["dojo/_base/declare",
             },
             _onChange: function (e)
             {
-                var invalid = !getCategoryMetadata(this.management, this.category.value)
-                              || !this._scopeModelObjects[this.scope.value];
+                var invalid = !this._scopeModelObjects[this.scope.value];
                 this.okButton.set("disabled", invalid);
             },
             _onFormSubmit: function (e)
             {
-                if (this.createQueryForm.validate())
+                if (this.createDashboardForm.validate())
                 {
-                    var category = this.category.value;
-                    if (getCategoryMetadata(this.management, category))
-                    {
-                        var data = {
-                            preference: {value: {category: category}, id : generateRandomUuid()},
-                            parentObject: this._scopeModelObjects[this.scope.value]
-                        };
-                        this.emit("create", data);
-                    }
-                    else
-                    {
-                        alert('Specified category does not exist. Please enter valid category');
-                    }
+                    var data = {
+                        preference: {id : generateRandomUuid()},
+                        parentObject: this._scopeModelObjects[this.scope.value]
+                    };
+                    this.emit("create", data);
                 }
                 else
                 {
