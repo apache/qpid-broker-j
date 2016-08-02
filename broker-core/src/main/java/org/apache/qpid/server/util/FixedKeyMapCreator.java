@@ -227,7 +227,7 @@ public class FixedKeyMapCreator
                 try
                 {
                     final String key = _keys[_position];
-                    final String value = _keys[_position++];
+                    final Object value = _values[_position++];
                     return new FixedKeyEntry(key, value);
                 }
                 catch (ArrayIndexOutOfBoundsException e)
@@ -248,9 +248,9 @@ public class FixedKeyMapCreator
     private static class FixedKeyEntry implements Map.Entry<String, Object>
     {
         private final String _key;
-        private final String _value;
+        private final Object _value;
 
-        private FixedKeyEntry(final String key, final String value)
+        private FixedKeyEntry(final String key, final Object value)
         {
             _key = key;
             _value = value;
