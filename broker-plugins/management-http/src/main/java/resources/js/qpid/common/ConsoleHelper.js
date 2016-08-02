@@ -23,6 +23,18 @@ define(["dojo/domReady!"], function () {
     var preferencesDialog = null;
     var helpURL = null;
 
+    var documentationUrl = null;
+
+    var openWindow = function (url, title)
+    {
+        var newWindow = window.open(
+            url,
+            title,
+            'height=600,width=600,scrollbars=1,location=1,resizable=1,status=0,toolbar=0,titlebar=1,menubar=0',
+            true);
+        newWindow.focus();
+    };
+
     return {
         showPreferencesDialog: function () {
           if (preferencesDialog == null)
@@ -39,51 +51,33 @@ define(["dojo/domReady!"], function () {
               preferencesDialog.showDialog();
           }
         },
-        getHelpUrl: function(callback)
+        showDocumentation: function ()
         {
-            this.management.load({type: "broker"}, {depth: 0}).then(
-             function(data) {
-              var broker = data[0];
-              if ("context" in broker && "qpid.helpURL" in broker["context"] )
-              {
-                helpURL = broker["context"]["qpid.helpURL"];
-              }
-              else
-              {
-                helpURL = "http://qpid.apache.org/";
-              }
-              if (callback)
-              {
-                callback(helpURL);
-              }
-             });
-        },
-        showHelp: function()
-        {
-          var openWindow = function(url)
-          {
-              var newWindow = window.open(url,'QpidHelp','height=600,width=600,scrollbars=1,location=1,resizable=1,status=0,toolbar=0,titlebar=1,menubar=0', true);
-              newWindow.focus();
-          }
-
-          if (helpURL)
-          {
-            openWindow(helpURL)
-          }
-          else
-          {
-            this.getHelpUrl(openWindow);
-          }
+            if (documentationUrl)
+            {
+                openWindow(documentationUrl, "Qpid Documentation");
+            }
+            else
+            {
+                this.management.load({type: "broker"}, {depth: 0, excludeInheritedContext: true})
+                    .then(function (data)
+                    {
+                        var broker = data[0];
+                        if (broker.documentationUrl)
+                        {
+                            documentationUrl = broker.documentationUrl;
+                        }
+                        else
+                        {
+                            documentationUrl = "http://qpid.apache.org/components/java-broker/";
+                        }
+                        openWindow(documentationUrl, "Qpid Documentation")
+                    });
+            }
         },
         showAPI: function()
         {
-          var openWindow = function(url)
-          {
-            var newWindow = window.open(url,'Qpid REST API','height=800,width=800,scrollbars=1,location=1,resizable=1,status=0,toolbar=1,titlebar=1,menubar=1', true);
-            newWindow.focus();
-          }
-
-          openWindow("/apidocs");
+            openWindow("/apidocs", 'Qpid REST API');
         }
 
     };

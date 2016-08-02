@@ -130,6 +130,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private final long _maximumDirectMemorySize = getMaxDirectMemorySize();
     private final BufferPoolMXBean _bufferPoolMXBean;
     private final List<String> _jvmArguments;
+    private String _documentationUrl;
 
     @ManagedObjectFactoryConstructor
     public BrokerAdapter(Map<String, Object> attributes,
@@ -364,6 +365,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             getEventLogger().message(BrokerMessages.FAILED_CHILDREN(failedChildren.toString()));
         }
 
+        _documentationUrl = getContextValue(String.class, QPID_DOCUMENTATION_URL);
         final boolean brokerShutdownOnErroredChild = getContextValue(Boolean.class,
                                                                      BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD);
         if (!_parent.isManagementMode() && brokerShutdownOnErroredChild && hasBrokerAnyErroredChildren)
@@ -1072,6 +1074,12 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     public List<String> getJvmArguments()
     {
         return _jvmArguments;
+    }
+
+    @Override
+    public String getDocumentationUrl()
+    {
+        return _documentationUrl;
     }
 
     @Override
