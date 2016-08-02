@@ -20,7 +20,6 @@
 */
 package org.apache.qpid.server.store;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;

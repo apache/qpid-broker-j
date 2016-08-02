@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.store;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,7 +43,6 @@ import org.apache.qpid.server.model.ContainerStoreUpgraderAndRecoverer;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHostAlias;
-import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.util.Action;
 
 public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAndRecoverer<Broker>

@@ -52,7 +52,6 @@ import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TestMessageMetaData;
 import org.apache.qpid.server.store.Transaction;
 import org.apache.qpid.server.store.Transaction.EnqueueRecord;
-import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;

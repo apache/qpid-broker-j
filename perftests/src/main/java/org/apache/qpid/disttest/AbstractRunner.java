@@ -20,11 +20,9 @@
  */
 package org.apache.qpid.disttest;
 
-import java.io.FileInputStream;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
-import java.util.Properties;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;

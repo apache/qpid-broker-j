@@ -33,7 +33,6 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.message.internal.InternalMessageHeader;
 import org.apache.qpid.server.model.NamedAddressSpace;
-import org.apache.qpid.server.model.VirtualHost;
 
 public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
 {

@@ -21,7 +21,6 @@
 package org.apache.qpid.server.store.berkeleydb.upgrade;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 

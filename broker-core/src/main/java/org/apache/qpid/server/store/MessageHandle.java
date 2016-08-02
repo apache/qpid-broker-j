@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.store;
 
-import java.nio.ByteBuffer;
-
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public interface MessageHandle<M extends StorableMessageMetaData>

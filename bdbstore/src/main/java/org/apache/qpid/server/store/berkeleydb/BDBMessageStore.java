@@ -23,7 +23,6 @@ package org.apache.qpid.server.store.berkeleydb;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.sleepycat.je.DatabaseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

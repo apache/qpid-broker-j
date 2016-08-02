@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -40,7 +39,6 @@ import org.apache.qpid.configuration.CommonProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.framing.ProtocolVersion;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;

@@ -22,15 +22,11 @@ package org.apache.qpid.server.protocol.v0_10;
 
 import static org.apache.qpid.transport.util.Functions.str;
 
-import java.nio.ByteBuffer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.SegmentType;
-import org.apache.qpid.transport.network.NetworkDelegate;
-import org.apache.qpid.transport.network.NetworkEvent;
 
 
 public final class ServerFrame

@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.management.plugin.auth;
 
-import java.security.Principal;
-
 import javax.security.auth.Subject;
 import javax.servlet.http.HttpServletRequest;
 

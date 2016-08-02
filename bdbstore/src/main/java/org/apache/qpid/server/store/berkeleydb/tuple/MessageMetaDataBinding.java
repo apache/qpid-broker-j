@@ -22,11 +22,7 @@ package org.apache.qpid.server.store.berkeleydb.tuple;
 
 import com.sleepycat.bind.EntryBinding;
 import com.sleepycat.je.DatabaseEntry;
-import java.nio.ByteBuffer;
 
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
-import com.sleepycat.bind.tuple.TupleOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

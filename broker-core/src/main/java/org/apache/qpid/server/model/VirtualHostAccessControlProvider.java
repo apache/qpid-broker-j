@@ -20,10 +20,6 @@
  */
 package org.apache.qpid.server.model;
 
-import java.util.Comparator;
-
-import org.apache.qpid.server.security.AccessControl;
-
 @ManagedObject( creatable = false )
 public interface VirtualHostAccessControlProvider<X extends VirtualHostAccessControlProvider<X>>  extends ConfiguredObject<X>, CommonAccessControlProvider<VirtualHostAccessControlProvider<?>>
 {

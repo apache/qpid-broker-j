@@ -22,8 +22,6 @@ package org.apache.qpid.server.model;
 
 import java.security.Principal;
 
-import javax.security.auth.Subject;
-
 interface SystemPrincipalSource
 {
     Principal getSystemPrincipal();

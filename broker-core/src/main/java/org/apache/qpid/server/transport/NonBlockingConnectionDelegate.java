@@ -20,7 +20,6 @@
 package org.apache.qpid.server.transport;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.cert.Certificate;
 import java.util.Collection;

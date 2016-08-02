@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.qpid.QpidException;
 import org.apache.qpid.server.message.MessageInstance;
 
 

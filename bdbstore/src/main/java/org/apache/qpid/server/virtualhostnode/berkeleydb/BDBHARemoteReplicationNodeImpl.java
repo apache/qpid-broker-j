@@ -32,7 +32,7 @@ import java.util.concurrent.TimeoutException;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.apache.qpid.server.configuration.IllegalConfigurationException;
+
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -38,7 +38,6 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.plugin.ConfiguredObjectAttributeInjector;
 import org.apache.qpid.server.plugin.PluggableService;
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.util.ParameterizedTypes;
 
 @PluggableService

@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.transport.codec;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;

@@ -21,7 +21,6 @@
 package org.apache.qpid.server.model;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.regex.Pattern;
 
 public abstract class ConfiguredObjectMethodAttribute<C extends ConfiguredObject, T>

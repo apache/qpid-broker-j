@@ -43,7 +43,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.preferences.AbstractJDBCPreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceRecordImpl;

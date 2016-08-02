@@ -21,9 +21,6 @@
 
 package org.apache.qpid.client.security.oauth2;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import javax.security.sasl.SaslException;
 
 import org.junit.Assert;

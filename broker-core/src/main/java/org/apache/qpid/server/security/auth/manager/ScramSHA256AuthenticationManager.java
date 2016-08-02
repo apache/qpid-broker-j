@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
-import java.nio.charset.Charset;
 import java.util.Map;
 
 import org.apache.qpid.server.model.Broker;

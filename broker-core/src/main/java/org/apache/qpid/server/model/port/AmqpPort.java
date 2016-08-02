@@ -35,7 +35,6 @@ import org.apache.qpid.server.model.StatisticType;
 import org.apache.qpid.server.model.StatisticUnit;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
-import org.apache.qpid.server.model.VirtualHost;
 
 import javax.net.ssl.SSLContext;
 

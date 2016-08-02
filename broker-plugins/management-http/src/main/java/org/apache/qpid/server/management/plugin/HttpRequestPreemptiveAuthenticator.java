@@ -23,7 +23,6 @@ package org.apache.qpid.server.management.plugin;
 import javax.security.auth.Subject;
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.plugin.Pluggable;
 
 public interface HttpRequestPreemptiveAuthenticator extends Pluggable

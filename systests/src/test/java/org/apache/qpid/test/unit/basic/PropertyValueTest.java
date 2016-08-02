@@ -39,7 +39,6 @@ import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
-import javax.naming.InitialContext;
 
 import com.google.common.base.Strings;
 import org.junit.Assert;

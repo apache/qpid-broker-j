@@ -27,7 +27,6 @@ import java.util.List;
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.controller.ResultsForAllTests;
 import org.apache.qpid.disttest.results.aggregation.ITestResult;
-import org.apache.qpid.disttest.results.aggregation.TestResultAggregator;
 import org.apache.qpid.disttest.results.formatting.CSVFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

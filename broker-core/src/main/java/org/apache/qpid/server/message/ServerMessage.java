@@ -20,9 +20,6 @@
  */
 package org.apache.qpid.server.message;
 
-import java.nio.ByteBuffer;
-import java.util.Collection;
-
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;

@@ -23,7 +23,6 @@ package org.apache.qpid.server.protocol.v0_10;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -33,21 +32,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.*;
 import org.apache.qpid.transport.DeliveryProperties;
 import org.apache.qpid.transport.Header;
 import org.apache.qpid.transport.MessageProperties;
 import org.apache.qpid.transport.Method;
-import org.apache.qpid.transport.NetworkEventReceiver;
 import org.apache.qpid.transport.ProtocolError;
 import org.apache.qpid.transport.ProtocolEvent;
 import org.apache.qpid.transport.ProtocolHeader;
 import org.apache.qpid.transport.Struct;
-import org.apache.qpid.transport.codec.BBDecoder;
 import org.apache.qpid.transport.network.Frame;
-import org.apache.qpid.transport.network.NetworkDelegate;
-import org.apache.qpid.transport.network.NetworkEvent;
-import org.apache.qpid.transport.util.Functions;
 
 public class ServerAssembler
 {

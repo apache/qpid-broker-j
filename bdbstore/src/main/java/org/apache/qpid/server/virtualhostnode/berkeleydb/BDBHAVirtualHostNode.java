@@ -25,7 +25,6 @@ import java.util.List;
 import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.store.berkeleydb.HASettings;
-import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
 import org.apache.qpid.server.store.preferences.PreferenceStoreProvider;
 
 

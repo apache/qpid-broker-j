@@ -20,14 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.LineNumberReader;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 public class DefaultDescribedTypeConstructor extends DescribedTypeConstructor
 {
     private Object _descriptor;

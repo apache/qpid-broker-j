@@ -19,7 +19,6 @@
 package org.apache.qpid.server.store.jdbc;
 
 
-import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.CLOSED;
 import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.CONFIGURED;
 import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.OPEN;
 
@@ -33,7 +32,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

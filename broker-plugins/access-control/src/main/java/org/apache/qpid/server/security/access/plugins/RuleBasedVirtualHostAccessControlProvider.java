@@ -23,7 +23,6 @@ package org.apache.qpid.server.security.access.plugins;
 
 import java.util.List;
 
-import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;

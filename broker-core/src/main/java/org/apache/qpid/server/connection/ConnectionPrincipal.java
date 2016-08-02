@@ -22,7 +22,6 @@ package org.apache.qpid.server.connection;
 
 import java.net.SocketAddress;
 
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.security.auth.SocketConnectionPrincipal;
 import org.apache.qpid.server.transport.AMQPConnection;
 

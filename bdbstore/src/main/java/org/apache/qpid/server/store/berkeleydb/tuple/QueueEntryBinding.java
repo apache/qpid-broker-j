@@ -23,9 +23,6 @@ package org.apache.qpid.server.store.berkeleydb.tuple;
 import java.util.UUID;
 
 import com.sleepycat.bind.EntryBinding;
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleInput;
-import com.sleepycat.bind.tuple.TupleOutput;
 import com.sleepycat.je.DatabaseEntry;
 
 import org.apache.qpid.server.store.berkeleydb.entry.QueueEntryKey;

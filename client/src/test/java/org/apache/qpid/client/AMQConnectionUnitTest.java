@@ -32,7 +32,6 @@ import org.apache.qpid.AMQDisconnectedException;
 import org.apache.qpid.AMQInvalidArgumentException;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.jms.ConnectionURL;
-import org.apache.qpid.jms.Session;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AMQConnectionUnitTest extends QpidTestCase

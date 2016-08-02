@@ -21,7 +21,6 @@
 package org.apache.qpid.server.model;
 
 import java.security.Principal;
-import java.util.Collection;
 import java.util.List;
 
 import javax.security.sasl.SaslException;

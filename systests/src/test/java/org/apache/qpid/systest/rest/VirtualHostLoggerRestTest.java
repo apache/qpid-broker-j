@@ -32,7 +32,6 @@ import org.apache.qpid.server.logging.logback.VirtualHostFileLogger;
 import org.apache.qpid.server.logging.logback.VirtualHostNameAndLevelLogInclusionRule;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHostLogInclusionRule;
 import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.util.LogMonitor;
 

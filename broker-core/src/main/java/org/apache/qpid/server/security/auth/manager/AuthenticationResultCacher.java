@@ -19,7 +19,6 @@
 
 package org.apache.qpid.server.security.auth.manager;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.AccessController;
@@ -33,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import javax.security.auth.Subject;
 import javax.xml.bind.DatatypeConverter;
 
-import com.google.common.cache.AbstractCache;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.util.concurrent.UncheckedExecutionException;

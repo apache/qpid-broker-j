@@ -27,7 +27,6 @@ import static org.apache.qpid.transport.network.Frame.HEADER_SIZE;
 import static org.apache.qpid.transport.network.Frame.LAST_FRAME;
 import static org.apache.qpid.transport.network.Frame.LAST_SEG;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,9 +46,7 @@ import org.apache.qpid.transport.ProtocolEventSender;
 import org.apache.qpid.transport.ProtocolHeader;
 import org.apache.qpid.transport.SegmentType;
 import org.apache.qpid.transport.Struct;
-import org.apache.qpid.transport.codec.Encoder;
 import org.apache.qpid.transport.network.Frame;
-import org.apache.qpid.transport.util.Functions;
 
 /**
  * Disassembler

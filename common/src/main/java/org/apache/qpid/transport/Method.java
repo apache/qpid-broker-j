@@ -25,9 +25,7 @@ import org.apache.qpid.transport.network.Frame;
 
 import static org.apache.qpid.transport.util.Functions.str;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Method

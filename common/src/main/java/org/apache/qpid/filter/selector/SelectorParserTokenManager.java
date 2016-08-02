@@ -21,17 +21,6 @@
  */
 
 package org.apache.qpid.filter.selector;
-import java.io.StringReader;
-import java.util.ArrayList;
-import org.apache.qpid.filter.ArithmeticExpression;
-import org.apache.qpid.filter.BooleanExpression;
-import org.apache.qpid.filter.ComparisonExpression;
-import org.apache.qpid.filter.ConstantExpression;
-import org.apache.qpid.filter.Expression;
-import org.apache.qpid.filter.LogicExpression;
-import org.apache.qpid.filter.PropertyExpression;
-import org.apache.qpid.filter.PropertyExpressionFactory;
-import org.apache.qpid.filter.UnaryExpression;
 
 /** Token Manager. */
 public class SelectorParserTokenManager implements SelectorParserConstants

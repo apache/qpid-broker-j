@@ -24,7 +24,6 @@ import static java.lang.Math.min;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.Collections;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.util.ByteBufferUtils;

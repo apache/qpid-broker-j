@@ -25,7 +25,6 @@ import java.util.Map;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.Port;

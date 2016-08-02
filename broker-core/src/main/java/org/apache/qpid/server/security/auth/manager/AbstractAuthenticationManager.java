@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AuthenticationProvider;
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.model.IntegrityViolationException;

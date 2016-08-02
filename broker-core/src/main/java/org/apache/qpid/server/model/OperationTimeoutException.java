@@ -19,8 +19,6 @@
 
 package org.apache.qpid.server.model;
 
-import java.util.concurrent.TimeoutException;
-
 public class OperationTimeoutException extends RuntimeException
 {
     public OperationTimeoutException(final String message)

@@ -23,8 +23,6 @@ package org.apache.qpid.server.model;
 import java.util.Collection;
 import java.util.Date;
 
-import org.apache.qpid.server.transport.AMQPConnection;
-
 @ManagedObject( creatable = false )
 public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
 {

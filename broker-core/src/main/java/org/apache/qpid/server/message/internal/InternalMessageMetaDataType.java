@@ -29,7 +29,6 @@ import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.util.ByteBufferInputStream;
 
 @PluggableService
 public class InternalMessageMetaDataType implements MessageMetaDataType<InternalMessageMetaData>

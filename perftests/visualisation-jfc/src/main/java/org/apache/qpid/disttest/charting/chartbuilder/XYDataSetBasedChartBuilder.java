@@ -35,7 +35,6 @@ import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.general.Dataset;
 import org.jfree.data.xy.DefaultXYDataset;
-import org.jfree.util.ShapeUtilities;
 
 
 public abstract class XYDataSetBasedChartBuilder extends BaseChartBuilder

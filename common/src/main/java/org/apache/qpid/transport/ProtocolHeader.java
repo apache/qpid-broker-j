@@ -25,8 +25,6 @@ import org.apache.qpid.transport.network.Frame;
 import org.apache.qpid.transport.network.NetworkDelegate;
 import org.apache.qpid.transport.network.NetworkEvent;
 
-import java.nio.ByteBuffer;
-
 
 /**
  * ProtocolHeader

@@ -26,9 +26,7 @@ import java.util.List;
 
 import javax.jms.Session;
 
-import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.message.Command;
-import org.apache.qpid.disttest.message.CreateProducerCommand;
 import org.apache.qpid.disttest.message.CreateSessionCommand;
 
 public class SessionConfig

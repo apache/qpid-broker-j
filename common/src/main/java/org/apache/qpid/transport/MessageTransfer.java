@@ -32,7 +32,6 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.codec.Decoder;
 import org.apache.qpid.transport.codec.Encoder;
 
-import java.nio.ByteBuffer;
 import org.apache.qpid.util.Strings;
 import org.apache.qpid.transport.network.Frame;
 
