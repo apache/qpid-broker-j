@@ -222,7 +222,6 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
 
     private void processManagedOperation(final PrintWriter pw, final ExecutableElement methodElement)
     {
-        ;
 
         if(!methodElement.getParameters().isEmpty())
         {
