@@ -59,10 +59,7 @@ public class ConfiguredObjectToMapConverter
         Map<String, Object> object = new LinkedHashMap<>();
 
         incorporateAttributesIntoMap(confObject, object, converterOptions);
-        if(!converterOptions.isExtractAsConfig())
-        {
-            incorporateStatisticsIntoMap(confObject, object);
-        }
+        incorporateStatisticsIntoMap(confObject, object);
 
         if(converterOptions.getDepth() > 0)
         {
@@ -77,117 +74,87 @@ public class ConfiguredObjectToMapConverter
             Map<String, Object> object,
             ConverterOptions converterOptions)
     {
-        // if extracting as config add a fake attribute for each secondary parent
-        if(converterOptions.isExtractAsConfig() && confObject.getModel().getParentTypes(confObject.getCategoryClass()).size()>1)
-        {
-            Iterator<Class<? extends ConfiguredObject>> parentClasses =
-                    confObject.getModel().getParentTypes(confObject.getCategoryClass()).iterator();
-
-            // ignore the first parent which is supplied by structure
-            parentClasses.next();
-
-            while(parentClasses.hasNext())
-            {
-                Class<? extends ConfiguredObject> parentClass = parentClasses.next();
-                ConfiguredObject parent = confObject.getParent(parentClass);
-                if(parent != null)
-                {
-                    String categoryName = parentClass.getSimpleName();
-                    object.put(categoryName.substring(0,1).toLowerCase()+categoryName.substring(1), parent.getName());
-                }
-            }
-        }
 
         for(String name : confObject.getAttributeNames())
         {
-            if (!(converterOptions.isExtractAsConfig() && CONFIG_EXCLUDED_ATTRIBUTES.contains(name)))
+            Object value =
+                    converterOptions.isUseActualValues()
+                            ? confObject.getActualAttributes().get(name)
+                            : confObject.getAttribute(name);
+            if (value instanceof ConfiguredObject)
             {
-                Object value =
-                        converterOptions.isUseActualValues() ? confObject.getActualAttributes().get(name) : confObject.getAttribute(name);
-                if (value instanceof ConfiguredObject)
-                {
-                    object.put(name, ((ConfiguredObject) value).getName());
-                }
-                else if (ConfiguredObject.CONTEXT.equals(name))
-                {
-                    Map<String, Object> contextValues = collectContext(confObject,
-                                                                       converterOptions.isExcludeInheritedContext(),
-                                                                       converterOptions.isUseActualValues());
+                object.put(name, ((ConfiguredObject) value).getName());
+            }
+            else if (ConfiguredObject.CONTEXT.equals(name))
+            {
+                Map<String, Object> contextValues = collectContext(confObject,
+                                                                   converterOptions.isExcludeInheritedContext(),
+                                                                   converterOptions.isUseActualValues());
 
-                    if (!contextValues.isEmpty())
+                if (!contextValues.isEmpty())
+                {
+                    object.put(ConfiguredObject.CONTEXT, contextValues);
+                }
+            }
+            else if (value instanceof Collection)
+            {
+                List<Object> converted = new ArrayList<>();
+                for (Object member : (Collection) value)
+                {
+                    if (member instanceof ConfiguredObject)
                     {
-                        object.put(ConfiguredObject.CONTEXT, contextValues);
+                        converted.add(((ConfiguredObject) member).getName());
+                    }
+                    else
+                    {
+                        converted.add(member);
                     }
                 }
-                else if (value instanceof Collection)
+                object.put(name, converted);
+            }
+            else if (value instanceof Named)
+            {
+                object.put(name, ((Named) value).getName());
+            }
+            else if (value != null)
+            {
+                ConfiguredObjectAttribute<?, ?> attribute = confObject.getModel()
+                        .getTypeRegistry()
+                        .getAttributeTypes(confObject.getClass())
+                        .get(name);
+
+                if (attribute.isSecureValue(value))
                 {
-                    List<Object> converted = new ArrayList<>();
-                    for (Object member : (Collection) value)
-                    {
-                        if (member instanceof ConfiguredObject)
-                        {
-                            converted.add(((ConfiguredObject) member).getName());
-                        }
-                        else
-                        {
-                            converted.add(member);
-                        }
-                    }
-                    object.put(name, converted);
+                    // do not expose actual secure attribute value
+                    // getAttribute() returns encoded value
+                    value = confObject.getAttribute(name);
                 }
-                else if (value instanceof Named)
+
+                if (attribute.isOversized()
+                    && !converterOptions.isUseActualValues())
                 {
-                    object.put(name, ((Named) value).getName());
-                }
-                else if (value != null)
-                {
-                    ConfiguredObjectAttribute<?, ?> attribute = confObject.getModel()
-                            .getTypeRegistry()
-                            .getAttributeTypes(confObject.getClass())
-                            .get(name);
-
-                    if (attribute.isSecureValue(value) && !(converterOptions.isSecureTransport() && converterOptions.isExtractAsConfig()))
+                    String valueString = String.valueOf(value);
+                    if (valueString.length() > converterOptions.getOversizeThreshold())
                     {
-                        // do not expose actual secure attribute value
-                        // getAttribute() returns encoded value
-                        value =  confObject.getAttribute(name);
-                    }
 
-                    if(attribute.isOversized() && !converterOptions.isExtractAsConfig() && !converterOptions.isUseActualValues())
-                    {
-                        String valueString = String.valueOf(value);
-                        if(valueString.length() > converterOptions.getOversizeThreshold())
-                        {
+                        String replacementValue = "".equals(attribute.getOversizedAltText())
+                                ? String.valueOf(value).substring(0, converterOptions.getOversizeThreshold() - 4)
+                                  + "..."
+                                : attribute.getOversizedAltText();
 
-                            String replacementValue = "".equals(attribute.getOversizedAltText())
-                                    ? String.valueOf(value).substring(0, converterOptions.getOversizeThreshold() - 4) + "..."
-                                    : attribute.getOversizedAltText();
-
-                            object.put(name, replacementValue);
-                        }
-                        else
-                        {
-                            object.put(name, value);
-                        }
+                        object.put(name, replacementValue);
                     }
                     else
                     {
                         object.put(name, value);
                     }
                 }
-                else if (converterOptions.isExtractAsConfig())
+                else
                 {
-                    ConfiguredObjectAttribute<?, ?> attribute = confObject.getModel()
-                            .getTypeRegistry()
-                            .getAttributeTypes(confObject.getClass())
-                            .get(name);
-
-                    if(attribute.isPersisted() &&  attribute.isDerived())
-                    {
-                        object.put(name, confObject.getAttribute(name));
-                    }
+                    object.put(name, value);
                 }
             }
+
         }
     }
 
@@ -279,48 +246,43 @@ public class ConfiguredObjectToMapConverter
         ConverterOptions childConverterOptions = new ConverterOptions(converterOptions, converterOptions.getDepth() - 1);
         for(Class<? extends ConfiguredObject> childClass : childTypes)
         {
-            if(!(converterOptions.isExtractAsConfig() && confObject.getModel().getParentTypes(childClass).iterator().next() != confObject.getCategoryClass()))
+            Collection children = confObject.getChildren(childClass);
+            if (children != null)
             {
-
-                Collection children = confObject.getChildren(childClass);
-                if(children != null)
+                List<? extends ConfiguredObject> sortedChildren = new ArrayList<ConfiguredObject>(children);
+                if (Comparable.class.isAssignableFrom(childClass))
                 {
-                    List<? extends ConfiguredObject> sortedChildren = new ArrayList<ConfiguredObject>(children);
-                    if(Comparable.class.isAssignableFrom(childClass))
+                    Collections.sort((List) sortedChildren);
+                }
+                else
+                {
+                    Collections.sort(sortedChildren, new Comparator<ConfiguredObject>()
                     {
-                        Collections.sort((List)sortedChildren);
-                    }
-                    else
-                    {
-                        Collections.sort(sortedChildren, new Comparator<ConfiguredObject>()
+                        @Override
+                        public int compare(final ConfiguredObject o1, final ConfiguredObject o2)
                         {
-                            @Override
-                            public int compare(final ConfiguredObject o1, final ConfiguredObject o2)
-                            {
-                                return o1.getName().compareTo(o2.getName());
-                            }
-                        });
-                    }
-                    List<Map<String, Object>> childObjects = new ArrayList<>();
-
-
-                    for (ConfiguredObject child : sortedChildren)
-                    {
-                        if (!(converterOptions.isExtractAsConfig() && !child.isDurable()))
-                        {
-                            childObjects.add(convertObjectToMap(child,
-                                                                childClass,
-                                                                childConverterOptions));
+                            return o1.getName().compareTo(o2.getName());
                         }
-                    }
+                    });
+                }
+                List<Map<String, Object>> childObjects = new ArrayList<>();
 
-                    if (!childObjects.isEmpty())
-                    {
-                        String childTypeSingular = childClass.getSimpleName().toLowerCase();
-                        object.put(childTypeSingular + (childTypeSingular.endsWith("s") ? "es" : "s"), childObjects);
-                    }
+
+                for (ConfiguredObject child : sortedChildren)
+                {
+                    childObjects.add(convertObjectToMap(child,
+                                                        childClass,
+                                                        childConverterOptions));
+
+                }
+
+                if (!childObjects.isEmpty())
+                {
+                    String childTypeSingular = childClass.getSimpleName().toLowerCase();
+                    object.put(childTypeSingular + (childTypeSingular.endsWith("s") ? "es" : "s"), childObjects);
                 }
             }
+
         }
     }
 
@@ -329,7 +291,6 @@ public class ConfiguredObjectToMapConverter
     {
         private final int _depth;
         private final boolean _useActualValues;
-        private final boolean _extractAsConfig;
         private final int _oversizeThreshold;
         private final boolean _secureTransport;
         private final boolean _excludeInheritedContext;
@@ -338,7 +299,6 @@ public class ConfiguredObjectToMapConverter
         {
             this(depth,
                  options.isUseActualValues(),
-                 options.isExtractAsConfig(),
                  options.getOversizeThreshold(),
                  options.isSecureTransport(),
                  options.isExcludeInheritedContext());
@@ -346,14 +306,12 @@ public class ConfiguredObjectToMapConverter
 
         public ConverterOptions(final int depth,
                                 final boolean useActualValues,
-                                final boolean extractAsConfig,
                                 final int oversizeThreshold,
                                 final boolean secureTransport,
                                 final boolean excludeInheritedContext)
         {
             _depth = depth;
             _useActualValues = useActualValues;
-            _extractAsConfig = extractAsConfig;
             _oversizeThreshold = oversizeThreshold;
             _secureTransport = secureTransport;
             _excludeInheritedContext = excludeInheritedContext;
@@ -367,11 +325,6 @@ public class ConfiguredObjectToMapConverter
         public boolean isUseActualValues()
         {
             return _useActualValues;
-        }
-
-        public boolean isExtractAsConfig()
-        {
-            return _extractAsConfig;
         }
 
         public int getOversizeThreshold()

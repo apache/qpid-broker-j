@@ -334,10 +334,12 @@ define(["dojo/_base/lang",
         //                     parent of the object in the same format, having fields name, type, parent
         //   parameters: Object?
         //               is optional JSON object to pass additional request parameters  which will be added into query of REST url
+        //   operation: String?
+        //               is optional String identifying the managed operation to be called on the object
         //
-        Management.prototype.download = function (modelObj, parameters)
+        Management.prototype.download = function (modelObj, parameters, operation)
         {
-            var url = this.buildObjectURL(modelObj, parameters);
+            var url = this.buildObjectURL(modelObj, parameters, operation);
             setTimeout(function ()
             {
                 window.location = url;
@@ -449,12 +451,18 @@ define(["dojo/_base/lang",
         //                     parent of the object in the same format, having fields name, type, parent
         //   parameters: Object?
         //             is optional JSON object to pass additional request parameters  which will be added into query of REST url
+        //   operation: String?
+        //               is optional String identifying the managed operation to be called on the object
         //
         // returns: full REST url for the hierarchy object
         //
-        Management.prototype.buildObjectURL = function (modelObj, parameters)
+        Management.prototype.buildObjectURL = function (modelObj, parameters, operation)
         {
             var url = this.objectToURL(modelObj);
+            if(operation)
+            {
+                url = url + "/" + operation;
+            }
             if (parameters)
             {
                 url = url + "?" + ioQuery.objectToQuery(parameters);

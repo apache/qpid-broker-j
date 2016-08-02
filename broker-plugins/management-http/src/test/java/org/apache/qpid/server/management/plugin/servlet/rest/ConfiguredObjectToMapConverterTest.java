@@ -86,7 +86,6 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
                                                                       new ConfiguredObjectToMapConverter.ConverterOptions(
                                                                               0,
                                                                               false,
-                                                                              false,
                                                                               120,
                                                                               false,
                                                                               false));
@@ -108,7 +107,6 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
                                                                       ConfiguredObject.class,
                                                                       new ConfiguredObjectToMapConverter.ConverterOptions(
                                                                               0,
-                                                                              false,
                                                                               false,
                                                                               120,
                                                                               false,
@@ -134,7 +132,6 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
                                                                       new ConfiguredObjectToMapConverter.ConverterOptions(
                                                                               0,
                                                                               false,
-                                                                              false,
                                                                               120,
                                                                               false,
                                                                               false));
@@ -159,7 +156,6 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
                                                                       ConfiguredObject.class,
                                                                       new ConfiguredObjectToMapConverter.ConverterOptions(
                                                                               1,
-                                                                              false,
                                                                               false,
                                                                               120,
                                                                               false,
@@ -205,7 +201,6 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
                                                                       new ConfiguredObjectToMapConverter.ConverterOptions(
                                                                               1,
                                                                               true,
-                                                                              false,
                                                                               120,
                                                                               false,
                                                                               true));
@@ -222,7 +217,6 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         resultMap = _converter.convertObjectToMap(_configuredObject,
                                                   ConfiguredObject.class,
                                                   new ConfiguredObjectToMapConverter.ConverterOptions(1,
-                                                                                                      false,
                                                                                                       false,
                                                                                                       120,
                                                                                                       false,
@@ -265,7 +259,6 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
                                                                        new ConfiguredObjectToMapConverter.ConverterOptions(
                                                                                1,
                                                                                false,
-                                                                               false,
                                                                                20,
                                                                                false,
                                                                                false));
@@ -282,7 +275,6 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         resultMap = _converter.convertObjectToMap(_configuredObject,
                                                   ConfiguredObject.class,
                                                   new ConfiguredObjectToMapConverter.ConverterOptions(1,
-                                                                                                      false,
                                                                                                       false,
                                                                                                       8,
                                                                                                       false,
@@ -304,7 +296,6 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         resultMap = _converter.convertObjectToMap(_configuredObject,
                                                   ConfiguredObject.class,
                                                   new ConfiguredObjectToMapConverter.ConverterOptions(1,
-                                                                                                      false,
                                                                                                       false,
                                                                                                       8,
                                                                                                       false,
@@ -351,7 +342,6 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
                                                                       new ConfiguredObjectToMapConverter.ConverterOptions(
                                                                               1,
                                                                               false,
-                                                                              false,
                                                                               20,
                                                                               false,
                                                                               false));
@@ -367,24 +357,6 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
                                                   ConfiguredObject.class,
                                                   new ConfiguredObjectToMapConverter.ConverterOptions(1,
                                                                                                       true,
-                                                                                                      true,
-                                                                                                      20,
-                                                                                                      true,
-                                                                                                      false));
-
-        children = resultMap.get("testchilds");
-        assertNotNull(children);
-        assertTrue(children instanceof Collection);
-        assertTrue(((Collection)children).size()==1);
-        attrs = ((Collection)children).iterator().next();
-        assertTrue(attrs instanceof Map);
-        assertEquals("secret", ((Map) attrs).get("secureAttribute"));
-
-        resultMap = _converter.convertObjectToMap(_configuredObject,
-                                                  ConfiguredObject.class,
-                                                  new ConfiguredObjectToMapConverter.ConverterOptions(1,
-                                                                                                      true,
-                                                                                                      false,
                                                                                                       20,
                                                                                                       true,
                                                                                                       false));
@@ -403,7 +375,6 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         TestEngine engine = createEngineWithContext();
         ConfiguredObjectToMapConverter.ConverterOptions options = new ConfiguredObjectToMapConverter.ConverterOptions(
                 1,
-                false,
                 false,
                 0,
                 false,
@@ -434,7 +405,6 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         ConfiguredObjectToMapConverter.ConverterOptions options = new ConfiguredObjectToMapConverter.ConverterOptions(
                 1,
                 true,
-                false,
                 0,
                 false,
                 false);
@@ -463,7 +433,6 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         ConfiguredObjectToMapConverter.ConverterOptions options = new ConfiguredObjectToMapConverter.ConverterOptions(
                 1,
                 false,
-                false,
                 0,
                 false,
                 true);
@@ -481,7 +450,6 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         ConfiguredObjectToMapConverter.ConverterOptions options = new ConfiguredObjectToMapConverter.ConverterOptions(
                 1,
                 true,
-                false,
                 0,
                 false,
                 true);

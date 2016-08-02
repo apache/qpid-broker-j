@@ -377,7 +377,6 @@ public class RestServlet extends AbstractServlet
             {
                 // TODO - sort special params, everything else should act as a filter
                 String attachmentFilename = request.getParameter(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM);
-                boolean extractInitialConfig = getBooleanParameterFromRequest(request, EXTRACT_INITIAL_CONFIG_PARAM);
 
                 if (attachmentFilename != null)
                 {
@@ -398,80 +397,71 @@ public class RestServlet extends AbstractServlet
                 int oversizeThreshold;
                 boolean excludeInheritedContext;
 
-                if (extractInitialConfig)
-                {
-                    depth = Integer.MAX_VALUE;
-                    oversizeThreshold = Integer.MAX_VALUE;
-                    actuals = true;
-                    excludeInheritedContext = true;
-                }
-                else
-                {
-                    depth = getIntParameterFromRequest(request, DEPTH_PARAM, DEFAULT_DEPTH);
-                    oversizeThreshold = getIntParameterFromRequest(request, OVERSIZE_PARAM, DEFAULT_OVERSIZE);
-                    actuals = getBooleanParameterFromRequest(request, ACTUALS_PARAM);
-                    String includeSystemContextParameter = request.getParameter(INCLUDE_SYS_CONTEXT_PARAM);
-                    String inheritedActualsParameter = request.getParameter(INHERITED_ACTUALS_PARAM);
-                    String excludeInheritedContextParameter = request.getParameter(EXCLUDE_INHERITED_CONTEXT_PARAM);
+                depth = getIntParameterFromRequest(request, DEPTH_PARAM, DEFAULT_DEPTH);
+                oversizeThreshold = getIntParameterFromRequest(request, OVERSIZE_PARAM, DEFAULT_OVERSIZE);
+                actuals = getBooleanParameterFromRequest(request, ACTUALS_PARAM);
+                String includeSystemContextParameter = request.getParameter(INCLUDE_SYS_CONTEXT_PARAM);
+                String inheritedActualsParameter = request.getParameter(INHERITED_ACTUALS_PARAM);
+                String excludeInheritedContextParameter = request.getParameter(EXCLUDE_INHERITED_CONTEXT_PARAM);
 
-                    if (excludeInheritedContextParameter == null)
+                if (excludeInheritedContextParameter == null)
+                {
+                    /* backward (pre v6.1) compatible behaviour */
+                    if (inheritedActualsParameter == null && includeSystemContextParameter == null)
                     {
-                        /* backward (pre v6.1) compatible behaviour */
-                        if (inheritedActualsParameter == null && includeSystemContextParameter == null)
+                        excludeInheritedContext = actuals;
+                    }
+                    else if (inheritedActualsParameter != null && includeSystemContextParameter != null)
+                    {
+                        if (actuals)
                         {
-                            excludeInheritedContext = actuals;
-                        }
-                        else if (inheritedActualsParameter != null && includeSystemContextParameter != null)
-                        {
-                            if (actuals)
-                            {
-                                excludeInheritedContext = !Boolean.parseBoolean(inheritedActualsParameter);
-                            }
-                            else
-                            {
-                                excludeInheritedContext = !Boolean.parseBoolean(includeSystemContextParameter);
-                            }
-                        }
-                        else if (inheritedActualsParameter != null)
-                        {
-                            if (actuals)
-                            {
-                                excludeInheritedContext = !Boolean.parseBoolean(inheritedActualsParameter);
-                            }
-                            else
-                            {
-                                excludeInheritedContext = false;
-                            }
+                            excludeInheritedContext = !Boolean.parseBoolean(inheritedActualsParameter);
                         }
                         else
                         {
-                            if (actuals)
-                            {
-                                excludeInheritedContext = true;
-                            }
-                            else
-                            {
-                                excludeInheritedContext = !Boolean.parseBoolean(includeSystemContextParameter);
-                            }
+                            excludeInheritedContext = !Boolean.parseBoolean(includeSystemContextParameter);
+                        }
+                    }
+                    else if (inheritedActualsParameter != null)
+                    {
+                        if (actuals)
+                        {
+                            excludeInheritedContext = !Boolean.parseBoolean(inheritedActualsParameter);
+                        }
+                        else
+                        {
+                            excludeInheritedContext = false;
                         }
                     }
                     else
                     {
-                        if (inheritedActualsParameter != null || includeSystemContextParameter != null)
+                        if (actuals)
                         {
-                            sendJsonErrorResponse(request,
-                                                  response,
-                                                  SC_UNPROCESSABLE_ENTITY,
-                                                  String.format(
-                                                          "Parameter '%s' cannot be specified together with '%s' or '%s'",
-                                                          EXCLUDE_INHERITED_CONTEXT_PARAM,
-                                                          INHERITED_ACTUALS_PARAM,
-                                                          INCLUDE_SYS_CONTEXT_PARAM));
-                            return;
+                            excludeInheritedContext = true;
                         }
-                        excludeInheritedContext = Boolean.parseBoolean(excludeInheritedContextParameter);
+                        else
+                        {
+                            excludeInheritedContext = !Boolean.parseBoolean(includeSystemContextParameter);
+                        }
                     }
                 }
+                else
+                {
+                    if (inheritedActualsParameter != null || includeSystemContextParameter != null)
+                    {
+                        sendJsonErrorResponse(request,
+                                              response,
+                                              SC_UNPROCESSABLE_ENTITY,
+                                              String.format(
+                                                      "Parameter '%s' cannot be specified together with '%s' or '%s'",
+                                                      EXCLUDE_INHERITED_CONTEXT_PARAM,
+                                                      INHERITED_ACTUALS_PARAM,
+                                                      INCLUDE_SYS_CONTEXT_PARAM));
+                        return;
+                    }
+                    excludeInheritedContext = Boolean.parseBoolean(excludeInheritedContextParameter);
+                }
+
 
                 List<Map<String, Object>> output = new ArrayList<>();
                 for (ConfiguredObject configuredObject : allObjects)
@@ -481,14 +471,13 @@ public class RestServlet extends AbstractServlet
                                                                    new ConfiguredObjectToMapConverter.ConverterOptions(
                                                                            depth,
                                                                            actuals,
-                                                                           extractInitialConfig,
                                                                            oversizeThreshold,
                                                                            request.isSecure(),
                                                                            excludeInheritedContext)));
                 }
 
                 boolean sendCachingHeaders = attachmentFilename == null;
-                sendJsonResponse(extractInitialConfig && output.size() == 1 ? output.get(0) : output,
+                sendJsonResponse(output,
                                  request,
                                  response,
                                  HttpServletResponse.SC_OK,
@@ -752,6 +741,7 @@ public class RestServlet extends AbstractServlet
                     if (operation.isNonModifying())
                     {
                         operationArguments = getOperationArgumentsAsMap(request);
+                        operationArguments.keySet().removeAll(Arrays.asList(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM));
                     }
                     else
                     {
@@ -801,7 +791,6 @@ public class RestServlet extends AbstractServlet
             final ConfiguredObjectToMapConverter.ConverterOptions converterOptions =
                     new ConfiguredObjectToMapConverter.ConverterOptions(DEFAULT_DEPTH,
                                                                         false,
-                                                                        false,
                                                                         DEFAULT_OVERSIZE,
                                                                         request.isSecure(),
                                                                         true);
@@ -822,6 +811,14 @@ public class RestServlet extends AbstractServlet
                 }
                 returnVal = output;
             }
+
+            String attachmentFilename = request.getParameter(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM);
+
+            if (attachmentFilename != null)
+            {
+                setContentDispositionHeaderIfNecessary(response, attachmentFilename);
+            }
+
             sendJsonResponse(returnVal, request, response);
         }
     }

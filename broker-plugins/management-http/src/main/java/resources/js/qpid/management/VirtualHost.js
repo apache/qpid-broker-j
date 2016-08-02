@@ -149,9 +149,8 @@ define(["dojo/parser",
                     {
                         var suggestedAttachmentName = encodeURIComponent(that.name + ".json");
                         that.management.download(that.modelObj, {
-                            extractInitialConfig: true,
                             contentDispositionAttachmentFilename: suggestedAttachmentName
-                        });
+                        }, "extractConfig");
                     });
 
                     that.deleteButton = registry.byNode(query(".deleteButton", containerNode)[0]);
