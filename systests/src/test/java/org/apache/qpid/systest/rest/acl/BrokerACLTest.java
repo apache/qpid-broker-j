@@ -49,7 +49,7 @@ import org.apache.qpid.server.model.adapter.FileBasedGroupProviderImpl;
 import org.apache.qpid.server.security.AllowAllAccessControlProvider;
 import org.apache.qpid.server.security.FileKeyStore;
 import org.apache.qpid.server.security.FileTrustStore;
-import org.apache.qpid.server.security.access.plugins.ACLFileAccessControlProvider;
+import org.apache.qpid.server.security.access.plugins.AclFileAccessControlProvider;
 import org.apache.qpid.server.security.acl.AbstractACLTestCase;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.PlainPasswordDatabaseAuthenticationManager;
@@ -1128,8 +1128,8 @@ public class BrokerACLTest extends QpidRestTestCase
         File file = TestFileUtils.createTempFile(this, ".acl", _secondaryAclFileContent);
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(AccessControlProvider.NAME, accessControlProviderName);
-        attributes.put(AccessControlProvider.TYPE, ACLFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE);
-        attributes.put(ACLFileAccessControlProvider.PATH, file.getAbsoluteFile());
+        attributes.put(AccessControlProvider.TYPE, AclFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE);
+        attributes.put(AclFileAccessControlProvider.PATH, file.getAbsoluteFile());
 
         return getRestTestHelper().submitRequest("accesscontrolprovider/" + accessControlProviderName, "PUT", attributes);
     }

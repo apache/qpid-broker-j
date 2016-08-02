@@ -50,7 +50,7 @@ import org.apache.qpid.server.security.access.config.RuleBasedAccessControl;
 import org.apache.qpid.server.security.access.config.RuleSet;
 
 
-abstract class AbstractCommonRulesBasedAccessControlProvider<X extends AbstractCommonRulesBasedAccessControlProvider<X,T,Y>, T extends EventLoggerProvider & ConfiguredObject<?>, Y extends CommonAccessControlProvider<Y>>
+abstract class AbstractCommonRuleBasedAccessControlProvider<X extends AbstractCommonRuleBasedAccessControlProvider<X,T,Y>, T extends EventLoggerProvider & ConfiguredObject<?>, Y extends CommonAccessControlProvider<Y>>
         extends AbstractLegacyAccessControlProvider<X, T, Y> implements EventLoggerProvider
 {
 
@@ -59,7 +59,7 @@ abstract class AbstractCommonRulesBasedAccessControlProvider<X extends AbstractC
     @ManagedAttributeField
     private List<AclRule> _rules;
 
-    AbstractCommonRulesBasedAccessControlProvider(final Map<String, Object> attributes, final T parent)
+    AbstractCommonRuleBasedAccessControlProvider(final Map<String, Object> attributes, final T parent)
     {
         super(attributes, parent);
     }

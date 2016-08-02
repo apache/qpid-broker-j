@@ -40,7 +40,7 @@ import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 
-public class ACLFileAccessControlProviderFactoryTest extends QpidTestCase
+public class AclFileAccessControlProviderFactoryTest extends QpidTestCase
 {
     private Broker _broker;
     private ConfiguredObjectFactoryImpl _objectFactory;
@@ -68,7 +68,7 @@ public class ACLFileAccessControlProviderFactoryTest extends QpidTestCase
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(AccessControlProvider.ID, UUID.randomUUID());
         attributes.put(AccessControlProvider.NAME, "acl");
-        attributes.put(AccessControlProvider.TYPE, ACLFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE);
+        attributes.put(AccessControlProvider.TYPE, AclFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE);
 
         try
         {
@@ -88,8 +88,8 @@ public class ACLFileAccessControlProviderFactoryTest extends QpidTestCase
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(AccessControlProvider.ID, UUID.randomUUID());
         attributes.put(AccessControlProvider.NAME, "acl");
-        attributes.put(AccessControlProvider.TYPE, ACLFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE);
-        attributes.put(ACLFileAccessControlProvider.PATH, aclFile.getAbsolutePath());
+        attributes.put(AccessControlProvider.TYPE, AclFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE);
+        attributes.put(AclFileAccessControlProvider.PATH, aclFile.getAbsolutePath());
         AccessControlProvider acl = _objectFactory.create(AccessControlProvider.class, attributes, _broker);
 
         assertNotNull("ACL was not created from acl file: " + aclFile.getAbsolutePath(), acl);
@@ -102,8 +102,8 @@ public class ACLFileAccessControlProviderFactoryTest extends QpidTestCase
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(AccessControlProvider.ID, UUID.randomUUID());
         attributes.put(AccessControlProvider.NAME, "acl");
-        attributes.put(AccessControlProvider.TYPE, ACLFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE);
-        attributes.put(ACLFileAccessControlProvider.PATH, aclFile.getAbsolutePath());
+        attributes.put(AccessControlProvider.TYPE, AclFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE);
+        attributes.put(AclFileAccessControlProvider.PATH, aclFile.getAbsolutePath());
         try
         {
             AccessControlProvider control = _objectFactory.create(AccessControlProvider.class, attributes, _broker);

@@ -29,7 +29,7 @@ import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
 class RuleBasedAccessControlProviderImpl
-        extends AbstractCommonRulesBasedAccessControlProvider<RuleBasedAccessControlProviderImpl, Broker<?>, AccessControlProvider<?>>
+        extends AbstractCommonRuleBasedAccessControlProvider<RuleBasedAccessControlProviderImpl, Broker<?>, AccessControlProvider<?>>
         implements RuleBasedAccessControlProvider<RuleBasedAccessControlProviderImpl>
 {
 

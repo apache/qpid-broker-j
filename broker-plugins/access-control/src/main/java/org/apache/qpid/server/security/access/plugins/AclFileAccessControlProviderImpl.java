@@ -41,11 +41,11 @@ import org.apache.qpid.server.security.access.config.AclFileParser;
 import org.apache.qpid.server.security.access.config.RuleBasedAccessControl;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
-public class ACLFileAccessControlProviderImpl
-        extends AbstractLegacyAccessControlProvider<ACLFileAccessControlProviderImpl, Broker<?>, AccessControlProvider<?>>
-        implements ACLFileAccessControlProvider<ACLFileAccessControlProviderImpl>
+public class AclFileAccessControlProviderImpl
+        extends AbstractLegacyAccessControlProvider<AclFileAccessControlProviderImpl, Broker<?>, AccessControlProvider<?>>
+        implements AclFileAccessControlProvider<AclFileAccessControlProviderImpl>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ACLFileAccessControlProviderImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AclFileAccessControlProviderImpl.class);
 
     static
     {
@@ -58,7 +58,7 @@ public class ACLFileAccessControlProviderImpl
     private String _path;
 
     @ManagedObjectFactoryConstructor
-    public ACLFileAccessControlProviderImpl(Map<String, Object> attributes, Broker broker)
+    public AclFileAccessControlProviderImpl(Map<String, Object> attributes, Broker broker)
     {
         super(attributes, broker);
         _broker = broker;

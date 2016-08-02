@@ -26,8 +26,8 @@ import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedOperation;
 
-@ManagedObject( category = false, type=ACLFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE )
-public interface ACLFileAccessControlProvider<X extends ACLFileAccessControlProvider<X>> extends AccessControlProvider<X>
+@ManagedObject( category = false, type=AclFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE )
+public interface AclFileAccessControlProvider<X extends AclFileAccessControlProvider<X>> extends AccessControlProvider<X>
 {
     String ACL_FILE_PROVIDER_TYPE = "AclFile";
     String PATH = "path";

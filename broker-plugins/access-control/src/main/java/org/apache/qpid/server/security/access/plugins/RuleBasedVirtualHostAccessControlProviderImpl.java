@@ -32,7 +32,7 @@ import org.apache.qpid.server.security.access.config.ObjectType;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 
 public class RuleBasedVirtualHostAccessControlProviderImpl
-        extends AbstractCommonRulesBasedAccessControlProvider<RuleBasedVirtualHostAccessControlProviderImpl, VirtualHost<?>, VirtualHostAccessControlProvider<?>>
+        extends AbstractCommonRuleBasedAccessControlProvider<RuleBasedVirtualHostAccessControlProviderImpl, VirtualHost<?>, VirtualHostAccessControlProvider<?>>
         implements RuleBasedVirtualHostAccessControlProvider<RuleBasedVirtualHostAccessControlProviderImpl>
 {
     private static final EnumSet<ObjectType> ALLOWED_OBJECT_TYPES = EnumSet.of(ObjectType.ALL,

@@ -53,7 +53,7 @@ import org.apache.qpid.server.model.adapter.FileBasedGroupProvider;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProviderImpl;
 import org.apache.qpid.server.plugin.PluggableFactoryLoader;
 import org.apache.qpid.server.plugin.SystemConfigFactory;
-import org.apache.qpid.server.security.access.plugins.ACLFileAccessControlProvider;
+import org.apache.qpid.server.security.access.plugins.AclFileAccessControlProvider;
 import org.apache.qpid.server.security.access.plugins.AclRule;
 import org.apache.qpid.server.security.access.plugins.RuleBasedAccessControlProvider;
 import org.apache.qpid.server.store.AbstractMemoryStore;
@@ -334,8 +334,8 @@ public class TestBrokerConfiguration
     {
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(AccessControlProvider.NAME, ENTRY_NAME_ACL_FILE);
-        attributes.put(AccessControlProvider.TYPE, ACLFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE);
-        attributes.put(ACLFileAccessControlProvider.PATH, aclFilePath);
+        attributes.put(AccessControlProvider.TYPE, AclFileAccessControlProvider.ACL_FILE_PROVIDER_TYPE);
+        attributes.put(AclFileAccessControlProvider.PATH, aclFilePath);
 
         return addObjectConfiguration(AccessControlProvider.class, attributes);
     }

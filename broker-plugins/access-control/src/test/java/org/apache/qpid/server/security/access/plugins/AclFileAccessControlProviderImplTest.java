@@ -39,7 +39,7 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ACLFileAccessControlProviderImplTest extends QpidTestCase
+public class AclFileAccessControlProviderImplTest extends QpidTestCase
 {
     private TaskExecutor _taskExecutor;
     private Model _model;
@@ -65,10 +65,10 @@ public class ACLFileAccessControlProviderImplTest extends QpidTestCase
         String aclFilePath = new File(TMP_FOLDER, "test_" + getTestName() + System.nanoTime() + ".acl").getAbsolutePath();
 
         attributes.put("path", aclFilePath);
-        attributes.put(ACLFileAccessControlProvider.NAME, getTestName());
+        attributes.put(AclFileAccessControlProvider.NAME, getTestName());
 
 
-        ACLFileAccessControlProviderImpl aclProvider = new ACLFileAccessControlProviderImpl(attributes, _broker);
+        AclFileAccessControlProviderImpl aclProvider = new AclFileAccessControlProviderImpl(attributes, _broker);
         try
         {
             aclProvider.create();
