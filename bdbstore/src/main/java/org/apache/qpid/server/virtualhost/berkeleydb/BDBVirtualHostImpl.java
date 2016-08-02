@@ -27,12 +27,10 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.berkeleydb.BDBMessageStore;
 import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
 import org.apache.qpid.server.store.berkeleydb.BDBCacheSizeSetter;
-import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 
 @ManagedObject(category = false, type = BDBVirtualHostImpl.VIRTUAL_HOST_TYPE)
@@ -99,7 +97,6 @@ public class BDBVirtualHostImpl extends AbstractVirtualHost<BDBVirtualHostImpl> 
     @Override
     public void updateMutableConfig()
     {
-        authorise(Operation.UPDATE);
         BDBMessageStore bdbMessageStore = (BDBMessageStore) getMessageStore();
         if (bdbMessageStore != null)
         {
@@ -114,7 +111,6 @@ public class BDBVirtualHostImpl extends AbstractVirtualHost<BDBVirtualHostImpl> 
     @Override
     public int cleanLog()
     {
-        authorise(Operation.UPDATE);
         BDBMessageStore bdbMessageStore = (BDBMessageStore) getMessageStore();
         if (bdbMessageStore != null)
         {
@@ -130,7 +126,6 @@ public class BDBVirtualHostImpl extends AbstractVirtualHost<BDBVirtualHostImpl> 
     @Override
     public void checkpoint(final boolean force)
     {
-        authorise(Operation.UPDATE);
         BDBMessageStore bdbMessageStore = (BDBMessageStore) getMessageStore();
         if (bdbMessageStore != null)
         {
