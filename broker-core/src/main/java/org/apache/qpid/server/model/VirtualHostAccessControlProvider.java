@@ -27,6 +27,6 @@ import org.apache.qpid.server.security.AccessControl;
 @ManagedObject( creatable = false )
 public interface VirtualHostAccessControlProvider<X extends VirtualHostAccessControlProvider<X>>  extends ConfiguredObject<X>, CommonAccessControlProvider<VirtualHostAccessControlProvider<?>>
 {
-    @ManagedAttribute(defaultValue = "10")
+    @ManagedAttribute(defaultValue = "10", description = "The priority of this access control provider - the lower the number the higher the priority")
     int getPriority();
 }
