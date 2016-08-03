@@ -28,8 +28,7 @@ public interface ConfiguredObjectRecordHandler
     /**
      * Handles the given record.
      *
-     * @param record
-     * @return false is returned if the handler does not wish to handle other record, true otherwise
+     * @param record the record to be handled
      */
     void handle(ConfiguredObjectRecord record);
 
