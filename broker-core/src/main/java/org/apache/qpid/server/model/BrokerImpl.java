@@ -234,7 +234,6 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     {
         super.postResolveChildren();
 
-
         final SystemConfig parent = getParent(SystemConfig.class);
         Runnable task =  parent.getOnContainerResolveTask();
         if(task != null)
@@ -242,6 +241,10 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
             task.run();
         }
         addChangeListener(_accessControlProviderListener);
+        for(AccessControlProvider aclProvider : getChildren(AccessControlProvider.class))
+        {
+            aclProvider.addChangeListener(_accessControlProviderListener);
+        }
         _eventLogger.message(BrokerMessages.CONFIG(parent instanceof FileBasedSettings
                                                            ? ((FileBasedSettings) parent).getStorePath()
                                                            : "N/A"));

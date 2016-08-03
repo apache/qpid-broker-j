@@ -97,7 +97,7 @@ public abstract class AbstractACLTestCase extends QpidBrokerTestCase implements 
         writeACLFileUtil(this, rules);
     }
 
-    public static void writeACLFileUtil(QpidBrokerTestCase testcase, String...rules) throws IOException
+    public static String writeACLFileUtil(QpidBrokerTestCase testcase, String...rules) throws IOException
     {
         File aclFile = File.createTempFile(testcase.getClass().getSimpleName(), testcase.getName());
         aclFile.deleteOnExit();
@@ -111,6 +111,7 @@ public abstract class AbstractACLTestCase extends QpidBrokerTestCase implements 
             out.println(line);
         }
         out.close();
+        return aclFile.getCanonicalPath();
     }
 
     /**

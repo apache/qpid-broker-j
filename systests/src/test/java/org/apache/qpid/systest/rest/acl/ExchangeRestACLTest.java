@@ -20,13 +20,20 @@
  */
 package org.apache.qpid.systest.rest.acl;
 
+import static org.apache.qpid.server.security.acl.AbstractACLTestCase.writeACLFileUtil;
+import static org.apache.qpid.test.utils.TestBrokerConfiguration.ENTRY_NAME_ACL_FILE;
+
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet;
+import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
@@ -38,30 +45,35 @@ public class ExchangeRestACLTest extends QpidRestTestCase
 {
     private static final String ALLOWED_USER = "user1";
     private static final String DENIED_USER = "user2";
+    private static final String ADMIN = "ADMIN";
+
     private String _queueName;
     private String _exchangeName;
     private String _exchangeUrl;
+    private String _aclFilePath;
 
     @Override
     protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
         final TestBrokerConfiguration defaultBrokerConfiguration = getDefaultBrokerConfiguration();
-        defaultBrokerConfiguration.configureTemporaryPasswordFile(ALLOWED_USER, DENIED_USER);
+        defaultBrokerConfiguration.configureTemporaryPasswordFile(ALLOWED_USER, DENIED_USER, ADMIN);
 
-        AbstractACLTestCase.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
-                "ACL ALLOW-LOG " + ALLOWED_USER + " CREATE QUEUE",
-                "ACL ALLOW-LOG " + ALLOWED_USER + " CREATE EXCHANGE",
-                "ACL DENY-LOG " + DENIED_USER + " CREATE EXCHANGE",
-                "ACL ALLOW-LOG " + ALLOWED_USER + " UPDATE EXCHANGE",
-                "ACL DENY-LOG " + DENIED_USER + " UPDATE EXCHANGE",
-                "ACL ALLOW-LOG " + ALLOWED_USER + " DELETE EXCHANGE",
-                "ACL DENY-LOG " + DENIED_USER + " DELETE EXCHANGE",
-                "ACL ALLOW-LOG " + ALLOWED_USER + " BIND EXCHANGE",
-                "ACL DENY-LOG " + DENIED_USER + " BIND EXCHANGE",
-                "ACL ALLOW-LOG " + ALLOWED_USER + " UNBIND EXCHANGE",
-                "ACL DENY-LOG " + DENIED_USER + " UNBIND EXCHANGE",
-                "ACL DENY-LOG ALL ALL");
+        _aclFilePath = writeACLFileUtil(this,
+                                        "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
+                                        "ACL ALLOW-LOG " + ALLOWED_USER + " CREATE QUEUE",
+                                        "ACL ALLOW-LOG " + ALLOWED_USER + " CREATE EXCHANGE",
+                                        "ACL DENY-LOG " + DENIED_USER + " CREATE EXCHANGE",
+                                        "ACL ALLOW-LOG " + ALLOWED_USER + " UPDATE EXCHANGE",
+                                        "ACL DENY-LOG " + DENIED_USER + " UPDATE EXCHANGE",
+                                        "ACL ALLOW-LOG " + ALLOWED_USER + " DELETE EXCHANGE",
+                                        "ACL DENY-LOG " + DENIED_USER + " DELETE EXCHANGE",
+                                        "ACL ALLOW-LOG " + ALLOWED_USER + " BIND EXCHANGE",
+                                        "ACL DENY-LOG " + DENIED_USER + " BIND EXCHANGE",
+                                        "ACL ALLOW-LOG " + ALLOWED_USER + " UNBIND EXCHANGE",
+                                        "ACL DENY-LOG " + DENIED_USER + " UNBIND EXCHANGE",
+                                        "ACL ALLOW-LOG " + ADMIN + " ALL ALL",
+                                        "ACL DENY-LOG ALL ALL");
     }
 
     @Override
@@ -98,6 +110,56 @@ public class ExchangeRestACLTest extends QpidRestTestCase
         assertEquals("Exchange creation should be denied", 403, responseCode);
 
         assertExchangeDoesNotExist();
+    }
+
+
+    public void testCreateExchangeAllowedAfterReload() throws Exception
+    {
+
+
+        getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
+
+        int responseCode = createExchange();
+        assertEquals("Exchange creation should be denied", 403, responseCode);
+
+        assertExchangeDoesNotExist();
+
+        overwriteAclFile("ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
+                         "ACL ALLOW-LOG " + ALLOWED_USER + " CREATE QUEUE",
+                         "ACL ALLOW-LOG " + ALLOWED_USER + " CREATE EXCHANGE",
+                         "ACL ALLOW-LOG " + DENIED_USER + " CREATE EXCHANGE",
+                         "ACL ALLOW-LOG " + ALLOWED_USER + " UPDATE EXCHANGE",
+                         "ACL DENY-LOG " + DENIED_USER + " UPDATE EXCHANGE",
+                         "ACL ALLOW-LOG " + ALLOWED_USER + " DELETE EXCHANGE",
+                         "ACL DENY-LOG " + DENIED_USER + " DELETE EXCHANGE",
+                         "ACL ALLOW-LOG " + ALLOWED_USER + " BIND EXCHANGE",
+                         "ACL DENY-LOG " + DENIED_USER + " BIND EXCHANGE",
+                         "ACL ALLOW-LOG " + ALLOWED_USER + " UNBIND EXCHANGE",
+                         "ACL DENY-LOG " + DENIED_USER + " UNBIND EXCHANGE",
+                         "ACL ALLOW-LOG " + ADMIN + " ALL ALL",
+                         "ACL DENY-LOG ALL ALL");
+        getRestTestHelper().setUsernameAndPassword(ADMIN, ADMIN);
+        getRestTestHelper().submitRequest("/api/latest/"
+                                          + AccessControlProvider.class.getSimpleName().toLowerCase()
+                                          + "/" + ENTRY_NAME_ACL_FILE + "/reload", "POST", Collections.emptyMap(), 200);
+        getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
+
+        responseCode = createExchange();
+        assertEquals("Exchange creation should be allowed", 201, responseCode);
+
+        assertExchangeExists();
+
+    }
+
+    private void overwriteAclFile(final String... rules) throws IOException
+    {
+        try(FileWriter fw = new FileWriter(_aclFilePath); PrintWriter out = new PrintWriter(fw))
+        {
+            for(String line :rules)
+            {
+                out.println(line);
+            }
+        }
     }
 
     public void testDeleteExchangeAllowed() throws Exception
