@@ -39,6 +39,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.ManageableMessage;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
@@ -53,7 +54,9 @@ import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
-import org.apache.qpid.server.virtualhost.*;
+import org.apache.qpid.server.virtualhost.HouseKeepingTask;
+import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
+import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 
 /**
   Object that represents the VirtualHost whilst the VirtualHostNode is in the replica role.  The
@@ -455,6 +458,20 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     public Map<String, Object> extractConfig(boolean includeSecureAttributes)
     {
         return Collections.emptyMap();
+    }
+
+    @Override
+    public Content extractMessageStore()
+    {
+        throwUnsupportedForReplica();
+
+        return null;
+    }
+
+    @Override
+    public void importMessageStore(final String source)
+    {
+        throwUnsupportedForReplica();
     }
 
     @Override

@@ -203,6 +203,12 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
                                             description = "include attributes that may contain passwords or other "
                                                           + "confidential information",
                                             defaultValue = "false") boolean includeSecureAttributes);
+    @ManagedOperation(nonModifying = true, description = "Extract message store content")
+    Content extractMessageStore();
+
+    @ManagedOperation(description = "Import message store content")
+    void importMessageStore(@Param(name="source", description = "Extract file")String source);
+
 
     void start();
 

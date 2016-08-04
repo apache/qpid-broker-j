@@ -63,13 +63,16 @@ class LegacyAccessControlAdapter
                                                                     "cleanLog",
                                                                     "checkpoint")));
 
-    private static final Set<String> BROKER_CONFIGURE_OPERATIONS=
+    private static final Set<String> BROKER_CONFIGURE_OPERATIONS =
             Collections.unmodifiableSet(new HashSet<>(Arrays.asList("setJVMOptions",
                                                                     "dumpHeap",
                                                                     "performGC",
                                                                     "getThreadStackTraces",
                                                                     "findThreadStackTraces",
                                                                     "extractConfig")));
+    private static final Set<String> VIRTUALHOST_UPDATE_OPERATIONS =
+            Collections.unmodifiableSet(new HashSet<>(Arrays.asList("importMessageStore",
+                                                                    "extractMessageStore")));
 
     private final LegacyAccessControl _accessControl;
     private final Model _model;
@@ -473,6 +476,13 @@ class LegacyAccessControlAdapter
                 _accessControl.authorise(LegacyOperation.SHUTDOWN, ObjectType.BROKER, ObjectProperties.EMPTY);
             }
 
+        }
+        else if(categoryClass == VirtualHost.class)
+        {
+            if(VIRTUALHOST_UPDATE_OPERATIONS.contains(methodName))
+            {
+                authorise(LegacyOperation.UPDATE, configuredObject);
+            }
         }
         return Result.ALLOWED;
 

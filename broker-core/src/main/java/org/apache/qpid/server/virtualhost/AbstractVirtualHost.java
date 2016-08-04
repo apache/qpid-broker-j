@@ -22,8 +22,16 @@ package org.apache.qpid.server.virtualhost;
 
 import static java.util.Collections.newSetFromMap;
 
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.AccessControlContext;
 import java.security.Principal;
 import java.security.PrivilegedAction;
@@ -40,7 +48,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
@@ -60,9 +73,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.pool.SuppressingInheritedAccessControlContextThreadFactory;
-import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.exchange.DefaultDestination;
@@ -102,13 +115,18 @@ import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreProvider;
 import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
+import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
+import org.apache.qpid.server.store.handler.MessageHandler;
+import org.apache.qpid.server.store.handler.MessageInstanceHandler;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
-import org.apache.qpid.server.store.preferences.PreferencesRoot;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
 import org.apache.qpid.server.store.preferences.PreferenceStoreUpdaterImpl;
 import org.apache.qpid.server.store.preferences.PreferencesRecoverer;
+import org.apache.qpid.server.store.preferences.PreferencesRoot;
+import org.apache.qpid.server.store.serializer.MessageStoreSerializer;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
@@ -815,6 +833,189 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public Map<String, Object> extractConfig(boolean includeSecureAttributes)
     {
         return (new ConfigurationExtractor()).extractConfig(this, includeSecureAttributes);
+    }
+
+    @Override
+    public Content extractMessageStore()
+    {
+        if(getState() == State.STOPPED)
+        {
+            return new MessageStoreContent();
+        }
+        else
+        {
+            throw new IllegalStateException("The extractMessageStore operation can only be called when the virtual host is stopped");
+        }
+
+    }
+
+    private class MessageStoreContent implements Content, CustomRestHeaders
+    {
+
+        @Override
+        public void write(final OutputStream outputStream) throws IOException
+        {
+            _messageStore.openMessageStore(AbstractVirtualHost.this);
+            final Map<UUID, String> queueMap = new HashMap<>();
+            getDurableConfigurationStore().reload(new ConfiguredObjectRecordHandler()
+            {
+                @Override
+                public void handle(final ConfiguredObjectRecord record)
+                {
+                    if(record.getType().equals(Queue.class.getSimpleName()))
+                    {
+                        queueMap.put(record.getId(), (String) record.getAttributes().get(ConfiguredObject.NAME));
+                    }
+                }
+            });
+            MessageStoreSerializer serializer = new QpidServiceLoader().getInstancesByType(MessageStoreSerializer.class).get(MessageStoreSerializer.LATEST);
+            MessageStore.MessageStoreReader reader = _messageStore.newMessageStoreReader();
+            serializer.serialize(queueMap, reader, outputStream);
+
+        }
+
+        @Override
+        public void release()
+        {
+            _messageStore.closeMessageStore();
+        }
+
+
+        @RestContentHeader("Content-Type")
+        public String getContentType()
+        {
+            return "application/octet-stream";
+        }
+
+        @RestContentHeader("Content-Disposition")
+        public String getContentDisposition()
+        {
+            return "attachment; filename=\"" + getName() + "_messages.bin\"";
+        }
+
+    }
+
+    @Override
+    public void importMessageStore(final String source)
+    {
+        if(getState() == State.STOPPED)
+        {
+
+            try
+            {
+                URL url = convertStringToURL(source);
+
+                try (InputStream input = url.openStream();
+                     BufferedInputStream bufferedInputStream = new BufferedInputStream(input);
+                     DataInputStream data = new DataInputStream(bufferedInputStream))
+                {
+                    // All encodings should start 0x00 << int length of the version string>> << version string in UTF-8 >>
+                    data.mark(50);
+                    if (data.read() != 0)
+                    {
+                        throw new IllegalArgumentException("Invalid format for upload");
+                    }
+                    int stringLength = data.readInt();
+                    byte[] stringBytes = new byte[stringLength];
+                    data.readFully(stringBytes);
+
+                    String version = new String(stringBytes, StandardCharsets.UTF_8);
+
+                    Map<String, MessageStoreSerializer> serializerMap =
+                            new QpidServiceLoader().getInstancesByType(MessageStoreSerializer.class);
+
+                    MessageStoreSerializer serializer = serializerMap.get(version);
+
+                    if (serializer != null)
+                    {
+                        try
+                        {
+
+                            _messageStore.openMessageStore(AbstractVirtualHost.this);
+                            checkMessageStoreEmpty();
+                            final Map<String, UUID> queueMap = new HashMap<>();
+                            getDurableConfigurationStore().reload(new ConfiguredObjectRecordHandler()
+                            {
+                                @Override
+                                public void handle(final ConfiguredObjectRecord record)
+                                {
+                                    if (record.getType().equals(Queue.class.getSimpleName()))
+                                    {
+                                        queueMap.put((String) record.getAttributes().get(ConfiguredObject.NAME),
+                                                     record.getId());
+                                    }
+                                }
+                            });
+
+                            bufferedInputStream.reset();
+                            serializer.deserialize(queueMap, _messageStore, data);
+                        }
+                        finally
+                        {
+                            _messageStore.closeMessageStore();
+                        }
+                    }
+                    else
+                    {
+                        throw new IllegalArgumentException("Message store import uses version '"
+                                                           + version + "' which is not supported");
+                    }
+                }
+            }
+            catch (IOException e)
+            {
+                throw new IllegalConfigurationException("Cannot convert " + source + " to a readable resource", e);
+            }
+        }
+        else
+        {
+            throw new IllegalArgumentException("The extractMessageStore operation can only be called when the virtual host is stopped");
+        }
+
+    }
+
+    private void checkMessageStoreEmpty()
+    {
+        final MessageStore.MessageStoreReader reader = _messageStore.newMessageStoreReader();
+        final StoreEmptyCheckingHandler handler = new StoreEmptyCheckingHandler();
+        reader.visitMessages(handler);
+        if(handler.isEmpty())
+        {
+            reader.visitMessageInstances(handler);
+
+            if(handler.isEmpty())
+            {
+                reader.visitDistributedTransactions(handler);
+            }
+        }
+
+        if(!handler.isEmpty())
+        {
+            throw new IllegalArgumentException("The message store is not empty");
+        }
+    }
+
+    private static URL convertStringToURL(final String source)
+    {
+        URL url;
+        try
+        {
+            url = new URL(source);
+        }
+        catch (MalformedURLException e)
+        {
+            File file = new File(source);
+            try
+            {
+                url = file.toURI().toURL();
+            }
+            catch (MalformedURLException notAFile)
+            {
+                throw new IllegalConfigurationException("Cannot convert " + source + " to a readable resource",
+                                                        notAFile);
+            }
+        }
+        return url;
     }
 
     @Override
@@ -2521,4 +2722,39 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }
 
+    private class StoreEmptyCheckingHandler
+            implements MessageHandler, MessageInstanceHandler, DistributedTransactionHandler
+    {
+        private boolean _empty = true;
+
+        @Override
+        public boolean handle(final StoredMessage<?> storedMessage)
+        {
+            _empty = false;
+            return false;
+        }
+
+        @Override
+        public boolean handle(final MessageEnqueueRecord record)
+        {
+            _empty = false;
+            return false;
+        }
+
+        @Override
+        public boolean handle(final org.apache.qpid.server.store.Transaction.StoredXidRecord storedXid,
+                              final org.apache.qpid.server.store.Transaction.EnqueueRecord[] enqueues,
+                              final org.apache.qpid.server.store.Transaction.DequeueRecord[] dequeues)
+        {
+            _empty = false;
+            return false;
+        }
+
+
+        public boolean isEmpty()
+        {
+            return _empty;
+        }
+
+    }
 }
