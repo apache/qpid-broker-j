@@ -78,7 +78,7 @@ define(["dojo/_base/declare",
                     if (!this._updating)
                     {
                         this._updating = true;
-                        this.fetch();
+                        return this.fetch();
                     }
                 },
                 updateRange: function ()
@@ -87,7 +87,7 @@ define(["dojo/_base/declare",
                     if (!this._updating && args)
                     {
                         this._updating = true;
-                        this.fetchRange(args);
+                        return this.fetchRange(args);
                     }
                 },
                 _captureResults: function (queryResults, methodName, args)

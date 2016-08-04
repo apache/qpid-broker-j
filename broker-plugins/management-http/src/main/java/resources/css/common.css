@@ -611,3 +611,21 @@ td.advancedSearchField, col.autoWidth {
     padding: 3em;
     text-align: center;
 }
+
+.claro .dojoxPortletIcon.preferenceAccessIcon,
+.claro .dojoxPortletIcon.preferenceAccessHoverIcon
+{
+    background: url("../dojo/dijit/icons/images/commonIconsObjActEnabled_rtl.png") no-repeat;
+    background-position: -240px;
+    width: 15px;
+    height: 15px;
+}
+
+.claro .dojoxPortletIcon.dashboardWidgetSettingsIcon,
+.claro .dojoxPortletIcon.dashboardWidgetSettingsHoverIcon
+{
+    background: url("../dojo/dijit/icons/images/commonIconsObjActEnabled_rtl.png") no-repeat;
+    background-position: -112px;
+    width: 15px;
+    height: 15px;
+}

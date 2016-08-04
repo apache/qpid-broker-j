@@ -25,6 +25,7 @@ define(["dojo/parser",
         "dojo/json",
         "qpid/common/util",
         "dojo/text!showDashboardTab.html",
+        "qpid/management/dashboard/DashboardWidget",
         "dojo/domReady!"],
     function (parser, lang, all, Deferred, query, json, util, template)
     {
@@ -103,6 +104,14 @@ define(["dojo/parser",
         DashboardTab.prototype.onOpen = function (containerNode)
         {
             this.dashboardWidgetNode = query(".dashboardWidgetNode", containerNode)[0];
+
+            this.dashboardWidget = new qpid.management.dashboard.DashboardWidget({
+                management: this.management,
+                parentObject: this.parent,
+                preference: this.tabData.data,
+                controller: this.controller
+            }, this.dashboardWidgetNode);
+
         };
 
         DashboardTab.prototype.close = function ()

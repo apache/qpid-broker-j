@@ -75,16 +75,44 @@ define(["dojo/_base/declare",
                 filter: "all",
                 fetch: function ()
                 {
-                    var brokerPreferencesPromise = this.management.getVisiblePreferences({type: "broker"}, "query");
-                    var virtualHostsPreferencesPromise = this.management.getVisiblePreferences({
-                        type: "virtualhost",
-                        name: "*",
-                        parent: {
-                            type: "virtualhostnode",
+                    var brokerPreferencesPromise = null;
+                    var virtualHostsPreferencesPromise = null;
+                    if (this.preferenceRoot && this.preferenceRoot.type !== "broker")
+                    {
+                        var query = this.management.getVisiblePreferences(this.preferenceRoot, "query");
+                        var brokerDeferred = new Deferred();
+                        brokerPreferencesPromise = brokerDeferred.promise;
+                        brokerDeferred.resolve(null);
+
+                        var virtualHostDeferred = new Deferred();
+                        virtualHostsPreferencesPromise = virtualHostDeferred.promise;
+                        query.then(function (data)
+                            {
+                                virtualHostDeferred.resolve([data]);
+                            },
+                            function (error)
+                            {
+                                virtualHostDeferred.cancel(error);
+                            });
+                    }
+                    else
+                    {
+                        brokerPreferencesPromise = this.management.getVisiblePreferences({type: "broker"}, "query");
+                        virtualHostsPreferencesPromise = this.management.getVisiblePreferences({
+                            type: "virtualhost",
                             name: "*",
-                            parent: {type: "broker"}
-                        }
-                    }, "query");
+                            parent: {
+                                type: "virtualhostnode",
+                                name: "*",
+                                parent: {type: "broker"}
+                            }
+                        }, "query");
+                    }
+
+                    var resultPromise = all({
+                        brokerPreferences: brokerPreferencesPromise,
+                        virtualHostsPreferences: virtualHostsPreferencesPromise
+                    });
 
                     var deferred = new Deferred();
 
@@ -102,11 +130,7 @@ define(["dojo/_base/declare",
                         deferred.resolve([]);
                     });
 
-                    all({
-                        brokerPreferences: brokerPreferencesPromise,
-                        virtualHostsPreferences: virtualHostsPreferencesPromise
-                    })
-                        .then(successHandler, failureHandler);
+                    resultPromise.then(successHandler, failureHandler);
 
                     return new QueryResults(deferred.promise, {
                         totalLength: deferred.promise.then(function (data)
@@ -139,6 +163,7 @@ define(["dojo/_base/declare",
                 // passed automatically by constructor
                 manangement: null,
                 structure: null,
+                preferenceRoot: null,
 
                 // internal
                 _preferenceStore: null,
@@ -196,6 +221,10 @@ define(["dojo/_base/declare",
                         highlightRow: function ()
                         {
                             // Suppress row highlighting
+                        },
+                        shouldExpand: function ()
+                        {
+                            return true;
                         }
                     }, this.queryBrowserGridNode);
 
@@ -218,7 +247,7 @@ define(["dojo/_base/declare",
                 },
                 update: function ()
                 {
-                    this._preferenceStore.update();
+                    return this._preferenceStore.update();
                 },
                 _createPreferencesStore: function (targetStore)
                 {
@@ -227,7 +256,8 @@ define(["dojo/_base/declare",
                         targetStore: targetStore,
                         management: this.management,
                         structure: this.structure,
-                        transformer: lang.hitch(this, this._preferencesTransformer)
+                        transformer: lang.hitch(this, this._preferencesTransformer),
+                        preferenceRoot: this.preferenceRoot
                     });
                     return preferencesStore;
                 },

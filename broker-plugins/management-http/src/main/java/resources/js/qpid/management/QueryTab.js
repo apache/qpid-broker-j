@@ -116,7 +116,7 @@ define(["dojo/parser",
                 preference: this.tabData.data,
                 controller: this.controller
             }, this.queryWidgetNode);
-            this.contentPane.set("title", this.getTitle());
+
             this.queryWidget.on("save", lang.hitch(this, function(e)
             {
                 this.tabData.data = e.preference;
