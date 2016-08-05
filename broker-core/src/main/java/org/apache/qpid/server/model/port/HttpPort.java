@@ -37,6 +37,7 @@ public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X
     String DEFAULT_HTTP_WANT_CLIENT_AUTH = "false";
     String THREAD_POOL_MINIMUM = "threadPoolMinimum";
     String THREAD_POOL_MAXIMUM = "threadPoolMaximum";
+    String ALLOW_CONFIDENTIAL_OPERATIONS_ON_INSECURE_CHANNELS = "allowConfidentialOperationsOnInsecureChannels";
 
     @ManagedAttribute(defaultValue = "*")
     String getBindingAddress();

@@ -38,6 +38,10 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.port.HttpPort;
+import org.apache.qpid.test.utils.TestBrokerConfiguration;
+
 public class MessagesRestTest extends QpidRestTestCase
 {
 
@@ -81,6 +85,17 @@ public class MessagesRestTest extends QpidRestTestCase
             }
         }
         _session.commit();
+    }
+
+    @Override
+    protected void customizeConfiguration() throws Exception
+    {
+        super.customizeConfiguration();
+        // Allow retrieval of message information on an insecure (non-tls) connection
+        getDefaultBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT,
+                                                           HttpPort.ALLOW_CONFIDENTIAL_OPERATIONS_ON_INSECURE_CHANNELS,
+                                                           true);
+
     }
 
     public void testGet() throws Exception
