@@ -89,4 +89,7 @@ public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X
     @ManagedContextDefault( name = PORT_HTTP_MAXIMUM_QUEUED_REQUESTS )
     long DEFAULT_PORT_HTTP_MAXIMUM_QUEUED_REQUESTS = 1000;
 
+    @ManagedAttribute( defaultValue = "false", description = "If true allow operations which may return confidential "
+                                                             + "information to be executed on insecure connections")
+    boolean isAllowConfidentialOperationsOnInsecureChannels();
 }

@@ -43,11 +43,13 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject> imple
     private final String _name;
     private final String _description;
     private final boolean _nonModifying;
+    private final boolean _secure;
     private final Object[] _staticParams;
 
     public ConfiguredObjectInjectedOperation(final String name,
                                              final String description,
                                              final boolean nonModifying,
+                                             final boolean secure,
                                              final OperationParameter[] parameters,
                                              final Method operation,
                                              final Object[] staticParams,
@@ -57,6 +59,7 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject> imple
         _name = name;
         _description = description;
         _nonModifying = nonModifying;
+        _secure = secure;
         _validator = validator;
         _staticParams = staticParams == null ? new Object[0] : staticParams;
 
@@ -244,6 +247,13 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject> imple
     {
         return _nonModifying;
     }
+
+    @Override
+    public boolean isSecure()
+    {
+        return _secure;
+    }
+
 
     @Override
     public Type getGenericReturnType()

@@ -41,4 +41,6 @@ public interface ConfiguredObjectOperation<C extends ConfiguredObject>
     boolean isNonModifying();
 
     Type getGenericReturnType();
+
+    boolean isSecure();
 }

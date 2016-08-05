@@ -51,6 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -730,6 +731,14 @@ public class RestServlet extends AbstractServlet
                                   response,
                                   HttpServletResponse.SC_NOT_FOUND,
                                   "No such operation: " + operationName);
+            return;
+        }
+        else if(operation.isSecure() && !(request.isSecure() || HttpManagement.getPort(request).isAllowConfidentialOperationsOnInsecureChannels()))
+        {
+            sendJsonErrorResponse(request,
+                                  response,
+                                  HttpServletResponse.SC_FORBIDDEN,
+                                  "Operation '" + operationName + "' can only be performed over a secure (HTTPS) connection");
             return;
         }
         else

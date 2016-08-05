@@ -221,6 +221,13 @@ public class ConfiguredObjectMethodOperation<C extends ConfiguredObject> impleme
     }
 
     @Override
+    public boolean isSecure()
+    {
+        return _operation.getAnnotation(ManagedOperation.class).secure();
+    }
+
+
+    @Override
     public Type getGenericReturnType()
     {
         return _operation.getGenericReturnType();

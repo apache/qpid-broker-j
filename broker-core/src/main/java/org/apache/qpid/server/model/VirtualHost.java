@@ -195,18 +195,18 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     @ManagedOperation(nonModifying = true)
     Connection<?> getConnection(@Param(name="name") String name);
 
-    @ManagedOperation
+    @ManagedOperation(secure = true)
     int publishMessage(@Param(name = "message")ManageableMessage message);
 
-    @ManagedOperation(nonModifying = true, description = "Extract configuration")
+    @ManagedOperation(nonModifying = true, description = "Extract configuration", secure = true)
     Map<String,Object> extractConfig(@Param(name="includeSecureAttributes",
                                             description = "include attributes that may contain passwords or other "
                                                           + "confidential information",
                                             defaultValue = "false") boolean includeSecureAttributes);
-    @ManagedOperation(nonModifying = true, description = "Extract message store content")
+    @ManagedOperation(nonModifying = true, description = "Extract message store content", secure = true)
     Content extractMessageStore();
 
-    @ManagedOperation(description = "Import message store content")
+    @ManagedOperation(description = "Import message store content", secure = true)
     void importMessageStore(@Param(name="source", description = "Extract file")String source);
 
 

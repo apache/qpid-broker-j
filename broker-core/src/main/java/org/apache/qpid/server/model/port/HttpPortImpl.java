@@ -47,6 +47,9 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     @ManagedAttributeField
     private int _threadPoolMinimum;
 
+    @ManagedAttributeField
+    private boolean _allowConfidentialOperationsOnInsecureChannels;
+
     @ManagedObjectFactoryConstructor
     public HttpPortImpl(final Map<String, Object> attributes,
                         final Container<?> container)
@@ -76,6 +79,12 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     public int getThreadPoolMinimum()
     {
         return _threadPoolMinimum;
+    }
+
+    @Override
+    public boolean isAllowConfidentialOperationsOnInsecureChannels()
+    {
+        return _allowConfidentialOperationsOnInsecureChannels;
     }
 
     @Override

@@ -370,7 +370,9 @@ public class InjectedAttributeTest extends QpidTestCase
         final OperationParameter[] params = new OperationParameter[1];
         params[0] = new OperationParameterFromInjection("height", Integer.TYPE, Integer.TYPE, "", "", new String[0]);
         final ConfiguredObjectInjectedOperation<?> operationInjector =
-                new ConfiguredObjectInjectedOperation<TestCar<?>>("fly", "", true, params, method, null, validator);
+                new ConfiguredObjectInjectedOperation<TestCar<?>>("fly", "", true,
+                                                                  false,
+                                                                  params, method, null, validator);
 
         TestModel model = new TestModel(null, new TestInjector(operationInjector));
 
@@ -410,9 +412,13 @@ public class InjectedAttributeTest extends QpidTestCase
         params[0] = new OperationParameterFromInjection("count", Integer.TYPE, Integer.TYPE, "", "", new String[0]);
 
         final ConfiguredObjectInjectedOperation<?> hello =
-                new ConfiguredObjectInjectedOperation<TestCar<?>>("sayHello", "", true, params, method, new String[] { "Hello"}, validator);
+                new ConfiguredObjectInjectedOperation<TestCar<?>>("sayHello", "", true,
+                                                                  false,
+                                                                  params, method, new String[] { "Hello"}, validator);
         final ConfiguredObjectInjectedOperation<?> goodbye =
-                new ConfiguredObjectInjectedOperation<TestCar<?>>("sayGoodbye", "", true, params, method, new String[] { "Goodbye"}, validator);
+                new ConfiguredObjectInjectedOperation<TestCar<?>>("sayGoodbye", "", true,
+                                                                  false,
+                                                                  params, method, new String[] { "Goodbye"}, validator);
 
         TestModel model = new TestModel(null, new TestInjector(hello, goodbye));
 

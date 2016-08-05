@@ -844,7 +844,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
         else
         {
-            throw new IllegalStateException("The extractMessageStore operation can only be called when the virtual host is stopped");
+            throw new IllegalArgumentException("The extractMessageStore operation can only be called when the virtual host is stopped");
         }
 
     }
