@@ -17,6 +17,7 @@
  * under the License.
  *
  */
+
 define(["dojo/_base/declare",
         "dojo/_base/lang",
         "dojo/json",
@@ -36,7 +37,7 @@ define(["dojo/_base/declare",
         "dgrid/extensions/ColumnResizer",
         "qpid/management/query/StoreUpdater",
         "qpid/common/util",
-        "dojo/text!query/QueryBrowserWidget.html",
+        "dojo/text!preference/PreferenceBrowserWidget.html",
         "dijit/_WidgetBase",
         "dijit/_TemplatedMixin",
         "dijit/_WidgetsInTemplateMixin",
@@ -72,14 +73,14 @@ define(["dojo/_base/declare",
             {
                 management: null,
                 transformer: null,
-                filter: "all",
+                preferenceType: null,
                 fetch: function ()
                 {
                     var brokerPreferencesPromise = null;
                     var virtualHostsPreferencesPromise = null;
                     if (this.preferenceRoot && this.preferenceRoot.type !== "broker")
                     {
-                        var query = this.management.getVisiblePreferences(this.preferenceRoot, "query");
+                        var query = this.management.getVisiblePreferences(this.preferenceRoot, this.preferenceType);
                         var brokerDeferred = new Deferred();
                         brokerPreferencesPromise = brokerDeferred.promise;
                         brokerDeferred.resolve(null);
@@ -97,7 +98,7 @@ define(["dojo/_base/declare",
                     }
                     else
                     {
-                        brokerPreferencesPromise = this.management.getVisiblePreferences({type: "broker"}, "query");
+                        brokerPreferencesPromise = this.management.getVisiblePreferences({type: "broker"}, this.preferenceType);
                         virtualHostsPreferencesPromise = this.management.getVisiblePreferences({
                             type: "virtualhost",
                             name: "*",
@@ -106,7 +107,7 @@ define(["dojo/_base/declare",
                                 name: "*",
                                 parent: {type: "broker"}
                             }
-                        }, "query");
+                        }, this.preferenceType);
                     }
 
                     var resultPromise = all({
@@ -149,26 +150,29 @@ define(["dojo/_base/declare",
                 }
             });
 
-        return declare("qpid.management.query.QueryBrowserWidget",
-            [dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
+        return declare([dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
             {
                 //Strip out the apache comment header from the template html as comments unsupported.
                 templateString: template.replace(/<!--[\s\S]*?-->/g, ""),
+
                 // attached automatically from template fields
-                queryBrowserGridNode: null,
-                all: null,
-                myQueries: null,
-                sharedWithMe: null,
+                preferenceBrowserGridNode: null,
+                allRadio: null,
+                mineRadio: null,
+                sharedWithMeRadio: null,
 
                 // passed automatically by constructor
                 manangement: null,
                 structure: null,
                 preferenceRoot: null,
+                preferenceType: null,
+                preferenceTypeFriendlySingular: null,
+                preferenceTypeFriendlyPlural: null,
 
                 // internal
                 _preferenceStore: null,
                 _gridStore: null,
-                queryBrowserGrid: null,
+                _preferenceBrowserGrid: null,
 
                 postCreate: function ()
                 {
@@ -181,14 +185,14 @@ define(["dojo/_base/declare",
                 startup: function ()
                 {
                     this.inherited(arguments);
-                    this.queryBrowserGrid.startup();
+                    this._preferenceBrowserGrid.startup();
                     this.update();
                 },
                 _buildGrid: function ()
                 {
                     var columns = {
                         name: {
-                            label: "Query",
+                            label: this.preferenceTypeFriendlySingular,
                             renderExpando: true,
                             sortable: false
                         },
@@ -208,15 +212,15 @@ define(["dojo/_base/declare",
 
                     var Grid = declare([OnDemandGrid, Keyboard, Selection, Tree, DijitRegistry, ColumnResizer]);
                     var store = this._gridStore.filter({parent: undefined});
-                    this.queryBrowserGrid = new Grid({
+                    this._preferenceBrowserGrid = new Grid({
                         minRowsPerPage: Math.pow(2, 53) - 1,
                         columns: columns,
                         collection: store,
-                        noDataMessage: 'No queries',
+                        noDataMessage: 'No ' + this.preferenceTypeFriendlyPlural,
                         noDataMessages: {
-                            all: "No queries",
-                            sharedWithMe: "No one has shared queries with you",
-                            myQueries: "You have no queries"
+                            all: "No " + this.preferenceTypeFriendlyPlural,
+                            sharedWithMe: "No one has shared "  + this.preferenceTypeFriendlyPlural + " with you",
+                            mine: "You have no " + this.preferenceTypeFriendlyPlural
                         },
                         highlightRow: function ()
                         {
@@ -226,23 +230,23 @@ define(["dojo/_base/declare",
                         {
                             return true;
                         }
-                    }, this.queryBrowserGridNode);
+                    }, this.preferenceBrowserGridNode);
 
-                    this.queryBrowserGrid.on('.dgrid-row:dblclick', lang.hitch(this, this._openQuery));
-                    this.queryBrowserGrid.on('.dgrid-row:keypress', lang.hitch(this, function (event)
+                    this._preferenceBrowserGrid.on('.dgrid-row:dblclick', lang.hitch(this, this._openPreference));
+                    this._preferenceBrowserGrid.on('.dgrid-row:keypress', lang.hitch(this, function (event)
                     {
                         if (event.keyCode === keys.ENTER)
                         {
-                            this._openQuery(event);
+                            this._openPreference(event);
                         }
                     }));
                 },
                 resize: function ()
                 {
                     this.inherited(arguments);
-                    if (this.queryBrowserGrid)
+                    if (this._preferenceBrowserGrid)
                     {
-                        this.queryBrowserGrid.resize();
+                        this._preferenceBrowserGrid.resize();
                     }
                 },
                 update: function ()
@@ -257,17 +261,18 @@ define(["dojo/_base/declare",
                         management: this.management,
                         structure: this.structure,
                         transformer: lang.hitch(this, this._preferencesTransformer),
-                        preferenceRoot: this.preferenceRoot
+                        preferenceRoot: this.preferenceRoot,
+                        preferenceType: this.preferenceType
                     });
                     return preferencesStore;
                 },
-                _openQuery: function (event)
+                _openPreference: function (event)
                 {
-                    var row = this.queryBrowserGrid.row(event);
+                    var row = this._preferenceBrowserGrid.row(event);
                     if (row.data.value)
                     {
                         var item = this.structure.findById(row.data.associatedObject);
-                        this.emit("openQuery",
+                        this.emit("open",
                             {
                                 preference: row.data,
                                 parentObject: item
@@ -277,29 +282,29 @@ define(["dojo/_base/declare",
                 _initFilter: function ()
                 {
                     var that = this;
-                    this.all.on("click", function (e)
+                    this.allRadio.on("click", function (e)
                     {
-                        that._modifyFilter(e, that.all);
+                        that._modifyFilter(e, that.allRadio);
                     });
-                    this.myQueries.on("click", function (e)
+                    this.mineRadio.on("click", function (e)
                     {
-                        that._modifyFilter(e, that.myQueries);
+                        that._modifyFilter(e, that.mineRadio);
                     });
-                    this.sharedWithMe.on("click", function (e)
+                    this.sharedWithMeRadio.on("click", function (e)
                     {
-                        that._modifyFilter(e, that.sharedWithMe);
+                        that._modifyFilter(e, that.sharedWithMeRadio);
                     });
                 },
                 _modifyFilter: function (event, targetWidget)
                 {
                     var value = targetWidget.get("value");
                     this.filter = value;
-                    if (this.queryBrowserGrid.noDataMessages[value])
+                    if (this._preferenceBrowserGrid.noDataMessages[value])
                     {
-                        this.queryBrowserGrid.noDataMessage = this.queryBrowserGrid.noDataMessages[value];
+                        this._preferenceBrowserGrid.noDataMessage = this._preferenceBrowserGrid.noDataMessages[value];
                     }
                     this.update();
-                    this.queryBrowserGrid.refresh();
+                    this._preferenceBrowserGrid.refresh();
                 },
                 _preferencesTransformer: function (preferences)
                 {
@@ -326,7 +331,7 @@ define(["dojo/_base/declare",
                         for (var i = preferenceList.length - 1; i >= 0; i--)
                         {
                             var item = preferenceList[i];
-                            if (this.filter == "myQueries" && item.owner != authenticatedUser)
+                            if (this.filter == "mine" && item.owner != authenticatedUser)
                             {
                                 preferenceList.splice(i, 1);
                             }

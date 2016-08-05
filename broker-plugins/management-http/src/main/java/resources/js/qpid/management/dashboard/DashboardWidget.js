@@ -25,9 +25,11 @@ define(["dojo/_base/declare",
         "dojo/text!dashboard/DashboardWidget.html",
         "dojo/text!dashboard/AddWidgetDialogContent.html",
         "dojo/text!dashboard/QueryWidgetSettings.html",
-        "qpid/management/query/QueryBrowserWidget",
+        "qpid/management/preference/PreferenceBrowserWidget",
         "qpid/management/preference/PreferenceSaveDialogContent",
         "dojox/uuid/generateRandomUuid",
+        "dojo/promise/all",
+        "dojo/Deferred",
         "dojox/layout/GridContainerLite",
         "dijit/_WidgetBase",
         "dijit/_TemplatedMixin",
@@ -42,10 +44,11 @@ define(["dojo/_base/declare",
               template,
               addWidgetDialogContentTemplate,
               queryWidgetSettingsTemplate,
-              QueryBrowserWidget,
+              PreferenceBrowserWidget,
               PreferenceSaveDialogContent,
-              generateRandomUuid
-    )
+              generateRandomUuid,
+              all,
+              Deferred)
     {
 
         var AddWidgetDialogContent = declare("qpid.management.dashboard.AddWidgetDialogContent",
@@ -73,24 +76,29 @@ define(["dojo/_base/declare",
                     {
                         this.emit("cancel");
                     }));
-                    this._queryBrowser = new QueryBrowserWidget({
+                    this._queryBrowser = new PreferenceBrowserWidget({
                         structure: this.structure,
                         management: this.management,
-                        preferenceRoot: this.preferenceRoot
+                        preferenceRoot: this.preferenceRoot,
+                        preferenceType: "query",
+                        preferenceTypeFriendlyPlural: "queries",
+                        preferenceTypeFriendlySingular: "Query"
                     }, this.queryBrowserNode);
-                    this._queryBrowser.on("openQuery", lang.hitch(this, this._onOpenQuery));
+                    this._queryBrowser.on("open", lang.hitch(this, this._onOpenQuery));
                 },
 
                 update: function ()
                 {
                     return this._queryBrowser.update();
                 },
-                _onOpenQuery: function(event)
+                _onOpenQuery: function (event)
                 {
                     var chosenWidget = {
                         type: "query",
                         preference: event.preference,
-                        parentObject: event.parentObject
+                        parentObject: event.parentObject,
+                        settings: {type: "query", preference: {id: event.preference.id}},
+                        id: generateRandomUuid()
                     };
 
                     this.emit("add", {widget: chosenWidget});
@@ -140,16 +148,16 @@ define(["dojo/_base/declare",
                         lang.hitch(this._addWidgetDialog, this._addWidgetDialog.hide));
                     this._addWidgetDialogContent.on("add", lang.hitch(this, this._onWidgetChosen));
 
-                    this._saveDashboardDialogContent = new PreferenceSaveDialogContent({management : this.management});
-                    this._saveDashboardDialog = new dijit.Dialog({title: "Save Dashboard", content: this._saveDashboardDialogContent});
-                    this._saveDashboardDialogContent.on("cancel", lang.hitch(this._saveDashboardDialog, this._saveDashboardDialog.hide));
+                    this._saveDashboardDialogContent = new PreferenceSaveDialogContent({management: this.management});
+                    this._saveDashboardDialog =
+                        new dijit.Dialog({title: "Save Dashboard", content: this._saveDashboardDialogContent});
+                    this._saveDashboardDialogContent.on("cancel",
+                        lang.hitch(this._saveDashboardDialog, this._saveDashboardDialog.hide));
                     this._saveDashboardDialogContent.on("save", lang.hitch(this, this._onPreferenceSave));
 
                     this.preference.type = "X-Dashboard";
-                    if (!this.preference.value || !this.preference.value.widgets)
-                    {
-                        this.preference.value = {widgets:{}};
-                    }
+                    this._verifyLayout();
+                    this._loadPreferencesAndRestoreWidgets();
                 },
                 _onSaveButton: function ()
                 {
@@ -170,31 +178,39 @@ define(["dojo/_base/declare",
                     this.management.savePreference(this.parentObject, preference)
                         .then(lang.hitch(this, function ()
                         {
+                            this.preference = preference;
                             this._saveDashboardDialog.hide();
+                            this.emit("save", {preference: this.preference});
                         }));
                 },
                 _onAddWidget: function ()
                 {
-                    this._addWidgetDialogContent.update().then(lang.hitch(this._addWidgetDialog, this._addWidgetDialog.show));
+                    this._addWidgetDialogContent.update()
+                        .then(lang.hitch(this._addWidgetDialog, this._addWidgetDialog.show));
                 },
                 _onWidgetChosen: function (event)
                 {
                     this._addWidgetDialog.hide();
-                    this._createWidget( event.widget);
+                    var promise = this._createWidget(event.widget);
+                    promise.then(lang.hitch(this, function(widget)
+                    {
+                        this._widgetChanged(widget);
+                    }));
                 },
-                _createWidget: function (widgetSettings)
+                _createWidget: function (kwargs)
                 {
-                    require(["qpid/management/dashboard/widget/" + widgetSettings.type.toLowerCase()],
+                    var deferred = new Deferred();
+                    require(["qpid/management/dashboard/widget/" + kwargs.type.toLowerCase()],
                         lang.hitch(this, function (Widget)
                         {
                             var widget = new Widget({
-                                widgetSettings: {},
                                 controller: this.controller,
                                 management: this.management,
-                                preference: widgetSettings.preference,
-                                parentObject: widgetSettings.parentObject
+                                widgetSettings: kwargs.settings,
+                                preference: kwargs.preference,
+                                parentObject: kwargs.parentObject
                             });
-                            widget.id = generateRandomUuid();
+                            widget.id = kwargs.id;
                             var portletPromise = widget.createPortlet();
                             portletPromise.then(lang.hitch(this, function (portlet)
                             {
@@ -204,24 +220,147 @@ define(["dojo/_base/declare",
                                 {
                                     this.widgetContainer.removeChild(portlet);
                                     delete this.preference.value.widgets[widget.id];
+                                    var position = this.preference.value.layout.column.indexOf(widget.id);
+                                    this.preference.value.layout.column.splice(position, 1);
                                     widget.destroy();
+                                    this._dashboardChanged();
                                 }));
 
                                 widget.on("change", lang.hitch(this, function ()
                                 {
-                                    this.preference.value.widgets[widget.id] =  widget.getSettings();
-                                    this._dashboardChanged();
+                                    this._widgetChanged(widget);
                                 }));
 
-                                this.preference.value.widgets[widget.id] =  widget.getSettings();
-                                this._dashboardChanged();
-
-                            }), this.management.errorHandler);
+                                deferred.resolve(widget);
+                            }),
+                            lang.hitch(this, function(error)
+                            {
+                                deferred.cancel(error);
+                                this.management.errorHandler(error);
+                            }));
+                            
+                            
                         }));
+                    // todo: handle require load failure and cancel deferred
+                    return deferred.promise;
                 },
                 _dashboardChanged: function ()
                 {
                     this.emit("change", {preference: this.preference});
+                },
+                _verifyLayout: function ()
+                {
+                    if (!this.preference.value )
+                    {
+                        this.preference.value = {widgets: {}, layout: {type: "singleColumn", column: []}};
+                    }
+                    else if (!this.preference.value.layout || this.preference.value.layout.type !== "singleColumn")
+                    {
+                        var layout = {type: "singleColumn", column: []};
+                        this.preference.value.layout = layout;
+                        if (this.preference.value.widgets)
+                        {
+                            for (var id in this.preference.value.widgets)
+                            {
+                                layout.column.push(id);
+                            }
+                        }
+                    }
+                },
+                _loadPreferencesAndRestoreWidgets: function()
+                {
+                    if (this.preference.value && this.preference.value.widgets)
+                    {
+                        var brokerPreferencesPromise = this.management.getVisiblePreferences({type: "broker"});
+                        var virtualHostsPreferencesPromise = this.management.getVisiblePreferences({
+                            type: "virtualhost",
+                            name: "*",
+                            parent: {
+                                type: "virtualhostnode",
+                                name: "*",
+                                parent: {type: "broker"}
+                            }
+                        });
+
+                        var resultPromise = all({
+                            brokerPreferences: brokerPreferencesPromise,
+                            virtualHostsPreferences: virtualHostsPreferencesPromise
+                        });
+
+                        resultPromise.then(lang.hitch(this, this._unwrapPreferencesAndRestoreWidgets));
+                    }
+                },
+                _unwrapPreferencesAndRestoreWidgets: function (allPreferences)
+                {
+                    var preferences = {};
+
+                    var unwrapPreferences = function (typePreferenceMap)
+                    {
+                        for (var type in typePreferenceMap)
+                        {
+                            if (typePreferenceMap.hasOwnProperty(type))
+                            {
+                                var typePreferences = typePreferenceMap[type];
+                                for (var i = 0; i < typePreferences.length; i++)
+                                {
+                                    var preference = typePreferences[i];
+                                    preferences[preference.id] = preference;
+                                }
+                            }
+                        }
+                    };
+
+                    unwrapPreferences(allPreferences.brokerPreferences);
+                    for (var i = 0; i < allPreferences.virtualHostsPreferences.length; i++)
+                    {
+                        unwrapPreferences(allPreferences.virtualHostsPreferences[i]);
+                    }
+
+                    this._restoreWidgets(preferences);
+                },
+                _restoreWidgets: function (preferences)
+                {
+                    for(var i = 0; i < this.preference.value.layout.column.length; i++)
+                    {
+                        var id = this.preference.value.layout.column[i];
+                        var widgetSetting = this.preference.value.widgets[id];
+                        if (widgetSetting && widgetSetting.preference && widgetSetting.preference.id)
+                        {
+                            var preference = preferences[widgetSetting.preference.id];
+                            if (preference)
+                            {
+                                var parentObject = this.structure.findById(preference.associatedObject);
+                                if (parentObject)
+                                {
+                                    this._createWidget({
+                                        preference: preference,
+                                        parentObject: parentObject,
+                                        settings: widgetSetting,
+                                        type: widgetSetting.type,
+                                        id: id
+                                    });
+                                }
+                                else
+                                {
+                                    // display special widget
+                                }
+                            }
+                            else
+                            {
+                                delete this.preference.value.widgets[id];
+                            }
+                        }
+                    }
+                },
+                _widgetChanged: function (widget)
+                {
+                    this.preference.value.widgets[widget.id] = widget.getSettings();
+                    var index = this.preference.value.layout.column.indexOf(widget.id);
+                    if (index === -1)
+                    {
+                        this.preference.value.layout.column.push(widget.id);
+                    }
+                    this._dashboardChanged();
                 }
             });
     });

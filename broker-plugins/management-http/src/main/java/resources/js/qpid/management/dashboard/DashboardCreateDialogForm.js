@@ -95,7 +95,11 @@ define(["dojo/_base/declare",
                 if (this.createDashboardForm.validate())
                 {
                     var data = {
-                        preference: {id : generateRandomUuid()},
+                        preference: {
+                            id: generateRandomUuid(),
+                            type: "X-Dashboard",
+                            value: {widgets: {}, layout: {type: "singleColumn", column: []}}
+                        },
                         parentObject: this._scopeModelObjects[this.scope.value]
                     };
                     this.emit("create", data);

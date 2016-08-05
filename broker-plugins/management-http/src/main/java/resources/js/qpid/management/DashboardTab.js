@@ -109,9 +109,36 @@ define(["dojo/parser",
                 management: this.management,
                 parentObject: this.parent,
                 preference: this.tabData.data,
-                controller: this.controller
+                controller: this.controller,
+                structure: this.controller.structure
             }, this.dashboardWidgetNode);
 
+            this.dashboardWidget.on("save", lang.hitch(this, function(e)
+            {
+                this.tabData.data = e.preference;
+                var title = this.getTitle();
+                this.contentPane.set("title", title);
+            }));
+            this.dashboardWidget.on("change", lang.hitch(this, function(e)
+            {
+                var title = this.getTitle(true);
+                this.contentPane.set("title", title);
+            }));
+            this.dashboardWidget.on("delete", lang.hitch(this, function(e)
+            {
+                this.management.userPreferences.removeTab(this.tabData);
+                this.destroy();
+            }));
+            this.dashboardWidget.on("clone", lang.hitch(this, function(e)
+            {
+                this.controller.showTab({
+                    preferenceId: e.preference.id,
+                    tabType: "dashboard",
+                    data: e.preference,
+                    modelObject: e.parentObject
+                });
+            }));
+           // this.dashboardWidget.startup();
         };
 
         DashboardTab.prototype.close = function ()

@@ -17,26 +17,27 @@
  * under the License.
  *
  */
+
 define(["dojo/parser",
         "dojo/query",
-        "dojo/text!showQueryBrowserTab.html",
+        "dojo/text!showDashboardBrowserTab.html",
         "qpid/management/preference/PreferenceBrowserWidget",
         "qpid/common/updater",
         "dojo/domReady!"],
     function (parser, query, template, PreferenceBrowserWidget, updater)
     {
-        function QueryBrowserTab(kwArgs)
+        function DashboardBrowserTab(kwArgs)
         {
             this.controller = kwArgs.controller;
             this.management = this.controller.management;
         }
 
-        QueryBrowserTab.prototype.getTitle = function (changed)
+        DashboardBrowserTab.prototype.getTitle = function (changed)
         {
-            return "Query Browser";
+            return "Dashboard Browser";
         };
 
-        QueryBrowserTab.prototype.open = function (contentPane)
+        DashboardBrowserTab.prototype.open = function (contentPane)
         {
             var that = this;
             this.contentPane = contentPane;
@@ -47,53 +48,54 @@ define(["dojo/parser",
                     that.onOpen(contentPane.containerNode)
                 }, function (e)
                 {
-                    console.error("Unexpected error on parsing query tab template", e);
+                    console.error("Unexpected error on parsing dashboard tab template", e);
                 });
         };
 
-        QueryBrowserTab.prototype.onOpen = function (containerNode)
+        DashboardBrowserTab.prototype.onOpen = function (containerNode)
         {
             var that = this;
-            var queryBrowserWidgetNode = query(".queryBrowserWidgetNode", containerNode)[0];
-            this.queryBrowserWidget = new PreferenceBrowserWidget({
+            var dashboardBrowserWidgetNode = query(".dashboardBrowserWidgetNode", containerNode)[0];
+            
+            this.dashboardBrowserWidget = new PreferenceBrowserWidget({
                 management: this.management,
                 structure: this.controller.structure,
-                preferenceType: "query",
-                preferenceTypeFriendlyPlural: "queries",
-                preferenceTypeFriendlySingular: "Query"
-            }, queryBrowserWidgetNode);
-            this.queryBrowserWidget.on("open",
+                preferenceType: "X-Dashboard",
+                preferenceTypeFriendlyPlural: "dashboards",
+                preferenceTypeFriendlySingular: "Dashboard"
+            }, dashboardBrowserWidgetNode);
+            this.dashboardBrowserWidget.on("open",
                 function (event)
                 {
                     var tabData = {
-                        tabType: "query",
+                        tabType: "dashboard",
                         data: event.preference,
                         modelObject: event.parentObject,
                         preferenceId: event.preference.id
                     };
                     that.controller.showTab(tabData);
                 });
-            this.queryBrowserWidget.startup();
+            this.dashboardBrowserWidget.startup();
 
             this.contentPane.on("show",
                 function ()
                 {
-                    that.queryBrowserWidget.resize();
+                    that.dashboardBrowserWidget.resize();
                 });
             updater.add(this);
         };
 
-        QueryBrowserTab.prototype.close = function ()
+        DashboardBrowserTab.prototype.close = function ()
         {
             updater.remove(this);
-            if (this.queryBrowserWidget)
+            if (this.dashboardBrowserWidget)
             {
-                this.queryBrowserWidget.destroyRecursive();
-                this.queryBrowserWidget = null;
+                this.dashboardBrowserWidget.destroyRecursive();
+                this.dashboardBrowserWidget = null;
             }
         };
 
-        QueryBrowserTab.prototype.destroy = function ()
+        DashboardBrowserTab.prototype.destroy = function ()
         {
             this.close();
             this.contentPane.onClose();
@@ -101,13 +103,13 @@ define(["dojo/parser",
             this.contentPane.destroyRecursive();
         };
 
-        QueryBrowserTab.prototype.update = function()
+        DashboardBrowserTab.prototype.update = function()
         {
             if (this.contentPane.selected)
             {
-                this.queryBrowserWidget.update();
+                this.dashboardBrowserWidget.update();
             }
         };
 
-        return QueryBrowserTab;
+        return DashboardBrowserTab;
     });

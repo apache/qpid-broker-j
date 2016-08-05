@@ -19,15 +19,14 @@
   -->
 
 <div>
-
     <div data-dojo-type="dijit/Toolbar" class="alignRight">
-        <input type="radio" data-dojo-type="dijit/form/RadioButton" data-dojo-attach-point="all" name="filter"
+        <input type="radio" data-dojo-type="dijit/form/RadioButton" data-dojo-attach-point="allRadio" name="filter"
                checked="true" value="all" id="${id}_all"/><label for="${id}_all">All</label>
-        <input type="radio" data-dojo-type="dijit/form/RadioButton" data-dojo-attach-point="myQueries" name="filter"
-               value="myQueries" id="${id}_myQueries"/><label for="${id}_myQueries">My Queries</label>
-        <input type="radio" data-dojo-type="dijit/form/RadioButton" data-dojo-attach-point="sharedWithMe" name="filter"
+        <input type="radio" data-dojo-type="dijit/form/RadioButton" data-dojo-attach-point="mineRadio" name="filter"
+               value="mine" id="${id}_mine"/><label for="${id}_mine">Mine</label>
+        <input type="radio" data-dojo-type="dijit/form/RadioButton" data-dojo-attach-point="sharedWithMeRadio" name="filter"
                value="sharedWithMe" id="${id}_sharedWithMe"/><label for="${id}_sharedWithMe">Shared with me</label>
     </div>
     <div class="clear"/>
-    <div class="includeNoDataWarning" data-dojo-attach-point="queryBrowserGridNode"/>
+    <div class="includeNoDataWarning" data-dojo-attach-point="preferenceBrowserGridNode"/>
 </div>
