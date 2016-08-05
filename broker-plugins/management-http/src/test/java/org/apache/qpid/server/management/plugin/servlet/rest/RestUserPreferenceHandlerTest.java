@@ -43,6 +43,7 @@ import com.google.common.collect.Sets;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.PreferenceFactory;
 import org.apache.qpid.server.model.preferences.UserPreferences;
@@ -80,7 +81,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                                    _configuredObject,
                                                    _preferenceStore,
                                                    Collections.<Preference>emptyList());
-        _groupPrincipal = new GroupPrincipal(MYGROUP, null);
+        _groupPrincipal = new GroupPrincipal(MYGROUP, (GroupProvider) null);
         _subject = new Subject(true,
                                Sets.newHashSet(new AuthenticatedPrincipal(new UsernamePrincipal(MYUSER, null)),
                                                _groupPrincipal),

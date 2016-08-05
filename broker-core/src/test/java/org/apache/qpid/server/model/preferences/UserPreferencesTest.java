@@ -41,6 +41,7 @@ import org.mockito.ArgumentMatcher;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.group.GroupPrincipal;
@@ -75,7 +76,7 @@ public class UserPreferencesTest extends QpidTestCase
                                                    _configuredObject,
                                                    _preferenceStore,
                                                    Collections.<Preference>emptyList());
-        _groupPrincipal = new GroupPrincipal(MYGROUP, null);
+        _groupPrincipal = new GroupPrincipal(MYGROUP, (GroupProvider) null);
         _owner = new AuthenticatedPrincipal(new UsernamePrincipal(MYUSER, null));
         _subject = new Subject(true,
                                Sets.newHashSet(_owner, _groupPrincipal),

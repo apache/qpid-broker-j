@@ -22,6 +22,7 @@ package org.apache.qpid.server.security.auth;
 
 import javax.security.auth.Subject;
 
+import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.security.group.GroupPrincipal;
 
 import java.security.Principal;
@@ -40,7 +41,7 @@ public class TestPrincipalUtils
         principals.add(new AuthenticatedPrincipal(new UsernamePrincipal(username, null)));
         for (String group : groups)
         {
-            principals.add(new GroupPrincipal(group, null));
+            principals.add(new GroupPrincipal(group, (GroupProvider) null));
         }
 
         return new Subject(false, principals, Collections.EMPTY_SET, Collections.EMPTY_SET);
