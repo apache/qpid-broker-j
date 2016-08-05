@@ -210,7 +210,7 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
             if (server.isComplete())
             {
                 final String userId = server.getAuthorizationID();
-                return new AuthenticationResult(new UsernamePrincipal(userId), challenge);
+                return new AuthenticationResult(new UsernamePrincipal(userId, this), challenge);
             }
             else
             {

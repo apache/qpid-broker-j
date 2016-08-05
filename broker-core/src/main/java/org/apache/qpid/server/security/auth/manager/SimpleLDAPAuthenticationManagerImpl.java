@@ -383,7 +383,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
             }
 
             //Authentication succeeded
-            return new AuthenticationResult(new UsernamePrincipal(name), groups, null);
+            return new AuthenticationResult(new UsernamePrincipal(name, this), groups, null);
         }
         catch(AuthenticationException ae)
         {
@@ -456,7 +456,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
                         if (attributeValue != null)
                         {
                             String groupDN = String.valueOf(attributeValue);
-                            groupPrincipals.add(new GroupPrincipal(groupDN));
+                            groupPrincipals.add(new GroupPrincipal(groupDN, this));
                         }
                     }
                 }
@@ -479,7 +479,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
             {
                 SearchResult result = (SearchResult) groupEnumeration.next();
                 String groupDN = result.getNameInNamespace();
-                groupPrincipals.add(new GroupPrincipal(groupDN));
+                groupPrincipals.add(new GroupPrincipal(groupDN, this));
             }
         }
 

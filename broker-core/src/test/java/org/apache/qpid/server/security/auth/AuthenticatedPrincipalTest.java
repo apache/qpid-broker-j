@@ -22,14 +22,13 @@ import java.security.Principal;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.security.auth.UsernamePrincipal;
-
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AuthenticatedPrincipalTest extends QpidTestCase
 {
 
-    private AuthenticatedPrincipal _authenticatedPrincipal = new AuthenticatedPrincipal(new UsernamePrincipal("name"));
+    private AuthenticatedPrincipal _authenticatedPrincipal = new AuthenticatedPrincipal(new UsernamePrincipal("name",
+                                                                                                              null));
 
     public void testGetAuthenticatedPrincipalFromSubject()
     {
@@ -64,7 +63,7 @@ public class AuthenticatedPrincipalTest extends QpidTestCase
         assertNull(AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(subjectWithNoPrincipals));
 
         Subject subjectWithoutAuthenticatedPrincipal = new Subject();
-        subjectWithoutAuthenticatedPrincipal.getPrincipals().add(new UsernamePrincipal("name1"));
+        subjectWithoutAuthenticatedPrincipal.getPrincipals().add(new UsernamePrincipal("name1", null));
         assertNull("Should return null for a subject containing a principal that isn't an AuthenticatedPrincipal",
                 AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(subjectWithoutAuthenticatedPrincipal));
     }
@@ -72,8 +71,8 @@ public class AuthenticatedPrincipalTest extends QpidTestCase
     public void testTooManyAuthenticatedPrincipalsInSubject()
     {
         final Subject subject = new Subject();
-        subject.getPrincipals().add(new AuthenticatedPrincipal(new UsernamePrincipal("name1")));
-        subject.getPrincipals().add(new AuthenticatedPrincipal(new UsernamePrincipal("name2")));
+        subject.getPrincipals().add(new AuthenticatedPrincipal(new UsernamePrincipal("name1", null)));
+        subject.getPrincipals().add(new AuthenticatedPrincipal(new UsernamePrincipal("name2", null)));
 
         try
         {
@@ -104,8 +103,8 @@ public class AuthenticatedPrincipalTest extends QpidTestCase
 
     public void testEqualsAndHashcode()
     {
-        AuthenticatedPrincipal user1principal1 = new AuthenticatedPrincipal(new UsernamePrincipal("user1"));
-        AuthenticatedPrincipal user1principal2 = new AuthenticatedPrincipal(new UsernamePrincipal("user1"));
+        AuthenticatedPrincipal user1principal1 = new AuthenticatedPrincipal(new UsernamePrincipal("user1", null));
+        AuthenticatedPrincipal user1principal2 = new AuthenticatedPrincipal(new UsernamePrincipal("user1", null));
 
         assertTrue(user1principal1.equals(user1principal1));
         assertTrue(user1principal1.equals(user1principal2));
@@ -116,7 +115,7 @@ public class AuthenticatedPrincipalTest extends QpidTestCase
 
     public void testEqualsAndHashcodeWithSameWrappedObject()
     {
-        UsernamePrincipal wrappedPrincipal = new UsernamePrincipal("user1");
+        UsernamePrincipal wrappedPrincipal = new UsernamePrincipal("user1", null);
         AuthenticatedPrincipal user1principal1 = new AuthenticatedPrincipal(wrappedPrincipal);
         AuthenticatedPrincipal user1principal2 = new AuthenticatedPrincipal(wrappedPrincipal);
 
@@ -129,8 +128,8 @@ public class AuthenticatedPrincipalTest extends QpidTestCase
 
     public void testEqualsWithDifferentUsernames()
     {
-        AuthenticatedPrincipal user1principal1 = new AuthenticatedPrincipal(new UsernamePrincipal("user1"));
-        AuthenticatedPrincipal user1principal2 = new AuthenticatedPrincipal(new UsernamePrincipal("user2"));
+        AuthenticatedPrincipal user1principal1 = new AuthenticatedPrincipal(new UsernamePrincipal("user1", null));
+        AuthenticatedPrincipal user1principal2 = new AuthenticatedPrincipal(new UsernamePrincipal("user2", null));
 
         assertFalse(user1principal1.equals(user1principal2));
         assertFalse(user1principal2.equals(user1principal1));
@@ -138,7 +137,7 @@ public class AuthenticatedPrincipalTest extends QpidTestCase
 
     public void testEqualsWithDissimilarObjects()
     {
-        UsernamePrincipal wrappedPrincipal = new UsernamePrincipal("user1");
+        UsernamePrincipal wrappedPrincipal = new UsernamePrincipal("user1", null);
         AuthenticatedPrincipal authenticatedPrincipal = new AuthenticatedPrincipal(wrappedPrincipal);
 
         assertFalse(authenticatedPrincipal.equals(wrappedPrincipal));

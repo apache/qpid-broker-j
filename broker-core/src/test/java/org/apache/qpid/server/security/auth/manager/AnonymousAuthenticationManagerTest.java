@@ -37,7 +37,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AnonymousAuthenticationManagerTest extends QpidTestCase
 {
-    private AuthenticationProvider _manager;
+    private AnonymousAuthenticationManager _manager;
 
     @Override
     public void setUp() throws Exception
@@ -89,7 +89,7 @@ public class AnonymousAuthenticationManagerTest extends QpidTestCase
                      AuthenticationResult.AuthenticationStatus.SUCCESS,
                      result.getStatus());
 
-        assertOnlyContainsWrapped(AnonymousAuthenticationManager.ANONYMOUS_PRINCIPAL, result.getPrincipals());
+        assertOnlyContainsWrapped(_manager.getAnonymousPrincipal(), result.getPrincipals());
     }
 
 

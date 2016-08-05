@@ -25,6 +25,9 @@ import java.security.Principal;
 import java.security.acl.Group;
 import java.util.Enumeration;
 
+import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.GroupProvider;
+
 /**
  * Immutable representation of a user group.  In Qpid, groups do <b>not</b> know
  * about their membership, and therefore the {@link #addMember(Principal)}
@@ -35,10 +38,21 @@ public class GroupPrincipal implements Group, Serializable
 {
     /** Name of the group */
     private final String _groupName;
+    private final GroupProvider<?> _groupProvider;
+    private final AuthenticationProvider<?> _groupAuthProvider;
 
-    public GroupPrincipal(final String groupName)
+    public GroupPrincipal(final String groupName, final GroupProvider<?> groupProvider)
     {
         _groupName = groupName;
+        _groupProvider = groupProvider;
+        _groupAuthProvider = null;
+    }
+
+    public GroupPrincipal(final String groupName, final AuthenticationProvider<?> groupAuthProvider)
+    {
+        _groupName = groupName;
+        _groupProvider = null;
+        _groupAuthProvider = groupAuthProvider;
     }
 
     public String getName()

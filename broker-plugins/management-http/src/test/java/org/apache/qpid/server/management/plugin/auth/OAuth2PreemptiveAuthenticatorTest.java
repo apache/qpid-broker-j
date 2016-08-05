@@ -35,6 +35,7 @@ import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProvider;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -109,10 +110,18 @@ public class OAuth2PreemptiveAuthenticatorTest extends QpidTestCase
         SubjectCreator mockSubjectCreator = mock(SubjectCreator.class);
         SubjectAuthenticationResult mockSuccessfulSubjectAuthenticationResult = mock(SubjectAuthenticationResult.class);
         SubjectAuthenticationResult mockUnauthorizedSubjectAuthenticationResult = mock(SubjectAuthenticationResult.class);
-        final Subject successfulSubject = new Subject(true, Collections.singleton(new AuthenticatedPrincipal(
-                TEST_AUTHORIZED_USER)), Collections.emptySet(), Collections.emptySet());
-        final Subject unauthorizedSubject = new Subject(true, Collections.singleton(new AuthenticatedPrincipal(
-                TEST_UNAUTHORIZED_USER)), Collections.emptySet(), Collections.emptySet());
+        final Subject successfulSubject = new Subject(true,
+                                                      Collections.singleton(new AuthenticatedPrincipal(new UsernamePrincipal(
+                                                              TEST_AUTHORIZED_USER,
+                                                              null))),
+                                                      Collections.emptySet(),
+                                                      Collections.emptySet());
+        final Subject unauthorizedSubject = new Subject(true,
+                                                        Collections.singleton(new AuthenticatedPrincipal(new UsernamePrincipal(
+                                                                TEST_UNAUTHORIZED_USER,
+                                                                null))),
+                                                        Collections.emptySet(),
+                                                        Collections.emptySet());
         AuthenticationResult mockSuccessfulAuthenticationResult = mock(AuthenticationResult.class);
         AuthenticationResult mockUnauthorizedAuthenticationResult = mock(AuthenticationResult.class);
         AuthenticationResult failedAuthenticationResult = new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR,

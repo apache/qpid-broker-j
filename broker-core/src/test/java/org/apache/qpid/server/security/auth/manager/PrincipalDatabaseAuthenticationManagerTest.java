@@ -58,7 +58,7 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
 {
     private static final String LOCALHOST = "localhost";
     private static final String MOCK_MECH_NAME = "MOCK-MECH-NAME";
-    private static final UsernamePrincipal PRINCIPAL = new UsernamePrincipal("guest");
+    private static final UsernamePrincipal PRINCIPAL = new UsernamePrincipal("guest", null);
 
     private PrincipalDatabaseAuthenticationManager _manager = null; // Class under test
     private PrincipalDatabase _principalDatabase;

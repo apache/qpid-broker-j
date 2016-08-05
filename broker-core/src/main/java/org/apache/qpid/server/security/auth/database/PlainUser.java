@@ -20,14 +20,17 @@
  */
 package org.apache.qpid.server.security.auth.database;
 
+import org.apache.qpid.server.model.AuthenticationProvider;
+
 public class PlainUser implements PasswordPrincipal
 {
+    private final AuthenticationProvider<?> _authenticationProvider;
     private String _name;
     private char[] _password;
     private boolean _modified = false;
     private boolean _deleted = false;
 
-    PlainUser(String[] data)
+    PlainUser(String[] data, final AuthenticationProvider<?> authenticationProvider)
     {
         if (data.length != 2)
         {
@@ -37,13 +40,14 @@ public class PlainUser implements PasswordPrincipal
         _name = data[0];
 
         _password = data[1].toCharArray();
-
+        _authenticationProvider = authenticationProvider;
     }
 
-    public PlainUser(String name, char[] password)
+    public PlainUser(String name, char[] password, final AuthenticationProvider<?> authenticationProvider)
     {
         _name = name;
         _password = password;
+        _authenticationProvider = authenticationProvider;
         _modified = true;
     }
 

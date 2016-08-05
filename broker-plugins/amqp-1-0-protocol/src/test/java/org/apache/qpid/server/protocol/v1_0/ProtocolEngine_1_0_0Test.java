@@ -33,6 +33,7 @@ import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,16 +41,23 @@ import java.util.UUID;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.model.*;
-import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.transport.ServerNetworkConnection;
-import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.Transport;
+import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.v1_0.codec.FrameWriter;
 import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
 import org.apache.qpid.server.protocol.v1_0.framing.SASLFrame;
@@ -57,14 +65,14 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslInit;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
-import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManagerFactory;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
+import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.transport.ServerNetworkConnection;
+import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
@@ -186,6 +194,10 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
 
     public void testProtocolEngineWithNoSaslNonTLSandAnon() throws Exception
     {
+        final Map<String, Object> attrs = Collections.<String, Object>singletonMap(ConfiguredObject.NAME, getTestName());
+        final AnonymousAuthenticationManager anonymousAuthenticationManager =
+                (new AnonymousAuthenticationManagerFactory()).create(null, attrs, _broker);
+        when(_port.getAuthenticationProvider()).thenReturn(anonymousAuthenticationManager);
         allowMechanisms(AnonymousAuthenticationManager.MECHANISM_NAME);
         final boolean useSASL = false;
 
@@ -200,7 +212,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         verify(_virtualHost).registerConnection(any(AMQPConnection.class));
         AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(principal);
-        assertEquals(principal, new AuthenticatedPrincipal(AnonymousAuthenticationManager.ANONYMOUS_PRINCIPAL));
+        assertEquals(principal, new AuthenticatedPrincipal(anonymousAuthenticationManager.getAnonymousPrincipal()));
     }
 
 
@@ -250,14 +262,9 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
 
     public void testProtocolEngineWithSaslNonTLSandAnon() throws Exception
     {
-        final Map<String, Object> attrs = new HashMap<>();
-        attrs.put(ConfiguredObject.NAME, getTestName());
-        final AuthenticationProvider anonymousAuthenticationManager =
-                (new AnonymousAuthenticationManagerFactory())
-                        .create(
-                                null,
-                                attrs,
-                                _broker);
+        final Map<String, Object> attrs = Collections.<String, Object>singletonMap(ConfiguredObject.NAME, getTestName());
+        final AnonymousAuthenticationManager anonymousAuthenticationManager =
+                (new AnonymousAuthenticationManagerFactory()).create(null, attrs, _broker);
         when(_port.getAuthenticationProvider()).thenReturn(anonymousAuthenticationManager);
         allowMechanisms(AnonymousAuthenticationManager.MECHANISM_NAME);
         final boolean useSASL = true;
@@ -280,7 +287,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         verify(_virtualHost).registerConnection(any(AMQPConnection.class));
         AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(principal);
-        assertEquals(principal, new AuthenticatedPrincipal(AnonymousAuthenticationManager.ANONYMOUS_PRINCIPAL));
+        assertEquals(principal, new AuthenticatedPrincipal(anonymousAuthenticationManager.getAnonymousPrincipal()));
     }
 
 

@@ -37,10 +37,10 @@ public class TestPrincipalUtils
     public static Subject createTestSubject(final String username, final String... groups)
     {
         final Set<Principal> principals = new HashSet<Principal>(1 + groups.length);
-        principals.add(new AuthenticatedPrincipal(username));
+        principals.add(new AuthenticatedPrincipal(new UsernamePrincipal(username, null)));
         for (String group : groups)
         {
-            principals.add(new GroupPrincipal(group));
+            principals.add(new GroupPrincipal(group, null));
         }
 
         return new Subject(false, principals, Collections.EMPTY_SET, Collections.EMPTY_SET);

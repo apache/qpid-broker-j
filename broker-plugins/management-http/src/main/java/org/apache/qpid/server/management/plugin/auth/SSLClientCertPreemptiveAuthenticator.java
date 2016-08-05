@@ -68,7 +68,7 @@ public class SSLClientCertPreemptiveAuthenticator implements HttpRequestPreempti
 
 
                     username = SSLUtil.getIdFromSubjectDN(dn);
-                    principal = new UsernamePrincipal(username);
+                    principal = new UsernamePrincipal(username, authenticationProvider);
                 }
 
                 return subjectCreator.createSubjectWithGroups(new AuthenticatedPrincipal(principal));

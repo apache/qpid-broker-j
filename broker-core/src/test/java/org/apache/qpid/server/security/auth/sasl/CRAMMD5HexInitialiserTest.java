@@ -54,7 +54,7 @@ public class CRAMMD5HexInitialiserTest extends QpidTestCase
     {
         CRAMMD5HexInitialiser initialiser = new CRAMMD5HexInitialiser();
 
-        PrincipalDatabase db = new Base64MD5PasswordFilePrincipalDatabase();
+        PrincipalDatabase db = new Base64MD5PasswordFilePrincipalDatabase(null);
         db.open(_file);
         initialiser.initialise(db);
 

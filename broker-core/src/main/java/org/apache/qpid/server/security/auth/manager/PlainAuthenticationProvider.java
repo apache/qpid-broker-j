@@ -140,7 +140,7 @@ public class PlainAuthenticationProvider
         AuthenticationResult result;
         if(user != null && user.getPassword().equals(password))
         {
-            result = new AuthenticationResult(new UsernamePrincipal(username));
+            result = new AuthenticationResult(new UsernamePrincipal(username, this));
         }
         else
         {

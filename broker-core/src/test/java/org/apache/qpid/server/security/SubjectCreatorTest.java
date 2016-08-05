@@ -41,7 +41,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class SubjectCreatorTest extends QpidTestCase
 {
-    private static final UsernamePrincipal USERNAME_PRINCIPAL = new UsernamePrincipal("username");
+    private static final UsernamePrincipal USERNAME_PRINCIPAL = new UsernamePrincipal("username", null);
     private static final String PASSWORD = "password";
 
     private AuthenticationProvider<?> _authenticationProvider = mock(AuthenticationProvider.class);

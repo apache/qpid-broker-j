@@ -140,7 +140,7 @@ public class FacebookIdentityResolverService implements OAuth2IdentityResolverSe
                         "Identity resolver '%s' failed, response did not include 'id'",
                         userInfoEndpoint));
             }
-            return new UsernamePrincipal(facebookId);
+            return new UsernamePrincipal(facebookId, authenticationProvider);
         }
     }
 

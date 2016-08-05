@@ -146,7 +146,7 @@ public class GitHubOAuth2IdentityResolverService implements OAuth2IdentityResolv
                         "Identity resolver '%s' failed, response did not include 'login'",
                         userInfoEndpoint));
             }
-            return new UsernamePrincipal(githubId);
+            return new UsernamePrincipal(githubId, authenticationProvider);
         }
     }
 

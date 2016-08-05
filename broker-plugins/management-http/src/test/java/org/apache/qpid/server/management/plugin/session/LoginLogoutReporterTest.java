@@ -32,6 +32,7 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.MessageLogger;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.ArgumentMatcher;
 
@@ -46,7 +47,7 @@ public class LoginLogoutReporterTest extends QpidTestCase
     {
         super.setUp();
 
-        _subject.getPrincipals().add(new AuthenticatedPrincipal("mockusername"));
+        _subject.getPrincipals().add(new AuthenticatedPrincipal(new UsernamePrincipal("mockusername", null)));
         when(_logger.isEnabled()).thenReturn(true);
         when(_logger.isMessageEnabled(anyString())).thenReturn(true);
         EventLogger eventLogger = new EventLogger(_logger);

@@ -23,18 +23,22 @@ package org.apache.qpid.server.security.auth;
 import java.io.Serializable;
 import java.security.Principal;
 
+import org.apache.qpid.server.model.AuthenticationProvider;
+
 /** A principal that is just a wrapper for a simple username. */
 public class UsernamePrincipal implements Principal, Serializable
 {
     private final String _name;
+    private final AuthenticationProvider<?> _authenticationProvider;
 
-    public UsernamePrincipal(String name)
+    public UsernamePrincipal(String name, AuthenticationProvider<?> authenticationProvider)
     {
         if (name == null)
         {
             throw new IllegalArgumentException("name cannot be null");
         }
         _name = name;
+        _authenticationProvider = authenticationProvider;
     }
 
     public String getName()

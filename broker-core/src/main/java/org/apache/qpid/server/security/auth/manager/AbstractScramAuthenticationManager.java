@@ -133,7 +133,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
                 if(Arrays.equals(saltAndPasswordKeys.getStoredKey(), storedKey)
                    && Arrays.equals(saltAndPasswordKeys.getServerKey(), serverKey))
                 {
-                    return new AuthenticationResult(new UsernamePrincipal(username));
+                    return new AuthenticationResult(new UsernamePrincipal(username, this));
                 }
             }
             catch (IllegalArgumentException | NoSuchAlgorithmException | SaslException e)

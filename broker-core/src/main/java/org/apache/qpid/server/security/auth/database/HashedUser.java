@@ -28,18 +28,20 @@ import java.security.NoSuchAlgorithmException;
 
 import javax.xml.bind.DatatypeConverter;
 
+import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 
 public class HashedUser implements PasswordPrincipal
 {
+    private final AuthenticationProvider<?> _authenticationProvider;
     private String _name;
     private char[] _password;
     private byte[] _encodedPassword = null;
     private boolean _modified = false;
     private boolean _deleted = false;
 
-    HashedUser(String[] data)
+    HashedUser(String[] data, AuthenticationProvider<?> authenticationProvider)
     {
         if (data.length != 2)
         {
@@ -67,11 +69,13 @@ public class HashedUser implements PasswordPrincipal
         {
             _password[index++] = (char) c;
         }
+        _authenticationProvider = authenticationProvider;
     }
 
-    public HashedUser(String name, char[] password)
+    public HashedUser(String name, char[] password, final AuthenticationProvider<?> authenticationProvider)
     {
         _name = name;
+        _authenticationProvider = authenticationProvider;
         setPassword(password,false);
     }
 

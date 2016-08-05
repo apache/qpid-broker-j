@@ -36,7 +36,7 @@ public class HashedUserTest extends QpidTestCase
     {
         try
         {
-            HashedUser user = new HashedUser(new String[]{USERNAME, PASSWORD, USERNAME});
+            HashedUser user = new HashedUser(new String[]{USERNAME, PASSWORD, USERNAME}, null);
             fail("Error expected");
         }
         catch (IllegalArgumentException e)
@@ -48,7 +48,7 @@ public class HashedUserTest extends QpidTestCase
 
     public void testArrayConstructor()
     {
-        HashedUser user = new HashedUser(new String[]{USERNAME, B64_ENCODED_PASSWORD});
+        HashedUser user = new HashedUser(new String[]{USERNAME, B64_ENCODED_PASSWORD}, null);
         assertEquals("Username incorrect", USERNAME, user.getName());
         int index = 0;
 

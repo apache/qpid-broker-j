@@ -55,6 +55,7 @@ import org.apache.qpid.server.security.*;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
@@ -134,7 +135,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
                                              "localhost",
                                              null)).thenReturn(saslServer);
         when(subjectCreator.authenticate(saslServer, SASL_RESPONSE)).thenReturn(new SubjectAuthenticationResult(
-                new AuthenticationResult(new AuthenticatedPrincipal("username")), new Subject()));
+                new AuthenticationResult(new AuthenticatedPrincipal(new UsernamePrincipal("username", null))), new Subject()));
 
         AuthenticationProvider authenticationProvider = mock(AuthenticationProvider.class);
         when(authenticationProvider.getSubjectCreator(false)).thenReturn(subjectCreator);

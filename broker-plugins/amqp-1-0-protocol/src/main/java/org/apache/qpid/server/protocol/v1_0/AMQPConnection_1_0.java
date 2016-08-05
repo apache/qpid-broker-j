@@ -1239,7 +1239,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                     }
                     else if(mechanisms.contains(AnonymousAuthenticationManager.MECHANISM_NAME))
                     {
-                        setUserPrincipal(new AuthenticatedPrincipal(AnonymousAuthenticationManager.ANONYMOUS_PRINCIPAL));
+                        setUserPrincipal(new AuthenticatedPrincipal(((AnonymousAuthenticationManager) authenticationProvider).getAnonymousPrincipal()));
                     }
                     else
                     {

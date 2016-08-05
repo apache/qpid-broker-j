@@ -54,7 +54,7 @@ public class AnonymousSaslServer implements SaslServer
 
     public String getAuthorizationID()
     {
-        return AnonymousAuthenticationManager.ANONYMOUS_PRINCIPAL.getName();
+        return AnonymousAuthenticationManager.ANONYMOUS_USERNAME;
     }
 
     public byte[] unwrap(byte[] incoming, int offset, int len) throws SaslException

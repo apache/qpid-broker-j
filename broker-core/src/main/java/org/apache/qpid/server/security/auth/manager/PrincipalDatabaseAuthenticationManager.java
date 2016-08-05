@@ -174,7 +174,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
             if (server.isComplete())
             {
                 final String userId = server.getAuthorizationID();
-                return new AuthenticationResult(new UsernamePrincipal(userId), challenge);
+                return new AuthenticationResult(new UsernamePrincipal(userId, this), challenge);
             }
             else
             {
@@ -196,7 +196,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         {
             if (_principalDatabase.verifyPassword(username, password.toCharArray()))
             {
-                return new AuthenticationResult(new UsernamePrincipal(username));
+                return new AuthenticationResult(new UsernamePrincipal(username, this));
             }
             else
             {
@@ -279,7 +279,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
 
     private void deleteUserFromDatabase(String username) throws AccountNotFoundException
     {
-        UsernamePrincipal principal = new UsernamePrincipal(username);
+        UsernamePrincipal principal = new UsernamePrincipal(username, this);
         getPrincipalDatabase().deletePrincipal(principal);
         _userMap.remove(principal);
     }
@@ -287,7 +287,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     @Override
     public void deleteUser(String username) throws AccountNotFoundException
     {
-        UsernamePrincipal principal = new UsernamePrincipal(username);
+        UsernamePrincipal principal = new UsernamePrincipal(username, this);
         PrincipalAdapter user = _userMap.get(principal);
         if(user != null)
         {
@@ -302,7 +302,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     @Override
     public void setPassword(String username, String password) throws AccountNotFoundException
     {
-        Principal principal = new UsernamePrincipal(username);
+        Principal principal = new UsernamePrincipal(username, this);
         User user = _userMap.get(principal);
         if (user != null)
         {
@@ -336,7 +336,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         {
             String username = (String) attributes.get("name");
             String password = (String) attributes.get("password");
-            Principal p = new UsernamePrincipal(username);
+            Principal p = new UsernamePrincipal(username, this);
             PrincipalAdapter principalAdapter = new PrincipalAdapter(p);
             principalAdapter.create(); // for a duplicate user DuplicateNameException should be thrown
             boolean created = getPrincipalDatabase().createPrincipal(p, password.toCharArray());

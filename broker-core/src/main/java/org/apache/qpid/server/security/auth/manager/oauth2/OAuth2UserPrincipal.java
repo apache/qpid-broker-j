@@ -22,13 +22,16 @@ package org.apache.qpid.server.security.auth.manager.oauth2;
 
 import java.security.Principal;
 
+import org.apache.qpid.server.model.AuthenticationProvider;
+
 
 public class OAuth2UserPrincipal implements Principal
 {
     private final String _accessToken;
     private final String _name;
+    private final AuthenticationProvider<?> _authenticationProvider;
 
-    public OAuth2UserPrincipal(final String name, final String accessToken)
+    public OAuth2UserPrincipal(final String name, final String accessToken, final AuthenticationProvider<?> authenticationProvider)
     {
         if (name == null)
         {
@@ -40,6 +43,7 @@ public class OAuth2UserPrincipal implements Principal
         }
         _name = name;
         _accessToken = accessToken;
+        _authenticationProvider = authenticationProvider;
     }
 
     public String getAccessToken()

@@ -45,6 +45,6 @@ public class Base64MD5PasswordDatabaseAuthenticationManager
     @Override
     protected PrincipalDatabase createDatabase()
     {
-        return new Base64MD5PasswordFilePrincipalDatabase();
+        return new Base64MD5PasswordFilePrincipalDatabase(this);
     }
 }

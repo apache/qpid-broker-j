@@ -49,7 +49,6 @@ import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.group.FileGroupDatabase;
 import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.apache.qpid.server.util.FileHelper;
@@ -134,13 +133,13 @@ public class FileBasedGroupProviderImpl
         _groupDatabase = groupDatabase;
 
         Set<Principal> groups = getGroupPrincipals();
-        Collection<Group> principals = new ArrayList<Group>(groups.size());
+        Collection<Group> principals = new ArrayList<>(groups.size());
         for (Principal group : groups)
         {
             Map<String,Object> attrMap = new HashMap<String, Object>();
             UUID id = UUID.randomUUID();
-            attrMap.put(Group.ID, id);
-            attrMap.put(Group.NAME, group.getName());
+            attrMap.put(ConfiguredObject.ID, id);
+            attrMap.put(ConfiguredObject.NAME, group.getName());
             GroupAdapter groupAdapter = new GroupAdapter(attrMap);
             principals.add(groupAdapter);
             groupAdapter.registerWithParents();
@@ -211,7 +210,7 @@ public class FileBasedGroupProviderImpl
     {
         if (childClass == Group.class)
         {
-            String groupName = (String) attributes.get(Group.NAME);
+            String groupName = (String) attributes.get(ConfiguredObject.NAME);
 
             if (getState() != State.ACTIVE)
             {
@@ -222,8 +221,8 @@ public class FileBasedGroupProviderImpl
 
             Map<String,Object> attrMap = new HashMap<String, Object>();
             UUID id = UUID.randomUUID();
-            attrMap.put(Group.ID, id);
-            attrMap.put(Group.NAME, groupName);
+            attrMap.put(ConfiguredObject.ID, id);
+            attrMap.put(ConfiguredObject.NAME, groupName);
             GroupAdapter groupAdapter = new GroupAdapter(attrMap);
             groupAdapter.create();
             return Futures.immediateFuture((C) groupAdapter);
@@ -248,7 +247,7 @@ public class FileBasedGroupProviderImpl
             Set<Principal> principals = new HashSet<Principal>();
             for (String groupName : groups)
             {
-                principals.add(new GroupPrincipal(groupName));
+                principals.add(new GroupPrincipal(groupName, this));
             }
             return principals;
         }
@@ -319,7 +318,7 @@ public class FileBasedGroupProviderImpl
             Set<Principal> principals = new HashSet<Principal>();
             for (String groupName : groups)
             {
-                principals.add(new GroupPrincipal(groupName));
+                principals.add(new GroupPrincipal(groupName, this));
             }
             return principals;
         }
@@ -327,7 +326,6 @@ public class FileBasedGroupProviderImpl
 
     private class GroupAdapter extends AbstractConfiguredObject<GroupAdapter> implements Group<GroupAdapter>
     {
-        private GroupPrincipal _groupPrincipal;
         public GroupAdapter(Map<String, Object> attributes)
         {
             super(parentsMap(FileBasedGroupProviderImpl.this), attributes);
@@ -354,38 +352,19 @@ public class FileBasedGroupProviderImpl
         protected void onOpen()
         {
             super.onOpen();
-            Set<Principal> usersInGroup = getUserPrincipalsForGroup(getName());
+            Set<String> usersInGroup = _groupDatabase.getUsersInGroup(getName());
             Collection<GroupMember> members = new ArrayList<GroupMember>();
-            for (Principal principal : usersInGroup)
+            for (String username : usersInGroup)
             {
                 UUID id = UUID.randomUUID();
                 Map<String,Object> attrMap = new HashMap<String, Object>();
-                attrMap.put(GroupMember.ID,id);
-                attrMap.put(GroupMember.NAME, principal.getName());
+                attrMap.put(ConfiguredObject.ID,id);
+                attrMap.put(ConfiguredObject.NAME, username);
                 GroupMemberAdapter groupMemberAdapter = new GroupMemberAdapter(attrMap);
                 groupMemberAdapter.registerWithParents();
                 // todo - this will be safe, but the synchronous open should not be called from the management thread
                 groupMemberAdapter.openAsync();
                 members.add(groupMemberAdapter);
-            }
-            _groupPrincipal = new GroupPrincipal(getName());
-        }
-
-        private Set<Principal> getUserPrincipalsForGroup(String group)
-        {
-            Set<String> users = _groupDatabase.getUsersInGroup(group);
-            if (users.isEmpty())
-            {
-                return Collections.emptySet();
-            }
-            else
-            {
-                Set<Principal> principals = new HashSet<Principal>();
-                for (String user : users)
-                {
-                    principals.add(new UsernamePrincipal(user));
-                }
-                return principals;
             }
         }
 
@@ -424,29 +403,13 @@ public class FileBasedGroupProviderImpl
             return Futures.immediateFuture(null);
         }
 
-        @Override
-        public GroupPrincipal getGroupPrincipal()
-        {
-            return _groupPrincipal;
-        }
-
         private class GroupMemberAdapter extends AbstractConfiguredObject<GroupMemberAdapter> implements
                 GroupMember<GroupMemberAdapter>
         {
-
-            private Principal _principal;
-
             public GroupMemberAdapter(Map<String, Object> attrMap)
             {
                 // TODO - need to relate to the User object
                 super(parentsMap(GroupAdapter.this),attrMap);
-            }
-
-            @Override
-            protected void onOpen()
-            {
-                super.onOpen();
-                _principal = new UsernamePrincipal(getName());
             }
 
             @Override
@@ -480,12 +443,6 @@ public class FileBasedGroupProviderImpl
                 deleted();
                 setState(State.DELETED);
                 return Futures.immediateFuture(null);
-            }
-
-            @Override
-            public Principal getPrincipal()
-            {
-                return _principal;
             }
         }
     }

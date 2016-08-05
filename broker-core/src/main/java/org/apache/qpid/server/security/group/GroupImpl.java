@@ -41,20 +41,11 @@ public class GroupImpl extends AbstractConfiguredObject<GroupImpl> implements Gr
 
     public static final String CONFIG_TYPE = "ManagedGroup";
 
-    private GroupPrincipal _groupPrincipal;
-
     @ManagedObjectFactoryConstructor
     public GroupImpl(Map<String, Object> attributes,
                      GroupProvider<?> provider)
     {
         super(parentsMap(provider), attributes);
-    }
-
-    @Override
-    protected void onOpen()
-    {
-        super.onOpen();
-        _groupPrincipal = new GroupPrincipal(getName());
     }
 
     @Override
@@ -71,13 +62,6 @@ public class GroupImpl extends AbstractConfiguredObject<GroupImpl> implements Gr
             return super.addChildAsync(childClass, attributes, otherParents);
         }
     }
-
-    @Override
-    public GroupPrincipal getGroupPrincipal()
-    {
-        return _groupPrincipal;
-    }
-
 
     @StateTransition( currentState = { State.UNINITIALIZED, State.QUIESCED, State.ERRORED }, desiredState = State.ACTIVE )
     private ListenableFuture<Void> activate()

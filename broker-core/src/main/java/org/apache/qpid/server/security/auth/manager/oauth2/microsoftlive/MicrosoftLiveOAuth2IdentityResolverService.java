@@ -138,7 +138,7 @@ public class MicrosoftLiveOAuth2IdentityResolverService implements OAuth2Identit
                         "Identity resolver '%s' failed, response did not include 'id'",
                         userInfoEndpoint));
             }
-            return new UsernamePrincipal(liveId);
+            return new UsernamePrincipal(liveId, authenticationProvider);
         }
     }
 

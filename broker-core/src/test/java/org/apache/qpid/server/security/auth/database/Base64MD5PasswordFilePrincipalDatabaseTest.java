@@ -50,7 +50,7 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends QpidTestCase
     private static final String PASSWORD_B64MD5HASHED = "CE4DQ6BIb/BVMN9scFyLtA==";
     private static char[] PASSWORD_MD5_CHARS;
     private static final String PRINCIPAL_USERNAME = "testUserPrincipal";
-    private static final Principal PRINCIPAL = new UsernamePrincipal(PRINCIPAL_USERNAME);
+    private static final Principal PRINCIPAL = new UsernamePrincipal(PRINCIPAL_USERNAME, null);
     private Base64MD5PasswordFilePrincipalDatabase _database;
     private File _pwdFile;
     private List<File> _testPwdFiles = new ArrayList<File>();
@@ -69,13 +69,13 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends QpidTestCase
 
     public void setUp() throws Exception
     {
-        _database = new Base64MD5PasswordFilePrincipalDatabase();
+        _database = new Base64MD5PasswordFilePrincipalDatabase(null);
         _pwdFile = File.createTempFile(this.getClass().getName(), "pwd");
         _pwdFile.deleteOnExit();
         _database.open(_pwdFile);
         _testPwdFiles.clear();
     }
-    
+
     public void tearDown() throws Exception
     {
         //clean up the created default password file and any backup

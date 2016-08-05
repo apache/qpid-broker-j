@@ -366,7 +366,7 @@ public class OAuth2AuthenticationProviderImpl
                 try
                 {
                     final Principal userPrincipal = _identityResolverService.getUserPrincipal(OAuth2AuthenticationProviderImpl.this, accessToken);
-                    OAuth2UserPrincipal oauthUserPrincipal = new OAuth2UserPrincipal(userPrincipal.getName(), accessToken);
+                    OAuth2UserPrincipal oauthUserPrincipal = new OAuth2UserPrincipal(userPrincipal.getName(), accessToken, OAuth2AuthenticationProviderImpl.this);
                     return new AuthenticationResult(oauthUserPrincipal);
                 }
                 catch (IOException | IdentityResolverException e)

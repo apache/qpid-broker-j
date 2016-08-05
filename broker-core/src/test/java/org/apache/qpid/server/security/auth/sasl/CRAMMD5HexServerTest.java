@@ -183,7 +183,7 @@ public class CRAMMD5HexServerTest extends QpidTestCase
      */
     private Base64MD5PasswordFilePrincipalDatabase createTestPrincipalDatabase() throws IOException
     {
-        Base64MD5PasswordFilePrincipalDatabase db = new Base64MD5PasswordFilePrincipalDatabase();
+        Base64MD5PasswordFilePrincipalDatabase db = new Base64MD5PasswordFilePrincipalDatabase(null);
         File file = File.createTempFile("passwd", "db");
         file.deleteOnExit();
         db.open(file);

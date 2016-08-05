@@ -39,29 +39,12 @@ import org.apache.qpid.server.security.auth.UsernamePrincipal;
 public class GroupMemberImpl extends AbstractConfiguredObject<GroupMemberImpl> implements GroupMember<GroupMemberImpl>
 {
     public static final String CONFIG_TYPE = "ManagedGroupMember";
-    private UsernamePrincipal _principal;
-
 
     @ManagedObjectFactoryConstructor
-    public GroupMemberImpl(Map<String, Object> attributes,
-                           Group group)
+    public GroupMemberImpl(Map<String, Object> attributes, Group group)
     {
         super(parentsMap(group), attributes);
     }
-
-    @Override
-    protected void onOpen()
-    {
-        super.onOpen();
-        _principal = new UsernamePrincipal(getName());
-    }
-
-    @Override
-    public Principal getPrincipal()
-    {
-        return _principal;
-    }
-
 
     @StateTransition( currentState = { State.UNINITIALIZED, State.QUIESCED, State.ERRORED }, desiredState = State.ACTIVE )
     private ListenableFuture<Void> activate()

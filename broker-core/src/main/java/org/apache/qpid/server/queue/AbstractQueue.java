@@ -81,6 +81,7 @@ import org.apache.qpid.server.message.MessageDeletedException;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.preferences.GenericPrincipal;
 import org.apache.qpid.server.plugin.MessageFilterFactory;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -404,7 +405,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             String owner = MapValueConverter.getStringAttribute(Queue.OWNER, attributes, null);
             if(owner != null)
             {
-                _exclusiveOwner = new AuthenticatedPrincipal(owner);
+                Principal ownerPrincipal = new GenericPrincipal(owner);
+                _exclusiveOwner = new AuthenticatedPrincipal(ownerPrincipal);
             }
         }
         else if(_exclusive == ExclusivityPolicy.CONTAINER)

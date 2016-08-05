@@ -30,6 +30,8 @@ import javax.security.auth.login.AccountNotFoundException;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 
+import org.apache.qpid.server.model.AuthenticationProvider;
+
 /** Represents a "user database" which is really a way of storing principals (i.e. usernames) and passwords. */
 public interface PrincipalDatabase
 {
@@ -108,4 +110,6 @@ public interface PrincipalDatabase
     public List<String> getMechanisms();
 
     public SaslServer createSaslServer(String mechanism, String localFQDN, Principal externalPrincipal) throws SaslException;
+
+    AuthenticationProvider<?> getAuthenticationProvider();
 }

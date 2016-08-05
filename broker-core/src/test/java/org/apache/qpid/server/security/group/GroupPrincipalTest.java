@@ -28,14 +28,14 @@ public class GroupPrincipalTest extends QpidTestCase
 {
     public void testGetName()
     {
-        final GroupPrincipal principal = new GroupPrincipal("group");
+        final GroupPrincipal principal = new GroupPrincipal("group", null);
         assertEquals("group", principal.getName());
     }
 
     public void testAddRejected()
     {
-        final GroupPrincipal principal = new GroupPrincipal("group");
-        final UsernamePrincipal user = new UsernamePrincipal("name");
+        final GroupPrincipal principal = new GroupPrincipal("group", null);
+        final UsernamePrincipal user = new UsernamePrincipal("name", null);
 
         try
         {
@@ -51,34 +51,34 @@ public class GroupPrincipalTest extends QpidTestCase
     public void testEqualitySameName()
     {
         final String string = "string";
-        final GroupPrincipal principal1 = new GroupPrincipal(string);
-        final GroupPrincipal principal2 = new GroupPrincipal(string);
+        final GroupPrincipal principal1 = new GroupPrincipal(string, null);
+        final GroupPrincipal principal2 = new GroupPrincipal(string, null);
         assertTrue(principal1.equals(principal2));
     }
 
     public void testEqualityEqualName()
     {
-        final GroupPrincipal principal1 = new GroupPrincipal(new String("string"));
-        final GroupPrincipal principal2 = new GroupPrincipal(new String("string"));
+        final GroupPrincipal principal1 = new GroupPrincipal(new String("string"), null);
+        final GroupPrincipal principal2 = new GroupPrincipal(new String("string"), null);
         assertTrue(principal1.equals(principal2));
     }
 
     public void testInequalityDifferentGroupPrincipals()
     {
-        GroupPrincipal principal1 = new GroupPrincipal("string1");
-        GroupPrincipal principal2 = new GroupPrincipal("string2");
+        GroupPrincipal principal1 = new GroupPrincipal("string1", null);
+        GroupPrincipal principal2 = new GroupPrincipal("string2", null);
         assertFalse(principal1.equals(principal2));
     }
 
     public void testInequalityNonGroupPrincipal()
     {
-        GroupPrincipal principal = new GroupPrincipal("string");
-        assertFalse(principal.equals(new UsernamePrincipal("string")));
+        GroupPrincipal principal = new GroupPrincipal("string", null);
+        assertFalse(principal.equals(new UsernamePrincipal("string", null)));
     }
 
     public void testInequalityNull()
     {
-        GroupPrincipal principal = new GroupPrincipal("string");
+        GroupPrincipal principal = new GroupPrincipal("string", null);
         assertFalse(principal.equals(null));
     }
 

@@ -146,7 +146,7 @@ public class CloudFoundryOAuth2IdentityResolverService implements OAuth2Identity
                     throw new IdentityResolverException(String.format("Identity resolver '%s' failed, response did not include 'user_name'",
                                                                       checkTokenEndpoint));
                 }
-                return new UsernamePrincipal(userName);
+                return new UsernamePrincipal(userName, authenticationProvider);
             }
         }
     }

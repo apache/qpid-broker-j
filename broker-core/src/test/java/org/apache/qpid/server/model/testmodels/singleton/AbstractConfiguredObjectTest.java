@@ -40,6 +40,7 @@ import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.NoopConfigurationChangeListener;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -1073,7 +1074,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
     private Subject createTestAuthenticatedSubject(final String username)
     {
         return new Subject(true,
-                           Collections.singleton(new AuthenticatedPrincipal(username)),
+                           Collections.singleton(new AuthenticatedPrincipal(new UsernamePrincipal(username, null))),
                            Collections.emptySet(),
                            Collections.emptySet());
     }

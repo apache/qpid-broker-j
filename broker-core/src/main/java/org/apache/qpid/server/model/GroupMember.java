@@ -19,12 +19,9 @@
  */
 package org.apache.qpid.server.model;
 
-import java.security.Principal;
-
 import org.apache.qpid.server.security.group.GroupMemberImpl;
 
 @ManagedObject( defaultType = GroupMemberImpl.CONFIG_TYPE )
 public interface GroupMember<X extends GroupMember<X>> extends ConfiguredObject<X>
 {
-    Principal getPrincipal();
 }

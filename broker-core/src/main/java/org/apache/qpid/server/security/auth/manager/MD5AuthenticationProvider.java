@@ -130,7 +130,7 @@ public class MD5AuthenticationProvider
         AuthenticationResult result;
         if(user != null && user.getPassword().equals(createStoredPassword(password)))
         {
-            result = new AuthenticationResult(new UsernamePrincipal(username));
+            result = new AuthenticationResult(new UsernamePrincipal(username, this));
         }
         else
         {

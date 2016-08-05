@@ -39,6 +39,7 @@ import javax.security.auth.login.AccountNotFoundException;
 
 import org.slf4j.Logger;
 
+import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.util.BaseAction;
 import org.apache.qpid.server.util.FileHelper;
@@ -51,7 +52,19 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
     private final Map<String, U> _userMap = new HashMap<>();
     private final ReentrantLock _userUpdate = new ReentrantLock();
     private final FileHelper _fileHelper = new FileHelper();
+    private final AuthenticationProvider<?> _authenticationProvider;
     private File _passwordFile;
+
+    public AbstractPasswordFilePrincipalDatabase(AuthenticationProvider<?> authenticationProvider)
+    {
+        _authenticationProvider = authenticationProvider;
+    }
+
+    @Override
+    public final AuthenticationProvider<?> getAuthenticationProvider()
+    {
+        return _authenticationProvider;
+    }
 
     public final void open(File passwordFile) throws IOException
     {
@@ -321,7 +334,7 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
     {
         if (_userMap.containsKey(username))
         {
-            return new UsernamePrincipal(username);
+            return new UsernamePrincipal(username, getAuthenticationProvider());
         }
         return null;
     }

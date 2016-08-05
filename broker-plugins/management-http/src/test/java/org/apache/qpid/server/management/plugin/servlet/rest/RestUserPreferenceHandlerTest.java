@@ -49,6 +49,7 @@ import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -79,9 +80,10 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                                    _configuredObject,
                                                    _preferenceStore,
                                                    Collections.<Preference>emptyList());
-        _groupPrincipal = new GroupPrincipal(MYGROUP);
+        _groupPrincipal = new GroupPrincipal(MYGROUP, null);
         _subject = new Subject(true,
-                               Sets.newHashSet(new AuthenticatedPrincipal(MYUSER), _groupPrincipal),
+                               Sets.newHashSet(new AuthenticatedPrincipal(new UsernamePrincipal(MYUSER, null)),
+                                               _groupPrincipal),
                                Collections.emptySet(),
                                Collections.emptySet());
         when(_configuredObject.getUserPreferences()).thenReturn(_userPreferences);

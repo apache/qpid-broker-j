@@ -27,6 +27,7 @@ import javax.security.sasl.SaslServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
@@ -37,13 +38,15 @@ public class ExternalSaslServer implements SaslServer
     public static final String MECHANISM = "EXTERNAL";
 
     private boolean _complete = false;
+    private final AuthenticationProvider<?> _authenticationProvider;
     private final Principal _externalPrincipal;
     private final boolean _useFullDN;
 
-    public ExternalSaslServer(Principal externalPrincipal, boolean useFullDN)
+    public ExternalSaslServer(Principal externalPrincipal, boolean useFullDN, AuthenticationProvider<?> authenticationProvider)
     {
         _useFullDN = useFullDN;
         _externalPrincipal = externalPrincipal;
+        _authenticationProvider = authenticationProvider;
     }
 
     public String getMechanismName()
@@ -107,7 +110,7 @@ public class ExternalSaslServer implements SaslServer
 
             LOGGER.debug("Constructing Principal with username: {}", username);
 
-            return new UsernamePrincipal(username);
+            return new UsernamePrincipal(username, _authenticationProvider);
         }
         else
         {

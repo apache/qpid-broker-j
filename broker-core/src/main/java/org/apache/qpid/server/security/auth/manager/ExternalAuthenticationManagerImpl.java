@@ -63,7 +63,7 @@ public class ExternalAuthenticationManagerImpl extends AbstractAuthenticationMan
     {
         if(MECHANISM_NAME.equals(mechanism))
         {
-            return new ExternalSaslServer(externalPrincipal, _useFullDN);
+            return new ExternalSaslServer(externalPrincipal, _useFullDN, this);
         }
         else
         {

@@ -36,12 +36,6 @@ public final class AuthenticatedPrincipal implements Principal, Serializable
 {
     private final Principal _wrappedPrincipal;
 
-    /** convenience constructor for the common case where we're wrapping a {@link UsernamePrincipal} */
-    public AuthenticatedPrincipal(String userPrincipalName)
-    {
-        this(new UsernamePrincipal(userPrincipalName));
-    }
-
     public AuthenticatedPrincipal(Principal wrappedPrincipal)
     {
         if(wrappedPrincipal == null)

@@ -59,7 +59,7 @@ public abstract class UsernamePasswordInitialiser implements AuthenticationProvi
             {
                 if (callback instanceof NameCallback)
                 {
-                    username = new UsernamePrincipal(((NameCallback) callback).getDefaultName());
+                    username = new UsernamePrincipal(((NameCallback) callback).getDefaultName(), _principalDatabase.getAuthenticationProvider());
                 }
                 else if (callback instanceof PasswordCallback)
                 {

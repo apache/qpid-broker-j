@@ -150,7 +150,7 @@ public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolv
                         "Identity resolver '%s' failed, response did not include 'sub'",
                         userInfoEndpoint));
             }
-            return new UsernamePrincipal(googleId);
+            return new UsernamePrincipal(googleId, authenticationProvider);
         }
     }
 

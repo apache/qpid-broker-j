@@ -134,7 +134,7 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
                 String authorizationID = server.getAuthorizationID();
                 _logger.debug("Authenticated as " + authorizationID);
 
-                return new AuthenticationResult(new UsernamePrincipal(authorizationID), challenge);
+                return new AuthenticationResult(new UsernamePrincipal(authorizationID, this), challenge);
             }
             else
             {
@@ -155,7 +155,7 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
             String userPassword = _users.get(username);
             if (userPassword.equals(password))
             {
-                return new AuthenticationResult(new UsernamePrincipal(username));
+                return new AuthenticationResult(new UsernamePrincipal(username, this));
             }
         }
         return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR);

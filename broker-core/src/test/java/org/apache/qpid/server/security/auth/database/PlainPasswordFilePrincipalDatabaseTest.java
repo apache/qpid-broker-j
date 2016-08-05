@@ -49,7 +49,7 @@ public class PlainPasswordFilePrincipalDatabaseTest extends QpidTestCase
     private static final char[] TEST_PASSWORD_CHARS = TEST_PASSWORD.toCharArray();
     private static final String TEST_USERNAME = "testUser";
     
-    private Principal _principal = new UsernamePrincipal(TEST_USERNAME);
+    private Principal _principal = new UsernamePrincipal(TEST_USERNAME, null);
     private PlainPasswordFilePrincipalDatabase _database;
     private List<File> _testPwdFiles = new ArrayList<File>();
 

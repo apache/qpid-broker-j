@@ -110,7 +110,7 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
     public void testAuthenticatePrincipalCnOnly() throws Exception
     {
         X500Principal principal = new X500Principal("CN=person");
-        UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person");
+        UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person", null);
         SaslServer saslServer = _manager.createSaslServer("EXTERNAL", "example.example.com", principal);
 
         AuthenticationResult result = _manager.authenticate(saslServer, new byte[0]);
@@ -125,7 +125,7 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
     public void testAuthenticatePrincipalCnAndDc() throws Exception
     {
         X500Principal principal = new X500Principal("CN=person, DC=example, DC=com");
-        UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person@example.com");
+        UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person@example.com", null);
         SaslServer saslServer = _manager.createSaslServer("EXTERNAL", "example.example.com", principal);
 
         AuthenticationResult result = _manager.authenticate(saslServer, new byte[0]);
@@ -140,7 +140,7 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
     public void testAuthenticatePrincipalCnDc_OtherComponentsIgnored() throws Exception
     {
         X500Principal principal = new X500Principal("CN=person, DC=example, DC=com, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
-        UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person@example.com");
+        UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person@example.com", null);
         SaslServer saslServer = _manager.createSaslServer("EXTERNAL", "example.example.com", principal);
 
         AuthenticationResult result = _manager.authenticate(saslServer, new byte[0]);
@@ -155,7 +155,7 @@ public class ExternalAuthenticationManagerTest extends QpidTestCase
     public void testAuthenticatePrincipalCn_OtherComponentsIgnored() throws Exception
     {
         X500Principal principal = new X500Principal("CN=person, O=My Company Ltd, L=Newbury, ST=Berkshire, C=GB");
-        UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person");
+        UsernamePrincipal expectedPrincipal = new UsernamePrincipal("person", null);
         SaslServer saslServer = _manager.createSaslServer("EXTERNAL", "example.example.com", principal);
 
         AuthenticationResult result = _manager.authenticate(saslServer, new byte[0]);

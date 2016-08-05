@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import javax.security.auth.Subject;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 
@@ -44,20 +43,15 @@ public class AnonymousAuthenticationManager extends AbstractAuthenticationManage
 
     public static final String ANONYMOUS_USERNAME = "ANONYMOUS";
 
-    public static final Principal ANONYMOUS_PRINCIPAL = new UsernamePrincipal(ANONYMOUS_USERNAME);
-
-    public static final Subject ANONYMOUS_SUBJECT = new Subject();
-    static
-    {
-        ANONYMOUS_SUBJECT.getPrincipals().add(ANONYMOUS_PRINCIPAL);
-    }
-
-    public static final AuthenticationResult ANONYMOUS_AUTHENTICATION = new AuthenticationResult(ANONYMOUS_PRINCIPAL);
+    private final Principal _anonymousPrincipal;
+    private final AuthenticationResult _anonymousAuthenticationResult;
 
     @ManagedObjectFactoryConstructor
     protected AnonymousAuthenticationManager(final Map<String, Object> attributes, final Container<?> container)
     {
         super(attributes, container);
+        _anonymousPrincipal = new UsernamePrincipal(ANONYMOUS_USERNAME, this);
+        _anonymousAuthenticationResult = new AuthenticationResult(_anonymousPrincipal);
     }
 
     @Override
@@ -89,7 +83,7 @@ public class AnonymousAuthenticationManager extends AbstractAuthenticationManage
 
             if (server.isComplete())
             {
-                return ANONYMOUS_AUTHENTICATION;
+                return _anonymousAuthenticationResult;
             }
             else
             {
@@ -102,4 +96,13 @@ public class AnonymousAuthenticationManager extends AbstractAuthenticationManage
         }
     }
 
+    public Principal getAnonymousPrincipal()
+    {
+        return _anonymousPrincipal;
+    }
+
+    public AuthenticationResult getAnonymousAuthenticationResult()
+    {
+        return _anonymousAuthenticationResult;
+    }
 }

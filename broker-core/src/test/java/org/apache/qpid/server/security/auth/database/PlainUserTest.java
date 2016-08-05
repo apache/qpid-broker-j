@@ -35,7 +35,7 @@ public class PlainUserTest extends QpidTestCase
     {
         try
         {
-            PlainUser user = new PlainUser(new String[]{USERNAME, PASSWORD, USERNAME});
+            PlainUser user = new PlainUser(new String[]{USERNAME, PASSWORD, USERNAME}, null);
             fail("Error expected");
         }
         catch (IllegalArgumentException e)
@@ -46,7 +46,7 @@ public class PlainUserTest extends QpidTestCase
 
     public void testStringArrayConstructor()
     {
-        PlainUser user = new PlainUser(new String[]{USERNAME, PASSWORD});
+        PlainUser user = new PlainUser(new String[]{USERNAME, PASSWORD}, null);
         assertEquals("Username incorrect", USERNAME, user.getName());
         int index = 0;
 

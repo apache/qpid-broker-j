@@ -68,6 +68,7 @@ public class PlainPasswordFilePrincipalDatabase extends AbstractPasswordFilePrin
 
     public PlainPasswordFilePrincipalDatabase(AuthenticationProvider<?> authenticationProvider)
     {
+        super(authenticationProvider);
         PlainInitialiser plainInitialiser = new PlainInitialiser();
         plainInitialiser.initialise(this);
         _callbackHandlerMap.put(PlainSaslServer.MECHANISM, plainInitialiser.getCallbackHandler());
@@ -121,14 +122,14 @@ public class PlainPasswordFilePrincipalDatabase extends AbstractPasswordFilePrin
 
     protected PlainUser createUserFromPassword(Principal principal, char[] passwd)
     {
-        return new PlainUser(principal.getName(), passwd);
+        return new PlainUser(principal.getName(), passwd, getAuthenticationProvider());
     }
 
 
     @Override
     protected PlainUser createUserFromFileData(String[] result)
     {
-        return new PlainUser(result);
+        return new PlainUser(result, getAuthenticationProvider());
     }
 
 

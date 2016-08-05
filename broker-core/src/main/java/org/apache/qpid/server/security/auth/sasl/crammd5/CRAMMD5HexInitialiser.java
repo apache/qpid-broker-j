@@ -30,6 +30,7 @@ import javax.security.auth.login.AccountNotFoundException;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 
+import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.auth.database.PrincipalDatabase;
 import org.apache.qpid.server.security.auth.sasl.UsernamePasswordInitialiser;
 
@@ -143,6 +144,12 @@ public class CRAMMD5HexInitialiser extends UsernamePasswordInitialiser
                 Principal externalPrincipal) throws SaslException
         {
             return _realPrincipalDatabase.createSaslServer(mechanism, localFQDN, externalPrincipal);
+        }
+
+        @Override
+        public AuthenticationProvider<?> getAuthenticationProvider()
+        {
+            return _realPrincipalDatabase.getAuthenticationProvider();
         }
     }
 

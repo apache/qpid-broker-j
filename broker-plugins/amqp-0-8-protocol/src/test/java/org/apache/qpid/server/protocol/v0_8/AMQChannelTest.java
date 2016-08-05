@@ -54,6 +54,7 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.NullMessageStore;
@@ -100,7 +101,7 @@ public class AMQChannelTest extends QpidTestCase
         when(_port.getModel()).thenReturn(BrokerModel.getInstance());
         when(_port.getContextValue(Integer.class, Connection.MAX_MESSAGE_SIZE)).thenReturn(1);
 
-        AuthenticatedPrincipal authenticatedPrincipal = new AuthenticatedPrincipal("user");
+        AuthenticatedPrincipal authenticatedPrincipal = new AuthenticatedPrincipal(new UsernamePrincipal("user", null));
         Set<Principal> authenticatedUser = Collections.<Principal>singleton(authenticatedPrincipal);
         Subject authenticatedSubject = new Subject(true, authenticatedUser, Collections.<Principal>emptySet(), Collections.<Principal>emptySet());
 

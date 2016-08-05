@@ -32,6 +32,7 @@ import javax.security.auth.Subject;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -39,7 +40,7 @@ public class AuthenticationResultCacherTest extends QpidTestCase
 {
     private AuthenticationResultCacher _authenticationResultCacher;
     private final AuthenticationResult _successfulAuthenticationResult =
-            new AuthenticationResult(new AuthenticatedPrincipal("TestUser"));
+            new AuthenticationResult(new AuthenticatedPrincipal(new UsernamePrincipal("TestUser", null)));
     private int _loadCallCount;
     private Subject _subject;
     private AMQPConnection _connection;

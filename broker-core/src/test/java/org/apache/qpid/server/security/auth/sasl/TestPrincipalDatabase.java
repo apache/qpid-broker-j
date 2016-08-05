@@ -31,6 +31,7 @@ import javax.security.auth.login.AccountNotFoundException;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 
+import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.auth.database.PrincipalDatabase;
 
 public class TestPrincipalDatabase implements PrincipalDatabase
@@ -104,4 +105,9 @@ public class TestPrincipalDatabase implements PrincipalDatabase
         return null;
     }
 
+    @Override
+    public AuthenticationProvider<?> getAuthenticationProvider()
+    {
+        return null;
+    }
 }

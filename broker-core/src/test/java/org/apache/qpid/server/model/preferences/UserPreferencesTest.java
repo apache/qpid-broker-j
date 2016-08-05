@@ -42,6 +42,7 @@ import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
@@ -74,8 +75,8 @@ public class UserPreferencesTest extends QpidTestCase
                                                    _configuredObject,
                                                    _preferenceStore,
                                                    Collections.<Preference>emptyList());
-        _groupPrincipal = new GroupPrincipal(MYGROUP);
-        _owner = new AuthenticatedPrincipal(MYUSER);
+        _groupPrincipal = new GroupPrincipal(MYGROUP, null);
+        _owner = new AuthenticatedPrincipal(new UsernamePrincipal(MYUSER, null));
         _subject = new Subject(true,
                                Sets.newHashSet(_owner, _groupPrincipal),
                                Collections.emptySet(),

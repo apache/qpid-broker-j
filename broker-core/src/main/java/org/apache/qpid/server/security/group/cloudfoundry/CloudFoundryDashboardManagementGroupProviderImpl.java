@@ -175,7 +175,7 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
             if (mayManageServiceInstance(serviceInstanceId, accessToken))
             {
                 LOGGER.debug("Adding group '{}' to the set of Principals", managementGroupName);
-                groupPrincipals.add(new GroupPrincipal(managementGroupName));
+                groupPrincipals.add(new GroupPrincipal(managementGroupName, this));
             }
             else
             {

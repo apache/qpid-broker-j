@@ -35,6 +35,7 @@ import javax.security.sasl.SaslServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5HashedInitialiser;
 import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5HashedSaslServer;
 import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5HexInitialiser;
@@ -57,8 +58,9 @@ public class Base64MD5PasswordFilePrincipalDatabase extends AbstractPasswordFile
                                                                                   PlainSaslServer.MECHANISM));
     private final Map<String, CallbackHandler> _callbackHandlerMap = new HashMap<String, CallbackHandler>();
 
-    public Base64MD5PasswordFilePrincipalDatabase()
+    public Base64MD5PasswordFilePrincipalDatabase(final AuthenticationProvider<?> authenticationProvider)
     {
+        super(authenticationProvider);
         CRAMMD5HashedInitialiser crammd5HashedInitialiser = new CRAMMD5HashedInitialiser();
         crammd5HashedInitialiser.initialise(this);
         _callbackHandlerMap.put(CRAMMD5HashedSaslServer.MECHANISM, crammd5HashedInitialiser.getCallbackHandler());
@@ -120,13 +122,13 @@ public class Base64MD5PasswordFilePrincipalDatabase extends AbstractPasswordFile
 
     protected HashedUser createUserFromPassword(Principal principal, char[] passwd)
     {
-        return new HashedUser(principal.getName(), passwd);
+        return new HashedUser(principal.getName(), passwd, getAuthenticationProvider());
     }
 
 
     protected HashedUser createUserFromFileData(String[] result)
     {
-        return new HashedUser(result);
+        return new HashedUser(result, getAuthenticationProvider());
     }
 
     protected Logger getLogger()

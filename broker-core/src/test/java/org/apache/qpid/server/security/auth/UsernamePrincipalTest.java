@@ -30,41 +30,41 @@ public class UsernamePrincipalTest extends QpidTestCase
 {
     public void testEqualitySameObject()
     {
-        final UsernamePrincipal principal = new UsernamePrincipal("string");
+        final UsernamePrincipal principal = new UsernamePrincipal("string", null);
         assertTrue(principal.equals(principal));
     }
 
     public void testEqualitySameName()
     {
         final String string = "string";
-        final UsernamePrincipal principal1 = new UsernamePrincipal(string);
-        final UsernamePrincipal principal2 = new UsernamePrincipal(string);
+        final UsernamePrincipal principal1 = new UsernamePrincipal(string, null);
+        final UsernamePrincipal principal2 = new UsernamePrincipal(string, null);
         assertTrue(principal1.equals(principal2));
     }
 
     public void testEqualityEqualName()
     {
-        final UsernamePrincipal principal1 = new UsernamePrincipal(new String("string"));
-        final UsernamePrincipal principal2 = new UsernamePrincipal(new String("string"));
+        final UsernamePrincipal principal1 = new UsernamePrincipal(new String("string"), null);
+        final UsernamePrincipal principal2 = new UsernamePrincipal(new String("string"), null);
         assertTrue(principal1.equals(principal2));
     }
 
     public void testInequalityDifferentUserPrincipals()
     {
-        UsernamePrincipal principal1 = new UsernamePrincipal("string1");
-        UsernamePrincipal principal2 = new UsernamePrincipal("string2");
+        UsernamePrincipal principal1 = new UsernamePrincipal("string1", null);
+        UsernamePrincipal principal2 = new UsernamePrincipal("string2", null);
         assertFalse(principal1.equals(principal2));
     }
 
     public void testInequalityNonUserPrincipal()
     {
-        UsernamePrincipal principal = new UsernamePrincipal("string");
+        UsernamePrincipal principal = new UsernamePrincipal("string", null);
         assertFalse(principal.equals(new String("string")));
     }
 
     public void testInequalityNull()
     {
-        UsernamePrincipal principal = new UsernamePrincipal("string");
+        UsernamePrincipal principal = new UsernamePrincipal("string", null);
         assertFalse(principal.equals(null));
     }
 }
