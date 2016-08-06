@@ -95,7 +95,6 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.ConnectionValidator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.SystemNodeCreator;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.protocol.LinkRegistryImpl;
 import org.apache.qpid.server.queue.QueueEntry;
@@ -1750,18 +1749,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 {
                     _logger.debug("Checking message status for queue: {}", q.getName());
                     q.checkMessageStatus();
-                }
-            }
-            for (AMQPConnection<?> connection : _connections)
-            {
-                _logger.debug("Checking for long running open transactions on connection {}", connection);
-                for (AMQSessionModel<?> session : connection.getSessionModels())
-                {
-                    _logger.debug("Checking for long running open transactions on session {}", session);
-                    session.checkTransactionStatus(getStoreTransactionOpenTimeoutWarn(),
-                                                   getStoreTransactionOpenTimeoutClose(),
-                                                   getStoreTransactionIdleTimeoutWarn(),
-                                                   getStoreTransactionIdleTimeoutClose());
                 }
             }
         }

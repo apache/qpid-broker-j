@@ -94,25 +94,37 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     @ManagedContextDefault( name = "virtualhost.storeTransactionIdleTimeoutClose")
     public static final long DEFAULT_STORE_TRANSACTION_IDLE_TIMEOUT_CLOSE = 0l;
 
-    @ManagedAttribute( defaultValue = "${virtualhost.storeTransactionIdleTimeoutClose}")
+    @ManagedAttribute( defaultValue = "${virtualhost.storeTransactionIdleTimeoutClose}",
+                       description = "The maximum length of time, in milliseconds, that an open store transaction may "
+                                     + "remain idle. If a transaction exceeds this threshold, the resource that "
+                                     + "created the transaction will be closed automatically.")
     long getStoreTransactionIdleTimeoutClose();
 
     @ManagedContextDefault( name = "virtualhost.storeTransactionIdleTimeoutWarn")
     public static final long DEFAULT_STORE_TRANSACTION_IDLE_TIMEOUT_WARN = 180000l;
 
-    @ManagedAttribute( defaultValue = "${virtualhost.storeTransactionIdleTimeoutWarn}")
+    @ManagedAttribute( defaultValue = "${virtualhost.storeTransactionIdleTimeoutWarn}",
+                       description = "The maximum length of time, in milliseconds, that an open store transaction may "
+                                     + "remain idle. If a transaction exceeds this threshold, warnings will be "
+                                     + "written to the logs.")
     long getStoreTransactionIdleTimeoutWarn();
 
     @ManagedContextDefault( name = "virtualhost.storeTransactionOpenTimeoutClose")
     public static final long DEFAULT_STORE_TRANSACTION_OPEN_TIMEOUT_CLOSE = 0l;
 
-    @ManagedAttribute( defaultValue = "${virtualhost.storeTransactionOpenTimeoutClose}")
+    @ManagedAttribute( defaultValue = "${virtualhost.storeTransactionOpenTimeoutClose}",
+                       description = "The maximum length of time, in milliseconds, that a store transaction may "
+                                   + "remain open. If a transaction exceeds this threshold, the resource that "
+                                   + "created the transaction will be closed automatically.")
     long getStoreTransactionOpenTimeoutClose();
 
     @ManagedContextDefault( name = "virtualhost.storeTransactionOpenTimeoutWarn")
     public static final long DEFAULT_STORE_TRANSACTION_OPEN_TIMEOUT_WARN = 300000l;
 
-    @ManagedAttribute( defaultValue = "${virtualhost.storeTransactionOpenTimeoutWarn}")
+    @ManagedAttribute( defaultValue = "${virtualhost.storeTransactionOpenTimeoutWarn}",
+                       description = "The maximum length of time, in milliseconds, that a store transaction may "
+                                   + "remain open. If a transaction exceeds this threshold, warnings will be "
+                                   + "written to the logs.")
     long getStoreTransactionOpenTimeoutWarn();
 
     @ManagedContextDefault( name = "virtualhost.housekeepingThreadCount")

@@ -50,7 +50,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class TransactionTimeoutTestCase extends QpidBrokerTestCase implements ExceptionListener
 {
     private static final int ALERT_MESSAGE_TOLERANCE = 6;
-    public static final String VIRTUALHOST = "test";
     public static final String TEXT = "0123456789abcdefghiforgettherest";
     public static final String CHN_OPEN_TXN = "CHN-1007";
     public static final String CHN_IDLE_TXN = "CHN-1008";

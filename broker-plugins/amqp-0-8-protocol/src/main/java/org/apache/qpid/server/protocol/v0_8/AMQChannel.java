@@ -56,8 +56,6 @@ import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.framing.*;
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.TransactionTimeoutHelper;
-import org.apache.qpid.server.TransactionTimeoutHelper.CloseAction;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
@@ -196,7 +194,6 @@ public class AMQChannel
 
     private final ClientDeliveryMethod _clientDeliveryMethod;
 
-    private final TransactionTimeoutHelper _transactionTimeoutHelper;
     private final UUID _id = UUID.randomUUID();
 
     private final List<Action<? super AMQChannel>> _taskList =
@@ -258,15 +255,6 @@ public class AMQChannel
 
         _clientDeliveryMethod = connection.createDeliveryMethod(_channelId);
 
-        _transactionTimeoutHelper = new TransactionTimeoutHelper(_logSubject, new CloseAction()
-        {
-            @Override
-            public void doTimeoutAction(String reason)
-            {
-                _connection.sendConnectionCloseAsync(AMQConstant.RESOURCE_ERROR, reason);
-            }
-        }, getConnection());
-
         AccessController.doPrivileged((new PrivilegedAction<Object>()
         {
             @Override
@@ -278,6 +266,12 @@ public class AMQChannel
             }
         }),_accessControllerContext);
 
+    }
+
+    @Override
+    public void doTimeoutAction(String reason)
+    {
+        _connection.sendConnectionCloseAsync(AMQConstant.RESOURCE_ERROR, reason);
     }
 
     private void message(final LogMessage message)
@@ -1762,11 +1756,6 @@ public class AMQChannel
     public NamedAddressSpace getAddressSpace()
     {
         return getConnection().getAddressSpace();
-    }
-
-    public void checkTransactionStatus(long openWarn, long openClose, long idleWarn, long idleClose)
-    {
-        _transactionTimeoutHelper.checkIdleOrOpenTimes(_transaction, openWarn, openClose, idleWarn, idleClose);
     }
 
     private void deadLetter(long deliveryTag)

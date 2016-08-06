@@ -31,6 +31,12 @@ public interface Session<X extends Session<X>> extends ConfiguredObject<X>
     // available credit of both producer and consumer sides.
     String PRODUCER_FLOW_BLOCKED = "producerFlowBlocked";
 
+    String TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD = "qpid.session.transactionTimeoutNotificationRepeatPeriod";
+
+    @ManagedContextDefault(name = TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD,
+                           description = "Frequency, in milliseconds, with which transaction timeout warnings will be repeated.")
+    long TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD_DEFAULT = 10000;
+
     @DerivedAttribute
     int getChannelId();
 

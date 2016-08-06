@@ -55,8 +55,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.TransactionTimeoutHelper;
-import org.apache.qpid.server.TransactionTimeoutHelper.CloseAction;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
@@ -178,8 +176,6 @@ public class ServerSession extends Session
 
     private final List<Action<? super ServerSession>> _taskList = new CopyOnWriteArrayList<Action<? super ServerSession>>();
 
-    private final TransactionTimeoutHelper _transactionTimeoutHelper;
-
     private AtomicReference<LogMessage> _forcedCloseLogMessage = new AtomicReference<LogMessage>();
 
     private volatile long _uncommittedMessageSize;
@@ -209,14 +205,6 @@ public class ServerSession extends Session
         {
             _token = amqpConnection.getBroker().newToken(_subject);
         }
-        _transactionTimeoutHelper = new TransactionTimeoutHelper(_logSubject, new CloseAction()
-        {
-            @Override
-            public void doTimeoutAction(String reason)
-            {
-                getAMQPConnection().closeSessionAsync(ServerSession.this, AMQConstant.RESOURCE_ERROR, reason);
-            }
-        }, getConnection().getAmqpConnection());
 
         _blockingTimeout = serverConnection.getBroker().getContextValue(Long.class,
                                                                                        Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
@@ -837,11 +825,6 @@ public class ServerSession extends Session
         return this;
     }
 
-    public void checkTransactionStatus(long openWarn, long openClose, long idleWarn, long idleClose)
-    {
-        _transactionTimeoutHelper.checkIdleOrOpenTimes(_transaction, openWarn, openClose, idleWarn, idleClose);
-    }
-
     public void block(Queue<?> queue)
     {
         block(queue, queue.getName());
@@ -1285,6 +1268,11 @@ public class ServerSession extends Session
         }
     }
 
+    @Override
+    public void doTimeoutAction(final String reason)
+    {
+        getAMQPConnection().closeSessionAsync(ServerSession.this, AMQConstant.RESOURCE_ERROR, reason);
+    }
 
     public final long getMaxUncommittedInMemorySize()
     {

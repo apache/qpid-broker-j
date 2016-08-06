@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.test.unit.transacted;
 
+import org.apache.qpid.server.model.Session;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 /**
@@ -32,7 +33,7 @@ public class TransactionTimeoutDisabledTest extends TransactionTimeoutTestCase
     {
         // Setup housekeeping every second
         TestBrokerConfiguration brokerConfiguration = getDefaultBrokerConfiguration();
-        setTestSystemProperty("virtualhost.housekeepingCheckPeriod", "100");
+        setTestSystemProperty(Session.TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD, "100");
 
         // No transaction timeout configuration.
     }

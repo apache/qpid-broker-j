@@ -1261,12 +1261,6 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     }
 
     @Override
-    public void checkTransactionStatus(long openWarn, long openClose, long idleWarn, long idleClose)
-    {
-        // TODO - required for AMQSessionModel / long running transaction detection
-    }
-
-    @Override
     public void block(Queue<?> queue)
     {
         // TODO - required for AMQSessionModel / producer side flow control
@@ -1605,6 +1599,12 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                 consumerTarget.releaseSendLock();
             }
         }
+    }
+
+    @Override
+    public void doTimeoutAction(final String reason)
+    {
+        getAMQPConnection().closeSessionAsync(this, AMQConstant.RESOURCE_ERROR, reason);
     }
 
     private void consumerAdded(Consumer<?> consumer)

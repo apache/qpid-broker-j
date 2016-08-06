@@ -27,7 +27,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.test.utils.TestBrokerConfiguration;
+import org.apache.qpid.server.model.Session;
 
 /**
  * This tests the behaviour of transactional sessions when the {@code transactionTimeout} configuration
@@ -44,10 +44,7 @@ public class TransactionTimeoutTest extends TransactionTimeoutTestCase
     {
         // switch off connection close in order to test timeout on publishing of unroutable messages
         getDefaultBrokerConfiguration().setBrokerAttribute(Broker.CONNECTION_CLOSE_WHEN_NO_ROUTE, false);
-
-        // Setup housekeeping every 100ms
-        TestBrokerConfiguration brokerConfiguration = getDefaultBrokerConfiguration();
-        setTestSystemProperty("virtualhost.housekeepingCheckPeriod","100");
+        setTestSystemProperty(Session.TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD, "100");
 
         if (getName().contains("ProducerIdle"))
         {

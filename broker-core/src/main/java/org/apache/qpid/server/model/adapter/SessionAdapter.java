@@ -20,39 +20,51 @@
  */
 package org.apache.qpid.server.model.adapter;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.google.common.base.Supplier;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Publisher;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.transport.TransactionTimeoutTicker;
+import org.apache.qpid.transport.network.Ticker;
 
 public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapter> implements Session<SessionAdapter>
 {
+    private static final String OPEN_TRANSACTION_TIMEOUT_ERROR = "Open transaction timed out";
+    private static final String IDLE_TRANSACTION_TIMEOUT_ERROR = "Idle transaction timed out";
+
     // Attributes
     private final AMQSessionModel _session;
     private final Action _deleteModelTask;
 
-    public SessionAdapter(final AbstractAMQPConnection<?> connectionAdapter,
+    public SessionAdapter(final AbstractAMQPConnection<?> amqpConnection,
                           final AMQSessionModel session)
     {
-        super(parentsMap(connectionAdapter), createAttributes(session));
+        super(parentsMap(amqpConnection), createAttributes(session));
         _session = session;
         _session.addConsumerListener(new ConsumerListener()
         {
@@ -70,6 +82,9 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
             }
         });
         session.setModelObject(this);
+
+        registerTransactionTimeoutTickers(amqpConnection, session);
+
         _deleteModelTask = new Action()
         {
             @Override
@@ -85,7 +100,7 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
 
     private static Map<String, Object> createAttributes(final AMQSessionModel session)
     {
-        Map<String,Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<>();
         attributes.put(ID, UUID.randomUUID());
         attributes.put(NAME, String.valueOf(session.getChannelId()));
         attributes.put(DURABLE, false);
@@ -118,11 +133,11 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
     @Override
     public <C extends ConfiguredObject> Collection<C> getChildren(Class<C> clazz)
     {
-        if(clazz == org.apache.qpid.server.model.Consumer.class)
+        if (clazz == org.apache.qpid.server.model.Consumer.class)
         {
             return (Collection<C>) getConsumers();
         }
-        else if(clazz == Publisher.class)
+        else if (clazz == Publisher.class)
         {
             return (Collection<C>) getPublishers();
         }
@@ -184,4 +199,115 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
         return Futures.immediateFuture(null);
     }
 
+    private void registerTransactionTimeoutTickers(AbstractAMQPConnection<?> amqpConnection,
+                                                   final AMQSessionModel session)
+    {
+        NamedAddressSpace addressSpace = amqpConnection.getAddressSpace();
+        if (addressSpace instanceof VirtualHost)
+        {
+            final EventLogger eventLogger = amqpConnection.getEventLogger();
+            final VirtualHost virtualhost = (VirtualHost) addressSpace;
+            final List<Ticker> tickers = new ArrayList<>(4);
+
+            final Supplier<Date> transactionStartTimeSupplier = new Supplier<Date>()
+            {
+                @Override
+                public Date get()
+                {
+                    return SessionAdapter.this.getTransactionStartTime();
+                }
+            };
+            final Supplier<Date> transactionUpdateTimeSupplier = new Supplier<Date>()
+            {
+                @Override
+                public Date get()
+                {
+                    return SessionAdapter.this.getTransactionUpdateTime();
+                }
+            };
+
+            long notificationRepeatPeriod =
+                    getContextValue(Long.class, Session.TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD);
+
+            if (virtualhost.getStoreTransactionOpenTimeoutWarn() > 0)
+            {
+                tickers.add(new TransactionTimeoutTicker(
+                        virtualhost.getStoreTransactionOpenTimeoutWarn(),
+                        notificationRepeatPeriod, transactionStartTimeSupplier,
+                        new Action<Long>()
+                        {
+                            @Override
+                            public void performAction(Long age)
+                            {
+                                eventLogger.message(_session.getLogSubject(), ChannelMessages.OPEN_TXN(age));
+                            }
+                        }
+                ));
+            }
+            if (virtualhost.getStoreTransactionOpenTimeoutClose() > 0)
+            {
+                tickers.add(new TransactionTimeoutTicker(
+                        virtualhost.getStoreTransactionOpenTimeoutClose(),
+                        notificationRepeatPeriod, transactionStartTimeSupplier,
+                        new Action<Long>()
+                        {
+                            @Override
+                            public void performAction(Long age)
+                            {
+                                _session.doTimeoutAction(OPEN_TRANSACTION_TIMEOUT_ERROR);
+                            }
+                        }
+                ));
+            }
+            if (virtualhost.getStoreTransactionIdleTimeoutWarn() > 0)
+            {
+                tickers.add(new TransactionTimeoutTicker(
+                        virtualhost.getStoreTransactionIdleTimeoutWarn(),
+                        notificationRepeatPeriod, transactionUpdateTimeSupplier,
+                        new Action<Long>()
+                        {
+                            @Override
+                            public void performAction(Long age)
+                            {
+                                eventLogger.message(_session.getLogSubject(), ChannelMessages.IDLE_TXN(age));
+                            }
+                        }
+                ));
+            }
+            if (virtualhost.getStoreTransactionIdleTimeoutClose() > 0)
+            {
+                tickers.add(new TransactionTimeoutTicker(
+                        virtualhost.getStoreTransactionIdleTimeoutClose(),
+                        notificationRepeatPeriod, transactionUpdateTimeSupplier,
+                        new Action<Long>()
+                        {
+                            @Override
+                            public void performAction(Long age)
+                            {
+                                _session.doTimeoutAction(IDLE_TRANSACTION_TIMEOUT_ERROR);
+                            }
+                        }
+                ));
+            }
+
+            for (Ticker ticker : tickers)
+            {
+                session.addTicker(ticker);
+            }
+
+            Action deleteTickerTask = new Action()
+            {
+                @Override
+                public void performAction(Object o)
+                {
+                    session.removeDeleteTask(this);
+                    for (Ticker ticker : tickers)
+                    {
+                        session.removeTicker(ticker);
+                    }
+                }
+            };
+            session.addDeleteTask(deleteTickerTask);
+        }
+    }
 }

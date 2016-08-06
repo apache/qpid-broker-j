@@ -314,8 +314,7 @@ public class MockConsumer implements ConsumerTarget
         }
 
         @Override
-        public void checkTransactionStatus(long openWarn, long openClose,
-                long idleWarn, long idleClose)
+        public void doTimeoutAction(final String reason)
         {
         }
 
