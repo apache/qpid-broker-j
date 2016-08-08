@@ -327,7 +327,7 @@ define(["dojo/_base/declare",
                 {
                     if (this.filter != "all")
                     {
-                        var authenticatedUser = this.management.getAuthenticatedUser().name;
+                        var authenticatedUser = this.management.getAuthenticatedUser();
                         for (var i = preferenceList.length - 1; i >= 0; i--)
                         {
                             var item = preferenceList[i];

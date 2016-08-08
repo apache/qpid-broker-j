@@ -20,10 +20,19 @@
 package org.apache.qpid.server.model.preferences;
 
 import java.security.Principal;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public class GenericPrincipal implements Principal, Comparable<Principal>
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.security.QpidPrincipal;
+
+public class GenericPrincipal implements Principal
 {
+    private static final Pattern PATTERN = Pattern.compile("(\\w+)@(\\w+)\\('(\\w+)'\\)");
+
     private final String _name;
+    private final String _originType;
+    private final String _originName;
 
     public GenericPrincipal(final String name)
     {
@@ -31,7 +40,14 @@ public class GenericPrincipal implements Principal, Comparable<Principal>
         {
             throw new IllegalArgumentException("Principal name cannot be null");
         }
-        _name = name;
+        Matcher m = PATTERN.matcher(name);
+        if (!m.matches())
+        {
+            throw new IllegalArgumentException("Principal has unexpected format");
+        }
+        _name = m.group(1);
+        _originType = m.group(2);
+        _originName = m.group(3);
     }
 
     @Override
@@ -41,8 +57,80 @@ public class GenericPrincipal implements Principal, Comparable<Principal>
     }
 
     @Override
-    public int compareTo(final Principal other)
+    public boolean equals(final Object o)
     {
-        return _name.compareTo(other.getName());
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+
+        final GenericPrincipal that = (GenericPrincipal) o;
+
+        return _name.equals(that._name) && _originType.equals(that._originType) && _originName.equals(that._originName);
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return _name.hashCode();
+    }
+
+    public String getOriginType()
+    {
+        return _originType;
+    }
+
+    public String getOriginName()
+    {
+        return _originName;
+    }
+
+    public static boolean principalsEqual(final Principal p1, final Principal p2)
+    {
+        if (p1 == null)
+        {
+            return p2 == null;
+        }
+        else if (p2 == null)
+        {
+            return false;
+        }
+
+        if (p1 instanceof GenericPrincipal)
+        {
+            return genericPrincipalEquals((GenericPrincipal) p1, p2);
+        }
+        if (p2 instanceof GenericPrincipal)
+        {
+            return genericPrincipalEquals((GenericPrincipal) p2, p1);
+        }
+
+        return p1.equals(p2);
+    }
+
+    private static boolean genericPrincipalEquals(GenericPrincipal genericPrincipal, Principal otherPrincipal)
+    {
+        if (otherPrincipal instanceof GenericPrincipal)
+        {
+            GenericPrincipal otherGenericPrincipal = (GenericPrincipal) otherPrincipal;
+            return genericPrincipalEqualsByStrings(genericPrincipal, otherGenericPrincipal.getName(), otherGenericPrincipal.getOriginType(), otherGenericPrincipal.getOriginName());
+        }
+        else if (otherPrincipal instanceof QpidPrincipal)
+        {
+            ConfiguredObject<?> origin = ((QpidPrincipal) otherPrincipal).getOrigin();
+            return genericPrincipalEqualsByStrings(genericPrincipal, otherPrincipal.getName(), origin.getType(), origin.getName());
+        }
+        return genericPrincipal.equals(otherPrincipal);
+    }
+
+    private static boolean genericPrincipalEqualsByStrings(GenericPrincipal genericPrincipal, String name, String originType, String originName)
+    {
+        return (genericPrincipal.getName().equals(name)
+                && genericPrincipal.getOriginType().equals(originType)
+                && genericPrincipal.getOriginName().equals(originName));
     }
 }

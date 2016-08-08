@@ -30,6 +30,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -52,6 +53,7 @@ import javax.xml.bind.DatatypeConverter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Defaults;
 
+import org.apache.qpid.server.model.preferences.GenericPrincipal;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 abstract class AttributeValueConverter<T>
@@ -566,6 +568,31 @@ abstract class AttributeValueConverter<T>
         }
     };
 
+    public static final AttributeValueConverter<Principal> PRINCIPAL_CONVERTER = new AttributeValueConverter<Principal>()
+    {
+        @Override
+        public Principal convert(final Object value, final ConfiguredObject object)
+        {
+            if (value instanceof Principal)
+            {
+                return (Principal) value;
+            }
+            else if (value instanceof String)
+            {
+                String interpolated = AbstractConfiguredObject.interpolate(object, (String) value);
+                return new GenericPrincipal(interpolated);
+            }
+            else if (value == null)
+            {
+                return null;
+            }
+            else
+            {
+                throw new IllegalArgumentException("Cannot convert type " + value.getClass() + " to a Principal");
+            }
+        }
+    };
+
     private static <T> T convertFromJson(final String value, final ConfiguredObject object, final Class<T> valueType)
     {
         String interpolated = AbstractConfiguredObject.interpolate(object, value);
@@ -683,6 +710,10 @@ abstract class AttributeValueConverter<T>
             {
                 return (AttributeValueConverter<X>) COLLECTION_CONVERTER;
             }
+        }
+        else if(Principal.class.isAssignableFrom(type))
+        {
+            return (AttributeValueConverter<X>) PRINCIPAL_CONVERTER;
         }
         else if(ConfiguredObject.class.isAssignableFrom(type))
         {

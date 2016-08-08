@@ -960,13 +960,13 @@ public class ConfiguredObjectTypeRegistry
                         {
                             try
                             {
-                                stringValue = new ObjectMapper().writeValueAsString(value);
+                                stringValue = ConfiguredObjectJacksonModule.newObjectMapper().writeValueAsString(value);
                             }
                             catch (JsonProcessingException e)
                             {
                                 throw new ServerScopedRuntimeException("Unable to convert value of type '"
                                                                        + value.getClass()
-                                                                       + "' to a JSON string for conext variable ${"
+                                                                       + "' to a JSON string for context variable ${"
                                                                        + name
                                                                        + "}");
                             }

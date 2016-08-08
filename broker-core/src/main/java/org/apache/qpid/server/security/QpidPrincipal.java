@@ -15,34 +15,16 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
-package org.apache.qpid.server.security.group;
+
+package org.apache.qpid.server.security;
 
 import java.security.Principal;
-import java.util.Set;
 
-public interface GroupManager
+import org.apache.qpid.server.model.ConfiguredObject;
+
+
+public interface QpidPrincipal extends Principal
 {
-    Set<Principal> getGroupPrincipalsForUser(String user);
-
-    Set<Principal> getGroupPrincipals();
-
-    Set<Principal> getUserPrincipalsForGroup(String group);
-
-    void createGroup(String group);
-
-    void removeGroup(String group);
-
-    void addUserToGroup(String user, String group);
-
-    void removeUserFromGroup(String user, String group);
-
-    void open();
-
-    void close();
-
-    void onDelete();
-
-    void onCreate();
+    ConfiguredObject<?> getOrigin();
 }

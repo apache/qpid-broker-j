@@ -93,7 +93,7 @@ public class PreferencesRecovererTest extends QpidTestCase
                 "X-testType",
                 "testPref1",
                 null,
-                TEST_USERNAME,
+                TestPrincipalUtils.getTestPrincipalSerialization(TEST_USERNAME),
                 null,
                 Collections.<String, Object>emptyMap());
         PreferenceRecord record1 = new PreferenceRecordImpl(p1Id, pref1Attributes);
@@ -104,7 +104,7 @@ public class PreferencesRecovererTest extends QpidTestCase
                 "X-testType",
                 "testPref2",
                 null,
-                TEST_USERNAME,
+                TestPrincipalUtils.getTestPrincipalSerialization(TEST_USERNAME),
                 null,
                 Collections.<String, Object>emptyMap());
         PreferenceRecord record2 = new PreferenceRecordImpl(p2Id, pref2Attributes);

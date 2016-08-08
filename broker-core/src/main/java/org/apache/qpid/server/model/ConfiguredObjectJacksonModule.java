@@ -23,6 +23,7 @@ package org.apache.qpid.server.model;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.security.Principal;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.util.Collections;
@@ -31,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.JsonSerializer;
@@ -38,6 +40,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
+import org.apache.qpid.server.model.preferences.GenericPrincipal;
+import org.apache.qpid.server.security.QpidPrincipal;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class ConfiguredObjectJacksonModule extends SimpleModule
@@ -59,6 +63,44 @@ public class ConfiguredObjectJacksonModule extends SimpleModule
         addConfiguredObjectSerializer();
         addManageableAttributeTypeSerializer();
         addCertificateSerializer();
+        addPrincipalSerializer();
+    }
+
+    private void addPrincipalSerializer()
+    {
+        final JsonSerializer<Principal> serializer = new JsonSerializer<Principal>()
+        {
+            @Override
+            public void serialize(final Principal value, final JsonGenerator jgen, final SerializerProvider provider)
+                    throws IOException, JsonGenerationException
+            {
+                if (value == null)
+                {
+                    jgen.writeNull();
+                }
+                else if (value instanceof QpidPrincipal)
+                {
+                    QpidPrincipal principal = (QpidPrincipal) value;
+                    jgen.writeString(String.format("%s@%s('%s')",
+                                                   principal.getName(),
+                                                   principal.getOrigin().getType(),
+                                                   principal.getOrigin().getName()));
+                }
+                else if (value instanceof GenericPrincipal)
+                {
+                    GenericPrincipal principal = (GenericPrincipal) value;
+                    jgen.writeString(String.format("%s@%s('%s')",
+                                                   principal.getName(),
+                                                   principal.getOriginType(),
+                                                   principal.getOriginName()));
+                }
+                else
+                {
+                    jgen.writeString(value.getName());
+                }
+            }
+        };
+        addSerializer(Principal.class, serializer);
     }
 
     private void addCertificateSerializer()

@@ -582,9 +582,7 @@ public class UserPreferencesImpl implements UserPreferences
 
     private boolean principalsEqual(final Principal p1, final Principal p2)
     {
-        return (p1.equals(p2)
-                || ((p1 instanceof GenericPrincipal) && (((GenericPrincipal) p1).compareTo(p2) == 0))
-                || ((p2 instanceof GenericPrincipal) && (((GenericPrincipal) p2).compareTo(p1) == 0)));
+        return GenericPrincipal.principalsEqual(p1, p2);
     }
 
     private boolean principalsContain(Collection<Principal> principals, Principal principal)

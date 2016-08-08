@@ -20,13 +20,11 @@
  */
 package org.apache.qpid.server.security.auth;
 
-import java.io.Serializable;
-import java.security.Principal;
-
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.security.QpidPrincipal;
 
 /** A principal that is just a wrapper for a simple username. */
-public class UsernamePrincipal implements Principal, Serializable
+public class UsernamePrincipal implements QpidPrincipal
 {
     private final String _name;
     private final AuthenticationProvider<?> _authenticationProvider;
@@ -49,6 +47,12 @@ public class UsernamePrincipal implements Principal, Serializable
     public String toString()
     {
         return _name;
+    }
+
+    @Override
+    public AuthenticationProvider<?> getOrigin()
+    {
+        return _authenticationProvider;
     }
 
     @Override

@@ -104,7 +104,7 @@ define(["dojo/_base/declare",
                         var present = false;
                         for (var j = 0; j < userGroups.length; j++)
                         {
-                            if (selected[i] === userGroups[j].name)
+                            if (selected[i] === userGroups[j])
                             {
                                 present = true;
                                 break;
@@ -118,7 +118,7 @@ define(["dojo/_base/declare",
                     var items = [];
                     for (var j = 0; j < userGroups.length; j++)
                     {
-                        items[j] = {id: userGroups[j].name, name: userGroups[j].name};
+                        items[j] = {id: userGroups[j], name: userGroups[j]};
                     }
                     this.groupChooser.set("data", {items: items, selected: selected});
                     this._onChange();
@@ -348,7 +348,7 @@ define(["dojo/_base/declare",
 
                     this._ownQuery = !this.preference
                                      || !this.preference.owner
-                                     || this.preference.owner === this.management.getAuthenticatedUser().name;
+                                     || this.preference.owner === this.management.getAuthenticatedUser();
                     this.saveButton.set("disabled", !this._ownQuery);
                     this.deleteButton.set("disabled", !this._ownQuery || !(this.preference  && this.preference.id));
 

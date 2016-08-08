@@ -44,11 +44,13 @@ import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.GroupProvider;
+import org.apache.qpid.server.model.preferences.GenericPrincipal;
 import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.PreferenceFactory;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.group.GroupPrincipal;
@@ -59,12 +61,15 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
 {
 
     private static final String MYGROUP = "mygroup";
+    private static final String MYGROUP_SERIALIZATION = TestPrincipalUtils.getTestPrincipalSerialization(MYGROUP);
     private static final String MYUSER = "myuser";
+    private static final String MYUSER_SERIALIZATION = TestPrincipalUtils.getTestPrincipalSerialization(MYUSER);
 
     private RestUserPreferenceHandler _handler = new RestUserPreferenceHandler(DEFAULT_PREFERENCE_OPERTAION_TIMEOUT);
     private ConfiguredObject<?> _configuredObject;
     private UserPreferences _userPreferences;
     private Subject _subject;
+    private Principal _userPrincipal;
     private GroupPrincipal _groupPrincipal;
     private PreferenceStore _preferenceStore;
     private TaskExecutor _preferenceTaskExecutor;
@@ -81,12 +86,9 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                                    _configuredObject,
                                                    _preferenceStore,
                                                    Collections.<Preference>emptyList());
-        _groupPrincipal = new GroupPrincipal(MYGROUP, (GroupProvider) null);
-        _subject = new Subject(true,
-                               Sets.newHashSet(new AuthenticatedPrincipal(new UsernamePrincipal(MYUSER, null)),
-                                               _groupPrincipal),
-                               Collections.emptySet(),
-                               Collections.emptySet());
+        _subject = TestPrincipalUtils.createTestSubject(MYUSER, MYGROUP);
+        _groupPrincipal = _subject.getPrincipals(GroupPrincipal.class).iterator().next();
+        _userPrincipal = _subject.getPrincipals(AuthenticatedPrincipal.class).iterator().next();
         when(_configuredObject.getUserPreferences()).thenReturn(_userPreferences);
     }
 
@@ -106,7 +108,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
-        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList(MYGROUP));
+        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList(MYGROUP_SERIALIZATION));
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
                      {
@@ -393,7 +395,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.NAME_ATTRIBUTE, "testPref");
         pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
-        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList(MYGROUP));
+        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList(MYGROUP_SERIALIZATION));
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
                      {
@@ -422,7 +424,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.NAME_ATTRIBUTE, "testPref");
         pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
-        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList(MYGROUP));
+        pref.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList(MYGROUP_SERIALIZATION));
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
                      {
@@ -527,8 +529,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      type,
                                      "testpref",
                                      null,
-                                     MYUSER,
-                                     Collections.singleton(_groupPrincipal.getName()),
+                                     MYUSER_SERIALIZATION,
+                                     Collections.singleton(MYGROUP_SERIALIZATION),
                                      Collections.<String, Object>emptyMap());
                              Preference preference = PreferenceFactory.create(_configuredObject, prefAttributes);
                              awaitPreferenceFuture(_userPreferences.updateOrAppend(Collections.singleton(preference)));
@@ -541,9 +543,9 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                           typeToPreferenceListMap.keySet().iterator().next());
                              List<Map<String, Object>> preferences = typeToPreferenceListMap.get(type);
                              assertEquals("Unexpected number of preferences", 1, preferences.size());
-                             Set<String> visibilityList = (Set<String>) preferences.get(0).get("visibilityList");
+                             Set<Principal> visibilityList = (Set<Principal>) preferences.get(0).get("visibilityList");
                              assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
-                             assertEquals("Unexpected principal in visibility list", MYGROUP, visibilityList.iterator().next());
+                             assertTrue("Unexpected principal in visibility list", GenericPrincipal.principalsEqual(_groupPrincipal, visibilityList.iterator().next()));
                              return null;
                          }
                      }
@@ -711,8 +713,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      prefType,
                                      prefName,
                                      null,
-                                     MYUSER,
-                                     Collections.singleton(_groupPrincipal.getName()),
+                                     MYUSER_SERIALIZATION,
+                                     Collections.singleton(MYGROUP_SERIALIZATION),
                                      Collections.<String, Object>emptyMap());
                              Preference p1 = PreferenceFactory.create(_configuredObject, pref1Attributes);
                              preferences.add(p1);
@@ -722,7 +724,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      prefType,
                                      "testPref2",
                                      null,
-                                     MYUSER,
+                                     MYUSER_SERIALIZATION,
                                      Collections.<String>emptySet(),
                                      Collections.<String, Object>emptyMap());
                              Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
@@ -750,10 +752,13 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              assertEquals("Unexpected name of preferences",
                                           prefName,
                                           preferences.get(0).get(Preference.NAME_ATTRIBUTE));
-                             Set<String> visibilityList = (Set<String>) preferences.get(0).get(Preference.VISIBILITY_LIST_ATTRIBUTE);
+                             Set<Principal> visibilityList = (Set<Principal>) preferences.get(0).get(Preference.VISIBILITY_LIST_ATTRIBUTE);
                              assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
-                             assertEquals("Unexpected principal in visibility list", MYGROUP, visibilityList.iterator().next());
-                             assertEquals("Unexpected owner", MYUSER, preferences.get(0).get(Preference.OWNER_ATTRIBUTE));
+                             assertTrue("Unexpected principal in visibility list",
+                                        GenericPrincipal.principalsEqual(_groupPrincipal,
+                                                                         visibilityList.iterator().next()));
+                             assertTrue("Unexpected owner", GenericPrincipal.principalsEqual(_userPrincipal,
+                                                                                               (Principal) preferences.get(0).get(Preference.OWNER_ATTRIBUTE)));
                              return null;
                          }
                      }
@@ -781,8 +786,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      prefType,
                                      prefName,
                                      null,
-                                     MYUSER,
-                                     Collections.singleton(_groupPrincipal.getName()),
+                                     MYUSER_SERIALIZATION,
+                                     Collections.singleton(MYGROUP_SERIALIZATION),
                                      Collections.<String, Object>emptyMap());
                              Preference p1 = PreferenceFactory.create(_configuredObject, pref1Attributes);
                              preferences.add(p1);
@@ -792,7 +797,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      prefType,
                                      "testPref2",
                                      null,
-                                     MYUSER,
+                                     MYUSER_SERIALIZATION,
                                      Collections.<String>emptySet(),
                                      Collections.<String, Object>emptyMap());
                              Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
@@ -815,10 +820,15 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              assertEquals("Unexpected name of preferences",
                                           prefName,
                                           preferences.get(0).get(Preference.NAME_ATTRIBUTE));
-                             Set<String> visibilityList = (Set<String>) preferences.get(0).get(Preference.VISIBILITY_LIST_ATTRIBUTE);
+                             Set<Principal> visibilityList = (Set<Principal>) preferences.get(0).get(Preference.VISIBILITY_LIST_ATTRIBUTE);
                              assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
-                             assertEquals("Unexpected principal in visibility list", MYGROUP, visibilityList.iterator().next());
-                             assertEquals("Unexpected owner", MYUSER, preferences.get(0).get(Preference.OWNER_ATTRIBUTE));
+                             assertTrue("Unexpected principal in visibility list",
+                                        GenericPrincipal.principalsEqual(_groupPrincipal,
+                                                                         visibilityList.iterator().next()));
+                             assertTrue("Unexpected owner",
+                                        GenericPrincipal.principalsEqual(_userPrincipal,
+                                                                         (Principal) preferences.get(0)
+                                                                                                .get(Preference.OWNER_ATTRIBUTE)));
                              return null;
                          }
                      }
@@ -846,8 +856,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      prefType,
                                      prefName,
                                      null,
-                                     MYUSER,
-                                     Collections.singleton(_groupPrincipal.getName()),
+                                     MYUSER_SERIALIZATION,
+                                     Collections.singleton(MYGROUP_SERIALIZATION),
                                      Collections.<String, Object>emptyMap());
                              Preference p1 = PreferenceFactory.create(_configuredObject, pref1Attributes);
                              preferences.add(p1);
@@ -857,7 +867,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      prefType,
                                      "testPref2",
                                      null,
-                                     MYUSER,
+                                     MYUSER_SERIALIZATION,
                                      Collections.<String>emptySet(),
                                      Collections.<String, Object>emptyMap());
                              Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
@@ -877,10 +887,14 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                              Map<String, Object> preference =
                                      (Map<String, Object>) _handler.handleGET(_userPreferences, rootRequestInfo);
                              assertEquals("Unexpected name of preferences", prefName, preference.get(Preference.NAME_ATTRIBUTE));
-                             Set<String> visibilityList = (Set<String>) preference.get(Preference.VISIBILITY_LIST_ATTRIBUTE);
+                             Set<Principal> visibilityList = (Set<Principal>) preference.get(Preference.VISIBILITY_LIST_ATTRIBUTE);
                              assertEquals("Unexpected number of principals in visibility list", 1, visibilityList.size());
-                             assertEquals("Unexpected principal in visibility list", MYGROUP, visibilityList.iterator().next());
-                             assertEquals("Unexpected owner", MYUSER, preference.get(Preference.OWNER_ATTRIBUTE));
+                             assertTrue("Unexpected principal in visibility list",
+                                        GenericPrincipal.principalsEqual(_groupPrincipal,
+                                                                         visibilityList.iterator().next()));
+                             assertTrue("Unexpected owner",
+                                        GenericPrincipal.principalsEqual(_userPrincipal,
+                                                                         (Principal) preference.get(Preference.OWNER_ATTRIBUTE)));
                              return null;
                          }
                      }

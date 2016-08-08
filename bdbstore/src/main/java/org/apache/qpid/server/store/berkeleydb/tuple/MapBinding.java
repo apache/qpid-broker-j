@@ -28,6 +28,7 @@ import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
 
+import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.store.StoreException;
 
 public class MapBinding extends TupleBinding<Map<String, Object>>
@@ -43,7 +44,7 @@ public class MapBinding extends TupleBinding<Map<String, Object>>
     public Map<String, Object> entryToObject(final TupleInput input)
     {
         String json = input.readString();
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
         try
         {
             Map<String, Object> value = mapper.readValue(json, Map.class);
@@ -62,7 +63,7 @@ public class MapBinding extends TupleBinding<Map<String, Object>>
         try
         {
             StringWriter writer = new StringWriter();
-            final ObjectMapper objectMapper = new ObjectMapper();
+            final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
             objectMapper.writeValue(writer, map);
             output.writeString(writer.toString());
         }

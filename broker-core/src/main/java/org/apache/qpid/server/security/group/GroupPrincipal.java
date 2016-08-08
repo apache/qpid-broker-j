@@ -20,13 +20,13 @@
  */
 package org.apache.qpid.server.security.group;
 
-import java.io.Serializable;
 import java.security.Principal;
-import java.security.acl.Group;
 import java.util.Enumeration;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.GroupProvider;
+import org.apache.qpid.server.security.QpidPrincipal;
 
 /**
  * Immutable representation of a user group.  In Qpid, groups do <b>not</b> know
@@ -34,7 +34,7 @@ import org.apache.qpid.server.model.GroupProvider;
  * methods etc throw {@link UnsupportedOperationException}.
  *
  */
-public class GroupPrincipal implements Group, Serializable
+public class GroupPrincipal implements QpidPrincipal
 {
     /** Name of the group */
     private final String _groupName;
@@ -78,6 +78,12 @@ public class GroupPrincipal implements Group, Serializable
     public Enumeration<? extends Principal> members()
     {
         throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public ConfiguredObject<?> getOrigin()
+    {
+        return (_groupAuthProvider != null ? _groupAuthProvider : _groupProvider);
     }
 
     /**

@@ -81,7 +81,7 @@ define(["dojo/_base/declare",
                         var present = false;
                         for (var j = 0; j < userGroups.length; j++)
                         {
-                            if (selected[i] === userGroups[j].name)
+                            if (selected[i] === userGroups[j])
                             {
                                 present = true;
                                 break;
@@ -96,8 +96,8 @@ define(["dojo/_base/declare",
                     for (var j = 0; j < userGroups.length; j++)
                     {
                         items[j] = {
-                            id: userGroups[j].name,
-                            name: userGroups[j].name
+                            id: userGroups[j],
+                            name: userGroups[j]
                         };
                     }
                     this.groupChooser.set("data",

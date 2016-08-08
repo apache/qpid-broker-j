@@ -37,7 +37,8 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class PreferenceFactoryTest extends QpidTestCase
 {
-    public static final String TEST_USERNAME = "testUser";
+    private static final String TEST_USERNAME = "testUser";
+    private static final String TEST_PRINCIPAL_SERIALIZATION = TestPrincipalUtils.getTestPrincipalSerialization(TEST_USERNAME);
     private ConfiguredObject<?> _testObject;
     private Subject _testSubject;
 
@@ -86,7 +87,7 @@ public class PreferenceFactoryTest extends QpidTestCase
                                                                                          "X-PREF1",
                                                                                          "myprefname",
                                                                                          "myprefdescription",
-                                                                                         TEST_USERNAME,
+                                                                                         TEST_PRINCIPAL_SERIALIZATION,
                                                                                          Collections.<String>emptySet(),
                                                                                          prefValueMap));
         assertNotNull("Creation failed", p);
@@ -109,7 +110,7 @@ public class PreferenceFactoryTest extends QpidTestCase
                                                                               "X-PREF1",
                                                                               null,
                                                                               "myprefdescription",
-                                                                              TEST_USERNAME,
+                                                                              TEST_PRINCIPAL_SERIALIZATION,
                                                                               Collections.<String>emptySet(),
                                                                               prefValueMap));
             fail("Preference name must not be null");
@@ -143,7 +144,7 @@ public class PreferenceFactoryTest extends QpidTestCase
                                                                                           "X-TESTPREF",
                                                                                           "testProp1",
                                                                                           "",
-                                                                                          TEST_USERNAME,
+                                                                                          TEST_PRINCIPAL_SERIALIZATION,
                                                                                           null,
                                                                                           Collections.<String, Object>emptyMap()));
         Preference p2 = PreferenceFactory.recover(_testObject, createPreferenceAttributes(null,
@@ -151,7 +152,7 @@ public class PreferenceFactoryTest extends QpidTestCase
                                                                                           "X-TESTPREF",
                                                                                           "testProp2",
                                                                                           "",
-                                                                                          TEST_USERNAME,
+                                                                                          TEST_PRINCIPAL_SERIALIZATION,
                                                                                           Collections.<String>emptySet(),
                                                                                           Collections.<String, Object>emptyMap()));
         UUID id1 = p1.getId();
@@ -168,11 +169,11 @@ public class PreferenceFactoryTest extends QpidTestCase
                                                                                          "X-TESTPREF",
                                                                                          "testProp1",
                                                                                          null,
-                                                                                         TEST_USERNAME,
+                                                                                         TEST_PRINCIPAL_SERIALIZATION,
                                                                                          null,
                                                                                          Collections.<String, Object>emptyMap()));
         final Principal testPrincipal = _testSubject.getPrincipals(AuthenticatedPrincipal.class).iterator().next();
-        assertEquals("Unexpected preference owner", testPrincipal.getName(), p.getOwner().getName());
+        assertTrue("Unexpected preference owner", GenericPrincipal.principalsEqual(testPrincipal, p.getOwner()));
     }
 
     public void testPreferenceOwnerIsMandatoryOnRecovery()
@@ -202,7 +203,7 @@ public class PreferenceFactoryTest extends QpidTestCase
                                                                                          "X-TESTPREF",
                                                                                          "testProp1",
                                                                                          null,
-                                                                                         TEST_USERNAME,
+                                                                                         TEST_PRINCIPAL_SERIALIZATION,
                                                                                          null,
                                                                                          Collections.<String, Object>emptyMap()));
         assertEquals("Unexpected associated object", _testObject, p.getAssociatedObject());
@@ -216,7 +217,7 @@ public class PreferenceFactoryTest extends QpidTestCase
                                                                                          type,
                                                                                          "testProp1",
                                                                                          null,
-                                                                                         TEST_USERNAME,
+                                                                                         TEST_PRINCIPAL_SERIALIZATION,
                                                                                          null,
                                                                                          Collections.<String, Object>emptyMap()));
         assertEquals("Unexpected type", type, p.getType());
@@ -229,7 +230,7 @@ public class PreferenceFactoryTest extends QpidTestCase
                                                                     "X-TESTPREF",
                                                                     "testProp1",
                                                                     null,
-                                                                    TEST_USERNAME,
+                                                                    TEST_PRINCIPAL_SERIALIZATION,
                                                                     null,
                                                                     Collections.<String, Object>emptyMap());
         attributes.put(Preference.LAST_UPDATED_DATE_ATTRIBUTE, 1);

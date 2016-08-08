@@ -21,7 +21,6 @@ package org.apache.qpid.server.model.preferences;
 
 import java.security.Principal;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -151,15 +150,10 @@ public class PreferenceImpl implements Preference
         map.put(NAME_ATTRIBUTE, _name);
         map.put(TYPE_ATTRIBUTE, _type);
         map.put(DESCRIPTION_ATTRIBUTE, _description);
-        map.put(OWNER_ATTRIBUTE, _owner == null ? "" : _owner.getName());
+        map.put(OWNER_ATTRIBUTE, _owner);
         map.put(ASSOCIATED_OBJECT_ATTRIBUTE, _associatedObject.getId());
-        Set<String> visibilityList = new HashSet<>(_visibilitySet.size());
-        for (Principal principal : _visibilitySet)
-        {
-            visibilityList.add(principal.getName());
-        }
-        map.put(VISIBILITY_LIST_ATTRIBUTE, visibilityList);
-        map.put(LAST_UPDATED_DATE_ATTRIBUTE, new Date(_lastUpdatedDate.getTime()));
+        map.put(VISIBILITY_LIST_ATTRIBUTE, getVisibilityList());
+        map.put(LAST_UPDATED_DATE_ATTRIBUTE, getLastUpdatedDate());
         map.put(VALUE_ATTRIBUTE, _preferenceValue.getAttributes());
         return map;
     }

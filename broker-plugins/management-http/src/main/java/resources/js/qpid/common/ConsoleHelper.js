@@ -194,7 +194,7 @@ define(["dojo/query",
                              "below-centered"];
                         if (controlButton)
                         {
-                            controlButton.set("label", management.getAuthenticatedUser().name);
+                            controlButton.set("label", management.getAuthenticatedUser());
                             controlButton.domNode.style.display = '';
                         }
                     });

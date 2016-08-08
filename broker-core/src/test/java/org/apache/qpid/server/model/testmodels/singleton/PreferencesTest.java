@@ -43,6 +43,7 @@ import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.preferences.GenericPrincipal;
 import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.PreferenceFactory;
 import org.apache.qpid.server.model.preferences.PreferenceTestHelper;
@@ -54,7 +55,9 @@ import org.apache.qpid.test.utils.QpidTestCase;
 public class PreferencesTest extends QpidTestCase
 {
     public static final String TEST_USERNAME = "testUser";
+    private static final String TEST_PRINCIPAL_SERIALIZATION = TestPrincipalUtils.getTestPrincipalSerialization(TEST_USERNAME);
     public static final String TEST_USERNAME2 = "testUser2";
+    private static final String TEST_PRINCIPAL2_SERIALIZATION = TestPrincipalUtils.getTestPrincipalSerialization(TEST_USERNAME2);
     private final Model _model = TestModel.getInstance();
     private ConfiguredObject<?> _testObject;
     private Subject _testSubject;
@@ -93,7 +96,7 @@ public class PreferencesTest extends QpidTestCase
                 "X-TestPropType",
                 "testProp1",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
         Subject.doAs(_testSubject, new PrivilegedAction<Void>()
@@ -117,7 +120,7 @@ public class PreferencesTest extends QpidTestCase
                 "X-testType",
                 "prop1",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
 
@@ -150,7 +153,7 @@ public class PreferencesTest extends QpidTestCase
                         "X-testType",
                         "prop1",
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
 
@@ -163,7 +166,7 @@ public class PreferencesTest extends QpidTestCase
                         "X-testType",
                         "prop2",
                         null,
-                        TEST_USERNAME2,
+                        TEST_PRINCIPAL2_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
 
@@ -191,7 +194,7 @@ public class PreferencesTest extends QpidTestCase
                 "X-testType",
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
 
@@ -201,7 +204,8 @@ public class PreferencesTest extends QpidTestCase
                 "X-testType",
                 "newPropName",
                 "newDescription",
-                TEST_USERNAME, null,
+                TEST_PRINCIPAL_SERIALIZATION,
+                null,
                 Collections.<String, Object>emptyMap()));
 
         Subject.doAs(_testSubject, new PrivilegedAction<Void>()
@@ -232,7 +236,7 @@ public class PreferencesTest extends QpidTestCase
                 "X-testType",
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
         final Preference p2 = PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -241,7 +245,7 @@ public class PreferencesTest extends QpidTestCase
                 "X-differentTestType",
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
         Subject.doAs(_testSubject, new PrivilegedAction<Void>()
@@ -272,7 +276,7 @@ public class PreferencesTest extends QpidTestCase
                 "X-testType",
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
         final Preference p2 = PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -281,7 +285,7 @@ public class PreferencesTest extends QpidTestCase
                 "X-testType",
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
 
@@ -314,7 +318,7 @@ public class PreferencesTest extends QpidTestCase
                 "X-testType",
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
         final Preference p2 = PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -323,7 +327,7 @@ public class PreferencesTest extends QpidTestCase
                 "X-testType",
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
         Subject.doAs(_testSubject, new PrivilegedAction<Void>()
@@ -359,8 +363,8 @@ public class PreferencesTest extends QpidTestCase
                 "X-PREF",
                 "prefname",
                 null,
-                TEST_USERNAME,
-                Collections.singleton(testGroupName),
+                TEST_PRINCIPAL_SERIALIZATION,
+                Collections.singleton(TestPrincipalUtils.getTestPrincipalSerialization(testGroupName)),
                 Collections.<String,Object>emptyMap());
         final Preference originalPreference = PreferenceFactory.recover(_testObject, preferenceAttributes);
         updateOrAppendAs(user1Subject, originalPreference);
@@ -378,7 +382,7 @@ public class PreferencesTest extends QpidTestCase
 
                 final Preference target = visiblePreferences.iterator().next();
                 Map<String, Object> replacementAttributes = new HashMap(target.getAttributes());
-                replacementAttributes.put(Preference.OWNER_ATTRIBUTE, TEST_USERNAME2);
+                replacementAttributes.put(Preference.OWNER_ATTRIBUTE, TEST_PRINCIPAL2_SERIALIZATION);
 
                 try
                 {
@@ -408,7 +412,7 @@ public class PreferencesTest extends QpidTestCase
                         prefType,
                         prefName,
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
 
@@ -422,7 +426,7 @@ public class PreferencesTest extends QpidTestCase
                         prefType,
                         prefName,
                         "new preference",
-                        TEST_USERNAME2,
+                        TEST_PRINCIPAL2_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         try
@@ -503,7 +507,7 @@ public class PreferencesTest extends QpidTestCase
                         preferenceType,
                         "propName",
                         null,
-                        TEST_USERNAME2,
+                        TEST_PRINCIPAL2_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         updateOrAppendAs(testSubject2, unaffectedPreference);
@@ -514,7 +518,7 @@ public class PreferencesTest extends QpidTestCase
                 preferenceType,
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
         final Preference p2 = PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -523,7 +527,7 @@ public class PreferencesTest extends QpidTestCase
                 preferenceType,
                 "newPropName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
 
@@ -555,7 +559,7 @@ public class PreferencesTest extends QpidTestCase
                 "X-type-1",
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
         final Preference p2 = PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -564,7 +568,7 @@ public class PreferencesTest extends QpidTestCase
                 "X-type-2",
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
         updateOrAppendAs(_testSubject, p1, p2);
@@ -592,7 +596,7 @@ public class PreferencesTest extends QpidTestCase
                         deleteType,
                         "propName",
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         String unaffectedType = "X-type-2";
@@ -603,7 +607,7 @@ public class PreferencesTest extends QpidTestCase
                         unaffectedType,
                         "propName",
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         updateOrAppendAs(_testSubject, deletePreference, unaffectedPreference);
@@ -635,7 +639,7 @@ public class PreferencesTest extends QpidTestCase
                         deleteType,
                         deletePropertyName,
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         final Preference unaffectedPreference1 =
@@ -645,7 +649,7 @@ public class PreferencesTest extends QpidTestCase
                         deleteType,
                         "propName2",
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         String unaffectedType = "X-type-2";
@@ -656,7 +660,7 @@ public class PreferencesTest extends QpidTestCase
                         unaffectedType,
                         deletePropertyName,
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         updateOrAppendAs(_testSubject, deletePreference, unaffectedPreference1, unaffectedPreference2);
@@ -691,7 +695,7 @@ public class PreferencesTest extends QpidTestCase
                         deleteType,
                         "propName",
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         final Preference unaffectedPreference1 =
@@ -701,7 +705,7 @@ public class PreferencesTest extends QpidTestCase
                         deleteType,
                         "propName2",
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         String unaffectedType = "X-type-2";
@@ -712,7 +716,7 @@ public class PreferencesTest extends QpidTestCase
                         unaffectedType,
                         "propName",
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         updateOrAppendAs(_testSubject, deletePreference, unaffectedPreference1, unaffectedPreference2);
@@ -747,7 +751,7 @@ public class PreferencesTest extends QpidTestCase
                         deleteType,
                         "propName",
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         final Preference unaffectedPreference1 =
@@ -757,7 +761,7 @@ public class PreferencesTest extends QpidTestCase
                         deleteType,
                         "propName2",
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         String unaffectedType = "X-type-2";
@@ -768,7 +772,7 @@ public class PreferencesTest extends QpidTestCase
                         unaffectedType,
                         "propName",
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         updateOrAppendAs(_testSubject, deletePreference, unaffectedPreference1, unaffectedPreference2);
@@ -804,7 +808,7 @@ public class PreferencesTest extends QpidTestCase
                         deleteType,
                         deletePropertyName,
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         final Preference unaffectedPreference1 =
@@ -814,7 +818,7 @@ public class PreferencesTest extends QpidTestCase
                         deleteType,
                         "propName2",
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         String unaffectedType = "X-type-2";
@@ -825,7 +829,7 @@ public class PreferencesTest extends QpidTestCase
                         unaffectedType,
                         deletePropertyName,
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         updateOrAppendAs(_testSubject, deletePreference, unaffectedPreference1, unaffectedPreference2);
@@ -882,7 +886,7 @@ public class PreferencesTest extends QpidTestCase
                         preferenceType,
                         "propName",
                         null,
-                        TEST_USERNAME2,
+                        TEST_PRINCIPAL2_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         updateOrAppendAs(testSubject2, unaffectedPreference);
@@ -893,7 +897,7 @@ public class PreferencesTest extends QpidTestCase
                 preferenceType,
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
 
@@ -929,7 +933,7 @@ public class PreferencesTest extends QpidTestCase
                         preferenceType,
                         "propName",
                         null,
-                        TEST_USERNAME2,
+                        TEST_PRINCIPAL2_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
         updateOrAppendAs(testSubject2, unaffectedPreference);
@@ -940,7 +944,7 @@ public class PreferencesTest extends QpidTestCase
                 preferenceType,
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
         final Preference p2 = PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -949,7 +953,7 @@ public class PreferencesTest extends QpidTestCase
                 unaffectedPreferenceType,
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
 
@@ -988,7 +992,7 @@ public class PreferencesTest extends QpidTestCase
                         preferenceType,
                         "propName",
                         null,
-                        TEST_USERNAME2,
+                        TEST_PRINCIPAL2_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
 
@@ -1000,7 +1004,7 @@ public class PreferencesTest extends QpidTestCase
                 preferenceType,
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
 
@@ -1010,7 +1014,7 @@ public class PreferencesTest extends QpidTestCase
                 preferenceType,
                 "unaffectedPropName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
 
@@ -1050,7 +1054,7 @@ public class PreferencesTest extends QpidTestCase
                         replaceType,
                         "propName",
                         null,
-                        TEST_USERNAME2,
+                        TEST_PRINCIPAL2_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
 
@@ -1062,7 +1066,7 @@ public class PreferencesTest extends QpidTestCase
                 replaceType,
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
         final Preference p2 = PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -1071,7 +1075,7 @@ public class PreferencesTest extends QpidTestCase
                 unaffectedType,
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
         final Preference p3 = PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -1080,7 +1084,7 @@ public class PreferencesTest extends QpidTestCase
                 replaceType,
                 "newPropName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
         Subject.doAs(_testSubject, new PrivilegedAction<Void>()
@@ -1120,7 +1124,7 @@ public class PreferencesTest extends QpidTestCase
                         replaceType,
                         "propName",
                         null,
-                        TEST_USERNAME2,
+                        TEST_PRINCIPAL2_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
 
@@ -1132,7 +1136,7 @@ public class PreferencesTest extends QpidTestCase
                 replaceType,
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
         final Preference p1b = PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
@@ -1141,7 +1145,7 @@ public class PreferencesTest extends QpidTestCase
                 replaceType,
                 "unaffectedPropName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
 
@@ -1151,7 +1155,7 @@ public class PreferencesTest extends QpidTestCase
                 unaffectedType,
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
 
@@ -1161,7 +1165,7 @@ public class PreferencesTest extends QpidTestCase
                 replaceType,
                 "propName",
                 "new description",
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
 
@@ -1195,15 +1199,15 @@ public class PreferencesTest extends QpidTestCase
     {
         final Principal testPrincipal = _testSubject.getPrincipals().iterator().next();
 
-        Subject peerSubject = TestPrincipalUtils.createTestSubject("peer");
+        Subject peerSubject = TestPrincipalUtils.createTestSubject(TEST_USERNAME2);
         final Preference sharedPreference = PreferenceFactory.recover(_testObject, PreferenceTestHelper.createPreferenceAttributes(
                 null,
                 null,
                 "X-testType",
                 "propName1",
                 "shared with colleague testUser",
-                "peer",
-                Collections.singleton(testPrincipal.toString()),
+                TEST_PRINCIPAL2_SERIALIZATION,
+                Collections.singleton(TEST_PRINCIPAL_SERIALIZATION),
                 Collections.<String, Object>emptyMap()));
 
         Subject.doAs(peerSubject, new PrivilegedAction<Void>()
@@ -1223,7 +1227,7 @@ public class PreferencesTest extends QpidTestCase
                 "X-testType",
                 "propName2",
                 null,
-                "anotherUser",
+                TestPrincipalUtils.getTestPrincipalSerialization("anotherUser"),
                 null,
                 Collections.<String, Object>emptyMap()));
 
@@ -1243,7 +1247,7 @@ public class PreferencesTest extends QpidTestCase
                 "X-testType",
                 "propName",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
 
@@ -1280,11 +1284,11 @@ public class PreferencesTest extends QpidTestCase
                         "X-testType",
                         "propName1",
                         null,
-                        "peer",
-                        Collections.singleton(testGroupName),
+                        TEST_PRINCIPAL2_SERIALIZATION,
+                        Collections.singleton(TestPrincipalUtils.getTestPrincipalSerialization(testGroupName)),
                         Collections.<String, Object>emptyMap()));
 
-        Subject peerSubject = TestPrincipalUtils.createTestSubject("peer");
+        Subject peerSubject = TestPrincipalUtils.createTestSubject(TEST_USERNAME2);
         Subject.doAs(peerSubject, new PrivilegedAction<Void>()
         {
             @Override
@@ -1302,7 +1306,7 @@ public class PreferencesTest extends QpidTestCase
                         "X-testType",
                         "propName",
                         null,
-                        TEST_USERNAME,
+                        TEST_PRINCIPAL_SERIALIZATION,
                         null,
                         Collections.<String, Object>emptyMap()));
 
@@ -1335,7 +1339,7 @@ public class PreferencesTest extends QpidTestCase
                 "X-testType",
                 "propName1",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
         Thread.sleep(1);
@@ -1357,7 +1361,7 @@ public class PreferencesTest extends QpidTestCase
                 "X-testType",
                 "propName1",
                 null,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 null,
                 Collections.<String, Object>emptyMap()));
         Date lastUpdatedDate = p1.getLastUpdatedDate();
@@ -1380,7 +1384,7 @@ public class PreferencesTest extends QpidTestCase
                 type,
                 name,
                 description,
-                TEST_USERNAME,
+                TEST_PRINCIPAL_SERIALIZATION,
                 visibilitySet,
                 prefValueMap));
         assertNotNull("Creation failed", p);
@@ -1391,7 +1395,7 @@ public class PreferencesTest extends QpidTestCase
         expectedAttributes.put("type", type);
         expectedAttributes.put("name", name);
         expectedAttributes.put("description", description);
-        expectedAttributes.put("owner", TEST_USERNAME);
+        expectedAttributes.put("owner", new GenericPrincipal(TEST_PRINCIPAL_SERIALIZATION));
         expectedAttributes.put("associatedObject", _testObject.getId());
         expectedAttributes.put("visibilityList", visibilitySet);
         expectedAttributes.put("lastUpdatedDate", lastUpdatedDate);

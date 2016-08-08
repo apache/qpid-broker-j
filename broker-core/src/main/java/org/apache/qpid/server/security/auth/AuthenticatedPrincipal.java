@@ -18,21 +18,21 @@
  */
 package org.apache.qpid.server.security.auth;
 
-import java.io.Serializable;
 import java.security.AccessController;
 import java.security.Principal;
 import java.util.Set;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.security.auth.UsernamePrincipal;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.security.QpidPrincipal;
 
 /**
  * A simple Principal wrapper. Exists to allow us to identify the "primary" principal
  * by calling {@link Subject#getPrincipals(Class)}, passing in {@link AuthenticatedPrincipal}.class,
  * e.g. when logging.
  */
-public final class AuthenticatedPrincipal implements Principal, Serializable
+public final class AuthenticatedPrincipal implements QpidPrincipal
 {
     private final Principal _wrappedPrincipal;
 
@@ -67,6 +67,19 @@ public final class AuthenticatedPrincipal implements Principal, Serializable
             user = null;
         }
         return user;
+    }
+
+    @Override
+    public ConfiguredObject<?> getOrigin()
+    {
+        if (_wrappedPrincipal instanceof QpidPrincipal)
+        {
+            return ((QpidPrincipal) _wrappedPrincipal).getOrigin();
+        }
+        else
+        {
+            return null;
+        }
     }
 
     @Override

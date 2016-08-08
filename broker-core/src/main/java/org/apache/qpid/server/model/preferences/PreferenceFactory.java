@@ -39,7 +39,7 @@ public class PreferenceFactory
     {
         AuthenticatedPrincipal currentUser = AuthenticatedPrincipal.getCurrentUser();
         Map<String, Object> overriddenAttributes =  new HashMap<>(attributes);
-        overriddenAttributes.put(Preference.OWNER_ATTRIBUTE, currentUser == null ? null : currentUser.getName());
+        overriddenAttributes.put(Preference.OWNER_ATTRIBUTE, currentUser);
         overriddenAttributes.put(Preference.LAST_UPDATED_DATE_ATTRIBUTE, System.currentTimeMillis());
         return recover(associatedObject, overriddenAttributes);
     }
@@ -51,7 +51,7 @@ public class PreferenceFactory
         final String type = getAttributeAsString(Preference.TYPE_ATTRIBUTE, attributes);
         final String name = getAttributeAsString(Preference.NAME_ATTRIBUTE, attributes);
         final String description = getAttributeAsString(Preference.DESCRIPTION_ATTRIBUTE, attributes);
-        final String owner = getAttributeAsString(Preference.OWNER_ATTRIBUTE, attributes);
+        final Principal owner = getOwner(attributes);
         if (owner == null)
         {
             throw new IllegalArgumentException("Preference owner is mandatory");
@@ -61,7 +61,7 @@ public class PreferenceFactory
         final Map<String, Object> preferenceValueAttributes = getPreferenceValue(attributes);
         PreferenceValue value = convertMapToPreferenceValue(type, preferenceValueAttributes);
         return new PreferenceImpl(associatedObject, uuid, name, type, description,
-                                  new GenericPrincipal(owner),
+                                  owner,
                                   lastUpdatedDate,
                                   visibilitySet,
                                   value);
@@ -146,6 +146,21 @@ public class PreferenceFactory
         }
         throw new IllegalArgumentException(String.format("Cannot recover '%s' as List",
                                                          Preference.VISIBILITY_LIST_ATTRIBUTE));
+    }
+
+    private static Principal getOwner(final Map<String, Object> attributes)
+    {
+        Object value = attributes.get(Preference.OWNER_ATTRIBUTE);
+        if (value == null || value instanceof Principal)
+        {
+            return (Principal) value;
+        }
+        else if (value instanceof String)
+        {
+            return new GenericPrincipal((String) value);
+        }
+        throw new IllegalArgumentException(String.format("Cannot recover '%s' as Principal",
+                                                         Preference.OWNER_ATTRIBUTE));
     }
 
     private static String getAttributeAsString(final String attributeName, final Map<String, Object> attributes)

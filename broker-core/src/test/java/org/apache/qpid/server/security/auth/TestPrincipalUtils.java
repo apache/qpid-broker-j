@@ -20,8 +20,12 @@
  */
 package org.apache.qpid.server.security.auth;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import javax.security.auth.Subject;
 
+import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.security.group.GroupPrincipal;
 
@@ -32,19 +36,33 @@ import java.util.Set;
 
 public class TestPrincipalUtils
 {
+    public static final String TEST_AUTH_PROVIDER_TYPE = "TestAuthProviderType";
+    public static final String TEST_AUTH_PROVIDER_NAME = "testAuthProvider";
+    private static final AuthenticationProvider TEST_AUTH_PROVIDER = mock(AuthenticationProvider.class);
+
+    static
+    {
+        when(TEST_AUTH_PROVIDER.getType()).thenReturn(TEST_AUTH_PROVIDER_TYPE);
+        when(TEST_AUTH_PROVIDER.getName()).thenReturn(TEST_AUTH_PROVIDER_NAME);
+    }
+
     /**
      * Creates a test subject, with exactly one {@link AuthenticatedPrincipal} and zero or more GroupPrincipals.
      */
     public static Subject createTestSubject(final String username, final String... groups)
     {
         final Set<Principal> principals = new HashSet<Principal>(1 + groups.length);
-        principals.add(new AuthenticatedPrincipal(new UsernamePrincipal(username, null)));
+        principals.add(new AuthenticatedPrincipal(new UsernamePrincipal(username, TEST_AUTH_PROVIDER)));
         for (String group : groups)
         {
-            principals.add(new GroupPrincipal(group, (GroupProvider) null));
+            principals.add(new GroupPrincipal(group, TEST_AUTH_PROVIDER));
         }
 
         return new Subject(false, principals, Collections.EMPTY_SET, Collections.EMPTY_SET);
     }
 
+    public static String getTestPrincipalSerialization(final String principalName)
+    {
+        return String.format("%s@%s('%s')", principalName, TEST_AUTH_PROVIDER_TYPE, TEST_AUTH_PROVIDER_NAME);
+    }
 }

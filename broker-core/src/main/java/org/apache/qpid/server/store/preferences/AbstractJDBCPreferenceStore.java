@@ -42,6 +42,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.ModelVersion;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.util.BaseAction;
@@ -348,7 +349,7 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
                                      final Map<String, Object> attributes)
             throws JsonProcessingException, SQLException
     {
-        final ObjectMapper objectMapper = new ObjectMapper();
+        final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
         if (attributes != null)
         {
             byte[] attributesAsBytes = objectMapper.writeValueAsBytes(attributes);

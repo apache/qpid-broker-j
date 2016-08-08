@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -34,9 +33,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import org.apache.qpid.server.management.plugin.preferences.QueryPreferenceValue;
-import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.model.preferences.Preference;
-import org.apache.qpid.server.security.group.GroupProviderImpl;
 
 public class UserPreferencesRestTest extends QpidRestTestCase
 {
@@ -63,7 +60,7 @@ public class UserPreferencesRestTest extends QpidRestTestCase
         assertEquals("Unexpected pref description", prefDescription, prefDetails.get(Preference.DESCRIPTION_ATTRIBUTE));
         assertEquals("Unexpected pref type", prefType, prefDetails.get(Preference.TYPE_ATTRIBUTE));
         assertEquals("Unexpected pref value", prefValueAttributes, prefDetails.get(Preference.VALUE_ATTRIBUTE));
-        assertEquals("Unexpected pref owner", RestTestHelper.DEFAULT_USERNAME, prefDetails.get(Preference.OWNER_ATTRIBUTE));
+        assertTrue("Unexpected pref owner", ((String) prefDetails.get(Preference.OWNER_ATTRIBUTE)).startsWith(RestTestHelper.DEFAULT_USERNAME + "@"));
 
         String typeUrl = String.format("broker/userpreferences/%s", prefType);
         assertEquals("Unexpected preference returned from type url",
@@ -79,33 +76,6 @@ public class UserPreferencesRestTest extends QpidRestTestCase
         assertEquals("Unexpected number of preferences", 1, prefs.size());
 
         assertEquals("Unexpected preference returned from all url", prefDetails, prefs.get(0));
-    }
-
-    public void testSavingOtherUserPreference() throws Exception
-    {
-        getRestTestHelper().submitRequest("groupprovider/temp", "PUT", Collections.singletonMap(GroupProvider.TYPE, GroupProviderImpl.CONFIG_TYPE), HttpServletResponse.SC_CREATED);
-        getRestTestHelper().createGroup("test", "temp");
-        getRestTestHelper().createNewGroupMember("temp", "test", RestTestHelper.DEFAULT_USERNAME);
-        getRestTestHelper().createNewGroupMember("temp", "test", "admin");
-
-        String preferenceType = "X-Type-" + getTestName();
-        String preferenceName = getTestName();
-        Map<String, Object> preferenceAttributes = new HashMap<>();
-        preferenceAttributes.put(Preference.ID_ATTRIBUTE, UUID.randomUUID());
-        preferenceAttributes.put(Preference.TYPE_ATTRIBUTE, preferenceType);
-        preferenceAttributes.put(Preference.NAME_ATTRIBUTE, preferenceName);
-        preferenceAttributes.put(Preference.DESCRIPTION_ATTRIBUTE, "");
-        preferenceAttributes.put(Preference.OWNER_ATTRIBUTE, RestTestHelper.DEFAULT_USERNAME);
-        preferenceAttributes.put(Preference.VISIBILITY_LIST_ATTRIBUTE, Collections.singletonList("test"));
-        preferenceAttributes.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
-
-        String fullUrl = String.format("broker/userpreferences/%s/%s", preferenceType, preferenceName);
-        getRestTestHelper().submitRequest(fullUrl, "PUT", preferenceAttributes, HttpServletResponse.SC_OK);
-
-        getRestTestHelper().setUsernameAndPassword("admin", "admin");
-
-        preferenceAttributes.put(Preference.OWNER_ATTRIBUTE, "admin");
-        getRestTestHelper().submitRequest(fullUrl, "PUT", preferenceAttributes, 422);
     }
 
     public void testPutQueryPreferenceRoundTrip() throws Exception
@@ -132,7 +102,7 @@ public class UserPreferencesRestTest extends QpidRestTestCase
         assertEquals("Unexpected pref description", prefDescription, prefDetails.get(Preference.DESCRIPTION_ATTRIBUTE));
         assertEquals("Unexpected pref type", prefType, prefDetails.get(Preference.TYPE_ATTRIBUTE));
         assertEquals("Unexpected pref value", prefValueAttributes, prefDetails.get(Preference.VALUE_ATTRIBUTE));
-        assertEquals("Unexpected pref owner", RestTestHelper.DEFAULT_USERNAME, prefDetails.get(Preference.OWNER_ATTRIBUTE));
+        assertTrue("Unexpected pref owner", ((String) prefDetails.get(Preference.OWNER_ATTRIBUTE)).startsWith(RestTestHelper.DEFAULT_USERNAME + "@"));
 
         String typeUrl = String.format("broker/userpreferences/%s", prefType);
         assertEquals("Unexpected preference returned from type url",
@@ -178,7 +148,7 @@ public class UserPreferencesRestTest extends QpidRestTestCase
         assertEquals("Unexpected pref description", prefDescription, prefDetails.get(Preference.DESCRIPTION_ATTRIBUTE));
         assertEquals("Unexpected pref type", prefType, prefDetails.get(Preference.TYPE_ATTRIBUTE));
         assertEquals("Unexpected pref value", prefValueAttributes, prefDetails.get(Preference.VALUE_ATTRIBUTE));
-        assertEquals("Unexpected pref owner", RestTestHelper.DEFAULT_USERNAME, prefDetails.get(Preference.OWNER_ATTRIBUTE));
+        assertTrue("Unexpected pref owner", ((String) prefDetails.get(Preference.OWNER_ATTRIBUTE)).startsWith(RestTestHelper.DEFAULT_USERNAME + "@"));
 
         String typeUrl = String.format("broker/userpreferences/%s", prefType);
         assertEquals("Unexpected preference returned from type url",

@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.ModelVersion;
 import org.apache.qpid.server.store.AbstractJsonFileStore;
 import org.apache.qpid.server.store.StoreException;
@@ -49,7 +50,7 @@ public class JsonFilePreferenceStore extends AbstractJsonFileStore implements Pr
         super();
         _storePath = path;
         _posixFilePermissions = posixFilePermissions;
-        _objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+        _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
         _recordMap = new LinkedHashMap<>();
     }
 
