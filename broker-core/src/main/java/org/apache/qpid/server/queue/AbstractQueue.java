@@ -50,26 +50,21 @@ import javax.security.auth.Subject;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.filter.selector.ParseException;
 import org.apache.qpid.filter.selector.TokenMgrError;
-import org.apache.qpid.server.configuration.updater.Task;
-import org.apache.qpid.server.filter.JMSSelectorFilter;
-import org.apache.qpid.server.message.MessageInfo;
-import org.apache.qpid.server.message.MessageInfoImpl;
-import org.apache.qpid.server.model.*;
-
-import com.google.common.util.concurrent.SettableFuture;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.FilterManager;
+import org.apache.qpid.server.filter.JMSSelectorFilter;
 import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
@@ -78,9 +73,12 @@ import org.apache.qpid.server.logging.messages.QueueMessages;
 import org.apache.qpid.server.logging.subjects.QueueLogSubject;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDeletedException;
+import org.apache.qpid.server.message.MessageInfo;
+import org.apache.qpid.server.message.MessageInfoImpl;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.model.preferences.GenericPrincipal;
 import org.apache.qpid.server.plugin.MessageFilterFactory;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
@@ -696,10 +694,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     @Override
     public QueueConsumerImpl addConsumer(final ConsumerTarget target,
-                                     final FilterManager filters,
-                                     final Class<? extends ServerMessage> messageClass,
-                                     final String consumerName,
-                                     final EnumSet<ConsumerImpl.Option> optionSet)
+                                         final FilterManager filters,
+                                         final Class<? extends ServerMessage> messageClass,
+                                         final String consumerName,
+                                         final EnumSet<ConsumerImpl.Option> optionSet,
+                                         final int priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
                    ConsumerAccessRefused
     {
@@ -711,7 +710,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 @Override
                 public QueueConsumerImpl execute() throws Exception
                 {
-                    return addConsumerInternal(target, filters, messageClass, consumerName, optionSet);
+                    return addConsumerInternal(target, filters, messageClass, consumerName, optionSet, priority);
                 }
 
                 @Override
@@ -751,7 +750,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                   FilterManager filters,
                                                   final Class<? extends ServerMessage> messageClass,
                                                   final String consumerName,
-                                                  EnumSet<ConsumerImpl.Option> optionSet)
+                                                  EnumSet<ConsumerImpl.Option> optionSet,
+                                                  final int priority)
             throws ExistingExclusiveConsumer, ConsumerAccessRefused,
                    ExistingConsumerPreventsExclusive
     {
@@ -885,7 +885,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                            consumerName,
                                                            filters,
                                                            messageClass,
-                                                           optionSet);
+                                                           optionSet,
+                                                           priority);
 
         _exclusiveOwner = exclusiveOwner;
         target.consumerAdded(consumer);
@@ -1006,7 +1007,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public Collection<QueueConsumer<?>> getConsumers()
     {
         List<QueueConsumer<?>> consumers = new ArrayList<QueueConsumer<?>>();
-        QueueConsumerList.ConsumerNodeIterator iter = _consumerList.iterator();
+        ConsumerNodeIterator iter = _consumerList.iterator();
         while(iter.advance())
         {
             consumers.add(iter.getNode().getConsumer());
@@ -1029,7 +1030,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public void resetSubPointersForGroups(final QueueEntry entry)
     {
-        QueueConsumerList.ConsumerNodeIterator subscriberIter = _consumerList.iterator();
+        ConsumerNodeIterator subscriberIter = _consumerList.iterator();
         // iterate over all the subscribers, and if they are in advance of this queue entry then move them backwards
         while (subscriberIter.advance())
         {
@@ -1252,8 +1253,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         try
         {
-            QueueConsumerList.ConsumerNode node = _consumerList.getMarkedNode();
-            QueueConsumerList.ConsumerNode nextNode = node.findNext();
+            ConsumerNode node = _consumerList.getMarkedNode();
+            ConsumerNode nextNode = node.findNext();
             if (nextNode == null)
             {
                 nextNode = _consumerList.getHead().findNext();
@@ -1289,8 +1290,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 {
                     // if consumer at end, and active, offer
                     final QueueConsumer<?> sub = nextNode.getConsumer();
-                    deliverToConsumer(sub, entry);
 
+                    if(sub.getPriority() == 0)
+                    {
+                        deliverToConsumer(sub, entry);
+                    }
 
                 }
                 nextNode = nextNode.findNext();
@@ -1473,7 +1477,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     public void requeue(QueueEntry entry)
     {
-        QueueConsumerList.ConsumerNodeIterator subscriberIter = _consumerList.iterator();
+        ConsumerNodeIterator subscriberIter = _consumerList.iterator();
         // iterate over all the subscribers, and if they are in advance of this queue entry then move them backwards
         while (subscriberIter.advance() && entry.isAvailable())
         {
@@ -1963,7 +1967,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 {
                     try
                     {
-                        final QueueConsumerList.ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
+                        final ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
 
                         while (consumerNodeIterator.advance())
                         {
@@ -2204,7 +2208,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         QueueEntry node  = getNextAvailableEntry(sub);
         boolean subActive = sub.isActive() && !sub.isSuspended();
 
-        if (subActive)
+        if (subActive && (sub.getPriority() == 0 || noHigherPriorityWithCredit(sub)))
         {
 
             if (_virtualHost.getState() != State.ACTIVE)
@@ -2259,12 +2263,30 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return atTail || !subActive;
     }
 
+    private boolean noHigherPriorityWithCredit(final QueueConsumer<?> sub)
+    {
+        ConsumerNodeIterator iterator = _consumerList.iterator();
+        while(iterator.advance())
+        {
+            final ConsumerNode node = iterator.getNode();
+            QueueConsumer consumer = node.getConsumer();
+            if(consumer.getPriority() < sub.getPriority())
+            {
+                if(getNextAvailableEntry(consumer) != null && consumer.hasCredit())
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     protected void advanceAllConsumers()
     {
-        QueueConsumerList.ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
+        ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
         while (consumerNodeIterator.advance())
         {
-            QueueConsumerList.ConsumerNode subNode = consumerNodeIterator.getNode();
+            ConsumerNode subNode = consumerNodeIterator.getNode();
             QueueConsumer sub = subNode.getConsumer();
             if(sub.acquires())
             {
@@ -2392,11 +2414,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             boolean allConsumersDone = true;
             boolean consumerDone;
 
-            QueueConsumerList.ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
+            ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
             //iterate over the subscribers and try to advance their pointer
             while (consumerNodeIterator.advance())
             {
+
                 QueueConsumer<?> sub = consumerNodeIterator.getNode().getConsumer();
+
                 sub.getSendLock();
 
                 try

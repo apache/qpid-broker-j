@@ -57,8 +57,8 @@ public class StandardQueueTest extends AbstractQueueTestBase
         ServerMessage message = createMessage(25l);
         QueueConsumer consumer =
                 (QueueConsumer) getQueue().addConsumer(getConsumerTarget(), null, message.getClass(), "test",
-                                       EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                                  ConsumerImpl.Option.SEES_REQUEUES));
+                                                       EnumSet.of(ConsumerImpl.Option.ACQUIRES,
+                                                  ConsumerImpl.Option.SEES_REQUEUES), 0);
 
         getQueue().enqueue(message, null, null);
         consumer.close();
@@ -84,7 +84,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
                           createMessage(-1l).getClass(),
                           "test",
                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                     ConsumerImpl.Option.SEES_REQUEUES));
+                                     ConsumerImpl.Option.SEES_REQUEUES), 0);
         assertEquals("Unexpected active consumer count", 1, queue.getConsumerCountWithCredit());
 
         //verify adding an inactive consumer doesn't increase the count
@@ -97,7 +97,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
                           createMessage(-1l).getClass(),
                           "test",
                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                     ConsumerImpl.Option.SEES_REQUEUES));
+                                     ConsumerImpl.Option.SEES_REQUEUES), 0);
         assertEquals("Unexpected active consumer count", 1, queue.getConsumerCountWithCredit());
 
         //verify behaviour in face of expected state changes:
@@ -152,7 +152,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
                           createMessage(-1l).getClass(),
                           "test",
                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                     ConsumerImpl.Option.SEES_REQUEUES));
+                                     ConsumerImpl.Option.SEES_REQUEUES), 0);
 
         // put test messages into a queue
         putGivenNumberOfMessages(queue, 4);
@@ -215,7 +215,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
                               entries.get(0).getMessage().getClass(),
                               "test",
                               EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                         ConsumerImpl.Option.SEES_REQUEUES));
+                                         ConsumerImpl.Option.SEES_REQUEUES), 0);
 
         // process queue
         testQueue.processQueue(new QueueRunner(testQueue, AccessController.getContext())

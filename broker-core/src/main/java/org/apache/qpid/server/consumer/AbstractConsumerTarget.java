@@ -96,6 +96,12 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
         return getSessionModel().getAMQPConnection().isMessageAssignmentSuspended() || isFlowSuspended();
     }
 
+    @Override
+    public boolean hasCredit()
+    {
+        return !isFlowSuspended();
+    }
+
     protected abstract boolean isFlowSuspended();
 
     public final State getState()

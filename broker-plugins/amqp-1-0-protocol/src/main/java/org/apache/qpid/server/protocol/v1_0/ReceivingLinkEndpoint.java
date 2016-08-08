@@ -22,6 +22,7 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,6 +33,7 @@ import java.util.TreeMap;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
@@ -110,6 +112,12 @@ public class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLinkListener>
         setLinkEventListener(ReceivingLinkListener.DEFAULT);
         setSendingSettlementMode(attach.getSndSettleMode());
         setReceivingSettlementMode(attach.getRcvSettleMode());
+    }
+
+    @Override
+    protected Map<Symbol, Object> initProperties(final Attach attach)
+    {
+        return Collections.emptyMap();
     }
 
 

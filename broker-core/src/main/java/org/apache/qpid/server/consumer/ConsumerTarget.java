@@ -39,6 +39,8 @@ public interface ConsumerTarget
 
     String getTargetAddress();
 
+    boolean hasCredit();
+
     enum State
     {
         ACTIVE, SUSPENDED, CLOSED

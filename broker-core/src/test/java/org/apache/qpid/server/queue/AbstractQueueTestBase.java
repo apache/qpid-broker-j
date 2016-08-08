@@ -177,8 +177,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         // Check adding a consumer adds it to the queue
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                       EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                                  ConsumerImpl.Option.SEES_REQUEUES));
+                                                          EnumSet.of(ConsumerImpl.Option.ACQUIRES,
+                                                  ConsumerImpl.Option.SEES_REQUEUES), 0);
         assertEquals("Queue does not have consumer", 1,
                      _queue.getConsumerCount());
         assertEquals("Queue does not have active consumer", 1,
@@ -209,8 +209,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         ServerMessage messageA = createMessage(new Long(24));
         _queue.enqueue(messageA, null, null);
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                       EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                                  ConsumerImpl.Option.SEES_REQUEUES));
+                                                          EnumSet.of(ConsumerImpl.Option.ACQUIRES,
+                                                  ConsumerImpl.Option.SEES_REQUEUES), 0);
         Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
         assertEquals(messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage());
         assertNull("There should be no releasedEntry after an enqueue",
@@ -227,8 +227,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue.enqueue(messageA, null, null);
         _queue.enqueue(messageB, null, null);
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                       EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                                  ConsumerImpl.Option.SEES_REQUEUES));
+                                                          EnumSet.of(ConsumerImpl.Option.ACQUIRES,
+                                                  ConsumerImpl.Option.SEES_REQUEUES), 0);
         Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
         assertEquals(messageB, _consumer.getQueueContext().getLastSeenEntry().getMessage());
         assertNull("There should be no releasedEntry after enqueues",
@@ -251,7 +251,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue.enqueue(messageA, null, null);
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                                                     ConsumerImpl.Option.SEES_REQUEUES));
+                                                                     ConsumerImpl.Option.SEES_REQUEUES), 0);
         Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
 
         assertEquals("Message which was not yet valid was received", 0, _consumerTarget.getMessages().size());
@@ -277,7 +277,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue.enqueue(messageA, null, null);
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                                                     ConsumerImpl.Option.SEES_REQUEUES));
+                                                                     ConsumerImpl.Option.SEES_REQUEUES), 0);
         Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
 
         assertEquals("Message was held despite queue not having holding enabled", 1, _consumerTarget.getMessages().size());
@@ -303,7 +303,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                                                     ConsumerImpl.Option.SEES_REQUEUES));
+                                                                     ConsumerImpl.Option.SEES_REQUEUES), 0);
         Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
 
         assertEquals("Expect one message (message B)", 1, _consumerTarget.getMessages().size());
@@ -330,8 +330,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
 
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                                      ConsumerImpl.Option.SEES_REQUEUES));
+                                                          EnumSet.of(ConsumerImpl.Option.ACQUIRES,
+                                                      ConsumerImpl.Option.SEES_REQUEUES), 0);
 
         final ArrayList<QueueEntry> queueEntries = new ArrayList<QueueEntry>();
         EntryListAddingAction postEnqueueAction = new EntryListAddingAction(queueEntries);
@@ -393,8 +393,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         };
 
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                           EnumSet.of(ConsumerImpl.Option.SEES_REQUEUES,
-                                                      ConsumerImpl.Option.ACQUIRES));
+                                                          EnumSet.of(ConsumerImpl.Option.SEES_REQUEUES,
+                                                      ConsumerImpl.Option.ACQUIRES), 0);
 
         final ArrayList<QueueEntry> queueEntries = new ArrayList<QueueEntry>();
         EntryListAddingAction postEnqueueAction = new EntryListAddingAction(queueEntries);
@@ -464,8 +464,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         ServerMessage messageC = createMessage(new Long(26));
 
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                                      ConsumerImpl.Option.SEES_REQUEUES));
+                                                          EnumSet.of(ConsumerImpl.Option.ACQUIRES,
+                                                      ConsumerImpl.Option.SEES_REQUEUES), 0);
 
         final ArrayList<QueueEntry> queueEntries = new ArrayList<QueueEntry>();
         EntryListAddingAction postEnqueueAction = new EntryListAddingAction(queueEntries);
@@ -517,12 +517,12 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
 
         QueueConsumer consumer1 = (QueueConsumer) _queue.addConsumer(target1, null, messageA.getClass(), "test",
-                                                         EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                                                    ConsumerImpl.Option.SEES_REQUEUES));
+                                                                     EnumSet.of(ConsumerImpl.Option.ACQUIRES,
+                                                                    ConsumerImpl.Option.SEES_REQUEUES), 0);
 
         QueueConsumer consumer2 = (QueueConsumer) _queue.addConsumer(target2, null, messageA.getClass(), "test",
-                                                         EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                                                    ConsumerImpl.Option.SEES_REQUEUES));
+                                                                     EnumSet.of(ConsumerImpl.Option.ACQUIRES,
+                                                                    ConsumerImpl.Option.SEES_REQUEUES), 0);
 
 
         final ArrayList<QueueEntry> queueEntries = new ArrayList<QueueEntry>();
@@ -559,8 +559,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         // Check adding an exclusive consumer adds it to the queue
 
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                           EnumSet.of(ConsumerImpl.Option.EXCLUSIVE, ConsumerImpl.Option.ACQUIRES,
-                                                      ConsumerImpl.Option.SEES_REQUEUES));
+                                                          EnumSet.of(ConsumerImpl.Option.EXCLUSIVE, ConsumerImpl.Option.ACQUIRES,
+                                                      ConsumerImpl.Option.SEES_REQUEUES), 0);
 
         assertEquals("Queue does not have consumer", 1,
                      _queue.getConsumerCount());
@@ -590,7 +590,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
             _queue.addConsumer(subB, null, messageA.getClass(), "test",
                                EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                          ConsumerImpl.Option.SEES_REQUEUES));
+                                          ConsumerImpl.Option.SEES_REQUEUES), 0);
 
         }
         catch (MessageSource.ExistingExclusiveConsumer e)
@@ -603,14 +603,14 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         // existing consumer
         _consumer.close();
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
-                                       EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                                  ConsumerImpl.Option.SEES_REQUEUES));
+                                                          EnumSet.of(ConsumerImpl.Option.ACQUIRES,
+                                                  ConsumerImpl.Option.SEES_REQUEUES), 0);
 
         try
         {
 
             _consumer = (QueueConsumer<?>) _queue.addConsumer(subB, null, messageA.getClass(), "test",
-                                               EnumSet.of(ConsumerImpl.Option.EXCLUSIVE));
+                                                              EnumSet.of(ConsumerImpl.Option.EXCLUSIVE), 0);
 
         }
         catch (MessageSource.ExistingConsumerPreventsExclusive e)
@@ -627,7 +627,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         ServerMessage message = createMessage(id);
 
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, message.getClass(), "test",
-                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES, ConsumerImpl.Option.SEES_REQUEUES));
+                                                          EnumSet.of(ConsumerImpl.Option.ACQUIRES, ConsumerImpl.Option.SEES_REQUEUES),
+                                                          0);
 
         _queue.enqueue(message, new Action<MessageInstance>()
         {

@@ -182,6 +182,12 @@ public class MockConsumer implements ConsumerTarget
     }
 
     @Override
+    public boolean hasCredit()
+    {
+        return _state == State.ACTIVE;
+    }
+
+    @Override
     public void consumerAdded(final ConsumerImpl sub)
     {
     }

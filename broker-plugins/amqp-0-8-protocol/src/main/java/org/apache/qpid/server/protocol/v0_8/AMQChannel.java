@@ -322,7 +322,7 @@ public class AMQChannel
                                                              singleMessageCredit, getDeliveryMethod, getRecordMethod);
         }
 
-        ConsumerImpl sub = queue.addConsumer(target, null, AMQMessage.class, "", options);
+        ConsumerImpl sub = queue.addConsumer(target, null, AMQMessage.class, "", options, 0);
         sub.flush();
         sub.close();
         return getDeliveryMethod.hasDeliveredMessage();
@@ -802,6 +802,43 @@ public class AMQChannel
 
             }
 
+            int priority;
+            if(arguments != null && arguments.containsKey("x-priority"))
+            {
+                Object value = arguments.get("x-priority");
+                if(value instanceof Number)
+                {
+                    priority = ((Number)value).intValue();
+                }
+                else if(value instanceof String || value instanceof AMQShortString)
+                {
+                    try
+                    {
+                        priority = Integer.parseInt(value.toString());
+                    }
+                    catch (NumberFormatException e)
+                    {
+                        priority = 0;
+                    }
+                }
+                else
+                {
+                    priority = 0;
+                }
+
+                if (priority < 0)
+                {
+                    priority = 0;
+                }
+
+            }
+            else
+            {
+                priority = 0;
+            }
+
+
+
             for(MessageSource source : sources)
             {
                 ConsumerImpl sub =
@@ -809,7 +846,7 @@ public class AMQChannel
                                            filterManager,
                                            AMQMessage.class,
                                            AMQShortString.toString(tag),
-                                           options);
+                                           options, priority);
                 if (sub instanceof Consumer<?>)
                 {
                     final Consumer<?> modelConsumer = (Consumer<?>) sub;

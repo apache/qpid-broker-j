@@ -25,11 +25,13 @@ import org.apache.qpid.server.consumer.ConsumerImpl;
 @ManagedObject
 public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>, ConsumerImpl
 {
-    public String DISTRIBUTION_MODE = "distributionMode";
-    public String EXCLUSIVE = "exclusive";
-    public String NO_LOCAL = "noLocal";
-    public String SELECTOR = "selector";
-    public String SETTLEMENT_MODE = "settlementMode";
+    String DISTRIBUTION_MODE = "distributionMode";
+    String EXCLUSIVE = "exclusive";
+    String NO_LOCAL = "noLocal";
+    String SELECTOR = "selector";
+    String SETTLEMENT_MODE = "settlementMode";
+    String PRIORITY = "priority";
+
 
     String SUSPEND_NOTIFICATION_PERIOD = "consumer.suspendNotificationPeriod";
 
@@ -50,6 +52,11 @@ public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>, Co
 
     @ManagedAttribute
     String getSelector();
+
+    @ManagedAttribute(defaultValue = "0",
+                      description="Non-negative number representing the priority of the consumer versus other "
+                                  + "consumers.  Priority 0 is the highest priority.")
+    int getPriority();
 
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound")
     long getBytesOut();

@@ -21,12 +21,13 @@
 
 package org.apache.qpid.server.protocol.v1_0;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
-import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
@@ -37,29 +38,13 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 public class SendingLinkEndpoint extends LinkEndpoint<SendingLinkListener>
 {
 
+    public static final Symbol PRIORITY = Symbol.valueOf("priority");
     private UnsignedInteger _lastDeliveryId;
     private Binary _lastDeliveryTag;
     private Map<Binary, UnsignedInteger> _unsettledMap = new HashMap<Binary, UnsignedInteger>();
     private Binary _transactionId;
+    private int _priority;
 
-    public SendingLinkEndpoint(final Session_1_0 sessionEndpoint, String name)
-    {
-        this(sessionEndpoint, name, null);
-    }
-
-    public SendingLinkEndpoint(final Session_1_0 sessionEndpoint, String name, Map<Binary, Outcome> unsettled)
-    {
-        super(sessionEndpoint, name, unsettled);
-        init();
-    }
-
-
-    public SendingLinkEndpoint(final Session_1_0 sessionEndpoint, String name, Map<Binary, Outcome> unsettled,
-                               DeliveryStateHandler deliveryStateHandler)
-    {
-        super(sessionEndpoint, name, unsettled, deliveryStateHandler);
-        init();
-    }
 
     public SendingLinkEndpoint(final Session_1_0 sessionEndpoint, final Attach attach)
     {
@@ -67,6 +52,52 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLinkListener>
         setSendingSettlementMode(attach.getSndSettleMode());
         setReceivingSettlementMode(attach.getRcvSettleMode());
         init();
+    }
+
+    @Override
+    protected Map<Symbol, Object> initProperties(final Attach attach)
+    {
+
+        Map<Symbol, Object> peerProperties = attach.getProperties();
+        if(peerProperties != null)
+        {
+            Map<Symbol, Object> actualProperties = new HashMap<>();
+            if(peerProperties.containsKey(PRIORITY))
+            {
+                Object value = peerProperties.get(PRIORITY);
+                if(value instanceof Number)
+                {
+                    _priority = ((Number)value).intValue();
+                }
+                else if(value instanceof String || value instanceof AMQShortString)
+                {
+                    try
+                    {
+                        _priority = Integer.parseInt(value.toString());
+                    }
+                    catch (NumberFormatException e)
+                    {
+                        _priority = 0;
+                    }
+                }
+                else
+                {
+                    _priority = 0;
+                }
+
+                if (_priority < 0)
+                {
+                    _priority = 0;
+                }
+                actualProperties.put(PRIORITY, _priority);
+            }
+            return actualProperties;
+        }
+        else
+        {
+
+            return Collections.emptyMap();
+        }
     }
 
     private void init()
@@ -79,6 +110,11 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLinkListener>
     @Override public Role getRole()
     {
         return Role.SENDER;
+    }
+
+    public int getPriority()
+    {
+        return _priority;
     }
 
     public boolean transfer(final Transfer xfr, final boolean decrementCredit)

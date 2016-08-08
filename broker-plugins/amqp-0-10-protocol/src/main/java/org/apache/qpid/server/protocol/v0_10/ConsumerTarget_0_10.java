@@ -131,7 +131,8 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     @Override
     public boolean isFlowSuspended()
     {
-        return getState()!=State.ACTIVE || _deleted.get() || _session.isClosing() || _session.getAMQPConnection().isConnectionStopped(); // TODO check for Session suspension
+        return getState()!=State.ACTIVE || _deleted.get() || _session.isClosing() || _session.getAMQPConnection().isConnectionStopped();
+        // TODO check for Session suspension
     }
 
     @Override

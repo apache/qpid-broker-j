@@ -83,10 +83,10 @@ public abstract class AbstractSystemMessageSource implements MessageSource
 
     @Override
     public Consumer addConsumer(final ConsumerTarget target,
-                                    final FilterManager filters,
-                                    final Class<? extends ServerMessage> messageClass,
-                                    final String consumerName,
-                                    final EnumSet<ConsumerImpl.Option> options)
+                                final FilterManager filters,
+                                final Class<? extends ServerMessage> messageClass,
+                                final String consumerName,
+                                final EnumSet<ConsumerImpl.Option> options, final int priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
                    ConsumerAccessRefused
     {

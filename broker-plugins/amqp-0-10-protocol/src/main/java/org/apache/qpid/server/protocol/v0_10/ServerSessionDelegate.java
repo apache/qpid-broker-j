@@ -319,6 +319,40 @@ public class ServerSessionDelegate extends SessionDelegate
                                                                                  method.getArguments()
                     );
 
+                    int priority;
+                    if(method.hasArguments() && method.getArguments().containsKey("x-priority"))
+                    {
+                        Object value = method.getArguments().get("x-priority");
+                        if(value instanceof Number)
+                        {
+                            priority = ((Number)value).intValue();
+                        }
+                        else if(value instanceof String)
+                        {
+                            try
+                            {
+                                priority = Integer.parseInt(value.toString());
+                            }
+                            catch (NumberFormatException e)
+                            {
+                                priority = 0;
+                            }
+                        }
+                        else
+                        {
+                            priority = 0;
+                        }
+
+                        if (priority < 0)
+                        {
+                            priority = 0;
+                        }
+                    }
+                    else
+                    {
+                        priority = 0;
+                    }
+
                     ((ServerSession)session).register(destination, target);
                     try
                     {
@@ -339,10 +373,11 @@ public class ServerSessionDelegate extends SessionDelegate
                         {
                             ((ServerSession) session).register(
                                     source.addConsumer(target,
-                                                      filterManager,
-                                                      MessageTransferMessage.class,
-                                                      destination,
-                                                      options));
+                                                       filterManager,
+                                                       MessageTransferMessage.class,
+                                                       destination,
+                                                       options,
+                                                       priority));
                         }
                     }
                     catch (Queue.ExistingExclusiveConsumer existing)

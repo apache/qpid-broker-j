@@ -20,7 +20,6 @@
 */
 package org.apache.qpid.server.queue;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -31,92 +30,6 @@ class QueueConsumerList
     private final AtomicReference<ConsumerNode> _tail = new AtomicReference<ConsumerNode>(_head);
     private final AtomicReference<ConsumerNode> _subNodeMarker = new AtomicReference<ConsumerNode>(_head);
     private final AtomicInteger _size = new AtomicInteger();
-
-    public static final class ConsumerNode
-    {
-        private final AtomicBoolean _deleted = new AtomicBoolean();
-        private final AtomicReference<ConsumerNode> _next = new AtomicReference<ConsumerNode>();
-        private final QueueConsumer<?> _sub;
-
-        public ConsumerNode()
-        {
-            //used for sentinel head and dummy node construction
-            _sub = null;
-            _deleted.set(true);
-        }
-
-        public ConsumerNode(final QueueConsumer<?> sub)
-        {
-            //used for regular node construction
-            _sub = sub;
-        }
-
-        /**
-         * Retrieves the first non-deleted node following the current node.
-         * Any deleted non-tail nodes encountered during the search are unlinked.
-         *
-         * @return the next non-deleted node, or null if none was found.
-         */
-        public ConsumerNode findNext()
-        {
-            ConsumerNode next = nextNode();
-            while(next != null && next.isDeleted())
-            {
-                final ConsumerNode newNext = next.nextNode();
-                if(newNext != null)
-                {
-                    //try to move our _next reference forward to the 'newNext'
-                    //node to unlink the deleted node
-                    _next.compareAndSet(next, newNext);
-                    next = nextNode();
-                }
-                else
-                {
-                    //'newNext' is null, meaning 'next' is the current tail. Can't unlink
-                    //the tail node for thread safety reasons, just use the null.
-                    next = null;
-                }
-            }
-
-            return next;
-        }
-
-        /**
-         * Gets the immediately next referenced node in the structure.
-         *
-         * @return the immediately next node in the structure, or null if at the tail.
-         */
-        protected ConsumerNode nextNode()
-        {
-            return _next.get();
-        }
-
-        /**
-         * Used to initialise the 'next' reference. Will only succeed if the reference was not previously set.
-         *
-         * @param node the ConsumerNode to set as 'next'
-         * @return whether the operation succeeded
-         */
-        private boolean setNext(final ConsumerNode node)
-        {
-            return _next.compareAndSet(null, node);
-        }
-
-        public boolean isDeleted()
-        {
-            return _deleted.get();
-        }
-
-        public boolean delete()
-        {
-            return _deleted.compareAndSet(false,true);
-        }
-
-        public QueueConsumer<?> getConsumer()
-        {
-            return _sub;
-        }
-    }
 
     private void insert(final ConsumerNode node, final boolean count)
     {
@@ -236,29 +149,6 @@ class QueueConsumerList
         return _subNodeMarker.get();
     }
 
-
-    public static class ConsumerNodeIterator
-    {
-        private ConsumerNode _lastNode;
-
-        ConsumerNodeIterator(ConsumerNode startNode)
-        {
-            _lastNode = startNode;
-        }
-
-        public ConsumerNode getNode()
-        {
-            return _lastNode;
-        }
-
-        public boolean advance()
-        {
-            ConsumerNode nextNode = _lastNode.findNext();
-            _lastNode = nextNode;
-
-            return _lastNode != null;
-        }
-    }
 
     public ConsumerNodeIterator iterator()
     {

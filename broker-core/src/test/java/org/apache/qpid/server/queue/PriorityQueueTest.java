@@ -63,7 +63,7 @@ public class PriorityQueueTest extends AbstractQueueTestBase
         queue.enqueue(createMessage(9L, (byte) 0), null, null);
 
         // Register subscriber
-        queue.addConsumer(getConsumer(), null, null, "test", EnumSet.noneOf(ConsumerImpl.Option.class));
+        queue.addConsumer(getConsumer(), null, null, "test", EnumSet.noneOf(ConsumerImpl.Option.class), 0);
         Thread.sleep(150);
 
         ArrayList<MessageInstance> msgs = getConsumer().getMessages();

@@ -20,20 +20,22 @@
  */
 package org.apache.qpid.server.message;
 
+import java.util.Collection;
+import java.util.EnumSet;
+
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.store.TransactionLogResource;
 
-import java.util.Collection;
-import java.util.EnumSet;
-
 public interface MessageSource extends TransactionLogResource, MessageNode
 {
      ConsumerImpl addConsumer(ConsumerTarget target, FilterManager filters,
-                         Class<? extends ServerMessage> messageClass,
-                         String consumerName, EnumSet<ConsumerImpl.Option> options)
+                              Class<? extends ServerMessage> messageClass,
+                              String consumerName,
+                              EnumSet<ConsumerImpl.Option> options,
+                              int priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
                    ConsumerAccessRefused;
 

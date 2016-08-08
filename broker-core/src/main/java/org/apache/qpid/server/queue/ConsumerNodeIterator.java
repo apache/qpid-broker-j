@@ -20,37 +20,24 @@
  */
 package org.apache.qpid.server.queue;
 
-import org.apache.qpid.server.message.MessageInstance;
-import org.apache.qpid.server.model.Consumer;
-import org.apache.qpid.server.model.Queue;
-
-public interface QueueConsumer<X extends QueueConsumer<X>> extends Consumer<X>
+public class ConsumerNodeIterator
 {
-    void flushBatched();
+    private ConsumerNode _lastNode;
 
-    void queueEmpty();
+    ConsumerNodeIterator(ConsumerNode startNode)
+    {
+        _lastNode = startNode;
+    }
 
-    boolean hasInterest(QueueEntry node);
+    public ConsumerNode getNode()
+    {
+        return _lastNode;
+    }
 
-    boolean wouldSuspend(QueueEntry entry);
+    public boolean advance()
+    {
+        _lastNode = _lastNode.findNext();
 
-    void restoreCredit(QueueEntry entry);
-
-    void send(QueueEntry entry, boolean batch);
-
-    void acquisitionRemoved(QueueEntry node);
-
-    void queueDeleted();
-
-    Queue<?> getQueue();
-
-    boolean resend(QueueEntry e);
-
-    MessageInstance.ConsumerAcquiredState<X> getOwningState();
-
-    QueueContext getQueueContext();
-
-    void awaitCredit(QueueEntry entry);
-
-    boolean hasCredit();
+        return _lastNode != null;
+    }
 }

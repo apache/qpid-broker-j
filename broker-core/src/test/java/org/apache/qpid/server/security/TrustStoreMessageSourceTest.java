@@ -78,7 +78,7 @@ public class TrustStoreMessageSourceTest extends QpidTestCase
         final ConsumerTarget target = mock(ConsumerTarget.class);
         when(target.allocateCredit(any(ServerMessage.class))).thenReturn(true);
 
-        _trustStoreMessageSource.addConsumer(target, null, ServerMessage.class, getTestName(), options);
+        _trustStoreMessageSource.addConsumer(target, null, ServerMessage.class, getTestName(), options, 0);
 
         ArgumentCaptor<MessageInstance> argumentCaptor = ArgumentCaptor.forClass(MessageInstance.class);
         verify(target).send(any(ConsumerImpl.class), argumentCaptor.capture(), anyBoolean());

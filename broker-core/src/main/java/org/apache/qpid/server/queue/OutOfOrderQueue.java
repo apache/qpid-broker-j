@@ -36,7 +36,7 @@ public abstract class OutOfOrderQueue<X extends OutOfOrderQueue<X>> extends Abst
     protected void checkConsumersNotAheadOfDelivery(final QueueEntry entry)
     {
         // check that all consumers are not in advance of the entry
-        QueueConsumerList.ConsumerNodeIterator subIter = getConsumerList().iterator();
+        ConsumerNodeIterator subIter = getConsumerList().iterator();
         while(subIter.advance() && !entry.isAcquired())
         {
             final QueueConsumer<?> consumer = subIter.getNode().getConsumer();

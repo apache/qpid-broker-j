@@ -115,15 +115,18 @@ class QueueConsumerImpl
     private String _settlementMode;
     @ManagedAttributeField
     private String _selector;
+    @ManagedAttributeField
+    private int _priority;
 
     QueueConsumerImpl(final AbstractQueue<?> queue,
                       ConsumerTarget target, final String consumerName,
                       final FilterManager filters,
                       final Class<? extends ServerMessage> messageClass,
-                      EnumSet<Option> optionSet)
+                      EnumSet<Option> optionSet,
+                      final int priority)
     {
         super(parentsMap(queue, target.getSessionModel().getModelObject()),
-              createAttributeMap(consumerName, filters, optionSet));
+              createAttributeMap(consumerName, filters, optionSet, priority));
         _messageClass = messageClass;
         _sessionReference = target.getSessionModel().getConnectionReference();
         _consumerNumber = CONSUMER_NUMBER_GENERATOR.getAndIncrement();
@@ -163,7 +166,10 @@ class QueueConsumerImpl
         };
     }
 
-    private static Map<String, Object> createAttributeMap(String name, FilterManager filters, EnumSet<Option> optionSet)
+    private static Map<String, Object> createAttributeMap(String name,
+                                                          FilterManager filters,
+                                                          EnumSet<Option> optionSet,
+                                                          int priority)
     {
         Map<String,Object> attributes = new HashMap<String, Object>();
         attributes.put(ID, UUID.randomUUID());
@@ -173,6 +179,7 @@ class QueueConsumerImpl
         attributes.put(DISTRIBUTION_MODE, optionSet.contains(Option.ACQUIRES) ? "MOVE" : "COPY");
         attributes.put(DURABLE,optionSet.contains(Option.DURABLE));
         attributes.put(LIFETIME_POLICY, LifetimePolicy.DELETE_ON_SESSION_END);
+        attributes.put(PRIORITY, priority);
         if(filters != null)
         {
             Iterator<MessageFilter> iter = filters.filters();
@@ -238,6 +245,12 @@ class QueueConsumerImpl
     }
 
     @Override
+    public boolean hasCredit()
+    {
+        return _target.hasCredit();
+    }
+
+    @Override
     public void externalStateChange()
     {
         _queue.deliverAsync();
@@ -293,6 +306,12 @@ class QueueConsumerImpl
             }
 
         }
+    }
+
+    @Override
+    public int getPriority()
+    {
+        return _priority;
     }
 
     public void flushBatched()

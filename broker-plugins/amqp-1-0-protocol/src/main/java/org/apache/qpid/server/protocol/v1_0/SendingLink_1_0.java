@@ -374,7 +374,10 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
 
                 _consumer = _queue.addConsumer(_target,
                                                filters,
-                                               Message_1_0.class, name, options);
+                                               Message_1_0.class,
+                                               name,
+                                               options,
+                                               getEndpoint().getPriority());
             }
             catch (MessageSource.ExistingExclusiveConsumer e)
             {

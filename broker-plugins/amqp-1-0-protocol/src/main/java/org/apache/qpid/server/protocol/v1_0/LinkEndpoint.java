@@ -79,6 +79,7 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
     private Boolean _drain;
     private UnsignedInteger _localHandle;
     private UnsignedLong _maxMessageSize;
+    private Map<Symbol, Object> _properties;
 
     private Map<Binary,Delivery> _unsettledTransfers = new HashMap<Binary,Delivery>();
 
@@ -103,9 +104,11 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
 
         _name = attach.getName();
         _initialUnsettledMap = attach.getUnsettled();
-
+        _properties = initProperties(attach);
         _state = State.ATTACH_RECVD;
     }
+
+    protected abstract Map<Symbol,Object> initProperties(final Attach attach);
 
     public String getName()
     {
@@ -299,6 +302,7 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
         attachToSend.setSndSettleMode(getSendingSettlementMode());
         attachToSend.setRcvSettleMode(getReceivingSettlementMode());
         attachToSend.setUnsettled(_localUnsettled);
+        attachToSend.setProperties(_properties);
 
         if (getRole() == Role.SENDER)
         {

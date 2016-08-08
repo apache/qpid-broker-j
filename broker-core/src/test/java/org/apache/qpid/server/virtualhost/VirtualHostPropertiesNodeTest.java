@@ -56,7 +56,7 @@ public class VirtualHostPropertiesNodeTest extends QpidTestCase
         final ConsumerTarget target = mock(ConsumerTarget.class);
         when(target.allocateCredit(any(ServerMessage.class))).thenReturn(true);
 
-        _virtualHostPropertiesNode.addConsumer(target, null, ServerMessage.class, getTestName(), options);
+        _virtualHostPropertiesNode.addConsumer(target, null, ServerMessage.class, getTestName(), options, 0);
         verify(target).send(any(ConsumerImpl.class), any(MessageInstance.class), anyBoolean());
     }
 }

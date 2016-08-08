@@ -34,7 +34,7 @@ public class ConsumerListTest extends QpidTestCase
     private QueueConsumer _sub1;
     private QueueConsumer _sub2;
     private QueueConsumer _sub3;
-    private QueueConsumerList.ConsumerNode _node;
+    private ConsumerNode _node;
 
     protected void setUp()
     {
@@ -146,9 +146,9 @@ public class ConsumerListTest extends QpidTestCase
      * Traverses the list nodes in a non-mutating fashion, returning the first node which matches the given
      * Consumer, or null if none is found.
      */
-    private QueueConsumerList.ConsumerNode getNodeForConsumer(final QueueConsumerList list, final ConsumerImpl sub)
+    private ConsumerNode getNodeForConsumer(final QueueConsumerList list, final ConsumerImpl sub)
     {
-        QueueConsumerList.ConsumerNode node = list.getHead();
+        ConsumerNode node = list.getHead();
         while (node != null && node.getConsumer() != sub)
         {
             node = node.nextNode();
@@ -162,7 +162,7 @@ public class ConsumerListTest extends QpidTestCase
      */
     private int countNodes(final QueueConsumerList list)
     {
-        QueueConsumerList.ConsumerNode node = list.getHead();
+        ConsumerNode node = list.getHead();
         int count;
         for(count = -1; node != null; count++)
         {
@@ -285,9 +285,9 @@ public class ConsumerListTest extends QpidTestCase
     public void testDeletedMarkedNodeDoesntLeakSubsequentlyDeletedNodes()
     {
         //get the nodes out the list for the 1st and 3rd consumers
-        QueueConsumerList.ConsumerNode sub1Node = getNodeForConsumer(_subList, _sub1);
+        ConsumerNode sub1Node = getNodeForConsumer(_subList, _sub1);
         assertNotNull("Should have been a node present for the consumer", sub1Node);
-        QueueConsumerList.ConsumerNode sub3Node = getNodeForConsumer(_subList, _sub3);
+        ConsumerNode sub3Node = getNodeForConsumer(_subList, _sub3);
         assertNotNull("Should have been a node present for the consumer", sub3Node);
 
         //mark the first consumer node
@@ -327,7 +327,7 @@ public class ConsumerListTest extends QpidTestCase
     public void testMarkedNodeFindsNewConsumerAfterRemovingTailWhilstMarked()
     {
         //get the node out the list for the 3rd consumer
-        QueueConsumerList.ConsumerNode sub3Node = getNodeForConsumer(_subList, _sub3);
+        ConsumerNode sub3Node = getNodeForConsumer(_subList, _sub3);
         assertNotNull("Should have been a node present for the consumer", sub3Node);
 
         //mark the 3rd consumer node
@@ -345,7 +345,7 @@ public class ConsumerListTest extends QpidTestCase
         _subList.add(sub4);
 
         //get the node out the list for the 4th consumer
-        QueueConsumerList.ConsumerNode sub4Node = getNodeForConsumer(_subList, sub4);
+        ConsumerNode sub4Node = getNodeForConsumer(_subList, sub4);
         assertNotNull("Should have been a node present for the consumer", sub4Node);
 
         //verify the marked node (which is now a dummy substitute for the 3rd consumer) returns
@@ -383,7 +383,7 @@ public class ConsumerListTest extends QpidTestCase
         assertNotNull("Should still have been a node present for the deleted consumer",
                 getNodeForConsumer(_subList, _sub1));
 
-        QueueConsumerList.ConsumerNodeIterator iter = _subList.iterator();
+        ConsumerNodeIterator iter = _subList.iterator();
 
         //verify the iterator returns the 2nd consumers node
         assertTrue("Iterator should have been able to advance", iter.advance());
@@ -406,7 +406,7 @@ public class ConsumerListTest extends QpidTestCase
         assertNotNull("Should still have been a node present for the deleted consumer",
                 getNodeForConsumer(_subList, _sub2));
 
-        QueueConsumerList.ConsumerNodeIterator iter = _subList.iterator();
+        ConsumerNodeIterator iter = _subList.iterator();
 
         //verify the iterator returns the 1st consumers node
         assertTrue("Iterator should have been able to advance", iter.advance());
@@ -429,7 +429,7 @@ public class ConsumerListTest extends QpidTestCase
         assertNotNull("Should still have been a node present for the deleted 3rd consumer",
                 getNodeForConsumer(_subList, _sub3));
 
-        QueueConsumerList.ConsumerNodeIterator iter = _subList.iterator();
+        ConsumerNodeIterator iter = _subList.iterator();
 
         //verify the iterator returns the 1st consumers node
         assertTrue("Iterator should have been able to advance", iter.advance());
