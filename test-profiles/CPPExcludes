@@ -243,5 +243,8 @@ org.apache.qpid.test.unit.client.connection.BrokerClosesClientConnectionTest#tes
 # the following test requires running broker with authentication enabled
 org.apache.qpid.transport.ConnectionEstablishmentTest#testAuthenticationBypass
 
-//Node Creation Policy Tests use Broker for Java Specific Config
+#Node Creation Policy Tests use Broker for Java Specific Config
 org.apache.qpid.server.queue.NodeAutoCreationPolicyTest#*
+
+# The consumer x-priority feature is Java Broker Specific
+org.apache.qpid.server.queue.ConsumerPriorityTest#*
