@@ -56,30 +56,37 @@ public class UsernamePrincipal implements QpidPrincipal
     }
 
     @Override
-    public int hashCode()
+    public boolean equals(final Object o)
     {
-        final int prime = 31;
-        return prime * _name.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
+        if (this == o)
         {
             return true;
         }
-        else
+        if (o == null || getClass() != o.getClass())
         {
-            if (obj instanceof UsernamePrincipal)
-            {
-                UsernamePrincipal other = (UsernamePrincipal) obj;
-                return _name.equals(other._name);
-            }
-            else
-            {
-                return false;
-            }
+            return false;
         }
+
+        final UsernamePrincipal that = (UsernamePrincipal) o;
+
+        if (!_name.equals(that._name))
+        {
+            return false;
+        }
+        if (_authenticationProvider == null || that._authenticationProvider == null)
+        {
+            return _authenticationProvider == null && that._authenticationProvider == null;
+        }
+
+        return (_authenticationProvider.getType().equals(that._authenticationProvider.getType())
+                && _authenticationProvider.getName().equals(that._authenticationProvider.getName()));
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = _name.hashCode();
+        result = 31 * result + (_authenticationProvider != null ? _authenticationProvider.hashCode() : 0);
+        return result;
     }
 }

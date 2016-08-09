@@ -58,7 +58,6 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
 {
     private static final String LOCALHOST = "localhost";
     private static final String MOCK_MECH_NAME = "MOCK-MECH-NAME";
-    private static final UsernamePrincipal PRINCIPAL = new UsernamePrincipal("guest", null);
 
     private PrincipalDatabaseAuthenticationManager _manager = null; // Class under test
     private PrincipalDatabase _principalDatabase;
@@ -197,7 +196,9 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
 
         AuthenticationResult result = _manager.authenticate(testServer, "12345".getBytes());
 
-        assertOnlyContainsWrapped(PRINCIPAL, result.getPrincipals());
+        UsernamePrincipal expectedPrincipal = new UsernamePrincipal("guest", _manager);
+
+        assertOnlyContainsWrapped(expectedPrincipal, result.getPrincipals());
         assertEquals(AuthenticationStatus.SUCCESS, result.getStatus());
     }
 
@@ -243,7 +244,9 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         when(_principalDatabase.verifyPassword("guest", "guest".toCharArray())).thenReturn(true);
 
         AuthenticationResult result = _manager.authenticate("guest", "guest");
-        assertOnlyContainsWrapped(PRINCIPAL, result.getPrincipals());
+
+        UsernamePrincipal expectedPrincipal = new UsernamePrincipal("guest", _manager);
+        assertOnlyContainsWrapped(expectedPrincipal, result.getPrincipals());
         assertEquals(AuthenticationStatus.SUCCESS, result.getStatus());
     }
 

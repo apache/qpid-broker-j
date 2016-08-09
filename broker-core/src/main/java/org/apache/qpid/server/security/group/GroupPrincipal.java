@@ -23,9 +23,7 @@ package org.apache.qpid.server.security.group;
 import java.security.Principal;
 import java.util.Enumeration;
 
-import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.security.QpidPrincipal;
 
 /**
@@ -38,21 +36,16 @@ public class GroupPrincipal implements QpidPrincipal
 {
     /** Name of the group */
     private final String _groupName;
-    private final GroupProvider<?> _groupProvider;
-    private final AuthenticationProvider<?> _groupAuthProvider;
+    private final ConfiguredObject<?> _origin;
 
-    public GroupPrincipal(final String groupName, final GroupProvider<?> groupProvider)
+    public GroupPrincipal(final String groupName, final ConfiguredObject<?> origin)
     {
+        if (groupName == null)
+        {
+            throw new IllegalArgumentException("group name cannot be null");
+        }
         _groupName = groupName;
-        _groupProvider = groupProvider;
-        _groupAuthProvider = null;
-    }
-
-    public GroupPrincipal(final String groupName, final AuthenticationProvider<?> groupAuthProvider)
-    {
-        _groupName = groupName;
-        _groupProvider = null;
-        _groupAuthProvider = groupAuthProvider;
+        _origin = origin;
     }
 
     public String getName()
@@ -83,39 +76,36 @@ public class GroupPrincipal implements QpidPrincipal
     @Override
     public ConfiguredObject<?> getOrigin()
     {
-        return (_groupAuthProvider != null ? _groupAuthProvider : _groupProvider);
+        return _origin;
     }
 
-    /**
-     * @see java.lang.Object#hashCode()
-     */
-    public int hashCode()
+    @Override
+    public boolean equals(final Object o)
     {
-        final int prime = 37;
-        return prime * _groupName.hashCode();
-    }
-
-    /**
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
-    public boolean equals(Object obj)
-    {
-        if (this == obj)
+        if (this == o)
         {
             return true;
         }
-        else
+        if (o == null || getClass() != o.getClass())
         {
-            if (obj instanceof GroupPrincipal)
-            {
-                GroupPrincipal other = (GroupPrincipal) obj;
-                return _groupName.equals(other._groupName);
-            }
-            else
-            {
-                return false;
-            }
+            return false;
         }
+
+        final GroupPrincipal that = (GroupPrincipal) o;
+
+        if (!_groupName.equals(that._groupName))
+        {
+            return false;
+        }
+        return _origin != null ? _origin.equals(that._origin) : that._origin == null;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = _groupName.hashCode();
+        result = 31 * result + (_origin != null ? _origin.hashCode() : 0);
+        return result;
     }
 
     @Override
