@@ -2524,7 +2524,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         final long thresholdTime = currentTime - getAlertRepeatGap();
 
         long cumulativeQueueSize = 0;
-        while (queueListIterator.advance())
+        while (!_stopped.get() && queueListIterator.advance())
         {
             final QueueEntry node = queueListIterator.getNode();
             // Only process nodes that are not currently deleted and not dequeued
