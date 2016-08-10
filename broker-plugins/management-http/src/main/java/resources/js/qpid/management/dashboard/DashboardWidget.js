@@ -52,6 +52,8 @@ define(["dojo/_base/declare",
               Deferred)
     {
 
+        var _failedWidgetTypes = {};
+
         var AddWidgetDialogContent = declare("qpid.management.dashboard.AddWidgetDialogContent",
             [dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
             {
@@ -205,9 +207,30 @@ define(["dojo/_base/declare",
                 _createWidget: function (kwargs)
                 {
                     var deferred = new Deferred();
+                    if (_failedWidgetTypes[kwargs.type])
+                    {
+                        // Dojo loader failed before, return a cancelled promise.
+                        var message = "Previous attempt to load module for widget type '"
+                                      + kwargs.type + "' failed. : " + json.stringify(_failedWidgetTypes[kwargs.type]);
+                        deferred.cancel(message);
+                        return deferred.promise;
+                    }
+
+                    var handle = require.on("error", lang.hitch(this, function (error)
+                    {
+                        var message = "Error loading module for widget type '" + kwargs.type + "' : " + json.stringify(
+                                error);
+                        deferred.cancel(message);
+                        handle.remove();
+                        // The on error handler is not re-thrown for subsequent attempts to reload the same failed module.
+                        _failedWidgetTypes[kwargs.type] = error;
+                    }));
+
                     require(["qpid/management/dashboard/widget/" + kwargs.type.toLowerCase()],
                         lang.hitch(this, function (Widget)
                         {
+                            handle.remove();
+
                             var widget = new Widget({
                                 controller: this.controller,
                                 management: this.management,
@@ -246,7 +269,6 @@ define(["dojo/_base/declare",
                                 this.management.errorHandler(error);
                             }));
                         }));
-                    // todo: handle require load failure and cancel deferred
                     return deferred.promise;
                 },
                 _dashboardChanged: function ()
