@@ -55,6 +55,7 @@ import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.apache.qpid.server.store.preferences.PreferenceRecord;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferencesRoot;
@@ -992,7 +993,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
             return Collections.emptySet();
         }
 
-        final Set<Principal> currentPrincipals = Collections.<Principal>unmodifiableSet(currentSubject.getPrincipals(java.security.acl.Group.class));
+        final Set<Principal> currentPrincipals = Collections.<Principal>unmodifiableSet(currentSubject.getPrincipals(GroupPrincipal.class));
         return currentPrincipals;
     }
 
