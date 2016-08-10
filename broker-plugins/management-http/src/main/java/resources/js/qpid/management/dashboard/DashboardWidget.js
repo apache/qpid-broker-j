@@ -30,13 +30,14 @@ define(["dojo/_base/declare",
         "dojox/uuid/generateRandomUuid",
         "dojo/promise/all",
         "dojo/Deferred",
-        "dojox/layout/GridContainerLite",
+        "dojox/layout/GridContainer",
         "dijit/_WidgetBase",
         "dijit/_TemplatedMixin",
         "dijit/_WidgetsInTemplateMixin",
         "dijit/form/Button",
         "dijit/Toolbar",
-        "dijit/Dialog"],
+        "dijit/Dialog",
+        "dijit/registry"],
     function (declare,
               lang,
               json,
@@ -155,6 +156,10 @@ define(["dojo/_base/declare",
                         lang.hitch(this._saveDashboardDialog, this._saveDashboardDialog.hide));
                     this._saveDashboardDialogContent.on("save", lang.hitch(this, this._onPreferenceSave));
 
+                    this.widgetContainer.subscribe("/dojox/mdnd/drop", lang.hitch(this,"_widgetDropped"));
+
+                    this.widgetContainer.enableDnd();
+
                     this.preference.type = "X-Dashboard";
                     this._verifyLayout();
                     this._loadPreferencesAndRestoreWidgets();
@@ -214,6 +219,8 @@ define(["dojo/_base/declare",
                             var portletPromise = widget.createPortlet();
                             portletPromise.then(lang.hitch(this, function (portlet)
                             {
+                                // Required so we can update the layout in sympathy with drag and drop events.
+                                portlet.widgetId = widget.id;
                                 this.widgetContainer.addChild(portlet);
                                 portlet.startup();
                                 widget.on("close", lang.hitch(this, function ()
@@ -238,8 +245,6 @@ define(["dojo/_base/declare",
                                 deferred.cancel(error);
                                 this.management.errorHandler(error);
                             }));
-                            
-                            
                         }));
                     // todo: handle require load failure and cancel deferred
                     return deferred.promise;
@@ -361,6 +366,28 @@ define(["dojo/_base/declare",
                         this.preference.value.layout.column.push(widget.id);
                     }
                     this._dashboardChanged();
+                },
+                _widgetDropped: function (node, targetArea, indexChild)
+                {
+                    var widgetNodes = this.widgetContainer._grid[0].node.children; // Assumes a 1 column grid
+                    if (widgetNodes)
+                    {
+                        var column = [];
+                        for (var i = 0; i < widgetNodes.length; i++)
+                        {
+                            var widgetNode = widgetNodes[i];
+                            if (widgetNode.id)
+                            {
+                                var portlet = dijit.registry.byId(widgetNode.id);
+                                if (portlet.widgetId)
+                                {
+                                    column.push(portlet.widgetId);
+                                }
+                            }
+                        }
+                        this.preference.value.layout.column = column;
+                        this._dashboardChanged();
+                    }
                 }
             });
     });

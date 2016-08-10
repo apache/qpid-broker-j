@@ -169,7 +169,6 @@ define(["dojo/_base/declare",
                     }));
 
                     var portlet = new Portlet({
-                        dndType: 'Portlet',
                         title: preference.name,
                         content: queryGrid,
                         open: !this.hidden,
