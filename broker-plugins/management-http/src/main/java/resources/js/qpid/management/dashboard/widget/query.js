@@ -28,6 +28,7 @@ define(["dojo/_base/declare",
         "dojox/html/entities",
         "dojox/widget/Portlet",
         "dojox/widget/PortletDialogSettings",
+        "dojo/query",
         "dijit/_WidgetBase",
         "dijit/_TemplatedMixin",
         "dijit/_WidgetsInTemplateMixin",
@@ -174,15 +175,39 @@ define(["dojo/_base/declare",
                         open: !this.hidden,
                         onClose: lang.hitch(this, function ()
                         {
-                            if (confirm("Are you sure you want to remove query widget '"
-                                        + entities.encode(new String(preference.name)) + "'?"))
+                            if (confirm("Are you sure you want to remove the query widget '"
+                                        + entities.encode(new String(preference.name)) + "'"
+                                        + " from the dashboard?"))
                             {
                                 this.emit("close");
                             }
-                        })
+                        }),
+                        startup: function ()
+                        {
+                            this.inherited("startup", arguments);
+
+                            // inherited startup adds the settings icon to the portlet's toolbar but does not expose
+                            // a handle to it.
+
+                            var settingsIconNodes = dojo.query(".dashboardWidgetSettingsIcon", this.domNode);
+                            if (settingsIconNodes && settingsIconNodes.length == 1)
+                            {
+                                settingsIconNodes[0].title = "Configure the settings of this widget.";
+                            }
+                        }
                     });
-                    //TODO: on hover a tooltip or hint can be displayed
-                    portlet.editQueryIcon = portlet._createIcon("preferenceAccessIcon",
+
+                    if (portlet.closeIcon)
+                    {
+                        portlet.closeIcon.title = "Remove this query from the dashboard.";
+                    }
+
+                    if (portlet.arrowNode)
+                    {
+                        portlet.arrowNode.title = "Maximise/minimise this widget.";
+                    }
+
+                    portlet._preferenceAccessIcon = portlet._createIcon("preferenceAccessIcon",
                         "preferenceAccessHoverIcon",
                         lang.hitch(this, function ()
                         {
@@ -194,6 +219,7 @@ define(["dojo/_base/declare",
                             };
                             this.controller.showTab(tabData);
                         }));
+                    portlet._preferenceAccessIcon.title = "Open this query in a separate tab.";
 
                     var settings = new QueryWidgetSettings();
                     settings.set("limit", this.limit);
