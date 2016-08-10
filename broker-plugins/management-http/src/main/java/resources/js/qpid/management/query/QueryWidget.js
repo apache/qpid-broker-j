@@ -349,17 +349,14 @@ define(["dojo/_base/declare",
                     this._ownQuery = !this.preference
                                      || !this.preference.owner
                                      || this.preference.owner === this.management.getAuthenticatedUser();
+                    var newQuery = !this.preference || !this.preference.createdDate;
                     this.saveButton.set("disabled", !this._ownQuery);
-                    this.deleteButton.set("disabled", !this._ownQuery || !(this.preference  && this.preference.id));
+                    this.deleteButton.set("disabled", !this._ownQuery || newQuery);
 
                     if (!this._ownQuery)
                     {
-                        this.saveButtonTooltip.set("label", "Shared query owned by someone else cannot be saved!"
-                                                            + "<br/>"
-                                                            + "Please clone query to make your own one.");
-                        this.deleteButtonTooltip.set("label", "Shared query owned by someone else cannot be deleted!"
-                                                            + "<br/>"
-                                                            + "Please clone query to make your own one.");
+                        this.saveButtonTooltip.set("label", "The query belongs to another user.<br/>Use clone if you wish to make your own copy.");
+                        this.deleteButtonTooltip.set("label", "This query belongs to another user.");
                     }
 
                     // advanced mode widgets
@@ -1055,10 +1052,6 @@ define(["dojo/_base/declare",
                 _deleteQuery: function ()
                 {
                     var message = "Are you sure you want to delete the query?";
-                    if (this.preference.id)
-                    {
-                        message = message + "\nQuery information will be removed from preferences.";
-                    }
                     if (confirm(message))
                     {
                         if (this.preference.id)

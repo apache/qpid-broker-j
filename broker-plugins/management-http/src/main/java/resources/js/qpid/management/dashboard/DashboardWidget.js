@@ -36,6 +36,7 @@ define(["dojo/_base/declare",
         "dijit/_WidgetsInTemplateMixin",
         "dijit/form/Button",
         "dijit/Toolbar",
+        "dijit/Tooltip",
         "dijit/Dialog",
         "dijit/registry"],
     function (declare,
@@ -120,6 +121,9 @@ define(["dojo/_base/declare",
                 deleteButton: null,
                 addWidgetButton: null,
                 widgetContainer: null,
+                saveButtonTooltip: null,
+                cloneButtonTooltip: null,
+                deleteButtonTooltip: null,
 
                 // constructor mixed in fields
                 parentObject: null,
@@ -134,7 +138,20 @@ define(["dojo/_base/declare",
                 postCreate: function ()
                 {
                     this.inherited(arguments);
-                    this.deleteButton.set("disabled", true);
+
+                    var ownDashboard = !this.preference || !this.preference.owner
+                                       || this.preference.owner === this.management.getAuthenticatedUser();
+                    var _newDashboard = !this.preference || !this.preference.createdDate;
+                    this.saveButton.set("disabled", !ownDashboard);
+                    this.deleteButton.set("disabled", !ownDashboard || _newDashboard);
+
+                    if (!ownDashboard)
+                    {
+                        this.saveButtonTooltip.set("label", "The query belongs to another user.<br/>"
+                                                            + "Use clone if you wish to make your own copy.");
+                        this.deleteButtonTooltip.set("label", "This query belongs to another user.");
+                    }
+
                     this.saveButton.on("click", lang.hitch(this, this._onSaveButton));
                     this.cloneButton.on("click", lang.hitch(this, this._onCloneButton));
                     this.deleteButton.on("click", lang.hitch(this, this._onDeleteButton));
@@ -173,11 +190,29 @@ define(["dojo/_base/declare",
                 },
                 _onCloneButton: function ()
                 {
-                    this.emit("clone", {parentObject: this.parentObject});
+                    var preference = {id : generateRandomUuid(), type: this.preference.type, value: this.preference.value};
+                    this.emit("clone", {preference: preference, parentObject: this.parentObject});
                 },
                 _onDeleteButton: function ()
                 {
-                    this.emit("delete", {preference: this.getDashboardPreference(), parentObject: this.parentObject});
+                    var message = "Are you sure you want to delete this dashboard?";
+                    if (confirm(message))
+                    {
+                        if (this.preference.id)
+                        {
+                            var deletePromise = this.management.deletePreference(this.parentObject,
+                                this.preference.type,
+                                this.preference.name);
+                            deletePromise.then(lang.hitch(this, function (preference)
+                            {
+                                this.emit("delete");
+                            }));
+                        }
+                        else
+                        {
+                            this.emit("delete");
+                        }
+                    }
                 },
                 _onPreferenceSave: function (event)
                 {
@@ -188,6 +223,7 @@ define(["dojo/_base/declare",
                             this.preference = preference;
                             this._saveDashboardDialog.hide();
                             this.emit("save", {preference: this.preference});
+                            this.deleteButton.set("disabled", false);
                         }));
                 },
                 _onAddWidget: function ()
