@@ -78,6 +78,7 @@ import org.apache.qpid.server.management.plugin.filter.ForbiddingTraceFilter;
 import org.apache.qpid.server.management.plugin.filter.LoggingFilter;
 import org.apache.qpid.server.management.plugin.filter.RedirectingAuthorisationFilter;
 import org.apache.qpid.server.management.plugin.filter.PreemptiveSessionInvalidationFilter;
+import org.apache.qpid.server.management.plugin.filter.RewriteRequestForUncompressedJavascript;
 import org.apache.qpid.server.management.plugin.servlet.FileServlet;
 import org.apache.qpid.server.management.plugin.servlet.RootServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.ApiDocsServlet;
@@ -173,10 +174,19 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     private boolean _allowPortActivation;
     private Map<HttpPort<?>, Connector> _portConnectorMap = new HashMap<>();
 
+    private volatile boolean _serveUncompressedDojo;
+
     @ManagedObjectFactoryConstructor
     public HttpManagement(Map<String, Object> attributes, Broker broker)
     {
         super(attributes, broker);
+    }
+
+    @Override
+    protected void onOpen()
+    {
+        super.onOpen();
+        _serveUncompressedDojo =   Boolean.TRUE.equals(getContextValue(Boolean.class, "qpid.httpManagement.serveUncompressedDojo"));
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED,State.ERRORED}, desiredState = State.ACTIVE)
@@ -328,6 +338,12 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
         root.addFilter(new FilterHolder(new RedirectingAuthorisationFilter()), "/index.html", EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(new FilterHolder(new RedirectingAuthorisationFilter()), "/", EnumSet.of(DispatcherType.REQUEST));
+
+        if (_serveUncompressedDojo)
+        {
+            root.addFilter(RewriteRequestForUncompressedJavascript.class, "/dojo/dojo/*", EnumSet.of(DispatcherType.REQUEST));
+            root.addFilter(RewriteRequestForUncompressedJavascript.class, "/dojo/dojox/*", EnumSet.of(DispatcherType.REQUEST));
+        }
 
         addRestServlet(root, Broker.class);
 
