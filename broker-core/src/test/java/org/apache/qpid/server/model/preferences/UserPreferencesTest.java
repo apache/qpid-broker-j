@@ -28,12 +28,15 @@ import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeSet;
 import java.util.UUID;
 
 import javax.security.auth.Subject;
 
+import com.google.common.collect.ObjectArrays;
 import com.google.common.collect.Sets;
 import org.hamcrest.Description;
 import org.mockito.ArgumentMatcher;
@@ -96,7 +99,7 @@ public class UserPreferencesTest extends QpidTestCase
     {
         final Preference preference = createPreference(_testId,
                                                        "test",
-                                                       "query",
+                                                       "X-query",
                                                        Collections.<String, Object>singletonMap("select", "id,name"));
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
@@ -117,7 +120,7 @@ public class UserPreferencesTest extends QpidTestCase
     {
         final Preference preference = createPreference(_testId,
                                                        "test",
-                                                       "query",
+                                                       "X-query",
                                                        Collections.<String, Object>singletonMap("select", "id,name"));
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
@@ -139,14 +142,14 @@ public class UserPreferencesTest extends QpidTestCase
     {
         final UUID queryUUID = UUID.randomUUID();
         final Preference queryPreference =
-                createPreference(queryUUID, "test", "query", Collections.<String, Object>emptyMap());
+                createPreference(queryUUID, "test", "X-query", Collections.<String, Object>emptyMap());
 
         final UUID dashboardUUID = UUID.randomUUID();
         final Preference dashboardPreference =
-                createPreference(dashboardUUID, "test", "dashboard", Collections.<String, Object>emptyMap());
+                createPreference(dashboardUUID, "test", "X-dashboard", Collections.<String, Object>emptyMap());
 
         final Preference newQueryPreference =
-                createPreference(_testId, "newTest", "query", Collections.<String, Object>emptyMap());
+                createPreference(_testId, "newTest", "X-query", Collections.<String, Object>emptyMap());
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
         {
@@ -154,7 +157,7 @@ public class UserPreferencesTest extends QpidTestCase
             public Void run()
             {
                 awaitPreferenceFuture(_userPreferences.updateOrAppend(Arrays.asList(queryPreference, dashboardPreference)));
-                awaitPreferenceFuture(_userPreferences.replaceByType("query", Collections.singletonList(newQueryPreference)));
+                awaitPreferenceFuture(_userPreferences.replaceByType("X-query", Collections.singletonList(newQueryPreference)));
                 return null;
             }
         });
@@ -167,17 +170,17 @@ public class UserPreferencesTest extends QpidTestCase
     {
         final UUID query1UUID = UUID.randomUUID();
         final Preference queryPreference1 =
-                createPreference(query1UUID, "test", "query", Collections.<String, Object>emptyMap());
+                createPreference(query1UUID, "test", "X-query", Collections.<String, Object>emptyMap());
         final UUID query2UUID = UUID.randomUUID();
         final Preference queryPreference2 =
-                createPreference(query2UUID, "test2", "query", Collections.<String, Object>emptyMap());
+                createPreference(query2UUID, "test2", "X-query", Collections.<String, Object>emptyMap());
 
         final UUID dashboardUUID = UUID.randomUUID();
         final Preference dashboardPreference =
-                createPreference(dashboardUUID, "test", "dashboard", Collections.<String, Object>emptyMap());
+                createPreference(dashboardUUID, "test", "X-dashboard", Collections.<String, Object>emptyMap());
 
         final Preference newQueryPreference =
-                createPreference(_testId, "test", "query", Collections.<String, Object>emptyMap());
+                createPreference(_testId, "test", "X-query", Collections.<String, Object>emptyMap());
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
         {
@@ -185,7 +188,7 @@ public class UserPreferencesTest extends QpidTestCase
             public Void run()
             {
                 awaitPreferenceFuture(_userPreferences.updateOrAppend(Arrays.asList(queryPreference1, queryPreference2, dashboardPreference)));
-                awaitPreferenceFuture(_userPreferences.replaceByTypeAndName("query", "test", newQueryPreference));
+                awaitPreferenceFuture(_userPreferences.replaceByTypeAndName("X-query", "test", newQueryPreference));
                 return null;
             }
         });
@@ -197,14 +200,21 @@ public class UserPreferencesTest extends QpidTestCase
     private Preference createPreference(final UUID queryUUID,
                                         final String name,
                                         final String type,
-                                        final Map<String, Object> attributes)
+                                        final Map<String, Object> preferenceValueAttributes)
     {
         final Preference queryPreference = mock(Preference.class);
+        HashMap<String, Object> preferenceAttributes = new HashMap<>();
+        preferenceAttributes.put(Preference.ID_ATTRIBUTE, queryUUID);
+        preferenceAttributes.put(Preference.NAME_ATTRIBUTE, name);
+        preferenceAttributes.put(Preference.TYPE_ATTRIBUTE, type);
+        preferenceAttributes.put(Preference.VALUE_ATTRIBUTE, preferenceValueAttributes);
+        preferenceAttributes.put(Preference.ASSOCIATED_OBJECT_ATTRIBUTE, _configuredObject.getId());
         when(queryPreference.getId()).thenReturn(queryUUID);
         when(queryPreference.getName()).thenReturn(name);
         when(queryPreference.getType()).thenReturn(type);
         when(queryPreference.getOwner()).thenReturn(_owner);
-        when(queryPreference.getAttributes()).thenReturn(attributes);
+        when(queryPreference.getAssociatedObject()).thenReturn((ConfiguredObject)_configuredObject);
+        when(queryPreference.getAttributes()).thenReturn(preferenceAttributes);
         return queryPreference;
     }
 
@@ -279,7 +289,7 @@ public class UserPreferencesTest extends QpidTestCase
             _failureDescription = "Expected attributes are not found: " + recordAttributes;
             for (Map.Entry entry : _preference.getAttributes().entrySet())
             {
-                if (!entry.getValue().equals(recordAttributes.get(entry.getKey())))
+                if (!Objects.equals(entry.getValue(), recordAttributes.get(entry.getKey())))
                 {
                     return false;
                 }

@@ -30,48 +30,39 @@ import java.util.UUID;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
-import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 
 public class PreferenceFactory
 {
-    public static Preference create(final ConfiguredObject<?> associatedObject,
-                                    final Map<String, Object> attributes)
-    {
-        AuthenticatedPrincipal currentUser = AuthenticatedPrincipal.getCurrentUser();
-        Map<String, Object> overriddenAttributes =  new HashMap<>(attributes);
-        overriddenAttributes.put(Preference.OWNER_ATTRIBUTE, currentUser);
-        overriddenAttributes.put(Preference.LAST_UPDATED_DATE_ATTRIBUTE, System.currentTimeMillis());
-        return recover(associatedObject, overriddenAttributes);
-    }
 
-    public static Preference recover(final ConfiguredObject<?> associatedObject,
-                                    final Map<String, Object> attributes)
+    public static Preference fromAttributes(final ConfiguredObject<?> associatedObject,
+                                     final Map<String, Object> attributes)
     {
         final UUID uuid = getId(attributes);
         final String type = getAttributeAsString(Preference.TYPE_ATTRIBUTE, attributes);
         final String name = getAttributeAsString(Preference.NAME_ATTRIBUTE, attributes);
         final String description = getAttributeAsString(Preference.DESCRIPTION_ATTRIBUTE, attributes);
         final Principal owner = getOwner(attributes);
-        if (owner == null)
-        {
-            throw new IllegalArgumentException("Preference owner is mandatory");
-        }
         final Set<Principal> visibilitySet = getVisibilitySet(attributes);
         final Date lastUpdatedDate = getAttributeAsDate(Preference.LAST_UPDATED_DATE_ATTRIBUTE, attributes);
+        final Date createdDate = getAttributeAsDate(Preference.CREATED_DATE_ATTRIBUTE, attributes);
         final Map<String, Object> preferenceValueAttributes = getPreferenceValue(attributes);
         PreferenceValue value = convertMapToPreferenceValue(type, preferenceValueAttributes);
-        return new PreferenceImpl(associatedObject, uuid, name, type, description,
+        return new PreferenceImpl(associatedObject,
+                                  uuid,
+                                  name,
+                                  type,
+                                  description,
                                   owner,
                                   lastUpdatedDate,
+                                  createdDate,
                                   visibilitySet,
                                   value);
     }
 
-
     private static UUID getId(final Map<String, Object> attributes)
     {
         final Object id = attributes.get(Preference.ID_ATTRIBUTE);
-        UUID uuid;
+        UUID uuid = null;
         if (id != null)
         {
             if (id instanceof UUID)
@@ -87,10 +78,6 @@ public class PreferenceFactory
                 throw new IllegalArgumentException(String.format("Preference attribute '%s' is not a UUID",
                                                                  Preference.ID_ATTRIBUTE));
             }
-        }
-        else
-        {
-            uuid = UUID.randomUUID();
         }
         return uuid;
     }
@@ -134,13 +121,20 @@ public class PreferenceFactory
             HashSet<Principal> principals = new HashSet<>();
             for (Object element : (Collection) value)
             {
-                if (!(element instanceof String))
+                if (element instanceof String)
+                {
+                    principals.add(new GenericPrincipal((String) element));
+                }
+                else if (element instanceof Principal)
+                {
+                    principals.add((Principal) element);
+                }
+                else
                 {
                     String errorMessage =
-                            String.format("Invalid visibilityList element: '%s' is not a String", element);
+                            String.format("Invalid visibilityList element: '%s' is not of expected type.", element);
                     throw new IllegalArgumentException(errorMessage);
                 }
-                principals.add(new GenericPrincipal((String) element));
             }
             return principals;
         }
@@ -176,7 +170,11 @@ public class PreferenceFactory
     private static Date getAttributeAsDate(final String attributeName, final Map<String, Object> attributes)
     {
         Object dateObject = attributes.get(attributeName);
-        if (dateObject instanceof Number)
+        if (dateObject instanceof Date)
+        {
+            return new Date(((Date) dateObject).getTime());
+        }
+        else if (dateObject instanceof Number)
         {
             return new Date(((Number)dateObject).longValue());
         }

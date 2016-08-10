@@ -46,7 +46,7 @@ public class PreferenceTestHelper
         Map<String, Object> preferenceAttributes = new HashMap<>();
         preferenceAttributes.put(Preference.ASSOCIATED_OBJECT_ATTRIBUTE,
                                  associatedObjectId == null ? null : associatedObjectId.toString());
-        preferenceAttributes.put(Preference.ID_ATTRIBUTE, id);
+        preferenceAttributes.put(Preference.ID_ATTRIBUTE, id != null ? id : UUID.randomUUID());
         preferenceAttributes.put(Preference.TYPE_ATTRIBUTE, type);
         preferenceAttributes.put(Preference.NAME_ATTRIBUTE, name);
         preferenceAttributes.put(Preference.DESCRIPTION_ATTRIBUTE, description);

@@ -108,7 +108,7 @@ public class PreferencesRecoverer
                 Map<String, Object> attributes = preferenceRecord.getAttributes();
                 try
                 {
-                    recoveredPreferences.add(PreferenceFactory.recover(associatedObject, attributes));
+                    recoveredPreferences.add(PreferenceFactory.fromAttributes(associatedObject, attributes));
                 }
                 catch (IllegalArgumentException e)
                 {

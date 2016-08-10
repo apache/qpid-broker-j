@@ -112,11 +112,7 @@ public class RestUserPreferenceHandler
             ensureAttributeMatches(providedAttributes, "name", name);
             ensureAttributeMatches(providedAttributes, "type", type);
 
-            UUID providedUuid = getProvidedUuid(providedAttributes);
-
-            Preference preference = PreferenceFactory.create(target, providedAttributes);
-
-            ensureValidVisibilityList(preference.getVisibilityList());
+            Preference preference = PreferenceFactory.fromAttributes(target, providedAttributes);
 
             awaitFuture(userPreferences.replaceByTypeAndName(type, name , preference));
         }
@@ -332,9 +328,7 @@ public class RestUserPreferenceHandler
 
                 ensureAttributeMatches(preferenceAttributes, "type", type);
 
-                Preference preference = PreferenceFactory.create(target, preferenceAttributes);
-
-                ensureValidVisibilityList(preference.getVisibilityList());
+                Preference preference = PreferenceFactory.fromAttributes(target, preferenceAttributes);
 
                 replacementPreferences.add(preference);
             }
@@ -358,9 +352,7 @@ public class RestUserPreferenceHandler
 
             ensureAttributeMatches(preferenceAttributes, "type", type);
 
-            Preference preference = PreferenceFactory.create(target, preferenceAttributes);
-
-            ensureValidVisibilityList(preference.getVisibilityList());
+            Preference preference = PreferenceFactory.fromAttributes(target, preferenceAttributes);
 
             replacementPreferences.add(preference);
         }
@@ -375,44 +367,6 @@ public class RestUserPreferenceHandler
             throw new IllegalArgumentException("Multiple ids in query string are not allowed");
         }
         return (ids == null ? null : UUID.fromString(ids.get(0)));
-    }
-
-    private UUID getProvidedUuid(final Map<String, Object> providedObjectMap)
-    {
-        String providedId = getProvidedAttributeAsString(providedObjectMap, "id");
-        try
-        {
-            return providedId != null ? UUID.fromString(providedId) : null;
-        }
-        catch (IllegalArgumentException iae)
-        {
-            throw new IllegalArgumentException(String.format("Invalid UUID ('%s') found in payload", providedId), iae);
-        }
-    }
-
-    private void ensureValidVisibilityList(final Collection<Principal> visibilityList)
-    {
-        Subject currentSubject = Subject.getSubject(AccessController.getContext());
-        if (currentSubject == null)
-        {
-            throw new SecurityException("Current thread does not have a user");
-        }
-
-        HashSet<String> principalNames = new HashSet<>(currentSubject.getPrincipals().size());
-        for (Principal principal : currentSubject.getPrincipals())
-        {
-            principalNames.add(principal.getName());
-        }
-
-        for (Principal visibilityPrincipal : visibilityList)
-        {
-            if (!principalNames.contains(visibilityPrincipal.getName()))
-            {
-                String errorMessage = String.format("Invalid visibilityList, this user does not hold principal '%s'",
-                                                    visibilityPrincipal);
-                throw new IllegalArgumentException(errorMessage);
-            }
-        }
     }
 
     private void ensureAttributeMatches(final Map<String, Object> preferenceAttributes,

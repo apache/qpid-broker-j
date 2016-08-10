@@ -41,6 +41,7 @@ public class PreferenceImpl implements Preference
     private final ConfiguredObject<?> _associatedObject;
     private final String _type;
     private final Date _lastUpdatedDate;
+    private final Date _createdDate;
 
     public PreferenceImpl(final ConfiguredObject<?> associatedObject,
                           final UUID uuid,
@@ -49,17 +50,13 @@ public class PreferenceImpl implements Preference
                           final String description,
                           final Principal owner,
                           final Date lastUpdatedDate,
+                          final Date createdDate,
                           final Set<Principal> visibilitySet,
                           final PreferenceValue preferenceValue)
     {
         if (associatedObject == null)
         {
             throw new IllegalArgumentException("Preference associatedObject is mandatory");
-        }
-
-        if (uuid == null)
-        {
-            throw new IllegalArgumentException("Preference id is mandatory");
         }
 
         if (name == null || "".equals(name))
@@ -72,12 +69,8 @@ public class PreferenceImpl implements Preference
             throw new IllegalArgumentException("Preference type is mandatory");
         }
 
-        if (owner == null)
-        {
-            throw new IllegalArgumentException("Preference owner is mandatory");
-        }
-
-        _lastUpdatedDate = lastUpdatedDate;
+        _lastUpdatedDate = lastUpdatedDate == null ? null : new Date(lastUpdatedDate.getTime());
+        _createdDate = createdDate == null ? null : new Date(createdDate.getTime());
         _associatedObject = associatedObject;
         _id = uuid;
         _name = name;
@@ -137,6 +130,12 @@ public class PreferenceImpl implements Preference
     }
 
     @Override
+    public Date getCreatedDate()
+    {
+        return new Date(_createdDate.getTime());
+    }
+
+    @Override
     public PreferenceValue getValue()
     {
         return _preferenceValue;
@@ -154,6 +153,7 @@ public class PreferenceImpl implements Preference
         map.put(ASSOCIATED_OBJECT_ATTRIBUTE, _associatedObject.getId());
         map.put(VISIBILITY_LIST_ATTRIBUTE, getVisibilityList());
         map.put(LAST_UPDATED_DATE_ATTRIBUTE, getLastUpdatedDate());
+        map.put(CREATED_DATE_ATTRIBUTE, getCreatedDate());
         map.put(VALUE_ATTRIBUTE, _preferenceValue.getAttributes());
         return map;
     }

@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -118,16 +119,17 @@ public class UserPreferencesImpl implements UserPreferences
 
     private void doUpdateOrAppend(final Collection<Preference> preferences)
     {
-        validateNewPreferencesForUpdate(preferences);
+        Collection<Preference> augmentedPreferences = augmentForUpdate(preferences);
+        validateNewPreferencesForUpdate(augmentedPreferences);
 
         Collection<PreferenceRecord> preferenceRecords = new HashSet<>();
-        for (Preference preference : preferences)
+        for (Preference preference : augmentedPreferences)
         {
             preferenceRecords.add(PreferenceRecordImpl.fromPreference(preference));
         }
         _preferenceStore.updateOrCreate(preferenceRecords);
 
-        for (Preference preference : preferences)
+        for (Preference preference : augmentedPreferences)
         {
             final Preference oldPreference = _preferences.get(preference.getId());
             if (oldPreference != null)
@@ -199,7 +201,8 @@ public class UserPreferencesImpl implements UserPreferences
     {
         Principal currentPrincipal = getMainPrincipalOrThrow();
 
-        validateNewPreferencesForReplaceByType(type, preferences);
+        Collection<Preference> augmentedPreferences = augmentForReplace(preferences);
+        validateNewPreferencesForReplaceByType(type, augmentedPreferences);
 
         Collection<UUID> preferenceRecordsToRemove = new HashSet<>();
         Collection<PreferenceRecord> preferenceRecordsToAdd = new HashSet<>();
@@ -212,7 +215,7 @@ public class UserPreferencesImpl implements UserPreferences
             }
         }
 
-        for (Preference preference : preferences)
+        for (Preference preference : augmentedPreferences)
         {
             preferenceRecordsToAdd.add(PreferenceRecordImpl.fromPreference(preference));
         }
@@ -224,7 +227,7 @@ public class UserPreferencesImpl implements UserPreferences
             _preferencesByName.get(preference.getName()).remove(preference);
         }
 
-        for (Preference preference : preferences)
+        for (Preference preference : augmentedPreferences)
         {
             addPreference(preference);
         }
@@ -250,7 +253,8 @@ public class UserPreferencesImpl implements UserPreferences
     {
         Principal currentPrincipal = getMainPrincipalOrThrow();
 
-        validateNewPreferencesForReplaceByTypeAndName(type, name, newPreference);
+        Preference augmentedPreference = newPreference == null ? null : augmentForReplace(Collections.singleton(newPreference)).iterator().next();
+        validateNewPreferencesForReplaceByTypeAndName(type, name, augmentedPreference);
 
         UUID existingPreferenceId = null;
         Iterator<Preference> preferenceIterator = null;
@@ -271,9 +275,9 @@ public class UserPreferencesImpl implements UserPreferences
         }
 
         _preferenceStore.replace(Collections.singleton(existingPreferenceId),
-                                 newPreference == null
+                                 augmentedPreference == null
                                          ? Collections.<PreferenceRecord>emptyList()
-                                         : Collections.singleton(PreferenceRecordImpl.fromPreference(newPreference)));
+                                         : Collections.singleton(PreferenceRecordImpl.fromPreference(augmentedPreference)));
 
         if (existingPreferenceId != null)
         {
@@ -281,9 +285,9 @@ public class UserPreferencesImpl implements UserPreferences
             preferenceIterator.remove();
         }
 
-        if (newPreference != null)
+        if (augmentedPreference != null)
         {
-            addPreference(newPreference);
+            addPreference(augmentedPreference);
         }
     }
 
@@ -394,7 +398,7 @@ public class UserPreferencesImpl implements UserPreferences
                 }
             }
         }
-        checkForValidPrincipal(preferences);
+        checkForValidVisibilityLists(preferences);
         checkForConflictWithinCollection(preferences);
         checkForIdUniqueness(preferences);
     }
@@ -421,15 +425,88 @@ public class UserPreferencesImpl implements UserPreferences
                     name,
                     newPreference.getName()));
         }
-        checkForValidPrincipal(Collections.singleton(newPreference));
+        checkForValidVisibilityLists(Collections.singleton(newPreference));
         checkForIdUniqueness(Collections.singleton(newPreference));
     }
 
     private void validateNewPreferencesForUpdate(final Collection<Preference> preferences)
     {
-        checkForValidPrincipal(preferences);
+        checkForValidVisibilityLists(preferences);
         checkForConflictWithExisting(preferences);
         checkForConflictWithinCollection(preferences);
+    }
+
+    private Collection<Preference> augmentForUpdate(final Collection<Preference> preferences)
+    {
+        HashSet<Preference> augmentedPreferences = new HashSet<>(preferences.size());
+        for (final Preference preference : preferences)
+        {
+            Map<String, Object> attributes = new HashMap<>(preference.getAttributes());
+            AuthenticatedPrincipal currentUser = AuthenticatedPrincipal.getCurrentUser();
+            Date currentTime = new Date();
+            attributes.put(Preference.LAST_UPDATED_DATE_ATTRIBUTE, currentTime);
+            attributes.put(Preference.CREATED_DATE_ATTRIBUTE, currentTime);
+            attributes.put(Preference.OWNER_ATTRIBUTE, currentUser);
+            if (preference.getId() == null)
+            {
+                attributes.put(Preference.ID_ATTRIBUTE, UUID.randomUUID());
+            }
+            else
+            {
+                Preference existingPreference = _preferences.get(preference.getId());
+                if (existingPreference != null)
+                {
+                    attributes.put(Preference.CREATED_DATE_ATTRIBUTE, existingPreference.getCreatedDate());
+                }
+            }
+            augmentedPreferences.add(PreferenceFactory.fromAttributes(preference.getAssociatedObject(), attributes));
+        }
+        return augmentedPreferences;
+    }
+
+    private Collection<Preference> augmentForReplace(final Collection<Preference> preferences)
+    {
+        HashSet<Preference> augmentedPreferences = new HashSet<>(preferences.size());
+        for (final Preference preference : preferences)
+        {
+            Map<String, Object> attributes = new HashMap<>(preference.getAttributes());
+            AuthenticatedPrincipal currentUser = AuthenticatedPrincipal.getCurrentUser();
+            Date currentTime = new Date();
+            attributes.put(Preference.LAST_UPDATED_DATE_ATTRIBUTE, currentTime);
+            attributes.put(Preference.CREATED_DATE_ATTRIBUTE, currentTime);
+            attributes.put(Preference.OWNER_ATTRIBUTE, currentUser);
+            if (preference.getId() == null)
+            {
+                attributes.put(Preference.ID_ATTRIBUTE, UUID.randomUUID());
+            }
+            augmentedPreferences.add(PreferenceFactory.fromAttributes(preference.getAssociatedObject(), attributes));
+        }
+        return augmentedPreferences;
+    }
+
+    private void checkForValidVisibilityLists(final Collection<Preference> preferences)
+    {
+        Subject currentSubject = Subject.getSubject(AccessController.getContext());
+        if (currentSubject == null)
+        {
+            throw new IllegalStateException("Current thread does not have a user");
+        }
+
+        Set<Principal> principals = currentSubject.getPrincipals();
+
+        for (Preference preference : preferences)
+        {
+            for (Principal visibilityPrincipal : preference.getVisibilityList())
+            {
+                if (!GenericPrincipal.principalsContain(principals, visibilityPrincipal))
+                {
+                    String errorMessage =
+                            String.format("Invalid visibilityList, this user does not hold principal '%s'",
+                                          visibilityPrincipal);
+                    throw new IllegalArgumentException(errorMessage);
+                }
+            }
+        }
     }
 
     private void checkForIdUniqueness(final Collection<Preference> preferences)
@@ -448,22 +525,6 @@ public class UserPreferencesImpl implements UserPreferences
                                                                      preference.getId()));
                 }
             }
-        }
-    }
-
-    private void checkForValidPrincipal(final Collection<Preference> preferences)
-    {
-        Principal currentPrincipal = getMainPrincipalOrThrow();
-
-        for (Preference preference : preferences)
-        {
-            // validate owner
-            if (!principalsEqual(currentPrincipal, preference.getOwner()))
-            {
-                throw new IllegalArgumentException(String.format("Preference owner contradicts the current user.",
-                                                          preference.getId().toString()));
-            }
-
         }
     }
 
@@ -587,14 +648,7 @@ public class UserPreferencesImpl implements UserPreferences
 
     private boolean principalsContain(Collection<Principal> principals, Principal principal)
     {
-        for (Principal currentPrincipal : principals)
-        {
-            if (principalsEqual(principal, currentPrincipal))
-            {
-                return true;
-            }
-        }
-        return false;
+        return GenericPrincipal.principalsContain(principals, principal);
     }
 
     private abstract class PreferencesTask<T> implements Task<T, RuntimeException>

@@ -646,8 +646,8 @@ define(["dojo/_base/lang",
 
         Management.prototype.savePreference = function(parentObject, preference)
         {
-           var url =  this.buildPreferenceUrl(parentObject, preference.type, preference.name);
-           return this.put({url: url}, preference);
+           var url =  this.buildPreferenceUrl(parentObject, preference.type);
+           return this.post({url: url}, [preference]);
         };
 
         Management.prototype.savePreferences = function(parentObject, preferences)

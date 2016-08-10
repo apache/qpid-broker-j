@@ -38,6 +38,7 @@ public interface Preference
     String ASSOCIATED_OBJECT_ATTRIBUTE = "associatedObject";
     String VISIBILITY_LIST_ATTRIBUTE = "visibilityList";
     String LAST_UPDATED_DATE_ATTRIBUTE = "lastUpdatedDate";
+    String CREATED_DATE_ATTRIBUTE = "createdDate";
     String VALUE_ATTRIBUTE = "value";
 
     UUID getId();
@@ -55,6 +56,8 @@ public interface Preference
     Set<Principal> getVisibilityList();
 
     Date getLastUpdatedDate();
+
+    Date getCreatedDate();
 
     PreferenceValue getValue();
 

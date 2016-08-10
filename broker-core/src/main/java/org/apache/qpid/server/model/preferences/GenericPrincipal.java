@@ -20,6 +20,7 @@
 package org.apache.qpid.server.model.preferences;
 
 import java.security.Principal;
+import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -79,6 +80,16 @@ public class GenericPrincipal implements Principal
         return _name.hashCode();
     }
 
+    @Override
+    public String toString()
+    {
+        return "GenericPrincipal{" +
+               "_name='" + _name + '\'' +
+               ", _originType='" + _originType + '\'' +
+               ", _originName='" + _originName + '\'' +
+               '}';
+    }
+
     public String getOriginType()
     {
         return _originType;
@@ -87,6 +98,19 @@ public class GenericPrincipal implements Principal
     public String getOriginName()
     {
         return _originName;
+    }
+
+
+    public static boolean principalsContain(Collection<Principal> principals, Principal principal)
+    {
+        for (Principal currentPrincipal : principals)
+        {
+            if (principalsEqual(principal, currentPrincipal))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static boolean principalsEqual(final Principal p1, final Principal p2)

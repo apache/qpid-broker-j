@@ -532,7 +532,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      MYUSER_SERIALIZATION,
                                      Collections.singleton(MYGROUP_SERIALIZATION),
                                      Collections.<String, Object>emptyMap());
-                             Preference preference = PreferenceFactory.create(_configuredObject, prefAttributes);
+                             Preference preference = PreferenceFactory.fromAttributes(_configuredObject, prefAttributes);
                              awaitPreferenceFuture(_userPreferences.updateOrAppend(Collections.singleton(preference)));
 
                              Map<String, List<Map<String, Object>>> typeToPreferenceListMap =
@@ -566,20 +566,20 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      type,
                                      "testpref",
                                      null,
-                                     MYUSER,
+                                     MYUSER_SERIALIZATION,
                                      null,
                                      Collections.<String, Object>emptyMap());
-                             Preference p1 = PreferenceFactory.create(_configuredObject, pref1Attributes);
+                             Preference p1 = PreferenceFactory.fromAttributes(_configuredObject, pref1Attributes);
                              Map<String, Object> pref2Attributes = createPreferenceAttributes(
                                      null,
                                      null,
                                      type,
                                      "testpref2",
                                      null,
-                                     MYUSER,
+                                     MYUSER_SERIALIZATION,
                                      null,
                                      Collections.<String, Object>emptyMap());
-                             Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
+                             Preference p2 = PreferenceFactory.fromAttributes(_configuredObject, pref2Attributes);
                              awaitPreferenceFuture(_userPreferences.updateOrAppend(Arrays.asList(p1, p2)));
                              UUID id = p1.getId();
 
@@ -618,20 +618,20 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      type,
                                      "testpref",
                                      null,
-                                     MYUSER,
+                                     MYUSER_SERIALIZATION,
                                      null,
                                      Collections.<String, Object>emptyMap());
-                             Preference p1 = PreferenceFactory.create(_configuredObject, pref1Attributes);
+                             Preference p1 = PreferenceFactory.fromAttributes(_configuredObject, pref1Attributes);
                              Map<String, Object> pref2Attributes = createPreferenceAttributes(
                                      null,
                                      null,
                                      type,
                                      "testpref2",
                                      null,
-                                     MYUSER,
+                                     MYUSER_SERIALIZATION,
                                      null,
                                      Collections.<String, Object>emptyMap());
-                             Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
+                             Preference p2 = PreferenceFactory.fromAttributes(_configuredObject, pref2Attributes);
                              awaitPreferenceFuture(_userPreferences.updateOrAppend(Arrays.asList(p1, p2)));
                              UUID id = p1.getId();
 
@@ -716,7 +716,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      MYUSER_SERIALIZATION,
                                      Collections.singleton(MYGROUP_SERIALIZATION),
                                      Collections.<String, Object>emptyMap());
-                             Preference p1 = PreferenceFactory.create(_configuredObject, pref1Attributes);
+                             Preference p1 = PreferenceFactory.fromAttributes(_configuredObject, pref1Attributes);
                              preferences.add(p1);
                              Map<String, Object> pref2Attributes = createPreferenceAttributes(
                                      null,
@@ -727,7 +727,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      MYUSER_SERIALIZATION,
                                      Collections.<String>emptySet(),
                                      Collections.<String, Object>emptyMap());
-                             Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
+                             Preference p2 = PreferenceFactory.fromAttributes(_configuredObject, pref2Attributes);
                              preferences.add(p2);
                              awaitPreferenceFuture(_userPreferences.updateOrAppend(preferences));
                              return null;
@@ -789,7 +789,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      MYUSER_SERIALIZATION,
                                      Collections.singleton(MYGROUP_SERIALIZATION),
                                      Collections.<String, Object>emptyMap());
-                             Preference p1 = PreferenceFactory.create(_configuredObject, pref1Attributes);
+                             Preference p1 = PreferenceFactory.fromAttributes(_configuredObject, pref1Attributes);
                              preferences.add(p1);
                              Map<String, Object> pref2Attributes = createPreferenceAttributes(
                                      null,
@@ -800,7 +800,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      MYUSER_SERIALIZATION,
                                      Collections.<String>emptySet(),
                                      Collections.<String, Object>emptyMap());
-                             Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
+                             Preference p2 = PreferenceFactory.fromAttributes(_configuredObject, pref2Attributes);
                              preferences.add(p2);
                              awaitPreferenceFuture(_userPreferences.updateOrAppend(preferences));
                              return null;
@@ -859,7 +859,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      MYUSER_SERIALIZATION,
                                      Collections.singleton(MYGROUP_SERIALIZATION),
                                      Collections.<String, Object>emptyMap());
-                             Preference p1 = PreferenceFactory.create(_configuredObject, pref1Attributes);
+                             Preference p1 = PreferenceFactory.fromAttributes(_configuredObject, pref1Attributes);
                              preferences.add(p1);
                              Map<String, Object> pref2Attributes = createPreferenceAttributes(
                                      null,
@@ -870,7 +870,7 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      MYUSER_SERIALIZATION,
                                      Collections.<String>emptySet(),
                                      Collections.<String, Object>emptyMap());
-                             Preference p2 = PreferenceFactory.create(_configuredObject, pref2Attributes);
+                             Preference p2 = PreferenceFactory.fromAttributes(_configuredObject, pref2Attributes);
                              preferences.add(p2);
                              awaitPreferenceFuture(_userPreferences.updateOrAppend(preferences));
                              return null;
@@ -914,10 +914,10 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      preferenceType,
                                      preferenceName,
                                      null,
-                                     MYUSER,
+                                     MYUSER_SERIALIZATION,
                                      null,
                                      Collections.<String, Object>emptyMap());
-                             Preference preference = PreferenceFactory.create(_configuredObject,
+                             Preference preference = PreferenceFactory.fromAttributes(_configuredObject,
                                                                               preferenceAttributes);
                              awaitPreferenceFuture(_userPreferences.updateOrAppend(Collections.singleton(preference)));
                              Set<Preference> retrievedPreferences = awaitPreferenceFuture(_userPreferences.getPreferences());
