@@ -984,8 +984,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     protected void onClose()
     {
         _dtxRegistry.close();
-        closeMessageStore();
         shutdownHouseKeeping();
+        closeMessageStore();
         closeNetworkConnectionScheduler();
         _eventLogger.message(VirtualHostMessages.CLOSED(getName()));
 
