@@ -51,6 +51,7 @@ public class SpawnedBrokerHolder extends AbstractBrokerHolder
     private static final String BROKER_STOPPED = System.getProperty("broker.stopped", BrokerMessages.STOPPED().toString());
     private static final String BROKER_COMMAND_PLATFORM = "broker.command." + SystemUtils.getOSConfigSuffix();
     private static final String BROKER_COMMAND_TEMPLATE = System.getProperty(BROKER_COMMAND_PLATFORM, System.getProperty("broker.command"));
+    private static final int BROKER_STARTUP_TIME = Integer.parseInt(System.getProperty("SpawnedBrokerHolder.brokerStartupTime", "30000"));
 
     private final Map<String, String> _jvmOptions;
     private final Map<String, String> _environmentSettings;
@@ -83,7 +84,8 @@ public class SpawnedBrokerHolder extends AbstractBrokerHolder
         mdc.put(QpidBrokerTestCase.CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
         mdc.put("origin", getLogPrefix());
 
-        LOGGER.debug("Spawning broker with options: {} jvmOptions: {} environmentSettings: {}", brokerOptions, _jvmOptions, _environmentSettings);
+        LOGGER.debug("Spawning broker with options: {} jvmOptions: {} environmentSettings: {} permitted start-up time: {}",
+                     brokerOptions, _jvmOptions, _environmentSettings, BROKER_STARTUP_TIME);
 
         String[] cmd = _brokerCommandHelper.getBrokerCommand(Integer.parseInt(brokerOptions.getConfigProperties().get("test.port")),
                                                              brokerOptions.getConfigProperties().get("qpid.work_dir"),
@@ -170,9 +172,11 @@ public class SpawnedBrokerHolder extends AbstractBrokerHolder
         _brokerCommand = cmdLine.toString();
         _pid = retrieveUnixPidIfPossible();
 
-        if (!standardOutputPiper.await(30, TimeUnit.SECONDS))
+        if (!standardOutputPiper.await(BROKER_STARTUP_TIME, TimeUnit.MILLISECONDS))
         {
-            LOGGER.info("broker failed to become ready (" + standardOutputPiper.getReady() + "):" + standardOutputPiper.getStopLine());
+            LOGGER.info("Spawned broker failed to become ready within {} ms."
+                        + " Ready line '{}'",
+                        BROKER_STARTUP_TIME, standardOutputPiper.getReady());
             String threadDump = dumpThreads();
             if (!threadDump.isEmpty())
             {
@@ -190,7 +194,7 @@ public class SpawnedBrokerHolder extends AbstractBrokerHolder
         {
             //test that the broker is still running and hasn't exited unexpectedly
             int exit = _process.exitValue();
-            LOGGER.info("broker aborted: " + exit);
+            LOGGER.info("broker aborted: {}", exit);
             throw new RuntimeException("broker aborted: " + exit);
         }
         catch (IllegalThreadStateException e)
