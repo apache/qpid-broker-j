@@ -323,11 +323,11 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         corsFilter.setInitParameter(CrossOriginFilter.ALLOW_CREDENTIALS_PARAM, String.valueOf(getCorsAllowCredentials()));
         root.addFilter(corsFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
 
+        root.addFilter(new FilterHolder(new PreemptiveSessionInvalidationFilter()), "/api/*", EnumSet.of(DispatcherType.REQUEST));
+
         FilterHolder loggingFilter = new FilterHolder(new LoggingFilter());
         root.addFilter(loggingFilter, "/api/*", EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(loggingFilter, "/service/*", EnumSet.of(DispatcherType.REQUEST));
-
-        root.addFilter(new FilterHolder(new PreemptiveSessionInvalidationFilter()), "/api/*", EnumSet.of(DispatcherType.REQUEST));
 
         root.addFilter(new FilterHolder(new ForbiddingTraceFilter()), "/*", EnumSet.of(DispatcherType.REQUEST));
         FilterHolder restAuthorizationFilter = new FilterHolder(new ForbiddingAuthorisationFilter());

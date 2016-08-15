@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,43 +42,46 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
+import javax.security.auth.login.AccountNotFoundException;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.configuration.CommonProperties;
+import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.BrokerPrincipal;
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.BrokerMessages;
+import org.apache.qpid.server.logging.messages.VirtualHostMessages;
+import org.apache.qpid.server.model.preferences.GenericPrincipal;
+import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
+import org.apache.qpid.server.plugin.SystemNodeCreator;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.CompoundAccessControl;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
-import org.apache.qpid.server.security.group.GroupPrincipal;
-import org.apache.qpid.server.store.preferences.PreferenceRecord;
-import org.apache.qpid.server.store.preferences.PreferenceStore;
-import org.apache.qpid.server.store.preferences.PreferencesRoot;
-import org.apache.qpid.server.store.preferences.PreferenceStoreUpdaterImpl;
-import org.apache.qpid.server.store.preferences.PreferencesRecoverer;
-import org.apache.qpid.server.util.HousekeepingExecutor;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.qpid.configuration.CommonProperties;
-import org.apache.qpid.server.BrokerOptions;
-import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.messages.BrokerMessages;
-import org.apache.qpid.server.logging.messages.VirtualHostMessages;
-import org.apache.qpid.server.plugin.QpidServiceLoader;
-import org.apache.qpid.server.plugin.SystemNodeCreator;
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.SimpleAuthenticationManager;
+import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.FileBasedSettings;
+import org.apache.qpid.server.store.preferences.PreferenceRecord;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.store.preferences.PreferenceStoreUpdaterImpl;
+import org.apache.qpid.server.store.preferences.PreferencesRecoverer;
+import org.apache.qpid.server.store.preferences.PreferencesRoot;
+import org.apache.qpid.server.util.HousekeepingExecutor;
 import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
 import org.apache.qpid.util.SystemUtils;
 
@@ -995,6 +999,103 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
         final Set<Principal> currentPrincipals = Collections.<Principal>unmodifiableSet(currentSubject.getPrincipals(GroupPrincipal.class));
         return currentPrincipals;
+    }
+
+    @Override
+    public void purgeUser(final AuthenticationProvider<?> origin, final String username)
+    {
+        doSync(doOnConfigThread(new Task<ListenableFuture<Void>, Exception>()
+        {
+            @Override
+            public ListenableFuture<Void> execute() throws Exception
+            {
+                doPurgeUser(origin, username);
+                return Futures.immediateFuture(null);
+            }
+
+            @Override
+            public String getObject()
+            {
+                return BrokerImpl.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "purgeUser";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return String.format("%s@%s('%s')", username, origin.getType(), origin.getName());
+            }
+        }));
+    }
+
+    private void doPurgeUser(final AuthenticationProvider<?> origin, final String username)
+    {
+        // remove from AuthenticationProvider
+        if (origin instanceof PasswordCredentialManagingAuthenticationProvider)
+        {
+            try
+            {
+                ((PasswordCredentialManagingAuthenticationProvider) origin).deleteUser(username);
+            }
+            catch (AccountNotFoundException e)
+            {
+                // pass
+            }
+        }
+
+        // remove from Groups
+        final Collection<GroupProvider> groupProviders = getChildren(GroupProvider.class);
+        for (GroupProvider<?> groupProvider : groupProviders)
+        {
+            final Collection<Group> groups = groupProvider.getChildren(Group.class);
+            for (Group<?> group : groups)
+            {
+                final Collection<GroupMember> members = group.getChildren(GroupMember.class);
+                for (GroupMember<?> member : members)
+                {
+                    if (username.equals(member.getName()))
+                    {
+                        member.delete();
+                    }
+                }
+            }
+        }
+
+        // remove Preferences from all ConfiguredObjects
+        Subject userSubject = new Subject(true,
+                                          Collections.singleton(new AuthenticatedPrincipal(new UsernamePrincipal(username, origin))),
+                                          Collections.EMPTY_SET,
+                                          Collections.EMPTY_SET);
+        java.util.Queue<ConfiguredObject<?>> configuredObjects = new LinkedList<>();
+        configuredObjects.add(BrokerImpl.this);
+        while (!configuredObjects.isEmpty())
+        {
+            final ConfiguredObject<?> currentObject = configuredObjects.poll();
+            final Collection<Class<? extends ConfiguredObject>> childClasses = getModel().getChildTypes(currentObject.getClass());
+            for (Class<? extends ConfiguredObject> childClass : childClasses)
+            {
+                final Collection<? extends ConfiguredObject> children = currentObject.getChildren(childClass);
+                for (ConfiguredObject child : children)
+                {
+                    configuredObjects.add(child);
+                }
+            }
+
+            Subject.doAs(userSubject, new PrivilegedAction<Void>()
+            {
+                @Override
+                public Void run()
+                {
+                    currentObject.getUserPreferences().delete(null, null, null);
+                    return null;
+                }
+            });
+        }
     }
 
     protected void shutdownHouseKeeping()

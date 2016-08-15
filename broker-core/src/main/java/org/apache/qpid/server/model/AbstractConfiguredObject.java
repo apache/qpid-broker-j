@@ -2273,6 +2273,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     public <C extends ConfiguredObject> Collection<C> getChildren(final Class<C> clazz)
     {
         Collection<ConfiguredObject<?>> children = _children.get(clazz);
+        if (children == null)
+        {
+            return Collections.EMPTY_LIST;
+        }
         return Collections.unmodifiableList((List<? extends C>) children);
     }
 

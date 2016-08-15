@@ -22,6 +22,7 @@ package org.apache.qpid.server.security.auth.manager;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +33,7 @@ import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.AccountNotFoundException;
 import javax.security.sasl.AuthorizeCallback;
 import javax.security.sasl.Sasl;
 import javax.security.sasl.SaslException;
@@ -42,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainPasswordCallback;
@@ -51,7 +54,7 @@ import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServerSourceAdap
 
 @ManagedObject( category = false, type = "Simple", register = false )
 public class SimpleAuthenticationManager extends AbstractAuthenticationManager<SimpleAuthenticationManager>
-        implements UsernamePasswordAuthenticationProvider<SimpleAuthenticationManager>
+        implements PasswordCredentialManagingAuthenticationProvider<SimpleAuthenticationManager>
 {
     private static final Logger _logger = LoggerFactory.getLogger(SimpleAuthenticationManager.class);
 
@@ -87,7 +90,7 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
 
     public void addUser(String username, String password)
     {
-        _users.put(username, password);
+        createUser(username, password, Collections.EMPTY_MAP);
     }
 
     @Override
@@ -159,6 +162,51 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
             }
         }
         return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR);
+    }
+
+    @Override
+    public boolean createUser(final String username, final String password, final Map<String, String> attributes)
+    {
+        _users.put(username, password);
+        return true;
+    }
+
+    @Override
+    public void deleteUser(final String username) throws AccountNotFoundException
+    {
+        if (_users.remove(username) == null)
+        {
+            throw new AccountNotFoundException("No such user: '" + username + "'");
+        }
+    }
+
+    @Override
+    public void setPassword(final String username, final String password) throws AccountNotFoundException
+    {
+        if (_users.containsKey(username))
+        {
+            _users.put(username, password);
+        }
+        else
+        {
+            throw new AccountNotFoundException("No such user: '" + username + "'");
+        }
+    }
+
+    @Override
+    public Map<String, Map<String, String>> getUsers()
+    {
+        final HashMap<String, Map<String, String>> users = new HashMap<>();
+        for (String username : _users.keySet())
+        {
+            users.put(username, Collections.EMPTY_MAP);
+        }
+        return users;
+    }
+
+    @Override
+    public void reload() throws IOException
+    {
     }
 
     private class SimpleCramMd5CallbackHandler implements CallbackHandler

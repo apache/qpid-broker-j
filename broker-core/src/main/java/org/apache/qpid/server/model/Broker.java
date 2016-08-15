@@ -260,6 +260,10 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedOperation(nonModifying = true, description = "Returns the groups to which the currently authenticated user belongs")
     Set<Principal> getGroups();
 
+    @ManagedOperation(description = "Removes a user and all associated preferences from the brokers configuration")
+    void purgeUser(@Param(name="origin", description="The AuthenticationProvider the username is associated with")AuthenticationProvider<?> origin,
+                   @Param(name="username", description="The unqualified username that should be purged from the broker")String username);
+
     //children
     Collection<VirtualHostNode<?>> getVirtualHostNodes();
 
