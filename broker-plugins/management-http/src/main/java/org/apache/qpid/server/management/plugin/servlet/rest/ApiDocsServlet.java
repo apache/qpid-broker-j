@@ -296,16 +296,13 @@ public class ApiDocsServlet extends AbstractServlet
 
         for(ConfiguredObjectAttribute attribute : attributeTypes)
         {
-            if(!attribute.isDerived())
-            {
-                writer.println("<tr><td class=\"name\">"
-                               + attribute.getName()
-                               + "</td><td class=\"type\">"
-                               + renderType(attribute)
-                               + "</td><td class=\"description\">"
-                               + attribute.getDescription()
-                               + "</td></tr>");
-            }
+            writer.println("<tr><td class=\"name\">"
+                           + attribute.getName()
+                           + "</td><td class=\"type\">"
+                           + renderType(attribute)
+                           + "</td><td class=\"description\">"
+                           + attribute.getDescription()
+                           + "</td></tr>");
         }
         writer.println("</tbody>");
 
