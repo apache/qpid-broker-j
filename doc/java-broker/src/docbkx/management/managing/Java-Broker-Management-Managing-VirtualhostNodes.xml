@@ -84,7 +84,7 @@
             service can be restore when less than quorum nodes are present. See <xref linkend="Java-Broker-High-Availability-Behaviour-MinimumNumberOfNodes"/></para>
         </listitem>
         <listitem>
-          <para><emphasis>Designated Primary</emphasis> (HA only - groups of two). Allows a single
+          <para><emphasis>Allow this node to operate solo</emphasis> (HA only - groups of two). Allows a single
             node in a two node group to operate solo. See <xref linkend="Java-Broker-High-Availability-Behaviour-DesignatedPrimary"/></para>
         </listitem>
       </itemizedlist>

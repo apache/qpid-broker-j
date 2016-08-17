@@ -1393,7 +1393,7 @@
         <row>
           <entry>
             <para>This node has been designated primary and can now operate solo. Applies to two
-              node groups only.</para>
+              node groups only. See <xref linkend="Java-Broker-High-Availability-Behaviour-DesignatedPrimary"/></para>
           </entry>
         </row>
         <row xml:id="Java-Broker-Appendix-Operation-Logging-Message-HA-1014">

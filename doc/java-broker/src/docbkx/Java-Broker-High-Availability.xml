@@ -366,19 +366,19 @@
       </important>
     </section>
     <section xml:id="Java-Broker-High-Availability-Behaviour-DesignatedPrimary">
-      <title>Designated Primary</title>
-      <para>This attribute applies to the groups of two only.</para>
+      <title>Allow to Operate Solo</title>
+      <para>This attribute only applies to groups containing exactly two nodes.</para>
       <para> In a group of two, if a node were to fail then in default configuration work will cease
         as quorum no longer exists. A single node cannot elect itself master. </para>
-      <para>The designated primary flag allows a node in a two node group to elect itself master and
-        to operate sole. Designated Primary is configured as an <link linkend="Java-Broker-Management-Managing-Virtualhost-Nodes-Attributes">attribute on the
+      <para>The <literal>allow to operate solo</literal> flag allows a node in a two node group to elect itself master and
+        to operate sole. It is configured as an <link linkend="Java-Broker-Management-Managing-Virtualhost-Nodes-Attributes">attribute on the
           virtualhost node</link> and can be changed at runtime and is effective immediately.</para>
       <para>For example, consider a group of two where the master fails. Service will be interrupted
         as the remaining node cannot elect itself master. To allow it to become master, apply the
-        designated primary flag to it. It will elect itself master and work can continue, albeit
+        <literal>allow to operate solo</literal> flag to it. It will elect itself master and work can continue, albeit
         from one node.</para>
       <important>
-        <para>It is imperative not to allow designated primary to be set on both nodes at once. To
+        <para>It is imperative not to allow the <literal>allow to operate solo</literal> flag to be set on both nodes at once. To
           do so will mean, in the event of a network partition, a <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://en.wikipedia.org/wiki/Split-brain_(computing)">split-brain</link> will
             occur.</para>
         <para>Transaction loss is reported by message <link linkend="Java-Broker-Appendix-Operation-Logging-Message-HA-1014">HA-1014</link>.</para>
