@@ -359,8 +359,8 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     @StateTransition( currentState = {State.ACTIVE, State.ERRORED}, desiredState = State.STOPPED )
     private ListenableFuture<Void> doStop()
     {
-        closePreferenceStore();
         stopPreferenceTaskExecutor();
+        closePreferenceStore();
         return Futures.immediateFuture(null);
     }
 
@@ -708,8 +708,8 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
         shutdownHouseKeeping();
 
-        closePreferenceStore();
         stopPreferenceTaskExecutor();
+        closePreferenceStore();
 
         _eventLogger.message(BrokerMessages.STOPPED());
 

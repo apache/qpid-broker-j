@@ -579,8 +579,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         shutdownHouseKeeping();
         closeNetworkConnectionScheduler();
         closeMessageStore();
-        closePreferenceStore();
         stopPreferenceTaskExecutor();
+        closePreferenceStore();
         stopLogging(new ArrayList<>(getChildren(VirtualHostLogger.class)));
     }
 
@@ -1368,8 +1368,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _dtxRegistry.close();
         shutdownHouseKeeping();
         closeMessageStore();
-        closePreferenceStore();
         stopPreferenceTaskExecutor();
+        closePreferenceStore();
         closeNetworkConnectionScheduler();
         _eventLogger.message(VirtualHostMessages.CLOSED(getName()));
 
@@ -2020,8 +2020,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 shutdownHouseKeeping();
                 closeNetworkConnectionScheduler();
                 closeMessageStore();
-                closePreferenceStore();
                 stopPreferenceTaskExecutor();
+                closePreferenceStore();
                 setState(State.STOPPED);
                 stopLogging(loggers);
             }
