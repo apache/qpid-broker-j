@@ -337,51 +337,25 @@ define(["dojo/_base/declare",
                 {
                     if (this.preference.value && this.preference.value.widgets)
                     {
-                        var brokerPreferencesPromise = this.management.getVisiblePreferences({type: "broker"});
-                        var virtualHostsPreferencesPromise = this.management.getVisiblePreferences({
-                            type: "virtualhost",
-                            name: "*",
-                            parent: {
-                                type: "virtualhostnode",
-                                name: "*",
-                                parent: {type: "broker"}
-                            }
-                        });
-
-                        var resultPromise = all({
-                            brokerPreferences: brokerPreferencesPromise,
-                            virtualHostsPreferences: virtualHostsPreferencesPromise
-                        });
-
-                        resultPromise.then(lang.hitch(this, this._unwrapPreferencesAndRestoreWidgets));
+                        var preferencesPromise = this.management.getVisiblePreferences(this.parentObject);
+                        preferencesPromise.then(lang.hitch(this, this._unwrapPreferencesAndRestoreWidgets));
                     }
                 },
-                _unwrapPreferencesAndRestoreWidgets: function (allPreferences)
+                _unwrapPreferencesAndRestoreWidgets: function (typePreferenceMap)
                 {
                     var preferences = {};
-
-                    var unwrapPreferences = function (typePreferenceMap)
+                    for (var type in typePreferenceMap)
                     {
-                        for (var type in typePreferenceMap)
+                        if (typePreferenceMap.hasOwnProperty(type))
                         {
-                            if (typePreferenceMap.hasOwnProperty(type))
+                            var typePreferences = typePreferenceMap[type];
+                            for (var i = 0; i < typePreferences.length; i++)
                             {
-                                var typePreferences = typePreferenceMap[type];
-                                for (var i = 0; i < typePreferences.length; i++)
-                                {
-                                    var preference = typePreferences[i];
-                                    preferences[preference.id] = preference;
-                                }
+                                var preference = typePreferences[i];
+                                preferences[preference.id] = preference;
                             }
                         }
-                    };
-
-                    unwrapPreferences(allPreferences.brokerPreferences);
-                    for (var i = 0; i < allPreferences.virtualHostsPreferences.length; i++)
-                    {
-                        unwrapPreferences(allPreferences.virtualHostsPreferences[i]);
                     }
-
                     this._restoreWidgets(preferences);
                 },
                 _restoreWidgets: function (preferences)

@@ -78,7 +78,7 @@ define(["dojo/_base/declare",
                 {
                     var brokerPreferencesPromise = null;
                     var virtualHostsPreferencesPromise = null;
-                    if (this.preferenceRoot && this.preferenceRoot.type !== "broker")
+                    if (this.preferenceRoot)
                     {
                         var query = this.management.getVisiblePreferences(this.preferenceRoot, this.preferenceType);
                         var brokerDeferred = new Deferred();
