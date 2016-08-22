@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -24,7 +23,7 @@ define(["dojo/_base/declare",
         "dojo/_base/array",
         "dojo/json",
         "dojo/dom-construct",
-        "dojo/text!query/MessageDialogForm.html",
+        "dojo/text!common/MessageDialogForm.html",
         "dojo/Evented",
         "dojox/html/entities",
         "dijit/Dialog",
@@ -36,7 +35,7 @@ define(["dojo/_base/declare",
         "dojo/domReady!"], function (declare, lang, array, json, domConstruct, template, Evented, entities)
 {
 
-    var MessageDialogForm = declare("qpid.management.query.MessageDialogForm",
+    var MessageDialogForm = declare("qpid.common.MessageDialogForm",
         [dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
         {
             /**
@@ -78,7 +77,7 @@ define(["dojo/_base/declare",
             }
         });
 
-    return declare("qpid.management.query.MessageDialog", [dijit.Dialog, Evented], {
+    return declare("qpid.common.MessageDialog", [dijit.Dialog, Evented], {
         postCreate: function ()
         {
             this.inherited(arguments);

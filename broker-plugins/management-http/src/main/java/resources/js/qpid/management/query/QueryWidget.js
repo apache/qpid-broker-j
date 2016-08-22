@@ -44,7 +44,7 @@ define(["dojo/_base/declare",
         "dijit/form/SimpleTextarea",
         "dijit/Toolbar",
         "dijit/Dialog",
-        "qpid/management/query/MessageDialog"],
+        "qpid/common/MessageDialog"],
     function (declare,
               lang,
               parser,
@@ -443,9 +443,9 @@ define(["dojo/_base/declare",
                         {
                             var formattedMessage = "<div>Copying of query settings is only supported on switching from Standard view into Advanced view!<br/>"
                                                    + "Switching back from Advanced view into Standard view will completely reset the query.<br/><br/>"
-                                                   + "Are you sure you want to switch from Standard view into Advanced view?"
+                                                   + "Are you sure you want to switch from Standard view into Advanced view?";
                             "</div>";
-                            this._switchModeWarningDialog = new qpid.management.query.MessageDialog({
+                            this._switchModeWarningDialog = new qpid.common.MessageDialog({
                                 title: "Warning!",
                                 message: formattedMessage
                             }, domConstruct.create("div"));

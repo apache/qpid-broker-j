@@ -169,9 +169,13 @@ define(["dojo/dom",
                         closable: true,
                         onClose: function ()
                         {
-                            tabObject.close();
-                            delete that.viewedObjects[tabObjectId];
-                            return true;
+                            var closeResult = tabObject.close();
+                            if (typeof closeResult === "undefined" || (typeof closeResult === "boolean" && closeResult))
+                            {
+                                delete that.viewedObjects[tabObjectId];
+                                return true;
+                            }
+                            return false;
                         }
                     });
                     this.tabContainer.addChild(contentPane);

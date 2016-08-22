@@ -27,6 +27,7 @@ define(["dojo/parser",
         "qpid/common/util",
         "dojo/text!showQueryTab.html",
         "qpid/management/query/QueryWidget",
+        "qpid/common/MessageDialog",
         "dojo/domReady!"],
     function (parser, lang, all, Deferred, query, json, util, template, QueryWidget)
     {
@@ -36,9 +37,19 @@ define(["dojo/parser",
             this.tabData = kwArgs.tabData;
             this.parent = kwArgs.tabData.modelObject;
             this.management = this.controller.management;
+            this.changed = !this.tabData.data.name;
+            this.confirmationDilog = new qpid.common.MessageDialog({
+                title: "Discard unsaved changed?",
+                message: "<div>Query contains unsaved changes.<br/>Would you like to close it anyway?</div>"
+            });
+            this.dialogHandle = this.confirmationDilog.on("execute", lang.hitch(this, function (stopDisplaying)
+            {
+                QueryTab.stopDisplayingConfirmation = stopDisplaying;
+                this.destroy();
+            }));
         }
 
-        QueryTab.prototype.getTitle = function (changed)
+        QueryTab.prototype.getTitle = function ()
         {
             if (this.tabData.preferenceId && !this.tabData.data)
             {
@@ -51,7 +62,7 @@ define(["dojo/parser",
                 category = category.charAt(0).toUpperCase() + category.substring(1);
             }
             var name = this.tabData.data.name ? this.tabData.data.name : "New";
-            var prefix = this.tabData.data.name && !changed ? "" : "*";
+            var prefix = this.tabData.data.name && !this.changed ? "" : "*";
             var path = this.controller.structure.getHierarchicalName(this.parent);
             return prefix + category + " query:" + name + path;
         };
@@ -119,13 +130,15 @@ define(["dojo/parser",
 
             this.queryWidget.on("save", lang.hitch(this, function(e)
             {
+                this.changed = false;
                 this.tabData.data = e.preference;
                 var title = this.getTitle();
                 this.contentPane.set("title", title);
             }));
             this.queryWidget.on("change", lang.hitch(this, function(e)
             {
-                var title = this.getTitle(true);
+                this.changed = true;
+                var title = this.getTitle();
                 this.contentPane.set("title", title);
             }));
             this.queryWidget.on("delete", lang.hitch(this, function(e)
@@ -147,20 +160,30 @@ define(["dojo/parser",
 
         QueryTab.prototype.close = function ()
         {
-            if (this.queryWidget != null)
+            if (!this.changed || (this.changed && QueryTab.stopDisplayingConfirmation))
             {
-                this.queryWidget.destroyRecursive();
-                this.queryWidget = null;
+                if (this.queryWidget != null)
+                {
+                    this.queryWidget.destroyRecursive();
+                    this.queryWidget = null;
+                }
+                this.dialogHandle.remove();
+                return true;
             }
+
+            this.confirmationDilog.show();
+            return false;
         };
 
         QueryTab.prototype.destroy = function ()
         {
-            this.close();
+            this.changed = false;
             this.contentPane.onClose();
             this.controller.tabContainer.removeChild(this.contentPane);
             this.contentPane.destroyRecursive();
         };
+
+        QueryTab.stopDisplayingConfirmation = false;
 
         return QueryTab;
     });

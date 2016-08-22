@@ -20,12 +20,12 @@
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" width="360" height="360" id="notificationIcon" version="1.1">
-    <g id="layer1" transform="translate(180,180)">
-        <circle style="fill:#0000ff;stroke:#000000;stroke-width:30;stroke-opacity:1" id="circle" cx="0" cy="0" r="165"/>
-        <text id="text" y="0" x="0"
-              style="dominant-baseline:middle;font-style:normal;font-weight:bold;font-size:300px;font-family:Sans;fill:#ffffff;fill-opacity:1;stroke:none">
-            <tspan y="25" x="0" text-anchor="middle" id="text">!</tspan>
-        </text>
-    </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="360" id="questionIcon" version="1.1">
+  <g id="layer1" transform="translate(180,180)">
+    <circle style="fill:#0000ff;stroke:#000000;stroke-width:30;stroke-opacity:1" id="circle" cx="0" cy="0" r="165"/>
+    <text id="text3761" y="0" x="0"
+          style="dominant-baseline:middle;font-style:normal;font-weight:bold;font-size:300px;font-family:Sans;fill:#ffffff;fill-opacity:1;stroke:none">
+      <tspan y="25" x="0" text-anchor="middle" id="text">?</tspan>
+    </text>
+  </g>
 </svg>
