@@ -152,6 +152,14 @@ define(["dojo/parser",
                 });
             }));
             this.dashboardWidget.startup();
+            this.contentPane.on("show", lang.hitch(this, function ()
+            {
+                this.dashboardWidget.activate();
+            }));
+            this.contentPane.on("hide", lang.hitch(this, function ()
+            {
+                this.dashboardWidget.deactivate();
+            }));
         };
 
         DashboardTab.prototype.close = function ()

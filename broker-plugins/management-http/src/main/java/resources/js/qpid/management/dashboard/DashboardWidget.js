@@ -134,11 +134,13 @@ define(["dojo/_base/declare",
                 // inner fields
                 _addWidgetDialog: null,
                 _addWidgetDialogContent: null,
+                _widgets: null,
 
                 postCreate: function ()
                 {
                     this.inherited(arguments);
 
+                    this._widgets = [];
                     var ownDashboard = !this.preference || !this.preference.owner
                                        || this.preference.owner === this.management.getAuthenticatedUser();
                     var _newDashboard = !this.preference || !this.preference.createdDate;
@@ -182,6 +184,20 @@ define(["dojo/_base/declare",
                     this.preference.type = "X-Dashboard";
                     this._verifyLayout();
                     this._loadPreferencesAndRestoreWidgets();
+                },
+                activate: function ()
+                {
+                    for (var i = 0; i < this._widgets.length; i++)
+                    {
+                        this._widgets[i].activate();
+                    }
+                },
+                deactivate: function ()
+                {
+                    for (var i = 0; i < this._widgets.length; i++)
+                    {
+                        this._widgets[i].deactivate();
+                    }
                 },
                 _onSaveButton: function ()
                 {
@@ -280,6 +296,7 @@ define(["dojo/_base/declare",
                                 parentObject: kwargs.parentObject
                             });
                             widget.id = kwargs.id;
+                            this._widgets.push(widget);
                             var portletPromise = widget.createPortlet();
                             portletPromise.then(lang.hitch(this, function (portlet)
                                 {
@@ -287,12 +304,19 @@ define(["dojo/_base/declare",
                                     portlet.widgetId = widget.id;
                                     widget.on("close", lang.hitch(this, function ()
                                     {
+                                        var index = this._widgets.indexOf(widget);
+                                        if (index != -1)
+                                        {
+                                            this._widgets.splice(index, 1);
+                                        }
+
                                         this.widgetContainer.removeChild(portlet);
                                         delete this.preference.value.widgets[widget.id];
                                         var position = this.preference.value.layout.column.indexOf(widget.id);
                                         this.preference.value.layout.column.splice(position, 1);
                                         widget.destroy();
                                         this._dashboardChanged();
+
                                     }));
 
                                     widget.on("change", lang.hitch(this, function ()

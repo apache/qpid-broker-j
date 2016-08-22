@@ -89,6 +89,14 @@ define(["dojo/_base/declare",
             getSettings: function ()
             {
                 return this.widgetSettings;
+            },
+            activate: function ()
+            {
+                // noop
+            },
+            deactivate: function ()
+            {
+                // noop
             }
         });
 

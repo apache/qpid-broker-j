@@ -169,6 +169,7 @@ define(["dojo/_base/declare",
                         this.controller.showById(event.id);
                     }));
 
+                    this._queryGrid = queryGrid;
                     var portlet = new Portlet({
                         title: preference.name,
                         content: queryGrid,
@@ -239,8 +240,8 @@ define(["dojo/_base/declare",
                         var emitChange = this.limit !== settings.limit || this.refreshPeriod !== settings.refreshPeriod;
                         this.limit = settings.limit;
                         this.refreshPeriod = settings.refreshPeriod;
-                        this._clearTimer();
-                        this._timer = setInterval(updateQuery, this.refreshPeriod  * 1000);
+                        this.deactivate();
+                        this.activate();
                         queryGrid.set("rowsPerPage", this.limit);
                         settingsDialog.toggle();
                         if (emitChange)
@@ -261,11 +262,7 @@ define(["dojo/_base/declare",
                         this.emit("change");
                     }));
 
-                    var updateQuery = function ()
-                    {
-                        queryGrid.updateData();
-                    };
-                    this._timer = setInterval(updateQuery, this.refreshPeriod  * 1000);
+                    this.activate();
 
                     this.portlet = portlet;
                     deferred.resolve(portlet);
@@ -283,8 +280,7 @@ define(["dojo/_base/declare",
                 {
                     this.portlet.destroyRecursive();
                 }
-                this._clearTimer();
-
+                this.deactivate();
             },
             getSettings: function ()
             {
@@ -300,7 +296,20 @@ define(["dojo/_base/declare",
                     }
                 };
             },
-            _clearTimer: function ()
+            activate: function ()
+            {
+                var updateQuery = function ()
+                {
+                    this._queryGrid.updateData();
+                };
+                if (this._timer)
+                {
+                    this.deactivate();
+                }
+                this._queryGrid.updateData();
+                this._timer = setInterval(lang.hitch(this, updateQuery), this.refreshPeriod  * 1000);
+            },
+            deactivate: function ()
             {
                 if (this._timer)
                 {
