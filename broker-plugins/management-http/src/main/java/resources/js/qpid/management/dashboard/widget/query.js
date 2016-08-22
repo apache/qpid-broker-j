@@ -56,7 +56,7 @@ define(["dojo/_base/declare",
 
                 // template fields
                 cancelButton: null,
-                saveButton: null,
+                applyButton: null,
                 refreshPeriod: null,
                 limit: null,
                 settingsForm: null,
@@ -89,7 +89,7 @@ define(["dojo/_base/declare",
                 },
                 _onChange: function ()
                 {
-                    this.saveButton.set("disabled", !this.settingsForm.validate());
+                    this.applyButton.set("disabled", !this.settingsForm.validate());
                 },
                 _setLimitAttr: function (value)
                 {

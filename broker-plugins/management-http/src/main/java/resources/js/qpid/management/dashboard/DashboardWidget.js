@@ -175,7 +175,7 @@ define(["dojo/_base/declare",
                         lang.hitch(this._saveDashboardDialog, this._saveDashboardDialog.hide));
                     this._saveDashboardDialogContent.on("save", lang.hitch(this, this._onPreferenceSave));
 
-                    this.widgetContainer.subscribe("/dojox/mdnd/drop", lang.hitch(this,"_widgetDropped"));
+                    this.widgetContainer.subscribe("/dojox/mdnd/drop", lang.hitch(this, "_widgetDropped"));
 
                     this.widgetContainer.enableDnd();
 
@@ -190,7 +190,11 @@ define(["dojo/_base/declare",
                 },
                 _onCloneButton: function ()
                 {
-                    var preference = {id : generateRandomUuid(), type: this.preference.type, value: this.preference.value};
+                    var preference = {
+                        id: generateRandomUuid(),
+                        type: this.preference.type,
+                        value: this.preference.value
+                    };
                     this.emit("clone", {preference: preference, parentObject: this.parentObject});
                 },
                 _onDeleteButton: function ()
@@ -235,8 +239,9 @@ define(["dojo/_base/declare",
                 {
                     this._addWidgetDialog.hide();
                     var promise = this._createWidget(event.widget);
-                    promise.then(lang.hitch(this, function(widget)
+                    promise.then(lang.hitch(this, function (widget)
                     {
+                        this._placePortlet(widget.portlet);
                         this._widgetChanged(widget);
                     }));
                 },
@@ -277,33 +282,31 @@ define(["dojo/_base/declare",
                             widget.id = kwargs.id;
                             var portletPromise = widget.createPortlet();
                             portletPromise.then(lang.hitch(this, function (portlet)
-                            {
-                                // Required so we can update the layout in sympathy with drag and drop events.
-                                portlet.widgetId = widget.id;
-                                this.widgetContainer.addChild(portlet);
-                                portlet.startup();
-                                widget.on("close", lang.hitch(this, function ()
                                 {
-                                    this.widgetContainer.removeChild(portlet);
-                                    delete this.preference.value.widgets[widget.id];
-                                    var position = this.preference.value.layout.column.indexOf(widget.id);
-                                    this.preference.value.layout.column.splice(position, 1);
-                                    widget.destroy();
-                                    this._dashboardChanged();
-                                }));
+                                    // Required so we can update the layout in sympathy with drag and drop events.
+                                    portlet.widgetId = widget.id;
+                                    widget.on("close", lang.hitch(this, function ()
+                                    {
+                                        this.widgetContainer.removeChild(portlet);
+                                        delete this.preference.value.widgets[widget.id];
+                                        var position = this.preference.value.layout.column.indexOf(widget.id);
+                                        this.preference.value.layout.column.splice(position, 1);
+                                        widget.destroy();
+                                        this._dashboardChanged();
+                                    }));
 
-                                widget.on("change", lang.hitch(this, function ()
+                                    widget.on("change", lang.hitch(this, function ()
+                                    {
+                                        this._widgetChanged(widget);
+                                    }));
+
+                                    deferred.resolve(widget);
+                                }),
+                                lang.hitch(this, function (error)
                                 {
-                                    this._widgetChanged(widget);
+                                    deferred.cancel(error);
+                                    this.management.errorHandler(error);
                                 }));
-
-                                deferred.resolve(widget);
-                            }),
-                            lang.hitch(this, function(error)
-                            {
-                                deferred.cancel(error);
-                                this.management.errorHandler(error);
-                            }));
                         }));
                     return deferred.promise;
                 },
@@ -313,7 +316,7 @@ define(["dojo/_base/declare",
                 },
                 _verifyLayout: function ()
                 {
-                    if (!this.preference.value )
+                    if (!this.preference.value)
                     {
                         this.preference.value = {widgets: {}, layout: {type: "singleColumn", column: []}};
                     }
@@ -330,7 +333,7 @@ define(["dojo/_base/declare",
                         }
                     }
                 },
-                _loadPreferencesAndRestoreWidgets: function()
+                _loadPreferencesAndRestoreWidgets: function ()
                 {
                     if (this.preference.value && this.preference.value.widgets)
                     {
@@ -383,37 +386,56 @@ define(["dojo/_base/declare",
                 },
                 _restoreWidgets: function (preferences)
                 {
-                    for(var i = 0; i < this.preference.value.layout.column.length; i++)
+                    var widgetPromises = [];
+                    for (var i = 0; i < this.preference.value.layout.column.length; i++)
                     {
                         var id = this.preference.value.layout.column[i];
                         var widgetSetting = this.preference.value.widgets[id];
                         if (widgetSetting && widgetSetting.preference && widgetSetting.preference.id)
                         {
+                            var widgetArgs = null;
                             var preference = preferences[widgetSetting.preference.id];
                             if (preference)
                             {
                                 var parentObject = this.structure.findById(preference.associatedObject);
                                 if (parentObject)
                                 {
-                                    this._createWidget({
+                                    widgetArgs = {
                                         preference: preference,
                                         parentObject: parentObject,
                                         settings: widgetSetting,
                                         type: widgetSetting.type,
                                         id: id
-                                    });
-                                }
-                                else
-                                {
-                                    // display special widget
+                                    };
                                 }
                             }
-                            else
+
+                            if (!widgetArgs)
                             {
-                                delete this.preference.value.widgets[id];
+                                widgetArgs = {
+                                    settings: widgetSetting,
+                                    type: "unavailable",
+                                    id: id
+                                };
                             }
+
+                            widgetPromises.push(this._createWidget(widgetArgs));
                         }
                     }
+                    all(widgetPromises)
+                        .then(lang.hitch(this,
+                            function (widgets)
+                            {
+                                for (var i = 0; i < widgets.length; i++)
+                                {
+                                    this._placePortlet(widgets[i].portlet);
+                                }
+                            }), this.management.errorHandler);
+                },
+                _placePortlet: function (portlet)
+                {
+                    this.widgetContainer.addChild(portlet);
+                    portlet.startup();
                 },
                 _widgetChanged: function (widget)
                 {
