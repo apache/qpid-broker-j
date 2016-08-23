@@ -20,6 +20,9 @@
 
 package org.apache.qpid.server.model.preferences;
 
+import static org.apache.qpid.server.model.preferences.GenericPrincipal.principalsContain;
+import static org.apache.qpid.server.model.preferences.GenericPrincipal.principalsEqual;
+
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
@@ -400,7 +403,7 @@ public class UserPreferencesImpl implements UserPreferences
         }
         checkForValidVisibilityLists(preferences);
         checkForConflictWithinCollection(preferences);
-        checkForIdUniqueness(preferences);
+        ensureSameTypeAndOwnerForExistingPreferences(preferences);
     }
 
     private void validateNewPreferencesForReplaceByTypeAndName(final String type,
@@ -426,7 +429,7 @@ public class UserPreferencesImpl implements UserPreferences
                     newPreference.getName()));
         }
         checkForValidVisibilityLists(Collections.singleton(newPreference));
-        checkForIdUniqueness(Collections.singleton(newPreference));
+        ensureSameTypeAndOwnerForExistingPreferences(Collections.singleton(newPreference));
     }
 
     private void validateNewPreferencesForUpdate(final Collection<Preference> preferences)
@@ -498,7 +501,7 @@ public class UserPreferencesImpl implements UserPreferences
         {
             for (Principal visibilityPrincipal : preference.getVisibilityList())
             {
-                if (!GenericPrincipal.principalsContain(principals, visibilityPrincipal))
+                if (!principalsContain(principals, visibilityPrincipal))
                 {
                     String errorMessage =
                             String.format("Invalid visibilityList, this user does not hold principal '%s'",
@@ -509,7 +512,7 @@ public class UserPreferencesImpl implements UserPreferences
         }
     }
 
-    private void checkForIdUniqueness(final Collection<Preference> preferences)
+    private void ensureSameTypeAndOwnerForExistingPreferences(final Collection<Preference> preferences)
     {
         Principal currentPrincipal = getMainPrincipalOrThrow();
 
@@ -530,27 +533,10 @@ public class UserPreferencesImpl implements UserPreferences
 
     private void checkForConflictWithExisting(final Collection<Preference> preferences)
     {
-        Principal currentPrincipal = getMainPrincipalOrThrow();
+        ensureSameTypeAndOwnerForExistingPreferences(preferences);
 
         for (Preference preference : preferences)
         {
-            // check for conflicts with existing preferences
-            final Preference storedPreference = _preferences.get(preference.getId());
-            if (storedPreference != null)
-            {
-                if (!principalsEqual(storedPreference.getOwner(), currentPrincipal))
-                {
-                    throw new IllegalArgumentException(String.format(
-                            "Preference '%s' exists but is not owned by the current user.",
-                            preference.getId().toString()));
-                }
-
-                if (!Objects.equals(storedPreference.getType(), preference.getType()))
-                {
-                    throw new IllegalArgumentException("Cannot change type of preference");
-                }
-            }
-
             List<Preference> preferencesWithSameName = _preferencesByName.get(preference.getName());
             if (preferencesWithSameName != null)
             {
@@ -639,16 +625,6 @@ public class UserPreferencesImpl implements UserPreferences
             _preferencesByName.put(preference.getName(), new ArrayList<Preference>());
         }
         _preferencesByName.get(preference.getName()).add(preference);
-    }
-
-    private boolean principalsEqual(final Principal p1, final Principal p2)
-    {
-        return GenericPrincipal.principalsEqual(p1, p2);
-    }
-
-    private boolean principalsContain(Collection<Principal> principals, Principal principal)
-    {
-        return GenericPrincipal.principalsContain(principals, principal);
     }
 
     private abstract class PreferencesTask<T> implements Task<T, RuntimeException>

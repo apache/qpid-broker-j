@@ -108,7 +108,9 @@ public class PreferencesRecoverer
                 Map<String, Object> attributes = preferenceRecord.getAttributes();
                 try
                 {
-                    recoveredPreferences.add(PreferenceFactory.fromAttributes(associatedObject, attributes));
+                    Preference recoveredPreference = PreferenceFactory.fromAttributes(associatedObject, attributes);
+                    validateRecoveredPreference(recoveredPreference);
+                    recoveredPreferences.add(recoveredPreference);
                 }
                 catch (IllegalArgumentException e)
                 {
@@ -136,6 +138,26 @@ public class PreferencesRecoverer
                     setUserPreferences(child, objectToRecordMap, preferenceStore, corruptedRecords);
                 }
             }
+        }
+    }
+
+    private void validateRecoveredPreference(final Preference recoveredPreference)
+    {
+        if (recoveredPreference.getId() == null)
+        {
+            throw new IllegalArgumentException("Recovered preference has no id");
+        }
+        if (recoveredPreference.getOwner() == null)
+        {
+            throw new IllegalArgumentException("Recovered preference has no owner");
+        }
+        if (recoveredPreference.getCreatedDate() == null)
+        {
+            throw new IllegalArgumentException("Recovered preference has no createdDate");
+        }
+        if (recoveredPreference.getLastUpdatedDate() == null)
+        {
+            throw new IllegalArgumentException("Recovered preference has no lastUpdatedDate");
         }
     }
 
