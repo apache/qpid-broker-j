@@ -37,7 +37,7 @@ define(["dojo/parser",
             this.tabData = kwArgs.tabData;
             this.parent = kwArgs.tabData.modelObject;
             this.management = this.controller.management;
-            this.changed = !this.tabData.data.name;
+            this.changed = !this.tabData.data || !this.tabData.data.name;
             this.confirmationDilog = new qpid.common.MessageDialog({
                 title: "Discard unsaved changed?",
                 message: "<div>Query contains unsaved changes.<br/>Would you like to close it anyway?</div>"
@@ -94,6 +94,7 @@ define(["dojo/parser",
                         if (preferences[0])
                         {
                             this.tabData.data = preferences[0];
+                            this.changed = false;
                         }
                         if (preferences.length !== 1)
                         {
@@ -120,6 +121,7 @@ define(["dojo/parser",
 
         QueryTab.prototype.onOpen = function (containerNode)
         {
+            this.contentPane.set("title", this.getTitle());
             this.queryWidgetNode = query(".queryWidgetNode", containerNode)[0];
             this.queryWidget = new QueryWidget({
                 management: this.management,
