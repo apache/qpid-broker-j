@@ -290,16 +290,35 @@ public class ApiDocsServlet extends AbstractServlet
     {
         writer.println("<table class=\"attributes\">");
         writer.println("<thead>");
-        writer.println("<tr><th class=\"name\">Attribute Name</th><th class=\"type\">Type</th><th class=\"description\">Description</th></tr>");
+        writer.println("<tr><th class=\"name\">Attribute Name</th><th class=\"type\">Type</th><th class=\"properties\">Properties</th><th class=\"description\">Description</th></tr>");
         writer.println("</thead>");
         writer.println("<tbody>");
 
         for(ConfiguredObjectAttribute attribute : attributeTypes)
         {
+            String properties;
+            if (attribute instanceof ConfiguredSettableAttribute)
+            {
+                ConfiguredSettableAttribute settableAttribute = (ConfiguredSettableAttribute)attribute;
+                if (settableAttribute.isImmutable())
+                {
+                    properties = "read/settable on create only";
+                }
+                else
+                {
+                    properties = "read/write";
+                }
+            }
+            else
+            {
+                properties = "read only";
+            }
             writer.println("<tr><td class=\"name\">"
                            + attribute.getName()
                            + "</td><td class=\"type\">"
                            + renderType(attribute)
+                           + "</td><td class=\"properties\">"
+                           + properties
                            + "</td><td class=\"description\">"
                            + attribute.getDescription()
                            + "</td></tr>");
