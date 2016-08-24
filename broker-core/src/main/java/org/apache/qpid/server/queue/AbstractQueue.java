@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -403,7 +404,15 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             String owner = MapValueConverter.getStringAttribute(Queue.OWNER, attributes, null);
             if(owner != null)
             {
-                Principal ownerPrincipal = new GenericPrincipal(owner);
+                Principal ownerPrincipal;
+                try
+                {
+                    ownerPrincipal = new GenericPrincipal(owner);
+                }
+                catch (IllegalArgumentException e)
+                {
+                    ownerPrincipal = new GenericPrincipal(owner + "@('')");
+                }
                 _exclusiveOwner = new AuthenticatedPrincipal(ownerPrincipal);
             }
         }
@@ -798,13 +807,14 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 }
                 break;
             case PRINCIPAL:
+                Principal currentAuthorizedPrincipal = target.getSessionModel().getAMQPConnection().getAuthorizedPrincipal();
                 if(exclusiveOwner == null)
                 {
-                    exclusiveOwner = target.getSessionModel().getAMQPConnection().getAuthorizedPrincipal();
+                    exclusiveOwner = currentAuthorizedPrincipal;
                 }
                 else
                 {
-                    if(!exclusiveOwner.equals(target.getSessionModel().getAMQPConnection().getAuthorizedPrincipal()))
+                    if(!Objects.equals(((Principal) exclusiveOwner).getName(), currentAuthorizedPrincipal.getName()))
                     {
                         throw new ConsumerAccessRefused();
                     }
@@ -2953,7 +2963,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 allowed = _exclusiveOwner == null || _exclusiveOwner == session.getAMQPConnection();
                 break;
             case PRINCIPAL:
-                allowed = _exclusiveOwner == null || _exclusiveOwner.equals(session.getAMQPConnection().getAuthorizedPrincipal());
+                allowed = _exclusiveOwner == null || Objects.equals(((Principal) _exclusiveOwner).getName(),
+                                                                    session.getAMQPConnection().getAuthorizedPrincipal().getName());
                 break;
             case CONTAINER:
                 allowed = _exclusiveOwner == null || _exclusiveOwner.equals(session.getAMQPConnection().getRemoteContainerName());
@@ -3119,7 +3130,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     {
                         principal = c.getSessionModel().getAMQPConnection().getAuthorizedPrincipal();
                     }
-                    else if(!principal.equals(c.getSessionModel().getAMQPConnection().getAuthorizedPrincipal()))
+                    else if(!Objects.equals(principal.getName(),
+                                            c.getSessionModel().getAMQPConnection().getAuthorizedPrincipal().getName()))
                     {
                         throw new ExistingConsumerPreventsExclusive();
                     }
