@@ -225,7 +225,7 @@ public class RequestInfoParser
         final List<String> pairs = Arrays.asList(queryString.split("&"));
         for (String pairString : pairs)
         {
-            List<String> pair = Arrays.asList(pairString.split("="));
+            List<String> pair = new ArrayList<>(Arrays.asList(pairString.split("=")));
             if (pair.size() == 1)
             {
                 pair.add(null);
