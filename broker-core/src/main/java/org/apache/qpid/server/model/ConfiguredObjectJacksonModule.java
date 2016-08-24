@@ -23,8 +23,6 @@ package org.apache.qpid.server.model;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
@@ -51,7 +49,6 @@ public class ConfiguredObjectJacksonModule extends SimpleModule
     private static final ConfiguredObjectJacksonModule INSTANCE = new ConfiguredObjectJacksonModule();
 
     private static final Set<String> OBJECT_METHOD_NAMES = Collections.synchronizedSet(new HashSet<String>());
-    private static final String UTF8 = StandardCharsets.UTF_8.name();
 
     static
     {
@@ -84,19 +81,11 @@ public class ConfiguredObjectJacksonModule extends SimpleModule
                 }
                 else if (value instanceof QpidPrincipal)
                 {
-                    QpidPrincipal principal = (QpidPrincipal) value;
-                    jgen.writeString(String.format("%s@%s('%s')",
-                                                   URLEncoder.encode(principal.getName(), UTF8),
-                                                   principal.getOrigin().getType(),
-                                                   URLEncoder.encode(principal.getOrigin().getName(), UTF8)));
+                    jgen.writeString(new GenericPrincipal((QpidPrincipal) value).toExternalForm());
                 }
                 else if (value instanceof GenericPrincipal)
                 {
-                    GenericPrincipal principal = (GenericPrincipal) value;
-                    jgen.writeString(String.format("%s@%s('%s')",
-                                                   URLEncoder.encode(principal.getName(), UTF8),
-                                                   principal.getOriginType(),
-                                                   URLEncoder.encode(principal.getOriginName(), UTF8)));
+                    jgen.writeString(((GenericPrincipal) value).toExternalForm());
                 }
                 else
                 {
