@@ -19,6 +19,9 @@
 
 package org.apache.qpid.server.model.preferences;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.regex.Matcher;
@@ -29,7 +32,8 @@ import org.apache.qpid.server.security.QpidPrincipal;
 
 public class GenericPrincipal implements Principal
 {
-    private static final Pattern PATTERN = Pattern.compile("(\\w+)@(\\w+)\\('(\\w+)'\\)");
+    private static final Pattern PATTERN = Pattern.compile("([a-zA-Z_0-9.%~-]+)@(\\w*)\\('([a-zA-Z_0-9.%~-]*)'\\)");
+    public static final String UTF8 = StandardCharsets.UTF_8.name();
 
     private final String _name;
     private final String _originType;
@@ -46,9 +50,16 @@ public class GenericPrincipal implements Principal
         {
             throw new IllegalArgumentException("Principal has unexpected format");
         }
-        _name = m.group(1);
-        _originType = m.group(2);
-        _originName = m.group(3);
+        try
+        {
+            _name = URLDecoder.decode(m.group(1), UTF8);
+            _originType = m.group(2);
+            _originName = URLDecoder.decode(m.group(3), UTF8);
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            throw new RuntimeException("JVM does not support UTF8", e);
+        }
     }
 
     @Override

@@ -20,16 +20,43 @@
  */
 package org.apache.qpid.server.model;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.Collections;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class ConfiguredObjectJacksonModuleTest extends QpidTestCase
 {
+    private static final String UTF8 = StandardCharsets.UTF_8.name();
+
+    public void testPrincipalSerialisation() throws Exception
+    {
+        final String username = "testuser@withFunky%";
+        final String originType = "authType";
+        final String originName = "authName('also')with%funky@Characters'";
+        final String expectedSerialisation = String.format("\"%s@%s('%s')\"",
+                                                           URLEncoder.encode(username, UTF8),
+                                                           originType,
+                                                           URLEncoder.encode(originName, UTF8));
+        AuthenticationProvider<?> authProvider = mock(AuthenticationProvider.class);
+        when(authProvider.getType()).thenReturn(originType);
+        when(authProvider.getName()).thenReturn(originName);
+        Principal p = new UsernamePrincipal(username, authProvider);
+        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
+        String json = mapper.writeValueAsString(p);
+        assertEquals("unexpected principal serialisation", expectedSerialisation, json);
+    }
+
     public void testManageableAttributeType() throws IOException
     {
         ManagedAttributeValue testType = new TestManagedAttributeValue();
