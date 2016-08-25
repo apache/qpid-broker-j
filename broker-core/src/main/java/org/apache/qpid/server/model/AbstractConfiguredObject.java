@@ -193,6 +193,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     private boolean _openFailed;
     private volatile State _state = State.UNINITIALIZED;
     private volatile Date _lastOpenedTime;
+    private volatile int _awaitAttainmentTimeout;
 
     protected static Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parentsMap(ConfiguredObject<?>... parents)
     {
@@ -2992,16 +2993,18 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     private int getAwaitAttainmentTimeout()
     {
-        int awaitAttainmentTimeout;
-        try
+        if (_awaitAttainmentTimeout == 0)
         {
-            awaitAttainmentTimeout = getContextValue(Integer.class, AWAIT_ATTAINMENT_TIMEOUT);
+            try
+            {
+                _awaitAttainmentTimeout = getContextValue(Integer.class, AWAIT_ATTAINMENT_TIMEOUT);
+            }
+            catch (IllegalArgumentException e)
+            {
+                _awaitAttainmentTimeout = DEFAULT_AWAIT_ATTAINMENT_TIMEOUT;
+            }
         }
-        catch (IllegalArgumentException e)
-        {
-            awaitAttainmentTimeout = DEFAULT_AWAIT_ATTAINMENT_TIMEOUT;
-        }
-        return awaitAttainmentTimeout;
+        return _awaitAttainmentTimeout;
     }
 
     protected final <C extends ConfiguredObject> C awaitChildClassToAttainState(final Class<C> childClass, final String name)
