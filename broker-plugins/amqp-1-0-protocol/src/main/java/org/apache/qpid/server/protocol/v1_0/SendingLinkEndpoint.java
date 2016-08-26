@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -69,7 +68,7 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLinkListener>
                 {
                     _priority = ((Number)value).intValue();
                 }
-                else if(value instanceof String || value instanceof AMQShortString)
+                else if(value instanceof String)
                 {
                     try
                     {
