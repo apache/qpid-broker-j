@@ -21,6 +21,7 @@
 package org.apache.qpid.server.model;
 
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -96,8 +97,7 @@ public class ConfigurationExtractor
                              && attributeDefinition.getGenericType() instanceof ParameterizedType
                              && ((ParameterizedType) attributeDefinition.getGenericType()).getActualTypeArguments().length
                                 == 1
-                             && ConfiguredObject.class.isAssignableFrom((Class) ((ParameterizedType) attributeDefinition
-                            .getGenericType()).getActualTypeArguments()[0])
+                             && isConfiguredObjectTypeArgument(attributeDefinition,0)
                             )
                     {
                         List<Object> listResults = new ArrayList<>();
@@ -120,6 +120,67 @@ public class ConfigurationExtractor
 
 
                         results.put(attr.getKey(), listResults);
+                    }
+                    else if (Map.class.isAssignableFrom(attributeDefinition.getType())
+                             && (attr.getValue() instanceof Map)
+                             && attributeDefinition.getGenericType() instanceof ParameterizedType
+                             && ((ParameterizedType) attributeDefinition.getGenericType()).getActualTypeArguments().length
+                                == 2
+                             && (isConfiguredObjectTypeArgument(attributeDefinition, 0)
+                                 || isConfiguredObjectTypeArgument(attributeDefinition, 1))
+                            )
+                    {
+                        Map mapResults = new LinkedHashMap<>();
+                        Map values = (Map) attributeDefinition.getValue(object);
+
+                        Iterator<Map.Entry> valuesIter = values.entrySet().iterator();
+                        for (Map.Entry attrValue : ((Map<?,?>) attr.getValue()).entrySet())
+                        {
+                            Object key;
+                            Object value;
+                            Map.Entry obj = valuesIter.next();
+                            if(obj.getKey() instanceof ConfiguredObject)
+                            {
+                                Object attrKeyVal = attrValue.getKey();
+                                if(!(attrKeyVal instanceof String) || ((ConfiguredObject)obj.getKey()).getId().toString().equals(attrKeyVal))
+                                {
+                                    key = ((ConfiguredObject)obj.getKey()).getName();
+                                }
+                                else
+                                {
+                                    key = attrValue.getKey();
+                                }
+                            }
+                            else
+                            {
+                                key = attrValue.getKey();
+                            }
+
+
+
+                            if(obj.getValue() instanceof ConfiguredObject)
+                            {
+                                Object attrValueVal = attrValue.getValue();
+                                if(!(attrValueVal instanceof String) || ((ConfiguredObject)obj.getValue()).getId().toString().equals(attrValueVal))
+                                {
+                                    value = ((ConfiguredObject)obj.getValue()).getName();
+                                }
+                                else
+                                {
+                                    value = attrValue.getValue();
+                                }
+                            }
+                            else
+                            {
+                                value = attrValue.getValue();
+                            }
+
+
+                            mapResults.put(key, value);
+                        }
+
+
+                        results.put(attr.getKey(), mapResults);
                     }
                     else
                     {
@@ -174,5 +235,18 @@ public class ConfigurationExtractor
 
 
         return results;
+    }
+
+    private boolean isConfiguredObjectTypeArgument(ConfiguredObjectAttribute attributeDefinition, int paramIndex)
+    {
+        return ConfiguredObject.class.isAssignableFrom(getTypeParameterClass(attributeDefinition, paramIndex));
+    }
+
+    private Class getTypeParameterClass(ConfiguredObjectAttribute attributeDefinition, int paramIndex)
+    {
+        final Type argType = ((ParameterizedType) attributeDefinition
+                .getGenericType()).getActualTypeArguments()[0];
+
+        return argType instanceof Class ? (Class) argType : (Class) ((ParameterizedType)argType).getRawType();
     }
 }
