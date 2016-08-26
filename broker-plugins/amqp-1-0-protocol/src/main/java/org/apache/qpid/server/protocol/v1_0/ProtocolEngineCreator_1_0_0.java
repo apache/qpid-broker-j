@@ -37,7 +37,7 @@ import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
-import org.apache.qpid.transport.network.AggregateTicker;
+import org.apache.qpid.server.transport.AggregateTicker;
 
 @PluggableService
 public class ProtocolEngineCreator_1_0_0 implements ProtocolEngineCreator

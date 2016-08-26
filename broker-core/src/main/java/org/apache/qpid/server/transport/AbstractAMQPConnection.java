@@ -73,7 +73,6 @@ import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.FixedKeyMapCreator;
-import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 import org.apache.qpid.transport.network.Ticker;
 
@@ -208,7 +207,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         super.onOpen();
         long maxAuthDelay = _port.getContextValue(Long.class, Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY);
         SlowConnectionOpenTicker slowConnectionOpenTicker = new SlowConnectionOpenTicker(maxAuthDelay);
-        _network.addSchedulingDelayNotificationListeners(slowConnectionOpenTicker);
         _aggregateTicker.addTicker(slowConnectionOpenTicker);
         _lastReadTime = _lastWriteTime = getCreatedTime().getTime();
 

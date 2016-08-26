@@ -108,7 +108,7 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.transport.network.AggregateTicker;
+import org.apache.qpid.server.transport.AggregateTicker;
 
 public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_0>
         implements FrameOutputHandler, DescribedTypeConstructorRegistry.Source,

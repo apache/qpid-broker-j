@@ -50,11 +50,11 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
     {
         final long timeNow = System.currentTimeMillis();
 
+        when(_dateSupplier.get()).thenReturn(new Date(0));
+
         _ticker = new TransactionTimeoutTicker(_timeoutValue, _notificationRepeatPeriod,
                                                _dateSupplier,
                                                _notificationAction);
-
-        when(_dateSupplier.get()).thenReturn(new Date(0));
 
         assertTickTime("Unexpected ticker value when no transaction is in-progress",
                        Integer.MAX_VALUE,
@@ -68,13 +68,34 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         final long timeNow = System.currentTimeMillis();
         final long transactionTime = timeNow - 90;
 
+        when(_dateSupplier.get()).thenReturn(new Date(transactionTime));
+
         _ticker = new TransactionTimeoutTicker(_timeoutValue, _notificationRepeatPeriod,
                                                _dateSupplier,
                                                _notificationAction);
 
+        final int expected = 10;
+        assertTickTime("Unexpected ticker value when transaction is in-progress",
+                       expected,
+                       timeNow, _ticker);
+
+        verify(_notificationAction, never()).performAction(anyLong());
+    }
+
+    public void testTickDuringSingleTransactionWithSchedulingDelay() throws Exception
+    {
+        final long timeNow = System.currentTimeMillis();
+        final long transactionTime = timeNow - 90;
+
         when(_dateSupplier.get()).thenReturn(new Date(transactionTime));
 
-        final int expected = 10;
+        _ticker = new TransactionTimeoutTicker(_timeoutValue, _notificationRepeatPeriod,
+                                               _dateSupplier,
+                                               _notificationAction);
+
+        _ticker.notifySchedulingDelay(10);
+
+        final int expected = 20;
         assertTickTime("Unexpected ticker value when transaction is in-progress",
                        expected,
                        timeNow, _ticker);
@@ -87,12 +108,12 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         long timeNow = System.currentTimeMillis();
         final long firstTransactionTime = timeNow - 10;
 
+        // First transaction
+        when(_dateSupplier.get()).thenReturn(new Date(firstTransactionTime));
+
         _ticker = new TransactionTimeoutTicker(_timeoutValue, _notificationRepeatPeriod,
                                                _dateSupplier,
                                                _notificationAction);
-
-        // First transaction
-        when(_dateSupplier.get()).thenReturn(new Date(firstTransactionTime));
 
         final int expectedTickForFirstTransaction = 90;
         assertTickTime("Unexpected ticker value for first transaction",
@@ -113,16 +134,48 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         verify(_notificationAction, never()).performAction(anyLong());
     }
 
-    public void testSingleTimeoutsDuringSingleTransaction() throws Exception
+    public void testTicksDuringManyTransactionsWithSchedulingDelay() throws Exception
     {
         long timeNow = System.currentTimeMillis();
-        final long transactionTime = timeNow - 110;
+        final long firstTransactionTime = timeNow - 10;
+
+        // First transaction
+        when(_dateSupplier.get()).thenReturn(new Date(firstTransactionTime));
 
         _ticker = new TransactionTimeoutTicker(_timeoutValue, _notificationRepeatPeriod,
                                                _dateSupplier,
                                                _notificationAction);
 
+        _ticker.notifySchedulingDelay(5);
+        final int expectedTickForFirstTransaction = 95;
+        assertTickTime("Unexpected ticker value for first transaction",
+                       expectedTickForFirstTransaction,
+                       timeNow, _ticker);
+
+        // Second transaction. scheduling delay should have been cleared
+        timeNow += 100;
+        final long secondTransactionTime = timeNow - 5;
+
+        when(_dateSupplier.get()).thenReturn(new Date(secondTransactionTime));
+
+        final int expectedTickForSecondTransaction = 95;
+        assertTickTime("Unexpected ticker value for second transaction",
+                       expectedTickForSecondTransaction,
+                       timeNow, _ticker);
+
+        verify(_notificationAction, never()).performAction(anyLong());
+    }
+
+    public void testSingleTimeoutsDuringSingleTransaction() throws Exception
+    {
+        long timeNow = System.currentTimeMillis();
+        final long transactionTime = timeNow - 110;
+
         when(_dateSupplier.get()).thenReturn(new Date(transactionTime));
+
+        _ticker = new TransactionTimeoutTicker(_timeoutValue, _notificationRepeatPeriod,
+                                               _dateSupplier,
+                                               _notificationAction);
 
 
         final long expectedInitialIdle = 110L;
@@ -139,11 +192,11 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         long timeNow = System.currentTimeMillis();
         final long transactionTime = timeNow - 110;
 
+        when(_dateSupplier.get()).thenReturn(new Date(transactionTime));
+
         _ticker = new TransactionTimeoutTicker(_timeoutValue, _notificationRepeatPeriod,
                                                _dateSupplier,
                                                _notificationAction);
-
-        when(_dateSupplier.get()).thenReturn(new Date(transactionTime));
 
 
         final long expectedInitialIdle = 110L;

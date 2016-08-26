@@ -52,7 +52,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.ConnectionDelegate;
 import org.apache.qpid.transport.Constant;
-import org.apache.qpid.transport.network.AggregateTicker;
+import org.apache.qpid.server.transport.AggregateTicker;
 
 
 public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0_10>

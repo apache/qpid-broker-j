@@ -47,7 +47,6 @@ import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.Ticker;
 
 public class MultiVersionProtocolEngine implements ProtocolEngine
@@ -189,7 +188,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         SlowProtocolHeaderTicker ticker = new SlowProtocolHeaderTicker(_port.getProtocolHandshakeTimeout(),
                                                                        System.currentTimeMillis());
         _aggregateTicker.addTicker(ticker);
-        _network.addSchedulingDelayNotificationListeners(ticker);
+        _network.addSchedulingDelayNotificationListeners(_aggregateTicker);
     }
 
     @Override

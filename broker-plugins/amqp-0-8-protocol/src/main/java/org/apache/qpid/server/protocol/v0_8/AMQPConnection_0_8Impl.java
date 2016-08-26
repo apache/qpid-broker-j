@@ -84,7 +84,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.TransportException;
-import org.apache.qpid.transport.network.AggregateTicker;
+import org.apache.qpid.server.transport.AggregateTicker;
 
 public class AMQPConnection_0_8Impl
         extends AbstractAMQPConnection<AMQPConnection_0_8Impl>

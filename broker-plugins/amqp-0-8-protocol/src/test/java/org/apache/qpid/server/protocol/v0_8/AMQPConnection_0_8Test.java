@@ -61,7 +61,7 @@ import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.transport.network.AggregateTicker;
+import org.apache.qpid.server.transport.AggregateTicker;
 
 public class AMQPConnection_0_8Test extends QpidTestCase
 {

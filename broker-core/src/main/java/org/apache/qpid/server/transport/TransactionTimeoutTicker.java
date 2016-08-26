@@ -22,19 +22,21 @@
 package org.apache.qpid.server.transport;
 
 import java.util.Date;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Supplier;
 
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.network.Ticker;
 
-public class TransactionTimeoutTicker implements Ticker
+public class TransactionTimeoutTicker implements Ticker, SchedulingDelayNotificationListener
 {
     private final long _timeoutValue;
-    private final Action<Long> _notfication;
+    private final Action<Long> _notification;
     private final Supplier<Date> _timeSupplier;
     private final long _notificationRepeatPeriod;
 
+    private AtomicLong _accumulatedSchedulingDelay = new AtomicLong();
     /** The time the ticker will next procedure the notification */
     private volatile long _nextNotificationTime = 0;
     /** Last transaction time stamp seen by this ticker.  */
@@ -46,7 +48,8 @@ public class TransactionTimeoutTicker implements Ticker
                                     Action<Long> notification)
     {
         _timeoutValue = timeoutValue;
-        _notfication = notification;
+        _notification = notification;
+        _lastTransactionTimeStamp = timeStampSupplier.get().getTime();
         _timeSupplier = timeStampSupplier;
         _notificationRepeatPeriod = notificationRepeatPeriod;
     }
@@ -74,7 +77,7 @@ public class TransactionTimeoutTicker implements Ticker
             {
                 final long idleTime = currentTime - transactionTimeStamp;
                 _nextNotificationTime = currentTime + _notificationRepeatPeriod;
-                _notfication.performAction(idleTime);
+                _notification.performAction(idleTime);
             }
             else
             {
@@ -91,14 +94,29 @@ public class TransactionTimeoutTicker implements Ticker
             // Transactions's time stamp has changed, reset the next notification time
             _lastTransactionTimeStamp = transactionTimeStamp;
             _nextNotificationTime = 0;
+            _accumulatedSchedulingDelay.set(0);
         }
         if (transactionTimeStamp > 0)
         {
-            return (int) ((transactionTimeStamp + _timeoutValue) - currentTime);
+            return (int) ((transactionTimeStamp + _timeoutValue + _accumulatedSchedulingDelay.get()) - currentTime);
         }
         else
         {
             return Integer.MAX_VALUE;
+        }
+    }
+
+    @Override
+    public void notifySchedulingDelay(final long schedulingDelay)
+    {
+        if (schedulingDelay > 0)
+        {
+            long accumulatedSchedulingDelay;
+            do
+            {
+                accumulatedSchedulingDelay = _accumulatedSchedulingDelay.get();
+            }
+            while (!_accumulatedSchedulingDelay.compareAndSet(accumulatedSchedulingDelay, accumulatedSchedulingDelay + schedulingDelay));
         }
     }
 }

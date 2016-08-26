@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,11 +17,13 @@
  * under the License.
  *
  */
-package org.apache.qpid.transport.network;
+package org.apache.qpid.server.transport;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class AggregateTicker implements Ticker
+import org.apache.qpid.transport.network.Ticker;
+
+public class AggregateTicker implements Ticker, SchedulingDelayNotificationListener
 {
 
     private final CopyOnWriteArrayList<Ticker> _tickers = new CopyOnWriteArrayList<>();
@@ -62,5 +63,17 @@ public class AggregateTicker implements Ticker
     public void removeTicker(Ticker ticker)
     {
         _tickers.remove(ticker);
+    }
+
+    @Override
+    public void notifySchedulingDelay(final long schedulingDelay)
+    {
+        for (Ticker ticker : _tickers)
+        {
+            if (ticker instanceof SchedulingDelayNotificationListener)
+            {
+                ((SchedulingDelayNotificationListener) ticker).notifySchedulingDelay(schedulingDelay);
+            }
+        }
     }
 }

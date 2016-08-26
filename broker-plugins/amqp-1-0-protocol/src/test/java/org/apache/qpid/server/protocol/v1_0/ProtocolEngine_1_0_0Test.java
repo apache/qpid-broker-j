@@ -34,7 +34,6 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -75,7 +74,7 @@ import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.transport.network.AggregateTicker;
+import org.apache.qpid.server.transport.AggregateTicker;
 
 public class ProtocolEngine_1_0_0Test extends QpidTestCase
 {

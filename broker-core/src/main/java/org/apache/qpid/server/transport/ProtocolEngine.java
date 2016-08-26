@@ -26,7 +26,6 @@ import javax.security.auth.Subject;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.TransportActivity;
 
 /**

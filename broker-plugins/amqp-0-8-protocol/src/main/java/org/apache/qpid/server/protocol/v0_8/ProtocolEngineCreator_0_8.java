@@ -28,7 +28,7 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
-import org.apache.qpid.transport.network.AggregateTicker;
+import org.apache.qpid.server.transport.AggregateTicker;
 
 @PluggableService
 public class ProtocolEngineCreator_0_8 implements ProtocolEngineCreator
