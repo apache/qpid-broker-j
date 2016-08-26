@@ -163,8 +163,7 @@ div .messages {
 
 .formLabel-controlCell {
   padding: 1px;
-  overflow: hidden;
-  text-align: left;
+  float: left;
 }
 
 
@@ -639,4 +638,14 @@ td.advancedSearchField, col.autoWidth {
     background-position: -112px;
     width: 15px;
     height: 15px;
+}
+
+/*
+ This establish new block formatting context
+ See https://www.w3.org/TR/CSS21/visuren.html#block-formatting
+*/
+.fillRemaining
+{
+    overflow:hidden;
+    float:none;
 }

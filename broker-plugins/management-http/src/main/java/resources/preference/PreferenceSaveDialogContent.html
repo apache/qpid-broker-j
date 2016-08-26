@@ -35,7 +35,7 @@
             </div>
             <div class="clear">
                 <label class="formLabel-labelCell tableContainer-labelCell" for="${id}_description">Description: </label>
-                <div class="formLabel-controlCell tableContainer-valueCell">
+                <div class="formLabel-controlCell tableContainer-valueCell fillRemaining">
                 <textarea id="${id}_description"
                           data-dojo-attach-point="description"
                           data-dojo-type="dijit/form/SimpleTextarea"
@@ -47,7 +47,7 @@
                                              promptMessage: 'Enter description'"></textarea>
                 </div>
             </div>
-            <div class="clear"></div>
+
             <div class="clear">
                 <label class="formLabel-labelCell tableContainer-labelCell" for="${id}_groups">Shared with: </label>
                 <div  class="formLabel-controlCell tableContainer-valueCell">
@@ -60,6 +60,7 @@
                                          promptMessage: 'Select groups to share with'"> </div>
                 </div>
             </div>
+            <div class="clear"></div>
         </div>
         <div class="dijitDialogPaneActionBar">
             <input id="${id}_cancelButton"
