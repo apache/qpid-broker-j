@@ -81,7 +81,9 @@ public class ConfigurationExtractor
                 }
                 else if (ConfiguredObject.class.isAssignableFrom(attributeDefinition.getType()))
                 {
-                    results.put(attr.getKey(), extractConfiguredObjectValue(object, attr, attributeDefinition));
+                    results.put(attr.getKey(),
+                                extractConfiguredObjectValue((ConfiguredObject<?>) attributeDefinition.getValue(object),
+                                                             attr.getValue()));
                 }
                 else if (Collection.class.isAssignableFrom(attributeDefinition.getType())
                          && (attr.getValue() instanceof Collection)
@@ -122,15 +124,7 @@ public class ConfigurationExtractor
             Map.Entry obj = valuesIter.next();
             if(obj.getKey() instanceof ConfiguredObject)
             {
-                Object attrKeyVal = attrValue.getKey();
-                if(!(attrKeyVal instanceof String) || ((ConfiguredObject)obj.getKey()).getId().toString().equals(attrKeyVal))
-                {
-                    key = ((ConfiguredObject)obj.getKey()).getName();
-                }
-                else
-                {
-                    key = attrValue.getKey();
-                }
+                key = extractConfiguredObjectValue((ConfiguredObject) obj.getKey(), attrValue.getKey());
             }
             else
             {
@@ -139,15 +133,7 @@ public class ConfigurationExtractor
 
             if(obj.getValue() instanceof ConfiguredObject)
             {
-                Object attrValueVal = attrValue.getValue();
-                if(!(attrValueVal instanceof String) || ((ConfiguredObject)obj.getValue()).getId().toString().equals(attrValueVal))
-                {
-                    value = ((ConfiguredObject)obj.getValue()).getName();
-                }
-                else
-                {
-                    value = attrValue.getValue();
-                }
+                value = extractConfiguredObjectValue((ConfiguredObject) obj.getValue(), attrValue.getValue());
             }
             else
             {
@@ -171,32 +157,22 @@ public class ConfigurationExtractor
         Iterator<? extends ConfiguredObject> valuesIter = values.iterator();
         for (Object attrValue : (Collection) attr.getValue())
         {
-            ConfiguredObject obj = valuesIter.next();
-            if (!(attrValue instanceof String) || obj.getId().toString().equals(attrValue))
-            {
-                listResults.add(obj.getName());
-            }
-            else
-            {
-                listResults.add(attrValue);
-            }
+            listResults.add(extractConfiguredObjectValue(valuesIter.next(), attrValue));
         }
         return listResults;
     }
 
     private Object extractConfiguredObjectValue(final ConfiguredObject<?> object,
-                                                final Map.Entry<String, Object> attr,
-                                                final ConfiguredObjectAttribute attributeDefinition)
+                                                final Object attrVal)
     {
         final Object value;
-        ConfiguredObject<?> obj = (ConfiguredObject<?>) attributeDefinition.getValue(object);
-        if (!(attr.getValue() instanceof String) || obj.getId().toString().equals(attr.getValue()))
+        if(!(attrVal instanceof String) || object.getId().toString().equals(attrVal))
         {
-            value = obj.getName();
+            value = object.getName();
         }
         else
         {
-            value = attr.getValue();
+            value = attrVal;
         }
         return value;
     }
