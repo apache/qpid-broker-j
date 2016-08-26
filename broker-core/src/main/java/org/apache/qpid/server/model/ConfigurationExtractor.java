@@ -45,152 +45,222 @@ public class ConfigurationExtractor
     {
         Map<String, Object> results = new LinkedHashMap<>();
 
-        Map<String, ConfiguredObjectAttribute<?,?>> attributeDefinitions = new HashMap<>();
+
+        results.putAll(extractAttributeValues(object, includeSecure));
+
+        results.putAll(extractNonPrimaryParentsAsAttributes(object));
+
+        results.putAll(extractChildren(object, includeSecure));
+
+        return results;
+    }
+
+
+    private Map<String,Object> extractAttributeValues(final ConfiguredObject<?> object,
+                                                      final boolean includeSecure)
+    {
         final Model model = object.getModel();
         final ConfiguredObjectTypeRegistry typeRegistry = model.getTypeRegistry();
 
-        for(ConfiguredObjectAttribute<?, ?> attributeDefinition : typeRegistry.getAttributes(object.getClass()))
+        Map<String, Object> results = new LinkedHashMap<>();
+        Map<String, ConfiguredObjectAttribute<?, ?>> attributeDefinitions = new HashMap<>();
+        for (ConfiguredObjectAttribute<?, ?> attributeDefinition : typeRegistry.getAttributes(object.getClass()))
         {
             attributeDefinitions.put(attributeDefinition.getName(), attributeDefinition);
         }
 
-
-        for(Map.Entry<String, Object> attr : object.getActualAttributes().entrySet())
+        for (Map.Entry<String, Object> attr : object.getActualAttributes().entrySet())
         {
-            if(!EXCLUDED_ATTRIBUTES.contains(attr.getKey()))
+            if (!EXCLUDED_ATTRIBUTES.contains(attr.getKey()))
             {
                 final ConfiguredObjectAttribute attributeDefinition = attributeDefinitions.get(attr.getKey());
                 if (attributeDefinition.isSecureValue(attributeDefinition.getValue(object)))
                 {
-                    if(includeSecure)
-                    {
-                        if(attributeDefinition.isSecure() && object.hasEncrypter())
-                        {
-                            results.put(attr.getKey(), attributeDefinition.getValue(object));
-                        }
-                        else
-                        {
-                            results.put(attr.getKey(), attr.getValue());
-                        }
-                    }
-                    else
-                    {
-                        results.put(attr.getKey(), AbstractConfiguredObject.SECURED_STRING_VALUE);
-                    }
+                    results.put(attr.getKey(),
+                                extractSecureValue(object, includeSecure, attr, attributeDefinition));
+                }
+                else if (ConfiguredObject.class.isAssignableFrom(attributeDefinition.getType()))
+                {
+                    results.put(attr.getKey(), extractConfiguredObjectValue(object, attr, attributeDefinition));
+                }
+                else if (Collection.class.isAssignableFrom(attributeDefinition.getType())
+                         && (attr.getValue() instanceof Collection)
+                         && hasConfiguredObjectTypeArguments(attributeDefinition, 1))
+                {
+                    results.put(attr.getKey(),
+                                extractConfiguredObjectCollectionValue(object, attr, attributeDefinition));
+                }
+                else if (Map.class.isAssignableFrom(attributeDefinition.getType())
+                         && (attr.getValue() instanceof Map)
+                         && hasConfiguredObjectTypeArguments(attributeDefinition, 2))
+                {
+                    results.put(attr.getKey(),
+                                extractConfiguredObjectMapValue(object, attr, attributeDefinition));
                 }
                 else
                 {
-                    if (ConfiguredObject.class.isAssignableFrom(attributeDefinition.getType()))
-                    {
-                        ConfiguredObject<?> obj = (ConfiguredObject<?>) attributeDefinition.getValue(object);
-                        if (!(attr.getValue() instanceof String) || obj.getId().toString().equals(attr.getValue()))
-                        {
-                            results.put(attr.getKey(), obj.getName());
-                        }
-                        else
-                        {
-                            results.put(attr.getKey(), attr.getValue());
-                        }
-                    }
-                    else if (Collection.class.isAssignableFrom(attributeDefinition.getType())
-                             && (attr.getValue() instanceof Collection)
-                             && attributeDefinition.getGenericType() instanceof ParameterizedType
-                             && ((ParameterizedType) attributeDefinition.getGenericType()).getActualTypeArguments().length
-                                == 1
-                             && isConfiguredObjectTypeArgument(attributeDefinition,0)
-                            )
-                    {
-                        List<Object> listResults = new ArrayList<>();
-                        Collection<? extends ConfiguredObject> values =
-                                (Collection<? extends ConfiguredObject>) attributeDefinition.getValue(object);
-
-                        Iterator<? extends ConfiguredObject> valuesIter = values.iterator();
-                        for (Object attrValue : (Collection) attr.getValue())
-                        {
-                            ConfiguredObject obj = valuesIter.next();
-                            if (!(attrValue instanceof String) || obj.getId().toString().equals(attrValue))
-                            {
-                                listResults.add(obj.getName());
-                            }
-                            else
-                            {
-                                listResults.add(attrValue);
-                            }
-                        }
-
-
-                        results.put(attr.getKey(), listResults);
-                    }
-                    else if (Map.class.isAssignableFrom(attributeDefinition.getType())
-                             && (attr.getValue() instanceof Map)
-                             && attributeDefinition.getGenericType() instanceof ParameterizedType
-                             && ((ParameterizedType) attributeDefinition.getGenericType()).getActualTypeArguments().length
-                                == 2
-                             && (isConfiguredObjectTypeArgument(attributeDefinition, 0)
-                                 || isConfiguredObjectTypeArgument(attributeDefinition, 1))
-                            )
-                    {
-                        Map mapResults = new LinkedHashMap<>();
-                        Map values = (Map) attributeDefinition.getValue(object);
-
-                        Iterator<Map.Entry> valuesIter = values.entrySet().iterator();
-                        for (Map.Entry attrValue : ((Map<?,?>) attr.getValue()).entrySet())
-                        {
-                            Object key;
-                            Object value;
-                            Map.Entry obj = valuesIter.next();
-                            if(obj.getKey() instanceof ConfiguredObject)
-                            {
-                                Object attrKeyVal = attrValue.getKey();
-                                if(!(attrKeyVal instanceof String) || ((ConfiguredObject)obj.getKey()).getId().toString().equals(attrKeyVal))
-                                {
-                                    key = ((ConfiguredObject)obj.getKey()).getName();
-                                }
-                                else
-                                {
-                                    key = attrValue.getKey();
-                                }
-                            }
-                            else
-                            {
-                                key = attrValue.getKey();
-                            }
-
-
-
-                            if(obj.getValue() instanceof ConfiguredObject)
-                            {
-                                Object attrValueVal = attrValue.getValue();
-                                if(!(attrValueVal instanceof String) || ((ConfiguredObject)obj.getValue()).getId().toString().equals(attrValueVal))
-                                {
-                                    value = ((ConfiguredObject)obj.getValue()).getName();
-                                }
-                                else
-                                {
-                                    value = attrValue.getValue();
-                                }
-                            }
-                            else
-                            {
-                                value = attrValue.getValue();
-                            }
-
-
-                            mapResults.put(key, value);
-                        }
-
-
-                        results.put(attr.getKey(), mapResults);
-                    }
-                    else
-                    {
-                        results.put(attr.getKey(), attr.getValue());
-                    }
-
+                    results.put(attr.getKey(), attr.getValue());
                 }
             }
         }
+        return results;
+    }
+
+
+    private Map extractConfiguredObjectMapValue(final ConfiguredObject<?> object,
+                                                final Map.Entry<String, Object> attr,
+                                                final ConfiguredObjectAttribute attributeDefinition)
+    {
+        Map mapResults = new LinkedHashMap<>();
+        Map values = (Map) attributeDefinition.getValue(object);
+
+        Iterator<Map.Entry> valuesIter = values.entrySet().iterator();
+        for (Map.Entry attrValue : ((Map<?,?>) attr.getValue()).entrySet())
+        {
+            Object key;
+            Object value;
+            Map.Entry obj = valuesIter.next();
+            if(obj.getKey() instanceof ConfiguredObject)
+            {
+                Object attrKeyVal = attrValue.getKey();
+                if(!(attrKeyVal instanceof String) || ((ConfiguredObject)obj.getKey()).getId().toString().equals(attrKeyVal))
+                {
+                    key = ((ConfiguredObject)obj.getKey()).getName();
+                }
+                else
+                {
+                    key = attrValue.getKey();
+                }
+            }
+            else
+            {
+                key = attrValue.getKey();
+            }
+
+            if(obj.getValue() instanceof ConfiguredObject)
+            {
+                Object attrValueVal = attrValue.getValue();
+                if(!(attrValueVal instanceof String) || ((ConfiguredObject)obj.getValue()).getId().toString().equals(attrValueVal))
+                {
+                    value = ((ConfiguredObject)obj.getValue()).getName();
+                }
+                else
+                {
+                    value = attrValue.getValue();
+                }
+            }
+            else
+            {
+                value = attrValue.getValue();
+            }
+
+
+            mapResults.put(key, value);
+        }
+        return mapResults;
+    }
+
+    private List<Object> extractConfiguredObjectCollectionValue(final ConfiguredObject<?> object,
+                                                                final Map.Entry<String, Object> attr,
+                                                                final ConfiguredObjectAttribute attributeDefinition)
+    {
+        List<Object> listResults = new ArrayList<>();
+        Collection<? extends ConfiguredObject> values =
+                (Collection<? extends ConfiguredObject>) attributeDefinition.getValue(object);
+
+        Iterator<? extends ConfiguredObject> valuesIter = values.iterator();
+        for (Object attrValue : (Collection) attr.getValue())
+        {
+            ConfiguredObject obj = valuesIter.next();
+            if (!(attrValue instanceof String) || obj.getId().toString().equals(attrValue))
+            {
+                listResults.add(obj.getName());
+            }
+            else
+            {
+                listResults.add(attrValue);
+            }
+        }
+        return listResults;
+    }
+
+    private Object extractConfiguredObjectValue(final ConfiguredObject<?> object,
+                                                final Map.Entry<String, Object> attr,
+                                                final ConfiguredObjectAttribute attributeDefinition)
+    {
+        final Object value;
+        ConfiguredObject<?> obj = (ConfiguredObject<?>) attributeDefinition.getValue(object);
+        if (!(attr.getValue() instanceof String) || obj.getId().toString().equals(attr.getValue()))
+        {
+            value = obj.getName();
+        }
+        else
+        {
+            value = attr.getValue();
+        }
+        return value;
+    }
+
+    private Object extractSecureValue(final ConfiguredObject<?> object,
+                                      final boolean includeSecure,
+                                      final Map.Entry<String, Object> attr,
+                                      final ConfiguredObjectAttribute attributeDefinition)
+    {
+        final Object value;
+        if(includeSecure)
+        {
+            if(attributeDefinition.isSecure() && object.hasEncrypter())
+            {
+                value = attributeDefinition.getValue(object);
+            }
+            else
+            {
+                value = attr.getValue();
+            }
+        }
+        else
+        {
+            value = AbstractConfiguredObject.SECURED_STRING_VALUE;
+        }
+        return value;
+    }
+
+    private boolean hasConfiguredObjectTypeArguments(ConfiguredObjectAttribute attributeDefinition, int paramCount)
+    {
+        if(attributeDefinition.getGenericType() instanceof ParameterizedType
+           && ((ParameterizedType) attributeDefinition.getGenericType()).getActualTypeArguments().length == paramCount)
+        {
+            for(int i = 0 ;  i < paramCount; i++)
+            {
+                if(isConfiguredObjectTypeArgument(attributeDefinition, i))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isConfiguredObjectTypeArgument(ConfiguredObjectAttribute attributeDefinition, int paramIndex)
+    {
+        return ConfiguredObject.class.isAssignableFrom(getTypeParameterClass(attributeDefinition, paramIndex));
+    }
+
+    private Class getTypeParameterClass(ConfiguredObjectAttribute attributeDefinition, int paramIndex)
+    {
+        final Type argType = ((ParameterizedType) attributeDefinition
+                .getGenericType()).getActualTypeArguments()[paramIndex];
+
+        return argType instanceof Class ? (Class) argType : (Class) ((ParameterizedType)argType).getRawType();
+    }
+
+    private Map<String, Object> extractNonPrimaryParentsAsAttributes(final ConfiguredObject<?> object)
+    {
+        final Model model = object.getModel();
+        Map<String, Object> results = new LinkedHashMap<>();
+
         Collection<Class<? extends ConfiguredObject>> parentTypes = model.getParentTypes(object.getCategoryClass());
+
         if(parentTypes.size() > 1)
         {
             Iterator<Class<? extends ConfiguredObject>>
@@ -206,24 +276,38 @@ public class ConfigurationExtractor
                 }
             }
         }
-        if(!(object.getCategoryClass().getAnnotation(ManagedObject.class).managesChildren() ||object.getTypeClass().getAnnotation(ManagedObject.class).managesChildren()))
+
+        return results;
+    }
+
+
+    private Map<String, Object> extractChildren(final ConfiguredObject<?> object,
+                                                final boolean includeSecure)
+    {
+        final Model model = object.getModel();
+
+        Map<String, Object> results = new LinkedHashMap<>();
+
+        if(!(object.getCategoryClass().getAnnotation(ManagedObject.class).managesChildren()
+             || object.getTypeClass().getAnnotation(ManagedObject.class).managesChildren()))
         {
+
             for (Class<? extends ConfiguredObject> childClass : model
                     .getChildTypes(object.getCategoryClass()))
             {
                 ArrayList<Class<? extends ConfiguredObject>> parentClasses =
                         new ArrayList<>(model.getParentTypes(childClass));
-                if(parentClasses.get(parentClasses.size()-1).equals(object.getCategoryClass()))
+                if (parentClasses.get(parentClasses.size() - 1).equals(object.getCategoryClass()))
                 {
-                    List<Map<String,Object>> children = new ArrayList<>();
-                    for(ConfiguredObject child : object.getChildren(childClass))
+                    List<Map<String, Object>> children = new ArrayList<>();
+                    for (ConfiguredObject child : object.getChildren(childClass))
                     {
-                        if(child.isDurable())
+                        if (child.isDurable())
                         {
                             children.add(extractConfig(child, includeSecure));
                         }
                     }
-                    if(!children.isEmpty())
+                    if (!children.isEmpty())
                     {
                         String singularName = childClass.getSimpleName().toLowerCase();
                         String attrName = singularName + (singularName.endsWith("s") ? "es" : "s");
@@ -233,20 +317,8 @@ public class ConfigurationExtractor
             }
         }
 
-
         return results;
     }
 
-    private boolean isConfiguredObjectTypeArgument(ConfiguredObjectAttribute attributeDefinition, int paramIndex)
-    {
-        return ConfiguredObject.class.isAssignableFrom(getTypeParameterClass(attributeDefinition, paramIndex));
-    }
 
-    private Class getTypeParameterClass(ConfiguredObjectAttribute attributeDefinition, int paramIndex)
-    {
-        final Type argType = ((ParameterizedType) attributeDefinition
-                .getGenericType()).getActualTypeArguments()[0];
-
-        return argType instanceof Class ? (Class) argType : (Class) ((ParameterizedType)argType).getRawType();
-    }
 }
