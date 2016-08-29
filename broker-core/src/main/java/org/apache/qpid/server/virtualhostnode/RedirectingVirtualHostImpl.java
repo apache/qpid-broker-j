@@ -50,6 +50,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.DurableConfigurationStore;
@@ -550,5 +551,12 @@ class RedirectingVirtualHostImpl
     public void setFirstOpening(final boolean firstOpening)
     {
 
+    }
+
+    @Override
+    public UserPreferences createUserPreferences(final ConfiguredObject<?> object)
+    {
+        throwUnsupportedForRedirector();
+        return null;
     }
 }

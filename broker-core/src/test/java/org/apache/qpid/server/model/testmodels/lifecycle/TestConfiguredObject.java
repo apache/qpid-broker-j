@@ -267,5 +267,17 @@ public class TestConfiguredObject extends AbstractConfiguredObject
         {
             return _configuredObjectTypeRegistry;
         }
+
+        @Override
+        public  <C> C getAncestor(final Class<C> ancestorClass,
+                                  final Class<? extends ConfiguredObject> category,
+                                  final ConfiguredObject<?> object)
+        {
+            if (object == null)
+            {
+                return null;
+            }
+            return super.getAncestor(ancestorClass, category, object);
+        }
     }
 }

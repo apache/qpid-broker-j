@@ -53,6 +53,7 @@ public class FileBasedGroupProviderImplTest extends QpidTestCase
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getModel()).thenReturn(BrokerModel.getInstance());
         when(_broker.getId()).thenReturn(UUID.randomUUID());
+        when(_broker.getCategoryClass()).thenReturn(Broker.class);
     }
 
     @Override

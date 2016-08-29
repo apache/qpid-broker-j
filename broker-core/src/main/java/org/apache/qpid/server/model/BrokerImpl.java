@@ -61,6 +61,9 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.logging.messages.VirtualHostMessages;
 import org.apache.qpid.server.model.preferences.GenericPrincipal;
+import org.apache.qpid.server.model.preferences.Preference;
+import org.apache.qpid.server.model.preferences.UserPreferences;
+import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
 import org.apache.qpid.server.plugin.SystemNodeCreator;
@@ -730,6 +733,11 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         }
     }
 
+    @Override
+    public UserPreferences createUserPreferences(final ConfiguredObject<?> object)
+    {
+        return new UserPreferencesImpl(_preferenceTaskExecutor, object, _preferenceStore, Collections.<Preference>emptySet());
+    }
 
     private void updateAccessControl()
     {

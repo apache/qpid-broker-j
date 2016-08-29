@@ -76,13 +76,13 @@ public abstract class Model
         return descendants;
     }
 
-    public <C extends ConfiguredObject> C getAncestor(final Class<C> ancestorClass,
+    public <C> C getAncestor(final Class<C> ancestorClass,
                                                              final ConfiguredObject<?> object)
     {
         return getAncestor(ancestorClass, object.getCategoryClass(), object);
     }
 
-    public  <C extends ConfiguredObject> C getAncestor(final Class<C> ancestorClass,
+    public  <C> C getAncestor(final Class<C> ancestorClass,
                                                final Class<? extends ConfiguredObject> category,
                                                final ConfiguredObject<?> object)
     {
@@ -95,10 +95,10 @@ public abstract class Model
             for(Class<? extends ConfiguredObject> parentClass : getParentTypes(category))
             {
                 ConfiguredObject<?> parent = object.getParent(parentClass);
-                ConfiguredObject<?> ancestor = getAncestor(ancestorClass, parentClass, parent);
+                C ancestor = getAncestor(ancestorClass, parentClass, parent);
                 if(ancestor != null)
                 {
-                    return (C) ancestor;
+                    return ancestor;
                 }
             }
         }

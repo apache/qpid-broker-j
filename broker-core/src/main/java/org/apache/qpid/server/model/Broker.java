@@ -32,9 +32,11 @@ import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.stats.StatisticsGatherer;
+import org.apache.qpid.server.store.preferences.UserPreferencesCreator;
 
 @ManagedObject( defaultType = Broker.BROKER_TYPE)
-public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventLoggerProvider, StatisticsGatherer, Container<X>
+public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventLoggerProvider, StatisticsGatherer, Container<X>,
+                                                     UserPreferencesCreator
 {
     String BROKER_TYPE = "Broker";
 

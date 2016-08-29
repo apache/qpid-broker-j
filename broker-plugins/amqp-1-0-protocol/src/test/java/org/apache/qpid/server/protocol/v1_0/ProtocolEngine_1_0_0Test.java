@@ -102,6 +102,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         when(_broker.getTaskExecutor()).thenReturn(taskExecutor);
         when(_broker.getId()).thenReturn(UUID.randomUUID());
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
+        when(((Broker) _broker).getCategoryClass()).thenReturn(Broker.class);
         _port = mock(AmqpPort.class);
         when(_port.getChildExecutor()).thenReturn(taskExecutor);
         when(_port.getCategoryClass()).thenReturn(Port.class);

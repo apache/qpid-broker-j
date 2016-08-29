@@ -54,6 +54,7 @@ public class NonJavaTrustStoreTest extends QpidTestCase
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getModel()).thenReturn(_model);
         when(_broker.getEventLogger()).thenReturn(new EventLogger());
+        when(((Broker) _broker).getCategoryClass()).thenReturn(Broker.class);
     }
 
     public void testCreationOfTrustStoreFromValidCertificate() throws Exception

@@ -252,7 +252,7 @@ public class BrokerTestHelper
 
     public static Exchange<?> createExchange(String hostName, final boolean durable, final EventLogger eventLogger) throws Exception
     {
-        final VirtualHost virtualHost = mockWithSystemPrincipal(VirtualHost.class, SYSTEM_PRINCIPAL);
+        final VirtualHost virtualHost =  mockWithSystemPrincipal(VirtualHost.class, SYSTEM_PRINCIPAL);
         when(virtualHost.getName()).thenReturn(hostName);
         when(virtualHost.getEventLogger()).thenReturn(eventLogger);
         when(virtualHost.getDurableConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));
@@ -261,6 +261,7 @@ public class BrokerTestHelper
         when(virtualHost.getModel()).thenReturn(objectFactory.getModel());
         when(virtualHost.getTaskExecutor()).thenReturn(TASK_EXECUTOR);
         when(virtualHost.getChildExecutor()).thenReturn(TASK_EXECUTOR);
+        when(virtualHost.getCategoryClass()).thenReturn(VirtualHost.class);
         final Map<String,Object> attributes = new HashMap<String, Object>();
         attributes.put(org.apache.qpid.server.model.Exchange.ID, UUIDGenerator.generateExchangeUUID("amp.direct", virtualHost.getName()));
         attributes.put(org.apache.qpid.server.model.Exchange.NAME, "amq.direct");

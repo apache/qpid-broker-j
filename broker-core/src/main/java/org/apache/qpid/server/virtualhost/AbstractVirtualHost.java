@@ -92,6 +92,9 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.model.preferences.Preference;
+import org.apache.qpid.server.model.preferences.UserPreferences;
+import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.plugin.ConnectionValidator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.SystemNodeCreator;
@@ -2028,21 +2031,29 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         });
     }
 
+    @Override
+    public UserPreferences createUserPreferences(ConfiguredObject<?> object)
+    {
+        if (_preferenceTaskExecutor == null || !_preferenceTaskExecutor.isRunning())
+        {
+            throw new IllegalStateException("Cannot create user preferences in not fully initialized virtual host");
+        }
+        return new UserPreferencesImpl(_preferenceTaskExecutor, object, _preferenceStore, Collections.<Preference>emptySet());
+    }
+
     private void stopPreferenceTaskExecutor()
     {
-        TaskExecutor preferenceTaskExecutor = _preferenceTaskExecutor;
-        if (preferenceTaskExecutor != null)
+        if (_preferenceTaskExecutor != null)
         {
-            preferenceTaskExecutor.stop();
+            _preferenceTaskExecutor.stop();
         }
     }
 
     private void closePreferenceStore()
     {
-        PreferenceStore ps = _preferenceStore;
-        if (ps != null)
+        if (_preferenceStore != null)
         {
-            ps.close();
+            _preferenceStore.close();
         }
     }
 
@@ -2420,6 +2431,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         getBroker().assignTargetSizes();
 
+        final PreferenceStoreUpdater updater = new PreferenceStoreUpdaterImpl();
+        Collection<PreferenceRecord> records = _preferenceStore.openAndLoad(updater);
+        _preferenceTaskExecutor = new TaskExecutorImpl("virtualhost-" + getName() + "-preferences", null);
+        _preferenceTaskExecutor.start();
+        PreferencesRecoverer preferencesRecoverer = new PreferencesRecoverer(_preferenceTaskExecutor);
+        preferencesRecoverer.recoverPreferences(this, records, _preferenceStore);
+
         if (_createDefaultExchanges)
         {
             return doAfter(createDefaultExchanges(), new Runnable()
@@ -2464,13 +2482,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         State finalState = State.ERRORED;
         try
         {
-            final PreferenceStoreUpdater updater = new PreferenceStoreUpdaterImpl();
-            Collection<PreferenceRecord> records = _preferenceStore.openAndLoad(updater);
-            _preferenceTaskExecutor = new TaskExecutorImpl("virtualhost-" + getName() + "-preferences", null);
-            _preferenceTaskExecutor.start();
-            PreferencesRecoverer preferencesRecoverer = new PreferencesRecoverer(_preferenceTaskExecutor);
-            preferencesRecoverer.recoverPreferences(this, records, _preferenceStore);
-
             initialiseHouseKeeping(getHousekeepingCheckPeriod());
             finalState = State.ACTIVE;
             _acceptsConnections.set(true);

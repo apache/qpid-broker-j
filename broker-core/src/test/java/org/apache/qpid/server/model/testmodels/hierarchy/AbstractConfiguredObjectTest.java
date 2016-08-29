@@ -337,6 +337,23 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
     }
 
+    public void testUserPreferencesCreatedOnEngineCreation()
+    {
+        Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, "myCar");
+        carAttributes.put(ConfiguredObject.TYPE, TestStandardCarImpl.TEST_STANDARD_CAR_TYPE);
+
+        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes);
+
+        Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, "myEngine");
+        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+
+        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
+
+        assertNotNull("Unexpected user preferences", engine.getUserPreferences());
+    }
+
     public void testDuplicateChildRejected_Name()
     {
         doDuplicateChildCheck(ConfiguredObject.NAME);

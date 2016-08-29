@@ -15,19 +15,15 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
 
-package org.apache.qpid.server.model.testmodels.hierarchy;
+package org.apache.qpid.server.store.preferences;
 
-import org.apache.qpid.server.model.ManagedObject;
-import org.apache.qpid.server.model.ManagedOperation;
-import org.apache.qpid.server.model.Param;
-import org.apache.qpid.server.store.preferences.UserPreferencesCreator;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.preferences.UserPreferences;
 
-@ManagedObject(category = false)
-public interface TestStandardCar<X extends TestStandardCar<X>> extends TestCar<X>, UserPreferencesCreator
+public interface UserPreferencesCreator
 {
-
-    @ManagedOperation
-    Door openDoor(@Param(name = "door", defaultValue = "DRIVER") Door door);
+    UserPreferences createUserPreferences(ConfiguredObject<?> object);
 }

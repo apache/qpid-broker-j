@@ -24,6 +24,7 @@ import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE_PASSWORD;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -83,6 +84,7 @@ public class NonJavaKeyStoreTest extends QpidTestCase
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getModel()).thenReturn(_model);
         when(_broker.getEventLogger()).thenReturn(new EventLogger(_messageLogger));
+        when(((Broker) _broker).getCategoryClass()).thenReturn(Broker.class);
         _testResources = new ArrayList<>();
     }
 

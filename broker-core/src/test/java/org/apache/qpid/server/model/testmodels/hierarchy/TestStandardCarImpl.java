@@ -33,6 +33,12 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.preferences.Preference;
+import org.apache.qpid.server.model.preferences.UserPreferences;
+import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
+import org.apache.qpid.server.store.preferences.NoopPreferenceStoreFactoryService;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 
 @ManagedObject( category = false,
                 type = TestStandardCarImpl.TEST_STANDARD_CAR_TYPE,
@@ -41,6 +47,7 @@ public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCa
         implements TestStandardCar<TestStandardCarImpl>
 {
     public static final String TEST_STANDARD_CAR_TYPE = "testpertrolcar";
+    private final PreferenceStore _preferenceStore;
 
     @ManagedAttributeField
     private Colour _bodyColour;
@@ -51,12 +58,13 @@ public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCa
     @ManagedObjectFactoryConstructor
     public TestStandardCarImpl(final Map<String, Object> attributes)
     {
-        super(parentsMap(), attributes, newTaskExecutor(), TestModel.getInstance());
+        this(attributes, TestModel.getInstance());
     }
 
-    public TestStandardCarImpl(final Map<String, Object> attributes, TestModel model)
+    public TestStandardCarImpl(final Map<String, Object> attributes, Model model)
     {
         super(parentsMap(), attributes, newTaskExecutor(), model);
+        _preferenceStore = new NoopPreferenceStoreFactoryService().createInstance(this, null);
     }
 
 
@@ -98,5 +106,11 @@ public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCa
     public Colour getInteriorColour()
     {
         return _interiorColour;
+    }
+
+    @Override
+    public UserPreferences createUserPreferences(final ConfiguredObject<?> object)
+    {
+        return new UserPreferencesImpl(getTaskExecutor(), object, _preferenceStore, Collections.<Preference>emptySet());
     }
 }

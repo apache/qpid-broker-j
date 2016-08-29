@@ -36,13 +36,15 @@ import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
+import org.apache.qpid.server.store.preferences.UserPreferencesCreator;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.HouseKeepingTask;
 import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
 
 @ManagedObject( defaultType = "ProvidedStore", description = VirtualHost.CLASS_DESCRIPTION)
 public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<X>, StatisticsGatherer,
-                                                               EventLoggerProvider, NamedAddressSpace
+                                                               EventLoggerProvider, NamedAddressSpace,
+                                                               UserPreferencesCreator
 {
     String CLASS_DESCRIPTION = "<p>A virtualhost is a namespace in which messaging is performed. Virtualhosts are "
                                + "independent; the messaging goes on a within a virtualhost is independent of any "
