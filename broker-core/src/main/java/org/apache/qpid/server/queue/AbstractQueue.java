@@ -206,7 +206,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             Collections.synchronizedSet(EnumSet.noneOf(NotificationCheck.class));
 
 
-    private int _maxAsyncDeliveries;
+    private volatile int _maxAsyncDeliveries;
+    private volatile long _estimatedAverageMessageHeaderSize;
 
     private final AtomicLong _stateChangeCount = new AtomicLong(Long.MIN_VALUE);
 
@@ -229,7 +230,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private final AtomicBoolean _overfull = new AtomicBoolean(false);
     private final FlowToDiskChecker _flowToDiskChecker = new FlowToDiskChecker();
-    private final long _estimatedAverageMessageHeaderSize = getContextValue(Long.class, QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD);
     private final CopyOnWriteArrayList<Binding<?>> _bindings = new CopyOnWriteArrayList<>();
     private Map<String, Object> _arguments;
 
@@ -476,6 +476,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             _messageGroupManager = null;
         }
 
+        _estimatedAverageMessageHeaderSize = getContextValue(Long.class, QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD);
         _maxAsyncDeliveries = getContextValue(Integer.class, Queue.MAX_ASYNCHRONOUS_DELIVERIES);
 
         if(_defaultFilters != null)

@@ -60,11 +60,13 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
     // Attributes
     private final AMQSessionModel _session;
     private final Action _deleteModelTask;
+    private final AbstractAMQPConnection<?> _amqpConnection;
 
     public SessionAdapter(final AbstractAMQPConnection<?> amqpConnection,
                           final AMQSessionModel session)
     {
         super(parentsMap(amqpConnection), createAttributes(session));
+        _amqpConnection = amqpConnection;
         _session = session;
         _session.addConsumerListener(new ConsumerListener()
         {
@@ -82,8 +84,6 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
             }
         });
         session.setModelObject(this);
-
-        registerTransactionTimeoutTickers(amqpConnection, session);
 
         _deleteModelTask = new Action()
         {
@@ -106,6 +106,13 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
         attributes.put(DURABLE, false);
         attributes.put(LIFETIME_POLICY, LifetimePolicy.DELETE_ON_SESSION_END);
         return attributes;
+    }
+
+    @Override
+    protected void postResolveChildren()
+    {
+        super.postResolveChildren();
+        registerTransactionTimeoutTickers(_amqpConnection, _session);
     }
 
     @Override

@@ -115,11 +115,11 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     private final AtomicBoolean _connectionCountWarningGiven = new AtomicBoolean();
 
     private final Container<?> _container;
-    private final int _connectionWarnCount;
     private final AtomicBoolean _closing = new AtomicBoolean();
     private final SettableFuture _noConnectionsRemain = SettableFuture.create();
     private AcceptingTransport _transport;
     private SSLContext _sslContext;
+    private volatile int _connectionWarnCount;
     private volatile long _protocolHandshakeTimeout;
 
     @ManagedObjectFactoryConstructor
@@ -127,7 +127,6 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     {
         super(attributes, container);
         _container = container;
-        _connectionWarnCount = getContextValue(Integer.class, OPEN_CONNECTIONS_WARN_PERCENT);
     }
 
     @Override
@@ -206,6 +205,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     {
         super.onOpen();
         _protocolHandshakeTimeout = getContextValue(Long.class, AmqpPort.PROTOCOL_HANDSHAKE_TIMEOUT);
+        _connectionWarnCount = getContextValue(Integer.class, OPEN_CONNECTIONS_WARN_PERCENT);
     }
 
     @Override

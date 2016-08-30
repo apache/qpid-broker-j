@@ -58,14 +58,20 @@ public class PlainAuthenticationProvider
                                                                                         CRAMMD5Initialiser.MECHANISM,
                                                                                         ScramSHA1AuthenticationManager.MECHANISM,
                                                                                         ScramSHA256AuthenticationManager.MECHANISM));
-    private final ScramSaslServerSourceAdapter _scramSha1Adapter;
-    private final ScramSaslServerSourceAdapter _scramSha256Adapter;
+    private volatile ScramSaslServerSourceAdapter _scramSha1Adapter;
+    private volatile ScramSaslServerSourceAdapter _scramSha256Adapter;
 
 
     @ManagedObjectFactoryConstructor
     protected PlainAuthenticationProvider(final Map<String, Object> attributes, final Broker broker)
     {
         super(attributes, broker);
+    }
+
+    @Override
+    protected void postResolveChildren()
+    {
+        super.postResolveChildren();
 
         ScramSaslServerSourceAdapter.PasswordSource passwordSource =
                 new ScramSaslServerSourceAdapter.PasswordSource()

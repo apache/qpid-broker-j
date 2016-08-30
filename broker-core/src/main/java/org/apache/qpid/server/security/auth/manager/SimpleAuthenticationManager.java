@@ -64,12 +64,18 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
     private static final String SCRAM_SHA256_MECHANISM = ScramSHA256AuthenticationManager.MECHANISM;
 
     private final Map<String, String> _users = Collections.synchronizedMap(new HashMap<String, String>());
-    private final ScramSaslServerSourceAdapter _scramSha1Adapter;
-    private final ScramSaslServerSourceAdapter _scramSha256Adapter;
+    private volatile ScramSaslServerSourceAdapter _scramSha1Adapter;
+    private volatile ScramSaslServerSourceAdapter _scramSha256Adapter;
 
     public SimpleAuthenticationManager(final Map<String, Object> attributes, final Container<?> container)
     {
         super(attributes, container);
+    }
+
+    @Override
+    protected void postResolveChildren()
+    {
+        super.postResolveChildren();
         ScramSaslServerSourceAdapter.PasswordSource passwordSource =
                 new ScramSaslServerSourceAdapter.PasswordSource()
                 {

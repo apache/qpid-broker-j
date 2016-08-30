@@ -3114,6 +3114,16 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return null;
     }
 
+    /**
+     * Retrieve and interpolate a context variable of the given name and convert it to the given type.
+     *
+     * Note that this SHOULD not be called before the model has been resolved (e.g., not in the constructor).
+     * @param <T> the type the interpolated context variable should be converted to
+     * @param clazz the class object of the type the interpolated context variable should be converted to
+     * @param propertyName the name of the context variable to retrieve
+     * @return the interpolated context variable converted to an object of the given type
+     * @throws IllegalArgumentException if the interpolated context variable cannot be converted to the given type
+     */
     @Override
     public final <T> T getContextValue(Class<T> clazz, String propertyName)
     {

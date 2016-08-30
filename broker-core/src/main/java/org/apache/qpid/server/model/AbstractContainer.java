@@ -99,12 +99,20 @@ public abstract class AbstractContainer<X extends AbstractContainer<X>> extends 
         _bufferPoolMXBean = bufferPoolMXBean;
         if(attributes.get(CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER) != null )
         {
-
-            final String encryptionProviderType = String.valueOf(attributes.get(CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER));
-            updateEncrypter(encryptionProviderType);
-            _confidentialConfigurationEncryptionProvider = encryptionProviderType;
+            _confidentialConfigurationEncryptionProvider =
+                    String.valueOf(attributes.get(CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER));
         }
 
+    }
+
+    @Override
+    protected void postResolveChildren()
+    {
+        super.postResolveChildren();
+        if (_confidentialConfigurationEncryptionProvider != null)
+        {
+            updateEncrypter(_confidentialConfigurationEncryptionProvider);
+        }
     }
 
     @SuppressWarnings("unused")
