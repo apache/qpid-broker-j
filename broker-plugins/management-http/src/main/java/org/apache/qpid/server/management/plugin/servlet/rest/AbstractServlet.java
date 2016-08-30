@@ -348,7 +348,11 @@ public abstract class AbstractServlet extends HttpServlet
                 final String headerName = entry.getKey().value();
                 try
                 {
-                    response.setHeader(headerName, String.valueOf(entry.getValue().invoke(customRestHeaders)));
+                    final Object headerValue = entry.getValue().invoke(customRestHeaders);
+                    if (headerValue != null)
+                    {
+                        response.setHeader(headerName, String.valueOf(headerValue));
+                    }
                 }
                 catch (Exception e)
                 {

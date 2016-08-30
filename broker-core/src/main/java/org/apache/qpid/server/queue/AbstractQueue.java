@@ -2725,6 +2725,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             return _messageReference.getMessage().getMessageHeader().getMimeType();
         }
 
+        @RestContentHeader("Content-Encoding")
+        public String getContentEncoding()
+        {
+            return _messageReference.getMessage().getMessageHeader().getEncoding();
+        }
+
     }
 
     private static class AcquireAllQueueEntryFilter implements QueueEntryFilter
