@@ -269,7 +269,8 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>
     long clearQueue();
 
     @ManagedOperation(nonModifying = true)
-    Content getMessageContent(@Param(name = "messageId") long messageId);
+    Content getMessageContent(@Param(name = "messageId") long messageId,
+                              @Param(name = "limit", defaultValue = "-1", description = "Number of bytes to return") long limit);
 
     @ManagedOperation(nonModifying = true)
     List<MessageInfo> getMessageInfo(@Param(name = "first", defaultValue = "-1") int first, @Param(name = "last", defaultValue = "-1") int last);

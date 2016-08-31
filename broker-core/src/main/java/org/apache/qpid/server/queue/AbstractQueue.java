@@ -2631,19 +2631,22 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     public static class MessageContent implements Content, CustomRestHeaders
     {
+        public static final int UNLIMITED = -1;
         private final byte[] _data;
         private final String _mimeType;
+        private final long _limit;
 
-        public MessageContent(byte[] data, String mimeType )
+        public MessageContent(byte[] data, String mimeType, long limit)
         {
             _data = data;
             _mimeType = mimeType;
+            _limit = (limit == UNLIMITED ? data.length : limit);
         }
 
         @Override
         public void write(OutputStream outputStream) throws IOException
         {
-            outputStream.write(_data);
+            outputStream.write(_data, 0, (int) _limit);
         }
 
         @RestContentHeader("Content-Type")
@@ -3424,13 +3427,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public Content getMessageContent(final long messageId)
+    public Content getMessageContent(final long messageId, final long limit)
     {
         final MessageContentFinder messageFinder = new MessageContentFinder(messageId);
         visit(messageFinder);
         if(messageFinder.isFound())
         {
-            return new MessageContent(messageFinder.getContent(), messageFinder.getMimeType());
+            return new MessageContent(messageFinder.getContent(), messageFinder.getMimeType(), limit);
         }
         else
         {

@@ -21,6 +21,7 @@ define(["dojo/dom",
         "dojo/_base/window",
         "dijit/registry",
         "dojo/parser",
+        "dojo/_base/lang",
         "dojo/_base/array",
         "dojo/_base/event",
         'dojo/_base/json',
@@ -31,7 +32,7 @@ define(["dojo/dom",
         "qpid/common/util",
         "dojo/text!showMessage.html",
         "dojo/domReady!"],
-    function (dom, construct, domClass, win, registry, parser, array, event, json, query, connect, properties, entities, util, template) {
+    function (dom, construct, domClass, win, registry, parser, lang, array, event, json, query, connect, properties, entities, util, template) {
 
 
         function encode(val){
@@ -89,9 +90,9 @@ define(["dojo/dom",
                                         tableStr += "<tr><td>"+encode(name)+"</td>";
                                         tableStr += "<td>"+encode(val[ name ])+"</td></tr>";
                                     }
-                                    field.innerHTML = tableStr;
                                 }
                                 tableStr += "</table>";
+                                field.innerHTML = tableStr;
                             } else if(domClass.contains(field,"datetime")) {
                                 field.innerHTML = management.userPreferences.formatDateTime(val, {addOffset: true, appendTimeZone: true});
                             } else {
@@ -106,29 +107,43 @@ define(["dojo/dom",
 
             var contentModelObj = {name: "getMessageContent", parent: modelObj, type: modelObj.type};
             var parameters = {messageId: data.id};
-            if(data.mimeType && data.mimeType.match(/text\/.*/))
+
+            var url = management.buildObjectURL(contentModelObj, parameters);
+            contentField.innerHTML = '<a href="#" title="' + url + '">Download</a><br/><div id="preview"></div>';
+
+            var href = query('a', contentField)[0]
+            connect.connect(href, 'onclick', function ()
             {
-                management.load(contentModelObj,
-                                parameters,
-                                {handleAs: "text", headers: { "Content-Type": data.mimeType}}).then(
-                                function(content)
-                                {
-                                    contentField.innerHTML = encode(content);
-                                    registry.byId("showMessage").show();
-                                });
+                management.download(contentModelObj, parameters);
+            });
+
+            if (data.mimeType && data.mimeType.match(/text\/.*/))
+            {
+                var limit = 1024;
+                var preview = query('#preview', contentField)[0];
+                preview.innerHTML = 'Preview'
+                                    + (limit < data.size
+                                       ? ' (showing the first ' + limit + ' of ' + data.size + ' bytes)'
+                                       : ' (showing all ' + data.size + ' bytes)')
+                                    + ':<br/>'
+                                    + '<div class="fillRemaining">'
+                                    + '<textarea id="previewContent" readonly rows="5" style="width: 100%"></textarea>'
+                                    + '</div>';
+                var previewContent = query("#previewContent", preview)[0];
+                var previewParameters = lang.mixin({limit: limit}, parameters);
+                management.load(contentModelObj, previewParameters, {
+                        handleAs: "text",
+                        headers: {"Content-Type": data.mimeType}
+                    })
+                    .then(function (content)
+                    {
+                        previewContent.innerHTML = encode(content);
+                        registry.byId("showMessage")
+                            .show();
+                    });
             }
             else
             {
-                var url = management.buildObjectURL(contentModelObj, parameters);
-                contentField.innerHTML = "<a href=\"#\" title=\"" + url + "\">Download</a>";
-
-                var href = query('a', contentField)[0]
-                connect.connect(href, 'onclick',
-                                 function()
-                                 {
-                                      management.download(contentModelObj, parameters);
-                                 });
-
                 registry.byId("showMessage").show();
             }
         };
