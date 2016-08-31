@@ -88,7 +88,7 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
     String PORT_MAX_MESSAGE_SIZE = "qpid.port.max_message_size";
 
     @ManagedContextDefault(name = PORT_MAX_MESSAGE_SIZE)
-    int DEFAULT_MAX_MESSAGE_SIZE = 0x1f40000; // 500Mb
+    int DEFAULT_MAX_MESSAGE_SIZE = 500 * 1024 * 1024;
 
     String OPEN_CONNECTIONS_WARN_PERCENT = "qpid.port.open_connections_warn_percent";
 
