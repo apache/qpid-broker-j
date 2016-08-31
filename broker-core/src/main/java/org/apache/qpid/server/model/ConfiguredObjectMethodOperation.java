@@ -121,39 +121,7 @@ public class ConfiguredObjectMethodOperation<C extends ConfiguredObject> impleme
             Object[] paramValues = new Object[_params.length];
             for (int i = 0; i < _params.length; i++)
             {
-                OperationParameter param = _params[i];
-                Object providedVal;
-                if (parameters.containsKey(param.getName()))
-                {
-                    providedVal = parameters.get(param.getName());
-                }
-                else if (!"".equals(param.getDefaultValue()))
-                {
-                    providedVal = param.getDefaultValue();
-                }
-                else
-                {
-                    providedVal = null;
-                }
-                final AttributeValueConverter<?> converter =
-                        AttributeValueConverter.getConverter(AttributeValueConverter.convertPrimitiveToBoxed(param.getType()),
-                                                             param.getGenericType());
-                try
-                {
-                    final Object convertedVal = converter.convert(providedVal, subject);
-                    paramValues[i] = convertedVal;
-                }
-                catch (IllegalArgumentException e)
-                {
-                    throw new IllegalArgumentException(e.getMessage()
-                                                       + " for parameter '"
-                                                       + param.getName()
-                                                       + "' in "
-                                                       + _objectType
-                                                       + "."
-                                                       + _operation.getName()
-                                                       + "(...) operation", e.getCause());
-                }
+                paramValues[i] = getParameterValue(subject, parameters, _params[i]);
             }
             try
             {
@@ -179,6 +147,46 @@ public class ConfiguredObjectMethodOperation<C extends ConfiguredObject> impleme
                 }
             }
         }
+    }
+
+    protected Object getParameterValue(final C subject,
+                                       final Map<String, Object> parameters,
+                                       final OperationParameter param)
+    {
+        final Object convertedVal;
+        Object providedVal;
+        if (parameters.containsKey(param.getName()))
+        {
+            providedVal = parameters.get(param.getName());
+        }
+        else if (!"".equals(param.getDefaultValue()))
+        {
+            providedVal = param.getDefaultValue();
+        }
+        else
+        {
+            providedVal = null;
+        }
+        final AttributeValueConverter<?> converter =
+                AttributeValueConverter.getConverter(AttributeValueConverter.convertPrimitiveToBoxed(param.getType()),
+                                                     param.getGenericType());
+        try
+        {
+            convertedVal = converter.convert(providedVal, subject);
+
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new IllegalArgumentException(e.getMessage()
+                                               + " for parameter '"
+                                               + param.getName()
+                                               + "' in "
+                                               + _objectType
+                                               + "."
+                                               + _operation.getName()
+                                               + "(...) operation", e.getCause());
+        }
+        return convertedVal;
     }
 
     @Override
@@ -221,9 +229,30 @@ public class ConfiguredObjectMethodOperation<C extends ConfiguredObject> impleme
     }
 
     @Override
-    public boolean isSecure()
+    public boolean isSecure(final C subject, final Map<String, Object> arguments)
     {
-        return _operation.getAnnotation(ManagedOperation.class).secure();
+        return _operation.getAnnotation(ManagedOperation.class).secure() || requiresSecure(subject, arguments);
+    }
+
+    private boolean requiresSecure(C subject, final Map<String, Object> arguments)
+    {
+        String secureParam = _operation.getAnnotation(ManagedOperation.class).paramRequiringSecure();
+        for(OperationParameterFromAnnotation param : _params)
+        {
+            if(secureParam.equals(param.getName()))
+            {
+                Object value = getParameterValue(subject, arguments, param);
+                if(value instanceof Boolean)
+                {
+                    return (Boolean)value;
+                }
+                else
+                {
+                    return value != null;
+                }
+            }
+        }
+        return false;
     }
 
 

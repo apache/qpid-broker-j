@@ -372,7 +372,7 @@ public class InjectedAttributeTest extends QpidTestCase
         final ConfiguredObjectInjectedOperation<?> operationInjector =
                 new ConfiguredObjectInjectedOperation<TestCar<?>>("fly", "", true,
                                                                   false,
-                                                                  params, method, null, validator);
+                                                                  "", params, method, null, validator);
 
         TestModel model = new TestModel(null, new TestInjector(operationInjector));
 
@@ -414,11 +414,14 @@ public class InjectedAttributeTest extends QpidTestCase
         final ConfiguredObjectInjectedOperation<?> hello =
                 new ConfiguredObjectInjectedOperation<TestCar<?>>("sayHello", "", true,
                                                                   false,
-                                                                  params, method, new String[] { "Hello"}, validator);
+                                                                  "", params, method, new String[] { "Hello"}, validator
+                );
         final ConfiguredObjectInjectedOperation<?> goodbye =
                 new ConfiguredObjectInjectedOperation<TestCar<?>>("sayGoodbye", "", true,
                                                                   false,
-                                                                  params, method, new String[] { "Goodbye"}, validator);
+                                                                  "",
+                                                                  params, method, new String[] { "Goodbye"}, validator
+                );
 
         TestModel model = new TestModel(null, new TestInjector(hello, goodbye));
 

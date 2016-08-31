@@ -32,5 +32,6 @@ public @interface ManagedOperation
     String description() default "";
     boolean nonModifying() default false;
     boolean secure() default false;
+    String paramRequiringSecure() default "";
 
 }

@@ -733,14 +733,6 @@ public class RestServlet extends AbstractServlet
                                   "No such operation: " + operationName);
             return;
         }
-        else if(operation.isSecure() && !(request.isSecure() || HttpManagement.getPort(request).isAllowConfidentialOperationsOnInsecureChannels()))
-        {
-            sendJsonErrorResponse(request,
-                                  response,
-                                  HttpServletResponse.SC_FORBIDDEN,
-                                  "Operation '" + operationName + "' can only be performed over a secure (HTTPS) connection");
-            return;
-        }
         else
         {
             switch (requestMethod)
@@ -780,6 +772,17 @@ public class RestServlet extends AbstractServlet
                     return;
             }
         }
+
+
+        if(operation.isSecure(target, operationArguments) && !(request.isSecure() || HttpManagement.getPort(request).isAllowConfidentialOperationsOnInsecureChannels()))
+        {
+            sendJsonErrorResponse(request,
+                                  response,
+                                  HttpServletResponse.SC_FORBIDDEN,
+                                  "Operation '" + operationName + "' can only be performed over a secure (HTTPS) connection");
+            return;
+        }
+
         Object returnVal = operation.perform(target, operationArguments);
         if(returnVal instanceof Content)
         {

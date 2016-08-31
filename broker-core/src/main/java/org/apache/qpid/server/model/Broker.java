@@ -192,7 +192,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedOperation(nonModifying = true, description = "Initiates an orderly shutdown of the Broker.")
     void initiateShutdown();
 
-    @ManagedOperation(nonModifying = true, description = "Extract configuration", secure = true)
+    @ManagedOperation(nonModifying = true, description = "Extract configuration", paramRequiringSecure = "includeSecureAttributes")
     Map<String,Object> extractConfig(@Param(name="includeSecureAttributes",
                                             description = "include attributes that may contain passwords or other"
                                                           + " confidential information",

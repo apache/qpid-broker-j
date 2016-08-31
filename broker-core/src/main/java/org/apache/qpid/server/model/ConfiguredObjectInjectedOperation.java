@@ -45,11 +45,13 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject> imple
     private final boolean _nonModifying;
     private final boolean _secure;
     private final Object[] _staticParams;
+    private final String _secureParam;
 
     public ConfiguredObjectInjectedOperation(final String name,
                                              final String description,
                                              final boolean nonModifying,
                                              final boolean secure,
+                                             final String secureParam,
                                              final OperationParameter[] parameters,
                                              final Method operation,
                                              final Object[] staticParams,
@@ -62,6 +64,7 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject> imple
         _secure = secure;
         _validator = validator;
         _staticParams = staticParams == null ? new Object[0] : staticParams;
+        _secureParam = secureParam;
 
         _params = parameters == null ? Collections.<OperationParameter>emptyList() : Arrays.asList(parameters);
 
@@ -149,39 +152,7 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject> imple
 
             for (int i = 0; i < _params.size(); i++)
             {
-                OperationParameter param = _params.get(i);
-                Object providedVal;
-                if (parameters.containsKey(param.getName()))
-                {
-                    providedVal = parameters.get(param.getName());
-                }
-                else if (!"".equals(param.getDefaultValue()))
-                {
-                    providedVal = param.getDefaultValue();
-                }
-                else
-                {
-                    providedVal = null;
-                }
-                final AttributeValueConverter<?> converter =
-                        AttributeValueConverter.getConverter(AttributeValueConverter.convertPrimitiveToBoxed(param.getType()),
-                                                             param.getGenericType());
-                try
-                {
-                    final Object convertedVal = converter.convert(providedVal, subject);
-                    paramValues[i+1+_staticParams.length] = convertedVal;
-                }
-                catch (IllegalArgumentException e)
-                {
-                    throw new IllegalArgumentException(e.getMessage()
-                                                       + " for parameter '"
-                                                       + param.getName()
-                                                       + "' in "
-                                                       + _operation.getDeclaringClass().getSimpleName()
-                                                       + "."
-                                                       + _operation.getName()
-                                                       + "(...) operation", e.getCause());
-                }
+                paramValues[i+1+_staticParams.length] = getParameterValue(subject, parameters, _params.get(i));
             }
             try
             {
@@ -207,6 +178,44 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject> imple
                 }
             }
         }
+    }
+
+    private Object getParameterValue(final C subject, final Map<String, Object> parameters, final OperationParameter param)
+    {
+        final Object convertedVal;
+        Object providedVal;
+        if (parameters.containsKey(param.getName()))
+        {
+            providedVal = parameters.get(param.getName());
+        }
+        else if (!"".equals(param.getDefaultValue()))
+        {
+            providedVal = param.getDefaultValue();
+        }
+        else
+        {
+            providedVal = null;
+        }
+        final AttributeValueConverter<?> converter =
+                AttributeValueConverter.getConverter(AttributeValueConverter.convertPrimitiveToBoxed(param.getType()),
+                                                     param.getGenericType());
+        try
+        {
+            convertedVal = converter.convert(providedVal, subject);
+
+        }
+        catch (IllegalArgumentException e)
+        {
+            throw new IllegalArgumentException(e.getMessage()
+                                               + " for parameter '"
+                                               + param.getName()
+                                               + "' in "
+                                               + _operation.getDeclaringClass().getSimpleName()
+                                               + "."
+                                               + _operation.getName()
+                                               + "(...) operation", e.getCause());
+        }
+        return convertedVal;
     }
 
     @Override
@@ -249,10 +258,35 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject> imple
     }
 
     @Override
-    public boolean isSecure()
+    public boolean isSecure(final C subject, final Map<String, Object> arguments)
     {
-        return _secure;
+        return _secure || requiresSecure(subject, arguments);
     }
+
+    private boolean requiresSecure(C subject, final Map<String, Object> arguments)
+    {
+        if(_secureParam != null && !"".equals(_secureParam))
+        {
+            for (OperationParameter param : _params)
+            {
+                if (_secureParam.equals(param.getName()))
+                {
+                    Object value = getParameterValue(subject, arguments, param);
+                    if (value instanceof Boolean)
+                    {
+                        return (Boolean) value;
+                    }
+                    else
+                    {
+                        return value != null;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+
 
 
     @Override

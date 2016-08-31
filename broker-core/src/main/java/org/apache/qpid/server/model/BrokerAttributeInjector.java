@@ -259,7 +259,9 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                     "dumpHeap",
                     "Dumps the heap to the outputFile file in the same format as the hprof heap dump.",
                     true,
-                    false, params,
+                    false,
+                    "",
+                    params,
                     method,
                     new Object[]{_hotSpotDiagnosticMXBean, heapDumpMethod},
                     _typeValidator);
@@ -289,7 +291,9 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                     "setJVMOptions",
                     "Sets given JVM options",
                     true,
-                    false, params,
+                    false,
+                    "",
+                    params,
                     method,
                     new Object[]{_hotSpotDiagnosticMXBean, setVMOptionMethod},
                     _typeValidator);

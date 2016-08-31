@@ -42,5 +42,5 @@ public interface ConfiguredObjectOperation<C extends ConfiguredObject>
 
     Type getGenericReturnType();
 
-    boolean isSecure();
+    boolean isSecure(final C subject, final Map<String, Object> arguments);
 }
