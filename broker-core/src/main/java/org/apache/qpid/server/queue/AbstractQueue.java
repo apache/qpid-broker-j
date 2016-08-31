@@ -2681,18 +2681,21 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public static class MessageContent implements Content, CustomRestHeaders
     {
 
+        public static final int UNLIMITED = -1;
         private final MessageReference<?> _messageReference;
+        private final long _limit;
 
-        public MessageContent(MessageReference<?> messageReference)
+        public MessageContent(MessageReference<?> messageReference, long limit)
         {
             _messageReference = messageReference;
+            _limit = (limit == UNLIMITED ? messageReference.getMessage().getSize() : limit);
         }
 
         @Override
         public void write(OutputStream outputStream) throws IOException
         {
             ServerMessage message = _messageReference.getMessage();
-            Collection<QpidByteBuffer> content = message.getContent(0, (int) message.getSize());
+            Collection<QpidByteBuffer> content = message.getContent(0, (int) _limit);
             try
             {
                 for (QpidByteBuffer b : content)
@@ -3498,13 +3501,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public Content getMessageContent(final long messageId)
+    public Content getMessageContent(final long messageId, final long limit)
     {
         final MessageContentFinder messageFinder = new MessageContentFinder(messageId);
         visit(messageFinder);
         if(messageFinder.isFound())
         {
-            return new MessageContent(messageFinder.getMessageReference());
+            return new MessageContent(messageFinder.getMessageReference(), limit);
         }
         else
         {
