@@ -28,6 +28,7 @@ define(["dojo/_base/declare",
         "dojox/html/entities",
         "dojox/widget/Portlet",
         "dojox/widget/PortletDialogSettings",
+        "qpid/common/MessageDialog",
         "dojo/query",
         "dijit/_WidgetBase",
         "dijit/_TemplatedMixin",
@@ -45,7 +46,8 @@ define(["dojo/_base/declare",
               util,
               entities,
               Portlet,
-              PortletDialogSettings)
+              PortletDialogSettings,
+              MessageDialog)
     {
 
         var QueryWidgetSettings = declare("qpid.management.dashboard.QueryWidgetSettings",
@@ -176,12 +178,17 @@ define(["dojo/_base/declare",
                         open: !this.hidden,
                         onClose: lang.hitch(this, function ()
                         {
-                            if (confirm("Are you sure you want to remove the query widget '"
-                                        + entities.encode(new String(preference.name)) + "'"
-                                        + " from the dashboard?"))
-                            {
-                                this.emit("close");
-                            }
+                            MessageDialog.confirm({
+                                title: "Remove widget?",
+                                message: ("Are you sure you want to remove the query widget '"
+                                          + entities.encode(new String(preference.name)) + "'"
+                                          + " from the dashboard?"),
+                                confirmationId: "dashboard.confirmation.widget.delete"
+                            })
+                                .then(lang.hitch(this, function ()
+                                {
+                                    this.emit("close");
+                                }));
                         }),
                         startup: function ()
                         {

@@ -32,6 +32,7 @@ define(["dojo/_base/declare",
         "dijit/_WidgetBase",
         "dijit/_TemplatedMixin",
         "dijit/_WidgetsInTemplateMixin",
+        "dijit/Tooltip",
         "dojox/validate/us",
         "dojox/validate/web",
         "dojo/domReady!"], function (declare, lang, template, Evented, Memory, generateRandomUuid)

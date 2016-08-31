@@ -123,16 +123,16 @@
         <div id="header"></div>
         <div class="alignRight">
             <div id="login" class="hidden" data-dojo-type="dijit/Toolbar">
-                <div data-dojo-type="dijit/form/DropDownButton">
+                <div data-dojo-type="dijit/form/DropDownButton" data-dojo-props="iconClass: 'dijitIconChart'">
                     <span>Dashboard</span>
                     <div data-dojo-type="dijit/Menu">
                         <div data-dojo-type="dijit/MenuItem"
                              data-dojo-props="onClick: function(e){qpidManagementHelper.showDashboardCreateDialog(e);}">
-                            Create Dashboard
+                            Create
                         </div>
                         <div data-dojo-type="dijit/MenuItem"
                              data-dojo-props="onClick: function(e){qpidManagementHelper.showDashboardBrowser(e);}">
-                            Show Dashboard Browser
+                            Browse
                         </div>
                     </div>
                 </div>
@@ -141,24 +141,24 @@
                     <div data-dojo-type="dijit/Menu">
                         <div data-dojo-type="dijit/MenuItem"
                              data-dojo-props="onClick: function(e){qpidManagementHelper.showQueryCreateDialog(e);}">
-                            Create Query
+                            Create
                         </div>
                         <div data-dojo-type="dijit/MenuItem"
                              data-dojo-props="onClick: function(e){qpidManagementHelper.showQueryBrowser(e);}">
-                            Show Query Browser
+                            Browse
                         </div>
                     </div>
                 </div>
                 <div data-dojo-type="dijit/form/DropDownButton"
-                     data-dojo-props="iconClass: 'helpIcon', showLabel: false">
-                    <span>Help</span>
+                     data-dojo-props="iconClass: 'dijitIconDocuments'">
+                    <span>Documentation</span>
                     <div data-dojo-type="dijit/Menu">
                         <div data-dojo-type="dijit/MenuItem"
-                             data-dojo-props="onClick: function(){qpidManagementHelper.showAPI();}">REST API
+                             data-dojo-props="onClick: function(){qpidManagementHelper.showAPI();}">API documentation
                         </div>
                         <div data-dojo-type="dijit/MenuItem"
-                             data-dojo-props="iconClass: 'helpIcon', onClick: function(){qpidManagementHelper.showDocumentation();}">
-                            Documentation
+                             data-dojo-props="onClick: function(){qpidManagementHelper.showDocumentation();}">
+                            Broker Manual
                         </div>
                     </div>
                 </div>
@@ -170,7 +170,7 @@
                              data-dojo-props="onClick: function(){qpidManagementHelper.logout();}">Log out
                         </div>
                         <div data-dojo-type="dijit/MenuItem"
-                             data-dojo-props="iconClass:'dijitIconFunction',onClick: function(){qpidManagementHelper.showPreferencesDialog();}">
+                             data-dojo-props="onClick: function(){qpidManagementHelper.showPreferencesDialog();}">
                             Preferences
                         </div>
                     </div>

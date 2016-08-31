@@ -34,6 +34,7 @@ define(["dojo/_base/declare",
         "dgrid/extensions/ColumnReorder",
         "dgrid/extensions/ColumnHider",
         "qpid/management/query/QueryGrid",
+        "qpid/common/MessageDialog",
         "qpid/management/query/DropDownSelect",
         "qpid/management/query/WhereExpression",
         "dijit/_WidgetBase",
@@ -43,8 +44,7 @@ define(["dojo/_base/declare",
         "dijit/form/ValidationTextBox",
         "dijit/form/SimpleTextarea",
         "dijit/Toolbar",
-        "dijit/Dialog",
-        "qpid/common/MessageDialog"],
+        "dijit/Dialog"],
     function (declare,
               lang,
               parser,
@@ -60,7 +60,8 @@ define(["dojo/_base/declare",
               generateRandomUuid,
               ColumnReorder,
               ColumnHider,
-              QueryGrid)
+              QueryGrid,
+              MessageDialog)
     {
         var QuerySaveDialogForm = declare("qpid.management.query.QuerySaveDialogForm",
             [dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
@@ -429,33 +430,24 @@ define(["dojo/_base/declare",
                         this._querySaveDialog.destroyRecursive();
                         this._querySaveDialog = null;
                     }
-                    if (this._switchModeWarningDialog)
-                    {
-                        this._switchModeWarningDialog.destroyRecursive();
-                        this._switchModeWarningDialog = null;
-                    }
                 },
                 _showModeSwitchWarningIfRequired: function ()
                 {
-                    if (this._standardMode && QueryWidget.showWarningOnModeChange)
+                    if (this._standardMode)
                     {
-                        if (!this._switchModeWarningDialog)
-                        {
-                            var formattedMessage = "<div>Copying of query settings is only supported on switching from Standard view into Advanced view!<br/>"
-                                                   + "Switching back from Advanced view into Standard view will completely reset the query.<br/><br/>"
-                                                   + "Are you sure you want to switch from Standard view into Advanced view?";
-                            "</div>";
-                            this._switchModeWarningDialog = new qpid.common.MessageDialog({
-                                title: "Warning!",
-                                message: formattedMessage
-                            }, domConstruct.create("div"));
-                            this._switchModeWarningDialog.on("execute", lang.hitch(this, function (stopDisplaying)
+                        var warningMessage = "<div>Copying of query settings is only supported on switching from Standard view into Advanced view!<br/>"
+                                             + "Switching back from Advanced view into Standard view will completely reset the query.<br/><br/>"
+                                             + "Are you sure you want to switch from Standard view into Advanced view?";
+                                             "</div>";
+                        MessageDialog.confirm({
+                            title: "Warning!",
+                            message: warningMessage,
+                            confirmationId: "query.confirmation.mode.change"
+                        }, domConstruct.create("div"))
+                            .then(lang.hitch(this, function ()
                             {
-                                QueryWidget.showWarningOnModeChange = !stopDisplaying;
                                 this._modeChanged();
                             }));
-                        }
-                        this._switchModeWarningDialog.show();
                     }
                     else
                     {
@@ -1051,8 +1043,11 @@ define(["dojo/_base/declare",
                 },
                 _deleteQuery: function ()
                 {
-                    var message = "Are you sure you want to delete the query?";
-                    if (confirm(message))
+                    MessageDialog.confirm({
+                        title: "Discard query?",
+                        message: "Are you sure you want to delete the query?",
+                        confirmationId: "query.confirmation.delete"
+                    }).then(lang.hitch(this, function ()
                     {
                         if (this.preference.id)
                         {
@@ -1068,7 +1063,7 @@ define(["dojo/_base/declare",
                         {
                             this.emit("delete");
                         }
-                    }
+                    }));
                 },
 
                 _loadPreference: function (name)
@@ -1093,8 +1088,6 @@ define(["dojo/_base/declare",
                     }
                 }
             });
-
-        QueryWidget.showWarningOnModeChange = true;
 
         return QueryWidget;
     });

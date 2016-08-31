@@ -33,6 +33,7 @@ define(["dojo/_base/declare",
         "dgrid/extensions/Pagination",
         "dstore/Memory",
         "dojo/Evented",
+        "dojox/html/entities",
         "dijit/layout/ContentPane",
         "dijit/form/Button",
         "dijit/_WidgetBase",
@@ -53,7 +54,8 @@ define(["dojo/_base/declare",
               DijitRegistry,
               Pagination,
               Memory,
-              Evented)
+              Evented,
+              entities)
     {
 
         var Summary = declare(null, {
@@ -352,8 +354,13 @@ define(["dojo/_base/declare",
                     };
                     columns[this.nameProperty] = {
                         label: "Name",
-                        sortable: true
-                    };
+                        sortable: true,
+                        renderCell: function(object, value, node)
+                        {
+                            node.appendChild(document.createTextNode(value));
+                            node.title = entities.encode(value);
+                        }
+                };
                     return columns;
                 },
                 _getSelectedItemsAttr: function ()

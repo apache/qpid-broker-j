@@ -21,12 +21,19 @@
     <form data-dojo-attach-point="createDashboardForm" data-dojo-type="dijit/form/Form" id="${id}_createDashboardForm">
         <div>
             <div class="clear">
-                <label class="formLabel-labelCell tableContainer-labelCell" for="${id}_dashboardScope">Scope*: </label>
+                <label class="formLabel-labelCell tableContainer-labelCell dashedUnderline" for="${id}_dashboardScope" id="${id}_scopeLabel">Scope*: </label>
                 <select id="${id}_dashboardScope" class="formLabel-controlCell tableContainer-valueCell"
                         data-dojo-attach-point="scope"
                         data-dojo-type='dijit/form/FilteringSelect'
-                        data-dojo-props="name: 'scope', placeHolder: 'Dashboard scope', required: true, title: 'Select dashboard scope', intermediateChanges: true">
+                        data-dojo-props="name: 'scope',
+                                         placeHolder: 'Dashboard scope',
+                                         required: true,
+                                         title: 'Select entity where dashboard data will be saved and accessible',
+                                         promptMessage: 'Select entity where dashboard data will be saved and accessible',
+                                         intermediateChanges: true">
                 </select>
+                <div data-dojo-type="dijit/Tooltip"
+                     data-dojo-props="connectId:'${id}_scopeLabel',position:['below']">Determines where dashboard data is stored and accessible.</div>
             </div>
             <div class="clear"></div>
         </div>

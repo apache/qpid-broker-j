@@ -38,6 +38,7 @@ define(["dojo/_base/declare",
         "qpid/management/query/StoreUpdater",
         "qpid/common/util",
         "dojo/text!preference/PreferenceBrowserWidget.html",
+        "dojo/keys",
         "dijit/_WidgetBase",
         "dijit/_TemplatedMixin",
         "dijit/_WidgetsInTemplateMixin",
@@ -63,7 +64,8 @@ define(["dojo/_base/declare",
               ColumnResizer,
               StoreUpdater,
               util,
-              template)
+              template,
+              keys)
     {
         var empty = new Deferred();
         empty.resolve([]);

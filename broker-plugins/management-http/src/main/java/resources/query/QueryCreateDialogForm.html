@@ -21,22 +21,36 @@
         <div>
             <div class="infoMessage infoPane">Please, specify query scope and category.</div>
             <div class="clear">
-                <label class="formLabel-labelCell tableContainer-labelCell" for="${id}_queryScope">Scope*: </label>
+                <label class="formLabel-labelCell tableContainer-labelCell dashedUnderline" for="${id}_queryScope" id="${id}_scopeLabel">Scope*: </label>
                 <select id="${id}_queryScope" class="formLabel-controlCell tableContainer-valueCell"
                         data-dojo-attach-point="scope"
                         data-dojo-type='dijit/form/FilteringSelect'
-                        data-dojo-props="name: 'scope', placeHolder: 'Query scope', required: true, title: 'Select query scope', intermediateChanges: true">
+                        data-dojo-props=" name: 'scope',
+                                          placeHolder: 'Query scope',
+                                          required: true,
+                                          title: 'Select entity where query data will be saved and accessible',
+                                          promptMessage: 'Select entity where query data will be saved and accessible',
+                                          intermediateChanges: true">
                 </select>
+                <div data-dojo-type="dijit/Tooltip"
+                     data-dojo-props="connectId:'${id}_scopeLabel',position:['below']">Determines where query data is stored and accessible.</div>
             </div>
             <div class="clear">
-                <label class="formLabel-labelCell tableContainer-labelCell" for="${id}_queryCategory">Category*: </label>
+                <label class="formLabel-labelCell tableContainer-labelCell dashedUnderline" for="${id}_queryCategory" id="${id}_categoryLabel">Category*: </label>
                 <select id="${id}_queryCategory" class="formLabel-controlCell tableContainer-valueCell"
                         data-dojo-attach-point="category"
                         data-dojo-type='dijit/form/ComboBox'
-                        data-dojo-props="name: 'scope', placeHolder: 'Query category', required: true, title: 'Provide query category', intermediateChanges: true">
+                        data-dojo-props=" name: 'scope',
+                                          placeHolder: 'Query category',
+                                          required: true,
+                                          title: 'Select category of objects to query',
+                                          promptMessage: 'Select category of objects to query',
+                                          intermediateChanges: true">
                     <option value="queue" selected="true">Queue</option>
                     <option value="connection">Connection</option>
                 </select>
+                <div data-dojo-type="dijit/Tooltip"
+                     data-dojo-props="connectId:'${id}_categoryLabel',position:['below']">Determines category of objects to query.</div>
             </div>
             <div class="clear"></div>
         </div>

@@ -500,11 +500,6 @@ td.advancedSearchField, col.autoWidth {
     height: 100%;
 }
 
-.messageExtra
-{
-  padding: 1em 0em 1em 3.2em;
-}
-
 .queryToolBar {
     background-color: #efefef;
     background-image: linear-gradient(rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 100%);
@@ -648,4 +643,19 @@ td.advancedSearchField, col.autoWidth {
 {
     overflow:hidden;
     float:none;
+}
+
+.addIcon
+{
+    background: url("../images/plus.svg") left center no-repeat;
+    width: 15px;
+    height: 15px;
+    background-size: 1em;
+}
+
+.dashedUnderline
+{
+    text-decoration-line: underline;
+    text-decoration-style: dashed;
+    cursor: help;
 }

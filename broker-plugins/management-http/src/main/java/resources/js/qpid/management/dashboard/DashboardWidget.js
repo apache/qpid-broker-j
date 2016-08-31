@@ -30,6 +30,7 @@ define(["dojo/_base/declare",
         "dojox/uuid/generateRandomUuid",
         "dojo/promise/all",
         "dojo/Deferred",
+        "qpid/common/MessageDialog",
         "dojox/layout/GridContainer",
         "dijit/_WidgetBase",
         "dijit/_TemplatedMixin",
@@ -50,7 +51,8 @@ define(["dojo/_base/declare",
               PreferenceSaveDialogContent,
               generateRandomUuid,
               all,
-              Deferred)
+              Deferred,
+              MessageDialog)
     {
 
         var _failedWidgetTypes = {};
@@ -215,8 +217,12 @@ define(["dojo/_base/declare",
                 },
                 _onDeleteButton: function ()
                 {
-                    var message = "Are you sure you want to delete this dashboard?";
-                    if (confirm(message))
+                    var confirmation = MessageDialog.confirm({
+                        title: "Discard dashboard?",
+                        message: "Are you sure you want to delete this dashboard?",
+                        confirmationId: "dashboard.confirmation.delete"
+                    });
+                    confirmation.then(lang.hitch(this, function ()
                     {
                         if (this.preference.id)
                         {
@@ -232,7 +238,7 @@ define(["dojo/_base/declare",
                         {
                             this.emit("delete");
                         }
-                    }
+                    }));
                 },
                 _onPreferenceSave: function (event)
                 {

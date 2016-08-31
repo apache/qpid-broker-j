@@ -29,7 +29,7 @@ define(["dojo/parser",
         "qpid/management/query/QueryWidget",
         "qpid/common/MessageDialog",
         "dojo/domReady!"],
-    function (parser, lang, all, Deferred, query, json, util, template, QueryWidget)
+    function (parser, lang, all, Deferred, query, json, util, template, QueryWidget, MessageDialog)
     {
         function QueryTab(kwArgs)
         {
@@ -38,15 +38,6 @@ define(["dojo/parser",
             this.parent = kwArgs.tabData.modelObject;
             this.management = this.controller.management;
             this.changed = !this.tabData.data || !this.tabData.data.name;
-            this.confirmationDilog = new qpid.common.MessageDialog({
-                title: "Discard unsaved changed?",
-                message: "<div>Query contains unsaved changes.<br/>Would you like to close it anyway?</div>"
-            });
-            this.dialogHandle = this.confirmationDilog.on("execute", lang.hitch(this, function (stopDisplaying)
-            {
-                QueryTab.stopDisplayingConfirmation = stopDisplaying;
-                this.destroy();
-            }));
         }
 
         QueryTab.prototype.getTitle = function ()
@@ -94,7 +85,7 @@ define(["dojo/parser",
                         if (preferences[0])
                         {
                             this.tabData.data = preferences[0];
-                            this.changed = false;
+                            this.changed = !this.tabData.data.name;
                         }
                         if (preferences.length !== 1)
                         {
@@ -162,30 +153,40 @@ define(["dojo/parser",
 
         QueryTab.prototype.close = function ()
         {
-            if (!this.changed || (this.changed && QueryTab.stopDisplayingConfirmation))
+            if (!this.changed)
             {
-                if (this.queryWidget != null)
-                {
-                    this.queryWidget.destroyRecursive();
-                    this.queryWidget = null;
-                }
-                this.dialogHandle.remove();
+                this.destroy();
                 return true;
             }
 
-            this.confirmationDilog.show();
+            MessageDialog.confirm({
+                title: "Discard unsaved changed?",
+                message: "<div>Query contains unsaved changes.<br/>Would you like to close it anyway?</div>",
+                confirmationId: "query.confirmation.close.changed"
+            })
+                .then(lang.hitch(this, this.destroy));
+
             return false;
         };
 
         QueryTab.prototype.destroy = function ()
         {
+            if (this.destroyed)
+            {
+                return;
+            }
+
+            this.destroyed = true;
             this.changed = false;
             this.contentPane.onClose();
+            if (this.queryWidget != null)
+            {
+                this.queryWidget.destroyRecursive();
+                this.queryWidget = null;
+            }
             this.controller.tabContainer.removeChild(this.contentPane);
             this.contentPane.destroyRecursive();
         };
-
-        QueryTab.stopDisplayingConfirmation = false;
 
         return QueryTab;
     });

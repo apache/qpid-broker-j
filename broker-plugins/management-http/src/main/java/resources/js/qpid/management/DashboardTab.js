@@ -25,10 +25,10 @@ define(["dojo/parser",
         "dojo/json",
         "qpid/common/util",
         "dojo/text!showDashboardTab.html",
-        "qpid/management/dashboard/DashboardWidget",
         "qpid/common/MessageDialog",
+        "qpid/management/dashboard/DashboardWidget",
         "dojo/domReady!"],
-    function (parser, lang, all, Deferred, query, json, util, template)
+    function (parser, lang, all, Deferred, query, json, util, template, MessageDialog)
     {
 
         function DashboardTab(kwArgs)
@@ -88,7 +88,7 @@ define(["dojo/parser",
                         if (preferences[0])
                         {
                             this.tabData.data = preferences[0];
-                            this.changed = false;
+                            this.changed = !this.tabData.data.name;
                         }
                         if (preferences.length !== 1)
                         {
@@ -166,25 +166,37 @@ define(["dojo/parser",
 
         DashboardTab.prototype.close = function ()
         {
-            if (!this.changed || (this.changed && DashboardTab.stopDisplayingConfirmation))
+            if (!this.changed)
             {
-                if (this.dashboardWidget != null)
-                {
-                    this.dashboardWidget.destroyRecursive();
-                    this.dashboardWidget = null;
-                }
-                this.dialogHandle.remove();
+                this.destroy();
                 return true;
             }
 
-            this.confirmationDilog.show();
+            MessageDialog.confirm({
+                title: "Discard unsaved changed?",
+                message: "<div>Dashbord contains unsaved changes.<br/>Would you like to close it anyway?</div>",
+                confirmationId: "dashboard.confirmation.close.changed"
+            })
+                .then(lang.hitch(this, this.destroy));
+
             return false;
         };
 
         DashboardTab.prototype.destroy = function ()
         {
+            if (this.destroyed)
+            {
+                return;
+            }
+
+            this.destroyed = true;
             this.changed = false;
             this.contentPane.onClose();
+            if (this.dashboardWidget != null)
+            {
+                this.dashboardWidget.destroyRecursive();
+                this.dashboardWidget = null;
+            }
             this.controller.tabContainer.removeChild(this.contentPane);
             this.contentPane.destroyRecursive();
         };

@@ -22,12 +22,12 @@
             <div data-dojo-attach-point='messageNode'>
             </div>
         </div>
-        <div class="messageExtra">
+        <div data-dojo-attach-point='stopDisplayingNode'>
             <input id="${id}_stopDisplaying"
                    data-dojo-attach-point="stopDisplaying"
                    data-dojo-type='dijit/form/CheckBox'
                    name='stopDisplaying' value='true'/>
-            <span>Stop displaying this dialog</span>
+            <label for="${id}_stopDisplaying">Stop displaying this dialog and confirm automatically</label>
         </div>
     </div>
     <div class="dijitDialogPaneActionBar">

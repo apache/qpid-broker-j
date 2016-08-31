@@ -23,13 +23,15 @@ define(["dojo/_base/declare",
         "dojo/json",
         "dojo/Deferred",
         "dojo/Evented",
-        "dojox/widget/Portlet"],
+        "dojox/widget/Portlet",
+        "qpid/common/MessageDialog"],
     function (declare,
               lang,
               json,
               Deferred,
               Evented,
-              Portlet)
+              Portlet,
+              MessageDialog)
     {
 
         return declare(Evented, {
@@ -47,10 +49,17 @@ define(["dojo/_base/declare",
                     open: !this.widgetSettings.hidden,
                     onClose: lang.hitch(this, function ()
                     {
-                        if (confirm("Are you sure you want to remove the widget?\nIt might become available at a later point."))
-                        {
-                            this.emit("close");
-                        }
+                        MessageDialog.confirm({
+                            title: "Remove widget?",
+                            message: "Are you sure you want to remove the widget?"
+                                     + "<br/>"
+                                     + "It might become available at a later point.",
+                            confirmationId: "dashboard.confirmation.widget.delete"
+                        })
+                            .then(lang.hitch(this, function ()
+                            {
+                                this.emit("close");
+                            }));
                     })
                 });
 
