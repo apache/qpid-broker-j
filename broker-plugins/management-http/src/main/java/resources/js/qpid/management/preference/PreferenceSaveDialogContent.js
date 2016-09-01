@@ -23,17 +23,23 @@ define(["dojo/_base/declare",
         "dojo/json",
         "dojo/Evented",
         "dojo/text!preference/PreferenceSaveDialogContent.html",
+        "qpid/common/util",
+        "dojox/html/entities",
         "dijit/_WidgetBase",
         "dijit/_TemplatedMixin",
         "dijit/_WidgetsInTemplateMixin",
         "dijit/form/Button",
         "dijit/form/ValidationTextBox",
-        "dijit/form/SimpleTextarea"],
+        "dijit/form/SimpleTextarea",
+        "qpid/management/query/OptionsPanel"
+],
     function (declare,
               lang,
               json,
               Evented,
-              template)
+              template,
+              util,
+              entities)
     {
         return declare([dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
             {
@@ -97,7 +103,7 @@ define(["dojo/_base/declare",
                     {
                         items[j] = {
                             id: userGroups[j],
-                            name: userGroups[j]
+                            name: util.toFriendlyUserName(userGroups[j])
                         };
                     }
                     this.groupChooser.set("data",
@@ -111,7 +117,8 @@ define(["dojo/_base/declare",
                 {
                     this.cancelButton.on("click", lang.hitch(this, this._onCancel));
                     this.name.on("change", lang.hitch(this, this._onChange));
-                    this.form.on("submit", lang.hitch(this, this._onFormSubmit))
+                    this.form.on("submit", lang.hitch(this, this._onFormSubmit));
+                    this.groupChooser.set("renderItem",  this._renderGroup);
                 },
                 _onCancel: function (data)
                 {
@@ -135,7 +142,7 @@ define(["dojo/_base/declare",
                             var selected = this.groupChooser.get("selectedItems");
                             for (var i = 0; i < selected.length; i++)
                             {
-                                groups.push(selected[i].name);
+                                groups.push(selected[i].id);
                             }
                             preference.visibilityList = groups;
                             this.emit("save", {preference: preference});
@@ -149,6 +156,11 @@ define(["dojo/_base/declare",
                     {
                         return false;
                     }
+                },
+                _renderGroup: function (object, value, node)
+                {
+                    node.appendChild(document.createTextNode(value));
+                    node.title = entities.encode(object.id);
                 }
             });
     });

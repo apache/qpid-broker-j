@@ -39,6 +39,7 @@ define(["dojo/_base/declare",
         "qpid/common/util",
         "dojo/text!preference/PreferenceBrowserWidget.html",
         "dojo/keys",
+        "dojox/html/entities",
         "dijit/_WidgetBase",
         "dijit/_TemplatedMixin",
         "dijit/_WidgetsInTemplateMixin",
@@ -65,7 +66,8 @@ define(["dojo/_base/declare",
               StoreUpdater,
               util,
               template,
-              keys)
+              keys,
+              entities)
     {
         var empty = new Deferred();
         empty.resolve([]);
@@ -204,11 +206,13 @@ define(["dojo/_base/declare",
                         },
                         owner: {
                             label: "Owner",
-                            sortable: false
+                            sortable: false,
+                            renderCell: this._renderOwner
                         },
                         visibilityList: {
                             label: "Shared with",
-                            sortable: false
+                            sortable: false,
+                            renderCell: this._renderGroups
                         }
                     };
 
@@ -388,6 +392,38 @@ define(["dojo/_base/declare",
                     }
 
                     return items;
+                },
+                _renderOwner: function (object, value, node)
+                {
+                    var friendlyName = value ? util.toFriendlyUserName(value) : "";
+                    node.appendChild(document.createTextNode(friendlyName));
+                    if (value)
+                    {
+                        node.title = entities.encode(value);
+                    }
+                },
+                _renderGroups: function (object, value, node)
+                {
+                    var data = "";
+                    if (value instanceof Array)
+                    {
+                        var title = "";
+                        for (var i = 0; i < value.length; i++)
+                        {
+                            var group = value[i];
+                            var friendlyName = entities.encode(util.toFriendlyUserName(group));
+                            if (i > 0)
+                            {
+                                friendlyName = ", " + friendlyName;
+                                group = ",\n" + group;
+                            }
+
+                            data = data + friendlyName;
+                            title = title + group;
+                        }
+                        node.title = entities.encode(title);
+                    }
+                    node.appendChild(document.createTextNode(data));
                 }
             });
     });

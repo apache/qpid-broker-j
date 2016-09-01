@@ -51,7 +51,11 @@ define(["dojo/_base/declare",
             },
             _postCreate: function ()
             {
-                this._optionsPanel = new OptionsPanel({showButtons: true, showSummary: true}, this._createDomNode());
+                this._optionsPanel = new OptionsPanel({
+                    showButtons: true,
+                    showSummary: true,
+                    renderItem: this.renderItem
+                }, this._createDomNode());
                 this._optionsDialog = new dijit.TooltipDialog({content: this._optionsPanel}, this._createDomNode());
                 this._selectButton = new dijit.form.DropDownButton({
                     label: this.label || "Select",
@@ -105,6 +109,17 @@ define(["dojo/_base/declare",
             _onShow: function ()
             {
                 this._optionsPanel.resizeGrid();
+            },
+            _setRenderItemAttr: function(renderItem)
+            {
+                if (this._optionsPanel)
+                {
+                    this._optionsPanel.set("renderItem", renderItem);
+                }
+                else
+                {
+                    this.renderItem = renderItem;
+                }
             }
         });
     });

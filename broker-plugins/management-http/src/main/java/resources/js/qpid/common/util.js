@@ -978,6 +978,15 @@ define(["dojo/_base/xhr",
             return "";
         };
 
+        util.toFriendlyUserName = function(serializedUserName)
+        {
+            var atPosition = serializedUserName.indexOf("@");
+            if (atPosition !== -1)
+            {
+                return serializedUserName.substring(0, atPosition);
+            }
+            return serializedUserName;
+        };
 
         return util;
     });

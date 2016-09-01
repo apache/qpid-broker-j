@@ -33,7 +33,6 @@ define(["dojo/_base/declare",
         "dgrid/extensions/Pagination",
         "dstore/Memory",
         "dojo/Evented",
-        "dojox/html/entities",
         "dijit/layout/ContentPane",
         "dijit/form/Button",
         "dijit/_WidgetBase",
@@ -54,8 +53,7 @@ define(["dojo/_base/declare",
               DijitRegistry,
               Pagination,
               Memory,
-              Evented,
-              entities)
+              Evented)
     {
 
         var Summary = declare(null, {
@@ -116,6 +114,7 @@ define(["dojo/_base/declare",
                 nameProperty: "name",
                 store: null,
                 items: null,
+                renderItem: null, // function to render grid cells
 
                 /**
                  * widget inner fields
@@ -354,13 +353,12 @@ define(["dojo/_base/declare",
                     };
                     columns[this.nameProperty] = {
                         label: "Name",
-                        sortable: true,
-                        renderCell: function(object, value, node)
-                        {
-                            node.appendChild(document.createTextNode(value));
-                            node.title = entities.encode(value);
-                        }
-                };
+                        sortable: true
+                    };
+                    if (this.renderItem)
+                    {
+                        columns[this.nameProperty].renderCell = this.renderItem;
+                    }
                     return columns;
                 },
                 _getSelectedItemsAttr: function ()
@@ -383,6 +381,14 @@ define(["dojo/_base/declare",
                 resizeGrid: function ()
                 {
                     this._optionsGrid.resize();
+                },
+                _setRenderItemAttr: function(renderItem)
+                {
+                    this.renderItem = renderItem;
+                    if (this._optionsGrid != null)
+                    {
+                        this._optionsGrid.set("columns", this._getOptionColumns());
+                    }
                 }
             });
 
