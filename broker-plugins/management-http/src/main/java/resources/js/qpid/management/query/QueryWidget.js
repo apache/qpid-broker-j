@@ -26,7 +26,7 @@ define(["dojo/_base/declare",
         "dojo/Evented",
         "dojo/text!query/QueryWidget.html",
         "dojo/text!query/QueryCloneDialogForm.html",
-        "dojo/text!query/QuerySaveDialogForm.html",
+        "qpid/management/preference/PreferenceSaveDialogContent",
         "dojo/store/Memory",
         "dijit/registry",
         "dojox/html/entities",
@@ -53,7 +53,7 @@ define(["dojo/_base/declare",
               Evented,
               template,
               queryCloneDialogFormTemplate,
-              querySaveDialogFormTemplate,
+              PreferenceSaveDialogContent,
               Memory,
               registry,
               entities,
@@ -63,111 +63,6 @@ define(["dojo/_base/declare",
               QueryGrid,
               MessageDialog)
     {
-        var QuerySaveDialogForm = declare("qpid.management.query.QuerySaveDialogForm",
-            [dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
-            {
-                /**
-                 * dijit._TemplatedMixin enforced fields
-                 */
-                //Strip out the apache comment header from the template html as comments unsupported.
-                templateString: querySaveDialogFormTemplate.replace(/<!--[\s\S]*?-->/g, ""),
-
-                /**
-                 * template attach points
-                 */
-                queryName: null,
-                queryDescription: null,
-                groupChooser: null,
-                saveButton: null,
-                cancelButton: null,
-                queryForm: null,
-
-                postCreate: function ()
-                {
-                    this.inherited(arguments);
-                    this._postCreate();
-                },
-                startup: function ()
-                {
-                    this.inherited(arguments);
-                    this.groupChooser.startup();
-                },
-                _setPreferenceAttr: function (preference)
-                {
-                    this.preference = lang.clone(preference);
-                    this.queryName.set("value", this.preference.name);
-                    this.queryDescription.set("value", this.preference.description);
-
-                    var userGroups = this.management.getGroups();
-                    var selected = this.preference.visibilityList || [];
-                    for (var i = selected.length - 1; i >= 0; i--)
-                    {
-                        var present = false;
-                        for (var j = 0; j < userGroups.length; j++)
-                        {
-                            if (selected[i] === userGroups[j])
-                            {
-                                present = true;
-                                break;
-                            }
-                        }
-                        if (!present)
-                        {
-                            selected.splice(i, 1);
-                        }
-                    }
-                    var items = [];
-                    for (var j = 0; j < userGroups.length; j++)
-                    {
-                        items[j] = {id: userGroups[j], name: userGroups[j]};
-                    }
-                    this.groupChooser.set("data", {items: items, selected: selected});
-                    this._onChange();
-                },
-                _postCreate: function ()
-                {
-                    this.cancelButton.on("click", lang.hitch(this, this._onCancel));
-                    this.queryName.on("change", lang.hitch(this, this._onChange));
-                    this.queryForm.on("submit", lang.hitch(this, this._onFormSubmit))
-                },
-                _onCancel: function (data)
-                {
-                    this.emit("cancel");
-                },
-                _onChange: function (e)
-                {
-                    var invalid = !this.queryName.value;
-                    this.saveButton.set("disabled", invalid);
-                },
-                _onFormSubmit: function (e)
-                {
-                    try
-                    {
-                        if (this.queryForm.validate())
-                        {
-                            var preference = this.preference;
-                            preference.name = this.queryName.value;
-                            preference.description = this.queryDescription.value;
-                            var groups = [];
-                            var selected = this.groupChooser.get("selectedItems");
-                            for (var i = 0; i < selected.length; i++)
-                            {
-                                groups.push(selected[i].name);
-                            }
-                            preference.visibilityList = groups;
-                            this.emit("save", {preference: preference});
-                        }
-                        else
-                        {
-                            alert('Form contains invalid data.  Please correct first');
-                        }
-                    }
-                    finally
-                    {
-                        return false;
-                    }
-                }
-            });
 
         var QueryCloneDialogForm = declare("qpid.management.query.QueryCloneDialogForm",
             [dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
@@ -337,10 +232,10 @@ define(["dojo/_base/declare",
                     this._queryCloneDialogForm.on("clone", lang.hitch(this, this._onQueryClone));
                     this._queryCloneDialogForm.on("cancel", lang.hitch(this, this._onQueryCloneCancel));
 
-                    this._querySaveDialogForm = new QuerySaveDialogForm({management: this.management});
+                    this._querySaveDialogForm = new PreferenceSaveDialogContent({management: this.management});
                     this._querySaveDialog = new dijit.Dialog({title: "Save query", content: this._querySaveDialogForm});
                     this._querySaveDialogForm.on("save", lang.hitch(this, this._onQuerySave));
-                    this._querySaveDialogForm.on("cancel", lang.hitch(this, this._onQuerySaveCancel));
+                    this._querySaveDialogForm.on("cancel", lang.hitch(this._querySaveDialog, this._querySaveDialog.hide));
 
                     // lifecycle controls
                     this.saveButton.on("click", lang.hitch(this, this._saveQuery));
@@ -1021,10 +916,6 @@ define(["dojo/_base/declare",
                             this.deleteButton.set("disabled", false);
                         }));
                     }));
-                },
-                _onQuerySaveCancel: function ()
-                {
-                    this._querySaveDialog.hide();
                 },
                 _cloneQuery: function ()
                 {
