@@ -52,7 +52,7 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
 
     String MAX_MESSAGE_SIZE = "qpid.max_message_size";
     @ManagedContextDefault(name = MAX_MESSAGE_SIZE)
-    int DEFAULT_MAX_MESSAGE_SIZE = 500 * 1024 * 1024;
+    int DEFAULT_MAX_MESSAGE_SIZE = 100 * 1024 * 1024;
 
     @DerivedAttribute
     String getClientId();
