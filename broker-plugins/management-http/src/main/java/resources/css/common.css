@@ -653,9 +653,3 @@ td.advancedSearchField, col.autoWidth {
     background-size: 1em;
 }
 
-.dashedUnderline
-{
-    text-decoration-line: underline;
-    text-decoration-style: dashed;
-    cursor: help;
-}

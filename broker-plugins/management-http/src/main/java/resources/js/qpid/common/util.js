@@ -983,7 +983,7 @@ define(["dojo/_base/xhr",
             var atPosition = serializedUserName.indexOf("@");
             if (atPosition !== -1)
             {
-                return serializedUserName.substring(0, atPosition);
+                return decodeURIComponent(serializedUserName.substring(0, atPosition));
             }
             return serializedUserName;
         };

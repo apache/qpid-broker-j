@@ -40,9 +40,12 @@ define(["dojo/query",
         var newWindow = window.open(
             url,
             title,
-            'height=600,width=600,scrollbars=1,location=1,resizable=1,status=0,toolbar=0,titlebar=1,menubar=0',
+            'height=600,width=600,scrollbars=1,location=1,resizable=1,status=0,toolbar=1,titlebar=1,menubar=0',
             true);
-        newWindow.focus();
+        if (newWindow)
+        {
+            newWindow.focus();
+        }
     };
 
     return {

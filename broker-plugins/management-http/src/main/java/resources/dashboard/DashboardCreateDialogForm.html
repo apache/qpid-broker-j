@@ -21,19 +21,22 @@
     <form data-dojo-attach-point="createDashboardForm" data-dojo-type="dijit/form/Form" id="${id}_createDashboardForm">
         <div>
             <div class="clear">
-                <label class="formLabel-labelCell tableContainer-labelCell dashedUnderline" for="${id}_dashboardScope" id="${id}_scopeLabel">Scope*: </label>
+                <label class="formLabel-labelCell tableContainer-labelCell" for="${id}_dashboardScope"
+                       id="${id}_scopeLabel">Associate dashboard with*: </label>
                 <select id="${id}_dashboardScope" class="formLabel-controlCell tableContainer-valueCell"
                         data-dojo-attach-point="scope"
                         data-dojo-type='dijit/form/FilteringSelect'
                         data-dojo-props="name: 'scope',
                                          placeHolder: 'Dashboard scope',
                                          required: true,
-                                         title: 'Select entity where dashboard data will be saved and accessible',
-                                         promptMessage: 'Select entity where dashboard data will be saved and accessible',
-                                         intermediateChanges: true">
+                                         intermediateChanges: true"
+                        title="Determines where to save the dashboard and where to get queries.
+Only queries with the same associated object can be added to the dashboard.
+Dashboards associated with a Virtual Host will be replicated across HA nodes."
+                        promptMessage="Determines where to save the dashboard and where to get queries.
+Only queries with the same associated object can be added to the dashboard.
+Dashboards associated with a Virtual Host will be replicated across HA nodes.">
                 </select>
-                <div data-dojo-type="dijit/Tooltip"
-                     data-dojo-props="connectId:'${id}_scopeLabel',position:['below']">Determines where dashboard data is stored and accessible.</div>
             </div>
             <div class="clear"></div>
         </div>
