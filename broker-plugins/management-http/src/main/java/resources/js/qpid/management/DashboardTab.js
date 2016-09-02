@@ -38,15 +38,6 @@ define(["dojo/parser",
             this.parent = kwArgs.tabData.modelObject;
             this.management = this.controller.management;
             this.changed = !this.tabData.data || !this.tabData.data.name;
-            this.confirmationDilog = new qpid.common.MessageDialog({
-                title: "Discard unsaved changed?",
-                message: "<div>Dashbord contains unsaved changes.<br/>Would you like to close it anyway?</div>"
-            });
-            this.dialogHandle = this.confirmationDilog.on("execute", lang.hitch(this, function (stopDisplaying)
-            {
-                DashboardTab.stopDisplayingConfirmation = stopDisplaying;
-                this.destroy();
-            }));
         }
 
         DashboardTab.prototype.getTitle = function ()
@@ -197,8 +188,6 @@ define(["dojo/parser",
                 this.dashboardWidget.destroyRecursive();
                 this.dashboardWidget = null;
             }
-            this.controller.tabContainer.removeChild(this.contentPane);
-            this.contentPane.destroyRecursive();
         };
 
         DashboardTab.stopDisplayingConfirmation = false;

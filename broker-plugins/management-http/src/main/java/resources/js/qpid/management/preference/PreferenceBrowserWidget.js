@@ -395,11 +395,10 @@ define(["dojo/_base/declare",
                 },
                 _renderOwner: function (object, value, node)
                 {
-                    var friendlyName = value ? util.toFriendlyUserName(value) : "";
-                    node.appendChild(document.createTextNode(friendlyName));
                     if (value)
                     {
                         node.title = entities.encode(value);
+                        node.appendChild(document.createTextNode(util.toFriendlyUserName(value)));
                     }
                 },
                 _renderGroups: function (object, value, node)
@@ -407,21 +406,16 @@ define(["dojo/_base/declare",
                     var data = "";
                     if (value instanceof Array)
                     {
-                        var title = "";
+                        var groupNames = [];
+                        var friendlyGroupNames = [];
                         for (var i = 0; i < value.length; i++)
                         {
                             var group = value[i];
-                            var friendlyName = entities.encode(util.toFriendlyUserName(group));
-                            if (i > 0)
-                            {
-                                friendlyName = ", " + friendlyName;
-                                group = ",\n" + group;
-                            }
-
-                            data = data + friendlyName;
-                            title = title + group;
+                            friendlyGroupNames.push(entities.encode(util.toFriendlyUserName(group)));
+                            groupNames.push(group);
                         }
-                        node.title = entities.encode(title);
+                        node.title = entities.encode(groupNames.join(",\n"));
+                        data = friendlyGroupNames.join(", ")
                     }
                     node.appendChild(document.createTextNode(data));
                 }

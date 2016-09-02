@@ -184,8 +184,6 @@ define(["dojo/parser",
                 this.queryWidget.destroyRecursive();
                 this.queryWidget = null;
             }
-            this.controller.tabContainer.removeChild(this.contentPane);
-            this.contentPane.destroyRecursive();
         };
 
         return QueryTab;

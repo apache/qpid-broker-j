@@ -201,6 +201,20 @@ define(["dojo/_base/declare",
                         this._widgets[i].deactivate();
                     }
                 },
+                destroyRecursive: function (preserveDom)
+                {
+                    this.inherited(arguments);
+                    if (this._saveDashboardDialog)
+                    {
+                        this._saveDashboardDialog.destroyRecursive(preserveDom);
+                        this._saveDashboardDialog = null;
+                    }
+                    if (this._addWidgetDialog)
+                    {
+                        this._addWidgetDialog.destroyRecursive(preserveDom);
+                        this._addWidgetDialog = null;
+                    }
+                },
                 _onSaveButton: function ()
                 {
                     this._saveDashboardDialogContent.set("preference", this.preference);
