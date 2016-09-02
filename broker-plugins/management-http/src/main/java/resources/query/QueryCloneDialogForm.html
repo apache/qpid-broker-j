@@ -21,11 +21,21 @@
     <div>
         <div class="infoMessage infoPane">Note, group information is not cloned.</div>
         <div class="clear">
-            <label class="formLabel-labelCell tableContainer-labelCell" for="${id}_queryScope">Scope*: </label>
+            <label class="formLabel-labelCell tableContainer-labelCell" for="${id}_queryScope">Associate query with*: </label>
             <select id="${id}_queryScope" class="formLabel-controlCell tableContainer-valueCell"
                    data-dojo-attach-point="scope"
                    data-dojo-type='dijit/form/FilteringSelect'
-                   data-dojo-props="name: 'scope', placeHolder: 'Query scope', required: true, title: 'Select query scope', intermediateChanges: true">
+                   data-dojo-props="name: 'scope', placeHolder: 'Query scope', required: true, intermediateChanges: true"
+                   title="Determines where the query is stored and where to query for the objects.
+If Broker is selected then any entity within the Broker can be queried.
+If Virtual Host is selected then only entities on the selected Virtual Host can be queried.
+Queries associated with a Virtual Host will be replicated across HA nodes.
+Queries can be added to the dashboards having the same associated object."
+                   promptMessage="Determines where the query is stored and where to query for the objects.
+If Broker is selected then any entity within the Broker can be queried.
+If Virtual Host is selected then only entities on the selected Virtual Host can be queried.
+Queries associated with a Virtual Host will be replicated across HA nodes.
+Queries can be added to the dashboards having the same associated object.">
             </select>
         </div>
         <div class="clear"></div>
