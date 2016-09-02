@@ -139,8 +139,6 @@ define(["dojo/dom",
                     }
                 }
             }
-            var contentField = query(".message-content", this.dialogNode)[0];
-            populatedFields.push(contentField);
 
             var contentModelObj = {
                 name: "getMessageContent",
@@ -149,27 +147,24 @@ define(["dojo/dom",
             };
             var parameters = {messageId: data.id};
             var url = management.buildObjectURL(contentModelObj, parameters);
-            contentField.innerHTML = '<a href="#" title="' + url + '">Download</a><br/><div id="preview"></div>';
 
-            var href = query('a', contentField)[0]
+            var href = query('a#message-download', this.dialogNode)[0];
+            href.title = url;
             connect.connect(href, 'onclick', function ()
             {
                 management.download(contentModelObj, parameters);
             });
 
+            var preview = query('#preview', this.dialogNode)[0];
             if (data.mimeType && data.mimeType.match(/text\/.*/))
             {
                 var limit = 1024;
-                var preview = query('#preview', contentField)[0];
-                preview.innerHTML = 'Preview'
-                                    + (limit < data.size
-                                       ? ' (showing the first ' + limit + ' of ' + data.size + ' bytes)'
-                                       : ' (showing all ' + data.size + ' bytes)')
-                                    + ':<br/>'
-                                    + '<div class="fillRemaining">'
-                                    + '<textarea id="previewContent" readonly rows="5" style="width: 100%"></textarea>'
-                                    + '</div>';
-                var previewContent = query("#previewContent", preview)[0];
+                preview.style.display = "block";
+                var previewDetail = query('#preview-detail', preview)[0];
+                previewDetail.innerHTML = (limit < data.size
+                    ? 'showing the first ' + limit + ' of ' + data.size + ' bytes'
+                    : 'showing all ' + data.size + ' bytes');
+                var previewContent = query("#message-content-preview", preview)[0];
                 var previewParameters = lang.mixin({limit: limit}, parameters);
                 management.load(contentModelObj, previewParameters, {
                         handleAs: "text",
@@ -184,6 +179,7 @@ define(["dojo/dom",
             }
             else
             {
+                preview.style.display = "none";
                 registry.byId("showMessage")
                     .show();
             }

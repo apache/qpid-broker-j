@@ -20,6 +20,9 @@ package org.apache.qpid.server.queue;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.AccessControlContext;
 import java.security.AccessControlException;
 import java.security.AccessController;
@@ -126,6 +129,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     };
 
     private static final long INITIAL_TARGET_QUEUE_SIZE = 102400l;
+    private static final String UTF8 = StandardCharsets.UTF_8.name();
 
     private final VirtualHost<?> _virtualHost;
     private final DeletedChildListener _deletedChildListener = new DeletedChildListener();
@@ -2678,14 +2682,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    public static class MessageContent implements Content, CustomRestHeaders
+    class MessageContent implements Content, CustomRestHeaders
     {
-
-        public static final int UNLIMITED = -1;
+        private static final int UNLIMITED = -1;
         private final MessageReference<?> _messageReference;
         private final long _limit;
 
-        public MessageContent(MessageReference<?> messageReference, long limit)
+        MessageContent(MessageReference<?> messageReference, long limit)
         {
             _messageReference = messageReference;
             _limit = (limit == UNLIMITED ? messageReference.getMessage().getSize() : limit);
@@ -2723,18 +2726,37 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             _messageReference.release();
         }
 
+        @SuppressWarnings("unused")
         @RestContentHeader("Content-Type")
         public String getContentType()
         {
             return _messageReference.getMessage().getMessageHeader().getMimeType();
         }
 
+        @SuppressWarnings("unused")
         @RestContentHeader("Content-Encoding")
         public String getContentEncoding()
         {
             return _messageReference.getMessage().getMessageHeader().getEncoding();
         }
 
+        @SuppressWarnings("unused")
+        @RestContentHeader("Content-Disposition")
+        public String getContentDisposition()
+        {
+            try
+            {
+                String disposition = String.format("attachment; filename=\"%s_msg%09d%s\"",
+                                                   URLEncoder.encode(getName(), UTF8),
+                                                   _messageReference.getMessage().getMessageNumber(),
+                                                   getContentType().startsWith("text") ? ".txt" : "");
+                return disposition;
+            }
+            catch (UnsupportedEncodingException e)
+            {
+                throw new RuntimeException("JVM does not support UTF8", e);
+            }
+        }
     }
 
     private static class AcquireAllQueueEntryFilter implements QueueEntryFilter
