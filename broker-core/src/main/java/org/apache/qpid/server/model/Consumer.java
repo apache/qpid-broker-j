@@ -53,9 +53,9 @@ public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>, Co
     @ManagedAttribute
     String getSelector();
 
-    @ManagedAttribute(defaultValue = "0",
-                      description="Non-negative number representing the priority of the consumer versus other "
-                                  + "consumers.  Priority 0 is the highest priority.")
+    @ManagedAttribute(defaultValue = "2147483647",
+            description="Number representing the priority of the consumer versus other "
+                        + "consumers.  Priority 2147483647 is the highest priority.")
     int getPriority();
 
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound")

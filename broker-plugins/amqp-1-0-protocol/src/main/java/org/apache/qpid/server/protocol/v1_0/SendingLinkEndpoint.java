@@ -76,17 +76,17 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLinkListener>
                     }
                     catch (NumberFormatException e)
                     {
-                        _priority = 0;
+                        _priority = Integer.MAX_VALUE;
                     }
                 }
                 else
                 {
-                    _priority = 0;
+                    _priority = Integer.MAX_VALUE;
                 }
 
-                if (_priority < 0)
+                if (_priority < Integer.MAX_VALUE)
                 {
-                    _priority = 0;
+                    _priority = Integer.MAX_VALUE;
                 }
                 actualProperties.put(PRIORITY, _priority);
             }

@@ -123,7 +123,7 @@ class QueueConsumerImpl
                       final FilterManager filters,
                       final Class<? extends ServerMessage> messageClass,
                       EnumSet<Option> optionSet,
-                      final int priority)
+                      final Integer priority)
     {
         super(parentsMap(queue, target.getSessionModel().getModelObject()),
               createAttributeMap(consumerName, filters, optionSet, priority));
@@ -169,7 +169,7 @@ class QueueConsumerImpl
     private static Map<String, Object> createAttributeMap(String name,
                                                           FilterManager filters,
                                                           EnumSet<Option> optionSet,
-                                                          int priority)
+                                                          Integer priority)
     {
         Map<String,Object> attributes = new HashMap<String, Object>();
         attributes.put(ID, UUID.randomUUID());
@@ -179,7 +179,10 @@ class QueueConsumerImpl
         attributes.put(DISTRIBUTION_MODE, optionSet.contains(Option.ACQUIRES) ? "MOVE" : "COPY");
         attributes.put(DURABLE,optionSet.contains(Option.DURABLE));
         attributes.put(LIFETIME_POLICY, LifetimePolicy.DELETE_ON_SESSION_END);
-        attributes.put(PRIORITY, priority);
+        if(priority != null)
+        {
+            attributes.put(PRIORITY, priority);
+        }
         if(filters != null)
         {
             Iterator<MessageFilter> iter = filters.filters();

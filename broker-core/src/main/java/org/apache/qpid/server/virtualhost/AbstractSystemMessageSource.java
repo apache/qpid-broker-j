@@ -86,7 +86,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
                                 final FilterManager filters,
                                 final Class<? extends ServerMessage> messageClass,
                                 final String consumerName,
-                                final EnumSet<ConsumerImpl.Option> options, final int priority)
+                                final EnumSet<ConsumerImpl.Option> options, final Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
                    ConsumerAccessRefused
     {

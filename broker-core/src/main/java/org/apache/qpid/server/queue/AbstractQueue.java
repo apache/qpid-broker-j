@@ -708,7 +708,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                          final Class<? extends ServerMessage> messageClass,
                                          final String consumerName,
                                          final EnumSet<ConsumerImpl.Option> optionSet,
-                                         final int priority)
+                                         final Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
                    ConsumerAccessRefused
     {
@@ -761,7 +761,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                   final Class<? extends ServerMessage> messageClass,
                                                   final String consumerName,
                                                   EnumSet<ConsumerImpl.Option> optionSet,
-                                                  final int priority)
+                                                  final Integer priority)
             throws ExistingExclusiveConsumer, ConsumerAccessRefused,
                    ExistingConsumerPreventsExclusive
     {
@@ -1302,7 +1302,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     // if consumer at end, and active, offer
                     final QueueConsumer<?> sub = nextNode.getConsumer();
 
-                    if(sub.getPriority() == 0)
+                    if(sub.getPriority() == Integer.MAX_VALUE)
                     {
                         deliverToConsumer(sub, entry);
                     }
@@ -2219,7 +2219,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         QueueEntry node  = getNextAvailableEntry(sub);
         boolean subActive = sub.isActive() && !sub.isSuspended();
 
-        if (subActive && (sub.getPriority() == 0 || noHigherPriorityWithCredit(sub)))
+        if (subActive && (sub.getPriority() == Integer.MAX_VALUE || noHigherPriorityWithCredit(sub)))
         {
 
             if (_virtualHost.getState() != State.ACTIVE)
@@ -2281,7 +2281,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             final ConsumerNode node = iterator.getNode();
             QueueConsumer consumer = node.getConsumer();
-            if(consumer.getPriority() < sub.getPriority())
+            if(consumer.getPriority() > sub.getPriority())
             {
                 if(getNextAvailableEntry(consumer) != null && consumer.hasCredit())
                 {

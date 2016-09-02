@@ -322,7 +322,7 @@ public class AMQChannel
                                                              singleMessageCredit, getDeliveryMethod, getRecordMethod);
         }
 
-        ConsumerImpl sub = queue.addConsumer(target, null, AMQMessage.class, "", options, 0);
+        ConsumerImpl sub = queue.addConsumer(target, null, AMQMessage.class, "", options, null);
         sub.flush();
         sub.close();
         return getDeliveryMethod.hasDeliveredMessage();
@@ -802,7 +802,7 @@ public class AMQChannel
 
             }
 
-            int priority;
+            Integer priority = null;
             if(arguments != null && arguments.containsKey("x-priority"))
             {
                 Object value = arguments.get("x-priority");
@@ -818,23 +818,10 @@ public class AMQChannel
                     }
                     catch (NumberFormatException e)
                     {
-                        priority = 0;
+                        // use default vlaue
                     }
                 }
-                else
-                {
-                    priority = 0;
-                }
 
-                if (priority < 0)
-                {
-                    priority = 0;
-                }
-
-            }
-            else
-            {
-                priority = 0;
             }
 
 

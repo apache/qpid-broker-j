@@ -319,7 +319,7 @@ public class ServerSessionDelegate extends SessionDelegate
                                                                                  method.getArguments()
                     );
 
-                    int priority;
+                    Integer priority = null;
                     if(method.hasArguments() && method.getArguments().containsKey("x-priority"))
                     {
                         Object value = method.getArguments().get("x-priority");
@@ -335,22 +335,8 @@ public class ServerSessionDelegate extends SessionDelegate
                             }
                             catch (NumberFormatException e)
                             {
-                                priority = 0;
                             }
                         }
-                        else
-                        {
-                            priority = 0;
-                        }
-
-                        if (priority < 0)
-                        {
-                            priority = 0;
-                        }
-                    }
-                    else
-                    {
-                        priority = 0;
                     }
 
                     ((ServerSession)session).register(destination, target);

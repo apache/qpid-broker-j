@@ -35,7 +35,7 @@ public interface MessageSource extends TransactionLogResource, MessageNode
                               Class<? extends ServerMessage> messageClass,
                               String consumerName,
                               EnumSet<ConsumerImpl.Option> options,
-                              int priority)
+                              Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
                    ConsumerAccessRefused;
 

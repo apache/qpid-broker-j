@@ -982,7 +982,7 @@ class ManagementNode implements MessageSource, MessageDestination
                                                             final Class<? extends ServerMessage> messageClass,
                                                             final String consumerName,
                                                             final EnumSet<ConsumerImpl.Option> options,
-                                                            final int priority)
+                                                            final Integer priority)
     {
 
         final ManagementNodeConsumer managementNodeConsumer = new ManagementNodeConsumer(consumerName,this, target);
