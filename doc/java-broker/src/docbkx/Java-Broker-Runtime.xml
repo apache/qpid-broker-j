@@ -28,6 +28,7 @@
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="runtime/Java-Broker-Runtime-Handling-Undeliverable-Messages.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="runtime/Java-Broker-Runtime-Close-On-No-Route.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="runtime/Java-Broker-Runtime-Flow-To-Disk.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="runtime/Java-Broker-Runtime-Consumers.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="runtime/Java-Broker-Runtime-Background-Recovery.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="runtime/Java-Broker-Runtime-Message-Compression.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="runtime/Java-Broker-Runtime-Connection-Limit.xml"/>

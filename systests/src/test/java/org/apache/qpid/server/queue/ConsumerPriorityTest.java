@@ -74,6 +74,17 @@ public class ConsumerPriorityTest extends QpidBrokerTestCase
     public void testLowPriorityConsumerDoesNotReceiveMessagesIfHigherPriorityConsumerAvailable() throws Exception
     {
         Queue queue = _consumingSession.createQueue("direct://amq.direct/" + getTestQueueName() + "/" + getTestQueueName() + "?x-priority='10'");
+        doTestLowPriorityConsumerDoesNotReceiveMessagesIfHigherPriorityAvailable(queue);
+    }
+
+    public void testLowPriorityConsumerDoesNotReceiveMessagesIfHigherPriorityConsumerAvailableUsingADDR() throws Exception
+    {
+        Queue queue = _consumingSession.createQueue("ADDR:" + getTestQueueName() + "; { create: always, node: { type: queue }, link : { x-subscribe: { arguments : { x-priority : '10' } } } }");
+        doTestLowPriorityConsumerDoesNotReceiveMessagesIfHigherPriorityAvailable(queue);
+    }
+
+    private void doTestLowPriorityConsumerDoesNotReceiveMessagesIfHigherPriorityAvailable(final Queue queue) throws Exception
+    {
         final MessageConsumer consumer = _consumingSession.createConsumer(queue);
         assertNull("There should be no messages in the queue", consumer.receive(100L));
 
