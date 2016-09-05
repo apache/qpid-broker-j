@@ -298,11 +298,14 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     Content getMessageContent(@Param(name = "messageId") long messageId,
                               @Param(name = "limit", defaultValue = "-1", description = "Number of bytes to return") long limit);
 
-    @ManagedOperation(nonModifying = true, secure = true)
-    List<MessageInfo> getMessageInfo(@Param(name = "first", defaultValue = "-1") int first, @Param(name = "last", defaultValue = "-1") int last);
+    @ManagedOperation(nonModifying = true, paramRequiringSecure = "includeHeaders")
+    List<MessageInfo> getMessageInfo(@Param(name = "first", defaultValue = "-1") int first,
+                                     @Param(name = "last",  defaultValue = "-1") int last,
+                                     @Param(name = "includeHeaders", defaultValue = "false") boolean includeHeaders);
 
-    @ManagedOperation(nonModifying = true, secure = true)
-    MessageInfo getMessageInfoById(@Param(name = "messageId") long messageId);
+    @ManagedOperation(nonModifying = true, paramRequiringSecure = "includeHeaders")
+    MessageInfo getMessageInfoById(@Param(name = "messageId") long messageId,
+                                   @Param(name = "includeHeaders", defaultValue = "true") boolean includeHeaders);
 
     boolean isExclusive();
 

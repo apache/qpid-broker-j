@@ -108,7 +108,8 @@ define(["dojo/_base/declare",
                     var myStore = new JsonRest({
                         management: that.management,
                         modelObject: that.modelObj,
-                        queryOperation: "getMessageInfo"
+                        queryOperation: "getMessageInfo",
+                        queryParams : {includeHeaders: false}
                     });
                     var messageGridDiv = query(".messages", contentPane.containerNode)[0];
                     that.dataStore = new ObjectStore({objectStore: myStore});

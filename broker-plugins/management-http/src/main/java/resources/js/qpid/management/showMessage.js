@@ -84,7 +84,7 @@ define(["dojo/dom",
 
         };
 
-        showMessage.populateShowMessage = function (management, modelObj, data)
+        showMessage.populateShowMessage = function (management, modelObj, data, includesConfidential)
         {
 
             // clear fields set by previous invocation.
@@ -140,61 +140,103 @@ define(["dojo/dom",
                 }
             }
 
-            var contentModelObj = {
-                name: "getMessageContent",
-                parent: modelObj,
-                type: modelObj.type
-            };
-            var parameters = {messageId: data.id};
-            var url = management.buildObjectURL(contentModelObj, parameters);
-
-            var href = query('a#message-download', this.dialogNode)[0];
-            href.title = url;
-            connect.connect(href, 'onclick', function ()
-            {
-                management.download(contentModelObj, parameters);
-            });
-
             var preview = query('#preview', this.dialogNode)[0];
-            if (data.mimeType && data.mimeType.match(/text\/.*/))
+            var confidentialInformationWarning = query('#confidentialInformationWarning', this.dialogNode)[0];
+            confidentialInformationWarning.style.display = includesConfidential ? "none" : "block";
+            var confidentialCells = query('.confidential', this.dialogNode);
+            for(var i = 0; i < confidentialCells.length; i++)
             {
-                var limit = 1024;
-                preview.style.display = "block";
-                var previewDetail = query('#preview-detail', preview)[0];
-                previewDetail.innerHTML = (limit < data.size
-                    ? 'showing the first ' + limit + ' of ' + data.size + ' bytes'
-                    : 'showing all ' + data.size + ' bytes');
-                var previewContent = query("#message-content-preview", preview)[0];
-                var previewParameters = lang.mixin({limit: limit}, parameters);
-                management.load(contentModelObj, previewParameters, {
-                        handleAs: "text",
-                        headers: {"Content-Type": data.mimeType}
-                    })
-                    .then(function (content)
-                    {
-                        previewContent.innerHTML = encode(content);
-                        registry.byId("showMessage")
-                            .show();
-                    });
+                confidentialCells[i].style.display = includesConfidential ?  "block" : "none";
+            }
+            var confidentialPlaceholderCells = query('.confidentialPlaceholder', this.dialogNode);
+            for(var i = 0; i < confidentialPlaceholderCells.length; i++)
+            {
+                confidentialPlaceholderCells[i].style.display = includesConfidential ?  "none" : "block";
+            }
+
+            if (includesConfidential)
+            {
+                var contentModelObj = {
+                    name: "getMessageContent",
+                    parent: modelObj,
+                    type: modelObj.type
+                };
+                var parameters = {messageId: data.id};
+                var url = management.buildObjectURL(contentModelObj, parameters);
+
+                var href = query('a#message-download', this.dialogNode)[0];
+                href.title = url;
+                connect.connect(href, 'onclick', function ()
+                {
+                    management.download(contentModelObj, parameters);
+                });
+
+                if (data.mimeType && data.mimeType.match(/text\/.*/))
+                {
+                    var limit = 1024;
+                    preview.style.display = "block";
+                    var previewDetail = query('#preview-detail', preview)[0];
+                    previewDetail.innerHTML = (limit < data.size
+                        ? 'showing the first ' + limit + ' of ' + data.size + ' bytes'
+                        : 'showing all ' + data.size + ' bytes');
+                    var previewContent = query("#message-content-preview", preview)[0];
+                    var previewParameters = lang.mixin({limit: limit}, parameters);
+                    management.load(contentModelObj, previewParameters, {
+                            handleAs: "text",
+                            headers: {"Content-Type": data.mimeType}
+                        })
+                        .then(function (content)
+                        {
+                            previewContent.innerHTML = encode(content);
+                            registry.byId("showMessage") .show();
+                        });
+                }
+                else
+                {
+                    preview.style.display = "none";
+                    registry.byId("showMessage").show();
+                }
             }
             else
             {
-                preview.style.display = "none";
-                registry.byId("showMessage")
-                    .show();
+                registry.byId("showMessage").show()
             }
         };
 
         showMessage.show = function (management, modelObj, message)
         {
-            management.load({
-                    name: "getMessageInfoById",
-                    parent: modelObj,
-                    type: modelObj.type
-                }, {messageId: message.id})
+            var obj = {
+                name: "getMessageInfoById",
+                parent: modelObj,
+                type: modelObj.type
+            };
+            management.load(obj,
+                {
+                    messageId: message.id,
+                    includeHeaders: true
+                })
                 .then(function (data)
                 {
-                    showMessage.populateShowMessage(management, modelObj, data);
+                    showMessage.populateShowMessage(management, modelObj, data, true);
+                },
+                function(e)
+                {
+                    if (e.response && e.response.status == 403)
+                    {
+                        management.load(obj,
+                                        {
+                                            messageId: message.id,
+                                            includeHeaders: false
+                                        })
+                            .then(function(data)
+                            {
+                                showMessage.populateShowMessage(management, modelObj, data, false);
+                            });
+                    }
+                    else
+                    {
+                        management.errorHandler(e);
+                    }
                 });
         };
 

@@ -31,6 +31,7 @@ define(["dojo/_base/lang", "dojo/json", "dojo/_base/declare", "dojo/store/util/Q
             queryOperation: null,
             modelObject: null,
             management: null,
+            queryParams: null,
 
             constructor: function (options)
             {
@@ -38,6 +39,7 @@ define(["dojo/_base/lang", "dojo/json", "dojo/_base/declare", "dojo/store/util/Q
                 this.management = options.management;
                 this.modelObject = options.modelObject;
                 this.queryOperation = options.queryOperation;
+                this.queryParams = options.queryParams;
                 declare.safeMixin(this, options);
             },
 
@@ -48,7 +50,7 @@ define(["dojo/_base/lang", "dojo/json", "dojo/_base/declare", "dojo/store/util/Q
 
             query: function (query, options)
             {
-                query = query || {};
+                query = lang.mixin(query || {}, this.queryParams);
                 options = options || {};
                 var headers = lang.mixin({Accept: this.accepts}, this.headers, options.headers);
 

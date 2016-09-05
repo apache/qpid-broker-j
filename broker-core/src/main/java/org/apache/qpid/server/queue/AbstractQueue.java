@@ -3538,18 +3538,18 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public List<MessageInfo> getMessageInfo(int first, int last)
+    public List<MessageInfo> getMessageInfo(int first, int last, boolean includeHeaders)
     {
-        final MessageCollector messageCollector = new MessageCollector(first, last, false);
+        final MessageCollector messageCollector = new MessageCollector(first, last, includeHeaders);
         visit(messageCollector);
         return messageCollector.getMessages();
 
     }
 
     @Override
-    public MessageInfo getMessageInfoById(final long messageId)
+    public MessageInfo getMessageInfoById(final long messageId, boolean includeHeaders)
     {
-        final MessageFinder messageFinder = new MessageFinder(messageId);
+        final MessageFinder messageFinder = new MessageFinder(messageId, includeHeaders);
         visit(messageFinder);
         return messageFinder.getMessageInfo();
     }
@@ -3557,11 +3557,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private class MessageFinder implements QueueEntryVisitor
     {
         private final long _messageNumber;
+        private final boolean _includeHeaders;
         private MessageInfo _messageInfo;
 
-        private MessageFinder(long messageNumber)
+        private MessageFinder(long messageNumber, final boolean includeHeaders)
         {
             _messageNumber = messageNumber;
+            _includeHeaders = includeHeaders;
         }
 
         @Override
@@ -3572,7 +3574,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 if (_messageNumber == message.getMessageNumber())
                 {
-                    _messageInfo = new MessageInfoImpl(entry, true);
+                    _messageInfo = new MessageInfoImpl(entry, _includeHeaders);
                 }
             }
             return false;

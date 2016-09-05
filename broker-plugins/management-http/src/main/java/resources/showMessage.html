@@ -18,7 +18,11 @@
 <div class="dijitHidden">
     <div data-dojo-type="dijit.Dialog" style="width:600px;" data-dojo-props="title:'View Message'" id="showMessage">
 
-    <table style="border: 0; width: 100%">
+        <div id="confidentialInformationWarning" class="infoMessage">Confidential message information (headers
+            and content) is not available on an insecure transport. Switch to a secure management transport (i.e. one
+            that uses HTTPS) to see the message's full details.</div>
+
+        <table style="border: 0; width: 100%">
         <tr style="margin-bottom: 4pt">
             <td style="width: 10em; vertical-align: top"><span style="font-weight: bold;">Message Number:</span></td>
             <td><span class="message-id"></span></td>
@@ -73,16 +77,24 @@
         </tr>
         <tr style="margin-bottom: 4pt">
             <td style="width: 10em; vertical-align: top"><span style="font-weight: bold;">Headers:</span></td>
-            <td><div class="message-headers map"></div></td>
+            <td>
+                <div class="message-headers map confidential"></div>
+                <div class="confidentialPlaceholder highlightedText">Not available</div>
+            </td>
         </tr>
 
         <tr style="margin-bottom: 4pt">
             <td style="width: 10em; vertical-align: top"><span style="font-weight: bold;">Content:</span></td>
-            <td><a href="#" id="message-download">Download</a><br/>
-                <div id="preview" class="fillRemaining">
-                    Preview (<span id="preview-detail"></span>):<br/>
-                    <textarea id="message-content-preview" readonly rows="5" style="width: 100%"></textarea>
+            <td>
+                <div class="confidential">
+                    <a href="#" id="message-download">Download</a>
+                    <br/>
+                    <div id="preview" class="fillRemaining">
+                        Preview (<span id="preview-detail"></span>):<br/>
+                        <textarea id="message-content-preview" readonly rows="5" style="width: 100%"></textarea>
+                    </div>
                 </div>
+                <div class="confidentialPlaceholder highlightedText">Not available</div>
             </td>
         </tr>
     </table>
