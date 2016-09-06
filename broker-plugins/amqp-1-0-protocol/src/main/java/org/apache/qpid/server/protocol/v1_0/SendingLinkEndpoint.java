@@ -42,7 +42,7 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLinkListener>
     private Binary _lastDeliveryTag;
     private Map<Binary, UnsignedInteger> _unsettledMap = new HashMap<Binary, UnsignedInteger>();
     private Binary _transactionId;
-    private int _priority;
+    private Integer _priority;
 
 
     public SendingLinkEndpoint(final Session_1_0 sessionEndpoint, final Attach attach)
@@ -76,19 +76,12 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLinkListener>
                     }
                     catch (NumberFormatException e)
                     {
-                        _priority = Integer.MAX_VALUE;
                     }
                 }
-                else
+                if(_priority != null)
                 {
-                    _priority = Integer.MAX_VALUE;
+                    actualProperties.put(PRIORITY, _priority);
                 }
-
-                if (_priority < Integer.MAX_VALUE)
-                {
-                    _priority = Integer.MAX_VALUE;
-                }
-                actualProperties.put(PRIORITY, _priority);
             }
             return actualProperties;
         }
@@ -111,7 +104,7 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLinkListener>
         return Role.SENDER;
     }
 
-    public int getPriority()
+    public Integer getPriority()
     {
         return _priority;
     }
