@@ -56,7 +56,7 @@ define(["dojo/dom",
         }
 
         var populatedFields = [];
-        var showMessage = {};
+        var showMessage = {includeHeaders: true};
 
         showMessage.hide = function ()
         {
@@ -203,7 +203,7 @@ define(["dojo/dom",
             }
         };
 
-        showMessage.show = function (management, modelObj, message)
+        var loadMessage = function (management, modelObj, id, includeHeaders, errorHandler)
         {
             var obj = {
                 name: "getMessageInfoById",
@@ -212,26 +212,25 @@ define(["dojo/dom",
             };
             management.load(obj,
                 {
-                    messageId: message.id,
-                    includeHeaders: true
+                    messageId: id,
+                    includeHeaders: includeHeaders
                 })
                 .then(function (data)
-                {
-                    showMessage.populateShowMessage(management, modelObj, data, true);
-                },
-                function(e)
+                    {
+                        showMessage.populateShowMessage(management, modelObj, data, includeHeaders);
+                    },
+                    errorHandler);
+        };
+
+        showMessage.show = function (management, modelObj, message)
+        {
+            loadMessage(management, modelObj, message.id, this.includeHeaders,
+                function (e)
                 {
                     if (e.response && e.response.status == 403)
                     {
-                        management.load(obj,
-                                        {
-                                            messageId: message.id,
-                                            includeHeaders: false
-                                        })
-                            .then(function(data)
-                            {
-                                showMessage.populateShowMessage(management, modelObj, data, false);
-                            });
+                        showMessage.includeHeaders = false;
+                        loadMessage(management, modelObj, message.id, false);
                     }
                     else
                     {
