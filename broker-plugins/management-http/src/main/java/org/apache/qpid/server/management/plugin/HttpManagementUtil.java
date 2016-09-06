@@ -62,9 +62,9 @@ public class HttpManagementUtil
     private static final String ATTR_SUBJECT = "Qpid.subject";
     private static final String ATTR_LOG_ACTOR = "Qpid.logActor";
 
-    private static final String ACCEPT_ENCODING_HEADER = "Accept-Encoding";
-    private static final String CONTENT_ENCODING_HEADER = "Content-Encoding";
-    private static final String GZIP_CONTENT_ENCODING = "gzip";
+    public static final String ACCEPT_ENCODING_HEADER = "Accept-Encoding";
+    public static final String CONTENT_ENCODING_HEADER = "Content-Encoding";
+    public static final String GZIP_CONTENT_ENCODING = "gzip";
 
     private static final Collection<HttpRequestPreemptiveAuthenticator> AUTHENTICATORS;
     private static final Operation MANAGE_ACTION = Operation.ACTION("manage");
@@ -178,9 +178,7 @@ public class HttpManagementUtil
             throws IOException
     {
         OutputStream outputStream;
-        if(managementConfiguration.isCompressResponses()
-           && Collections.list(request.getHeaderNames()).contains(ACCEPT_ENCODING_HEADER)
-           && request.getHeader(ACCEPT_ENCODING_HEADER).contains(GZIP_CONTENT_ENCODING))
+        if(isCompressing(request, managementConfiguration))
         {
             outputStream = new GZIPOutputStream(response.getOutputStream());
             response.setHeader(CONTENT_ENCODING_HEADER, GZIP_CONTENT_ENCODING);
@@ -190,6 +188,14 @@ public class HttpManagementUtil
             outputStream = response.getOutputStream();
         }
         return outputStream;
+    }
+
+    public static boolean isCompressing(final HttpServletRequest request,
+                                        final HttpManagementConfiguration managementConfiguration)
+    {
+        return managementConfiguration.isCompressResponses()
+               && Collections.list(request.getHeaderNames()).contains(ACCEPT_ENCODING_HEADER)
+               && request.getHeader(ACCEPT_ENCODING_HEADER).contains(GZIP_CONTENT_ENCODING);
     }
 
     public static String ensureFilenameIsRfc2183(final String requestedFilename)

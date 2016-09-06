@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
+import static org.apache.qpid.server.management.plugin.HttpManagementUtil.CONTENT_ENCODING_HEADER;
+import static org.apache.qpid.server.management.plugin.HttpManagementUtil.GZIP_CONTENT_ENCODING;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
@@ -29,6 +32,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 
 import javax.security.auth.Subject;
 import javax.servlet.ServletConfig;
@@ -44,6 +48,7 @@ import org.apache.qpid.server.model.RestContentHeader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.google.common.io.ByteStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +56,7 @@ import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
+import org.apache.qpid.server.model.StreamingContent;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public abstract class AbstractServlet extends HttpServlet
@@ -319,47 +325,70 @@ public abstract class AbstractServlet extends HttpServlet
         response.setDateHeader("Expires", 0);
     }
 
-    protected void writeTypedContent(Content content, HttpServletRequest request, HttpServletResponse response) throws IOException
+    protected void writeTypedContent(Content content, HttpServletRequest request, HttpServletResponse response)
+            throws IOException
     {
-        try(OutputStream os = getOutputStream(request, response))
+        Map<String, Object> headers = getResponseHeaders(content);
+        boolean isGzipCompressed = GZIP_CONTENT_ENCODING.equals(headers.get(CONTENT_ENCODING_HEADER.toUpperCase()));
+        boolean isCompressing = HttpManagementUtil.isCompressing(request, _managementConfiguration);
+        try (OutputStream os = isGzipCompressed ? response.getOutputStream() : getOutputStream(request, response))
         {
-            if(content instanceof CustomRestHeaders)
+            if (isGzipCompressed && !isCompressing && content instanceof StreamingContent)
             {
-                setResponseHeaders(response, (CustomRestHeaders) content);
+                headers.remove(CONTENT_ENCODING_HEADER);
+                content = new DecompressingContent((StreamingContent) content);
             }
             response.setStatus(HttpServletResponse.SC_OK);
+            for (Map.Entry<String, Object> entry : headers.entrySet())
+            {
+                response.setHeader(entry.getKey(), String.valueOf(entry.getValue()));
+            }
             content.write(os);
-
         }
-        catch(IOException e)
+        catch (IOException e)
         {
             LOGGER.warn("Unexpected exception processing request", e);
             sendJsonErrorResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 
-    private void setResponseHeaders(final HttpServletResponse response, final CustomRestHeaders customRestHeaders)
+    private Map<String, Object> getResponseHeaders(final Object content)
     {
-        Map<RestContentHeader, Method> contentHeaderGetters = getContentHeaderMethods(customRestHeaders);
-        if (contentHeaderGetters != null)
+        Map<String, Object> headers = Collections.emptyMap();
+        if (content instanceof CustomRestHeaders)
         {
-            for (Map.Entry<RestContentHeader, Method> entry : contentHeaderGetters.entrySet())
+            CustomRestHeaders customRestHeaders = (CustomRestHeaders) content;
+            Map<RestContentHeader, Method> contentHeaderGetters = getContentHeaderMethods(customRestHeaders);
+            if (contentHeaderGetters != null)
             {
-                final String headerName = entry.getKey().value();
-                try
+                headers = new HashMap<>();
+                for (Map.Entry<RestContentHeader, Method> entry : contentHeaderGetters.entrySet())
                 {
-                    final Object headerValue = entry.getValue().invoke(customRestHeaders);
-                    if (headerValue != null)
+                    final String headerName = entry.getKey().value();
+                    try
                     {
-                        response.setHeader(headerName, String.valueOf(headerValue));
+                        final Object headerValue = entry.getValue().invoke(customRestHeaders);
+                        if (headerValue != null)
+                        {
+                            headers.put(headerName.toUpperCase(), headerValue);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        LOGGER.warn("Unexpected exception whilst setting response header " + headerName, e);
                     }
                 }
-                catch (Exception e)
-                {
-                    LOGGER.warn("Unexpected exception whilst setting response header " + headerName, e);
-                }
             }
+        }
+        return headers;
+    }
 
+    private void setResponseHeaders(final HttpServletResponse response, final CustomRestHeaders customRestHeaders)
+    {
+        Map<String, Object> headers = getResponseHeaders(customRestHeaders);
+        for(Map.Entry<String,Object> entry : headers.entrySet())
+        {
+            response.setHeader(entry.getKey(), String.valueOf(entry.getValue()));
         }
     }
 
@@ -387,4 +416,31 @@ public abstract class AbstractServlet extends HttpServlet
         return results;
     }
 
+    private class DecompressingContent implements Content
+    {
+        private final StreamingContent _content;
+
+        public DecompressingContent(final StreamingContent content)
+        {
+            _content = content;
+        }
+
+        @Override
+        public void write(final OutputStream os) throws IOException
+        {
+            try(GZIPInputStream gzipInputStream = new GZIPInputStream(_content.getInputStream());)
+            {
+                ByteStreams.copy(gzipInputStream, os);
+            }
+        }
+
+        @Override
+        public void release()
+        {
+            if (_content instanceof Content)
+            {
+                ((Content)_content).release();
+            }
+        }
+    }
 }

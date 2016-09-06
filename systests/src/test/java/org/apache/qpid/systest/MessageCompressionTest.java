@@ -20,9 +20,15 @@
  */
 package org.apache.qpid.systest;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.GZIPInputStream;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -36,6 +42,8 @@ import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -55,6 +63,9 @@ public class MessageCompressionTest extends QpidBrokerTestCase
     {
         TestBrokerConfiguration config = getDefaultBrokerConfiguration();
         config.addHttpManagementConfiguration();
+        config.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT,
+                                  HttpPort.ALLOW_CONFIDENTIAL_OPERATIONS_ON_INSECURE_CHANNELS,
+                                  true);
         super.startDefaultBroker();
 
         _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
@@ -116,32 +127,9 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         Connection senderConnection = getConnection(senderCompresses);
         String virtualPath = getConnectionFactory().getVirtualPath();
         String testQueueName = getTestQueueName();
+        createAndBindQueue(virtualPath, testQueueName);
 
-        // create the queue using REST and bind it
-        assertEquals(201,
-                     _restTestHelper.submitRequest("/api/latest/queue"
-                                                   + virtualPath
-                                                   + virtualPath
-                                                   + "/"
-                                                   + testQueueName, "PUT", Collections.<String, Object>emptyMap()));
-        assertEquals(201,
-                     _restTestHelper.submitRequest("/api/latest/binding"
-                                                   + virtualPath
-                                                   + virtualPath
-                                                   + "/amq.direct/"
-                                                   + testQueueName
-                                                   + "/"
-                                                   + testQueueName, "PUT", Collections.<String, Object>emptyMap()));
-
-        Session session = senderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
-        // send a large message
-        MessageProducer producer = session.createProducer(getTestQueue());
-        TextMessage sentMessage = session.createTextMessage(messageText);
-        sentMessage.setStringProperty("bar", "foo");
-
-        producer.send(sentMessage);
-        ((AMQSession)session).sync();
+        publishMessage(senderConnection, messageText);
 
         // get the number of bytes received at the broker on the connection
         List<Map<String, Object>> connectionRestOutput = _restTestHelper.getJsonAsList("/api/latest/connection");
@@ -163,7 +151,7 @@ public class MessageCompressionTest extends QpidBrokerTestCase
 
         // receive the message
         Connection consumerConnection = getConnection(receiverUncompresses);
-        session = consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Session session = consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         MessageConsumer consumer = session.createConsumer(getTestQueue());
         consumerConnection.start();
 
@@ -190,6 +178,105 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         }
 
         consumerConnection.close();
+    }
+
+    public void testGetContentViaRestForCompressedMessageWithAgentNotSupportingCompression() throws Exception
+    {
+        setTestSystemProperty(Broker.BROKER_MESSAGE_COMPRESSION_ENABLED, String.valueOf(true));
+
+        doActualSetUp();
+
+        String messageText = createMessageText();
+        Connection senderConnection = getConnection(true);
+        String virtualPath = getConnectionFactory().getVirtualPath();
+        String testQueueName = getTestQueueName();
+        createAndBindQueue(virtualPath, testQueueName);
+
+        publishMessage(senderConnection, messageText);
+
+        String queueRelativePath = "queue" + virtualPath + virtualPath + "/" + testQueueName;
+
+        List<Map<String, Object>> messages = _restTestHelper.getJsonAsList(queueRelativePath + "/getMessageInfo");
+        assertEquals("Unexpected number of messages", 1, messages.size());
+        long id = ((Number) messages.get(0).get("id")).longValue();
+
+        byte[] messageBytes = _restTestHelper.getBytes(queueRelativePath + "/getMessageContent?messageId=" + id);
+        String content = new String(messageBytes, StandardCharsets.UTF_8);
+        assertEquals("Unexpected message content :" + content, messageText, content);
+    }
+
+    public void testGetContentViaRestForCompressedMessageWithAgentSupportingCompression() throws Exception
+    {
+        setTestSystemProperty(Broker.BROKER_MESSAGE_COMPRESSION_ENABLED, String.valueOf(true));
+
+        doActualSetUp();
+
+        String messageText = createMessageText();
+        Connection senderConnection = getConnection(true);
+        String virtualPath = getConnectionFactory().getVirtualPath();
+        String testQueueName = getTestQueueName();
+        createAndBindQueue(virtualPath, testQueueName);
+
+        publishMessage(senderConnection, messageText);
+
+        String queueRelativePath = "queue" + virtualPath + virtualPath + "/" + testQueueName;
+
+        List<Map<String, Object>> messages = _restTestHelper.getJsonAsList(queueRelativePath + "/getMessageInfo");
+        assertEquals("Unexpected number of messages", 1, messages.size());
+        long id = ((Number) messages.get(0).get("id")).longValue();
+
+        _restTestHelper.setAcceptEncoding("gzip, deflate, br");
+        HttpURLConnection connection =
+                _restTestHelper.openManagementConnection(queueRelativePath + "/getMessageContent?messageId=" + id,
+                                                         "GET");
+        connection.connect();
+
+        String content;
+        try (InputStream is = new GZIPInputStream(connection.getInputStream());
+             ByteArrayOutputStream baos = new ByteArrayOutputStream())
+        {
+            byte[] buffer = new byte[1024];
+            int len;
+            while ((len = is.read(buffer)) != -1)
+            {
+                baos.write(buffer, 0, len);
+            }
+            content = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+        }
+        assertEquals("Unexpected message content :" + content, messageText, content);
+    }
+
+    private void publishMessage(final Connection senderConnection, final String messageText)
+            throws JMSException, org.apache.qpid.QpidException
+    {
+        Session session = senderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+        // send a large message
+        MessageProducer producer = session.createProducer(getTestQueue());
+        TextMessage sentMessage = session.createTextMessage(messageText);
+        sentMessage.setStringProperty("bar", "foo");
+
+        producer.send(sentMessage);
+        ((AMQSession) session).sync();
+    }
+
+    private void createAndBindQueue(final String virtualPath, final String testQueueName) throws IOException
+    {
+        // create the queue using REST and bind it
+        assertEquals(201,
+                     _restTestHelper.submitRequest("/api/latest/queue"
+                                                   + virtualPath
+                                                   + virtualPath
+                                                   + "/"
+                                                   + testQueueName, "PUT", Collections.<String, Object>emptyMap()));
+        assertEquals(201,
+                     _restTestHelper.submitRequest("/api/latest/binding"
+                                                   + virtualPath
+                                                   + virtualPath
+                                                   + "/amq.direct/"
+                                                   + testQueueName
+                                                   + "/"
+                                                   + testQueueName, "PUT", Collections.<String, Object>emptyMap()));
     }
 
     private String createMessageText()

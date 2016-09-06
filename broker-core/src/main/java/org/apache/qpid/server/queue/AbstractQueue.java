@@ -19,6 +19,7 @@
 package org.apache.qpid.server.queue;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -104,6 +105,7 @@ import org.apache.qpid.server.util.MapValueConverter;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
+import org.apache.qpid.streams.CompositeInputStream;
 import org.apache.qpid.transport.TransportException;
 
 public abstract class AbstractQueue<X extends AbstractQueue<X>>
@@ -2682,7 +2684,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    class MessageContent implements Content, CustomRestHeaders
+    class MessageContent implements Content, CustomRestHeaders, StreamingContent
     {
         private static final int UNLIMITED = -1;
         private final MessageReference<?> _messageReference;
@@ -2756,6 +2758,36 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 throw new RuntimeException("JVM does not support UTF8", e);
             }
+        }
+
+        @Override
+        public InputStream getInputStream()
+        {
+            ServerMessage message = _messageReference.getMessage();
+            final Collection<QpidByteBuffer> content = message.getContent(0, (int) _limit);
+            Collection<InputStream> streams = new ArrayList<>(content.size());
+            for (QpidByteBuffer b : content)
+            {
+                streams.add(b.asInputStream());
+            }
+            return new CompositeInputStream(streams)
+            {
+                @Override
+                public void close() throws IOException
+                {
+                    try
+                    {
+                        super.close();
+                    }
+                    finally
+                    {
+                        for (QpidByteBuffer b : content)
+                        {
+                            b.dispose();
+                        }
+                    }
+                }
+            };
         }
     }
 

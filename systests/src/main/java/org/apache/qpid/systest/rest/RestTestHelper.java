@@ -93,6 +93,7 @@ public class RestTestHelper
     private String _keystorePassword;
 
     private String _clientAuthAlias;
+    private String _acceptEncoding;
 
     public RestTestHelper(int httpPort)
     {
@@ -230,6 +231,11 @@ public class RestTestHelper
         {
             String encoded = DatatypeConverter.printBase64Binary((_username + ":" + _password).getBytes());
             httpCon.setRequestProperty("Authorization", "Basic " + encoded);
+        }
+
+        if (_acceptEncoding != null && !"".equals(_acceptEncoding))
+        {
+            httpCon.setRequestProperty("Accept-Encoding", _acceptEncoding);
         }
 
         httpCon.setDoOutput(true);
@@ -671,5 +677,15 @@ public class RestTestHelper
             nodeAttributes = Collections.emptyList();
         }
         return nodeAttributes;
+    }
+
+    public String getAcceptEncoding()
+    {
+        return _acceptEncoding;
+    }
+
+    public void setAcceptEncoding(String acceptEncoding)
+    {
+        _acceptEncoding = acceptEncoding;
     }
 }
