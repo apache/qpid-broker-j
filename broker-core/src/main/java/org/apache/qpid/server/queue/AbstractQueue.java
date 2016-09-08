@@ -83,11 +83,14 @@ import org.apache.qpid.server.message.MessageInfoImpl;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.model.preferences.GenericPrincipal;
+import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.MessageFilterFactory;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.store.MessageDurability;
@@ -3562,18 +3565,46 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public Content getMessageContent(final long messageId, final long limit)
+    public Content getMessageContent(final long messageId, final long limit, boolean returnJson)
     {
         final MessageContentFinder messageFinder = new MessageContentFinder(messageId);
         visit(messageFinder);
         if(messageFinder.isFound())
         {
-            return new MessageContent(messageFinder.getMessageReference(), limit);
+            return createMessageContent((MessageReference) messageFinder.getMessageReference(), limit);
         }
         else
         {
             return null;
         }
+    }
+
+    private Content createMessageContent(final MessageReference messageReference, final long limit)
+    {
+        String mimeType = messageReference.getMessage().getMessageHeader().getMimeType();
+        if (("amqp/list".equalsIgnoreCase(mimeType)
+             || "amqp/map".equalsIgnoreCase(mimeType)
+             || "jms/map-message".equalsIgnoreCase(mimeType)))
+        {
+            ServerMessage message = messageReference.getMessage();
+            if (message instanceof InternalMessage)
+            {
+                return new JsonMessageContent(getName(), messageReference, (InternalMessage) message, limit);
+            }
+            else
+            {
+                MessageConverter messageConverter =
+                        MessageConverterRegistry.getConverter(message.getClass(), InternalMessage.class);
+                if (messageConverter != null)
+                {
+                    return new JsonMessageContent(getName(),
+                                                  messageReference,
+                                                  (InternalMessage) messageConverter.convert(message, getVirtualHost()),
+                                                  limit);
+                }
+            }
+        }
+        return new MessageContent(messageReference, limit);
     }
 
     @Override

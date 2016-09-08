@@ -26,17 +26,22 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
+import javax.jms.MapMessage;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.naming.NamingException;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Maps;
 
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.client.AMQSession;
@@ -244,6 +249,85 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         return decompressInputStream(connection);
     }
 
+    public void testGetContentViaRestForCompressedMapMessageWithAgentNotSupportingCompression() throws Exception
+    {
+        setTestSystemProperty(Broker.BROKER_MESSAGE_COMPRESSION_ENABLED, String.valueOf(true));
+
+        doActualSetUp();
+
+        Connection senderConnection = getConnection(true);
+        String virtualPath = getConnectionFactory().getVirtualPath();
+        String testQueueName = getTestQueueName();
+        createAndBindQueue(virtualPath, testQueueName);
+
+        Map<String, Object> mapToSend = createMapToSend();
+        publishMapMessage(senderConnection, mapToSend);
+
+        String queueRelativePath = "queue" + virtualPath + virtualPath + "/" + testQueueName;
+
+        List<Map<String, Object>> messages = _restTestHelper.getJsonAsList(queueRelativePath + "/getMessageInfo");
+        assertEquals("Unexpected number of messages", 1, messages.size());
+        long id = ((Number) messages.get(0).get("id")).longValue();
+
+        Map<String, Object> content =
+                _restTestHelper.getJsonAsMap(queueRelativePath + "/getMessageContent?returnJson=true&messageId=" + id);
+        assertEquals("Unexpected message content: difference " + Maps.difference(mapToSend, content),
+                     new HashMap<>(mapToSend),
+                     new HashMap<>(content));
+    }
+
+    public void testGetContentViaRestForCompressedMapMessageWithAgentSupportingCompression() throws Exception
+    {
+        setTestSystemProperty(Broker.BROKER_MESSAGE_COMPRESSION_ENABLED, String.valueOf(true));
+
+        doActualSetUp();
+
+        Connection senderConnection = getConnection(true);
+        String virtualPath = getConnectionFactory().getVirtualPath();
+        String testQueueName = getTestQueueName();
+        createAndBindQueue(virtualPath, testQueueName);
+
+        Map<String, Object> mapToSend = createMapToSend();
+        publishMapMessage(senderConnection, mapToSend);
+
+        String queueRelativePath = "queue" + virtualPath + virtualPath + "/" + testQueueName;
+
+        List<Map<String, Object>> messages = _restTestHelper.getJsonAsList(queueRelativePath + "/getMessageInfo");
+        assertEquals("Unexpected number of messages", 1, messages.size());
+        long id = ((Number) messages.get(0).get("id")).longValue();
+
+        _restTestHelper.setAcceptEncoding("gzip, deflate, br");
+        HttpURLConnection connection =
+                _restTestHelper.openManagementConnection(queueRelativePath
+                                                         + "/getMessageContent?returnJson=true&messageId="
+                                                         + id,
+                                                         "GET");
+        connection.connect();
+
+        String content = decompressInputStream(connection);
+        Map<String, Object> mapContent = new ObjectMapper().readValue(content, Map.class);
+        assertEquals("Unexpected message content: difference " + Maps.difference(mapToSend, mapContent),
+                     new HashMap<>(mapToSend),
+                     new HashMap<>(mapContent));
+    }
+
+    private Map<String, Object> createMapToSend()
+    {
+        Map<String, Object> mapToSend = new HashMap<>();
+
+        String message = "This is a sample message";
+        int i = 0, l = message.length();
+        do
+        {
+            mapToSend.put("text" + i, message);
+            i++;
+        }
+        while (i * l < 2048 * 1024);
+
+        mapToSend.put("int", 1);
+        return mapToSend;
+    }
+
     private String decompressInputStream(final HttpURLConnection connection) throws IOException
     {
         String content;
@@ -261,12 +345,41 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         return content;
     }
 
+    private void publishMapMessage(final Connection senderConnection, final Map<String, Object> mapData)
+            throws JMSException, org.apache.qpid.QpidException
+    {
+        Session session = senderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+        MessageProducer producer = session.createProducer(getTestQueue());
+        MapMessage sentMessage = session.createMapMessage();
+        sentMessage.setStringProperty("bar", "foo");
+        for(Map.Entry<String,Object> entry: mapData.entrySet())
+        {
+            String key =  entry.getKey();
+            Object value =  entry.getValue();
+            if (value instanceof String)
+            {
+                sentMessage.setString(key, (String) value);
+            }
+            else if (value instanceof Integer)
+            {
+                sentMessage.setInt(key, (Integer) value);
+            }
+            else
+            {
+                throw new RuntimeException("Setting value of type " + value.getClass() + " is not implemented yet");
+            }
+        }
+
+        producer.send(sentMessage);
+        ((AMQSession) session).sync();
+    }
+
     private void publishMessage(final Connection senderConnection, final String messageText)
             throws JMSException, org.apache.qpid.QpidException
     {
         Session session = senderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-        // send a large message
         MessageProducer producer = session.createProducer(getTestQueue());
         TextMessage sentMessage = session.createTextMessage(messageText);
         sentMessage.setStringProperty("bar", "foo");

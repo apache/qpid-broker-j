@@ -20,7 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
+import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -41,6 +43,7 @@ import org.apache.qpid.transport.codec.BBDecoder;
 import org.apache.qpid.typedmessage.TypedBytesContentReader;
 import org.apache.qpid.typedmessage.TypedBytesFormatException;
 import org.apache.qpid.url.AMQBindingURL;
+import org.apache.qpid.util.GZIPUtils;
 
 @PluggableService
 public class MessageConverter_v0_8_to_Internal implements MessageConverter<AMQMessage, InternalMessage>
@@ -71,10 +74,19 @@ public class MessageConverter_v0_8_to_Internal implements MessageConverter<AMQMe
             total += len;
         }
 
+        String encoding = serverMessage.getMessageHeader().getEncoding();
+        byte[] uncompressed;
+        if (GZIPUtils.GZIP_CONTENT_ENCODING.equals(encoding)
+            && (uncompressed = GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(data))) != null)
+        {
+            data = uncompressed;
+            encoding =  null;
+        }
+
         Object body = convertMessageBody(mimeType, data);
 
         return InternalMessage.convert(serverMessage.getMessageNumber(), serverMessage.isPersistent(),
-                new DelegatingMessageHeader(serverMessage.getMessageHeader()), body);
+                new DelegatingMessageHeader(serverMessage.getMessageHeader(), encoding), body);
     }
 
     private static class ReplyToComponents
@@ -132,10 +144,12 @@ public class MessageConverter_v0_8_to_Internal implements MessageConverter<AMQMe
     private static class DelegatingMessageHeader implements AMQMessageHeader
     {
         private final AMQMessageHeader _delegate;
+        private final String _encoding;
 
-        private DelegatingMessageHeader(final AMQMessageHeader delegate)
+        private DelegatingMessageHeader(final AMQMessageHeader delegate, String encoding)
         {
             _delegate = delegate;
+            _encoding = encoding;
         }
 
         @Override
@@ -177,7 +191,7 @@ public class MessageConverter_v0_8_to_Internal implements MessageConverter<AMQMe
         @Override
         public String getEncoding()
         {
-            return _delegate.getEncoding();
+            return _encoding;
         }
 
         @Override

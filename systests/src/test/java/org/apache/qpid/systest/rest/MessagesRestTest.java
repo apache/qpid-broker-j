@@ -33,11 +33,13 @@ import java.util.concurrent.TimeUnit;
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
+import javax.jms.MapMessage;
 import javax.jms.Message;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.qpid.jms.ListMessage;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -123,32 +125,58 @@ public class MessagesRestTest extends QpidRestTestCase
         _session.commit();
 
         // get message IDs
-        List<Long> ids = getMesssageIds(queueName);
+        Long lastMessageId = getLastMessageIdAndVerifyMimeType(queueName, "text/plain");
 
-        List<Map<String, Object>> messages = getRestTestHelper().getJsonAsList("queue/test/test/" + queueName + "/getMessageInfo?first=0&last=0");
-        assertEquals("Unexpected message number returned", 1, messages.size());
-        Map<String, Object> message = messages.get(0);
-        assertMessageAttributes(message);
-        assertMessageAttributeValues(message, true);
-
-        int lastMessageId = ids.size() - 1;
-        messages = getRestTestHelper().getJsonAsList("queue/test/test/" + queueName + "/getMessageInfo?first=" + lastMessageId + "&last=" + lastMessageId);
-        assertEquals("Unexpected message number returned", 1, messages.size());
-        message = messages.get(0);
-        assertMessageAttributes(message);
-        assertEquals("Unexpected message attribute mimeType", "text/plain", message.get("mimeType"));
-        assertEquals("Unexpected message attribute size", STRING_VALUE.getBytes(StandardCharsets.UTF_8).length, message.get("size"));
-
-        message = getRestTestHelper().getJsonAsMap("queue/test/test/" + queueName + "/getMessageInfoById?messageId=" + ids.get(lastMessageId));
+        Map<String, Object> message = getRestTestHelper().getJsonAsMap("queue/test/test/" + queueName + "/getMessageInfoById?messageId=" + lastMessageId);
         @SuppressWarnings("unchecked")
         Map<String, Object> messageHeader = (Map<String, Object>) message.get("headers");
         assertNotNull("Message headers are not found", messageHeader);
         assertEquals("Unexpected message header value", STRING_VALUE, messageHeader.get(STRING_PROP));
 
         // get content
-        byte[] data = getRestTestHelper().getBytes("queue/test/test/" + queueName + "/getMessageContent?messageId=" + ids.get(lastMessageId));
+        byte[] data = getRestTestHelper().getBytes("queue/test/test/" + queueName + "/getMessageContent?messageId=" + lastMessageId);
         assertTrue("Unexpected message for id " + lastMessageId + ":" + data.length, Arrays.equals(STRING_VALUE.getBytes(StandardCharsets.UTF_8), data));
 
+    }
+
+    public void testGetMapMessageContentAsJson() throws Exception
+    {
+        String queueName = getTestQueueName();
+        MapMessage mapMessage = _session.createMapMessage();
+        mapMessage.setString("testStringProperty", "My String");
+        mapMessage.setInt("testIntProperty", 999999);
+        _producer.send(mapMessage);
+        _session.commit();
+
+        Long lastMessageId = getLastMessageIdAndVerifyMimeType(queueName, "amqp/map");
+
+        Map<String, Object> jsonMessageData = getRestTestHelper().getJsonAsMap("queue/test/test/"
+                                                                               + queueName
+                                                                               + "/getMessageContent?returnJson=true&messageId="
+                                                                               + lastMessageId);
+        assertEquals("Unexpected map content size", 2, jsonMessageData.size());
+        assertEquals("Unexpected testStringProperty", "My String", jsonMessageData.get("testStringProperty"));
+        assertEquals("Unexpected testIntProperty", 999999, jsonMessageData.get("testIntProperty"));
+    }
+
+    public void testGetListMessageContentAsJson() throws Exception
+    {
+        String queueName = getTestQueueName();
+        ListMessage listMessage = ((org.apache.qpid.jms.Session) _session).createListMessage();
+        listMessage.add(999999);
+        listMessage.add("My String");
+        _producer.send(listMessage);
+        _session.commit();
+
+        Long lastMessageId = getLastMessageIdAndVerifyMimeType(queueName, "amqp/list");
+
+        List<Object> jsonMessageData = getRestTestHelper().getJsonAsSimpleList("queue/test/test/"
+                                                                               + queueName
+                                                                               + "/getMessageContent?returnJson=true&messageId="
+                                                                               + lastMessageId);
+        assertEquals("Unexpected map content size", 2, jsonMessageData.size());
+        assertEquals("Unexpected value at index 1", "My String", jsonMessageData.get(1));
+        assertEquals("Unexpected value at index 0", 999999, jsonMessageData.get(0));
     }
 
     public void testPostMoveMessages() throws Exception
@@ -508,5 +536,24 @@ public class MessagesRestTest extends QpidRestTestCase
         assertNotNull("Unexpected message attribute userId", message.get("userId"));
         assertNotNull("Message priority cannot be null", message.get("priority"));
         assertNotNull("Message persistent cannot be null", message.get("persistent"));
+    }
+
+
+    private Long getLastMessageIdAndVerifyMimeType(final String queueName, final String mimeType) throws IOException
+    {
+        List<Long> ids = getMesssageIds(queueName);
+        int lastMessageIndex = ids.size() - 1;
+        List<Map<String, Object>> messages = getRestTestHelper().getJsonAsList("queue/test/test/"
+                                                                               + queueName
+                                                                               + "/getMessageInfo?first="
+                                                                               + lastMessageIndex
+                                                                               + "&last="
+                                                                               + lastMessageIndex);
+        assertEquals("Unexpected message number returned", 1, messages.size());
+        Map<String, Object> message = messages.get(0);
+        assertEquals("Unexpected message attribute mimeType", mimeType, message.get("mimeType"));
+        assertMessageAttributes(message);
+
+        return ids.get(lastMessageIndex);
     }
 }

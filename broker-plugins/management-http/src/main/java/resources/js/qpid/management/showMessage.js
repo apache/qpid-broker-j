@@ -24,13 +24,19 @@ define(["dojo/dom",
         "dojo/_base/lang",
         "dojo/_base/array",
         "dojo/_base/event",
-        'dojo/_base/json',
+        'dojo/json',
         "dojo/query",
         "dojo/_base/connect",
         "qpid/common/properties",
         "dojox/html/entities",
         "qpid/common/util",
         "dojo/text!showMessage.html",
+        'dojo/_base/declare',
+        'dstore/Memory',
+        'dstore/Trackable',
+        "dgrid/OnDemandGrid",
+        "dgrid/extensions/DijitRegistry",
+        "dijit/form/SimpleTextarea",
         "dojo/domReady!"],
     function (dom,
               construct,
@@ -47,7 +53,12 @@ define(["dojo/dom",
               properties,
               entities,
               util,
-              template)
+              template,
+              declare,
+              Memory,
+              Trackable,
+              OnDemandGrid,
+              DijitRegistry)
     {
 
         function encode(val)
@@ -161,7 +172,7 @@ define(["dojo/dom",
                     parent: modelObj,
                     type: modelObj.type
                 };
-                var parameters = {messageId: data.id};
+                var parameters = {messageId: data.id, returnJson: true};
                 var url = management.buildObjectURL(contentModelObj, parameters);
 
                 var href = query('a#message-download', this.dialogNode)[0];
@@ -171,7 +182,10 @@ define(["dojo/dom",
                     management.download(contentModelObj, parameters);
                 });
 
-                if (data.mimeType && data.mimeType.match(/text\/.*/))
+                if (data.mimeType && (data.mimeType.match(/text\/.*/)
+                                      || data.mimeType === "amqp/list"
+                                      || data.mimeType === "amqp/map"
+                                      || data.mimeType === "jms/map-message"))
                 {
                     var limit = 1024;
                     preview.style.display = "block";
@@ -187,7 +201,65 @@ define(["dojo/dom",
                         })
                         .then(function (content)
                         {
-                            previewContent.innerHTML = encode(content);
+                            if (showMessage.previewWidget)
+                            {
+                                showMessage.previewWidget.destroyRecursive();
+                            }
+                            var widgetDiv = construct.create("div", null, previewContent, "last");
+                            var contentWidget = null;
+                            if (data.mimeType === "amqp/list"
+                                || data.mimeType === "amqp/map"
+                                || data.mimeType === "jms/map-message")
+                            {
+                                var contentData = json.parse(content);
+                                var columns, items = [];
+                                if (data.mimeType === "amqp/list")
+                                {
+                                    columns = {
+                                        value: {
+                                            label: 'Item'
+                                        }
+                                    };
+                                    for (var i = 0; i < contentData.length; i++)
+                                    {
+                                        items.push({id: i, value: json.stringify(contentData[i])});
+                                    }
+                                }
+                                else
+                                {
+                                    columns = {
+                                        id: {
+                                            label: 'Key'
+                                        },
+                                        value: {
+                                            label: 'Value'
+                                        }
+                                    };
+
+                                    for (var i in contentData)
+                                    {
+                                        items.push({id: i, value: json.stringify(contentData[i])});
+                                    }
+                                }
+                                var store = new (declare([Memory, Trackable]))({
+                                    data: items
+                                });
+                                 contentWidget = new (declare([OnDemandGrid,DijitRegistry]))({
+                                    collection: store,
+                                    columns: columns
+                                }, widgetDiv);
+
+                            }
+                            else
+                            {
+                                contentWidget = new dijit.form.SimpleTextarea({
+                                    value: content,
+                                    rows: 4,
+                                    readOnly: true
+                                }, widgetDiv);
+                            }
+                            showMessage.previewWidget = contentWidget;
+                            contentWidget.startup();
                             registry.byId("showMessage") .show();
                         });
                 }

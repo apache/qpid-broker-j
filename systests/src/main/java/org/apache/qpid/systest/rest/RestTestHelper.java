@@ -371,6 +371,18 @@ public class RestTestHelper
         return response;
     }
 
+    public List<Object> getJsonAsSimpleList(String path) throws IOException
+    {
+        HttpURLConnection connection = openManagementConnection(path, "GET");
+        connection.connect();
+        byte[] data = readConnectionInputStream(connection);
+        ObjectMapper mapper = new ObjectMapper();
+        List<Object> providedObject = mapper.readValue(new ByteArrayInputStream(data), new TypeReference<List<Object>>()
+        {
+        });
+        return providedObject;
+    }
+
     public Map<String, Object> getJsonAsMap(String path) throws IOException
     {
         HttpURLConnection connection = openManagementConnection(path, "GET");

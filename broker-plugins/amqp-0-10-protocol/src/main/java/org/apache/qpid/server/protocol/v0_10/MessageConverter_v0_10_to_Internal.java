@@ -41,6 +41,7 @@ import org.apache.qpid.transport.ReplyTo;
 import org.apache.qpid.transport.codec.BBDecoder;
 import org.apache.qpid.typedmessage.TypedBytesContentReader;
 import org.apache.qpid.typedmessage.TypedBytesFormatException;
+import org.apache.qpid.util.GZIPUtils;
 
 @PluggableService
 public class MessageConverter_v0_10_to_Internal implements MessageConverter<MessageTransferMessage, InternalMessage>
@@ -71,9 +72,18 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
             total += len;
         }
 
+        String encoding = serverMessage.getMessageHeader().getEncoding();
+        byte[] uncompressed;
+        if (GZIPUtils.GZIP_CONTENT_ENCODING.equals(encoding)
+            && (uncompressed = GZIPUtils.uncompressBufferToArray(ByteBuffer.wrap(data))) != null)
+        {
+            data = uncompressed;
+            encoding =  null;
+        }
+
         Object body = convertMessageBody(mimeType, data);
         MessageProperties messageProps = serverMessage.getHeader().getMessageProperties();
-        AMQMessageHeader fixedHeader = new DelegatingMessageHeader(serverMessage.getMessageHeader(), messageProps == null ? null : messageProps.getReplyTo());
+        AMQMessageHeader fixedHeader = new DelegatingMessageHeader(serverMessage.getMessageHeader(), messageProps == null ? null : messageProps.getReplyTo(), encoding);
         return InternalMessage.convert(serverMessage.getMessageNumber(), serverMessage.isPersistent(), fixedHeader, body);
     }
 
@@ -81,12 +91,14 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
     {
         private final AMQMessageHeader _delegate;
         private final ReplyTo _replyTo;
+        private final String _encoding;
 
 
-        private DelegatingMessageHeader(final AMQMessageHeader delegate, final ReplyTo replyTo)
+        private DelegatingMessageHeader(final AMQMessageHeader delegate, final ReplyTo replyTo, final String encoding)
         {
             _delegate = delegate;
             _replyTo = replyTo;
+            _encoding = encoding;
         }
 
         @Override
@@ -128,7 +140,7 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
         @Override
         public String getEncoding()
         {
-            return _delegate.getEncoding();
+            return _encoding;
         }
 
         @Override
