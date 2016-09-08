@@ -817,7 +817,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         _currentPrefetch.set(0);
     }
 
-    void setPrefetchLimits(final int messagePrefetch, final long sizePrefetch)
+    public void setPrefetchLimits(final int messagePrefetch, final long sizePrefetch)
             throws QpidException, FailoverException
     {
         _currentPrefetch.set(0);
