@@ -227,7 +227,7 @@ define(["dojo/dom",
             loadMessage(management, modelObj, message.id, this.includeHeaders,
                 function (e)
                 {
-                    if (e.response && e.response.status == 403)
+                    if (showMessage.includeHeaders && e.response && e.response.status == 403)
                     {
                         showMessage.includeHeaders = false;
                         loadMessage(management, modelObj, message.id, false);
