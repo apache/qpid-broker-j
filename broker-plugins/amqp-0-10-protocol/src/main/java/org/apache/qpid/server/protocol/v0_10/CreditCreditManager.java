@@ -75,7 +75,7 @@ public class CreditCreditManager extends AbstractFlowCreditManager implements Fl
 
     }
 
-    public void clearCredit()
+    public synchronized void clearCredit()
     {
         _bytesCredit = 0l;
         _messageCredit = 0l;
@@ -144,19 +144,5 @@ public class CreditCreditManager extends AbstractFlowCreditManager implements Fl
         }
 
     }
-
-    public synchronized void stop()
-    {
-        if(_bytesCredit > 0)
-        {
-            _bytesCredit = 0;
-        }
-        if(_messageCredit > 0)
-        {
-            _messageCredit = 0;
-        }
-
-    }
-
 
 }

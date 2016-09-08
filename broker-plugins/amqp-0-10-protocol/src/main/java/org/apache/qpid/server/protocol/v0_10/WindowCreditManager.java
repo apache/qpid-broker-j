@@ -49,19 +49,19 @@ public class WindowCreditManager extends AbstractFlowCreditManager implements Fl
 
     }
 
-    public long getMessageCreditLimit()
+    public synchronized long getMessageCreditLimit()
     {
         return _messageCreditLimit;
     }
 
-    public long getMessageCredit()
+    synchronized long getMessageCredit()
     {
          return _messageCreditLimit == -1L
                     ? Long.MAX_VALUE
                     : _messageUsed < _messageCreditLimit ? _messageCreditLimit - _messageUsed : 0L;
     }
 
-    public long getBytesCredit()
+    synchronized long getBytesCredit()
     {
         return _bytesCreditLimit == -1L
                     ? Long.MAX_VALUE
@@ -87,7 +87,7 @@ public class WindowCreditManager extends AbstractFlowCreditManager implements Fl
         _bytesUsed -= bytesCredit;
         if(_bytesUsed < 0L)
         {
-            LOGGER.error("Bytes credit used value was negative: "+ _messageUsed);
+            LOGGER.error("Bytes credit used value was negative: "+ _bytesUsed);
             _bytesUsed = 0;
         }
 
@@ -192,7 +192,7 @@ public class WindowCreditManager extends AbstractFlowCreditManager implements Fl
         }
     }
 
-    public void clearCredit()
+    public synchronized void clearCredit()
     {
         _bytesCreditLimit = 0l;
         _messageCreditLimit = 0l;

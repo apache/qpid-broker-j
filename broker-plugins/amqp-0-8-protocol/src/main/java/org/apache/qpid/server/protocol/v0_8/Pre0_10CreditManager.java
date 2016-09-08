@@ -21,9 +21,9 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 
-import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.flow.AbstractFlowCreditManager;
 import org.apache.qpid.server.flow.FlowCreditManager;
+import org.apache.qpid.server.transport.ProtocolEngine;
 
 public class Pre0_10CreditManager extends AbstractFlowCreditManager implements FlowCreditManager
 {
@@ -47,82 +47,62 @@ public class Pre0_10CreditManager extends AbstractFlowCreditManager implements F
     }
 
 
-
     public synchronized void setCreditLimits(final long bytesCreditLimit, final long messageCreditLimit)
     {
         long bytesCreditChange = bytesCreditLimit - _bytesCreditLimit;
         long messageCreditChange = messageCreditLimit - _messageCreditLimit;
 
-
-
-        if(bytesCreditChange != 0L)
+        if (bytesCreditChange != 0L)
         {
-            if(bytesCreditLimit == 0L)
-            {
-                _bytesCredit = 0;
-            }
-            else
-            {
-                _bytesCredit += bytesCreditChange;
-            }
+            _bytesCredit += bytesCreditChange;
         }
 
-
-        if(messageCreditChange != 0L)
+        if (messageCreditChange != 0L)
         {
-            if(messageCreditLimit == 0L)
-            {
-                _messageCredit = 0;
-            }
-            else
-            {
-                _messageCredit += messageCreditChange;
-            }
+            _messageCredit += messageCreditChange;
         }
-
 
         _bytesCreditLimit = bytesCreditLimit;
         _messageCreditLimit = messageCreditLimit;
 
         setSuspended(!hasCredit());
-
     }
-
 
     public synchronized void restoreCredit(final long messageCredit, final long bytesCredit)
     {
-        final long messageCreditLimit = _messageCreditLimit;
-        boolean notifyIncrease = true;
-        if(messageCreditLimit != 0L)
+        final boolean hadCredit = hasCredit();
+
+        _messageCredit += messageCredit;
+        if (_messageCredit > _messageCreditLimit)
         {
-            notifyIncrease = (_messageCredit != 0);
-            long newCredit = _messageCredit + messageCredit;
-            _messageCredit = newCredit > messageCreditLimit ? messageCreditLimit : newCredit;
+            throw new IllegalStateException(String.format(
+                    "Consumer credit accounting error. Restored more credit than we ever had: messageCredit=%d  messageCreditLimit=%d",
+                    _messageCredit,
+                    _messageCreditLimit));
         }
 
-
-        final long bytesCreditLimit = _bytesCreditLimit;
-        if(bytesCreditLimit != 0L)
+        _bytesCredit += bytesCredit;
+        if (_bytesCredit > _bytesCreditLimit)
         {
-            long newCredit = _bytesCredit + bytesCredit;
-            _bytesCredit = newCredit > bytesCreditLimit ? bytesCreditLimit : newCredit;
-            if(notifyIncrease && bytesCredit>0)
-            {
-                notifyIncreaseBytesCredit();
-            }
+            throw new IllegalStateException(String.format(
+                    "Consumer credit accounting error. Restored more credit than we ever had: bytesCredit=%d  bytesCreditLimit=%d",
+                    _bytesCredit,
+                    _bytesCreditLimit));
         }
 
-
+        if (_bytesCreditLimit != 0 && _bytesCredit > 0 && bytesCredit > 0 && hadCredit)
+        {
+            notifyIncreaseBytesCredit();
+        }
 
         setSuspended(!hasCredit());
-
     }
 
     public synchronized boolean hasCredit()
     {
         return (_bytesCreditLimit == 0L || _bytesCredit > 0)
-                && (_messageCreditLimit == 0L || _messageCredit > 0)
-                && !_protocolEngine.isTransportBlockedForWriting();
+               && (_messageCreditLimit == 0L || _messageCredit > 0)
+               && !_protocolEngine.isTransportBlockedForWriting();
     }
 
     public synchronized boolean useCreditForMessage(final long msgSize)
@@ -132,59 +112,26 @@ public class Pre0_10CreditManager extends AbstractFlowCreditManager implements F
             setSuspended(true);
             return false;
         }
-        else if(_messageCreditLimit != 0L)
+
+        if (_messageCreditLimit != 0)
         {
-            if(_messageCredit != 0L)
-            {
-                if(_bytesCreditLimit == 0L)
-                {
-                    _messageCredit--;
-
-                    return true;
-                }
-                else
-                {
-                    if((_bytesCredit >= msgSize) || (_bytesCredit == _bytesCreditLimit))
-                    {
-                        _messageCredit--;
-                        _bytesCredit -= msgSize;
-
-                        return true;
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-            }
-            else
+            if (_messageCredit <= 0)
             {
                 setSuspended(true);
                 return false;
             }
         }
-        else
+        if (_bytesCreditLimit != 0)
         {
-            if(_bytesCreditLimit == 0L)
+            if ((_bytesCredit < msgSize) && (_bytesCredit != _bytesCreditLimit))
             {
-
-                return true;
+                setSuspended(!hasCredit());
+                return false;
             }
-            else
-            {
-                if((_bytesCredit >= msgSize) || (_bytesCredit == _bytesCreditLimit))
-                {
-                    _bytesCredit -= msgSize;
-
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
         }
 
+        _messageCredit--;
+        _bytesCredit -= msgSize;
+        return true;
     }
 }
