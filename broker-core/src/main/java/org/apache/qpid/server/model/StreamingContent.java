@@ -25,4 +25,6 @@ import java.io.InputStream;
 public interface StreamingContent
 {
     InputStream getInputStream();
+
+    long getLimit();
 }

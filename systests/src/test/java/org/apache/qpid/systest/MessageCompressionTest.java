@@ -203,6 +203,10 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         byte[] messageBytes = _restTestHelper.getBytes(queueRelativePath + "/getMessageContent?messageId=" + id);
         String content = new String(messageBytes, StandardCharsets.UTF_8);
         assertEquals("Unexpected message content :" + content, messageText, content);
+
+        messageBytes = _restTestHelper.getBytes(queueRelativePath + "/getMessageContent?limit=1024&messageId=" + id);
+        content = new String(messageBytes, StandardCharsets.UTF_8);
+        assertEquals("Unexpected message content :" + content, messageText.substring(0, 1024), content);
     }
 
     public void testGetContentViaRestForCompressedMessageWithAgentSupportingCompression() throws Exception
@@ -226,11 +230,22 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         long id = ((Number) messages.get(0).get("id")).longValue();
 
         _restTestHelper.setAcceptEncoding("gzip, deflate, br");
-        HttpURLConnection connection =
-                _restTestHelper.openManagementConnection(queueRelativePath + "/getMessageContent?messageId=" + id,
-                                                         "GET");
-        connection.connect();
+        String content = getDecompressedContent(queueRelativePath + "/getMessageContent?messageId=" + id);
+        assertEquals("Unexpected message content :" + content, messageText, content);
 
+        content = getDecompressedContent(queueRelativePath + "/getMessageContent?limit=1024&messageId=" + id);
+        assertEquals("Unexpected message content :" + content, messageText.substring(0, 1024), content);
+    }
+
+    private String getDecompressedContent(final String url) throws IOException
+    {
+        HttpURLConnection connection = _restTestHelper.openManagementConnection(url, "GET");
+        connection.connect();
+        return decompressInputStream(connection);
+    }
+
+    private String decompressInputStream(final HttpURLConnection connection) throws IOException
+    {
         String content;
         try (InputStream is = new GZIPInputStream(connection.getInputStream());
              ByteArrayOutputStream baos = new ByteArrayOutputStream())
@@ -243,7 +258,7 @@ public class MessageCompressionTest extends QpidBrokerTestCase
             }
             content = new String(baos.toByteArray(), StandardCharsets.UTF_8);
         }
-        assertEquals("Unexpected message content :" + content, messageText, content);
+        return content;
     }
 
     private void publishMessage(final Connection senderConnection, final String messageText)

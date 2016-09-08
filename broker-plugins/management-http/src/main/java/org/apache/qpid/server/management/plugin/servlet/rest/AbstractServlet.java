@@ -331,13 +331,19 @@ public abstract class AbstractServlet extends HttpServlet
         Map<String, Object> headers = getResponseHeaders(content);
         boolean isGzipCompressed = GZIP_CONTENT_ENCODING.equals(headers.get(CONTENT_ENCODING_HEADER.toUpperCase()));
         boolean isCompressing = HttpManagementUtil.isCompressing(request, _managementConfiguration);
-        try (OutputStream os = isGzipCompressed ? response.getOutputStream() : getOutputStream(request, response))
+
+        if (isGzipCompressed && content instanceof StreamingContent
+            && ((((StreamingContent) content).getLimit() >= 0 || !isCompressing)))
         {
-            if (isGzipCompressed && !isCompressing && content instanceof StreamingContent)
-            {
-                headers.remove(CONTENT_ENCODING_HEADER);
-                content = new DecompressingContent((StreamingContent) content);
-            }
+            headers.remove(CONTENT_ENCODING_HEADER);
+            content = new DecompressingContent((StreamingContent) content);
+            isGzipCompressed = false;
+        }
+
+        try (OutputStream os = isGzipCompressed && isCompressing
+                ? response.getOutputStream()
+                : getOutputStream(request, response))
+        {
             response.setStatus(HttpServletResponse.SC_OK);
             for (Map.Entry<String, Object> entry : headers.entrySet())
             {
@@ -428,9 +434,11 @@ public abstract class AbstractServlet extends HttpServlet
         @Override
         public void write(final OutputStream os) throws IOException
         {
-            try(GZIPInputStream gzipInputStream = new GZIPInputStream(_content.getInputStream());)
+            try (GZIPInputStream gzipInputStream = new GZIPInputStream(_content.getInputStream());)
             {
-                ByteStreams.copy(gzipInputStream, os);
+                ByteStreams.copy(_content.getLimit() >= 0
+                                         ? ByteStreams.limit(gzipInputStream, _content.getLimit())
+                                         : gzipInputStream, os);
             }
         }
 

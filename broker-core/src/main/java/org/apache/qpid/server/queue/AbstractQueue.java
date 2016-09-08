@@ -2693,14 +2693,15 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         MessageContent(MessageReference<?> messageReference, long limit)
         {
             _messageReference = messageReference;
-            _limit = (limit == UNLIMITED ? messageReference.getMessage().getSize() : limit);
+            _limit = limit;
         }
 
         @Override
         public void write(OutputStream outputStream) throws IOException
         {
             ServerMessage message = _messageReference.getMessage();
-            Collection<QpidByteBuffer> content = message.getContent(0, (int) _limit);
+            int length = (int) (_limit == UNLIMITED ? message.getSize() : _limit);
+            Collection<QpidByteBuffer> content = message.getContent(0, length);
             try
             {
                 for (QpidByteBuffer b : content)
@@ -2764,7 +2765,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         public InputStream getInputStream()
         {
             ServerMessage message = _messageReference.getMessage();
-            final Collection<QpidByteBuffer> content = message.getContent(0, (int) _limit);
+            final Collection<QpidByteBuffer> content = message.getContent(0, (int) message.getSize());
             Collection<InputStream> streams = new ArrayList<>(content.size());
             for (QpidByteBuffer b : content)
             {
@@ -2788,6 +2789,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     }
                 }
             };
+        }
+
+        @Override
+        public long getLimit()
+        {
+            return _limit;
         }
     }
 
