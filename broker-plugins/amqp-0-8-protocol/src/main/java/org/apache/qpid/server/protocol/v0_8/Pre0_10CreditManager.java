@@ -134,7 +134,7 @@ public class Pre0_10CreditManager extends AbstractFlowCreditManager implements F
         }
         else if(_messageCreditLimit != 0L)
         {
-            if(_messageCredit != 0L)
+            if(_messageCredit > 0L)
             {
                 if(_bytesCreditLimit == 0L)
                 {
