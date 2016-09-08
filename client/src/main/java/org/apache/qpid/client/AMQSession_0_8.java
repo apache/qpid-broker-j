@@ -809,9 +809,10 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         TxRollbackBody body = getMethodRegistry().createTxRollbackBody();
         AMQFrame frame = body.generateFrame(getChannelId());
         getProtocolHandler().syncWrite(frame, TxRollbackOkBody.class);
+        _currentPrefetch.set(0);
     }
 
-    public void setPrefetchLimits(final int messagePrefetch, final long sizePrefetch)
+    void setPrefetchLimits(final int messagePrefetch, final long sizePrefetch)
             throws QpidException, FailoverException
     {
         _currentPrefetch.set(0);
