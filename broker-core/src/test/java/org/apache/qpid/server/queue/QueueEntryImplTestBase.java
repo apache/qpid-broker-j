@@ -18,8 +18,12 @@
  */
 package org.apache.qpid.server.queue;
 
+import static org.apache.qpid.server.message.MessageInstance.NON_CONSUMER_ACQUIRED_STATE;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
@@ -33,6 +37,8 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstance.EntryState;
+import org.apache.qpid.server.message.MessageInstance.StealableConsumerAcquiredState;
+import org.apache.qpid.server.message.MessageInstance.UnstealableConsumerAcquiredState;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.BrokerModel;
@@ -41,6 +47,7 @@ import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
@@ -135,12 +142,31 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
     {
         final QueueConsumer consumer = mock(QueueConsumer.class);
 
-        MessageInstance.ConsumerAcquiredState owningState = new QueueEntryImpl.ConsumerAcquiredState(consumer);
+        StealableConsumerAcquiredState
+                owningState = new StealableConsumerAcquiredState(consumer);
         when(consumer.getOwningState()).thenReturn(owningState);
         when(consumer.getConsumerNumber()).thenReturn(_consumerId++);
         return consumer;
     }
 
+    public void testStateChanges()
+    {
+        QueueConsumer consumer = newConsumer();
+        StateChangeListener<MessageInstance, EntryState> stateChangeListener = mock(StateChangeListener.class);
+        _queueEntry.addStateChangeListener(stateChangeListener);
+        _queueEntry.acquire(consumer);
+        verify(stateChangeListener).stateChanged(eq(_queueEntry),
+                                                 eq(MessageInstance.AVAILABLE_STATE),
+                                                 isA(UnstealableConsumerAcquiredState.class));
+        _queueEntry.makeAcquisitionStealable();
+        verify(stateChangeListener).stateChanged(eq(_queueEntry),
+                                                 isA(UnstealableConsumerAcquiredState.class),
+                                                 isA(StealableConsumerAcquiredState.class));
+        _queueEntry.removeAcquisitionFromConsumer(consumer);
+        verify(stateChangeListener).stateChanged(eq(_queueEntry),
+                                                 isA(StealableConsumerAcquiredState.class),
+                                                 eq(NON_CONSUMER_ACQUIRED_STATE));
+    }
 
     public void testLocking()
     {
@@ -152,7 +178,7 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
                    _queueEntry.isAcquired());
 
         assertFalse("Acquisition should initially be locked",_queueEntry.removeAcquisitionFromConsumer(consumer));
-        assertTrue("Should be able to unlock locked queue entry", _queueEntry.unlockAcquisition());
+        assertTrue("Should be able to unlock locked queue entry", _queueEntry.makeAcquisitionStealable());
         assertFalse("Acquisition should not be able to be removed from the wrong consumer",
                     _queueEntry.removeAcquisitionFromConsumer(consumer2));
         assertTrue("Acquisition should be able to be removed once unlocked",
@@ -169,8 +195,8 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
                    _queueEntry.isAcquired());
 
         assertFalse("Acquisition should initially be locked",_queueEntry.removeAcquisitionFromConsumer(consumer));
-        assertTrue("Should be able to unlock locked queue entry",_queueEntry.unlockAcquisition());
-        assertTrue("Should be able to lock queue entry",_queueEntry.lockAcquisition(consumer));
+        assertTrue("Should be able to unlock locked queue entry",_queueEntry.makeAcquisitionStealable());
+        assertTrue("Should be able to lock queue entry",_queueEntry.makeAcquisitionUnstealable(consumer));
         assertFalse("Acquisition should not be able to be hijacked when locked",_queueEntry.removeAcquisitionFromConsumer(consumer));
 
         _queueEntry.delete();
@@ -185,10 +211,10 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
         _queueEntry.acquire(consumer1);
         assertTrue("Queue entry should be acquired by consumer1", _queueEntry.acquiredByConsumer());
 
-        assertTrue("Consumer1 relocking should be allowed", _queueEntry.lockAcquisition(consumer1));
-        assertFalse("Consumer2 should not be allowed", _queueEntry.lockAcquisition(consumer2));
+        assertTrue("Consumer1 relocking should be allowed", _queueEntry.makeAcquisitionUnstealable(consumer1));
+        assertFalse("Consumer2 should not be allowed", _queueEntry.makeAcquisitionUnstealable(consumer2));
 
-        _queueEntry.unlockAcquisition();
+        _queueEntry.makeAcquisitionStealable();
 
         assertTrue("Queue entry should still be acquired by consumer1", _queueEntry.acquiredByConsumer());
 

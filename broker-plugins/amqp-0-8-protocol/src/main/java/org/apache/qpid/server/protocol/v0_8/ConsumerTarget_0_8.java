@@ -34,6 +34,7 @@ import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.flow.FlowCreditManager;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstance.EntryState;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -545,10 +546,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
     @Override
     public void acquisitionRemoved(final MessageInstance node)
     {
-        if (node.removeStateChangeListener(_unacknowledgedMessageListener))
-        {
-            removeUnacknowledgedMessage(node);
-        }
     }
 
     public long getUnacknowledgedBytes()
@@ -561,17 +558,22 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         return _unacknowledgedCount.longValue();
     }
 
-    private final StateChangeListener<MessageInstance, MessageInstance.State> _unacknowledgedMessageListener = new StateChangeListener<MessageInstance, MessageInstance.State>()
+    private final StateChangeListener<MessageInstance, EntryState> _unacknowledgedMessageListener = new StateChangeListener<MessageInstance, EntryState>()
     {
-
-        public void stateChanged(MessageInstance entry, MessageInstance.State oldState, MessageInstance.State newState)
+        @Override
+        public void stateChanged(MessageInstance entry, EntryState oldState, EntryState newState)
         {
-            if(oldState == MessageInstance.State.ACQUIRED && newState != MessageInstance.State.ACQUIRED)
+            if (isConsumerAcquiredStateForThis(oldState) && !isConsumerAcquiredStateForThis(newState))
             {
                 removeUnacknowledgedMessage(entry);
                 entry.removeStateChangeListener(this);
             }
+        }
 
+        private boolean isConsumerAcquiredStateForThis(EntryState state)
+        {
+            return state instanceof MessageInstance.ConsumerAcquiredState
+                   && ((MessageInstance.ConsumerAcquiredState) state).getConsumer().getTarget() == ConsumerTarget_0_8.this;
         }
     };
 }

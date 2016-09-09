@@ -38,6 +38,8 @@ import org.apache.qpid.server.flow.FlowCreditManager;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstance.ConsumerAcquiredState;
+import org.apache.qpid.server.message.MessageInstance.EntryState;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
@@ -88,16 +90,23 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     private long _deferredSizeCredit;
     private final List<ConsumerImpl> _consumers = new CopyOnWriteArrayList<>();
 
-    private final StateChangeListener<MessageInstance, MessageInstance.State> _unacknowledgedMessageListener = new StateChangeListener<MessageInstance, MessageInstance.State>()
+    private final StateChangeListener<MessageInstance, EntryState> _unacknowledgedMessageListener = new StateChangeListener<MessageInstance, EntryState>()
     {
 
-        public void stateChanged(MessageInstance entry, MessageInstance.State oldState, MessageInstance.State newState)
+        @Override
+        public void stateChanged(MessageInstance entry, EntryState oldState, EntryState newState)
         {
-            if(oldState == MessageInstance.State.ACQUIRED && newState != MessageInstance.State.ACQUIRED)
+            if (isConsumerAcquiredStateForThis(oldState) && !isConsumerAcquiredStateForThis(newState))
             {
                 removeUnacknowledgedMessage(entry);
                 entry.removeStateChangeListener(this);
             }
+        }
+
+        private boolean isConsumerAcquiredStateForThis(EntryState state)
+        {
+            return state instanceof ConsumerAcquiredState
+                   && ((ConsumerAcquiredState) state).getConsumer().getTarget() == ConsumerTarget_0_10.this;
         }
     };
 
@@ -389,10 +398,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     @Override
     public void acquisitionRemoved(final MessageInstance entry)
     {
-        if (entry.removeStateChangeListener(_unacknowledgedMessageListener))
-        {
-            removeUnacknowledgedMessage(entry);
-        }
     }
 
     private void deferredAddCredit(final int deferredMessageCredit, final long deferredSizeCredit)
@@ -439,7 +444,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     void reject(final ConsumerImpl consumer, final MessageInstance entry)
     {
         entry.setRedelivered();
-        if (entry.lockAcquisition(consumer))
+        if (entry.makeAcquisitionUnstealable(consumer))
         {
             entry.routeToAlternate(null, null);
         }
@@ -474,7 +479,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         final ServerMessage msg = entry.getMessage();
 
         int requeues = 0;
-        if (entry.lockAcquisition(consumer))
+        if (entry.makeAcquisitionUnstealable(consumer))
         {
             requeues = entry.routeToAlternate(new Action<MessageInstance>()
             {

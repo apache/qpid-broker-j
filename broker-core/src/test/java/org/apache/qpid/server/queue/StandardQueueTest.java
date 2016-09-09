@@ -354,13 +354,13 @@ public class StandardQueueTest extends AbstractQueueTestBase
         }
 
         @Override
-        public boolean lockAcquisition(final ConsumerImpl consumer)
+        public boolean makeAcquisitionUnstealable(final ConsumerImpl consumer)
         {
             return true;
         }
 
         @Override
-        public boolean unlockAcquisition()
+        public boolean makeAcquisitionStealable()
         {
             return true;
         }

@@ -226,7 +226,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
 
                 if (consumer.acquires())
                 {
-                    entry.unlockAcquisition();
+                    entry.makeAcquisitionStealable();
                 }
             }
             finally

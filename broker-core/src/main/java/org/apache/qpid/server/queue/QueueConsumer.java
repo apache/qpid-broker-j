@@ -46,7 +46,7 @@ public interface QueueConsumer<X extends QueueConsumer<X>> extends Consumer<X>
 
     boolean resend(QueueEntry e);
 
-    MessageInstance.ConsumerAcquiredState<X> getOwningState();
+    MessageInstance.StealableConsumerAcquiredState<X> getOwningState();
 
     QueueContext getQueueContext();
 

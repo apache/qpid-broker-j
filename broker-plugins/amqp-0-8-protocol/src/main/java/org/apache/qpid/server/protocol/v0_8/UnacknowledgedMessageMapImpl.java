@@ -155,7 +155,7 @@ public class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
             List<MessageInstance> acknowledged = new ArrayList<>();
             for (MessageInstance instance : ackedMessageMap.values())
             {
-                if (instance.lockAcquisition(instance.getAcquiringConsumer()))
+                if (instance.makeAcquisitionUnstealable(instance.getAcquiringConsumer()))
                 {
                     acknowledged.add(instance);
                 }
@@ -169,7 +169,7 @@ public class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
             {
                 instance = remove(deliveryTag);
             }
-            if(instance != null && instance.lockAcquisition(instance.getAcquiringConsumer()))
+            if(instance != null && instance.makeAcquisitionUnstealable(instance.getAcquiringConsumer()))
             {
                 return Collections.singleton(instance);
             }

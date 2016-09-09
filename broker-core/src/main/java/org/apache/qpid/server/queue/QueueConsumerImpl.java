@@ -71,7 +71,8 @@ class QueueConsumerImpl
     private final AtomicBoolean _closed = new AtomicBoolean(false);
     private final long _consumerNumber;
     private final long _createTime = System.currentTimeMillis();
-    private final MessageInstance.ConsumerAcquiredState<QueueConsumerImpl> _owningState = new MessageInstance.ConsumerAcquiredState<QueueConsumerImpl>(this);
+    private final MessageInstance.StealableConsumerAcquiredState<QueueConsumerImpl>
+            _owningState = new MessageInstance.StealableConsumerAcquiredState<>(this);
     private final WaitingOnCreditMessageListener _waitingOnCreditMessageListener = new WaitingOnCreditMessageListener();
     private final boolean _acquires;
     private final boolean _seesRequeues;
@@ -538,7 +539,7 @@ class QueueConsumerImpl
         return _createTime;
     }
 
-    public final MessageInstance.ConsumerAcquiredState<QueueConsumerImpl> getOwningState()
+    public final MessageInstance.StealableConsumerAcquiredState<QueueConsumerImpl> getOwningState()
     {
         return _owningState;
     }
@@ -644,7 +645,7 @@ class QueueConsumerImpl
         return _queue.getEventLogger();
     }
 
-    public class WaitingOnCreditMessageListener implements StateChangeListener<MessageInstance, QueueEntry.State>
+    public class WaitingOnCreditMessageListener implements StateChangeListener<MessageInstance, MessageInstance.EntryState>
     {
         private final AtomicReference<MessageInstance> _entry = new AtomicReference<>();
 
@@ -675,7 +676,8 @@ class QueueConsumerImpl
 
         }
 
-        public void stateChanged(MessageInstance entry, QueueEntry.State oldSate, QueueEntry.State newState)
+        @Override
+        public void stateChanged(MessageInstance entry, MessageInstance.EntryState oldState, MessageInstance.EntryState newState)
         {
             entry.removeStateChangeListener(this);
             _entry.compareAndSet(entry, null);

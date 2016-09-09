@@ -533,7 +533,7 @@ public class ServerSession extends Session
                             final ConsumerTarget_0_10 target,
                             final MessageInstance entry)
     {
-        if (entry.lockAcquisition(consumer))
+        if (entry.makeAcquisitionUnstealable(consumer))
         {
             _transaction.dequeue(entry.getEnqueueRecord(),
                                  new ServerTransaction.Action()

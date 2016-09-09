@@ -101,13 +101,13 @@ public class MockMessageInstance implements MessageInstance
     }
 
     @Override
-    public boolean lockAcquisition(final ConsumerImpl consumer)
+    public boolean makeAcquisitionUnstealable(final ConsumerImpl consumer)
     {
         return false;
     }
 
     @Override
-    public boolean unlockAcquisition()
+    public boolean makeAcquisitionStealable()
     {
         return false;
     }
@@ -221,13 +221,13 @@ public class MockMessageInstance implements MessageInstance
     }
 
     @Override
-    public void addStateChangeListener(final StateChangeListener<? super MessageInstance, State> listener)
+    public void addStateChangeListener(final StateChangeListener<? super MessageInstance, EntryState> listener)
     {
 
     }
 
     @Override
-    public boolean removeStateChangeListener(final StateChangeListener<? super MessageInstance, State> listener)
+    public boolean removeStateChangeListener(final StateChangeListener<? super MessageInstance, EntryState> listener)
     {
         return false;
     }

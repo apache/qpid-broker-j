@@ -22,7 +22,7 @@ package org.apache.qpid.server.util;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-public class StateChangeListenerEntry<T, E extends Enum>
+public class StateChangeListenerEntry<T, E>
 {
     private static final AtomicReferenceFieldUpdater<StateChangeListenerEntry, StateChangeListenerEntry> NEXT =
             AtomicReferenceFieldUpdater.newUpdater(StateChangeListenerEntry.class, StateChangeListenerEntry.class, "_next");

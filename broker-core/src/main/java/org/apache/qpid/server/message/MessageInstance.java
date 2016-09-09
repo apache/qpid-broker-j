@@ -44,9 +44,9 @@ public interface MessageInstance
 
     void decrementDeliveryCount();
 
-    void addStateChangeListener(StateChangeListener<? super MessageInstance,State> listener);
+    void addStateChangeListener(StateChangeListener<? super MessageInstance, EntryState> listener);
 
-    boolean removeStateChangeListener(StateChangeListener<? super MessageInstance, State> listener);
+    boolean removeStateChangeListener(StateChangeListener<? super MessageInstance, EntryState> listener);
 
     boolean acquiredByConsumer();
 
@@ -70,9 +70,9 @@ public interface MessageInstance
 
     boolean acquire(ConsumerImpl sub);
 
-    boolean lockAcquisition(final ConsumerImpl consumer);
+    boolean makeAcquisitionUnstealable(final ConsumerImpl consumer);
 
-    boolean unlockAcquisition();
+    boolean makeAcquisitionStealable();
 
     int getMaximumDeliveryCount();
 
@@ -84,7 +84,7 @@ public interface MessageInstance
 
     MessageEnqueueRecord getEnqueueRecord();
 
-    public static enum State
+    enum State
     {
         AVAILABLE,
         ACQUIRED,
@@ -92,7 +92,7 @@ public interface MessageInstance
         DELETED
     }
 
-    public abstract class EntryState
+    abstract class EntryState
     {
         protected EntryState()
         {
@@ -114,7 +114,7 @@ public interface MessageInstance
     }
 
 
-    public final class AvailableState extends EntryState
+    final class AvailableState extends EntryState
     {
 
         public State getState()
@@ -129,7 +129,7 @@ public interface MessageInstance
     }
 
 
-    public final class DequeuedState extends EntryState
+    final class DequeuedState extends EntryState
     {
 
         public State getState()
@@ -144,7 +144,7 @@ public interface MessageInstance
     }
 
 
-    public final class DeletedState extends EntryState
+    final class DeletedState extends EntryState
     {
 
         public State getState()
@@ -158,7 +158,7 @@ public interface MessageInstance
         }
     }
 
-    public final class NonConsumerAcquiredState extends EntryState
+    final class NonConsumerAcquiredState extends EntryState
     {
         public State getState()
         {
@@ -171,76 +171,72 @@ public interface MessageInstance
         }
     }
 
-    public final class ConsumerAcquiredState<C extends ConsumerImpl> extends EntryState
+    abstract class ConsumerAcquiredState<C extends ConsumerImpl> extends EntryState
     {
-        private final C _consumer;
-        private final LockedAcquiredState<C> _lockedState;
+        public abstract C getConsumer();
 
-        public ConsumerAcquiredState(C consumer)
-        {
-            _consumer = consumer;
-            _lockedState = new LockedAcquiredState<>(this);
-        }
-
-
-        public State getState()
+        @Override
+        public final State getState()
         {
             return State.ACQUIRED;
         }
 
+        @Override
+        public String toString()
+        {
+            return "{" + getState().name() + " : " + getConsumer() +"}";
+        }
+    }
+
+    final class StealableConsumerAcquiredState<C extends ConsumerImpl> extends ConsumerAcquiredState
+    {
+        private final C _consumer;
+        private final UnstealableConsumerAcquiredState<C> _unstealableState;
+
+        public StealableConsumerAcquiredState(C consumer)
+        {
+            _consumer = consumer;
+            _unstealableState = new UnstealableConsumerAcquiredState<>(this);
+        }
+
+        @Override
         public C getConsumer()
         {
             return _consumer;
         }
 
-        public String toString()
+        public UnstealableConsumerAcquiredState<C> getUnstealableState()
         {
-            return "{" + getState().name() + " : " + _consumer +"}";
+            return _unstealableState;
         }
-
-        public LockedAcquiredState<C> getLockedState()
-        {
-            return _lockedState;
-        }
-
     }
 
-    public final class LockedAcquiredState<C extends ConsumerImpl> extends EntryState
+    final class UnstealableConsumerAcquiredState<C extends ConsumerImpl> extends ConsumerAcquiredState
     {
-        private final ConsumerAcquiredState<C> _acquiredState;
+        private final StealableConsumerAcquiredState<C> _stealableState;
 
-        public LockedAcquiredState(final ConsumerAcquiredState<C> acquiredState)
+        public UnstealableConsumerAcquiredState(final StealableConsumerAcquiredState<C> stealableState)
         {
-            _acquiredState = acquiredState;
+            _stealableState = stealableState;
         }
 
         @Override
-        public State getState()
-        {
-            return State.ACQUIRED;
-        }
-
         public C getConsumer()
         {
-            return _acquiredState.getConsumer();
+            return _stealableState.getConsumer();
         }
 
-        public String toString()
+        public StealableConsumerAcquiredState<C> getStealableState()
         {
-            return "{" + getState().name() + " : " + _acquiredState.getConsumer() +"}";
-        }
-
-        public ConsumerAcquiredState<C> getUnlockedState()
-        {
-            return _acquiredState;
+            return _stealableState;
         }
     }
 
 
-    final static EntryState AVAILABLE_STATE = new AvailableState();
-    final static EntryState DELETED_STATE = new DeletedState();
-    final static EntryState DEQUEUED_STATE = new DequeuedState();
-    final static EntryState NON_CONSUMER_ACQUIRED_STATE = new NonConsumerAcquiredState();
+    EntryState AVAILABLE_STATE = new AvailableState();
+    EntryState DELETED_STATE = new DeletedState();
+    EntryState DEQUEUED_STATE = new DequeuedState();
+    EntryState NON_CONSUMER_ACQUIRED_STATE = new NonConsumerAcquiredState();
 
     boolean isAvailable();
 
