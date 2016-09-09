@@ -157,9 +157,9 @@ public class TimeToLiveTest extends QpidBrokerTestCase
 
         //Receive Message 0
         // Set 5s receive time for messages we expect to receive.
-        Message receivedFirst = consumer.receive(5000);
-        Message receivedSecond = consumer.receive(5000);
-        Message receivedThird = consumer.receive(1000);
+        Message receivedFirst = consumer.receive(RECEIVE_LONG_TIMEOUT);
+        Message receivedSecond = consumer.receive(RECEIVE_LONG_TIMEOUT);
+        Message receivedThird = consumer.receive(RECEIVE_SHORT_TIMEOUT);
 
         // Log the messages to help diagnosis incase of failure
         _logger.info("First:"+receivedFirst);
@@ -313,9 +313,9 @@ public class TimeToLiveTest extends QpidBrokerTestCase
 
         //Receive Message 0
         // Set 5s receive time for messages we expect to receive.
-        Message receivedFirst = durableSubscriber.receive(5000);
-        Message receivedSecond = durableSubscriber.receive(5000);
-        Message receivedThird = durableSubscriber.receive(1000);
+        Message receivedFirst = durableSubscriber.receive(RECEIVE_LONG_TIMEOUT);
+        Message receivedSecond = durableSubscriber.receive(RECEIVE_LONG_TIMEOUT);
+        Message receivedThird = durableSubscriber.receive(RECEIVE_SHORT_TIMEOUT);
         
         // Log the messages to help diagnosis incase of failure
         _logger.info("First:"+receivedFirst);

@@ -80,7 +80,9 @@ public class QpidBrokerTestCase extends QpidTestCase
     public static final String TOPIC = "topic";
     public static final String MANAGEMENT_MODE_PASSWORD = "mm_password";
     protected static final Logger _logger = LoggerFactory.getLogger(QpidBrokerTestCase.class);
-    protected static final long RECEIVE_TIMEOUT = Long.getLong("qpid.test_receive_timeout", 1000L);
+    protected static final long RECEIVE_TIMEOUT = getLongProperty("qpid.test_receive_timeout", 1000L);
+    protected static final long RECEIVE_LONG_TIMEOUT = getLongProperty("qpid.test_receive_long_timeout", 5000L);
+    protected static final long RECEIVE_SHORT_TIMEOUT = getLongProperty("qpid.test_receive_short_timeout", 500L);
     protected static final String INDEX = "index";
     protected static final String CONTENT = "content";
     protected static final int DEFAULT_MESSAGE_SIZE = 1024;

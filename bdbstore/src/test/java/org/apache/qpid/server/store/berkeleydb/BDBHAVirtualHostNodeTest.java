@@ -138,7 +138,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
 
         assertEquals("SYNC,NO_SYNC,SIMPLE_MAJORITY", environmentFacade.getMessageStoreDurability().toString());
 
-        _helper.awaitForVirtualhost(node, 30000);
+        _helper.awaitForVirtualhost(node);
         VirtualHost<?> virtualHost = node.getVirtualHost();
         assertNotNull("Virtual host child was not added", virtualHost);
         assertEquals("Unexpected virtual host name", groupName, virtualHost.getName());
@@ -219,7 +219,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         attributes.put(BDBHAVirtualHostNode.QUORUM_OVERRIDE, 1);
         node1.setAttributes(attributes);
 
-        _helper.awaitForVirtualhost(node1, 30000);
+        _helper.awaitForVirtualhost(node1);
 
         assertEquals("Unexpected node priority value after mutation", 200, node1.getPriority());
         assertTrue("Unexpected designated primary value after mutation", node1.isDesignatedPrimary());
@@ -376,7 +376,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         _helper.assertNodeRole(node, NodeRole.MASTER, NodeRole.REPLICA);
         assertEquals("Unexpected node state", State.ACTIVE, node.getState());
 
-        _helper.awaitForVirtualhost(node,30000);
+        _helper.awaitForVirtualhost(node);
         BDBHAVirtualHostImpl virtualHost = (BDBHAVirtualHostImpl)node.getVirtualHost();
         assertNotNull("Virtual host is not created", virtualHost);
 

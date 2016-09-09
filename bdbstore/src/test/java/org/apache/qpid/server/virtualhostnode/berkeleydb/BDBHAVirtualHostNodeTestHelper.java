@@ -71,6 +71,9 @@ public class BDBHAVirtualHostNodeTestHelper
     private TaskExecutor _taskExecutor;
     private final ConfiguredObjectFactory _objectFactory = BrokerModel.getInstance().getObjectFactory();
     private final Set<BDBHAVirtualHostNode<?>> _nodes = new HashSet<>();
+    private int _numberOfSleeps;
+    private final int _sleepInterval;
+    private int _waitForVirtualhostInterval;
 
     public BDBHAVirtualHostNodeTestHelper(String testName) throws Exception
     {
@@ -85,6 +88,9 @@ public class BDBHAVirtualHostNodeTestHelper
 
         _bdbStorePath = new File(QpidTestCase.TMP_FOLDER, _testName + "." + System.currentTimeMillis());
         _bdbStorePath.deleteOnExit();
+        _numberOfSleeps = Integer.getInteger("BDBHAVirtualHostNodeTestHelper.numberOfSleepsOnChangeWaiting", 50);
+        _sleepInterval = Integer.getInteger("BDBHAVirtualHostNodeTestHelper.sleepIntervalOnChangeWaiting", 100);
+        _waitForVirtualhostInterval = Integer.getInteger("BDBHAVirtualHostNodeTestHelper.waitForVirtualhostInterval", 30000);
     }
 
     public void tearDown() throws Exception
@@ -147,7 +153,7 @@ public class BDBHAVirtualHostNodeTestHelper
             remoteNodes = node.getRemoteReplicationNodes();
             if (counter > 0)
             {
-                Thread.sleep(100);
+                Thread.sleep(_sleepInterval);
             }
             counter++;
         }
@@ -159,7 +165,7 @@ public class BDBHAVirtualHostNodeTestHelper
     public void awaitForAttributeChange(ConfiguredObject<?> object, String name, Object expectedValue) throws InterruptedException
     {
         int awaitCounter = 0;
-        while(!object.equals(object.getAttribute(name)) && awaitCounter < 50)
+        while(!object.equals(object.getAttribute(name)) && awaitCounter < _numberOfSleeps)
         {
             Thread.sleep(100);
             awaitCounter++;
@@ -176,9 +182,9 @@ public class BDBHAVirtualHostNodeTestHelper
             replica = findNodeInRole(desiredRole);
             if (replica == null)
             {
-                Thread.sleep(100);
+                Thread.sleep(_sleepInterval);
             }
-            if (findReplicaCount > 50)
+            if (findReplicaCount > _numberOfSleeps)
             {
                 fail("Could not find a node in role " + desiredRole);
             }
@@ -237,11 +243,11 @@ public class BDBHAVirtualHostNodeTestHelper
             }
             if (!inRole)
             {
-                Thread.sleep(50);
+                Thread.sleep(_sleepInterval);
             }
             iterationCounter++;
         }
-        while(!inRole && iterationCounter<100);
+        while(!inRole && iterationCounter < _numberOfSleeps);
         assertTrue("Node " + node.getName() + " did not transit into role " + Arrays.toString(roleName)
                 + " Node role is " + node.getRole(), inRole);
     }
@@ -328,9 +334,9 @@ public class BDBHAVirtualHostNodeTestHelper
         return permittedNodes;
     }
 
-    public void awaitForVirtualhost(final VirtualHostNode<?> node, final int wait)
+    public void awaitForVirtualhost(final VirtualHostNode<?> node)
     {
-        long endTime = System.currentTimeMillis() + wait;
+        long endTime = System.currentTimeMillis() + _waitForVirtualhostInterval;
         do
         {
             if(node.getVirtualHost() != null)
@@ -339,7 +345,7 @@ public class BDBHAVirtualHostNodeTestHelper
             }
             try
             {
-                Thread.sleep(100);
+                Thread.sleep(_sleepInterval);
             }
             catch (InterruptedException e)
             {

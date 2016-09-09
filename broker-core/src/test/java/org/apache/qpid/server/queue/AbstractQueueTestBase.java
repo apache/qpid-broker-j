@@ -71,7 +71,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 abstract class AbstractQueueTestBase extends QpidTestCase
 {
     private static final Logger _logger = LoggerFactory.getLogger(AbstractQueueTestBase.class);
-    private static final long QUEUE_RUNNER_WAIT_TIME = Long.getLong("AbstractQueueTestBase.queueRunnerWaitTime", 150L);
+    private static final long QUEUE_RUNNER_WAIT_TIME = getLongProperty("AbstractQueueTestBase.queueRunnerWaitTime", 150L);
 
     static
     {
