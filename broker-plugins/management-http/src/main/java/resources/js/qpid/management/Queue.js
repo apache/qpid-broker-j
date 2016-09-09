@@ -109,7 +109,28 @@ define(["dojo/_base/declare",
                         management: that.management,
                         modelObject: that.modelObj,
                         queryOperation: "getMessageInfo",
-                        queryParams : {includeHeaders: false}
+                        queryParams: {includeHeaders: false},
+                        totalRetriever: function ()
+                        {
+                            if (that.queueUpdater.queueData && that.queueUpdater.queueData.queueDepthMessages != undefined)
+                            {
+                                return that.queueUpdater.queueData.queueDepthMessages;
+                            }
+                            return that.management.query(
+                                {
+                                    parent: that.modelObj.parent,
+                                    category: "queue",
+                                    select: "queueDepthMessages",
+                                    where: "name='" + that.modelObj.name.replace(/'/g, "'''") + "'"
+                                })
+                                .then(function (data)
+                                {
+                                    return data && data.results && data.results[0] ? data.results[0][0] : 0;
+                                }, function (error)
+                                {
+                                    return undefined;
+                                });
+                        }
                     });
                     var messageGridDiv = query(".messages", contentPane.containerNode)[0];
                     that.dataStore = new ObjectStore({objectStore: myStore});
@@ -192,6 +213,13 @@ define(["dojo/_base/declare",
                         that.moveOrCopyMessages({move: false});
                     });
 
+                    var refreshMessagesButton =  query(".refreshMessagesButton", contentPane.containerNode)[0];
+                    connect.connect(registry.byNode(refreshMessagesButton), "onClick", function (evt)
+                    {
+                        event.stop(evt);
+                        that.refreshMessages();
+                    });
+
                     var addBindingButton = query(".addBindingButton", contentPane.containerNode)[0];
                     connect.connect(registry.byNode(addBindingButton), "onClick", function (evt)
                     {
@@ -268,7 +296,7 @@ define(["dojo/_base/declare",
                     });
             }
         };
-        Queue.prototype.reloadGridData = function ()
+        Queue.prototype.refreshMessages = function ()
         {
             var currentPage = this.grid.pagination.currentPage;
             var currentPageSize = this.grid.pagination.currentPageSize;
@@ -278,6 +306,10 @@ define(["dojo/_base/declare",
                 first: first,
                 last: last
             });
+        };
+        Queue.prototype.reloadGridData = function ()
+        {
+            this.refreshMessages();
             this.queueUpdater.update();
         };
         Queue.prototype.moveOrCopyMessages = function (obj)

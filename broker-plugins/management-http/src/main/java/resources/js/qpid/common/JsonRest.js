@@ -23,23 +23,22 @@ define(["dojo/_base/lang", "dojo/json", "dojo/_base/declare", "dojo/store/util/Q
     function (lang, json, declare, QueryResults)
     {
         return declare("qpid.common.JsonRest", null, {
-            headers: {},
+            headers: null,
             idProperty: "id",
             firstProperty: "first",
             lastProperty: "last",
             accepts: "application/javascript, application/json",
+
+            // constructor arguments
             queryOperation: null,
             modelObject: null,
             management: null,
             queryParams: null,
+            totalRetriever: null,
 
             constructor: function (options)
             {
                 this.headers = {};
-                this.management = options.management;
-                this.modelObject = options.modelObject;
-                this.queryOperation = options.queryOperation;
-                this.queryParams = options.queryParams;
                 declare.safeMixin(this, options);
             },
 
@@ -57,15 +56,6 @@ define(["dojo/_base/lang", "dojo/json", "dojo/_base/declare", "dojo/store/util/Q
                 query[this.firstProperty] = options.start >= 0 ? options.start : -1;
                 query[this.lastProperty] = options.count >= 0 && query.first >= 0 ? options.count + query.first : -1;
 
-                if (options.start >= 0 || options.count >= 0)
-                {
-                    headers["X-Range"] =
-                        "items=" + (options.start || '0') + '-' + (("count" in options && options.count != Infinity)
-                            ? (options.count + (options.start || 0) - 1)
-                            : '');
-                    headers.Range = headers["X-Range"];
-                }
-
                 var modelObj = {
                     name: this.queryOperation,
                     parent: this.modelObject,
@@ -73,15 +63,10 @@ define(["dojo/_base/lang", "dojo/json", "dojo/_base/declare", "dojo/store/util/Q
                 };
                 var results = management.load(modelObj, query, {headers: headers});
 
-                results.total = results.response.then(function (response)
+                if (this.totalRetriever)
                 {
-                    var range = response.getHeader("Content-Range");
-                    if (!range)
-                    {
-                        range = response.getHeader("X-Content-Range");
-                    }
-                    return range && (range = range.match(/\/(.*)/)) && +range[1];
-                });
+                    results.total = this.totalRetriever();
+                }
                 return QueryResults(results);
             }
         });
