@@ -367,7 +367,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     protected void onCreate()
     {
         super.onCreate();
-        _createDefaultExchanges = getChildren(Exchange.class).isEmpty() && getChildren(Queue.class).isEmpty();
+        _createDefaultExchanges = true;
     }
 
     @Override

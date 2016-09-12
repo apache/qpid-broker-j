@@ -623,7 +623,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     {
         try
         {
-            boolean createDefaultExchanges = false;
+            boolean firstOpening = false;
             closeVirtualHostIfExist().get();
             getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.RECOVERY_START());
             VirtualHostStoreUpgraderAndRecoverer upgraderAndRecoverer = new VirtualHostStoreUpgraderAndRecoverer(this);
@@ -633,11 +633,12 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
             }
             else
             {
+                getConfigurationStore().upgradeStoreStructure();
                 ConfiguredObjectRecord[] initialRecords = getInitialRecords();
                 if(upgraderAndRecoverer.upgradeAndRecover(getConfigurationStore(), initialRecords))
                 {
                     setAttributes(Collections.<String, Object>singletonMap(VIRTUALHOST_INITIAL_CONFIGURATION, "{}"));
-                    createDefaultExchanges = initialRecords == null || initialRecords.length == 0;
+                    firstOpening = initialRecords.length == 0;
                 }
 
             }
@@ -669,7 +670,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                 }
 
                 final VirtualHost<?> recoveredHost = host;
-                recoveredHost.setFirstOpening(createDefaultExchanges);
+                recoveredHost.setFirstOpening(firstOpening);
                 Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
                 {
                     @Override
