@@ -55,7 +55,8 @@ public class ConsumerListTest extends QpidTestCase
     private QueueConsumer newMockConsumer()
     {
         QueueConsumer consumer = mock(QueueConsumer.class);
-        MessageInstance.ConsumerAcquiredState owningState = new QueueEntryImpl.ConsumerAcquiredState(consumer);
+        MessageInstance.StealableConsumerAcquiredState
+                owningState = new MessageInstance.StealableConsumerAcquiredState(consumer);
         when(consumer.getOwningState()).thenReturn(owningState);
 
         return consumer;

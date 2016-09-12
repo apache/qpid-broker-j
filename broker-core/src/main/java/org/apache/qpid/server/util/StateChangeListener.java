@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.util;
 
-public interface StateChangeListener<T, E extends Enum>
+public interface StateChangeListener<T, E>
 {
     void stateChanged(T object, E oldState, E newState);
 }

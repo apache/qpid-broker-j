@@ -69,18 +69,9 @@ public class FlowControlTest extends QpidBrokerTestCase
         Session producerSession = producerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         MessageProducer producer = producerSession.createProducer(_queue);
 
-        BytesMessage m1 = producerSession.createBytesMessage();
-        m1.writeBytes(new byte[128]);
-        m1.setIntProperty("msg", 1);
-        producer.send(m1);
-        BytesMessage m2 = producerSession.createBytesMessage();
-        m2.writeBytes(new byte[128]);
-        m2.setIntProperty("msg", 2);
-        producer.send(m2);
-        BytesMessage m3 = producerSession.createBytesMessage();
-        m3.writeBytes(new byte[256]);
-        m3.setIntProperty("msg", 3);
-        producer.send(m3);
+        sendBytesMessage(producerSession, producer, 1, 128);
+        sendBytesMessage(producerSession, producer, 2, 128);
+        sendBytesMessage(producerSession, producer, 3, 256);
 
         producer.close();
         producerSession.close();
@@ -139,18 +130,9 @@ public class FlowControlTest extends QpidBrokerTestCase
         Session producerSession = producerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         MessageProducer producer = producerSession.createProducer(_queue);
 
-        BytesMessage m1 = producerSession.createBytesMessage();
-        m1.writeBytes(new byte[128]);
-        m1.setIntProperty("msg", 1);
-        producer.send(m1);
-        BytesMessage m2 = producerSession.createBytesMessage();
-        m2.writeBytes(new byte[256]);
-        m2.setIntProperty("msg", 2);
-        producer.send(m2);
-        BytesMessage m3 = producerSession.createBytesMessage();
-        m3.writeBytes(new byte[128]);
-        m3.setIntProperty("msg", 3);
-        producer.send(m3);
+        sendBytesMessage(producerSession, producer, 1, 128);
+        sendBytesMessage(producerSession, producer, 2, 256);
+        sendBytesMessage(producerSession, producer, 3, 128);
 
         producer.close();
         producerSession.close();
@@ -195,27 +177,47 @@ public class FlowControlTest extends QpidBrokerTestCase
 
     }
 
-    public static void main(String args[]) throws Throwable
+    public void testDeliverMessageLargerThanBytesLimit() throws Exception
     {
-        FlowControlTest test = new FlowControlTest();
+        _queue = (Queue) getInitialContext().lookup("queue");
+        Connection connection = getConnection();
+        connection.start();
 
-        int run = 0;
-        while (true)
-        {
-            System.err.println("Test Run:" + ++run);
-            Thread.sleep(1000);
-            try
-            {
-                test.startBroker();
-                test.testBasicBytesFlowControl();
+        Session producerSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        producerSession.createConsumer(_queue).close();
+        MessageProducer producer = producerSession.createProducer(_queue);
 
-                Thread.sleep(1000);
-            }
-            finally
-            {
-                test.stopBroker();
-            }
-        }
+        sendBytesMessage(producerSession, producer, 1, 128);
+        sendBytesMessage(producerSession, producer, 2, 256);
+
+        Session consumerSession1 = connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+        ((AMQSession_0_8) consumerSession1).setPrefetchLimits(0, 64);
+        MessageConsumer recv1 = consumerSession1.createConsumer(_queue);
+
+        Message r1 = recv1.receive(RECEIVE_TIMEOUT);
+        assertNotNull("First message not received", r1);
+        assertEquals("Messages in wrong order", 1, r1.getIntProperty("msg"));
+
+        Message r2 = recv1.receive(RECEIVE_TIMEOUT);
+        assertNull("Second message incorrectly delivered", r2);
+
+        r1.acknowledge();
+
+        r2 = recv1.receive(RECEIVE_TIMEOUT);
+        assertNotNull("Second message not received", r2);
+        assertEquals("Wrong messages received", 2, r2.getIntProperty("msg"));
+
+        r2.acknowledge();
+    }
+
+    private void sendBytesMessage(final Session producerSession,
+                                  final MessageProducer producer,
+                                  final int messageId, final int messageSize) throws Exception
+    {
+        BytesMessage message = producerSession.createBytesMessage();
+        message.writeBytes(new byte[messageSize]);
+        message.setIntProperty("msg", messageId);
+        producer.send(message);
     }
 }
 

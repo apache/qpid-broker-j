@@ -50,8 +50,8 @@ public class UnacknowledgedMessageMapTest extends QpidTestCase
         map = new UnacknowledgedMessageMapImpl(100);
         msgs = populateMap(map,expectedSize);
         // simulate some messages being ttl expired
-        when(msgs[2].lockAcquisition(_consumer)).thenReturn(Boolean.FALSE);
-        when(msgs[4].lockAcquisition(_consumer)).thenReturn(Boolean.FALSE);
+        when(msgs[2].makeAcquisitionUnstealable(_consumer)).thenReturn(Boolean.FALSE);
+        when(msgs[4].makeAcquisitionUnstealable(_consumer)).thenReturn(Boolean.FALSE);
 
         assertEquals(expectedSize,map.size());
 
@@ -80,7 +80,7 @@ public class UnacknowledgedMessageMapTest extends QpidTestCase
     private MessageInstance createMessageInstance(final int id)
     {
         MessageInstance instance = mock(MessageInstance.class);
-        when(instance.lockAcquisition(_consumer)).thenReturn(Boolean.TRUE);
+        when(instance.makeAcquisitionUnstealable(_consumer)).thenReturn(Boolean.TRUE);
         when(instance.getAcquiringConsumer()).thenReturn(_consumer);
         return instance;
     }

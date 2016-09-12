@@ -1614,7 +1614,7 @@ public class AMQChannel
             {
                 for(MessageInstance entry : _ackedMessages)
                 {
-                    entry.unlockAcquisition();
+                    entry.makeAcquisitionStealable();
                 }
                 _resendList.addAll(_ackedMessages);
             }
@@ -1778,7 +1778,7 @@ public class AMQChannel
         {
             final ServerMessage msg = rejectedQueueEntry.getMessage();
             int requeues = 0;
-            if (rejectedQueueEntry.lockAcquisition(rejectedQueueEntry.getAcquiringConsumer()))
+            if (rejectedQueueEntry.makeAcquisitionUnstealable(rejectedQueueEntry.getAcquiringConsumer()))
             {
                 requeues = rejectedQueueEntry.routeToAlternate(new Action<MessageInstance>()
                 {

@@ -93,7 +93,7 @@ public class QpidBrokerTestCase extends QpidTestCase
     protected static final Logger _logger = LoggerFactory.getLogger(QpidBrokerTestCase.class);
     protected static final int LOGMONITOR_TIMEOUT = 5000;
 
-    protected long RECEIVE_TIMEOUT = Long.getLong("qpid.test_receive_timeout", 1000l);
+    protected static long RECEIVE_TIMEOUT = Long.getLong("qpid.test_receive_timeout", 1000l);
 
 
     private Map<String, String> _propertiesSetForBroker = new HashMap<String, String>();

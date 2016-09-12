@@ -22,6 +22,8 @@ package org.apache.qpid.server.queue;
 
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstance.ConsumerAcquiredState;
+import org.apache.qpid.server.message.MessageInstance.EntryState;
 import org.apache.qpid.server.util.StateChangeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,7 +174,7 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
 
             _groupMap.put(groupId, group);
 
-            // there's a small change that the group became empty between the point at which getNextAvailable() was
+            // there's a small chance that the group became empty between the point at which getNextAvailable() was
             // called on the consumer, and when accept message is called... in that case we want to avoid delivering
             // out of order
             if(_resetHelper.isEntryAheadOfConsumer(entry, sub))
@@ -256,7 +258,7 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
         return groupVal;
     }
 
-    private class GroupStateChangeListener implements StateChangeListener<MessageInstance, MessageInstance.State>
+    private class GroupStateChangeListener implements StateChangeListener<MessageInstance, EntryState>
     {
         private final Group _group;
 
@@ -265,24 +267,20 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
             _group = group;
         }
 
-        public void stateChanged(final MessageInstance entry,
-                                 final MessageInstance.State oldState,
-                                 final MessageInstance.State newState)
+        @Override
+        public void stateChanged(final MessageInstance entry, final EntryState oldState, final EntryState newState)
         {
             synchronized (DefinedGroupMessageGroupManager.this)
             {
                 if(_group.isValid())
                 {
-                    if(oldState != newState)
+                    if (isConsumerAcquiredStateForThisGroup(newState) && !isConsumerAcquiredStateForThisGroup(oldState))
                     {
-                        if(newState == QueueEntry.State.ACQUIRED)
-                        {
-                            _group.add();
-                        }
-                        else if(oldState == QueueEntry.State.ACQUIRED)
-                        {
-                            _group.subtract((QueueEntry) entry, newState == MessageInstance.State.AVAILABLE);
-                        }
+                        _group.add();
+                    }
+                    else if (isConsumerAcquiredStateForThisGroup(oldState) && !isConsumerAcquiredStateForThisGroup(newState))
+                    {
+                        _group.subtract((QueueEntry) entry, newState.getState() == MessageInstance.State.AVAILABLE);
                     }
                 }
                 else
@@ -290,6 +288,12 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
                     entry.removeStateChangeListener(this);
                 }
             }
+        }
+
+        private boolean isConsumerAcquiredStateForThisGroup(EntryState state)
+        {
+            return state instanceof ConsumerAcquiredState
+                   && ((ConsumerAcquiredState) state).getConsumer() == _group.getConsumer();
         }
     }
 }

@@ -388,7 +388,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
             if(outcome instanceof Accepted)
             {
-                if (_queueEntry.lockAcquisition(getConsumer()))
+                if (_queueEntry.makeAcquisitionUnstealable(getConsumer()))
                 {
                     txn.dequeue(_queueEntry.getEnqueueRecord(),
                                 new ServerTransaction.Action()

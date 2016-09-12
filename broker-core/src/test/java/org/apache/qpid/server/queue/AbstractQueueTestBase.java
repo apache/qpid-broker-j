@@ -413,12 +413,12 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         QueueEntry queueEntry = queueEntries.get(0);
 
         final CountDownLatch dequeueIndicator = new CountDownLatch(1);
-        queueEntry.addStateChangeListener(new StateChangeListener<MessageInstance, MessageInstance.State>()
+        queueEntry.addStateChangeListener(new StateChangeListener<MessageInstance, MessageInstance.EntryState>()
         {
             @Override
-            public void stateChanged(MessageInstance object, MessageInstance.State oldState, MessageInstance.State newState)
+            public void stateChanged(MessageInstance object, MessageInstance.EntryState oldState, MessageInstance.EntryState newState)
             {
-                if (newState == MessageInstance.State.DEQUEUED)
+                if (newState.equals(MessageInstance.DEQUEUED_STATE))
                 {
                     dequeueIndicator.countDown();
                 }
