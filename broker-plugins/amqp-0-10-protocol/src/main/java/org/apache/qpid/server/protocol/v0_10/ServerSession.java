@@ -535,7 +535,6 @@ public class ServerSession extends Session
 
                                      public void postCommit()
                                      {
-                                         target.acquisitionRemoved(entry);
                                          entry.delete();
                                      }
 
