@@ -19,9 +19,7 @@
 package org.apache.qpid.server.store.berkeleydb;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
 import javax.jms.Destination;
@@ -33,25 +31,19 @@ import javax.jms.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBVirtualHostNode;
-import org.apache.qpid.test.utils.Piper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.util.FileUtils;
 import org.apache.qpid.util.Strings;
-import org.apache.qpid.util.SystemUtils;
 
 /**
- * Tests the BDB backup script can successfully perform a backup and that
+ * Tests the BDB backup can successfully perform a backup and that
  * backup can be restored and used by the Broker.
  */
 public class BDBBackupTest extends QpidBrokerTestCase
 {
     protected static final Logger LOGGER = LoggerFactory.getLogger(BDBBackupTest.class);
-
-    private static final String BACKUP_SCRIPT = "/bin/backup.sh";
-    private static final String BACKUP_COMPLETE_MESSAGE = "Hot Backup Completed";
 
     private static final String TEST_VHOST = "test";
     private static final String SYSTEM_TMP_DIR = System.getProperty("java.io.tmpdir");
@@ -139,48 +131,7 @@ public class BDBBackupTest extends QpidBrokerTestCase
 
     private void invokeBdbBackup(final File backupFromDir, final File backupToDir) throws Exception
     {
-        if (SystemUtils.isWindows())
-        {
-            BDBBackup.main(new String[]{"-todir", backupToDir.getAbsolutePath(), "-fromdir", backupFromDir.getAbsolutePath()});
-        }
-        else
-        {
-            runBdbBackupScript(backupFromDir, backupToDir);
-        }
-    }
-
-    private void runBdbBackupScript(final File backupFromDir, final File backupToDir) throws IOException,
-            InterruptedException
-    {
-        Process backupProcess = null;
-        try
-        {
-            String qpidHome = QPID_HOME;
-            ProcessBuilder pb = new ProcessBuilder(qpidHome + BACKUP_SCRIPT, "-todir", backupToDir.getAbsolutePath(), "-fromdir", backupFromDir.getAbsolutePath());
-            pb.redirectErrorStream(true);
-            Map<String, String> env = pb.environment();
-            env.put(BrokerProperties.PROPERTY_QPID_HOME, qpidHome);
-
-            LOGGER.debug("Backup command is " + pb.command());
-            backupProcess = pb.start();
-            Piper piper = new Piper(backupProcess.getInputStream(),  null, BACKUP_COMPLETE_MESSAGE, "BACKUP", "");
-            piper.start();
-            piper.await(2, TimeUnit.SECONDS);
-            backupProcess.waitFor();
-            piper.join();
-
-            LOGGER.debug("Backup command completed " + backupProcess.exitValue());
-            assertEquals("Unexpected exit value from backup script", 0, backupProcess.exitValue());
-        }
-        finally
-        {
-            if (backupProcess != null)
-            {
-                backupProcess.getErrorStream().close();
-                backupProcess.getInputStream().close();
-                backupProcess.getOutputStream().close();
-            }
-        }
+        BDBBackup.main(new String[]{"-todir", backupToDir.getAbsolutePath(), "-fromdir", backupFromDir.getAbsolutePath()});
     }
 
     private void replaceStoreWithBackup(File source, File dst) throws Exception

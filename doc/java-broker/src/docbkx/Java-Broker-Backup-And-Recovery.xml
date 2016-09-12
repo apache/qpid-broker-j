@@ -41,39 +41,23 @@
       type.</para>
     <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost-Node-BDB">
       <title>BDB</title>
-      <para>Qpid Broker distribution includes the "hot" backup utility <literal>backup.sh</literal>
-        which can be found at broker bin folder. This utility can perform the backup when broker is
-        running.</para>
-      <para><literal>backup.sh</literal> script invokes
-          <classname>org.apache.qpid.server.store.berkeleydb.BDBBackup</classname> to do the
-        job.</para>
-      <para>You can also run this class from command line like in an example below:</para>
+      <para>BDB module includes the "hot" backup utility <literal>org.apache.qpid.server.store.berkeleydb.BDBBackup</literal>.
+        This utility can perform the backup when broker is running.</para>
+      <para>You can run this class from command line like in an example below:</para>
       <example>
         <title>Performing store backup by using <classname>BDBBackup</classname> class
           directly</title>
         <cmdsynopsis>
           <command>java</command>
-          <arg choice="plain">-cp qpid-bdbstore-${project.version}.jar</arg>
-          <arg choice="plain">org.apache.qpid.server.store.berkeleydb.BDBBackup</arg>
+          <arg choice="plain">-cp <replaceable>"$QPID_HOME/lib/*"</replaceable></arg>
+          <arg choice="plain">org.apache.qpid.server.store.berkeleydb.BDBBackup \</arg>
           <sbr/>
           <arg choice="plain">-fromdir <replaceable>\${QPID_WORK}/&lt;nodename&gt;/config</replaceable></arg>
-          <arg choice="plain">-todir <replaceable>path/to/backup/folder</replaceable></arg>
-        </cmdsynopsis>
+          <arg choice="plain">-todir <replaceable>path/to/backup/folder</replaceable></arg></cmdsynopsis>
       </example>
-      <para>In the example above BDBBackup utility is called from
-        qpid-bdbstore-${project.version}.jar to backup the store at
+      <para>In the example above BDBBackup utility is called to backup the store at
           <literal>\${QPID_WORK}/&lt;nodename&gt;/config</literal> and copy store logs into
           <literal>path/to/backup/folder</literal>.</para>
-      <para>Linux and Unix users can take advantage of <literal>backup.sh</literal> bash script by
-        running this script in a similar way.</para>
-      <example>
-        <title>Performing store backup by using <classname>backup.sh</classname> bash script</title>
-        <cmdsynopsis>
-          <command>backup.sh</command>
-          <arg choice="plain">-fromdir <replaceable>\${QPID_WORK}/&lt;nodename&gt;/config</replaceable></arg>
-          <arg choice="plain">-todir <replaceable>path/to/backup/folder</replaceable></arg>
-        </cmdsynopsis>
-      </example>
     </section>
     <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost-Node-BDB-HA">
       <title>BDB-HA</title>
