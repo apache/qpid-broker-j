@@ -42,14 +42,14 @@
     <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost-Node-BDB">
       <title>BDB</title>
       <para>BDB module includes the "hot" backup utility <literal>org.apache.qpid.server.store.berkeleydb.BDBBackup</literal>.
-        This utility can perform the backup when broker is running.</para>
+        This utility can perform the backup when the broker is running.</para>
       <para>You can run this class from command line like in an example below:</para>
       <example>
         <title>Performing store backup by using <classname>BDBBackup</classname> class
           directly</title>
         <cmdsynopsis>
           <command>java</command>
-          <arg choice="plain">-cp <replaceable>"$QPID_HOME/lib/*"</replaceable></arg>
+          <arg choice="plain">-cp <replaceable>"${QPID_HOME}/lib/*"</replaceable></arg>
           <arg choice="plain">org.apache.qpid.server.store.berkeleydb.BDBBackup \</arg>
           <sbr/>
           <arg choice="plain">-fromdir <replaceable>\${QPID_WORK}/&lt;nodename&gt;/config</replaceable></arg>
