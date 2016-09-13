@@ -18,6 +18,8 @@
  */
 package org.apache.qpid.server.queue;
 
+import static org.apache.qpid.server.util.ParameterizedTypes.MAP_OF_STRING_STRING;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -282,6 +284,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private boolean _closing;
     private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
     private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
+    private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
 
     private interface HoldMethod
     {
@@ -487,6 +490,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         _estimatedAverageMessageHeaderSize = getContextValue(Long.class, QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD);
         _maxAsyncDeliveries = getContextValue(Integer.class, Queue.MAX_ASYNCHRONOUS_DELIVERIES);
+        _mimeTypeToFileExtension = getContextValue(Map.class, MAP_OF_STRING_STRING, MIME_TYPE_TO_FILE_EXTENSION);
 
         if(_defaultFilters != null)
         {
@@ -2752,10 +2756,22 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             try
             {
-                String disposition = String.format("attachment; filename=\"%s_msg%09d%s\"",
-                                                   URLEncoder.encode(getName(), UTF8),
-                                                   _messageReference.getMessage().getMessageNumber(),
-                                                   getContentType().startsWith("text") ? ".txt" : "");
+                String queueName = getName();
+                // replace all non-ascii and non-printable characters and all backslashes and percent encoded characters
+                // as suggested by rfc6266 Appendix D
+                String asciiQueueName = queueName.replaceAll("[^\\x20-\\x7E]", "?")
+                                                 .replace('\\', '?')
+                                                 .replaceAll("%[0-9a-fA-F]{2}", "?");
+                long messageNumber = _messageReference.getMessage().getMessageNumber();
+                String filenameExtension = _mimeTypeToFileExtension.get(getContentType());
+                filenameExtension = (filenameExtension == null ? "" : filenameExtension);
+                String disposition = String.format("attachment; filename=\"%s_msg%09d%s\"; filename*=\"UTF-8''%s_msg%09d%s\"",
+                                                   asciiQueueName,
+                                                   messageNumber,
+                                                   filenameExtension,
+                                                   URLEncoder.encode(queueName, UTF8),
+                                                   messageNumber,
+                                                   filenameExtension);
                 return disposition;
             }
             catch (UnsupportedEncodingException e)
