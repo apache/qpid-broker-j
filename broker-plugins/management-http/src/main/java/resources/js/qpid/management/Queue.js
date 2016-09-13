@@ -19,6 +19,7 @@
  *
  */
 define(["dojo/_base/declare",
+        "dojo/_base/lang",
         "dojo/parser",
         "dojo/query",
         "dijit/registry",
@@ -43,6 +44,7 @@ define(["dojo/_base/declare",
         "dojox/grid/enhanced/plugins/IndirectSelection",
         "dojo/domReady!"],
     function (declare,
+              lang,
               parser,
               query,
               registry,
@@ -217,7 +219,7 @@ define(["dojo/_base/declare",
                     connect.connect(registry.byNode(refreshMessagesButton), "onClick", function (evt)
                     {
                         event.stop(evt);
-                        that.refreshMessages();
+                        that.reloadGridData();
                     });
 
                     var addBindingButton = query(".addBindingButton", contentPane.containerNode)[0];
@@ -263,16 +265,13 @@ define(["dojo/_base/declare",
                     {
                         parameters.messageIds.push(data[i].id);
                     }
-                    var that = this;
+
                     this.management.update(modelObj, parameters)
-                        .then(function (result)
+                        .then(lang.hitch(this, function (result)
                         {
-                            that.grid.selection.deselectAll();
-                            if (result && result[0])
-                            {
-                                that.reloadGridData();
-                            }
-                        });
+                            this.grid.selection.deselectAll();
+                            this.reloadGridData();
+                        }));
                 }
             }
         };
@@ -285,15 +284,7 @@ define(["dojo/_base/declare",
                     name: "clearQueue",
                     parent: this.modelObj
                 };
-                var that = this;
-                this.management.update(modelObj, {})
-                    .then(function (result)
-                    {
-                        if (result)
-                        {
-                            that.reloadGridData();
-                        }
-                    });
+                this.management.update(modelObj, {}).then(lang.hitch(this, this.reloadGridData));
             }
         };
         Queue.prototype.refreshMessages = function ()
@@ -309,8 +300,7 @@ define(["dojo/_base/declare",
         };
         Queue.prototype.reloadGridData = function ()
         {
-            this.refreshMessages();
-            this.queueUpdater.update();
+            this.queueUpdater.update(lang.hitch(this, this.refreshMessages));
         };
         Queue.prototype.moveOrCopyMessages = function (obj)
         {
