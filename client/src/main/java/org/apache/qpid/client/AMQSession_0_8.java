@@ -308,6 +308,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
                 getAMQConnection().getProtocolHandler().syncWrite(body.generateFrame(getChannelId()), BasicRecoverSyncOkBody.class);
             }
         }
+        _currentPrefetch.set(0);
     }
 
     private void enforceRejectBehaviourDuringRecover()
