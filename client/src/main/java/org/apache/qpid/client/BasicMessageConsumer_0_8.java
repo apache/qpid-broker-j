@@ -191,12 +191,12 @@ public class BasicMessageConsumer_0_8 extends BasicMessageConsumer<UnprocessedMe
             Message message = super.receive(l);
             if (creditModified && message == null)
             {
-                getSession().reduceCreditAfterAcknowledge();
+                getSession().reduceCreditToOriginalSize();
             }
             if (manageCredit && !(getSession().getAcknowledgeMode() == Session.AUTO_ACKNOWLEDGE
                                   || getSession().getAcknowledgeMode() == Session.DUPS_OK_ACKNOWLEDGE) && message != null)
             {
-                getSession().updateCurrentPrefetch(1);
+                getSession().incUnacknowledgedMessages();
             }
             return message;
         }
@@ -224,12 +224,12 @@ public class BasicMessageConsumer_0_8 extends BasicMessageConsumer<UnprocessedMe
             Message message = super.receiveNoWait();
             if (creditModified && message == null)
             {
-                getSession().reduceCreditAfterAcknowledge();
+                getSession().reduceCreditToOriginalSize();
             }
             if (manageCredit && !(getSession().getAcknowledgeMode() == Session.AUTO_ACKNOWLEDGE
                                   || getSession().getAcknowledgeMode() == Session.DUPS_OK_ACKNOWLEDGE) && message != null)
             {
-                getSession().updateCurrentPrefetch(1);
+                getSession().incUnacknowledgedMessages();
             }
             return message;
         }
@@ -240,10 +240,10 @@ public class BasicMessageConsumer_0_8 extends BasicMessageConsumer<UnprocessedMe
         }
     }
 
-
+    @Override
     void postDeliver(AbstractJMSMessage msg)
     {
-        getSession().reduceCreditInPostDeliver();
+        getSession().stopFlowIfNeccessary();
         super.postDeliver(msg);
     }
 }

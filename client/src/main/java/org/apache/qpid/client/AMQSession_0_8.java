@@ -88,7 +88,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
      */
     private final long _flowControlWaitFailure = Long.getLong(QPID_FLOW_CONTROL_WAIT_FAILURE,
                                                                   DEFAULT_FLOW_CONTROL_WAIT_FAILURE);
-    private AtomicInteger _currentPrefetch = new AtomicInteger();
+    private AtomicInteger _unacknowledgedMessages = new AtomicInteger();
 
     /** Flow control */
     private FlowControlIndicator _flowControl = new FlowControlIndicator();
@@ -112,7 +112,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
     {
 
         super(con,channelId,transacted,acknowledgeMode, defaultPrefetchHighMark,defaultPrefetchLowMark);
-        _currentPrefetch.set(0);
+        _unacknowledgedMessages.set(0);
     }
 
 
@@ -126,11 +126,11 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         boolean syncRequired = false;
         try
         {
-            reduceCreditAfterAcknowledge();
+            reduceCreditToOriginalSize();
         }
         catch (QpidException e)
         {
-            throw JMSExceptionHelper.chainJMSException(new JMSException("Session.reduceCreditAfterAcknowledge failed"),
+            throw JMSExceptionHelper.chainJMSException(new JMSException("Session.reduceCreditToOriginalSize failed"),
                                                        e);
         }
         while (true)
@@ -144,7 +144,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
             acknowledgeMessage(tag, false);
             syncRequired = true;
         }
-        _currentPrefetch.set(0);
+        _unacknowledgedMessages.set(0);
         try
         {
             if (syncRequired && getAMQConnection().getSyncClientAck())
@@ -267,9 +267,9 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         }
 
         final AMQProtocolHandler handler = getProtocolHandler();
-        reduceCreditAfterAcknowledge();
+        reduceCreditToOriginalSize();
         handler.syncWrite(getProtocolHandler().getMethodRegistry().createTxCommitBody().generateFrame(getChannelId()), TxCommitOkBody.class);
-        _currentPrefetch.set(0);
+        _unacknowledgedMessages.set(0);
     }
 
     public void sendCreateQueue(String name, final boolean autoDelete, final boolean durable, final boolean exclusive, final Map<String, Object> arguments) throws
@@ -308,7 +308,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
                 getAMQConnection().getProtocolHandler().syncWrite(body.generateFrame(getChannelId()), BasicRecoverSyncOkBody.class);
             }
         }
-        _currentPrefetch.set(0);
+        _unacknowledgedMessages.set(0);
     }
 
     private void enforceRejectBehaviourDuringRecover()
@@ -810,13 +810,13 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         TxRollbackBody body = getMethodRegistry().createTxRollbackBody();
         AMQFrame frame = body.generateFrame(getChannelId());
         getProtocolHandler().syncWrite(frame, TxRollbackOkBody.class);
-        _currentPrefetch.set(0);
+        _unacknowledgedMessages.set(0);
     }
 
     public void setPrefetchLimits(final int messagePrefetch, final long sizePrefetch)
             throws QpidException, FailoverException
     {
-        _currentPrefetch.set(0);
+        _unacknowledgedMessages.set(0);
         if(messagePrefetch > 0 || sizePrefetch > 0)
         {
             BasicQosBody basicQosBody =
@@ -835,7 +835,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
                 {
                     public Boolean execute() throws QpidException, FailoverException
                     {
-                        int currentPrefetch = _currentPrefetch.get();
+                        int currentPrefetch = _unacknowledgedMessages.get();
                         if (currentPrefetch >= getPrefetch() && getPrefetch() >= 0)
                         {
                             BasicQosBody basicQosBody = getProtocolHandler().getMethodRegistry()
@@ -859,7 +859,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
     }
 
-    protected void reduceCreditAfterAcknowledge() throws QpidException
+    protected void reduceCreditToOriginalSize() throws QpidException
     {
         boolean manageCredit = isManagingCredit();
 
@@ -890,25 +890,26 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         }
     }
 
-    protected void reduceCreditInPostDeliver()
+    protected void stopFlowIfNeccessary()
     {
         int acknowledgeMode = getAcknowledgeMode();
-        boolean manageCredit = (acknowledgeMode == AUTO_ACKNOWLEDGE || acknowledgeMode == DUPS_OK_ACKNOWLEDGE) && getPrefetch() == 0;
+        boolean autoAckLike = (acknowledgeMode == AUTO_ACKNOWLEDGE || acknowledgeMode == DUPS_OK_ACKNOWLEDGE);
 
-        if(manageCredit && _creditChanged.compareAndSet(true,false))
+        if (autoAckLike && getPrefetch() == 0)
         {
-            ChannelFlowBody body = getMethodRegistry().createChannelFlowBody(false);
-            AMQFrame channelFlowFrame = body.generateFrame(getChannelId());
-            getProtocolHandler().writeFrame(channelFlowFrame, true);
+            if (_creditChanged.compareAndSet(true,false))
+            {
+                ChannelFlowBody body = getMethodRegistry().createChannelFlowBody(false);
+                AMQFrame channelFlowFrame = body.generateFrame(getChannelId());
+                getProtocolHandler().writeFrame(channelFlowFrame, true);
+            }
         }
     }
 
-
-    protected void updateCurrentPrefetch(int delta)
+    protected void incUnacknowledgedMessages()
     {
-        _currentPrefetch.addAndGet(delta);
+        _unacknowledgedMessages.incrementAndGet();
     }
-
 
 
     public DestinationCache<AMQQueue> getQueueDestinationCache()
