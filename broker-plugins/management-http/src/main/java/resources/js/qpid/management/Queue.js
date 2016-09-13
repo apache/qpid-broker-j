@@ -417,7 +417,7 @@ define(["dojo/_base/declare",
                         "holdOnPublishEnabled",
                         "oldestMessageAge"]);
 
-            that.queueData = {}
+            that.queueData = {};
             that.bindingsGrid = new UpdatableStore([], findNode("bindings"), [{
                 name: "Exchange",
                 field: "exchange",
@@ -655,12 +655,12 @@ define(["dojo/_base/declare",
                 this.management.remove(this.modelObj)
                     .then(function (data)
                     {
-                        that.contentPane.onClose()
+                        that.contentPane.onClose();
                         that.controller.tabContainer.removeChild(that.contentPane);
                         that.contentPane.destroyRecursive();
                     }, util.xhrErrorHandler);
             }
-        }
+        };
 
         return Queue;
     });
