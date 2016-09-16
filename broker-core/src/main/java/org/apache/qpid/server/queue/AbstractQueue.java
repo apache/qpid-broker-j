@@ -18,9 +18,14 @@
  */
 package org.apache.qpid.server.queue;
 
+import static org.apache.qpid.server.util.ParameterizedTypes.MAP_OF_STRING_STRING;
+
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.AccessControlContext;
 import java.security.AccessControlException;
 import java.security.AccessController;
@@ -143,6 +148,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     };
 
     private static final long INITIAL_TARGET_QUEUE_SIZE = 102400l;
+    private static final String UTF8 = StandardCharsets.UTF_8.name();
 
     private final VirtualHostImpl _virtualHost;
     private final DeletedChildListener _deletedChildListener = new DeletedChildListener();
@@ -290,6 +296,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private boolean _closing;
     private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
     private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
+    private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
 
     private interface HoldMethod
     {
@@ -483,6 +490,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
         _maxAsyncDeliveries = getContextValue(Integer.class, Queue.MAX_ASYNCHRONOUS_DELIVERIES);
+        _mimeTypeToFileExtension = getContextValue(Map.class, MAP_OF_STRING_STRING, MIME_TYPE_TO_FILE_EXTENSION);
 
         if(_defaultFilters != null)
         {
@@ -2629,18 +2637,22 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    public static class MessageContent implements Content, CustomRestHeaders
+    class MessageContent implements Content, CustomRestHeaders
     {
-        public static final int UNLIMITED = -1;
+        private static final int UNLIMITED = -1;
         private final byte[] _data;
         private final String _mimeType;
+        private String _encoding;
+        private long _messageNumber;
         private final long _limit;
 
-        public MessageContent(byte[] data, String mimeType, long limit)
+        MessageContent(byte[] data, String mimeType, final String encoding, final long messageNumber, long limit)
         {
             _data = data;
             _mimeType = mimeType;
-            _limit = (limit == UNLIMITED ? data.length : limit);
+            _encoding = encoding;
+            _messageNumber = messageNumber;
+            _limit = (limit == UNLIMITED ? data.length : Math.min(limit, data.length));
         }
 
         @Override
@@ -2649,12 +2661,48 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             outputStream.write(_data, 0, (int) _limit);
         }
 
+        @SuppressWarnings("unused")
         @RestContentHeader("Content-Type")
         public String getContentType()
         {
             return _mimeType;
         }
 
+        @SuppressWarnings("unused")
+        @RestContentHeader("Content-Encoding")
+        public String getContentEncoding()
+        {
+            return _encoding;
+        }
+
+        @SuppressWarnings("unused")
+        @RestContentHeader("Content-Disposition")
+        public String getContentDisposition()
+        {
+            try
+            {
+                String queueName = getName();
+                // replace all non-ascii and non-printable characters and all backslashes and percent encoded characters
+                // as suggested by rfc6266 Appendix D
+                String asciiQueueName = queueName.replaceAll("[^\\x20-\\x7E]", "?")
+                                                 .replace('\\', '?')
+                                                 .replaceAll("%[0-9a-fA-F]{2}", "?");
+                String filenameExtension = _mimeTypeToFileExtension.get(getContentType());
+                filenameExtension = (filenameExtension == null ? "" : filenameExtension);
+                String disposition = String.format("attachment; filename=\"%s_msg%09d%s\"; filename*=\"UTF-8''%s_msg%09d%s\"",
+                                                   asciiQueueName,
+                                                   _messageNumber,
+                                                   filenameExtension,
+                                                   URLEncoder.encode(queueName, UTF8),
+                                                   _messageNumber,
+                                                   filenameExtension);
+                return disposition;
+            }
+            catch (UnsupportedEncodingException e)
+            {
+                throw new RuntimeException("JVM does not support UTF8", e);
+            }
+        }
     }
 
     private static class AcquireAllQueueEntryFilter implements QueueEntryFilter
@@ -3433,7 +3481,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         visit(messageFinder);
         if(messageFinder.isFound())
         {
-            return new MessageContent(messageFinder.getContent(), messageFinder.getMimeType(), limit);
+            return new MessageContent(messageFinder.getContent(),
+                                      messageFinder.getMimeType(),
+                                      messageFinder.getEncoding(),
+                                      messageFinder.getMessageNumber(),
+                                      limit);
         }
         else
         {
@@ -3500,6 +3552,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         private final long _messageNumber;
         private String _mimeType;
+        private String _encoding;
         private long _size;
         private byte[] _content;
         private boolean _found;
@@ -3523,6 +3576,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         try
                         {
                             _mimeType = message.getMessageHeader().getMimeType();
+                            _encoding = message.getMessageHeader().getEncoding();
                             _size = message.getSize();
                             _content = new byte[(int) _size];
                             _found = true;
@@ -3562,6 +3616,16 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         public boolean isFound()
         {
             return _found;
+        }
+
+        public long getMessageNumber()
+        {
+            return _messageNumber;
+        }
+
+        public String getEncoding()
+        {
+            return _encoding;
         }
     }
 

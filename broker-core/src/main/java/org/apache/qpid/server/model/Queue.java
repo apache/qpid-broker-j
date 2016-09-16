@@ -76,6 +76,16 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>
     @ManagedContextDefault(name = MAX_ASYNCHRONOUS_DELIVERIES )
     int DEFAULT_MAX_ASYNCHRONOUS_DELIVERIES = 80;
 
+    String MIME_TYPE_TO_FILE_EXTENSION = "qpid.mimeTypeToFileExtension";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = MIME_TYPE_TO_FILE_EXTENSION)
+    String DEFAULT_MIME_TYPE_TO_FILE_EXTENSION = "{\"application/json\":\".json\","
+                                                 + "\"application/pdf\":\".pdf\","
+                                                 + "\"application/xml\":\".xml\","
+                                                 + "\"image/jpeg\":\".jpg\","
+                                                 + "\"image/tiff\":\".tiff\","
+                                                 + "\"text/plain\":\".txt\"}";
+
     @ManagedAttribute
     Exchange getAlternateExchange();
 

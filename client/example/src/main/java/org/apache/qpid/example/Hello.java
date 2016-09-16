@@ -27,6 +27,7 @@ import java.util.Properties;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
+import javax.jms.MapMessage;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
@@ -61,13 +62,33 @@ public class Hello
             connection.start();
 
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            Destination destination = (Destination) context.lookup("topicExchange");
+            Destination destination = (Destination) context.lookup("myQueue");
 
             MessageProducer messageProducer = session.createProducer(destination);
             MessageConsumer messageConsumer = session.createConsumer(destination);
 
             TextMessage message = session.createTextMessage("Hello world!");
             messageProducer.send(message);
+
+            MapMessage mm = session.createMapMessage();
+            mm.setBoolean("b", true);
+            mm.setString("s", "fnord");
+            mm.setLong("l", 123456789123L);
+            messageProducer.send(mm);
+
+            TextMessage longMessage = session.createTextMessage("LongMessage\n"
+                                                                + "0123456789112345678921234567893123456789412345678951234567896123456789712345678981234567899123456789\n"
+                                                                + "0123456789112345678921234567893123456789412345678951234567896123456789712345678981234567899123456789\n"
+                                                                + "0123456789112345678921234567893123456789412345678951234567896123456789712345678981234567899123456789\n"
+                                                                + "0123456789112345678921234567893123456789412345678951234567896123456789712345678981234567899123456789\n"
+                                                                + "0123456789112345678921234567893123456789412345678951234567896123456789712345678981234567899123456789\n"
+                                                                + "0123456789112345678921234567893123456789412345678951234567896123456789712345678981234567899123456789\n"
+                                                                + "0123456789112345678921234567893123456789412345678951234567896123456789712345678981234567899123456789\n"
+                                                                + "0123456789112345678921234567893123456789412345678951234567896123456789712345678981234567899123456789\n"
+                                                                + "0123456789112345678921234567893123456789412345678951234567896123456789712345678981234567899123456789\n"
+                                                                + "0123456789112345678921234567893123456789412345678951234567896123456789712345678981234567899123456789\n"
+                                                                + "0123456789112345678921234567893123456789412345678951234567896123456789712345678981234567899123456789\n");
+            messageProducer.send(longMessage);
 
             message = (TextMessage)messageConsumer.receive();
             System.out.println(message.getText());
