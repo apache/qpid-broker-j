@@ -172,7 +172,7 @@ define(["dojo/dom",
                     parent: modelObj,
                     type: modelObj.type
                 };
-                var parameters = {messageId: data.id, returnJson: true};
+                var parameters = {messageId: data.id};
                 var url = management.buildObjectURL(contentModelObj, parameters);
 
                 var href = query('a#message-download', this.dialogNode)[0];
@@ -194,7 +194,7 @@ define(["dojo/dom",
                         ? 'showing the first ' + limit + ' of ' + data.size + ' bytes'
                         : 'showing all ' + data.size + ' bytes');
                     var previewContent = query("#message-content-preview", preview)[0];
-                    var previewParameters = lang.mixin({limit: limit}, parameters);
+                    var previewParameters = lang.mixin({limit: limit, returnJson: true}, parameters);
                     management.load(contentModelObj, previewParameters, {
                             handleAs: "text",
                             headers: {"Content-Type": data.mimeType}

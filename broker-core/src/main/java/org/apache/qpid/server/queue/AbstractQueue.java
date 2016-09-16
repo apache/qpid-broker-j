@@ -2691,16 +2691,102 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    class MessageContent implements Content, CustomRestHeaders, StreamingContent
+    abstract class BaseMessageContent implements Content
     {
-        private static final int UNLIMITED = -1;
-        private final MessageReference<?> _messageReference;
-        private final long _limit;
+        public static final int UNLIMITED = -1;
+        protected final MessageReference<?> _messageReference;
+        protected final long _limit;
 
-        MessageContent(MessageReference<?> messageReference, long limit)
+        BaseMessageContent(MessageReference<?> messageReference, long limit)
         {
             _messageReference = messageReference;
             _limit = limit;
+        }
+
+        @Override
+        public void release()
+        {
+            _messageReference.release();
+        }
+
+        public abstract String getContentType();
+
+        public String getContentDisposition()
+        {
+            try
+            {
+                String queueName = getName();
+                // replace all non-ascii and non-printable characters and all backslashes and percent encoded characters
+                // as suggested by rfc6266 Appendix D
+                String asciiQueueName = queueName.replaceAll("[^\\x20-\\x7E]", "?")
+                                                 .replace('\\', '?')
+                                                 .replaceAll("%[0-9a-fA-F]{2}", "?");
+                long messageNumber = _messageReference.getMessage().getMessageNumber();
+                String filenameExtension = _mimeTypeToFileExtension.get(getContentType());
+                filenameExtension = (filenameExtension == null ? "" : filenameExtension);
+                String disposition = String.format("attachment; filename=\"%s_msg%09d%s\"; filename*=\"UTF-8''%s_msg%09d%s\"",
+                                                   asciiQueueName,
+                                                   messageNumber,
+                                                   filenameExtension,
+                                                   URLEncoder.encode(queueName, UTF8),
+                                                   messageNumber,
+                                                   filenameExtension);
+                return disposition;
+            }
+            catch (UnsupportedEncodingException e)
+            {
+                throw new RuntimeException("JVM does not support UTF8", e);
+            }
+        }
+    }
+
+    class JsonMessageContent extends BaseMessageContent implements CustomRestHeaders
+    {
+        private final InternalMessage _internalMessage;
+        private boolean _truncate = false;
+
+        JsonMessageContent(MessageReference<?> messageReference, InternalMessage message, long limit)
+        {
+            super(messageReference, limit);
+            _internalMessage = message;
+            _truncate = limit >= 0 && _messageReference.getMessage().getSize() > limit;
+        }
+
+        @Override
+        public void write(final OutputStream outputStream) throws IOException
+        {
+            Object messageBody = _internalMessage.getMessageBody();
+            new MessageContentJsonConverter(messageBody, _truncate ? _limit : UNLIMITED).convertAndWrite(outputStream);
+        }
+
+        @SuppressWarnings("unused")
+        @RestContentHeader("X-Content-Truncated")
+        public String getContentTruncated()
+        {
+            return String.valueOf(_truncate);
+        }
+
+        @SuppressWarnings("unused")
+        @RestContentHeader("Content-Type")
+        public String getContentType()
+        {
+            return "application/json";
+        }
+
+        @SuppressWarnings("unused")
+        @RestContentHeader("Content-Disposition")
+        public String getContentDisposition()
+        {
+            return super.getContentDisposition();
+        }
+    }
+
+    class MessageContent extends BaseMessageContent implements CustomRestHeaders, StreamingContent
+    {
+
+        MessageContent(MessageReference<?> messageReference, long limit)
+        {
+            super(messageReference, limit);
         }
 
         @Override
@@ -2754,30 +2840,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         @RestContentHeader("Content-Disposition")
         public String getContentDisposition()
         {
-            try
-            {
-                String queueName = getName();
-                // replace all non-ascii and non-printable characters and all backslashes and percent encoded characters
-                // as suggested by rfc6266 Appendix D
-                String asciiQueueName = queueName.replaceAll("[^\\x20-\\x7E]", "?")
-                                                 .replace('\\', '?')
-                                                 .replaceAll("%[0-9a-fA-F]{2}", "?");
-                long messageNumber = _messageReference.getMessage().getMessageNumber();
-                String filenameExtension = _mimeTypeToFileExtension.get(getContentType());
-                filenameExtension = (filenameExtension == null ? "" : filenameExtension);
-                String disposition = String.format("attachment; filename=\"%s_msg%09d%s\"; filename*=\"UTF-8''%s_msg%09d%s\"",
-                                                   asciiQueueName,
-                                                   messageNumber,
-                                                   filenameExtension,
-                                                   URLEncoder.encode(queueName, UTF8),
-                                                   messageNumber,
-                                                   filenameExtension);
-                return disposition;
-            }
-            catch (UnsupportedEncodingException e)
-            {
-                throw new RuntimeException("JVM does not support UTF8", e);
-            }
+            return super.getContentDisposition();
         }
 
         @Override
@@ -3585,9 +3648,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         final MessageContentFinder messageFinder = new MessageContentFinder(messageId);
         visit(messageFinder);
-        if(messageFinder.isFound())
+        if (messageFinder.isFound())
         {
-            return createMessageContent((MessageReference) messageFinder.getMessageReference(), limit);
+            return createMessageContent(messageFinder.getMessageReference(), returnJson, limit);
         }
         else
         {
@@ -3595,17 +3658,19 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    private Content createMessageContent(final MessageReference messageReference, final long limit)
+    private Content createMessageContent(final MessageReference<?> messageReference,
+                                         final boolean returnJson,
+                                         final long limit)
     {
         String mimeType = messageReference.getMessage().getMessageHeader().getMimeType();
-        if (("amqp/list".equalsIgnoreCase(mimeType)
-             || "amqp/map".equalsIgnoreCase(mimeType)
-             || "jms/map-message".equalsIgnoreCase(mimeType)))
+        if (returnJson && ("amqp/list".equalsIgnoreCase(mimeType)
+                           || "amqp/map".equalsIgnoreCase(mimeType)
+                           || "jms/map-message".equalsIgnoreCase(mimeType)))
         {
             ServerMessage message = messageReference.getMessage();
             if (message instanceof InternalMessage)
             {
-                return new JsonMessageContent(getName(), messageReference, (InternalMessage) message, limit);
+                return new JsonMessageContent(messageReference, (InternalMessage) message, limit);
             }
             else
             {
@@ -3613,8 +3678,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         MessageConverterRegistry.getConverter(message.getClass(), InternalMessage.class);
                 if (messageConverter != null)
                 {
-                    return new JsonMessageContent(getName(),
-                                                  messageReference,
+                    return new JsonMessageContent(messageReference,
                                                   (InternalMessage) messageConverter.convert(message, getVirtualHost()),
                                                   limit);
                 }

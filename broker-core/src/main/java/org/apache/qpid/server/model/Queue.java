@@ -306,8 +306,12 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     @ManagedOperation(nonModifying = true, secure = true)
     Content getMessageContent(@Param(name = "messageId") long messageId,
-                              @Param(name = "limit", defaultValue = "-1", description = "Number of bytes to return") long limit,
-                              @Param(name = "returnJson", defaultValue = "true", description = "if true (default), converts message into json format") boolean returnJson);
+                              @Param(name = "limit", defaultValue = "-1",
+                                      description = "Number of bytes to return") long limit,
+                              @Param(name = "returnJson", defaultValue = "false",
+                                      description = "If true, converts message content into json format"
+                                                    + " if message mime-type is either amqp/map or amqp/list"
+                                                    + " or jms/map-message. Default is false.") boolean returnJson);
 
     @ManagedOperation(nonModifying = true, paramRequiringSecure = "includeHeaders")
     List<MessageInfo> getMessageInfo(@Param(name = "first", defaultValue = "-1") int first,
