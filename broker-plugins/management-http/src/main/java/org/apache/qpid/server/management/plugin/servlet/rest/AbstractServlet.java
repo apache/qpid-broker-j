@@ -32,7 +32,6 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.zip.GZIPInputStream;
 
 import javax.security.auth.Subject;
 import javax.servlet.ServletConfig;
@@ -48,7 +47,6 @@ import org.apache.qpid.server.model.RestContentHeader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.google.common.io.ByteStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,14 +54,15 @@ import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
-import org.apache.qpid.server.model.StreamingContent;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.management.plugin.GZIPOutputStreamAdapter;
 
 public abstract class AbstractServlet extends HttpServlet
 {
     public static final int SC_UNPROCESSABLE_ENTITY = 422;
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractServlet.class);
     public static final String CONTENT_DISPOSITION = "Content-disposition";
+    public static final String CONTENT_LIMIT = "X-Content-Limit";
 
     private Broker<?> _broker;
     private HttpManagementConfiguration _managementConfiguration;
@@ -330,19 +329,22 @@ public abstract class AbstractServlet extends HttpServlet
     {
         Map<String, Object> headers = getResponseHeaders(content);
         boolean isGzipCompressed = GZIP_CONTENT_ENCODING.equals(headers.get(CONTENT_ENCODING_HEADER.toUpperCase()));
-        boolean isCompressing = HttpManagementUtil.isCompressing(request, _managementConfiguration);
-
-        if (isGzipCompressed && content instanceof StreamingContent
-            && ((((StreamingContent) content).getLimit() >= 0 || !isCompressing)))
+        boolean isCompressingAccepted = HttpManagementUtil.isCompressingAccepted(request, _managementConfiguration);
+        if (isGzipCompressed && !isCompressingAccepted)
         {
             headers.remove(CONTENT_ENCODING_HEADER);
-            content = new DecompressingContent((StreamingContent) content);
-            isGzipCompressed = false;
+        }
+        long limit = -1;
+        if (headers.containsKey(CONTENT_LIMIT.toUpperCase()))
+        {
+            limit = Long.parseLong(String.valueOf(headers.get(CONTENT_LIMIT.toUpperCase())));
         }
 
-        try (OutputStream os = isGzipCompressed && isCompressing
+        try (OutputStream os = isGzipCompressed && isCompressingAccepted && limit < 0
                 ? response.getOutputStream()
-                : getOutputStream(request, response))
+                : isGzipCompressed && (!isCompressingAccepted || limit >= 0)
+                        ? new GZIPOutputStreamAdapter(getOutputStream(request, response), limit)
+                        : getOutputStream(request, response))
         {
             response.setStatus(HttpServletResponse.SC_OK);
             for (Map.Entry<String, Object> entry : headers.entrySet())
@@ -422,33 +424,4 @@ public abstract class AbstractServlet extends HttpServlet
         return results;
     }
 
-    private class DecompressingContent implements Content
-    {
-        private final StreamingContent _content;
-
-        public DecompressingContent(final StreamingContent content)
-        {
-            _content = content;
-        }
-
-        @Override
-        public void write(final OutputStream os) throws IOException
-        {
-            try (GZIPInputStream gzipInputStream = new GZIPInputStream(_content.getInputStream());)
-            {
-                ByteStreams.copy(_content.getLimit() >= 0
-                                         ? ByteStreams.limit(gzipInputStream, _content.getLimit())
-                                         : gzipInputStream, os);
-            }
-        }
-
-        @Override
-        public void release()
-        {
-            if (_content instanceof Content)
-            {
-                ((Content)_content).release();
-            }
-        }
-    }
 }

@@ -178,7 +178,7 @@ public class HttpManagementUtil
             throws IOException
     {
         OutputStream outputStream;
-        if(isCompressing(request, managementConfiguration))
+        if(isCompressingAccepted(request, managementConfiguration))
         {
             outputStream = new GZIPOutputStream(response.getOutputStream());
             response.setHeader(CONTENT_ENCODING_HEADER, GZIP_CONTENT_ENCODING);
@@ -190,8 +190,8 @@ public class HttpManagementUtil
         return outputStream;
     }
 
-    public static boolean isCompressing(final HttpServletRequest request,
-                                        final HttpManagementConfiguration managementConfiguration)
+    public static boolean isCompressingAccepted(final HttpServletRequest request,
+                                                final HttpManagementConfiguration managementConfiguration)
     {
         return managementConfiguration.isCompressResponses()
                && Collections.list(request.getHeaderNames()).contains(ACCEPT_ENCODING_HEADER)

@@ -21,7 +21,6 @@ package org.apache.qpid.server.queue;
 import static org.apache.qpid.server.util.ParameterizedTypes.MAP_OF_STRING_STRING;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -110,7 +109,6 @@ import org.apache.qpid.server.util.MapValueConverter;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
-import org.apache.qpid.streams.CompositeInputStream;
 import org.apache.qpid.transport.TransportException;
 
 public abstract class AbstractQueue<X extends AbstractQueue<X>>
@@ -2781,7 +2779,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    class MessageContent extends BaseMessageContent implements CustomRestHeaders, StreamingContent
+    class MessageContent extends BaseMessageContent implements CustomRestHeaders
     {
 
         MessageContent(MessageReference<?> messageReference, long limit)
@@ -2843,41 +2841,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             return super.getContentDisposition();
         }
 
-        @Override
-        public InputStream getInputStream()
-        {
-            ServerMessage message = _messageReference.getMessage();
-            final Collection<QpidByteBuffer> content = message.getContent(0, (int) message.getSize());
-            Collection<InputStream> streams = new ArrayList<>(content.size());
-            for (QpidByteBuffer b : content)
-            {
-                streams.add(b.asInputStream());
-            }
-            return new CompositeInputStream(streams)
-            {
-                @Override
-                public void close() throws IOException
-                {
-                    try
-                    {
-                        super.close();
-                    }
-                    finally
-                    {
-                        for (QpidByteBuffer b : content)
-                        {
-                            b.dispose();
-                        }
-                    }
-                }
-            };
-        }
-
-        @Override
-        public long getLimit()
+        @SuppressWarnings("unused")
+        @RestContentHeader("X-Content-Limit")
+        public Long getContentLimit()
         {
             return _limit;
         }
+
     }
 
     private static class AcquireAllQueueEntryFilter implements QueueEntryFilter
