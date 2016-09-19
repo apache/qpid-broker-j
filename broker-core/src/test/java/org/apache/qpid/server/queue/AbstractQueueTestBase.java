@@ -71,13 +71,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 abstract class AbstractQueueTestBase extends QpidTestCase
 {
     private static final Logger _logger = LoggerFactory.getLogger(AbstractQueueTestBase.class);
-    private static final long QUEUE_RUNNER_WAIT_TIME = getLongProperty("AbstractQueueTestBase.queueRunnerWaitTime", 150L);
-
-    static
-    {
-        _logger.debug("Using AbstractQueueTestBase.queueRunnerWaitTime {}", QUEUE_RUNNER_WAIT_TIME);
-    }
-
+    private long _queueRunnerWaitTime;
     private Queue<?> _queue;
     private VirtualHost<?> _virtualHost;
     private String _qname = "qname";
@@ -103,6 +97,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue = _virtualHost.createChild(Queue.class, attributes);
 
         _exchange = (DirectExchange) _virtualHost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
+        _queueRunnerWaitTime = Long.getLong("AbstractQueueTestBase.queueRunnerWaitTime", 150L);
+        _logger.debug("Using AbstractQueueTestBase.queueRunnerWaitTime {}", _queueRunnerWaitTime);
     }
 
     @Override
@@ -186,7 +182,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         // Check sending a message ends up with the subscriber
         _queue.enqueue(messageA, null, null);
-        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
+        Thread.sleep(_queueRunnerWaitTime);
 
         assertEquals(messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage());
         assertNull(_consumer.getQueueContext().getReleasedEntry());
@@ -211,7 +207,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                                   ConsumerImpl.Option.SEES_REQUEUES), 0);
-        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
+        Thread.sleep(_queueRunnerWaitTime);
         assertEquals(messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage());
         assertNull("There should be no releasedEntry after an enqueue",
                    _consumer.getQueueContext().getReleasedEntry());
@@ -229,7 +225,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                                   ConsumerImpl.Option.SEES_REQUEUES), 0);
-        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
+        Thread.sleep(_queueRunnerWaitTime);
         assertEquals(messageB, _consumer.getQueueContext().getLastSeenEntry().getMessage());
         assertNull("There should be no releasedEntry after enqueues",
                    _consumer.getQueueContext().getReleasedEntry());
@@ -252,12 +248,12 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                                                      ConsumerImpl.Option.SEES_REQUEUES), 0);
-        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
+        Thread.sleep(_queueRunnerWaitTime);
 
         assertEquals("Message which was not yet valid was received", 0, _consumerTarget.getMessages().size());
         when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()-100L);
         _queue.checkMessageStatus();
-        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
+        Thread.sleep(_queueRunnerWaitTime);
         assertEquals("Message which was valid was not received", 1, _consumerTarget.getMessages().size());
     }
 
@@ -278,7 +274,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                                                      ConsumerImpl.Option.SEES_REQUEUES), 0);
-        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
+        Thread.sleep(_queueRunnerWaitTime);
 
         assertEquals("Message was held despite queue not having holding enabled", 1, _consumerTarget.getMessages().size());
 
@@ -304,14 +300,14 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                                                      ConsumerImpl.Option.SEES_REQUEUES), 0);
-        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
+        Thread.sleep(_queueRunnerWaitTime);
 
         assertEquals("Expect one message (message B)", 1, _consumerTarget.getMessages().size());
         assertEquals("Wrong message received", messageB.getMessageHeader().getMessageId(), _consumerTarget.getMessages().get(0).getMessage().getMessageHeader().getMessageId());
 
         when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()-100L);
         _queue.checkMessageStatus();
-        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);
+        Thread.sleep(_queueRunnerWaitTime);
         assertEquals("Message which was valid was not received", 2, _consumerTarget.getMessages().size());
         assertEquals("Wrong message received", messageA.getMessageHeader().getMessageId(), _consumerTarget.getMessages().get(1).getMessage().getMessageHeader().getMessageId());
 
@@ -342,7 +338,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue.enqueue(messageB, postEnqueueAction, null);
         _queue.enqueue(messageC, postEnqueueAction, null);
 
-        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);  // Work done by QueueRunner Thread
+        Thread.sleep(_queueRunnerWaitTime);  // Work done by QueueRunner Thread
 
         assertEquals("Unexpected total number of messages sent to consumer",
                      3,
@@ -355,7 +351,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         queueEntries.get(0).release();
 
-        Thread.sleep(QUEUE_RUNNER_WAIT_TIME); // Work done by QueueRunner Thread
+        Thread.sleep(_queueRunnerWaitTime); // Work done by QueueRunner Thread
 
         assertEquals("Unexpected total number of messages sent to consumer",
                      4,
@@ -401,7 +397,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         /* Enqueue one message with expiration set for a short time in the future */
 
-        final long expiration = System.currentTimeMillis() + QUEUE_RUNNER_WAIT_TIME;
+        final long expiration = System.currentTimeMillis() + _queueRunnerWaitTime;
         when(messageA.getExpiration()).thenReturn(expiration);
 
         _queue.enqueue(messageA, postEnqueueAction, null);
@@ -476,7 +472,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue.enqueue(messageB, postEnqueueAction, null);
         _queue.enqueue(messageC, postEnqueueAction, null);
 
-        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);  // Work done by QueueRunner Thread
+        Thread.sleep(_queueRunnerWaitTime);  // Work done by QueueRunner Thread
 
         assertEquals("Unexpected total number of messages sent to consumer",
                      3,
@@ -490,7 +486,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         queueEntries.get(2).release();
         queueEntries.get(0).release();
 
-        Thread.sleep(QUEUE_RUNNER_WAIT_TIME); // Work done by QueueRunner Thread
+        Thread.sleep(_queueRunnerWaitTime); // Work done by QueueRunner Thread
 
         assertEquals("Unexpected total number of messages sent to consumer",
                      5,
@@ -533,7 +529,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue.enqueue(messageA, postEnqueueAction, null);
         _queue.enqueue(messageB, postEnqueueAction, null);
 
-        Thread.sleep(QUEUE_RUNNER_WAIT_TIME);  // Work done by QueueRunner Thread
+        Thread.sleep(_queueRunnerWaitTime);  // Work done by QueueRunner Thread
 
         assertEquals("Unexpected total number of messages sent to both after enqueue",
                      2,
@@ -542,7 +538,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         /* Now release the first message only, causing it to be requeued */
         queueEntries.get(0).release();
 
-        Thread.sleep(QUEUE_RUNNER_WAIT_TIME); // Work done by QueueRunner Thread
+        Thread.sleep(_queueRunnerWaitTime); // Work done by QueueRunner Thread
 
         assertEquals("Unexpected total number of messages sent to both consumers after release",
                      3,
@@ -570,7 +566,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         // Check sending a message ends up with the subscriber
         _queue.enqueue(messageA, null, null);
 
-        final long timeout = System.currentTimeMillis() + QUEUE_RUNNER_WAIT_TIME;
+        final long timeout = System.currentTimeMillis() + _queueRunnerWaitTime;
 
         QueueEntry lastSeen = null;
         while (timeout > System.currentTimeMillis() &&

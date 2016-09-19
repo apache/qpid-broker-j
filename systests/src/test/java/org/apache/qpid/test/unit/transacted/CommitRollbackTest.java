@@ -62,15 +62,23 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 public class CommitRollbackTest extends QpidBrokerTestCase
 {
     private static final Logger _logger = LoggerFactory.getLogger(CommitRollbackTest.class);
-    private static final long POSITIVE_TIMEOUT = QpidBrokerTestCase.RECEIVE_TIMEOUT;
-    private static final long NEGATIVE_TIMEOUT = QpidBrokerTestCase.RECEIVE_SHORT_TIMEOUT;
+    private long _positiveTimeout;
+    private long _negativeTimeout;
 
-    protected AMQConnection _conn;
+    private AMQConnection _conn;
     private Session _session;
     private MessageProducer _publisher;
     private Session _pubSession;
     private MessageConsumer _consumer;
     private Queue _jmsQueue;
+
+    @Override
+    public void setUp() throws Exception
+    {
+        super.setUp();
+        _positiveTimeout = getReceiveTimeout();
+        _negativeTimeout = getShortReceiveTimeout();
+    }
 
     private void newConnection() throws Exception
     {
@@ -112,7 +120,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         newConnection();
 
         _logger.info("receiving result");
-        Message result = _consumer.receive(NEGATIVE_TIMEOUT);
+        Message result = _consumer.receive(_negativeTimeout);
 
         // commit to ensure message is removed from queue
         _session.commit();
@@ -142,7 +150,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         _pubSession.rollback();
 
         _logger.info("receiving result");
-        Message result = _consumer.receive(NEGATIVE_TIMEOUT);
+        Message result = _consumer.receive(_negativeTimeout);
 
         assertNull("test message was put and rolled back, but is still present", result);
     }
@@ -167,7 +175,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
 
         _logger.info("getting test message");
 
-        Message msg = _consumer.receive(POSITIVE_TIMEOUT);
+        Message msg = _consumer.receive(_positiveTimeout);
         assertNotNull("retrieved message is null", msg);
 
         _logger.info("closing connection");
@@ -176,7 +184,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         newConnection();
 
         _logger.info("receiving result");
-        Message result = _consumer.receive(NEGATIVE_TIMEOUT);
+        Message result = _consumer.receive(_negativeTimeout);
 
         _session.commit();
 
@@ -205,7 +213,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
 
         _logger.info("getting test message");
 
-        Message msg = _consumer.receive(POSITIVE_TIMEOUT);
+        Message msg = _consumer.receive(_positiveTimeout);
         assertNotNull("retrieved message is null", msg);
         assertEquals("test message was correct message", MESSAGE_TEXT, ((TextMessage) msg).getText());
 
@@ -216,7 +224,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         newConnection();
 
         _logger.info("receiving result");
-        Message result = _consumer.receive(POSITIVE_TIMEOUT);
+        Message result = _consumer.receive(_positiveTimeout);
 
         _session.commit();
 
@@ -245,7 +253,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
 
         _logger.info("getting test message");
 
-        Message msg = _consumer.receive(POSITIVE_TIMEOUT);
+        Message msg = _consumer.receive(_positiveTimeout);
 
         assertNotNull("retrieved message is null", msg);
         assertEquals("test message was correct message", MESSAGE_TEXT, ((TextMessage) msg).getText());
@@ -256,7 +264,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
 
         _logger.info("receiving result");
 
-        Message result = _consumer.receive(POSITIVE_TIMEOUT);
+        Message result = _consumer.receive(_positiveTimeout);
 
         _session.commit();
         assertNotNull("test message was consumed and rolled back, but is gone", result);
@@ -285,7 +293,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
 
         _logger.info("getting test message");
 
-        Message msg = _consumer.receive(POSITIVE_TIMEOUT);
+        Message msg = _consumer.receive(_positiveTimeout);
 
         assertNotNull("retrieved message is null", msg);
         assertEquals("test message was correct message", MESSAGE_TEXT, ((TextMessage) msg).getText());
@@ -300,7 +308,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
 
         _consumer = _session.createConsumer(_jmsQueue);
 
-        Message result = _consumer.receive(POSITIVE_TIMEOUT);
+        Message result = _consumer.receive(_positiveTimeout);
 
         _session.commit();
         assertNotNull("test message was consumed and rolled back, but is gone", result);
@@ -328,7 +336,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         _pubSession.commit();
 
         _logger.info("getting test message");
-        Message result = _consumer.receive(POSITIVE_TIMEOUT);
+        Message result = _consumer.receive(_positiveTimeout);
 
         assertNotNull("Message received should not be null", result);
         assertEquals("1", ((TextMessage) result).getText());
@@ -345,7 +353,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
 
 
         // Message 2 may be marked as redelivered if it was prefetched.
-        result = _consumer.receive(POSITIVE_TIMEOUT);
+        result = _consumer.receive(_positiveTimeout);
         assertNotNull("Second message was not consumed, but is gone", result);
 
         // The first message back will be 2, message 1 has been received but not committed
@@ -357,7 +365,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
             fail("First message was received again");
         }
 
-        result = _consumer.receive(NEGATIVE_TIMEOUT);
+        result = _consumer.receive(_negativeTimeout);
         assertNull("test message should be null:" + result, result);
 
         _session.commit();
@@ -376,7 +384,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         _publisher.send(_pubSession.createTextMessage(MESSAGE_TEXT));
         _pubSession.commit();
 
-        assertNotNull(_consumer.receive(POSITIVE_TIMEOUT));
+        assertNotNull(_consumer.receive(_positiveTimeout));
 
         _publisher.send(_pubSession.createTextMessage(MESSAGE_TEXT));
 
@@ -384,14 +392,14 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         _pubSession.rollback();
 
         _logger.info("receiving result");
-        Message result = _consumer.receive(NEGATIVE_TIMEOUT);
+        Message result = _consumer.receive(_negativeTimeout);
         assertNull("test message was put and rolled back, but is still present", result);
 
         _publisher.send(_pubSession.createTextMessage(MESSAGE_TEXT));
 
         _pubSession.commit();
 
-        assertNotNull(_consumer.receive(POSITIVE_TIMEOUT));
+        assertNotNull(_consumer.receive(_positiveTimeout));
 
         _session.commit();
     }
@@ -474,7 +482,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
 
         for (int i=0 ;i< maxPrefetch; i++)
         {
-            final Message message = _consumer.receive(POSITIVE_TIMEOUT);
+            final Message message = _consumer.receive(_positiveTimeout);
             assertNotNull("Received:" + i, message);
             assertEquals("Unexpected message received", i, message.getIntProperty(INDEX));
         }
@@ -484,7 +492,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
 
         _logger.info("Receiving messages");
 
-        Message result = _consumer.receive(POSITIVE_TIMEOUT);
+        Message result = _consumer.receive(_positiveTimeout);
         assertNotNull("Message expected", result);
         // Expect the first message
         assertEquals("Unexpected message received", 0, result.getIntProperty(INDEX));
@@ -520,7 +528,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         final int rollbackTime = 2000;
         final int numberOfMessages = 1000;
         final int numberOfConsumers = 2;
-        final long testTimeout = numberOfMessages * POSITIVE_TIMEOUT / numberOfConsumers;
+        final long testTimeout = numberOfMessages * _positiveTimeout / numberOfConsumers;
         sendMessage(_pubSession, _jmsQueue, numberOfMessages);
 
         List<ListenableFuture<Void >> consumerFutures = new ArrayList<>(numberOfConsumers);
@@ -546,7 +554,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
 
                         while(!shutdown.get())
                         {
-                            Message m = consumer.receive(POSITIVE_TIMEOUT);
+                            Message m = consumer.receive(_positiveTimeout);
                             if (m != null)
                             {
                                 long currentTime = System.currentTimeMillis();
@@ -611,7 +619,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         finally
         {
             threadPool.shutdownNow();
-            threadPool.awaitTermination(2 * POSITIVE_TIMEOUT, TimeUnit.SECONDS);
+            threadPool.awaitTermination(2 * _positiveTimeout, TimeUnit.SECONDS);
         }
     }
 
@@ -641,15 +649,15 @@ public class CommitRollbackTest extends QpidBrokerTestCase
 
         _pubSession.commit();
 
-        assertNotNull("two messages were sent, but none has been received", _consumer.receive(POSITIVE_TIMEOUT));
+        assertNotNull("two messages were sent, but none has been received", _consumer.receive(_positiveTimeout));
 
         _session.rollback();
 
         _logger.info("receiving result");
 
-        assertNotNull("two messages were sent, but none has been received", _consumer.receive(POSITIVE_TIMEOUT));
-        assertNotNull("two messages were sent, but only one has been received", _consumer.receive(POSITIVE_TIMEOUT));
-        assertNull("Only two messages were sent, but more have been received", _consumer.receive(NEGATIVE_TIMEOUT));
+        assertNotNull("two messages were sent, but none has been received", _consumer.receive(_positiveTimeout));
+        assertNotNull("two messages were sent, but only one has been received", _consumer.receive(_positiveTimeout));
+        assertNull("Only two messages were sent, but more have been received", _consumer.receive(_negativeTimeout));
 
         _session.commit();
     }

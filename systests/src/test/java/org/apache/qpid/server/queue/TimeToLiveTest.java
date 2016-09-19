@@ -55,6 +55,16 @@ public class TimeToLiveTest extends QpidBrokerTestCase
 
     private static final int MSG_COUNT = 50;
     private static final long SERVER_TTL_TIMEOUT = 60000L;
+    private long _shortReceiveTimeout;
+    private long _longReceiveTimeout;
+
+    @Override
+    public void setUp() throws Exception
+    {
+        super.setUp();
+        _longReceiveTimeout = getLongReceiveTimeout();
+        _shortReceiveTimeout = getShortReceiveTimeout();
+    }
 
     public void testPassiveTTLWithPrefetch() throws Exception
     {
@@ -155,11 +165,9 @@ public class TimeToLiveTest extends QpidBrokerTestCase
 
         clientConnection.start();
 
-        //Receive Message 0
-        // Set 5s receive time for messages we expect to receive.
-        Message receivedFirst = consumer.receive(RECEIVE_LONG_TIMEOUT);
-        Message receivedSecond = consumer.receive(RECEIVE_LONG_TIMEOUT);
-        Message receivedThird = consumer.receive(RECEIVE_SHORT_TIMEOUT);
+        Message receivedFirst = consumer.receive(_longReceiveTimeout);
+        Message receivedSecond = consumer.receive(_longReceiveTimeout);
+        Message receivedThird = consumer.receive(_shortReceiveTimeout);
 
         // Log the messages to help diagnosis incase of failure
         _logger.info("First:"+receivedFirst);
@@ -311,11 +319,9 @@ public class TimeToLiveTest extends QpidBrokerTestCase
 
         clientConnection.start();
 
-        //Receive Message 0
-        // Set 5s receive time for messages we expect to receive.
-        Message receivedFirst = durableSubscriber.receive(RECEIVE_LONG_TIMEOUT);
-        Message receivedSecond = durableSubscriber.receive(RECEIVE_LONG_TIMEOUT);
-        Message receivedThird = durableSubscriber.receive(RECEIVE_SHORT_TIMEOUT);
+        Message receivedFirst = durableSubscriber.receive(_longReceiveTimeout);
+        Message receivedSecond = durableSubscriber.receive(_longReceiveTimeout);
+        Message receivedThird = durableSubscriber.receive(getShortReceiveTimeout());
         
         // Log the messages to help diagnosis incase of failure
         _logger.info("First:"+receivedFirst);

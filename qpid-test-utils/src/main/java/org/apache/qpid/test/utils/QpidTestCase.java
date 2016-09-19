@@ -340,13 +340,4 @@ public class QpidTestCase extends TestCase
         }
         return properties;
     }
-
-    protected static long getLongProperty(String propertyName, long defaultValue)
-    {
-        if (OVERRIDDEN_PROPERTIES.containsKey(propertyName))
-        {
-            return Long.parseLong(OVERRIDDEN_PROPERTIES.getProperty(propertyName));
-        }
-        return Long.getLong(propertyName, defaultValue);
-    }
 }

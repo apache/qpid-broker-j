@@ -80,9 +80,7 @@ public class QpidBrokerTestCase extends QpidTestCase
     public static final String TOPIC = "topic";
     public static final String MANAGEMENT_MODE_PASSWORD = "mm_password";
     protected static final Logger _logger = LoggerFactory.getLogger(QpidBrokerTestCase.class);
-    protected static final long RECEIVE_TIMEOUT = getLongProperty("qpid.test_receive_timeout", 1000L);
-    protected static final long RECEIVE_LONG_TIMEOUT = getLongProperty("qpid.test_receive_long_timeout", 5000L);
-    protected static final long RECEIVE_SHORT_TIMEOUT = getLongProperty("qpid.test_receive_short_timeout", 500L);
+    protected static final long RECEIVE_TIMEOUT = Long.getLong("qpid.test_receive_timeout", 1000L);
     protected static final String INDEX = "index";
     protected static final String CONTENT = "content";
     protected static final int DEFAULT_MESSAGE_SIZE = 1024;
@@ -313,7 +311,6 @@ public class QpidBrokerTestCase extends QpidTestCase
     /**
      * Return a Queue specific for this test.
      * Uses getTestQueueName() as the name of the queue
-     *
      */
     public Queue getTestQueue()
     {
@@ -323,7 +320,6 @@ public class QpidBrokerTestCase extends QpidTestCase
     /**
      * Return a Topic specific for this test.
      * Uses getTestQueueName() as the name of the topic
-     *
      */
     public Topic getTestTopic()
     {
@@ -400,7 +396,6 @@ public class QpidBrokerTestCase extends QpidTestCase
                 {
                     session.commit();
                 }
-
             }
 
             messages.add(next);
@@ -425,7 +420,6 @@ public class QpidBrokerTestCase extends QpidTestCase
         message.setIntProperty(INDEX, msgCount);
 
         return message;
-
     }
 
     public Message createMessage(Session session, int messageSize) throws JMSException
@@ -727,6 +721,21 @@ public class QpidBrokerTestCase extends QpidTestCase
         {
             setSystemProperty(propertyName, properties.getProperty(propertyName));
         }
+    }
+
+    protected long getReceiveTimeout()
+    {
+        return Long.getLong("qpid.test_receive_timeout", 1000L);
+    }
+
+    protected long getLongReceiveTimeout()
+    {
+        return Long.getLong("qpid.test_receive_long_timeout", 5000L);
+    }
+
+    protected long getShortReceiveTimeout()
+    {
+        return Long.getLong("qpid.test_receive_short_timeout", 500L);
     }
 
     private File getFileFromSiftingAppender(final ch.qos.logback.classic.Logger logger)
