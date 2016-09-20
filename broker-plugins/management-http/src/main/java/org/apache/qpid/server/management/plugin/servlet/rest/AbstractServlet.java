@@ -32,6 +32,7 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.GZIPOutputStream;
 
 import javax.security.auth.Subject;
 import javax.servlet.ServletConfig;
@@ -41,21 +42,21 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.server.model.Content;
-import org.apache.qpid.server.model.CustomRestHeaders;
-import org.apache.qpid.server.model.RestContentHeader;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.management.plugin.GunzipOutputStream;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
+import org.apache.qpid.server.management.plugin.LimitingOutputStream;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
+import org.apache.qpid.server.model.Content;
+import org.apache.qpid.server.model.CustomRestHeaders;
+import org.apache.qpid.server.model.RestContentHeader;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.management.plugin.GZIPOutputStreamAdapter;
 
 public abstract class AbstractServlet extends HttpServlet
 {
@@ -328,23 +329,8 @@ public abstract class AbstractServlet extends HttpServlet
             throws IOException
     {
         Map<String, Object> headers = getResponseHeaders(content);
-        boolean isGzipCompressed = GZIP_CONTENT_ENCODING.equals(headers.get(CONTENT_ENCODING_HEADER.toUpperCase()));
-        boolean isCompressingAccepted = HttpManagementUtil.isCompressingAccepted(request, _managementConfiguration);
-        if (isGzipCompressed && !isCompressingAccepted)
-        {
-            headers.remove(CONTENT_ENCODING_HEADER);
-        }
-        long limit = -1;
-        if (headers.containsKey(CONTENT_LIMIT.toUpperCase()))
-        {
-            limit = Long.parseLong(String.valueOf(headers.get(CONTENT_LIMIT.toUpperCase())));
-        }
 
-        try (OutputStream os = isGzipCompressed && isCompressingAccepted && limit < 0
-                ? response.getOutputStream()
-                : isGzipCompressed && (!isCompressingAccepted || limit >= 0)
-                        ? new GZIPOutputStreamAdapter(getOutputStream(request, response), limit)
-                        : getOutputStream(request, response))
+        try (OutputStream os = getOutputStream(request, response, headers))
         {
             response.setStatus(HttpServletResponse.SC_OK);
             for (Map.Entry<String, Object> entry : headers.entrySet())
@@ -358,6 +344,52 @@ public abstract class AbstractServlet extends HttpServlet
             LOGGER.warn("Unexpected exception processing request", e);
             sendJsonErrorResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
+    }
+
+    private OutputStream getOutputStream(final HttpServletRequest request,
+                                         final HttpServletResponse response,
+                                         Map<String, Object> headers) throws IOException
+    {
+        boolean isGzipCompressed = GZIP_CONTENT_ENCODING.equals(headers.get(CONTENT_ENCODING_HEADER.toUpperCase()));
+        boolean isCompressingAccepted = HttpManagementUtil.isCompressingAccepted(request, _managementConfiguration);
+        if (isGzipCompressed && !isCompressingAccepted)
+        {
+            headers.remove(CONTENT_ENCODING_HEADER);
+        }
+        long limit = -1;
+        if (headers.containsKey(CONTENT_LIMIT.toUpperCase()))
+        {
+            limit = Long.parseLong(String.valueOf(headers.get(CONTENT_LIMIT.toUpperCase())));
+        }
+        OutputStream stream = response.getOutputStream();
+
+        if (isGzipCompressed)
+        {
+            if (!isCompressingAccepted)
+            {
+                if (limit > 0)
+                {
+                    stream = new LimitingOutputStream(stream, limit);
+                }
+                stream = new GunzipOutputStream(stream);
+            }
+            else
+            {
+                if (limit > 0)
+                {
+                    stream = new GunzipOutputStream(new LimitingOutputStream(new GZIPOutputStream(stream), limit));
+                }
+            }
+        }
+        else
+        {
+            if (isCompressingAccepted)
+            {
+                stream = new GZIPOutputStream(stream);
+            }
+        }
+
+        return stream;
     }
 
     private Map<String, Object> getResponseHeaders(final Object content)

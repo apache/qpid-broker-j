@@ -24,37 +24,65 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.zip.GZIPOutputStream;
 
+import javax.xml.bind.DatatypeConverter;
+
 import org.apache.qpid.test.utils.QpidTestCase;
 
 
-public class GZIPOutputStreamAdapterTest extends QpidTestCase
+public class GunzipOutputStreamTest extends QpidTestCase
 {
+    // base64 encoded content of 'gzip -N test.txt' containing text: This is test
+    private static final String GZIP_CONTENT_WITH_EMBEDDED_FILE_NAME =
+            "H4sICIAM4FcAA3Rlc3QudHh0AAvJyCxWAKKS1OISANCadxgMAAAA";
+
+    // base64 encoded content of 'gzip -c -N test.txt > test.txt.gz ; gzip -c -N test1.txt >> test.txt.gz'
+    // containing texts "This is test" and "Another test text" accordingly
+    private static final String GZIP_CONTENT_WITH_MULTIPLE_MEMBERS =
+            "H4sICNoV4VcAA3Rlc3QudHh0AAvJyCxWAKKS1OISANCadxgMAAAA"
+            + "H4sICOQV4VcAA3Rlc3QxLnR4dABzzMsvyUgtUihJLS4BEhUlAHeK0kERAAAA";
+    private static final String TEST_TEXT = "This is test";
+    private static final String TEST_TEXT2 = "Another test text";
 
     public void testDecompressing() throws IOException
     {
         String testText = generateTestText();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        GZIPOutputStreamAdapter adapter = new GZIPOutputStreamAdapter(outputStream, 128, -1);
+        GunzipOutputStream adapter = new GunzipOutputStream(outputStream);
 
         compressAndDecompressWithAdapter(testText, adapter);
 
         assertEquals("Unexpected content", testText, new String(outputStream.toByteArray()));
     }
 
-    public void testDecompressingLimited() throws IOException
+    public void testDecompressingWithFileName() throws IOException
     {
-        String testText = generateTestText();
+        byte[] data = DatatypeConverter.parseBase64Binary(GZIP_CONTENT_WITH_EMBEDDED_FILE_NAME);
+
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        GZIPOutputStreamAdapter adapter = new GZIPOutputStreamAdapter(outputStream, 128, testText.length() / 2);
+        GunzipOutputStream adapter = new GunzipOutputStream(outputStream);
+        adapter.write(data);
 
-        compressAndDecompressWithAdapter(testText, adapter);
-
-        assertEquals("Unexpected content",
-                     testText.substring(0, testText.length() / 2),
-                     new String(outputStream.toByteArray()));
+        assertEquals("Unexpected content", TEST_TEXT, new String(outputStream.toByteArray()));
     }
 
-    private void compressAndDecompressWithAdapter(final String testText, final GZIPOutputStreamAdapter adapter) throws IOException
+    public void testDecompressingMultipleMembers() throws IOException
+    {
+        byte[] data = DatatypeConverter.parseBase64Binary(GZIP_CONTENT_WITH_MULTIPLE_MEMBERS);
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        GunzipOutputStream adapter = new GunzipOutputStream(outputStream);
+        for (int i = 0; i < data.length; i++)
+        {
+            adapter.write(data[i]);
+        }
+
+        StringBuilder expected = new StringBuilder(TEST_TEXT);
+        expected.append(TEST_TEXT2);
+        assertEquals("Unexpected content", expected.toString(), new String(outputStream.toByteArray()));
+    }
+
+    private void compressAndDecompressWithAdapter(final String testText, final GunzipOutputStream adapter)
+            throws IOException
     {
         byte[] data = compress(testText);
         byte[] buffer = new byte[256];
@@ -64,7 +92,7 @@ public class GZIPOutputStreamAdapterTest extends QpidTestCase
         {
             int length = Math.min(remaining, buffer.length);
             System.arraycopy(data, written, buffer, 0, length);
-            adapter.write(buffer);
+            adapter.write(buffer, 0, length);
             written += length;
             remaining -= length;
         }
@@ -86,7 +114,15 @@ public class GZIPOutputStreamAdapterTest extends QpidTestCase
         int i = 0;
         while (sb.length() < 5000)
         {
-            sb.append(" A simple test text ").append(i++);
+            if (i % 2 == 0)
+            {
+                sb.append(TEST_TEXT);
+            }
+            else
+            {
+                sb.append(TEST_TEXT2);
+            }
+            sb.append(" ").append(i++);
         }
         return sb.toString();
     }

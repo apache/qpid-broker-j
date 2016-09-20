@@ -110,6 +110,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.transport.TransportException;
+import org.apache.qpid.util.GZIPUtils;
 
 public abstract class AbstractQueue<X extends AbstractQueue<X>>
         extends AbstractConfiguredObject<X>
@@ -2791,18 +2792,16 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         public void write(OutputStream outputStream) throws IOException
         {
             ServerMessage message = _messageReference.getMessage();
-            int length = (int) (_limit == UNLIMITED ? message.getSize() : _limit);
+            int length = (int) ((_limit == UNLIMITED || GZIPUtils.GZIP_CONTENT_ENCODING.equals(getContentEncoding())) ? message.getSize() : _limit);
             Collection<QpidByteBuffer> content = message.getContent(0, length);
             try
             {
                 for (QpidByteBuffer b : content)
                 {
-
                     int len = b.remaining();
                     byte[] data = new byte[len];
                     b.get(data);
                     outputStream.write(data);
-
                 }
             }
             finally
