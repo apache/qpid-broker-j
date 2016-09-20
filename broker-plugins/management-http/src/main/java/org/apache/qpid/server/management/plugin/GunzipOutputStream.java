@@ -37,8 +37,8 @@ public class GunzipOutputStream extends InflaterOutputStream
     private final GZIPHeader _header = new GZIPHeader();
     private final GZIPTrailer _trailer = new GZIPTrailer();
     private final byte[] _singleByteArray = new byte[1];
-    private StreamState _streamState = StreamState.HEADER_PARSING;
     private final CRC32 _crc;
+    private StreamState _streamState = StreamState.HEADER_PARSING;
 
     public GunzipOutputStream(final OutputStream targetOutputStream)
     {
@@ -49,49 +49,51 @@ public class GunzipOutputStream extends InflaterOutputStream
     @Override
     public void write(final byte data[], final int offset, final int length) throws IOException
     {
-        ByteArrayInputStream bais = new ByteArrayInputStream(data, offset, length);
-        int b;
-        while ((b = bais.read()) != -1)
+        try(ByteArrayInputStream bais = new ByteArrayInputStream(data, offset, length))
         {
-            if (_streamState == StreamState.DONE)
+            int b;
+            while ((b = bais.read()) != -1)
             {
-                // another member is coming
-                _streamState = StreamState.HEADER_PARSING;
-                _crc.reset();
-                _header.reset();
-                _trailer.reset();
-                inf.reset();
-            }
-
-            if (_streamState == StreamState.HEADER_PARSING)
-            {
-                _header.headerByte(b);
-                if (_header.getState() == HeaderState.DONE)
+                if (_streamState == StreamState.DONE)
                 {
-                    _streamState = StreamState.INFLATING;
-                    continue;
+                    // another member is coming
+                    _streamState = StreamState.HEADER_PARSING;
+                    _crc.reset();
+                    _header.reset();
+                    _trailer.reset();
+                    inf.reset();
                 }
-            }
 
-            if (_streamState == StreamState.INFLATING)
-            {
-                _singleByteArray[0] = (byte) b;
-                super.write(_singleByteArray, 0, 1);
-
-                if (inf.finished())
+                if (_streamState == StreamState.HEADER_PARSING)
                 {
-                    _streamState = StreamState.TRAILER_PARSING;
-                    continue;
+                    _header.headerByte(b);
+                    if (_header.getState() == HeaderState.DONE)
+                    {
+                        _streamState = StreamState.INFLATING;
+                        continue;
+                    }
                 }
-            }
 
-            if (_streamState == StreamState.TRAILER_PARSING)
-            {
-                if (_trailer.trailerByte(b))
+                if (_streamState == StreamState.INFLATING)
                 {
-                    _trailer.verify(_crc);
-                    _streamState = StreamState.DONE;
-                    continue;
+                    _singleByteArray[0] = (byte) b;
+                    super.write(_singleByteArray, 0, 1);
+
+                    if (inf.finished())
+                    {
+                        _streamState = StreamState.TRAILER_PARSING;
+                        continue;
+                    }
+                }
+
+                if (_streamState == StreamState.TRAILER_PARSING)
+                {
+                    if (_trailer.trailerByte(b))
+                    {
+                        _trailer.verify(_crc);
+                        _streamState = StreamState.DONE;
+                        continue;
+                    }
                 }
             }
         }
@@ -267,7 +269,7 @@ public class GunzipOutputStream extends InflaterOutputStream
             else
             {
                 throw new IOException(
-                        "Received bytes exceeds GZIP trailer length. Multipe memeber support is not implemented");
+                        String.format("Received too many GZIP trailer bytes. Expecting %d bytes.", TRAILER_SIZE));
             }
         }
 
@@ -275,12 +277,12 @@ public class GunzipOutputStream extends InflaterOutputStream
         {
             try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(_trailerBytes)))
             {
-                long crc32 = readLittleEndianInt(in);
+                long crc32 = readLittleEndianLong(in);
                 if (crc32 != crc.getValue())
                 {
                     throw new IOException("crc32 mismatch. Gzip-compressed data is corrupted");
                 }
-                long isize = readLittleEndianInt(in);
+                long isize = readLittleEndianLong(in);
                 if (isize != (inf.getBytesWritten() & SIZE_MASK))
                 {
                     throw new IOException("Uncompressed size mismatch. Gzip-compressed data is corrupted");
@@ -288,7 +290,7 @@ public class GunzipOutputStream extends InflaterOutputStream
             }
         }
 
-        private long readLittleEndianInt(final DataInputStream inData) throws IOException
+        private long readLittleEndianLong(final DataInputStream inData) throws IOException
         {
             return inData.readUnsignedByte()
                    | (inData.readUnsignedByte() << 8)

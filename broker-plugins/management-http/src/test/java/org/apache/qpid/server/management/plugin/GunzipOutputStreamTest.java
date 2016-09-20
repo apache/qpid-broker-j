@@ -20,13 +20,15 @@
 
 package org.apache.qpid.server.management.plugin;
 
+import static org.junit.Assert.assertArrayEquals;
+
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.zip.GZIPOutputStream;
+import java.nio.ByteBuffer;
 
 import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.util.GZIPUtils;
 
 
 public class GunzipOutputStreamTest extends QpidTestCase
@@ -43,72 +45,49 @@ public class GunzipOutputStreamTest extends QpidTestCase
     private static final String TEST_TEXT = "This is test";
     private static final String TEST_TEXT2 = "Another test text";
 
-    public void testDecompressing() throws IOException
+    public void testDecompressing() throws Exception
     {
-        String testText = generateTestText();
+        final byte[] originalUncompressedInput = generateTestBytes();
+        final byte[] compressedBytes = GZIPUtils.compressBufferToArray(ByteBuffer.wrap(originalUncompressedInput));
+
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        GunzipOutputStream adapter = new GunzipOutputStream(outputStream);
+        GunzipOutputStream guos = new GunzipOutputStream(outputStream);
+        guos.write(compressedBytes);
+        guos.close();
 
-        compressAndDecompressWithAdapter(testText, adapter);
-
-        assertEquals("Unexpected content", testText, new String(outputStream.toByteArray()));
+        assertArrayEquals("Unexpected content", originalUncompressedInput, outputStream.toByteArray());
     }
 
-    public void testDecompressingWithFileName() throws IOException
+    public void testDecompressingWithEmbeddedFileName() throws Exception
     {
         byte[] data = DatatypeConverter.parseBase64Binary(GZIP_CONTENT_WITH_EMBEDDED_FILE_NAME);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        GunzipOutputStream adapter = new GunzipOutputStream(outputStream);
-        adapter.write(data);
+        GunzipOutputStream guos = new GunzipOutputStream(outputStream);
+        guos.write(data);
+        guos.close();
 
         assertEquals("Unexpected content", TEST_TEXT, new String(outputStream.toByteArray()));
     }
 
-    public void testDecompressingMultipleMembers() throws IOException
+    public void testDecompressingMultipleMembers() throws Exception
     {
         byte[] data = DatatypeConverter.parseBase64Binary(GZIP_CONTENT_WITH_MULTIPLE_MEMBERS);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        GunzipOutputStream adapter = new GunzipOutputStream(outputStream);
+        GunzipOutputStream guos = new GunzipOutputStream(outputStream);
         for (int i = 0; i < data.length; i++)
         {
-            adapter.write(data[i]);
+            guos.write(data[i]);
         }
+        guos.close();
 
         StringBuilder expected = new StringBuilder(TEST_TEXT);
         expected.append(TEST_TEXT2);
         assertEquals("Unexpected content", expected.toString(), new String(outputStream.toByteArray()));
     }
 
-    private void compressAndDecompressWithAdapter(final String testText, final GunzipOutputStream adapter)
-            throws IOException
-    {
-        byte[] data = compress(testText);
-        byte[] buffer = new byte[256];
-        int remaining = data.length;
-        int written = 0;
-        while (remaining > 0)
-        {
-            int length = Math.min(remaining, buffer.length);
-            System.arraycopy(data, written, buffer, 0, length);
-            adapter.write(buffer, 0, length);
-            written += length;
-            remaining -= length;
-        }
-    }
-
-    private byte[] compress(final String testText) throws IOException
-    {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (GZIPOutputStream zipStream = new GZIPOutputStream(baos))
-        {
-            zipStream.write(testText.getBytes());
-        }
-        return baos.toByteArray();
-    }
-
-    private String generateTestText()
+    private byte[] generateTestBytes()
     {
         StringBuilder sb = new StringBuilder();
         int i = 0;
@@ -124,6 +103,6 @@ public class GunzipOutputStreamTest extends QpidTestCase
             }
             sb.append(" ").append(i++);
         }
-        return sb.toString();
+        return sb.toString().getBytes();
     }
 }
