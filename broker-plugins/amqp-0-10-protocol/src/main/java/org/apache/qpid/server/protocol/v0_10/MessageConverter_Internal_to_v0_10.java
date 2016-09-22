@@ -22,6 +22,7 @@ package org.apache.qpid.server.protocol.v0_10;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.UUID;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.internal.InternalMessage;
@@ -108,8 +109,6 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
         DeliveryProperties deliveryProps = new DeliveryProperties();
         MessageProperties messageProps = new MessageProperties();
 
-
-
         deliveryProps.setExpiration(serverMsg.getExpiration());
         deliveryProps.setPriority(MessageDeliveryPriority.get(serverMsg.getMessageHeader().getPriority()));
         deliveryProps.setRoutingKey(serverMsg.getInitialRoutingAddress());
@@ -118,11 +117,22 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
         messageProps.setContentEncoding(serverMsg.getMessageHeader().getEncoding());
         messageProps.setContentLength(size);
         messageProps.setContentType(bodyMimeType);
-        if(serverMsg.getMessageHeader().getCorrelationId() != null)
+        if (serverMsg.getMessageHeader().getCorrelationId() != null)
         {
             messageProps.setCorrelationId(serverMsg.getMessageHeader().getCorrelationId().getBytes());
         }
         messageProps.setApplicationHeaders(serverMsg.getMessageHeader().getHeaderMap());
+        if (serverMsg.getMessageHeader().getMessageId() != null)
+        {
+            try
+            {
+                messageProps.setMessageId(UUID.fromString(serverMsg.getMessageHeader().getMessageId()));
+            }
+            catch (IllegalArgumentException iae)
+            {
+                // ignore message id is not a UUID
+            }
+        }
         Header header = new Header(deliveryProps, messageProps, null);
         return new MessageMetaData_0_10(header, size, serverMsg.getArrivalTime());
     }

@@ -209,7 +209,10 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     @ManagedOperation(nonModifying = true)
     Connection<?> getConnection(@Param(name="name") String name);
 
-    @ManagedOperation(secure = true)
+    @ManagedOperation(secure = true,
+                      description = "Publishes a message to a specified address. "
+                                    + "Returns the number of queues onto which it has been placed, "
+                                    + " or zero, if the address routes to no queues.")
     int publishMessage(@Param(name = "message")ManageableMessage message);
 
     @ManagedOperation(nonModifying = true, description = "Extract configuration", paramRequiringSecure = "includeSecureAttributes")

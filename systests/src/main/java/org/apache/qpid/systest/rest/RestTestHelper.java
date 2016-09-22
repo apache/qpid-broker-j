@@ -398,6 +398,14 @@ public class RestTestHelper
         return readJsonResponse(connection, valueType);
     }
 
+    public <T> T postJson(String path, final Object data , final Class<T> valueType) throws IOException
+    {
+        HttpURLConnection connection = openManagementConnection(path, "POST");
+        connection.connect();
+        writeJsonRequest(connection, data);
+        return readJsonResponse(connection, valueType);
+    }
+
     public void createNewGroupMember(String groupProviderName, String groupName, String memberName, int responseCode) throws IOException
     {
         HttpURLConnection connection = openManagementConnection(

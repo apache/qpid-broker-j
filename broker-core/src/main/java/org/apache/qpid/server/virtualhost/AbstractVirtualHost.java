@@ -1664,25 +1664,30 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         @Override
         public Object getHeader(final String name)
         {
-            return _message.getHeaders().get(name);
+            return getHeaders().get(name);
         }
 
         @Override
         public boolean containsHeaders(final Set<String> names)
         {
-            return _message.getHeaders().keySet().containsAll(names);
+            return getHeaders().keySet().containsAll(names);
         }
 
         @Override
         public boolean containsHeader(final String name)
         {
-            return _message.getHeaders().keySet().contains(name);
+            return getHeaders().keySet().contains(name);
         }
 
         @Override
         public Collection<String> getHeaderNames()
         {
-            return Collections.unmodifiableCollection(_message.getHeaders().keySet());
+            return Collections.unmodifiableCollection(getHeaders().keySet());
+        }
+
+        private Map<String, Object> getHeaders()
+        {
+            return _message.getHeaders() == null ? Collections.<String, Object>emptyMap() : _message.getHeaders();
         }
     }
 
