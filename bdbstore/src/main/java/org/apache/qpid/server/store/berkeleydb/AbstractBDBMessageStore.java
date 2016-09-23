@@ -1513,6 +1513,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 cursor = getDeliveryDb().openCursor(null, null);
                 DatabaseEntry key = new DatabaseEntry();
                 DatabaseEntry value = new DatabaseEntry();
+                value.setPartial(0, 0, true);
 
                 QueueEntryBinding keyBinding = QueueEntryBinding.getInstance();
                 keyBinding.objectToEntry(new QueueEntryKey(queue.getId(),0l), key);
@@ -1594,6 +1595,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 QueueEntryBinding keyBinding = QueueEntryBinding.getInstance();
 
                 DatabaseEntry value = new DatabaseEntry();
+                value.setPartial(0, 0, true);
                 while (cursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS)
                 {
                     QueueEntryKey entry = keyBinding.entryToObject(key);
