@@ -103,7 +103,7 @@ class InetNetwork
                                         (byte) (mask[3] & ip[3])
                                 });
         }
-        catch (Exception _)
+        catch (Exception e)
         {
             return null;
         }
