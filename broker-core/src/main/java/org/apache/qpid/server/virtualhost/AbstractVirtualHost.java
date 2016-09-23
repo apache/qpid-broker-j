@@ -994,7 +994,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             }
             catch (IOException e)
             {
-                throw new IllegalConfigurationException("Cannot convert " + source + " to a readable resource", e);
+                throw new IllegalConfigurationException("Cannot convert '" + source + "' to a readable resource", e);
             }
         }
         else
