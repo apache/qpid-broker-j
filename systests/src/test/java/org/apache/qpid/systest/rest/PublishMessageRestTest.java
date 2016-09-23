@@ -19,6 +19,9 @@
  */
 package org.apache.qpid.systest.rest;
 
+import static org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet.SC_UNPROCESSABLE_ENTITY;
+
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -35,6 +38,8 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.servlet.http.HttpServletResponse;
 
+import com.google.common.base.Strings;
+
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.port.HttpPort;
@@ -42,7 +47,6 @@ import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 public class PublishMessageRestTest extends QpidRestTestCase
 {
-
     private Connection _connection;
     private Session _session;
     private String _queueName;
@@ -100,11 +104,9 @@ public class PublishMessageRestTest extends QpidRestTestCase
         final long tomorrow = TimeUnit.DAYS.toMillis(1) + System.currentTimeMillis();
         final Map<String, Object> headers =  new HashMap<>();
         headers.put("stringprop", "mystring");
+        headers.put("longstringprop", Strings.repeat("*", 256));
         headers.put("intprop", Integer.MIN_VALUE);
         headers.put("longprop", Long.MAX_VALUE);
-        //headers.put("", "mykeyisempty"); // 0-8..0-91 Causes Broker to die (MessageConverter_Internal_to_v0_8), 0-10 fails in JMS client on receipt
-        //headers.put("nullpropvalue", null); // 0-8..0-91 Causes Broker failure (MessageConverter_Internal_to_v0_8), 0-10 JMS client ignores property
-
         final Map<String, Object> messageBody = new HashMap<>();
         messageBody.put("messageId", messageId);
         messageBody.put("address", _queueName);
@@ -130,6 +132,37 @@ public class PublishMessageRestTest extends QpidRestTestCase
             count++;
         }
         assertEquals("Unexpected number of properties", headers.size(), count);
+    }
+
+    public void testPublishMessageWithIllegalPropertyKeysAndValues() throws Exception
+    {
+        {
+            final Map<String, Object> headers = new HashMap<>();
+            final String keytoolong = Strings.repeat("*", 256);
+            headers.put(keytoolong, "helloworld");
+            expectPublishFailure(headers, SC_UNPROCESSABLE_ENTITY);
+        }
+
+        {
+            final Map<String, Object> headers = new HashMap<>();
+            headers.put("", "emptykey");
+            expectPublishFailure(headers, SC_UNPROCESSABLE_ENTITY);
+        }
+
+        {
+            final Map<String, Object> headers = new HashMap<>();
+            headers.put("nullvalue", null);
+            expectPublishFailure(headers, SC_UNPROCESSABLE_ENTITY);
+        }
+    }
+
+    private void expectPublishFailure(final Map<String, Object> headers, final int responseCode) throws IOException
+    {
+        final Map<String, Object> messageBody = Collections.<String, Object>singletonMap("headers", headers);
+
+        getRestTestHelper().submitRequest(_publishMessageOpUrl, "POST",
+                                          Collections.singletonMap("message", messageBody),
+                                          responseCode);
     }
 
     public void testPublishStringMessage() throws Exception

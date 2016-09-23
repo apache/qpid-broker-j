@@ -122,11 +122,16 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
             messageProps.setCorrelationId(serverMsg.getMessageHeader().getCorrelationId().getBytes());
         }
         messageProps.setApplicationHeaders(serverMsg.getMessageHeader().getHeaderMap());
-        if (serverMsg.getMessageHeader().getMessageId() != null)
+        String messageIdAsString = serverMsg.getMessageHeader().getMessageId();
+        if (messageIdAsString != null)
         {
             try
             {
-                messageProps.setMessageId(UUID.fromString(serverMsg.getMessageHeader().getMessageId()));
+                if (messageIdAsString.startsWith("ID:"))
+                {
+                    messageIdAsString = messageIdAsString.substring(3);
+                }
+                messageProps.setMessageId(UUID.fromString(messageIdAsString));
             }
             catch (IllegalArgumentException iae)
             {

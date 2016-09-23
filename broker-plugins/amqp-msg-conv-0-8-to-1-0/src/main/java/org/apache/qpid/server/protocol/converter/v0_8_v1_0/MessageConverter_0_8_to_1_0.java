@@ -165,6 +165,9 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
             applicationProperties = new LinkedHashMap<>(applicationProperties);
             applicationProperties.remove("qpid.subject");
         }
+        // TODO: http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-application
+        // Adhere to "the values are restricted to be of simple types only, that is, excluding map, list, and array types".
+        // 0-8..0-91 for instance suppoorted field tables with maps as values.
         sections.add(new ApplicationProperties(applicationProperties));
         if(bodySection != null)
         {
