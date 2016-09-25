@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>qpid-java-build</artifactId>
+        <groupId>org.apache.qpid</groupId>
+        <version>6.1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>tck</artifactId>
+    <name>Apache Qpid JMX TCK Configuration</name>
+    <description>Configuration for Oracle JMS TCK</description>
+
+    <properties>
+        <tck.directory>/Users/keith/jmstck/</tck.directory>
+        <tck.broker-hostport>localhost:5672</tck.broker-hostport>
+        <tck.broker-virtualhostnode>default</tck.broker-virtualhostnode>
+        <tck.broker-virtualhost>default</tck.broker-virtualhost>
+
+        <tck.manangement-url>http://localhost:8080</tck.manangement-url>
+        <tck.manangement-username>guest</tck.manangement-username>
+        <tck.manangement-password>guest</tck.manangement-password>
+        <tck.manangement-api-queue>/api/latest/queue/%s/%s/%s</tck.manangement-api-queue>
+        <tck.manangement-api-topic>/api/latest/exchange/%s/%s/%s</tck.manangement-api-topic>
+
+        <tck.jmsobjects.class>com.sun.ts.lib.implementation.sun.jms.SunRIJMSObjects</tck.jmsobjects.class>
+        <tck.work.directory>${project.build.directory}/${tck}/work</tck.work.directory>
+        <tck.ts.jte>${project.build.testOutputDirectory}/ts.jte</tck.ts.jte>
+        <tck.test>com/</tck.test>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.geronimo.specs</groupId>
+            <artifactId>geronimo-jms_1.1_spec</artifactId>
+            <version>${geronimo-jms-1-1-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>${httpclient-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${fasterxml-jackson-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${fasterxml-jackson-version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>output-test-properties</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <echo>
+                                    TCK: To run all TCK tests, set system property -Dtck to a name of a JMS client e.g. qpid-jms-client
+                                    and set -Dtck.directory to the location of the exploded TCK distribution.
+                                    To run tests from a single, use the system property -Dtck.test to specify the test source:
+                                    e.g. -Dtck.test=com/sun/ts/tests/jms/ee/all/sessiontests/SessionTests.java:
+                                    To run only a single test, append the test name
+                                    e.g. -Dtck.test=com/sun/ts/tests/jms/ee/all/sessiontests/SessionTests.java#SubscriberTests_from_standalone
+                                </echo>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <delimiters>
+                        <delimiter>${*}</delimiter>
+                    </delimiters>
+                    <useDefaultDelimiters>false</useDefaultDelimiters>
+                </configuration>
+            </plugin>
+        </plugins>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+            </testResource>
+        </testResources>
+    </build>
+    <profiles>
+        <profile>
+            <id>selective-test-mode</id>
+            <activation>
+                <property>
+                    <name>test</name>
+                </property>
+            </activation>
+            <properties>
+                <tck.selective.test.arg>-tests</tck.selective.test.arg>
+                <tck.selective.test.value>${test}</tck.selective.test.value>
+            </properties>
+        </profile>
+        <profile>
+            <id>tck</id>
+            <activation>
+                <property>
+                    <name>tck</name>
+                </property>
+            </activation>
+
+            <dependencies>
+                <dependency>
+                    <groupId>oracle-jms-tck</groupId>
+                    <artifactId>tsharness</artifactId>
+                    <version>0</version>
+                    <scope>system</scope>
+                    <systemPath>${tck.directory}/lib/tsharness.jar</systemPath>
+                </dependency>
+                <dependency>
+                    <groupId>oracle-jms-tck</groupId>
+                    <artifactId>javatest</artifactId>
+                    <version>0</version>
+                    <scope>system</scope>
+                    <systemPath>${tck.directory}/lib/javatest.jar</systemPath>
+                </dependency>
+                <dependency>
+                    <groupId>oracle-jms-tck</groupId>
+                    <artifactId>jmstck</artifactId>
+                    <version>0</version>
+                    <scope>system</scope>
+                    <systemPath>${tck.directory}/lib/jmstck.jar</systemPath>
+                </dependency>
+                <dependency>
+                    <groupId>oracle-jms-tck</groupId>
+                    <artifactId>parser</artifactId>
+                    <version>0</version>
+                    <scope>system</scope>
+                    <systemPath>${tck.directory}/lib/parser.jar</systemPath>
+                </dependency>
+                <dependency>
+                    <groupId>oracle-jms-tck</groupId>
+                    <artifactId>api-check</artifactId>
+                    <version>0</version>
+                    <scope>system</scope>
+                    <systemPath>${tck.directory}/lib/apiCheck.jar</systemPath>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>enforce-property</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <requireProperty>
+                                            <property>tck</property>
+                                            <regex>^(qpid-jms-client)|(jms-client-0-9)|(jms-client-0-10)$</regex>
+                                        </requireProperty>
+                                    </rules>
+                                    <fail>true</fail>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>make-directories</id>
+                                <phase>integration-test</phase>
+                                <configuration>
+                                    <tasks>
+                                        <delete dir="${tck.work.directory}"/>
+                                        <mkdir dir="${tck.work.directory}"/>
+                                    </tasks>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>build-classpath</goal>
+                                </goals>
+                                <configuration>
+                                    <outputProperty>tck.full.classpath</outputProperty>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>run-tck</id>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <phase>integration-test</phase>
+                                <configuration>
+                                    <classpathScope>system</classpathScope>
+                                    <executable>java</executable>
+                                    <arguments>
+                                        <argument>-classpath</argument>
+                                        <classpath/>
+                                        <argument>-Dcts.harness.debug=false</argument>
+                                        <argument>-Dcts.jtroutput=true</argument>
+                                        <argument>-Dbuild.level=1</argument>
+                                        <argument>-DTS_HOME=${tck.directory}</argument>
+                                        <argument>-Djavatest.security.allowPropertiesAccess=true</argument>
+                                        <argument>-Dtechnology.name=JMS</argument>
+                                        <argument>-Ddeliverable.class=com.sun.ts.lib.deliverable.jms.JMSDeliverable</argument>
+                                        <!-- This is the classpath used by the JVM spawned by com.sun.javatest.tool.Main to run each individual test -->
+                                        <argument>-DLOCAL_CLASSES=${tck.full.classpath}:${project.build.directory}/${project.build.finalName}.jar</argument>
+                                        <argument>-DJAVA_OPTIONS=${tck.test.options}</argument>
+                                        <argument>-DJAVA_HOME=${java.home}</argument>
+                                        <argument>com.sun.javatest.tool.Main</argument>
+                                        <argument>-EsysProps</argument>
+                                        <argument>-batch</argument>
+                                        <argument>-testsuite</argument><argument>${tck.directory}/src</argument>
+                                        <argument>-workDirectory</argument><argument>${tck.work.directory}</argument>
+                                        <argument>-envFiles</argument><argument>${tck.ts.jte}</argument>
+                                        <argument>-env</argument><argument>ts_unix</argument>
+                                        <argument>-excludeList</argument><argument>${tck.ts.jtx}</argument>
+                                        <argument>-tests</argument> <argument>${tck.test}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+
+        </profile>
+
+        <profile>
+            <!-- Profile used to execute TCK against the Qpid JMS client -->
+            <id>qpid-jms-client</id>
+            <activation>
+                <property>
+                    <name>tck</name>
+                    <value>qpid-jms-client</value>
+                </property>
+            </activation>
+            <properties>
+                <java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</java.naming.factory.initial>
+                <java.naming.provider.url>${project.build.testOutputDirectory}/qpid-jms-client/jndi.properties</java.naming.provider.url>
+                <tck.ts.jtx>${project.build.testOutputDirectory}/qpid-jms-client/ts.jtx</tck.ts.jtx>
+                <tck.test.options></tck.test.options>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>create-jms-resources</id>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                                <phase>pre-integration-test</phase>
+                                <configuration>
+                                    <classpathScope>test</classpathScope>
+                                    <mainClass>org.apache.qpid.tck.ManageQpidJMSResources</mainClass>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>delete-jms-resources</id>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                                <phase>post-integration-test</phase>
+                                <configuration>
+                                    <classpathScope>test</classpathScope>
+                                    <mainClass>org.apache.qpid.tck.ManageQpidJMSResources</mainClass>
+                                    <arguments><argument>--delete</argument></arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.qpid</groupId>
+                    <artifactId>qpid-jms-client</artifactId>
+                    <version>${qpid-jms-client-version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <!-- Profile used to execute TCK against the Old JMS client for 0-8..0-91 -->
+            <id>jms-client-0-9</id>
+            <activation>
+                <property>
+                    <name>tck</name>
+                    <value>jms-client-0-9</value>
+                </property>
+            </activation>
+            <properties>
+                <java.naming.factory.initial>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</java.naming.factory.initial>
+                <java.naming.provider.url>${project.build.directory}/test-classes/jms-client/jndi.properties</java.naming.provider.url>
+                <tck.ts.jtx>${project.build.testOutputDirectory}/jms-client/ts.jtx</tck.ts.jtx>
+                <tck.test.options>-Dqpid.amqp.version=0-9 -Dqpid.dest_syntax=BURL</tck.test.options>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.qpid</groupId>
+                    <artifactId>qpid-client</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <!-- Profile used to execute TCK against the Old JMS client for 0-10-->
+            <id>jms-client-0-10</id>
+            <activation>
+                <property>
+                    <name>tck</name>
+                    <value>jms-client-0-10</value>
+                </property>
+            </activation>
+            <properties>
+                <java.naming.factory.initial>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</java.naming.factory.initial>
+                <java.naming.provider.url>${project.build.directory}/test-classes/jms-client/jndi.properties</java.naming.provider.url>
+                <tck.ts.jtx>${project.build.testOutputDirectory}/jms-client/ts.jtx</tck.ts.jtx>
+                <tck.test.options>-Dqpid.amqp.version=0-10 -Dqpid.dest_syntax=BURL</tck.test.options>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.qpid</groupId>
+                    <artifactId>qpid-client</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+</project>

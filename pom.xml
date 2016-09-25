@@ -203,6 +203,7 @@
     <module>bdbstore/systests</module>
 
     <module>joramtests</module>
+    <module>tck</module>
 
     <module>doc</module>
   </modules>
