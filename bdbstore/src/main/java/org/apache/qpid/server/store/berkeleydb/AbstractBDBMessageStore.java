@@ -601,7 +601,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     }
 
 
-    private static final byte[] ENQUEUE_RECORD_VALUE = new byte[1];
+    private static final byte[] ENQUEUE_RECORD_VALUE = new byte[] {};
     /**
      * Places a message onto a specified queue, in a given transaction.
      *
@@ -620,7 +620,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         QueueEntryKey dd = new QueueEntryKey(queue.getId(), messageId);
         keyBinding.objectToEntry(dd, key);
         DatabaseEntry value = new DatabaseEntry();
-        value.setData(ENQUEUE_RECORD_VALUE, 0, 1);
+        value.setData(ENQUEUE_RECORD_VALUE, 0, ENQUEUE_RECORD_VALUE.length);
 
         try
         {
