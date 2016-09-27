@@ -311,7 +311,11 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                               @Param(name = "returnJson", defaultValue = "false",
                                       description = "If true, converts message content into json format"
                                                     + " if message mime-type is either amqp/map or amqp/list"
-                                                    + " or jms/map-message. Default is false.") boolean returnJson);
+                                                    + " or jms/map-message. Default is false.") boolean returnJson,
+                              @Param(name = "decompressBeforeLimiting", defaultValue = "false",
+                                      description = "If true, the operation will attempt to decompress the message"
+                                                    + "(should it be compressed) before applying any limit. If"
+                                                    + "decompression fails the operation will fail.") boolean decompressBeforeLimiting);
 
     @ManagedOperation(nonModifying = true, paramRequiringSecure = "includeHeaders")
     List<MessageInfo> getMessageInfo(@Param(name = "first", defaultValue = "-1") int first,

@@ -50,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.management.plugin.GunzipOutputStream;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
-import org.apache.qpid.server.management.plugin.LimitingOutputStream;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.Content;
@@ -63,7 +62,6 @@ public abstract class AbstractServlet extends HttpServlet
     public static final int SC_UNPROCESSABLE_ENTITY = 422;
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractServlet.class);
     public static final String CONTENT_DISPOSITION = "Content-disposition";
-    public static final String CONTENT_LIMIT = "X-Content-Limit";
 
     private Broker<?> _broker;
     private HttpManagementConfiguration _managementConfiguration;
@@ -350,35 +348,17 @@ public abstract class AbstractServlet extends HttpServlet
                                          final HttpServletResponse response,
                                          Map<String, Object> headers) throws IOException
     {
-        boolean isGzipCompressed = GZIP_CONTENT_ENCODING.equals(headers.get(CONTENT_ENCODING_HEADER.toUpperCase()));
-        boolean isCompressingAccepted = HttpManagementUtil.isCompressingAccepted(request, _managementConfiguration);
-        if (isGzipCompressed && !isCompressingAccepted)
-        {
-            headers.remove(CONTENT_ENCODING_HEADER);
-        }
-        long limit = -1;
-        if (headers.containsKey(CONTENT_LIMIT.toUpperCase()))
-        {
-            limit = Long.parseLong(String.valueOf(headers.get(CONTENT_LIMIT.toUpperCase())));
-        }
+        final boolean isGzipCompressed = GZIP_CONTENT_ENCODING.equals(headers.get(CONTENT_ENCODING_HEADER.toUpperCase()));
+        final boolean isCompressingAccepted = HttpManagementUtil.isCompressingAccepted(request, _managementConfiguration);
+
         OutputStream stream = response.getOutputStream();
 
         if (isGzipCompressed)
         {
             if (!isCompressingAccepted)
             {
-                if (limit > 0)
-                {
-                    stream = new LimitingOutputStream(stream, limit);
-                }
                 stream = new GunzipOutputStream(stream);
-            }
-            else
-            {
-                if (limit > 0)
-                {
-                    stream = new GunzipOutputStream(new LimitingOutputStream(new GZIPOutputStream(stream), limit));
-                }
+                headers.remove(CONTENT_ENCODING_HEADER.toUpperCase());
             }
         }
         else
@@ -386,6 +366,7 @@ public abstract class AbstractServlet extends HttpServlet
             if (isCompressingAccepted)
             {
                 stream = new GZIPOutputStream(stream);
+                headers.put(CONTENT_ENCODING_HEADER.toUpperCase(), GZIP_CONTENT_ENCODING);
             }
         }
 

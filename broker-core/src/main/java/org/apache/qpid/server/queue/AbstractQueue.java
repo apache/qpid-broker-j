@@ -19,8 +19,10 @@
 package org.apache.qpid.server.queue;
 
 import static org.apache.qpid.server.util.ParameterizedTypes.MAP_OF_STRING_STRING;
+import static org.apache.qpid.util.GZIPUtils.GZIP_CONTENT_ENCODING;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -31,6 +33,7 @@ import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -50,9 +53,12 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import javax.security.auth.Subject;
 
+import com.google.common.io.ByteStreams;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -60,7 +66,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.bytebuffer.QpidByteBufferInputStream;
 import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.filter.selector.ParseException;
 import org.apache.qpid.filter.selector.TokenMgrError;
@@ -110,7 +116,6 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.transport.TransportException;
-import org.apache.qpid.util.GZIPUtils;
 
 public abstract class AbstractQueue<X extends AbstractQueue<X>>
         extends AbstractConfiguredObject<X>
@@ -2690,26 +2695,54 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    abstract class BaseMessageContent implements Content
+    abstract class BaseMessageContent implements Content, CustomRestHeaders
     {
         public static final int UNLIMITED = -1;
         protected final MessageReference<?> _messageReference;
         protected final long _limit;
+        private final boolean _truncated;
 
         BaseMessageContent(MessageReference<?> messageReference, long limit)
         {
             _messageReference = messageReference;
             _limit = limit;
+            _truncated = limit >= 0 && _messageReference.getMessage().getSize() > limit;
         }
 
         @Override
-        public void release()
+        public final void release()
         {
             _messageReference.release();
         }
 
-        public abstract String getContentType();
+        protected boolean isTruncated()
+        {
+            return _truncated;
+        }
 
+        @SuppressWarnings("unused")
+        @RestContentHeader("X-Content-Truncated")
+        public String getContentTruncated()
+        {
+            return String.valueOf(isTruncated());
+        }
+
+        @SuppressWarnings("unused")
+        @RestContentHeader("Content-Type")
+        public String getContentType()
+        {
+            return _messageReference.getMessage().getMessageHeader().getMimeType();
+        }
+
+        @SuppressWarnings("unused")
+        @RestContentHeader("Content-Encoding")
+        public String getContentEncoding()
+        {
+            return _messageReference.getMessage().getMessageHeader().getEncoding();
+        }
+
+        @SuppressWarnings("unused")
+        @RestContentHeader("Content-Disposition")
         public String getContentDisposition()
         {
             try
@@ -2739,114 +2772,89 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    class JsonMessageContent extends BaseMessageContent implements CustomRestHeaders
+    class JsonMessageContent extends BaseMessageContent
     {
         private final InternalMessage _internalMessage;
-        private boolean _truncate = false;
 
         JsonMessageContent(MessageReference<?> messageReference, InternalMessage message, long limit)
         {
             super(messageReference, limit);
             _internalMessage = message;
-            _truncate = limit >= 0 && _messageReference.getMessage().getSize() > limit;
         }
 
         @Override
-        public void write(final OutputStream outputStream) throws IOException
+        public void write(OutputStream outputStream) throws IOException
         {
             Object messageBody = _internalMessage.getMessageBody();
-            new MessageContentJsonConverter(messageBody, _truncate ? _limit : UNLIMITED).convertAndWrite(outputStream);
+            new MessageContentJsonConverter(messageBody, isTruncated() ? _limit : UNLIMITED).convertAndWrite(outputStream);
         }
 
         @SuppressWarnings("unused")
-        @RestContentHeader("X-Content-Truncated")
-        public String getContentTruncated()
+        @Override
+        @RestContentHeader("Content-Encoding")
+        public String getContentEncoding()
         {
-            return String.valueOf(_truncate);
+            return "identity";
         }
 
         @SuppressWarnings("unused")
+        @Override
         @RestContentHeader("Content-Type")
         public String getContentType()
         {
             return "application/json";
         }
-
-        @SuppressWarnings("unused")
-        @RestContentHeader("Content-Disposition")
-        public String getContentDisposition()
-        {
-            return super.getContentDisposition();
-        }
     }
 
-    class MessageContent extends BaseMessageContent implements CustomRestHeaders
+    class MessageContent extends BaseMessageContent
     {
 
-        MessageContent(MessageReference<?> messageReference, long limit)
+        private boolean _decompressBeforeLimiting;
+
+        MessageContent(MessageReference<?> messageReference, long limit, boolean decompressBeforeLimiting)
         {
             super(messageReference, limit);
+            if (decompressBeforeLimiting)
+            {
+                String contentEncoding = getContentEncoding();
+                if (GZIP_CONTENT_ENCODING.equals(contentEncoding))
+                {
+                    _decompressBeforeLimiting = true;
+                }
+                else if (contentEncoding != null && !"".equals(contentEncoding) && !"identity".equals(contentEncoding))
+                {
+                    throw new IllegalArgumentException(String.format(
+                            "Requested decompression of message with unknown compression '%s'", contentEncoding));
+                }
+            }
         }
 
         @Override
         public void write(OutputStream outputStream) throws IOException
         {
             ServerMessage message = _messageReference.getMessage();
-            int length = (int) ((_limit == UNLIMITED || GZIPUtils.GZIP_CONTENT_ENCODING.equals(getContentEncoding())) ? message.getSize() : _limit);
-            Collection<QpidByteBuffer> content = message.getContent(0, length);
+
+            int length = (int) ((_limit == UNLIMITED || _decompressBeforeLimiting) ? message.getSize() : _limit);
+            InputStream inputStream = new QpidByteBufferInputStream(message.getContent(0, length));
+
+            if (_limit != UNLIMITED && _decompressBeforeLimiting)
+            {
+                inputStream = new GZIPInputStream(inputStream);
+                inputStream = ByteStreams.limit(inputStream, _limit);
+                outputStream = new GZIPOutputStream(outputStream);
+            }
+
             try
             {
-                for (QpidByteBuffer b : content)
-                {
-                    int len = b.remaining();
-                    byte[] data = new byte[len];
-                    b.get(data);
-                    outputStream.write(data);
-                }
+                 long foo = ByteStreams.copy(inputStream, outputStream);
+                foo = foo +1 -1;
             }
             finally
             {
-                for (QpidByteBuffer b : content)
-                {
-                    b.dispose();
-                }
+                outputStream.close();
+                inputStream.close();
             }
         }
-
-        @Override
-        public void release()
-        {
-            _messageReference.release();
-        }
-
-        @SuppressWarnings("unused")
-        @RestContentHeader("Content-Type")
-        public String getContentType()
-        {
-            return _messageReference.getMessage().getMessageHeader().getMimeType();
-        }
-
-        @SuppressWarnings("unused")
-        @RestContentHeader("Content-Encoding")
-        public String getContentEncoding()
-        {
-            return _messageReference.getMessage().getMessageHeader().getEncoding();
-        }
-
-        @SuppressWarnings("unused")
-        @RestContentHeader("Content-Disposition")
-        public String getContentDisposition()
-        {
-            return super.getContentDisposition();
-        }
-
-        @SuppressWarnings("unused")
-        @RestContentHeader("X-Content-Limit")
-        public Long getContentLimit()
-        {
-            return _limit;
-        }
-
     }
 
     private static class AcquireAllQueueEntryFilter implements QueueEntryFilter
@@ -3613,13 +3621,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public Content getMessageContent(final long messageId, final long limit, boolean returnJson)
+    public Content getMessageContent(final long messageId, final long limit, boolean returnJson, boolean decompressBeforeLimiting)
     {
         final MessageContentFinder messageFinder = new MessageContentFinder(messageId);
         visit(messageFinder);
         if (messageFinder.isFound())
         {
-            return createMessageContent(messageFinder.getMessageReference(), returnJson, limit);
+            return createMessageContent(messageFinder.getMessageReference(), returnJson, limit, decompressBeforeLimiting);
         }
         else
         {
@@ -3629,7 +3637,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private Content createMessageContent(final MessageReference<?> messageReference,
                                          final boolean returnJson,
-                                         final long limit)
+                                         final long limit,
+                                         final boolean decompressBeforeLimiting)
     {
         String mimeType = messageReference.getMessage().getMessageHeader().getMimeType();
         if (returnJson && ("amqp/list".equalsIgnoreCase(mimeType)
@@ -3653,7 +3662,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 }
             }
         }
-        return new MessageContent(messageReference, limit);
+        return new MessageContent(messageReference, limit, decompressBeforeLimiting);
     }
 
     @Override

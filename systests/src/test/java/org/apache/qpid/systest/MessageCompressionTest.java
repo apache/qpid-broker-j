@@ -21,6 +21,7 @@
 package org.apache.qpid.systest;
 
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -209,7 +210,7 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         String content = new String(messageBytes, StandardCharsets.UTF_8);
         assertEquals("Unexpected message content :" + content, messageText, content);
 
-        messageBytes = _restTestHelper.getBytes(queueRelativePath + "/getMessageContent?limit=1024&messageId=" + id);
+        messageBytes = _restTestHelper.getBytes(queueRelativePath + "/getMessageContent?limit=1024&decompressBeforeLimiting=true&messageId=" + id);
         content = new String(messageBytes, StandardCharsets.UTF_8);
         assertEquals("Unexpected message content :" + content, messageText.substring(0, 1024), content);
     }
@@ -238,8 +239,40 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         String content = getDecompressedContent(queueRelativePath + "/getMessageContent?messageId=" + id);
         assertEquals("Unexpected message content :" + content, messageText, content);
 
-        content = getDecompressedContent(queueRelativePath + "/getMessageContent?limit=1024&messageId=" + id);
+        content = getDecompressedContent(queueRelativePath + "/getMessageContent?limit=1024&decompressBeforeLimiting=true&messageId=" + id);
         assertEquals("Unexpected message content :" + content, messageText.substring(0, 1024), content);
+    }
+
+    public void testGetTruncatedContentViaRestForCompressedMessage() throws Exception
+    {
+        setTestSystemProperty(Broker.BROKER_MESSAGE_COMPRESSION_ENABLED, String.valueOf(true));
+
+        doActualSetUp();
+
+        String messageText = createMessageText();
+        Connection senderConnection = getConnection(true);
+        String virtualPath = getConnectionFactory().getVirtualPath();
+        String testQueueName = getTestQueueName();
+        createAndBindQueue(virtualPath, testQueueName);
+
+        publishMessage(senderConnection, messageText);
+
+        String queueRelativePath = "queue" + virtualPath + virtualPath + "/" + testQueueName;
+
+        List<Map<String, Object>> messages = _restTestHelper.getJsonAsList(queueRelativePath + "/getMessageInfo");
+        assertEquals("Unexpected number of messages", 1, messages.size());
+        long id = ((Number) messages.get(0).get("id")).longValue();
+
+        _restTestHelper.setAcceptEncoding("gzip");
+        try
+        {
+            getDecompressedContent(queueRelativePath + "/getMessageContent?limit=1024&messageId=" + id);
+            fail("Should not be able to decompress truncated gzip");
+        }
+        catch (EOFException e)
+        {
+            // pass
+        }
     }
 
     private String getDecompressedContent(final String url) throws IOException
