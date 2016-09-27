@@ -216,7 +216,7 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     int publishMessage(@Param(name = "message")ManageableMessage message);
 
     @ManagedOperation(nonModifying = true, description = "Extract configuration", paramRequiringSecure = "includeSecureAttributes")
-    Map<String,Object> extractConfig(@Param(name="includeSecureAttributes",
+    Map<String,Object> exportConfig(@Param(name="includeSecureAttributes",
                                             description = "include attributes that may contain passwords or other "
                                                           + "confidential information",
                                             defaultValue = "false") boolean includeSecureAttributes);

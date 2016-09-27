@@ -20,9 +20,11 @@
  */
 package org.apache.qpid.server.store.serializer.v1;
 
+import java.io.IOException;
+
 interface Record
 {
     RecordType getType();
 
-    byte[] getData();
+    void writeData(Serializer output) throws IOException;
 }

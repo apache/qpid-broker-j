@@ -29,6 +29,7 @@ class Serializer
 {
     private final OutputStream _outputStream;
     private final MessageDigest _digest;
+    private final byte[] _tmpBuf = new byte[8];
 
     Serializer(final OutputStream outputStream)
             throws IOException
@@ -49,37 +50,58 @@ class Serializer
 
     void add(Record record) throws IOException
     {
-        add((byte) record.getType().ordinal());
-        add(record.getData());
+        write((byte) record.getType().ordinal());
+        record.writeData(this);
     }
 
-    void add(final int value) throws IOException
+    public final void writeInt(long val) throws IOException
     {
-        add(new byte[] {
-                (byte)(value >>> 24),
-                (byte)(value >>> 16),
-                (byte)(value >>> 8),
-                (byte)value});
+
+        _tmpBuf[4] = (byte)(val >>> 24);
+        _tmpBuf[5] = (byte)(val >>> 16);
+        _tmpBuf[6] = (byte)(val >>>  8);
+        _tmpBuf[7] = (byte)val;
+        write(_tmpBuf, 0, 4);
     }
 
-    void add(byte data) throws IOException
+
+    public final void writeLong(long val) throws IOException
     {
-        _digest.update(data);
-        _outputStream.write(data);
+        _tmpBuf[0] = (byte)(val >>> 56);
+        _tmpBuf[1] = (byte)(val >>> 48);
+        _tmpBuf[2] = (byte)(val >>> 40);
+        _tmpBuf[3] = (byte)(val >>> 32);
+        _tmpBuf[4] = (byte)(val >>> 24);
+        _tmpBuf[5] = (byte)(val >>> 16);
+        _tmpBuf[6] = (byte)(val >>>  8);
+        _tmpBuf[7] = (byte)val;
+        write(_tmpBuf, 0, 8);
     }
-
-    private void add(byte[] data) throws IOException
-    {
-        _digest.update(data);
-        _outputStream.write(data);
-    }
-
 
     void complete() throws IOException
     {
-        add((byte)RecordType.DIGEST.ordinal());
+        write((byte)RecordType.DIGEST.ordinal());
         _outputStream.write(_digest.digest());
         _outputStream.flush();
+    }
+
+
+    void write(final int b) throws IOException
+    {
+        _digest.update((byte)b);
+        _outputStream.write(b);
+    }
+
+    void write(final byte[] b) throws IOException
+    {
+        _digest.update(b);
+        _outputStream.write(b);
+    }
+
+    void write(final byte[] input, final int off, final int len) throws IOException
+    {
+        _digest.update(input, off, len);
+        _outputStream.write(input, off, len);
     }
 
 }

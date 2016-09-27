@@ -73,17 +73,13 @@ class MessageRecord implements Record
     }
 
     @Override
-    public byte[] getData()
+    public void writeData(final Serializer output) throws IOException
     {
-        byte[] data = new byte[getLength()];
-        QpidByteBuffer buf = QpidByteBuffer.wrap(data);
-        buf.putLong(_messageNumber);
-        buf.putInt(_metaData.length);
-        buf.put(_metaData);
-        buf.putInt(_content.length);
-        buf.put(_content);
-        buf.dispose();
-        return data;
+        output.writeLong(_messageNumber);
+        output.writeInt(_metaData.length);
+        output.write(_metaData);
+        output.writeInt(_content.length);
+        output.write(_content);
     }
 
     public long getMessageNumber()

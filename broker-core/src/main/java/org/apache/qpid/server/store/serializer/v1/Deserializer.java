@@ -59,22 +59,22 @@ class Deserializer
 
     byte[] readBytes(final int size) throws IOException
     {
-            byte[] bytes = new byte[size];
-            int pos = 0;
-            while(pos < size)
-            {
-                int read;
+        byte[] bytes = new byte[size];
+        int pos = 0;
+        while(pos < size)
+        {
+            int read;
 
-                read = _inputStream.read(bytes, pos, size - pos);
-                if (read == -1)
-                {
-                    throw new EOFException("Unexpected end of input");
-                }
-                else
-                {
-                    pos += read;
-                }
+            read = _inputStream.read(bytes, pos, size - pos);
+            if (read == -1)
+            {
+                throw new EOFException("Unexpected end of input");
             }
+            else
+            {
+                pos += read;
+            }
+        }
         _digest.update(bytes);
         return bytes;
     }
@@ -131,9 +131,9 @@ class Deserializer
             }
 
             @Override
-            public byte[] getData()
+            public void writeData(final Serializer output) throws IOException
             {
-                return fileDigest;
+                output.write(fileDigest);
             }
         };
     }

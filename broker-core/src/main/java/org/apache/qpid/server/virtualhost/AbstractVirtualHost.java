@@ -860,7 +860,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public Map<String, Object> extractConfig(boolean includeSecureAttributes)
+    public Map<String, Object> exportConfig(boolean includeSecureAttributes)
     {
         return (new ConfigurationExtractor()).extractConfig(this, includeSecureAttributes);
     }
@@ -939,56 +939,33 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                      BufferedInputStream bufferedInputStream = new BufferedInputStream(input);
                      DataInputStream data = new DataInputStream(bufferedInputStream))
                 {
-                    // All encodings should start 0x00 << int length of the version string>> << version string in UTF-8 >>
-                    data.mark(50);
-                    if (data.read() != 0)
+
+                    MessageStoreSerializer serializer = MessageStoreSerializer.FACTORY.newInstance(data);
+
+                    try
                     {
-                        throw new IllegalArgumentException("Invalid format for upload");
-                    }
-                    int stringLength = data.readInt();
-                    byte[] stringBytes = new byte[stringLength];
-                    data.readFully(stringBytes);
 
-                    String version = new String(stringBytes, StandardCharsets.UTF_8);
-
-                    Map<String, MessageStoreSerializer> serializerMap =
-                            new QpidServiceLoader().getInstancesByType(MessageStoreSerializer.class);
-
-                    MessageStoreSerializer serializer = serializerMap.get(version);
-
-                    if (serializer != null)
-                    {
-                        try
+                        _messageStore.openMessageStore(AbstractVirtualHost.this);
+                        checkMessageStoreEmpty();
+                        final Map<String, UUID> queueMap = new HashMap<>();
+                        getDurableConfigurationStore().reload(new ConfiguredObjectRecordHandler()
                         {
-
-                            _messageStore.openMessageStore(AbstractVirtualHost.this);
-                            checkMessageStoreEmpty();
-                            final Map<String, UUID> queueMap = new HashMap<>();
-                            getDurableConfigurationStore().reload(new ConfiguredObjectRecordHandler()
+                            @Override
+                            public void handle(final ConfiguredObjectRecord record)
                             {
-                                @Override
-                                public void handle(final ConfiguredObjectRecord record)
+                                if (record.getType().equals(Queue.class.getSimpleName()))
                                 {
-                                    if (record.getType().equals(Queue.class.getSimpleName()))
-                                    {
-                                        queueMap.put((String) record.getAttributes().get(ConfiguredObject.NAME),
-                                                     record.getId());
-                                    }
+                                    queueMap.put((String) record.getAttributes().get(ConfiguredObject.NAME),
+                                                 record.getId());
                                 }
-                            });
+                            }
+                        });
 
-                            bufferedInputStream.reset();
-                            serializer.deserialize(queueMap, _messageStore, data);
-                        }
-                        finally
-                        {
-                            _messageStore.closeMessageStore();
-                        }
+                        serializer.deserialize(queueMap, _messageStore, data);
                     }
-                    else
+                    finally
                     {
-                        throw new IllegalArgumentException("Message store import uses version '"
-                                                           + version + "' which is not supported");
+                        _messageStore.closeMessageStore();
                     }
                 }
             }

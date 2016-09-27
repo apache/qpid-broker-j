@@ -23,7 +23,6 @@ package org.apache.qpid.server.store.serializer.v1;
 import java.io.IOException;
 import java.util.UUID;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -68,39 +67,31 @@ class DTXRecord implements Record
     }
 
     @Override
-    public byte[] getData()
+    public void writeData(final Serializer output) throws IOException
     {
-        byte[] data = new byte[24
-                               + _xid.getBranchId().length
-                               + _xid.getGlobalId().length
-                               + (24 * _enqueues.length + _dequeues.length)];
-        QpidByteBuffer buf = QpidByteBuffer.wrap(data);
-        buf.putLong(_xid.getFormat());
-        buf.putInt(_xid.getGlobalId().length);
-        buf.put(_xid.getGlobalId());
-        buf.putInt(_xid.getBranchId().length);
-        buf.put(_xid.getBranchId());
+        output.writeLong(_xid.getFormat());
+        output.writeInt(_xid.getGlobalId().length);
+        output.write(_xid.getGlobalId());
+        output.writeInt(_xid.getBranchId().length);
+        output.write(_xid.getBranchId());
 
-        buf.putInt(_enqueues.length);
+        output.writeInt(_enqueues.length);
         for(Transaction.EnqueueRecord record : _enqueues)
         {
-            buf.putLong(record.getMessage().getMessageNumber());
-            buf.putLong(record.getResource().getId().getMostSignificantBits());
-            buf.putLong(record.getResource().getId().getLeastSignificantBits());
+            output.writeLong(record.getMessage().getMessageNumber());
+            output.writeLong(record.getResource().getId().getMostSignificantBits());
+            output.writeLong(record.getResource().getId().getLeastSignificantBits());
         }
 
-
-        buf.putInt(_dequeues.length);
+        output.writeInt(_dequeues.length);
         for(Transaction.DequeueRecord record : _dequeues)
         {
-            buf.putLong(record.getEnqueueRecord().getMessageNumber());
-            buf.putLong(record.getEnqueueRecord().getQueueId().getMostSignificantBits());
-            buf.putLong(record.getEnqueueRecord().getQueueId().getLeastSignificantBits());
+            output.writeLong(record.getEnqueueRecord().getMessageNumber());
+            output.writeLong(record.getEnqueueRecord().getQueueId().getMostSignificantBits());
+            output.writeLong(record.getEnqueueRecord().getQueueId().getLeastSignificantBits());
         }
 
 
-        buf.dispose();
-        return data;
     }
 
     public static DTXRecord read(final Deserializer deserializer) throws IOException

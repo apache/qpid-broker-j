@@ -148,7 +148,7 @@ public class MessageStoreSerializer_v1 implements MessageStoreSerializer
 
         nextRecord = deserializeMessageInstances(store, queueIdMap, messageMap, deserializer, nextRecord);
 
-        nextRecord = deserializeDtx(store, queueIdMap, messageMap, deserializer, nextRecord);
+        nextRecord = deserializeDistributedTransactions(store, queueIdMap, messageMap, deserializer, nextRecord);
 
         if(nextRecord.getType() != RecordType.DIGEST)
         {
@@ -157,10 +157,11 @@ public class MessageStoreSerializer_v1 implements MessageStoreSerializer
 
     }
 
-    private Record deserializeDtx(final MessageStore store,
-                                  final Map<UUID, UUID> queueIdMap,
-                                  final Map<Long, StoredMessage<?>> messageMap, final Deserializer deserializer,
-                                  Record nextRecord) throws IOException
+    private Record deserializeDistributedTransactions(final MessageStore store,
+                                                      final Map<UUID, UUID> queueIdMap,
+                                                      final Map<Long, StoredMessage<?>> messageMap,
+                                                      final Deserializer deserializer,
+                                                      Record nextRecord) throws IOException
     {
         while(nextRecord.getType() == RecordType.DTX)
         {

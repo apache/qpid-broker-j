@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.store.serializer;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -37,4 +38,12 @@ public interface MessageStoreSerializer extends Pluggable
                    final MessageStore.MessageStoreReader storeReader,
                    OutputStream outputStream) throws IOException;
     void deserialize(final Map<String, UUID> queueMap, MessageStore store, InputStream inputStream) throws IOException;
+
+    interface Factory
+    {
+        MessageStoreSerializer newInstance();
+        MessageStoreSerializer newInstance(DataInputStream input) throws IOException;
+    }
+
+    Factory FACTORY = new MessageStoreSerializerFactory();
 }

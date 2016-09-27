@@ -25,13 +25,13 @@ import java.io.IOException;
 enum RecordType
 {
     VERSION
-        {
-            @Override
-            public VersionRecord read(Deserializer deserializer) throws IOException
             {
-                return VersionRecord.read(deserializer);
-            }
-        },
+                @Override
+                public VersionRecord read(Deserializer deserializer) throws IOException
+                {
+                    return VersionRecord.read(deserializer);
+                }
+            },
     MESSAGE
             {
                 @Override

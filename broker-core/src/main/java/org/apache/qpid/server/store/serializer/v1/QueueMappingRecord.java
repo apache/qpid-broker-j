@@ -24,8 +24,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
 class QueueMappingRecord implements Record
 {
     private final UUID _id;
@@ -55,17 +53,13 @@ class QueueMappingRecord implements Record
     }
 
     @Override
-    public byte[] getData()
+    public void writeData(final Serializer output) throws IOException
     {
         byte[] nameBytes = _name.getBytes(StandardCharsets.UTF_8);
-        byte[] data = new byte[20 + nameBytes.length];
-        QpidByteBuffer buf = QpidByteBuffer.wrap(data);
-        buf.putLong(_id.getMostSignificantBits());
-        buf.putLong(_id.getLeastSignificantBits());
-        buf.putInt(nameBytes.length);
-        buf.put(nameBytes);
-        buf.dispose();
-        return data;
+        output.writeLong(_id.getMostSignificantBits());
+        output.writeLong(_id.getLeastSignificantBits());
+        output.writeInt(nameBytes.length);
+        output.write(nameBytes);
     }
 
     public static QueueMappingRecord read(final Deserializer deserializer) throws IOException

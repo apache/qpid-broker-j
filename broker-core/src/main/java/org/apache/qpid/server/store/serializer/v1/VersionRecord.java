@@ -23,8 +23,6 @@ package org.apache.qpid.server.store.serializer.v1;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
 class VersionRecord implements Record
 {
 
@@ -37,14 +35,10 @@ class VersionRecord implements Record
     }
 
     @Override
-    public byte[] getData()
+    public void writeData(final Serializer output) throws IOException
     {
-        byte[] data = new byte[4 + _versionBytes.length];
-        QpidByteBuffer buf = QpidByteBuffer.wrap(data);
-        buf.putInt(_versionBytes.length);
-        buf.put(_versionBytes);
-        buf.dispose();
-        return data;
+        output.writeInt(_versionBytes.length);
+        output.write(_versionBytes);
     }
 
     public static VersionRecord read(final Deserializer deserializer) throws IOException

@@ -23,7 +23,6 @@ package org.apache.qpid.server.store.serializer.v1;
 import java.io.IOException;
 import java.util.UUID;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 
 class MessageInstanceRecord implements Record
@@ -60,15 +59,11 @@ class MessageInstanceRecord implements Record
     }
 
     @Override
-    public byte[] getData()
+    public void writeData(final Serializer output) throws IOException
     {
-        byte[] data = new byte[24];
-        QpidByteBuffer buf = QpidByteBuffer.wrap(data);
-        buf.putLong(_messageNumber);
-        buf.putLong(_queueId.getMostSignificantBits());
-        buf.putLong(_queueId.getLeastSignificantBits());
-        buf.dispose();
-        return data;
+        output.writeLong(_messageNumber);
+        output.writeLong(_queueId.getMostSignificantBits());
+        output.writeLong(_queueId.getLeastSignificantBits());
     }
 
     public static MessageInstanceRecord read(final Deserializer deserializer) throws IOException
