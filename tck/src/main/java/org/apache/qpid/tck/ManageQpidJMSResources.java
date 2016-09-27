@@ -93,7 +93,7 @@ public class ManageQpidJMSResources
         _objectMapper = new ObjectMapper();
         _objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
 
-        _managementUser = System.getProperty("tck.manangement-user", "guest");
+        _managementUser = System.getProperty("tck.manangement-username", "guest");
         _managementPassword = System.getProperty("tck.manangement-password", "guest");
 
         _virtualhostnode = System.getProperty("tck.broker-virtualhostnode", "default");

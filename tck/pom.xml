@@ -28,12 +28,11 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>tck</artifactId>
+    <artifactId>qpid-tck</artifactId>
     <name>Apache Qpid JMX TCK Configuration</name>
     <description>Configuration for Oracle JMS TCK</description>
 
     <properties>
-        <tck.directory>/Users/keith/jmstck/</tck.directory>
         <tck.broker-hostport>localhost:5672</tck.broker-hostport>
         <tck.broker-virtualhostnode>default</tck.broker-virtualhostnode>
         <tck.broker-virtualhost>default</tck.broker-virtualhost>
@@ -139,18 +138,6 @@
         </testResources>
     </build>
     <profiles>
-        <profile>
-            <id>selective-test-mode</id>
-            <activation>
-                <property>
-                    <name>test</name>
-                </property>
-            </activation>
-            <properties>
-                <tck.selective.test.arg>-tests</tck.selective.test.arg>
-                <tck.selective.test.value>${test}</tck.selective.test.value>
-            </properties>
-        </profile>
         <profile>
             <id>tck</id>
             <activation>
@@ -328,6 +315,28 @@
                                 <configuration>
                                     <classpathScope>test</classpathScope>
                                     <mainClass>org.apache.qpid.tck.ManageQpidJMSResources</mainClass>
+                                    <systemProperties>
+                                        <systemProperty>
+                                            <key>tck.manangement-url</key>
+                                            <value>${tck.manangement-url}</value>
+                                        </systemProperty>
+                                        <systemProperty>
+                                            <key>tck.manangement-username</key>
+                                            <value>${tck.manangement-username}</value>
+                                        </systemProperty>
+                                        <systemProperty>
+                                            <key>tck.manangement-password</key>
+                                            <value>${tck.manangement-password}</value>
+                                        </systemProperty>
+                                        <systemProperty>
+                                            <key>tck.manangement-api-queue</key>
+                                            <value>${tck.manangement-api-queue}</value>
+                                        </systemProperty>
+                                        <systemProperty>
+                                            <key>tck.manangement-api-topic</key>
+                                            <value>${tck.manangement-api-topic}</value>
+                                        </systemProperty>
+                                    </systemProperties>
                                 </configuration>
                             </execution>
                         </executions>
@@ -346,6 +355,28 @@
                                     <classpathScope>test</classpathScope>
                                     <mainClass>org.apache.qpid.tck.ManageQpidJMSResources</mainClass>
                                     <arguments><argument>--delete</argument></arguments>
+                                    <systemProperties>
+                                        <systemProperty>
+                                            <key>tck.manangement-url</key>
+                                            <value>${tck.manangement-url}</value>
+                                        </systemProperty>
+                                        <systemProperty>
+                                            <key>tck.manangement-username</key>
+                                            <value>${tck.manangement-username}</value>
+                                        </systemProperty>
+                                        <systemProperty>
+                                            <key>tck.manangement-password</key>
+                                            <value>${tck.manangement-password}</value>
+                                        </systemProperty>
+                                        <systemProperty>
+                                            <key>tck.manangement-api-queue</key>
+                                            <value>${tck.manangement-api-queue}</value>
+                                        </systemProperty>
+                                        <systemProperty>
+                                            <key>tck.manangement-api-topic</key>
+                                            <value>${tck.manangement-api-topic}</value>
+                                        </systemProperty>
+                                    </systemProperties>
                                 </configuration>
                             </execution>
                         </executions>
