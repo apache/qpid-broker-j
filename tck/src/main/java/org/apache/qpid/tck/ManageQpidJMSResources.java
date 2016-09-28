@@ -93,16 +93,16 @@ public class ManageQpidJMSResources
         _objectMapper = new ObjectMapper();
         _objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
 
-        _managementUser = System.getProperty("tck.manangement-username", "guest");
-        _managementPassword = System.getProperty("tck.manangement-password", "guest");
+        _managementUser = System.getProperty("tck.management-username", "guest");
+        _managementPassword = System.getProperty("tck.management-password", "guest");
 
         _virtualhostnode = System.getProperty("tck.broker-virtualhostnode", "default");
         _virtualhost = System.getProperty("tck.broker-virtualhost", "default");
 
-        _management = HttpHost.create(System.getProperty("tck.manangement-url", "http://localhost:8080"));
-        _queueApiUrl = System.getProperty("tck.manangement-api-queue", "/api/latest/queue/%s/%s/%s");
-        _queueApiClearQueueUrl = System.getProperty("tck.manangement-api-queue-clear", "/api/latest/queue/%s/%s/%s/clearQueue");
-        _topicApiUrl = System.getProperty("tck.manangement-api-topic", "/api/latest/exchange/%s/%s/%s");
+        _management = HttpHost.create(System.getProperty("tck.management-url", "http://localhost:8080"));
+        _queueApiUrl = System.getProperty("tck.management-api-queue", "/api/latest/queue/%s/%s/%s");
+        _queueApiClearQueueUrl = System.getProperty("tck.management-api-queue-clear", "/api/latest/queue/%s/%s/%s/clearQueue");
+        _topicApiUrl = System.getProperty("tck.management-api-topic", "/api/latest/exchange/%s/%s/%s");
 
     }
 

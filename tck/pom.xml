@@ -37,11 +37,11 @@
         <tck.broker-virtualhostnode>default</tck.broker-virtualhostnode>
         <tck.broker-virtualhost>default</tck.broker-virtualhost>
 
-        <tck.manangement-url>http://localhost:8080</tck.manangement-url>
-        <tck.manangement-username>guest</tck.manangement-username>
-        <tck.manangement-password>guest</tck.manangement-password>
-        <tck.manangement-api-queue>/api/latest/queue/%s/%s/%s</tck.manangement-api-queue>
-        <tck.manangement-api-topic>/api/latest/exchange/%s/%s/%s</tck.manangement-api-topic>
+        <tck.management-url>http://localhost:8080</tck.management-url>
+        <tck.management-username>guest</tck.management-username>
+        <tck.management-password>guest</tck.management-password>
+        <tck.management-api-queue>/api/latest/queue/%s/%s/%s</tck.management-api-queue>
+        <tck.management-api-topic>/api/latest/exchange/%s/%s/%s</tck.management-api-topic>
 
         <tck.jmsobjects.class>com.sun.ts.lib.implementation.sun.jms.SunRIJMSObjects</tck.jmsobjects.class>
         <tck.work.directory>${project.build.directory}/${tck}/work</tck.work.directory>
@@ -317,24 +317,24 @@
                                     <mainClass>org.apache.qpid.tck.ManageQpidJMSResources</mainClass>
                                     <systemProperties>
                                         <systemProperty>
-                                            <key>tck.manangement-url</key>
-                                            <value>${tck.manangement-url}</value>
+                                            <key>tck.management-url</key>
+                                            <value>${tck.management-url}</value>
                                         </systemProperty>
                                         <systemProperty>
-                                            <key>tck.manangement-username</key>
-                                            <value>${tck.manangement-username}</value>
+                                            <key>tck.management-username</key>
+                                            <value>${tck.management-username}</value>
                                         </systemProperty>
                                         <systemProperty>
-                                            <key>tck.manangement-password</key>
-                                            <value>${tck.manangement-password}</value>
+                                            <key>tck.management-password</key>
+                                            <value>${tck.management-password}</value>
                                         </systemProperty>
                                         <systemProperty>
-                                            <key>tck.manangement-api-queue</key>
-                                            <value>${tck.manangement-api-queue}</value>
+                                            <key>tck.management-api-queue</key>
+                                            <value>${tck.management-api-queue}</value>
                                         </systemProperty>
                                         <systemProperty>
-                                            <key>tck.manangement-api-topic</key>
-                                            <value>${tck.manangement-api-topic}</value>
+                                            <key>tck.management-api-topic</key>
+                                            <value>${tck.management-api-topic}</value>
                                         </systemProperty>
                                     </systemProperties>
                                 </configuration>
@@ -357,24 +357,24 @@
                                     <arguments><argument>--delete</argument></arguments>
                                     <systemProperties>
                                         <systemProperty>
-                                            <key>tck.manangement-url</key>
-                                            <value>${tck.manangement-url}</value>
+                                            <key>tck.management-url</key>
+                                            <value>${tck.management-url}</value>
                                         </systemProperty>
                                         <systemProperty>
-                                            <key>tck.manangement-username</key>
-                                            <value>${tck.manangement-username}</value>
+                                            <key>tck.management-username</key>
+                                            <value>${tck.management-username}</value>
                                         </systemProperty>
                                         <systemProperty>
-                                            <key>tck.manangement-password</key>
-                                            <value>${tck.manangement-password}</value>
+                                            <key>tck.management-password</key>
+                                            <value>${tck.management-password}</value>
                                         </systemProperty>
                                         <systemProperty>
-                                            <key>tck.manangement-api-queue</key>
-                                            <value>${tck.manangement-api-queue}</value>
+                                            <key>tck.management-api-queue</key>
+                                            <value>${tck.management-api-queue}</value>
                                         </systemProperty>
                                         <systemProperty>
-                                            <key>tck.manangement-api-topic</key>
-                                            <value>${tck.manangement-api-topic}</value>
+                                            <key>tck.management-api-topic</key>
+                                            <value>${tck.management-api-topic}</value>
                                         </systemProperty>
                                     </systemProperties>
                                 </configuration>
