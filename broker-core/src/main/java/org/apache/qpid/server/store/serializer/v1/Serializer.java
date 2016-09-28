@@ -57,10 +57,10 @@ class Serializer
     public final void writeInt(long val) throws IOException
     {
 
-        _tmpBuf[4] = (byte)(val >>> 24);
-        _tmpBuf[5] = (byte)(val >>> 16);
-        _tmpBuf[6] = (byte)(val >>>  8);
-        _tmpBuf[7] = (byte)val;
+        _tmpBuf[0] = (byte)(val >>> 24);
+        _tmpBuf[1] = (byte)(val >>> 16);
+        _tmpBuf[2] = (byte)(val >>>  8);
+        _tmpBuf[3] = (byte)val;
         write(_tmpBuf, 0, 4);
     }
 

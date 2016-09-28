@@ -221,7 +221,7 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
                                                           + "confidential information",
                                             defaultValue = "false") boolean includeSecureAttributes);
     @ManagedOperation(nonModifying = true, description = "Extract message store content", secure = true)
-    Content extractMessageStore();
+    Content exportMessageStore();
 
     @ManagedOperation(description = "Import message store content", secure = true)
     void importMessageStore(@Param(name="source", description = "Extract file")String source);

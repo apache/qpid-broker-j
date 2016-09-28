@@ -46,7 +46,7 @@ import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.url.URLSyntaxException;
 import org.apache.qpid.util.DataUrlUtils;
 
-public class ExtractImportMessagesRestTest extends QpidRestTestCase
+public class ExportImportMessagesRestTest extends QpidRestTestCase
 {
     private static final String CONNECTION_URL_TEMPLATE =
             "amqp://guest:guest@clientid/%s?brokerlist='localhost:%d?failover='false''";

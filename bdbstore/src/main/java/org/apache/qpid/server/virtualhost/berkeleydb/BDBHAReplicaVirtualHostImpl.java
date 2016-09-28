@@ -462,7 +462,7 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public Content extractMessageStore()
+    public Content exportMessageStore()
     {
         throwUnsupportedForReplica();
 

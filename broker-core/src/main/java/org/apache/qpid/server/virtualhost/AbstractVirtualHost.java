@@ -866,7 +866,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public Content extractMessageStore()
+    public Content exportMessageStore()
     {
         if(getState() == State.STOPPED)
         {

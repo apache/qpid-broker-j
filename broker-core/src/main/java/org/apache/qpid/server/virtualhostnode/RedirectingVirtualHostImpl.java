@@ -321,7 +321,7 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
-    public Content extractMessageStore()
+    public Content exportMessageStore()
     {
         throwUnsupportedForRedirector();
 
