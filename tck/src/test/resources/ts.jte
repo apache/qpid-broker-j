@@ -36,5 +36,5 @@ harness.log.delayseconds=0
 porting.ts.jmsObjects.class.1=${tck.jmsobjects.class}
 
 jms_timeout=5000
-user=${tck.manangement-username}
-password=${tck.manangement-password}
+user=${tck.management-username}
+password=${tck.management-password}
