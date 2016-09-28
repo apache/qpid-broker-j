@@ -81,7 +81,7 @@ public class ExportImportMessagesRestTest extends QpidRestTestCase
 
         connection.close();
 
-        _extractOpUrl = String.format("virtualhost/%s/%s/extractMessageStore", _virtualHostNodeName, _virtualHostName);
+        _extractOpUrl = String.format("virtualhost/%s/%s/exportMessageStore", _virtualHostNodeName, _virtualHostName);
         _importOpUrl = String.format("virtualhost/%s/%s/importMessageStore", _virtualHostNodeName, _virtualHostName);
 
     }
