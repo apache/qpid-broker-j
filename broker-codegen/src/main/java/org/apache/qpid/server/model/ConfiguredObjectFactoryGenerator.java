@@ -23,8 +23,10 @@ package org.apache.qpid.server.model;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -39,6 +41,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
@@ -119,7 +122,12 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
             pw.println("import static org.apache.qpid.server.security.access.Operation.METHOD;");
             pw.println();
             pw.println("import java.util.Map;");
+            pw.println("import java.util.concurrent.ExecutionException;");
             pw.println();
+            pw.println("import com.google.common.util.concurrent.Futures;");
+            pw.println("import com.google.common.util.concurrent.ListenableFuture;");
+            pw.println();
+            pw.println("import org.apache.qpid.server.configuration.updater.Task;");
             pw.println("import org.apache.qpid.server.util.FixedKeyMapCreator;");
             pw.println();
             pw.println("final class " + childClassSimpleName + " extends "+ objectSimpleName);
@@ -159,7 +167,7 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
             pw.println("    }");
             pw.println();
 
-            generateAccessCheckedMethods(classElement, pw, new HashSet<TypeElement>(), new HashSet<String>());
+            generateAccessCheckedMethods(childClassSimpleName, classElement, pw, new HashSet<TypeElement>(), new HashSet<String>());
 
             pw.println("}");
 
@@ -176,7 +184,8 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
 
     }
 
-    private void generateAccessCheckedMethods(final TypeElement typeElement,
+    private void generateAccessCheckedMethods(final String className,
+                                              final TypeElement typeElement,
                                               final PrintWriter pw,
                                               final HashSet<TypeElement> processedClasses,
                                               final HashSet<String> processedMethods) throws ClassNotFoundException
@@ -186,7 +195,7 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
             Element superClassElement = processingEnv.getTypeUtils().asElement(typeElement.getSuperclass());
             if(superClassElement instanceof TypeElement)
             {
-                generateAccessCheckedMethods((TypeElement) superClassElement, pw, processedClasses, processedMethods);
+                generateAccessCheckedMethods(className, (TypeElement) superClassElement, pw, processedClasses, processedMethods);
             }
 
             for(TypeMirror ifMirror : typeElement.getInterfaces())
@@ -194,7 +203,7 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
                 Element ifElement = processingEnv.getTypeUtils().asElement(ifMirror);
                 if(ifElement instanceof TypeElement)
                 {
-                    generateAccessCheckedMethods((TypeElement) ifElement, pw, processedClasses, processedMethods);
+                    generateAccessCheckedMethods(className, (TypeElement) ifElement, pw, processedClasses, processedMethods);
                 }
             }
 
@@ -206,7 +215,7 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
                     {
                         if(annotationMirror.getAnnotationType().toString().equals("org.apache.qpid.server.model.ManagedOperation"))
                         {
-                            processManagedOperation(pw, (ExecutableElement) element);
+                            processManagedOperation(pw, className, (ExecutableElement) element, annotationMirror);
                             break;
                         }
                     }
@@ -216,7 +225,7 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
 
     }
 
-    private void processManagedOperation(final PrintWriter pw, final ExecutableElement methodElement)
+    private void processManagedOperation(final PrintWriter pw, final String className, final ExecutableElement methodElement, final AnnotationMirror annotationMirror)
     {
 
         if(!methodElement.getParameters().isEmpty())
@@ -264,39 +273,129 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
         pw.print("        authorise(METHOD(\"");
         pw.print(methodElement.getSimpleName().toString());
         pw.print("\")");
+        final String parameterList = getParameterList(methodElement);
+
         if(!methodElement.getParameters().isEmpty())
         {
             pw.print(", ");
             pw.print(methodElement.getSimpleName().toString().replaceAll("([A-Z])", "_$1").toUpperCase() + "_MAP_CREATOR");
-            pw.print(".createMap(");
-            first = true;
-            for(VariableElement param : methodElement.getParameters())
-            {
-                if(first)
-                {
-                    first = false;
-                }
-                else
-                {
-                    pw.print(", ");
-                }
-                pw.print(getParamName(param));
-            }
-
-            pw.print(")");
+            pw.print(".createMap" + parameterList);
         }
         pw.println(");");
         pw.println();
 
-        pw.print("        ");
-        if(methodElement.getReturnType().getKind() != TypeKind.VOID)
+        final Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues =
+                processingEnv.getElementUtils().getElementValuesWithDefaults(annotationMirror);
+        for (ExecutableElement executableElement : elementValues.keySet())
         {
-            pw.print("return ");
+            if ("changesConfiguredObjectState".contentEquals(executableElement.getSimpleName()))
+            {
+                final String callToSuper = "super." + methodElement.getSimpleName().toString() + parameterList;
+
+                pw.print("        ");
+                if (methodElement.getReturnType().getKind() != TypeKind.VOID)
+                {
+                    pw.print("return ");
+                }
+                if ((Boolean) elementValues.get(executableElement).getValue())
+                {
+                    pw.println(wrapByDoOnConfigThread(callToSuper, className, methodElement));
+                }
+                else
+                {
+                    pw.println(callToSuper + ";");
+                }
+
+                break;
+            }
         }
-        pw.print("super.");
-        pw.print(methodElement.getSimpleName().toString());
-        pw.print("(");
-        first = true;
+
+        pw.println("    }");
+        pw.println();
+    }
+
+    private String wrapByDoOnConfigThread(final String callToWrap,
+                                          final String className,
+                                          final ExecutableElement methodElement)
+    {
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter pw = new PrintWriter(stringWriter);
+        String boxedReturnTypeName = getBoxedReturnTypeAsString(methodElement);
+        pw.println("doSync(doOnConfigThread(new Task<ListenableFuture<"
+                   + boxedReturnTypeName
+                   + ">, RuntimeException>()");
+        pw.println("            {");
+        pw.println("                @Override");
+        pw.println("                public ListenableFuture<"
+                   + boxedReturnTypeName
+                   + "> execute()");
+        pw.println("                {");
+        if (methodElement.getReturnType().getKind() != TypeKind.VOID)
+        {
+            pw.println("                    return Futures.<"
+                       + boxedReturnTypeName
+                       + ">immediateFuture("
+                       + className
+                       + "."
+                       + callToWrap
+                       + ");");
+        }
+        else
+        {
+            pw.println("                    " + className + "." + callToWrap + ";");
+            pw.println("                    return Futures.<"
+                       + boxedReturnTypeName
+                       + ">immediateFuture(null);");
+        }
+        pw.println("                }");
+
+        pw.println("                @Override");
+        pw.println("                public String getObject()");
+        pw.println("                {");
+        pw.println("                    return " + className + ".this.toString();");
+        pw.println("                }");
+
+        pw.println("                @Override");
+        pw.println("                public String getAction()");
+        pw.println("                {");
+        pw.println("                    return \"" + methodElement.getSimpleName() + "\";");
+        pw.println("                }");
+
+        pw.println("                @Override");
+        pw.println("                public String getArguments()");
+        pw.println("                {");
+        pw.println("                    return null;");
+        pw.println("                }");
+
+        pw.println("            }));");
+        return stringWriter.toString();
+    }
+
+    private String getBoxedReturnTypeAsString(final ExecutableElement methodElement)
+    {
+        TypeMirror returnType = methodElement.getReturnType();
+        String returnTypeName;
+        if (returnType.getKind().isPrimitive())
+        {
+            TypeElement returnTypeElement =
+                    processingEnv.getTypeUtils().boxedClass((PrimitiveType) returnType);
+            returnTypeName = returnTypeElement.asType().toString();
+        }
+        else if (returnType.getKind() == TypeKind.VOID)
+        {
+            returnTypeName = "Void";
+        }
+        else
+        {
+            returnTypeName = methodElement.getReturnType().toString();
+        }
+        return returnTypeName;
+    }
+
+    private String getParameterList(final ExecutableElement methodElement)
+    {
+        StringBuilder parametersStringBuilder = new StringBuilder("(");
+        boolean first = true;
         for(VariableElement param : methodElement.getParameters())
         {
             if(first)
@@ -305,13 +404,12 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
             }
             else
             {
-                pw.print(", ");
+                parametersStringBuilder.append(", ");
             }
-            pw.print(getParamName(param));
+            parametersStringBuilder.append(getParamName(param));
         }
-        pw.println(");");
-        pw.println("    }");
-        pw.println();
+        parametersStringBuilder.append(")");
+        return parametersStringBuilder.toString();
     }
 
     private String getParamName(final VariableElement param)
