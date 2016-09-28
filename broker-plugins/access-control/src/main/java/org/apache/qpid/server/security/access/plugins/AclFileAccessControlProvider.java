@@ -35,6 +35,7 @@ public interface AclFileAccessControlProvider<X extends AclFileAccessControlProv
     @ManagedAttribute( mandatory = true, description = "File location", oversize = true, oversizedAltText = OVER_SIZED_ATTRIBUTE_ALTERNATIVE_TEXT)
     String getPath();
 
-    @ManagedOperation( description = "Causes the ACL rules to be reloaded.  Changes are applied immediately.")
+    @ManagedOperation( description = "Causes the ACL rules to be reloaded.  Changes are applied immediately.",
+            changesConfiguredObjectState = true)
     void reload();
 }

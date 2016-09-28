@@ -189,10 +189,15 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound")
     long getMessagesOut();
 
-    @ManagedOperation(nonModifying = true, description = "Initiates an orderly shutdown of the Broker.")
+    @ManagedOperation(nonModifying = true,
+            description = "Initiates an orderly shutdown of the Broker.",
+            changesConfiguredObjectState = false)
     void initiateShutdown();
 
-    @ManagedOperation(nonModifying = true, description = "Extract configuration", paramRequiringSecure = "includeSecureAttributes")
+    @ManagedOperation(nonModifying = true,
+            description = "Extract configuration",
+            paramRequiringSecure = "includeSecureAttributes",
+            changesConfiguredObjectState = false)
     Map<String,Object> extractConfig(@Param(name="includeSecureAttributes",
                                             description = "include attributes that may contain passwords or other"
                                                           + " confidential information",
@@ -240,29 +245,38 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
                       description = "Number of objects pending finalization")
     int getNumberOfObjectsPendingFinalization();
 
-    @ManagedOperation(nonModifying = true, description = "Initiates garbage collection")
+    @ManagedOperation(nonModifying = true,
+            description = "Initiates garbage collection",
+            changesConfiguredObjectState = false)
     void performGC();
 
     @ManagedOperation(nonModifying = true,
-                      description = "Collects thread stack traces and dead locks. Dumps stack traces into logs if requested")
+                      description = "Collects thread stack traces and dead locks. Dumps stack traces into logs if requested",
+            changesConfiguredObjectState = false)
     Content getThreadStackTraces(@Param(name="appendToLog",
                                         defaultValue = "false",
                                         description = "If true, appends stack traces into logs")
                                  boolean appendToLog);
 
     @ManagedOperation(nonModifying = true,
-            description = "Collects thread stack traces for the threads with names containing matching characters for given regular expression")
+            description = "Collects thread stack traces for the threads with names containing matching characters for given regular expression",
+            changesConfiguredObjectState = false)
     Content findThreadStackTraces(@Param(name="threadNameFindExpression",
                                         description = "Regular expression to find threads with names containing matching characters")
                                  String threadNameFindExpression);
 
-    @ManagedOperation(nonModifying = true, description = "Returns the principal of the currently authenticated user")
+    @ManagedOperation(nonModifying = true,
+            description = "Returns the principal of the currently authenticated user",
+            changesConfiguredObjectState = false)
     Principal getUser();
 
-    @ManagedOperation(nonModifying = true, description = "Returns the groups to which the currently authenticated user belongs")
+    @ManagedOperation(nonModifying = true,
+            description = "Returns the groups to which the currently authenticated user belongs",
+            changesConfiguredObjectState = false)
     Set<Principal> getGroups();
 
-    @ManagedOperation(description = "Removes a user and all associated preferences from the brokers configuration")
+    @ManagedOperation(description = "Removes a user and all associated preferences from the brokers configuration",
+            changesConfiguredObjectState = true)
     void purgeUser(@Param(name="origin", description="The AuthenticationProvider the username is associated with")AuthenticationProvider<?> origin,
                    @Param(name="username", description="The unqualified username that should be purged from the broker")String username);
 

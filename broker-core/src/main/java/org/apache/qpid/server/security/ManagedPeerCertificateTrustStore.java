@@ -44,14 +44,16 @@ public interface ManagedPeerCertificateTrustStore<X extends ManagedPeerCertifica
     @ManagedAttribute(oversize = true, defaultValue = "[]", description = "List of base64 encoded representations of the ASN.1 DER encoded certificates")
     List<Certificate> getStoredCertificates();
 
-    @ManagedOperation(description = "Add a given certificate to the Trust Store")
+    @ManagedOperation(description = "Add a given certificate to the Trust Store",
+            changesConfiguredObjectState = true)
     void addCertificate(@Param(name = "certificate", description = "PEM or base64 encoded DER certificate to be added to the Trust Store")
                         Certificate certificate);
 
     @DerivedAttribute(description = "List of details about the certificates like validity dates, SANs, issuer and subject names, etc.")
     List<CertificateDetails> getCertificateDetails();
 
-    @ManagedOperation(description = "Remove given certificates from the Trust Store.")
+    @ManagedOperation(description = "Remove given certificates from the Trust Store.",
+            changesConfiguredObjectState = true)
     void removeCertificates(@Param(name = "certificates", description = "List of certificate details to be removed. The details should take the form given by the certificateDetails attribute")
                             List<CertificateDetails> certificates);
 }

@@ -33,5 +33,5 @@ public @interface ManagedOperation
     boolean nonModifying() default false;
     boolean secure() default false;
     String paramRequiringSecure() default "";
-    boolean changesConfiguredObjectState() default true;
+    boolean changesConfiguredObjectState();
 }

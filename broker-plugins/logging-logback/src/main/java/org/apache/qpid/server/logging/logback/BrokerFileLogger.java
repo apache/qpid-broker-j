@@ -68,12 +68,13 @@ public interface BrokerFileLogger<X extends BrokerFileLogger<X>> extends BrokerL
     @DerivedAttribute
     List<LogFileDetails> getLogFiles();
 
-    @ManagedOperation(nonModifying = true)
+    @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
     Content getFile(@Param(name = "fileName") String fileName);
 
-    @ManagedOperation(nonModifying = true)
+    @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
     Content getFiles(@Param(name = "fileName") Set<String> fileName);
 
-    @ManagedOperation(nonModifying = true)
+    @ManagedOperation(nonModifying = true,
+            changesConfiguredObjectState = false)
     Content getAllFiles();
 }

@@ -28,6 +28,6 @@ import org.apache.qpid.server.store.preferences.UserPreferencesCreator;
 public interface TestStandardCar<X extends TestStandardCar<X>> extends TestCar<X>, UserPreferencesCreator
 {
 
-    @ManagedOperation
+    @ManagedOperation(changesConfiguredObjectState = false)
     Door openDoor(@Param(name = "door", defaultValue = "DRIVER") Door door);
 }

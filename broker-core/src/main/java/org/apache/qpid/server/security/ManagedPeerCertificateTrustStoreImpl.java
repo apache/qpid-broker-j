@@ -33,10 +33,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -44,7 +44,6 @@ import javax.net.ssl.X509TrustManager;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.TrustStoreMessages;
 import org.slf4j.Logger;
@@ -267,56 +266,11 @@ public class ManagedPeerCertificateTrustStoreImpl
     @Override
     public void addCertificate(final Certificate cert)
     {
-        final Map<String, Object> updateMap = new HashMap<>();
-
-        doAfter(doOnConfigThread(new Task<ListenableFuture<Void>, RuntimeException>()
-                                    {
-                                        @Override
-                                        public ListenableFuture<Void> execute()
-                                        {
-                                            Set<Certificate> certs = new HashSet<>(_storedCertificates);
-                                            if(certs.add(cert))
-                                            {
-                                                updateMap.put("storedCertificates", new ArrayList<>(certs));
-                                            }
-                                            return Futures.immediateFuture(null);
-                                        }
-
-                                        @Override
-                                        public String getObject()
-                                        {
-                                            return ManagedPeerCertificateTrustStoreImpl.this.toString();
-                                        }
-
-                                        @Override
-                                        public String getAction()
-                                        {
-                                            return "add certificate";
-                                        }
-
-                                        @Override
-                                        public String getArguments()
-                                        {
-                                            return String.valueOf(cert);
-                                        }
-                                    }),
-                 new Callable<ListenableFuture<Void>>()
-                    {
-                        @Override
-                        public ListenableFuture<Void> call() throws Exception
-                        {
-                            if(updateMap.isEmpty())
-                            {
-                                return Futures.immediateFuture(null);
-                            }
-                            else
-                            {
-                                return setAttributesAsync(updateMap);
-                            }
-                        }
-
-                    });
-
+        final Set<Certificate> certificates = new LinkedHashSet<>(_storedCertificates);
+        if (certificates.add(cert))
+        {
+            setAttributesAsync(Collections.<String, Object>singletonMap("storedCertificates", certificates));
+        }
     }
 
     @Override
@@ -337,85 +291,38 @@ public class ManagedPeerCertificateTrustStoreImpl
     @Override
     public void removeCertificates(final List<CertificateDetails> certs)
     {
-        final Map<String,Set<BigInteger>> certsToRemove = new HashMap<>();
-        for(CertificateDetails cert : certs)
+        final Map<String, Set<BigInteger>> certsToRemove = new HashMap<>();
+        for (CertificateDetails cert : certs)
         {
-            if(!certsToRemove.containsKey(cert.getIssuerName()))
+            if (!certsToRemove.containsKey(cert.getIssuerName()))
             {
                 certsToRemove.put(cert.getIssuerName(), new HashSet<BigInteger>());
             }
             certsToRemove.get(cert.getIssuerName()).add(new BigInteger(cert.getSerialNumber()));
         }
 
-        final Map<String, Object> updateMap = new HashMap<>();
-
-        doAfter(doOnConfigThread(new Task<ListenableFuture<Void>, RuntimeException>()
+        boolean updated = false;
+        Set<Certificate> currentCerts = new LinkedHashSet<>(_storedCertificates);
+        Iterator<Certificate> iter = currentCerts.iterator();
+        while (iter.hasNext())
+        {
+            Certificate cert = iter.next();
+            if (cert instanceof X509Certificate)
+            {
+                X509Certificate x509Certificate = (X509Certificate) cert;
+                String issuerName = x509Certificate.getIssuerX500Principal().getName();
+                if(certsToRemove.containsKey(issuerName) && certsToRemove.get(issuerName).contains(x509Certificate.getSerialNumber()))
                 {
-                    @Override
-                    public ListenableFuture<Void> execute()
-                    {
+                    iter.remove();
+                    updated = true;
+                }
+            }
+        }
 
-                        Set<Certificate> certs = new HashSet<>(_storedCertificates);
-
-                        boolean updated = false;
-                        Iterator<Certificate> iter = certs.iterator();
-                        while(iter.hasNext())
-                        {
-                            Certificate cert = iter.next();
-                            if(cert instanceof X509Certificate)
-                            {
-                                X509Certificate x509Certificate = (X509Certificate) cert;
-                                String issuerName = x509Certificate.getIssuerX500Principal().getName();
-                                if(certsToRemove.containsKey(issuerName) && certsToRemove.get(issuerName).contains(x509Certificate.getSerialNumber()))
-                                {
-                                    iter.remove();
-                                    updated = true;
-                                }
-                            }
-                        }
-
-
-                        if(updated)
-                        {
-                            updateMap.put("storedCertificates", new ArrayList<>(certs));
-                        }
-                        return Futures.immediateFuture(null);
-                    }
-
-                    @Override
-                    public String getObject()
-                    {
-                        return ManagedPeerCertificateTrustStoreImpl.this.toString();
-                    }
-
-                    @Override
-                    public String getAction()
-                    {
-                        return "remove certificates";
-                    }
-
-                    @Override
-                    public String getArguments()
-                    {
-                        return String.valueOf(certs);
-                    }
-                }),
-                new Callable<ListenableFuture<Void>>()
-                {
-                    @Override
-                    public ListenableFuture<Void> call() throws Exception
-                    {
-                        if(updateMap.isEmpty())
-                        {
-                            return Futures.immediateFuture(null);
-                        }
-                        else
-                        {
-                            return setAttributesAsync(updateMap);
-                        }
-                    }
-
-                });
+        if (updated)
+        {
+            setAttributesAsync(Collections.<String, Object>singletonMap("storedCertificates", currentCerts));
+        }
     }
 
     public static class CertificateDetailsImpl implements CertificateDetails, ManagedAttributeValue

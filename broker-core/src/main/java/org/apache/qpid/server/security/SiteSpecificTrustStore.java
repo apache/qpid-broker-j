@@ -58,6 +58,7 @@ public interface SiteSpecificTrustStore<X extends SiteSpecificTrustStore<X>> ext
     @DerivedAttribute(description = "The end date of the validity of the certificate")
     Date getCertificateValidUntilDate();
 
-    @ManagedOperation(description = "Re-download the certificate from the URL")
+    @ManagedOperation(description = "Re-download the certificate from the URL",
+            changesConfiguredObjectState = false)
     void refreshCertificate();
 }

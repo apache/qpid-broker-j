@@ -44,9 +44,9 @@ public interface RuleBasedVirtualHostAccessControlProvider<X extends RuleBasedVi
     @ManagedAttribute( mandatory = true, defaultValue = "[ ]")
     List<AclRule> getRules();
 
-    @ManagedOperation
+    @ManagedOperation(changesConfiguredObjectState = true)
     void loadFromFile(@Param(name = "path") String path);
 
-    @ManagedOperation(nonModifying = true)
+    @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
     Content extractRules();
 }

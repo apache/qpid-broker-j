@@ -54,13 +54,11 @@ import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.BrokerPrincipal;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.logging.messages.VirtualHostMessages;
-import org.apache.qpid.server.model.preferences.GenericPrincipal;
 import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
@@ -1012,33 +1010,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     @Override
     public void purgeUser(final AuthenticationProvider<?> origin, final String username)
     {
-        doSync(doOnConfigThread(new Task<ListenableFuture<Void>, Exception>()
-        {
-            @Override
-            public ListenableFuture<Void> execute() throws Exception
-            {
-                doPurgeUser(origin, username);
-                return Futures.immediateFuture(null);
-            }
-
-            @Override
-            public String getObject()
-            {
-                return BrokerImpl.this.toString();
-            }
-
-            @Override
-            public String getAction()
-            {
-                return "purgeUser";
-            }
-
-            @Override
-            public String getArguments()
-            {
-                return String.format("%s@%s('%s')", username, origin.getType(), origin.getName());
-            }
-        }));
+        doPurgeUser(origin, username);
     }
 
     private void doPurgeUser(final AuthenticationProvider<?> origin, final String username)

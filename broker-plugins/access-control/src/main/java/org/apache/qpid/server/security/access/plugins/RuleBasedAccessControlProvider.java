@@ -44,9 +44,12 @@ public interface RuleBasedAccessControlProvider<X extends RuleBasedAccessControl
     @ManagedAttribute( mandatory = true, defaultValue = "[ { \"identity\" : \"ALL\", \"objectType\" : \"ALL\", \"operation\" : \"ALL\", \"attributes\" : {}, \"outcome\" : \"ALLOW\"} ]", description = "the ordered list of ACL rules")
     List<AclRule> getRules();
 
-    @ManagedOperation(description = "Load access control rules from a file in the legacy access control rule format")
+    @ManagedOperation(description = "Load access control rules from a file in the legacy access control rule format",
+            changesConfiguredObjectState = true)
     void loadFromFile(@Param(name = "path")String path);
 
-    @ManagedOperation(nonModifying = true, description = "Extract the access control rules in the legacy access control rule format")
+    @ManagedOperation(nonModifying = true,
+            description = "Extract the access control rules in the legacy access control rule format",
+            changesConfiguredObjectState = false)
     Content extractRules();
 }

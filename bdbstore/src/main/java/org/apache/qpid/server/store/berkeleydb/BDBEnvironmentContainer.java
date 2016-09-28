@@ -29,21 +29,27 @@ public interface BDBEnvironmentContainer<X extends ConfiguredObject<X>> extends 
 {
     void setBDBCacheSize(long cacheSize);
 
-    @ManagedOperation(description = "Update BDB mutable configuration from settings in context variables")
+    @ManagedOperation(description = "Update BDB mutable configuration from settings in context variables",
+            changesConfiguredObjectState = false)
     void updateMutableConfig();
 
-    @ManagedOperation(description = "Instruct BDB to attempt to clean up its log files")
+    @ManagedOperation(description = "Instruct BDB to attempt to clean up its log files",
+            changesConfiguredObjectState = false)
     int cleanLog();
 
-    @ManagedOperation(description = "Instruct BDB to perform a checkpoint operation")
+    @ManagedOperation(description = "Instruct BDB to perform a checkpoint operation",
+            changesConfiguredObjectState = false)
     void checkpoint(@Param(name = "force", defaultValue = "false") boolean force);
 
-    @ManagedOperation(description = "Get the BDB environment statistics", nonModifying = true)
+    @ManagedOperation(description = "Get the BDB environment statistics", nonModifying = true,
+            changesConfiguredObjectState = false)
     Map<String,Map<String,Object>> environmentStatistics(@Param(name="reset", defaultValue = "false", description = "If true, reset the statistics") boolean reset);
 
-    @ManagedOperation(description = "Get the BDB transaction statistics", nonModifying = true)
+    @ManagedOperation(description = "Get the BDB transaction statistics", nonModifying = true,
+            changesConfiguredObjectState = false)
     Map<String, Object> transactionStatistics(@Param(name="reset", defaultValue = "false", description = "If true, reset the statistics")boolean reset);
 
-    @ManagedOperation(description = "Get the BDB database statistics", nonModifying = true)
+    @ManagedOperation(description = "Get the BDB database statistics", nonModifying = true,
+            changesConfiguredObjectState = false)
     Map<String, Object> databaseStatistics(@Param(name="database", description = "database table for which to retrieve statistics")String database, @Param(name="reset", defaultValue = "false", description = "If true, reset the statistics") boolean reset);
 }

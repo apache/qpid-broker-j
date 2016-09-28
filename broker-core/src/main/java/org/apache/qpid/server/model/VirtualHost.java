@@ -202,28 +202,38 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     Broker<?> getBroker();
 
+    // LQ TODO: I think this is not being processed correctly because it is not annotated on the base. At least is does not show up in the generated overrides
     @Override
-    @ManagedOperation(nonModifying = true)
+    @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
     Collection<? extends Connection<?>> getConnections();
 
-    @ManagedOperation(nonModifying = true)
+    @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
     Connection<?> getConnection(@Param(name="name") String name);
 
     @ManagedOperation(secure = true,
                       description = "Publishes a message to a specified address. "
                                     + "Returns the number of queues onto which it has been placed, "
-                                    + " or zero, if the address routes to no queues.")
+                                    + " or zero, if the address routes to no queues.",
+            changesConfiguredObjectState = false)
     int publishMessage(@Param(name = "message")ManageableMessage message);
 
-    @ManagedOperation(nonModifying = true, description = "Extract configuration", paramRequiringSecure = "includeSecureAttributes")
+    @ManagedOperation(nonModifying = true,
+            description = "Extract configuration",
+            paramRequiringSecure = "includeSecureAttributes",
+            changesConfiguredObjectState = false)
     Map<String,Object> exportConfig(@Param(name="includeSecureAttributes",
                                             description = "include attributes that may contain passwords or other "
                                                           + "confidential information",
                                             defaultValue = "false") boolean includeSecureAttributes);
-    @ManagedOperation(nonModifying = true, description = "Extract message store content", secure = true)
+    @ManagedOperation(nonModifying = true,
+            description = "Extract message store content",
+            secure = true,
+            changesConfiguredObjectState = true)
     Content exportMessageStore();
 
-    @ManagedOperation(description = "Import message store content", secure = true)
+    @ManagedOperation(description = "Import message store content",
+            secure = true,
+            changesConfiguredObjectState = true)
     void importMessageStore(@Param(name="source", description = "Extract file")String source);
 
 

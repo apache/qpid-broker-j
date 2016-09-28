@@ -45,7 +45,7 @@ public interface BrokerMemoryLogger<X extends BrokerMemoryLogger<X>> extends Bro
     @ManagedAttribute( defaultValue = "4096" )
     int getMaxRecords();
 
-    @ManagedOperation(nonModifying = true)
+    @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
     Collection<LogRecord> getLogEntries(@Param(name="lastLogId", defaultValue="0") long lastLogId);
 
 }

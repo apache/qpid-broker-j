@@ -281,30 +281,30 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Oldest Message")
     long getOldestMessageAge();
 
-    @ManagedOperation
+    @ManagedOperation(description = "move messages from this queue to another", changesConfiguredObjectState = false)
     List<Long> moveMessages(@Param(name = "destination", description = "The queue to which the messages should be moved") Queue<?> destination,
                             @Param(name = "messageIds", description = "If provided, only messages in the queue whose (internal) message-id is supplied will be considered for moving") List<Long> messageIds,
                             @Param(name = "selector", description = "A (JMS) selector - if provided, only messages which match the selector will be considered for moving") String selector,
                             @Param(name = "limit", description = "Maximum number of messages to move", defaultValue = "-1") int limit);
 
 
-    @ManagedOperation
+    @ManagedOperation(description = "copies messages from this queue to another", changesConfiguredObjectState = false)
     List<Long> copyMessages(@Param(name = "destination", description = "The queue to which the messages should be copied") Queue<?> destination,
                             @Param(name = "messageIds", description = "If provided, only messages in the queue whose (internal) message-id is supplied will be considered for copying") List<Long> messageIds,
                             @Param(name = "selector", description = "A (JMS) selector - if provided, only messages which match the selector will be considered for copying")  String selector,
                             @Param(name = "limit", description = "Maximum number of messages to copy", defaultValue = "-1") int limit);
 
 
-    @ManagedOperation
+    @ManagedOperation(description = "removes messages from this queue", changesConfiguredObjectState = false)
     List<Long> deleteMessages(@Param(name = "messageIds", description = "If provided, only messages in the queue whose (internal) message-id is supplied will be considered for deletion") List<Long> messageIds,
                               @Param(name = "selector", description = "A (JMS) selector - if provided, only messages which match the selector will be considered for deletion") String selector,
                               @Param(name = "limit", description = "Maximum number of messages to delete", defaultValue = "-1") int limit);
 
 
-    @ManagedOperation
+    @ManagedOperation(description = "removes all messages from this queue", changesConfiguredObjectState = false)
     long clearQueue();
 
-    @ManagedOperation(nonModifying = true, secure = true)
+    @ManagedOperation(nonModifying = true, secure = true, changesConfiguredObjectState = false)
     Content getMessageContent(@Param(name = "messageId") long messageId,
                               @Param(name = "limit", defaultValue = "-1",
                                       description = "Number of bytes to return") long limit,
@@ -317,12 +317,18 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                                                     + "(should it be compressed) before applying any limit. If"
                                                     + "decompression fails the operation will fail.") boolean decompressBeforeLimiting);
 
-    @ManagedOperation(nonModifying = true, paramRequiringSecure = "includeHeaders")
+    @ManagedOperation(description = "get information about a range of messages",
+            nonModifying = true,
+            paramRequiringSecure = "includeHeaders",
+            changesConfiguredObjectState = false)
     List<MessageInfo> getMessageInfo(@Param(name = "first", defaultValue = "-1") int first,
                                      @Param(name = "last",  defaultValue = "-1") int last,
                                      @Param(name = "includeHeaders", defaultValue = "false") boolean includeHeaders);
 
-    @ManagedOperation(nonModifying = true, paramRequiringSecure = "includeHeaders")
+    @ManagedOperation(description = "get information about the message with the given Id",
+            nonModifying = true,
+            paramRequiringSecure = "includeHeaders",
+            changesConfiguredObjectState = false)
     MessageInfo getMessageInfoById(@Param(name = "messageId") long messageId,
                                    @Param(name = "includeHeaders", defaultValue = "true") boolean includeHeaders);
 

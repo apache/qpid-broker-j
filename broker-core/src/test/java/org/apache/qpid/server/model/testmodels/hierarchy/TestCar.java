@@ -45,6 +45,6 @@ public interface TestCar<X extends TestCar<X>> extends ConfiguredObject<X>
 
     enum Door { DRIVER, PASSENGER }
 
-    @ManagedOperation
+    @ManagedOperation(changesConfiguredObjectState = false)
     Door openDoor(@Param(name = "door") Door door);
 }
