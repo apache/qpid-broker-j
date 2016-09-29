@@ -988,7 +988,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 String asciiName = vhostName.replaceAll("[^\\x20-\\x7E]", "?")
                                                  .replace('\\', '?')
                                                  .replaceAll("%[0-9a-fA-F]{2}", "?");
-                String disposition = String.format("attachment; filename=\"%s_messages%09dbin\"; filename*=\"UTF-8''%s_messages%09dbin\"",
+                String disposition = String.format("attachment; filename=\"%s_messages.bin\"; filename*=\"UTF-8''%s_messages.bin\"",
                                                    asciiName,
                                                    URLEncoder.encode(vhostName, StandardCharsets.UTF_8.name())
                                                    );
