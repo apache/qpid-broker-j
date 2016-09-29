@@ -631,6 +631,14 @@ public final class QpidByteBuffer
             }
             return uncompressedBuffers;
         }
+        catch (IOException e)
+        {
+            for (QpidByteBuffer uncompressedBuffer : uncompressedBuffers)
+            {
+                uncompressedBuffer.dispose();
+            }
+            throw e;
+        }
     }
 
     public static Collection<QpidByteBuffer> deflate(Collection<QpidByteBuffer> uncompressedBuffers) throws IOException
@@ -649,9 +657,8 @@ public final class QpidByteBuffer
         }
         final int bufferSize = (isDirect && _pooledBufferSize > 0) ? _pooledBufferSize : 65536;
 
-        QpidByteBufferOutputStream compressedOutput = new QpidByteBufferOutputStream(isDirect, bufferSize);
-
-        try(InputStream compressedInput = new CompositeInputStream(streams);
+        try(QpidByteBufferOutputStream compressedOutput = new QpidByteBufferOutputStream(isDirect, bufferSize);
+            InputStream compressedInput = new CompositeInputStream(streams);
             GZIPOutputStream gzipStream = new GZIPOutputStream(new BufferedOutputStream(compressedOutput, bufferSize)))
         {
             byte[] buf = new byte[16384];
@@ -660,11 +667,10 @@ public final class QpidByteBuffer
             {
                 gzipStream.write(buf, 0, read);
             }
+            gzipStream.finish();
+            gzipStream.flush();
+            return compressedOutput.fetchAccumulatedBuffers();
         }
-
-        // output pipeline will be already flushed and closed
-
-        return compressedOutput.fetchAccumulatedBuffers();
     }
 
     public static long write(GatheringByteChannel channel, Collection<QpidByteBuffer> buffers) throws IOException

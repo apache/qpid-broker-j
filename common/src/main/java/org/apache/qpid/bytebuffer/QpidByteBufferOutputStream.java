@@ -78,6 +78,11 @@ public class QpidByteBufferOutputStream extends OutputStream
     public void close() throws IOException
     {
         _closed = true;
+        for (QpidByteBuffer buffer : _buffers)
+        {
+            buffer.dispose();
+        }
+        _buffers.clear();
     }
 
     public Collection<QpidByteBuffer> fetchAccumulatedBuffers()

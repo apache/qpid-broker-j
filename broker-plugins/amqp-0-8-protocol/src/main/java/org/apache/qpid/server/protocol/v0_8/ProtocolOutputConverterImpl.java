@@ -150,28 +150,44 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
     private DisposableMessageContentSource deflateIfPossible(MessageContentSource source)
     {
+        Collection<QpidByteBuffer> contentBuffers = source.getContent(0, (int) source.getSize());
         try
         {
-            return new ModifiedContentSource(QpidByteBuffer.deflate(source.getContent(0, (int) source.getSize())));
+            return new ModifiedContentSource(QpidByteBuffer.deflate(contentBuffers));
         }
         catch (IOException e)
         {
             LOGGER.warn("Unable to compress message payload for consumer with gzip, message will be sent as is", e);
             return null;
         }
+        finally
+        {
+            for (QpidByteBuffer contentBuffer : contentBuffers)
+            {
+                contentBuffer.dispose();
+            }
+        }
     }
 
 
     private DisposableMessageContentSource inflateIfPossible(MessageContentSource source)
     {
+        Collection<QpidByteBuffer> contentBuffers = source.getContent(0, (int) source.getSize());
         try
         {
-            return new ModifiedContentSource(QpidByteBuffer.inflate(source.getContent(0, (int) source.getSize())));
+            return new ModifiedContentSource(QpidByteBuffer.inflate(contentBuffers));
         }
         catch (IOException e)
         {
             LOGGER.warn("Unable to decompress message payload for consumer with gzip, message will be sent as is", e);
             return null;
+        }
+        finally
+        {
+            for (QpidByteBuffer contentBuffer : contentBuffers)
+            {
+                contentBuffer.dispose();
+            }
         }
     }
 
