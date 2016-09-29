@@ -269,7 +269,7 @@ public class ManagedPeerCertificateTrustStoreImpl
         final Set<Certificate> certificates = new LinkedHashSet<>(_storedCertificates);
         if (certificates.add(cert))
         {
-            setAttributesAsync(Collections.<String, Object>singletonMap("storedCertificates", certificates));
+            setAttributes(Collections.<String, Object>singletonMap("storedCertificates", certificates));
         }
     }
 
@@ -321,7 +321,7 @@ public class ManagedPeerCertificateTrustStoreImpl
 
         if (updated)
         {
-            setAttributesAsync(Collections.<String, Object>singletonMap("storedCertificates", currentCerts));
+            setAttributes(Collections.<String, Object>singletonMap("storedCertificates", currentCerts));
         }
     }
 
