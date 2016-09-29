@@ -320,7 +320,7 @@ public class EncodingUtils
 
     public static long readLongAsShortString(QpidByteBuffer buffer)
     {
-        short length = (short) buffer.getUnsignedByte();
+        short length = buffer.getUnsignedByte();
         short pos = 0;
         if (length == 0)
         {

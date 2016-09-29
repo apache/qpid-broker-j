@@ -44,6 +44,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
@@ -157,6 +158,9 @@ public class TCPandSSLTransportTest extends QpidTestCase
         List<String> blackList = mapper.readValue(Broker.DEFAULT_SECURITY_TLS_PROTOCOL_BLACK_LIST, type);
         when(port.getTlsProtocolBlackList()).thenReturn(blackList);
         when(port.getTlsProtocolWhiteList()).thenReturn(whiteList);
+        final Broker broker = mock(Broker.class);
+        when(broker.getEventLogger()).thenReturn(mock(EventLogger.class));
+        when(port.getParent(Broker.class)).thenReturn(broker);
 
         TCPandSSLTransport transport = new TCPandSSLTransport(new HashSet<>(Arrays.asList(transports)),
                                                               port,

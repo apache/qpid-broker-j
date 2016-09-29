@@ -136,8 +136,8 @@ public class ConnectionStartBody extends AMQMethodBodyImpl implements EncodableA
     public static void process(final QpidByteBuffer in, final ClientMethodProcessor dispatcher)
             throws AMQFrameDecodingException
     {
-        short versionMajor = (short) in.getUnsignedByte();
-        short versionMinor = (short) in.getUnsignedByte();
+        short versionMajor = in.getUnsignedByte();
+        short versionMinor = in.getUnsignedByte();
         FieldTable serverProperties = EncodingUtils.readFieldTable(in);
         byte[] mechanisms = EncodingUtils.readBytes(in);
         byte[] locales = EncodingUtils.readBytes(in);

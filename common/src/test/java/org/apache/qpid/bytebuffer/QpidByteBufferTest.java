@@ -150,6 +150,67 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
+    public void testSlice() throws Exception
+    {
+        QpidByteBuffer directBuffer = QpidByteBuffer.allocate(true, 6);
+        directBuffer.position(2);
+        directBuffer.limit(5);
+        QpidByteBuffer directSlice = directBuffer.slice();
+
+        assertTrue("Direct slice should be direct too", directSlice.isDirect());
+        assertTrue("Direct slice should be special", directSlice instanceof SlicedQpidByteBuffer);
+        assertEquals("Unexpected capacity", 3, directSlice.capacity());
+        assertEquals("Unexpected limit", 3, directSlice.limit());
+        assertEquals("Unexpected position", 0, directSlice.position());
+
+        directBuffer.dispose();
+        directSlice.dispose();
+
+        final QpidByteBuffer heapBuffer = QpidByteBuffer.allocate(false, 6);
+        final QpidByteBuffer heapSlice = heapBuffer.slice();
+        assertFalse("Heap slice should not be special", heapSlice instanceof SlicedQpidByteBuffer);
+        heapBuffer.dispose();
+        heapSlice.dispose();
+    }
+
+    public void testView() throws Exception
+    {
+        doTestView(true);
+        doTestView(false);
+    }
+
+    private void doTestView(final boolean direct)
+    {
+        byte[] content = "ABCDEF".getBytes();
+        QpidByteBuffer buffer = QpidByteBuffer.allocate(direct, content.length);
+        buffer.put(content);
+        buffer.position(2);
+        buffer.limit(5);
+
+        QpidByteBuffer view = buffer.view(0, buffer.remaining());
+
+        assertEquals("Unexpected view direct", direct, view.isDirect());
+
+        assertEquals("Unexpected capacity", 3, view.capacity());
+        assertEquals("Unexpected limit", 3, view.limit());
+        assertEquals("Unexpected position", 0, view.position());
+
+        byte[] destination = new byte[view.remaining()];
+        view.get(destination);
+
+        Assert.assertArrayEquals("CDE".getBytes(), destination);
+
+        QpidByteBuffer viewWithOffset = buffer.view(1, 1);
+        destination = new byte[viewWithOffset.remaining()];
+        viewWithOffset.get(destination);
+
+        Assert.assertArrayEquals("D".getBytes(), destination);
+
+        buffer.dispose();
+        view.dispose();
+        viewWithOffset.dispose();
+    }
+
     private void doDeflateInflate(byte[] input,
                                   Collection<QpidByteBuffer> inputBufs,
                                   boolean direct) throws IOException
