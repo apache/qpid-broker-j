@@ -925,8 +925,17 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             try
             {
-                return String.format("attachment; filename=\"%s_messages.bin\"",
-                                     URLEncoder.encode(getName(), StandardCharsets.UTF_8.name()));
+
+                String vhostName = getName();
+                // replace all non-ascii and non-printable characters and all backslashes and percent encoded characters
+                // as suggested by rfc6266 Appendix D
+                String asciiName = vhostName.replaceAll("[^\\x20-\\x7E]", "?")
+                                                 .replace('\\', '?')
+                                                 .replaceAll("%[0-9a-fA-F]{2}", "?");
+                String disposition = String.format("attachment; filename=\"%s_messages%09dbin\"; filename*=\"UTF-8''%s_messages%09dbin\"",
+                                                   asciiName,
+                                                   URLEncoder.encode(vhostName, StandardCharsets.UTF_8.name())
+                                                   );
             }
             catch (UnsupportedEncodingException e)
             {
