@@ -992,6 +992,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                                    asciiName,
                                                    URLEncoder.encode(vhostName, StandardCharsets.UTF_8.name())
                                                    );
+                return disposition;
             }
             catch (UnsupportedEncodingException e)
             {
