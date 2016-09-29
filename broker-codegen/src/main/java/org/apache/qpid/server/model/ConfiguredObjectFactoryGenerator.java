@@ -24,8 +24,10 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -325,6 +327,7 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
                    + boxedReturnTypeName
                    + ">, RuntimeException>()");
         pw.println("            {");
+        pw.println("                private String _args;");
         pw.println("                @Override");
         pw.println("                public ListenableFuture<"
                    + boxedReturnTypeName
@@ -364,7 +367,28 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
         pw.println("                @Override");
         pw.println("                public String getArguments()");
         pw.println("                {");
-        pw.println("                    return null;");
+        if (!methodElement.getParameters().isEmpty())
+        {
+            pw.println("                    if (_args == null)");
+            pw.println("                    {");
+            boolean first = true;
+            String args = "_args = ";
+            for (VariableElement param : methodElement.getParameters())
+            {
+                if (!first)
+                {
+                    args += " + \",\" + ";
+                }
+                else
+                {
+                    first = false;
+                }
+                args += "\"" + getParamName(param) + "=\" + " + getParamName(param);
+            }
+            pw.println("                        " + args + ";");
+            pw.println("                    }");
+        }
+        pw.println("                    return _args;");
         pw.println("                }");
 
         pw.println("            }));");

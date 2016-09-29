@@ -228,12 +228,12 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     @ManagedOperation(nonModifying = true,
             description = "Extract message store content",
             secure = true,
-            changesConfiguredObjectState = true)
+            changesConfiguredObjectState = false)
     Content exportMessageStore();
 
     @ManagedOperation(description = "Import message store content",
             secure = true,
-            changesConfiguredObjectState = true)
+            changesConfiguredObjectState = false)
     void importMessageStore(@Param(name="source", description = "Extract file")String source);
 
 

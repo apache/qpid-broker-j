@@ -59,6 +59,6 @@ public interface SiteSpecificTrustStore<X extends SiteSpecificTrustStore<X>> ext
     Date getCertificateValidUntilDate();
 
     @ManagedOperation(description = "Re-download the certificate from the URL",
-            changesConfiguredObjectState = false)
+            changesConfiguredObjectState = false /* This should really be true but pragmatically it is set to false because we do not want to block the config thread while getting the certificate from the remote host */)
     void refreshCertificate();
 }

@@ -31,6 +31,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,8 @@ import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+
+import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.TrustStoreMessages;
 import org.slf4j.Logger;
@@ -88,7 +91,7 @@ public class SiteSpecificTrustStoreImpl
     private volatile TrustManager[] _trustManagers = new TrustManager[0];
 
 
-    private X509Certificate _x509Certificate;
+    private volatile X509Certificate _x509Certificate;
 
     @ManagedObjectFactoryConstructor
     public SiteSpecificTrustStoreImpl(final Map<String, Object> attributes, Broker<?> broker)
@@ -231,11 +234,36 @@ public class SiteSpecificTrustStoreImpl
                 final Certificate[] certificateChain = socket.getSession().getPeerCertificates();
                 if (certificateChain != null && certificateChain.length != 0 && certificateChain[0] instanceof X509Certificate)
                 {
-                    _x509Certificate = (X509Certificate) certificateChain[0];
+                    runTask(new Task<Void, RuntimeException>()
+                    {
+                        @Override
+                        public Void execute() throws RuntimeException
+                        {
+                            _x509Certificate = (X509Certificate) certificateChain[0];
 
-                    final String certificate = getCertificate();
-                    attributeSet(CERTIFICATE, certificate, certificate);
+                            final String certificate = getCertificate();
+                            attributeSet(CERTIFICATE, certificate, certificate);
+                            return null;
+                        }
 
+                        @Override
+                        public String getObject()
+                        {
+                            return SiteSpecificTrustStoreImpl.this.getName();
+                        }
+
+                        @Override
+                        public String getAction()
+                        {
+                            return "downloadCertificate";
+                        }
+
+                        @Override
+                        public String getArguments()
+                        {
+                            return null;
+                        }
+                    });
                 }
                 else
                 {

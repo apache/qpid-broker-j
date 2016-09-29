@@ -862,23 +862,43 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public Map<String, Object> exportConfig(boolean includeSecureAttributes)
+    public Map<String, Object> exportConfig(final boolean includeSecureAttributes)
     {
-        return (new ConfigurationExtractor()).extractConfig(this, includeSecureAttributes);
+        return doSync(doOnConfigThread(new Task<ListenableFuture<Map<String,Object>>, RuntimeException>()
+        {
+            @Override
+            public ListenableFuture<Map<String, Object>> execute() throws RuntimeException
+            {
+                ConfigurationExtractor configExtractor = new ConfigurationExtractor();
+                Map<String, Object> config = configExtractor.extractConfig(AbstractVirtualHost.this,
+                                                                           includeSecureAttributes);
+                return Futures.immediateFuture(config);
+            }
+
+            @Override
+            public String getObject()
+            {
+                return AbstractVirtualHost.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "exportConfig";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return "includeSecureAttributes=" + String.valueOf(includeSecureAttributes);
+            }
+        }));
     }
 
     @Override
     public Content exportMessageStore()
     {
-        if(getState() == State.STOPPED)
-        {
-            return new MessageStoreContent();
-        }
-        else
-        {
-            throw new IllegalArgumentException("The extractMessageStore operation can only be called when the virtual host is stopped");
-        }
-
+        return new MessageStoreContent();
     }
 
     private class MessageStoreContent implements Content, CustomRestHeaders
@@ -887,31 +907,67 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         @Override
         public void write(final OutputStream outputStream) throws IOException
         {
-            _messageStore.openMessageStore(AbstractVirtualHost.this);
-            final Map<UUID, String> queueMap = new HashMap<>();
-            getDurableConfigurationStore().reload(new ConfiguredObjectRecordHandler()
+            doSync(doOnConfigThread(new Task<ListenableFuture<Void>, IOException>()
             {
                 @Override
-                public void handle(final ConfiguredObjectRecord record)
+                public ListenableFuture<Void> execute() throws IOException
                 {
-                    if(record.getType().equals(Queue.class.getSimpleName()))
+                    if (getState() != State.STOPPED)
                     {
-                        queueMap.put(record.getId(), (String) record.getAttributes().get(ConfiguredObject.NAME));
+                        throw new IllegalArgumentException(
+                                "The exportMessageStore operation can only be called when the virtual host is stopped");
                     }
-                }
-            });
-            MessageStoreSerializer serializer = new QpidServiceLoader().getInstancesByType(MessageStoreSerializer.class).get(MessageStoreSerializer.LATEST);
-            MessageStore.MessageStoreReader reader = _messageStore.newMessageStoreReader();
-            serializer.serialize(queueMap, reader, outputStream);
 
+                    _messageStore.openMessageStore(AbstractVirtualHost.this);
+                    try
+                    {
+                        final Map<UUID, String> queueMap = new HashMap<>();
+                        getDurableConfigurationStore().reload(new ConfiguredObjectRecordHandler()
+                        {
+                            @Override
+                            public void handle(final ConfiguredObjectRecord record)
+                            {
+                                if(record.getType().equals(Queue.class.getSimpleName()))
+                                {
+                                    queueMap.put(record.getId(), (String) record.getAttributes().get(ConfiguredObject.NAME));
+                                }
+                            }
+                        });
+                        MessageStoreSerializer serializer = new QpidServiceLoader().getInstancesByType(MessageStoreSerializer.class).get(MessageStoreSerializer.LATEST);
+                        MessageStore.MessageStoreReader reader = _messageStore.newMessageStoreReader();
+                        serializer.serialize(queueMap, reader, outputStream);
+                    }
+                    finally
+                    {
+                        _messageStore.closeMessageStore();
+                    }
+                    return null;
+                }
+
+                @Override
+                public String getObject()
+                {
+                    return AbstractVirtualHost.this.toString();
+                }
+
+                @Override
+                public String getAction()
+                {
+                    return "exportMessageStore";
+                }
+
+                @Override
+                public String getArguments()
+                {
+                    return null;
+                }
+            }));
         }
 
         @Override
         public void release()
         {
-            _messageStore.closeMessageStore();
         }
-
 
         @RestContentHeader("Content-Type")
         public String getContentType()
@@ -948,57 +1004,90 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public void importMessageStore(final String source)
     {
-        if(getState() == State.STOPPED)
+        try
         {
+            final URL url = convertStringToURL(source);
 
-            try
+            try (InputStream input = url.openStream();
+                 BufferedInputStream bufferedInputStream = new BufferedInputStream(input);
+                 DataInputStream data = new DataInputStream(bufferedInputStream))
             {
-                URL url = convertStringToURL(source);
 
-                try (InputStream input = url.openStream();
-                     BufferedInputStream bufferedInputStream = new BufferedInputStream(input);
-                     DataInputStream data = new DataInputStream(bufferedInputStream))
+                final MessageStoreSerializer serializer = MessageStoreSerializer.FACTORY.newInstance(data);
+
+                doSync(doOnConfigThread(new Task<ListenableFuture<Void>, IOException>()
                 {
-
-                    MessageStoreSerializer serializer = MessageStoreSerializer.FACTORY.newInstance(data);
-
-                    try
+                    @Override
+                    public ListenableFuture<Void> execute() throws IOException
                     {
-
-                        _messageStore.openMessageStore(AbstractVirtualHost.this);
-                        checkMessageStoreEmpty();
-                        final Map<String, UUID> queueMap = new HashMap<>();
-                        getDurableConfigurationStore().reload(new ConfiguredObjectRecordHandler()
+                        if (getState() != State.STOPPED)
                         {
-                            @Override
-                            public void handle(final ConfiguredObjectRecord record)
+                            throw new IllegalArgumentException(
+                                    "The importMessageStore operation can only be called when the virtual host is stopped");
+                        }
+
+                        try
+                        {
+                            _messageStore.openMessageStore(AbstractVirtualHost.this);
+                            checkMessageStoreEmpty();
+                            final Map<String, UUID> queueMap = new HashMap<>();
+                            getDurableConfigurationStore().reload(new ConfiguredObjectRecordHandler()
                             {
-                                if (record.getType().equals(Queue.class.getSimpleName()))
+                                @Override
+                                public void handle(final ConfiguredObjectRecord record)
                                 {
-                                    queueMap.put((String) record.getAttributes().get(ConfiguredObject.NAME),
-                                                 record.getId());
+                                    if (record.getType().equals(Queue.class.getSimpleName()))
+                                    {
+                                        queueMap.put((String) record.getAttributes().get(ConfiguredObject.NAME),
+                                                     record.getId());
+                                    }
                                 }
-                            }
-                        });
+                            });
 
-                        serializer.deserialize(queueMap, _messageStore, data);
+                            serializer.deserialize(queueMap, _messageStore, data);
+                        }
+                        finally
+                        {
+                            _messageStore.closeMessageStore();
+                        }
+                        return null;
                     }
-                    finally
+
+                    @Override
+                    public String getObject()
                     {
-                        _messageStore.closeMessageStore();
+                        return AbstractVirtualHost.this.toString();
                     }
-                }
-            }
-            catch (IOException e)
-            {
-                throw new IllegalConfigurationException("Cannot convert '" + source + "' to a readable resource", e);
-            }
-        }
-        else
-        {
-            throw new IllegalArgumentException("The extractMessageStore operation can only be called when the virtual host is stopped");
-        }
 
+                    @Override
+                    public String getAction()
+                    {
+                        return "importMessageStore";
+                    }
+
+                    @Override
+                    public String getArguments()
+                    {
+                        if (url.getProtocol().equalsIgnoreCase("http") || url.getProtocol().equalsIgnoreCase("https") || url.getProtocol().equalsIgnoreCase("file"))
+                        {
+                            return "source=" + source;
+                        }
+                        else if (url.getProtocol().equalsIgnoreCase("data"))
+                        {
+                            return "source=<data stream>";
+                        }
+                        else
+                        {
+                            return "source=<unknown source type>";
+                        }
+                    }
+                }));
+            }
+        }
+        catch (IOException e)
+        {
+            throw new IllegalConfigurationException("Cannot convert '" + source + "' to a readable resource", e);
+        }
     }
 
     private void checkMessageStoreEmpty()

@@ -57,7 +57,7 @@ abstract class AbstractCommonRuleBasedAccessControlProvider<X extends AbstractCo
     @ManagedAttributeField
     private Result _defaultResult;
     @ManagedAttributeField
-    private List<AclRule> _rules;
+    private volatile List<AclRule> _rules;
 
     AbstractCommonRuleBasedAccessControlProvider(final Map<String, Object> attributes, final T parent)
     {
