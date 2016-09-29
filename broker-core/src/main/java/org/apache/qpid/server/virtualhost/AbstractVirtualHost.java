@@ -29,8 +29,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.AccessControlContext;
 import java.security.Principal;
@@ -917,10 +919,19 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             return "application/octet-stream";
         }
 
+        @SuppressWarnings("unused")
         @RestContentHeader("Content-Disposition")
         public String getContentDisposition()
         {
-            return "attachment; filename=\"" + getName() + "_messages.bin\"";
+            try
+            {
+                return String.format("attachment; filename=\"%s_messages.bin\"",
+                                     URLEncoder.encode(getName(), StandardCharsets.UTF_8.name()));
+            }
+            catch (UnsupportedEncodingException e)
+            {
+                throw new RuntimeException("JVM does not support UTF8", e);
+            }
         }
 
     }
