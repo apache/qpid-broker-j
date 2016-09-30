@@ -134,28 +134,6 @@ public class PublishMessageRestTest extends QpidRestTestCase
         assertEquals("Unexpected number of properties", headers.size(), count);
     }
 
-    public void testPublishMessageWithIllegalPropertyKeysAndValues() throws Exception
-    {
-        {
-            final Map<String, Object> headers = new HashMap<>();
-            final String keytoolong = Strings.repeat("*", 256);
-            headers.put(keytoolong, "helloworld");
-            expectPublishFailure(headers, SC_UNPROCESSABLE_ENTITY);
-        }
-
-        {
-            final Map<String, Object> headers = new HashMap<>();
-            headers.put("", "emptykey");
-            expectPublishFailure(headers, SC_UNPROCESSABLE_ENTITY);
-        }
-
-        {
-            final Map<String, Object> headers = new HashMap<>();
-            headers.put("nullvalue", null);
-            expectPublishFailure(headers, SC_UNPROCESSABLE_ENTITY);
-        }
-    }
-
     private void expectPublishFailure(final Map<String, Object> headers, final int responseCode) throws IOException
     {
         final Map<String, Object> messageBody = Collections.<String, Object>singletonMap("headers", headers);

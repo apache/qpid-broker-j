@@ -770,33 +770,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 throw new IllegalArgumentException("The message content (if present) can only be a string, map or list");
             }
         }
-        if (message.getHeaders() != null)
-        {
-            for (Map.Entry<String, Object> entry : message.getHeaders().entrySet())
-            {
-                final String key = entry.getKey();
-                final Object value = entry.getValue();
-                final int keyLength = key.getBytes(StandardCharsets.UTF_8).length;
-                if (keyLength > 255)
-                {
-                    // Disallow keys of more than 255 bytes.  Converting for a 0-8..0-10 client would fail to tolerate
-                    // key as it cannot be represented as shortstring/str8.  Ultimately is too restrictive for 1.0.
-                    throw new IllegalArgumentException(String.format("Header key '%s' is too long. Must be fewer than 256 bytes",
-                                                                     key));
-                }
-                if (keyLength == 0)
-                {
-                    // Disallow empty keys. Converting for a 0-8..0-91 client would fail within Broker.  For 0-10, the client fails.
-                    throw new IllegalArgumentException(String.format("Header entries with empty keys unsupported", key));
-                }
-                if (value == null)
-                {
-                    // Disallow null values. Converting for a 0-8..0-91 client would fail within Broker. For 0-10, such
-                    // properties are treated as if the property never existed.
-                    throw new IllegalArgumentException(String.format("Header key '%s' value of null is unsupported.", key));
-                }
-            }
-        }
 
         InternalMessage internalMessage = InternalMessage.createMessage(getMessageStore(), header, body, message.isPersistent());
         AutoCommitTransaction txn = new AutoCommitTransaction(getMessageStore());
