@@ -123,8 +123,10 @@ public class BDBMessageStoreTest extends MessageStoreTestCase
         DeliveryProperties delProps_0_10 = createDeliveryProperties_0_10();
         Header header_0_10 = new Header(delProps_0_10, msgProps_0_10);
 
+        ByteBuffer buffer = ByteBuffer.allocate(completeContentBody_0_10.remaining());
+        completeContentBody_0_10.copyTo(buffer);
         MessageTransfer xfr_0_10 = new MessageTransfer("destination", MessageAcceptMode.EXPLICIT,
-                MessageAcquireMode.PRE_ACQUIRED, header_0_10, completeContentBody_0_10.asByteBuffer());
+                MessageAcquireMode.PRE_ACQUIRED, header_0_10, buffer);
 
         MessageMetaData_0_10 messageMetaData_0_10 = new MessageMetaData_0_10(xfr_0_10);
         MessageHandle<MessageMetaData_0_10> messageHandle_0_10 = bdbStore.addMessage(messageMetaData_0_10);
