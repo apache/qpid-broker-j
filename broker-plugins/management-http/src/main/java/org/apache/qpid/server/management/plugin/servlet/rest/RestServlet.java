@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.management.plugin.HttpManagement;
+import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -550,7 +551,8 @@ public class RestServlet extends AbstractServlet
             super.service(request, response);
         }
         catch (IllegalArgumentException | IllegalConfigurationException | IllegalStateException | SecurityException
-                | IntegrityViolationException | IllegalStateTransitionException | NoClassDefFoundError  e)
+                | IntegrityViolationException | IllegalStateTransitionException | NoClassDefFoundError
+                | OperationTimeoutException e)
         {
             setResponseStatus(request, response, e);
         }
@@ -1120,7 +1122,11 @@ public class RestServlet extends AbstractServlet
             }
             else if (e instanceof IllegalConfigurationException || e instanceof IllegalArgumentException)
             {
-                LOGGER.warn(e.getClass().getSimpleName() + " processing request : " + message);
+                LOGGER.warn("{} processing request {} from user '{}': {}",
+                            e.getClass().getSimpleName(),
+                            HttpManagementUtil.getRequestURL(request),
+                            HttpManagementUtil.getRequestPrincipals(request),
+                            message);
                 Throwable t = e;
                 int maxDepth = 10;
                 while ((t = t.getCause()) != null && maxDepth-- != 0)
@@ -1138,11 +1144,16 @@ public class RestServlet extends AbstractServlet
                 message = "Timeout occurred";
                 if (LOGGER.isDebugEnabled())
                 {
-                    LOGGER.debug(message, e);
+                    LOGGER.debug("Timeout during processing of request {} from user '{}'",
+                                 HttpManagementUtil.getRequestURL(request),
+                                 HttpManagementUtil.getRequestPrincipals(request),
+                                 e);
                 }
                 else
                 {
-                    LOGGER.info(e.getMessage());
+                    LOGGER.info("Timeout during processing of request {} from user '{}'",
+                            HttpManagementUtil.getRequestURL(request),
+                            HttpManagementUtil.getRequestPrincipals(request));
                 }
 
                 responseCode = HttpServletResponse.SC_BAD_GATEWAY;

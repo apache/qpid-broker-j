@@ -25,12 +25,15 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.zip.GZIPOutputStream;
 
 import javax.security.auth.Subject;
@@ -225,5 +228,42 @@ public class HttpManagementUtil
             }
         }
         return Arrays.asList(pathInfoElements);
+    }
+
+    public static String getRequestURL(HttpServletRequest httpRequest)
+    {
+        String url;
+        StringBuilder urlBuilder = new StringBuilder(httpRequest.getRequestURL());
+        String queryString = httpRequest.getQueryString();
+        if (queryString != null)
+        {
+            urlBuilder.append('?').append(queryString);
+        }
+        url = urlBuilder.toString();
+        return url;
+    }
+
+    public static String getRequestPrincipals(HttpServletRequest httpRequest)
+    {
+        HttpSession session = httpRequest.getSession(false);
+        if (session != null)
+        {
+            Subject subject = HttpManagementUtil.getAuthorisedSubject(httpRequest);
+            if (subject != null)
+            {
+
+                Set<Principal> principalSet = subject.getPrincipals();
+                if (!principalSet.isEmpty())
+                {
+                    TreeSet<String> principalNames = new TreeSet();
+                    for (Principal principal : principalSet)
+                    {
+                        principalNames.add(principal.getName());
+                    }
+                    return principalNames.toString();
+                }
+            }
+        }
+        return null;
     }
 }

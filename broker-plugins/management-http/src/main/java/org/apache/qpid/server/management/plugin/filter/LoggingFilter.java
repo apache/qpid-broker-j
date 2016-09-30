@@ -21,11 +21,7 @@
 package org.apache.qpid.server.management.plugin.filter;
 
 import java.io.IOException;
-import java.security.Principal;
-import java.util.Set;
-import java.util.TreeSet;
 
-import javax.security.auth.Subject;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -34,7 +30,6 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.slf4j.Logger;
@@ -61,8 +56,8 @@ public class LoggingFilter implements Filter
         if (LOGGER.isDebugEnabled())
         {
             method = httpRequest.getMethod();
-            user = getRequestPrincipals(httpRequest);
-            url = getRequestURL(httpRequest);
+            user = HttpManagementUtil.getRequestPrincipals(httpRequest);
+            url = HttpManagementUtil.getRequestURL(httpRequest);
             LOGGER.debug("REQUEST  user='{}' method='{}' url='{}'", user, method, url);
         }
         try
@@ -76,7 +71,7 @@ public class LoggingFilter implements Filter
                 if (user == null)
                 {
                     // user might have been set by subsequent filters
-                    user = getRequestPrincipals(httpRequest);
+                    user = HttpManagementUtil.getRequestPrincipals(httpRequest);
                 }
                 String responseStatus = String.valueOf(httpResponse.getStatus());
                 LOGGER.debug("RESPONSE user='{}' method='{}' url='{}' status='{}'", user, method, url, responseStatus);
@@ -89,42 +84,5 @@ public class LoggingFilter implements Filter
     public void destroy()
     {
         //noop
-    }
-
-    private String getRequestURL(HttpServletRequest httpRequest)
-    {
-        String url;
-        StringBuilder urlBuilder = new StringBuilder(httpRequest.getRequestURL());
-        String queryString = httpRequest.getQueryString();
-        if (queryString != null)
-        {
-            urlBuilder.append('?').append(queryString);
-        }
-        url = urlBuilder.toString();
-        return url;
-    }
-
-    private String getRequestPrincipals(HttpServletRequest httpRequest)
-    {
-        HttpSession session = httpRequest.getSession(false);
-        if (session != null)
-        {
-            Subject subject = HttpManagementUtil.getAuthorisedSubject(httpRequest);
-            if (subject != null)
-            {
-
-                Set<Principal> principalSet = subject.getPrincipals();
-                if (!principalSet.isEmpty())
-                {
-                    TreeSet<String> principalNames = new TreeSet();
-                    for (Principal principal : principalSet)
-                    {
-                        principalNames.add(principal.getName());
-                    }
-                    return principalNames.toString();
-                }
-            }
-        }
-        return null;
     }
 }
