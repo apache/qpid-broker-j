@@ -255,10 +255,11 @@ final class SlicedQpidByteBuffer extends QpidByteBuffer
             throw new BufferOverflowException();
         }
 
-        for (int i = 0; i < sourceRemaining; i++)
-        {
-            put(src.get());
-        }
+        final int length = src.remaining();
+        ByteBuffer dup = getDuplicateForBulk();
+        dup.put(src);
+        _position += length;
+
         return this;
     }
 
@@ -276,10 +277,9 @@ final class SlicedQpidByteBuffer extends QpidByteBuffer
             throw new BufferOverflowException();
         }
 
-        for (int i = 0; i < sourceRemaining; i++)
-        {
-            put(src.get());
-        }
+        put(src.getUnderlyingBuffer());
+        src.updateFromLastUnderlying();
+
         return this;
     }
 
@@ -293,29 +293,18 @@ final class SlicedQpidByteBuffer extends QpidByteBuffer
             throw new BufferUnderflowException();
         }
 
-        // TODO consider using a slice of the underlying BB, followed by a bulk method
-        for (int i = offset; i < offset + length; i++)
-        {
-            dst[i] = get();
-        }
-
+        ByteBuffer dup = getDuplicateForBulk();
+        dup.get(dst, offset, length);
+        _position += length;
         return this;
     }
 
     @Override
     public QpidByteBuffer get(final ByteBuffer dst)
     {
-        int destinationRemaining = dst.remaining();
         int remaining = remaining();
-        if (destinationRemaining < remaining)
-        {
-            throw new BufferUnderflowException();
-        }
-
-        for (int i = 0; i < remaining; i++)
-        {
-            dst.put(get());
-        }
+        copyTo(dst);
+        _position += remaining;
         return this;
     }
 
@@ -329,10 +318,8 @@ final class SlicedQpidByteBuffer extends QpidByteBuffer
             throw new BufferUnderflowException();
         }
 
-        for (int i = 0; i < remaining; i++)
-        {
-            dst.put(get(_position + i));
-        }
+        ByteBuffer dup = getDuplicateForBulk();
+        dst.put(dup);
     }
 
     @Override
@@ -345,10 +332,7 @@ final class SlicedQpidByteBuffer extends QpidByteBuffer
             throw new BufferOverflowException();
         }
 
-        for (int i = 0; i < sourceRemaining; i++)
-        {
-            put(source.get(i));
-        }
+        put(source.getUnderlyingBuffer().duplicate());
     }
 
     @Override
@@ -383,10 +367,8 @@ final class SlicedQpidByteBuffer extends QpidByteBuffer
         int remaining = remaining();
         if (_position > 0 && _position < _limit)
         {
-            for (int i = 0; i < remaining; i++)
-            {
-                put(i, get(_position + i));
-            }
+            getUnderlyingBuffer().compact();
+            _lastUnderlyingBuffer = null;
         }
         _position = remaining;
         _limit = _capacity;
@@ -487,10 +469,10 @@ final class SlicedQpidByteBuffer extends QpidByteBuffer
             throw new BufferOverflowException();
         }
 
-        for (int i = offset; i < offset + length; i++)
-        {
-            put(src[i]);
-        }
+        ByteBuffer dup = getDuplicateForBulk();
+        dup.put(src, offset, length);
+        _position += length;
+
         return this;
     }
 
@@ -545,10 +527,8 @@ final class SlicedQpidByteBuffer extends QpidByteBuffer
             throw new BufferUnderflowException();
         }
 
-        for (int i = 0; i < dst.length; i++)
-        {
-            dst[i] = get(_position + i);
-        }
+        ByteBuffer dup = getDuplicateForBulk();
+        dup.get(dst);
     }
 
     @Override
@@ -619,12 +599,12 @@ final class SlicedQpidByteBuffer extends QpidByteBuffer
         return _buffer.getFloat(index + _offset);
     }
 
-
     @Override
     public QpidByteBuffer slice()
     {
         return new SlicedQpidByteBuffer(0, remaining(), remaining(), _offset + _position, _ref);
     }
+
 
     @Override
     public QpidByteBuffer view(final int offset, final int length)
@@ -680,6 +660,14 @@ final class SlicedQpidByteBuffer extends QpidByteBuffer
     void clearLastUnderlyingBuffer()
     {
         _lastUnderlyingBuffer = null;
+    }
+
+    private ByteBuffer getDuplicateForBulk()
+    {
+        ByteBuffer dup = _buffer.duplicate();
+        dup.position(_offset + _position);
+        dup.limit(_offset + _limit);
+        return dup;
     }
 
     private void checkBounds(final byte[] array, final int offset, final int length)
