@@ -941,7 +941,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     {
                         _messageStore.closeMessageStore();
                     }
-                    return null;
+                    return Futures.immediateFuture(null);
                 }
 
                 @Override
@@ -1051,7 +1051,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                         {
                             _messageStore.closeMessageStore();
                         }
-                        return null;
+                        return Futures.immediateFuture(null);
                     }
 
                     @Override
