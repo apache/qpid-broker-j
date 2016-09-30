@@ -164,6 +164,13 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
         {
             throw new AccountNotFoundException(principal.getName());
         }
+        for (char c : password)
+        {
+            if (c == ':')
+            {
+                throw new IllegalArgumentException("Illegal character in password");
+            }
+        }
 
         char[] orig = user.getPassword();
         _userUpdate.lock();
@@ -378,6 +385,17 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
         if (_userMap.get(principal.getName()) != null)
         {
             return false;
+        }
+        if (principal.getName().contains(":"))
+        {
+            throw new IllegalArgumentException("Username must not contain colons (\":\").");
+        }
+        for (char c : password)
+        {
+            if (c == ':')
+            {
+                throw new IllegalArgumentException("Illegal character in password");
+            }
         }
 
         U user = createUserFromPassword(principal, password);

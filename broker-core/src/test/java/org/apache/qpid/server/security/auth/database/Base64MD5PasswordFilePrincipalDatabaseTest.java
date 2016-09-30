@@ -21,7 +21,6 @@
 package org.apache.qpid.server.security.auth.database;
 
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
-import org.apache.qpid.test.utils.QpidTestCase;
 
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.login.AccountNotFoundException;
@@ -40,12 +39,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public class Base64MD5PasswordFilePrincipalDatabaseTest extends QpidTestCase
+public class Base64MD5PasswordFilePrincipalDatabaseTest extends AbstractPasswordFilePrincipalDatabaseTest
 {
 
-    private static final String TEST_COMMENT = "# Test Comment";
-
-    private static final String USERNAME = "testUser";
     private static final String PASSWORD = "guest";
     private static final String PASSWORD_B64MD5HASHED = "CE4DQ6BIb/BVMN9scFyLtA==";
     private static char[] PASSWORD_MD5_CHARS;
@@ -69,6 +65,7 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends QpidTestCase
 
     public void setUp() throws Exception
     {
+        super.setUp();
         _database = new Base64MD5PasswordFilePrincipalDatabase(null);
         _pwdFile = File.createTempFile(this.getClass().getName(), "pwd");
         _pwdFile.deleteOnExit();
@@ -78,75 +75,27 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends QpidTestCase
 
     public void tearDown() throws Exception
     {
-        //clean up the created default password file and any backup
-        File oldPwdFile = new File(_pwdFile.getAbsolutePath() + ".old");
-        if(oldPwdFile.exists())
+        try
         {
-            oldPwdFile.delete();
-        }
-        
-        _pwdFile.delete();
-        
-        //clean up any additional files and their backups
-        for(File f : _testPwdFiles)
-        {
-            oldPwdFile = new File(f.getAbsolutePath() + ".old");
-            if(oldPwdFile.exists())
+            //clean up the created default password file and any backup
+            File oldPwdFile = new File(_pwdFile.getAbsolutePath() + ".old");
+            if (oldPwdFile.exists())
             {
                 oldPwdFile.delete();
             }
-            
-            f.delete();
+
+            _pwdFile.delete();
+        }
+        finally
+        {
+            super.tearDown();
         }
     }
 
-    private File createPasswordFile(int commentLines, int users)
+    @Override
+    protected AbstractPasswordFilePrincipalDatabase getDatabase()
     {
-        try
-        {
-            File testFile = File.createTempFile("Base64MD5PDPDTest","tmp");
-            testFile.deleteOnExit();
-
-            BufferedWriter writer = new BufferedWriter(new FileWriter(testFile));
-
-            for (int i = 0; i < commentLines; i++)
-            {
-                writer.write(TEST_COMMENT);
-                writer.newLine();
-            }
-
-            for (int i = 0; i < users; i++)
-            {
-                writer.write(USERNAME + i + ":Password");
-                writer.newLine();
-            }
-
-            writer.flush();
-            writer.close();
-            
-            _testPwdFiles.add(testFile);
-
-            return testFile;
-
-        }
-        catch (IOException e)
-        {
-            fail("Unable to create test password file." + e.getMessage());
-        }
-
-        return null;
-    }
-
-    private void loadPasswordFile(File file)
-    {
-        try
-        {
-            _database.open(file);
-        }
-        catch (IOException e)
-        {
-            fail("Password File was not created." + e.getMessage());
-        }
+        return _database;
     }
 
     /** **** Test Methods ************** */
@@ -162,7 +111,7 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends QpidTestCase
         {
             public String getName()
             {
-                return USERNAME;
+                return TEST_USERNAME;
             }
         };
 
@@ -192,7 +141,7 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends QpidTestCase
         }
         assertTrue("Password returned was incorrect.", Arrays.equals(PASSWORD_MD5_CHARS, callback.getPassword()));
         
-        assertNotNull("Created User was not saved", _database.getUser(USERNAME));
+        assertNotNull("Created User was not saved", _database.getUser(TEST_USERNAME));
 
         assertFalse("Duplicate user created.", _database.createPrincipal(principal, PASSWORD.toCharArray()));
     }
@@ -253,7 +202,7 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends QpidTestCase
 
         loadPasswordFile(testFile);
 
-        Principal user = _database.getUser(USERNAME + "0");
+        Principal user = _database.getUser(TEST_USERNAME + "0");
         assertNotNull("Generated user not present.", user);
 
         try
@@ -287,7 +236,7 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends QpidTestCase
             //pass
         }
 
-        assertNull("Deleted user still present.", _database.getUser(USERNAME + "0"));
+        assertNull("Deleted user still present.", _database.getUser(TEST_USERNAME + "0"));
     }
 
     public void testGetUsers()
@@ -315,7 +264,7 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends QpidTestCase
 
             String name = principal.getName();
 
-            int id = Integer.parseInt(name.substring(USERNAME.length()));
+            int id = Integer.parseInt(name.substring(TEST_USERNAME.length()));
 
             assertFalse("Duplicated username retrieve", verify[id]);
             verify[id] = true;
@@ -334,7 +283,7 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends QpidTestCase
 
         loadPasswordFile(testFile);
 
-        Principal testUser = _database.getUser(USERNAME + "0");
+        Principal testUser = _database.getUser(TEST_USERNAME + "0");
 
         assertNotNull(testUser);
 
@@ -365,7 +314,7 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends QpidTestCase
 
             assertEquals("User line not complete '" + userLine + "'", 2, result.length);
 
-            assertEquals("Username not correct,", USERNAME + "0", result[0]);
+            assertEquals("Username not correct,", TEST_USERNAME + "0", result[0]);
             assertEquals("New Password not correct,", NEW_PASSWORD_HASH, result[1]);
 
             assertFalse("File has more content", reader.ready());

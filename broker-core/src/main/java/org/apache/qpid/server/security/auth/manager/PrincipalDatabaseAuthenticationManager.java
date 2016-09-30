@@ -339,10 +339,18 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
             Principal p = new UsernamePrincipal(username, this);
             PrincipalAdapter principalAdapter = new PrincipalAdapter(p);
             principalAdapter.create(); // for a duplicate user DuplicateNameException should be thrown
-            boolean created = getPrincipalDatabase().createPrincipal(p, password.toCharArray());
-            if (!created)
+            try
             {
-                throw new IllegalArgumentException("User '" + username + "' was not added into principal database");
+                boolean created = getPrincipalDatabase().createPrincipal(p, password.toCharArray());
+                if (!created)
+                {
+                    throw new IllegalArgumentException("User '" + username + "' was not added into principal database");
+                }
+            }
+            catch (RuntimeException e)
+            {
+                principalAdapter.deleteAsync();
+                throw e;
             }
             _userMap.put(p, principalAdapter);
             return Futures.immediateFuture((C)principalAdapter);
@@ -467,13 +475,13 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
             {
                 String userName = _user.getName();
                 deleteUserFromDatabase(userName);
-                deleted();
-                setState(State.DELETED);
             }
             catch (AccountNotFoundException e)
             {
-                LOGGER.warn("Failed to delete user " + _user, e);
+                // pass
             }
+            deleted();
+            setState(State.DELETED);
             return Futures.immediateFuture(null);
         }
     }

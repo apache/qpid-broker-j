@@ -41,41 +41,29 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public class PlainPasswordFilePrincipalDatabaseTest extends QpidTestCase
+public class PlainPasswordFilePrincipalDatabaseTest extends AbstractPasswordFilePrincipalDatabaseTest
 {
 
-    private static final String TEST_COMMENT = "# Test Comment";
-    private static final String TEST_PASSWORD = "testPassword";
-    private static final char[] TEST_PASSWORD_CHARS = TEST_PASSWORD.toCharArray();
-    private static final String TEST_USERNAME = "testUser";
-    
+
     private Principal _principal = new UsernamePrincipal(TEST_USERNAME, null);
     private PlainPasswordFilePrincipalDatabase _database;
     private List<File> _testPwdFiles = new ArrayList<File>();
 
     public void setUp() throws Exception
     {
+        super.setUp();
         final AuthenticationProvider mockAuthenticationProvider = mock(AuthenticationProvider.class);
         when(mockAuthenticationProvider.getContextValue(Integer.class, AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT)).thenReturn(4096);
         _database = new PlainPasswordFilePrincipalDatabase(mockAuthenticationProvider);
         _testPwdFiles.clear();
     }
 
-    public void tearDown() throws Exception
+    @Override
+    protected AbstractPasswordFilePrincipalDatabase getDatabase()
     {
-        //clean up any additional files and their backups
-        for(File f : _testPwdFiles)
-        {
-            File oldPwdFile = new File(f.getAbsolutePath() + ".old");
-            if(oldPwdFile.exists())
-            {
-                oldPwdFile.delete();
-            }
-            
-            f.delete();
-        }
+        return _database;
     }
-    
+
     // ******* Test Methods ********** //
 
     public void testCreatePrincipal()
@@ -326,17 +314,22 @@ public class PlainPasswordFilePrincipalDatabaseTest extends QpidTestCase
         testFile.delete();
     }
     
-    private void createUserPrincipal() throws IOException
+    public void testCreateUserPrincipal() throws IOException
     {
-        File testFile = createPasswordFile(0, 0);
-        loadPasswordFile(testFile);
-        
-        _database.createPrincipal(_principal, TEST_PASSWORD_CHARS);
-        Principal newPrincipal = _database.getUser(TEST_USERNAME);
+        Principal newPrincipal = createUserPrincipal();
         assertNotNull(newPrincipal);
         assertEquals(_principal.getName(), newPrincipal.getName());
     }
-    
+
+    private Principal createUserPrincipal()
+    {
+        File testFile = createPasswordFile(0, 0);
+        loadPasswordFile(testFile);
+
+        _database.createPrincipal(_principal, TEST_PASSWORD_CHARS);
+        return _database.getUser(TEST_USERNAME);
+    }
+
     public void testVerifyPassword() throws IOException, AccountNotFoundException
     {
         createUserPrincipal();
@@ -363,59 +356,4 @@ public class PlainPasswordFilePrincipalDatabaseTest extends QpidTestCase
         assertFalse(_database.verifyPassword(TEST_USERNAME, TEST_PASSWORD_CHARS));
         assertTrue(_database.verifyPassword(TEST_USERNAME, newPwd));
     }
- 
-    
-    
-    // *********** Utility Methods ******** //
-    
-    private File createPasswordFile(int commentLines, int users)
-    {
-        try
-        {
-            File testFile = File.createTempFile(this.getClass().getName(),"tmp");
-            testFile.deleteOnExit();
-
-            BufferedWriter writer = new BufferedWriter(new FileWriter(testFile));
-
-            for (int i = 0; i < commentLines; i++)
-            {
-                writer.write(TEST_COMMENT);
-                writer.newLine();
-            }
-
-            for (int i = 0; i < users; i++)
-            {
-                writer.write(TEST_USERNAME + i + ":" + TEST_PASSWORD);
-                writer.newLine();
-            }
-
-            writer.flush();
-            writer.close();
-            
-            _testPwdFiles.add(testFile);
-
-            return testFile;
-
-        }
-        catch (IOException e)
-        {
-            fail("Unable to create test password file." + e.getMessage());
-        }
-
-        return null;
-    }
-
-    private void loadPasswordFile(File file)
-    {
-        try
-        {
-            _database.open(file);
-        }
-        catch (IOException e)
-        {
-            fail("Password File was not created." + e.getMessage());
-        }
-    }
-    
-    
 }
