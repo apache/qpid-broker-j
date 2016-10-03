@@ -93,8 +93,8 @@ public class ManageQpidJMSResources
         _objectMapper = new ObjectMapper();
         _objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
 
-        _managementUser = System.getProperty("tck.management-username", "guest");
-        _managementPassword = System.getProperty("tck.management-password", "guest");
+        _managementUser = System.getProperty("tck.management-username");
+        _managementPassword = System.getProperty("tck.management-password");
 
         _virtualhostnode = System.getProperty("tck.broker-virtualhostnode", "default");
         _virtualhost = System.getProperty("tck.broker-virtualhost", "default");
@@ -103,7 +103,6 @@ public class ManageQpidJMSResources
         _queueApiUrl = System.getProperty("tck.management-api-queue", "/api/latest/queue/%s/%s/%s");
         _queueApiClearQueueUrl = System.getProperty("tck.management-api-queue-clear", "/api/latest/queue/%s/%s/%s/clearQueue");
         _topicApiUrl = System.getProperty("tck.management-api-topic", "/api/latest/exchange/%s/%s/%s");
-
     }
 
     private void createResources() throws IOException
@@ -236,12 +235,14 @@ public class ManageQpidJMSResources
     {
         try
         {
-            UsernamePasswordCredentials
-                    credentials = new UsernamePasswordCredentials(_managementUser, _managementPassword);
-
             final HttpClient httpClient = HttpClients.createDefault();
 
-            httpRequest.addHeader(new BasicScheme().authenticate(credentials, httpRequest));
+            if (_managementUser != null && _managementPassword != null)
+            {
+                UsernamePasswordCredentials
+                        credentials = new UsernamePasswordCredentials(_managementUser, _managementPassword);
+                httpRequest.addHeader(new BasicScheme().authenticate(credentials, httpRequest));
+            }
             final HttpResponse response = httpClient.execute(_management, httpRequest);
 
             return response.getStatusLine().getStatusCode();
