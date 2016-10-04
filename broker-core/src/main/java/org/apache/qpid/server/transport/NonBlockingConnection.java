@@ -384,7 +384,12 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
     private long getBufferedSize()
     {
-        long totalSize = 0l;
+        // Avoids iterator garbage if empty
+        if (_buffers.isEmpty())
+        {
+            return 0L;
+        }
+        long totalSize = 0L;
         for(QpidByteBuffer buf : _buffers)
         {
             totalSize += buf.remaining();
