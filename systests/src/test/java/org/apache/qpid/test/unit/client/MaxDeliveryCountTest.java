@@ -335,7 +335,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
 
         for(int i = 0; i < numMsg; i++)
         {
-            Message message = consumer.receive(250);
+            Message message = consumer.receive(getReceiveTimeout());
 
             assertNotNull("failed to consume expected message " + i + " from DLQ", message);
             assertTrue("message " + i + " was the wrong type", message instanceof TextMessage);
@@ -549,7 +549,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
 
         while(!_failed)
         {
-            Message message = consumer.receive(1000);
+            Message message = consumer.receive(getReceiveTimeout());
 
             _totalNumDeliveries++;
 
