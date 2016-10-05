@@ -1536,7 +1536,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         private Iterator<? extends AMQSessionModel<?>> _sessionIterator;
         private ProcessPendingIterator()
         {
-            _sessionsWithPending = new ArrayList<>(getSessionModels());
+            _sessionsWithPending = getSessionModels();
             _sessionIterator = _sessionsWithPending.iterator();
         }
 

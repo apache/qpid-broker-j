@@ -1209,7 +1209,7 @@ public class ServerSession extends Session
             consumerListNeedsRefreshing = true;
         }
 
-        Iterator<ConsumerTarget> iter = _consumersWithPendingWork.iterator();
+        Iterator<ConsumerTarget> iter = _consumersWithPendingWork.isEmpty() ? Collections.<ConsumerTarget>emptyIterator() : _consumersWithPendingWork.iterator();
 
         boolean consumerHasMoreWork = false;
         while(iter.hasNext())

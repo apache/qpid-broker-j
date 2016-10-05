@@ -82,6 +82,11 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
 
     void stopConnection();
 
+    /**
+     * Returns the a list of session models.  Required to return a copy.
+     *
+     * @return list of sessions
+     */
     List<? extends AMQSessionModel<?>> getSessionModels();
 
     void resetStatistics();

@@ -3782,7 +3782,7 @@ public class AMQChannel
             consumerListNeedsRefreshing = true;
         }
 
-        Iterator<ConsumerTarget_0_8> iter = _consumersWithPendingWork.iterator();
+        Iterator<ConsumerTarget_0_8> iter = _consumersWithPendingWork.isEmpty() ? Collections.<ConsumerTarget_0_8>emptyIterator() : _consumersWithPendingWork.iterator();
 
         boolean consumerHasMoreWork = false;
         while(iter.hasNext())
