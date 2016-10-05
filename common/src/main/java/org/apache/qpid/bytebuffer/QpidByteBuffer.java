@@ -23,6 +23,8 @@ package org.apache.qpid.bytebuffer;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.GatheringByteChannel;
@@ -31,6 +33,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.zip.GZIPInputStream;
@@ -130,43 +133,17 @@ public abstract class QpidByteBuffer
 
     public final CharBuffer decode(Charset charset)
     {
-        ByteBuffer underlyingBuffer = getUnderlyingBuffer();
-        try
-        {
-            return charset.decode(underlyingBuffer);
-        }
-        finally
-        {
-            updateFromLastUnderlying();
-        }
+        return charset.decode(getUnderlyingBuffer());
     }
 
     public final int read(ReadableByteChannel channel) throws IOException
     {
-        ByteBuffer underlyingBuffer = getUnderlyingBuffer();
-        try
-        {
-            return channel.read(underlyingBuffer);
-        }
-        finally
-        {
-            updateFromLastUnderlying();
-        }
+        return channel.read(getUnderlyingBuffer());
     }
 
     public final SSLEngineResult decryptSSL(SSLEngine engine, QpidByteBuffer dest) throws SSLException
     {
-        ByteBuffer underlyingBuffer = getUnderlyingBuffer();
-        ByteBuffer destUnderlyingBuffer = dest.getUnderlyingBuffer();
-        try
-        {
-            return engine.unwrap(underlyingBuffer, destUnderlyingBuffer);
-        }
-        finally
-        {
-            updateFromLastUnderlying();
-            dest.updateFromLastUnderlying();
-        }
+        return engine.unwrap(getUnderlyingBuffer(), dest.getUnderlyingBuffer());
     }
 
     @Override
@@ -178,7 +155,10 @@ public abstract class QpidByteBuffer
                '}';
     }
 
-    public abstract boolean hasRemaining();
+    public final boolean hasRemaining()
+    {
+        return _buffer.hasRemaining();
+    }
 
     public abstract QpidByteBuffer putInt(int index, int value);
 
@@ -186,49 +166,126 @@ public abstract class QpidByteBuffer
 
     public abstract QpidByteBuffer putChar(int index, char value);
 
-    public abstract QpidByteBuffer put(byte b);
+    public final QpidByteBuffer put(final byte b)
+    {
+        _buffer.put(b);
+        return this;
+    }
 
     public abstract QpidByteBuffer put(int index, byte b);
 
     public abstract short getShort(int index);
 
-    public abstract QpidByteBuffer mark();
+    public final QpidByteBuffer mark()
+    {
+        _buffer.mark();
+        return this;
+    }
 
-    public abstract long getLong();
+    public final long getLong()
+    {
+        return _buffer.getLong();
+    }
 
     public abstract QpidByteBuffer putFloat(int index, float value);
 
     public abstract double getDouble(int index);
 
-    public abstract boolean hasArray();
+    public final boolean hasArray()
+    {
+        return _buffer.hasArray();
+    }
 
-    public abstract double getDouble();
+    public final double getDouble()
+    {
+        return _buffer.getDouble();
+    }
 
-    public abstract QpidByteBuffer putFloat(float value);
+    public final QpidByteBuffer putFloat(final float value)
+    {
+        _buffer.putFloat(value);
+        return this;
+    }
 
-    public abstract QpidByteBuffer putInt(int value);
+    public final QpidByteBuffer putInt(final int value)
+    {
+        _buffer.putInt(value);
+        return this;
+    }
 
     public abstract byte[] array();
 
-    public abstract QpidByteBuffer putShort(short value);
+    public final QpidByteBuffer putShort(final short value)
+    {
+        _buffer.putShort(value);
+        return this;
+    }
 
     public abstract int getInt(int index);
 
-    public abstract int remaining();
+    public final int remaining()
+    {
+        return _buffer.remaining();
+    }
 
-    public abstract QpidByteBuffer put(byte[] src);
+    public final QpidByteBuffer put(final byte[] src)
+    {
+        _buffer.put(src);
+        return this;
+    }
 
-    public abstract QpidByteBuffer put(ByteBuffer src);
+    public final QpidByteBuffer put(final ByteBuffer src)
+    {
+        _buffer.put(src);
+        return this;
+    }
 
-    public abstract QpidByteBuffer put(QpidByteBuffer src);
+    public final QpidByteBuffer put(final QpidByteBuffer src)
+    {
+        int sourceRemaining = src.remaining();
+        if (sourceRemaining > remaining())
+        {
+            throw new BufferOverflowException();
+        }
 
-    public abstract QpidByteBuffer get(byte[] dst, int offset, int length);
+        _buffer.put(src.getUnderlyingBuffer());
+        return this;
+    }
 
-    public abstract QpidByteBuffer get(ByteBuffer dst);
+    public final QpidByteBuffer get(final byte[] dst, final int offset, final int length)
+    {
+        _buffer.get(dst, offset, length);
+        return this;
+    }
 
-    public abstract void copyTo(ByteBuffer dst);
+    public final QpidByteBuffer get(final ByteBuffer dst)
+    {
+        int destinationRemaining = dst.remaining();
+        int remaining = remaining();
+        if (destinationRemaining < remaining)
+        {
+            throw new BufferUnderflowException();
+        }
+        dst.put(_buffer);
+        return this;
+    }
 
-    public abstract void putCopyOf(QpidByteBuffer buf);
+    public final void copyTo(final ByteBuffer dst)
+    {
+        dst.put(_buffer.duplicate());
+    }
+
+    public final void putCopyOf(final QpidByteBuffer source)
+    {
+        int remaining = remaining();
+        int sourceRemaining = source.remaining();
+        if (sourceRemaining > remaining)
+        {
+            throw new BufferOverflowException();
+        }
+
+        put(source.getUnderlyingBuffer().duplicate());
+    }
 
     public abstract QpidByteBuffer rewind();
 
@@ -238,7 +295,11 @@ public abstract class QpidByteBuffer
 
     public abstract QpidByteBuffer compact();
 
-    public abstract QpidByteBuffer putDouble(double value);
+    public final QpidByteBuffer putDouble(final double value)
+    {
+        _buffer.putDouble(value);
+        return this;
+    }
 
     public abstract int limit();
 
@@ -246,15 +307,26 @@ public abstract class QpidByteBuffer
 
     public abstract QpidByteBuffer flip();
 
-    public abstract short getShort();
+    public final short getShort()
+    {
+        return _buffer.getShort();
 
-    public abstract float getFloat();
+    }
+
+    public final float getFloat()
+    {
+        return _buffer.getFloat();
+    }
 
     public abstract QpidByteBuffer limit(int newLimit);
 
     public abstract QpidByteBuffer duplicate();
 
-    public abstract QpidByteBuffer put(byte[] src, int offset, int length);
+    public final QpidByteBuffer put(final byte[] src, final int offset, final int length)
+    {
+        _buffer.put(src, offset, length);
+        return this;
+    }
 
     public abstract long getLong(int index);
 
@@ -262,25 +334,53 @@ public abstract class QpidByteBuffer
 
     public abstract char getChar(int index);
 
-    public abstract byte get();
+    public final byte get()
+    {
+        return _buffer.get();
+    }
 
     public abstract byte get(int index);
 
-    public abstract QpidByteBuffer get(byte[] dst);
+    public final QpidByteBuffer get(final byte[] dst)
+    {
+        _buffer.get(dst);
+        return this;
+    }
 
-    public abstract void copyTo(byte[] dst);
+    public final void copyTo(final byte[] dst)
+    {
+        if (remaining() < dst.length)
+        {
+            throw new BufferUnderflowException();
+        }
+        _buffer.duplicate().get(dst);
+    }
 
-    public abstract QpidByteBuffer putChar(char value);
+    public final QpidByteBuffer putChar(final char value)
+    {
+        _buffer.putChar(value);
+        return this;
+    }
 
     public abstract QpidByteBuffer position(int newPosition);
 
     public abstract int arrayOffset();
 
-    public abstract char getChar();
+    public final char getChar()
+    {
+        return _buffer.getChar();
+    }
 
-    public abstract int getInt();
+    public final int getInt()
+    {
+        return _buffer.getInt();
+    }
 
-    public abstract QpidByteBuffer putLong(long value);
+    public final QpidByteBuffer putLong(final long value)
+    {
+        _buffer.putLong(value);
+        return this;
+    }
 
     public abstract float getFloat(int index);
 
@@ -292,21 +392,7 @@ public abstract class QpidByteBuffer
 
     public abstract QpidByteBuffer putDouble(int index, double value);
 
-    /**
-     * Returns an underlying byte buffer for update operations.
-     * <p></p>
-     * Method {@link #updateFromLastUnderlying()} needs to be invoked to update the state of {@link QpidByteBuffer}
-     *
-     * @return ByteBuffer
-     */
     abstract ByteBuffer getUnderlyingBuffer();
-
-    /**
-     * Used to update the state of {@link QpidByteBuffer} after underlying byte buffer is modified.
-     *
-     * @throws IllegalStateException when method is invoked without previous call to {@link #getUnderlyingBuffer()}
-     */
-    abstract void updateFromLastUnderlying();
 
     public static QpidByteBuffer allocate(boolean direct, int size)
     {
@@ -415,25 +501,13 @@ public abstract class QpidByteBuffer
                                              final Collection<QpidByteBuffer> buffers,
                                              QpidByteBuffer dest) throws SSLException
     {
-        List<QpidByteBuffer> qpidBuffers = new ArrayList<>(buffers);
         final ByteBuffer[] src = new ByteBuffer[buffers.size()];
+        Iterator<QpidByteBuffer> iterator = buffers.iterator();
         for (int i = 0; i < src.length; i++)
         {
-            src[i] = qpidBuffers.get(i).getUnderlyingBuffer();
+            src[i] = iterator.next().getUnderlyingBuffer();
         }
-        ByteBuffer destinationUnderlyingBuffer = dest.getUnderlyingBuffer();
-        try
-        {
-            return engine.wrap(src, destinationUnderlyingBuffer);
-        }
-        finally
-        {
-            for (QpidByteBuffer qpidByteBuffer : qpidBuffers)
-            {
-                qpidByteBuffer.updateFromLastUnderlying();
-            }
-            dest.updateFromLastUnderlying();
-        }
+        return engine.wrap(src, dest.getUnderlyingBuffer());
     }
 
     public static Collection<QpidByteBuffer> inflate(Collection<QpidByteBuffer> compressedBuffers) throws IOException
@@ -511,23 +585,13 @@ public abstract class QpidByteBuffer
     public static long write(GatheringByteChannel channel, Collection<QpidByteBuffer> qpidByteBuffers)
             throws IOException
     {
-        List<QpidByteBuffer> qpidBuffers = new ArrayList<>(qpidByteBuffers);
-        ByteBuffer[] byteBuffers = new ByteBuffer[qpidBuffers.size()];
+        ByteBuffer[] byteBuffers = new ByteBuffer[qpidByteBuffers.size()];
+        Iterator<QpidByteBuffer> iterator = qpidByteBuffers.iterator();
         for (int i = 0; i < byteBuffers.length; i++)
         {
-            byteBuffers[i] = qpidBuffers.get(i).getUnderlyingBuffer();
+            byteBuffers[i] = iterator.next().getUnderlyingBuffer();
         }
-        try
-        {
-            return channel.write(byteBuffers);
-        }
-        finally
-        {
-            for (QpidByteBuffer qbb : qpidBuffers)
-            {
-                qbb.updateFromLastUnderlying();
-            }
-        }
+        return channel.write(byteBuffers);
     }
 
     public static QpidByteBuffer wrap(final ByteBuffer wrap)

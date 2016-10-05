@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.bytebuffer;
 
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
 final class QpidByteBufferImpl extends QpidByteBuffer
@@ -35,12 +34,6 @@ final class QpidByteBufferImpl extends QpidByteBuffer
     {
         super(ref, buf);
         ref.incrementRef();
-    }
-
-    @Override
-    public boolean hasRemaining()
-    {
-        return _buffer.hasRemaining();
     }
 
     @Override
@@ -65,13 +58,6 @@ final class QpidByteBufferImpl extends QpidByteBuffer
     }
 
     @Override
-    public QpidByteBuffer put(final byte b)
-    {
-        _buffer.put(b);
-        return this;
-    }
-
-    @Override
     public QpidByteBuffer put(final int index, final byte b)
     {
         _buffer.put(index, b);
@@ -82,20 +68,6 @@ final class QpidByteBufferImpl extends QpidByteBuffer
     public short getShort(final int index)
     {
         return _buffer.getShort(index);
-    }
-
-
-    @Override
-    public QpidByteBuffer mark()
-    {
-        _buffer.mark();
-        return this;
-    }
-
-    @Override
-    public long getLong()
-    {
-        return _buffer.getLong();
     }
 
     @Override
@@ -112,113 +84,15 @@ final class QpidByteBufferImpl extends QpidByteBuffer
     }
 
     @Override
-    public boolean hasArray()
-    {
-        return _buffer.hasArray();
-    }
-
-    @Override
-    public double getDouble()
-    {
-        return _buffer.getDouble();
-    }
-
-    @Override
-    public QpidByteBuffer putFloat(final float value)
-    {
-        _buffer.putFloat(value);
-        return this;
-    }
-
-    @Override
-    public QpidByteBuffer putInt(final int value)
-    {
-        _buffer.putInt(value);
-        return this;
-    }
-
-    @Override
     public byte[] array()
     {
         return _buffer.array();
     }
 
     @Override
-    public QpidByteBuffer putShort(final short value)
-    {
-        _buffer.putShort(value);
-        return this;
-    }
-
-    @Override
     public int getInt(final int index)
     {
         return _buffer.getInt(index);
-    }
-
-    @Override
-    public int remaining()
-    {
-        return _buffer.remaining();
-    }
-
-    @Override
-    public QpidByteBuffer put(final byte[] src)
-    {
-        _buffer.put(src);
-        return this;
-    }
-
-    @Override
-    public QpidByteBuffer put(final ByteBuffer src)
-    {
-        _buffer.put(src);
-        return this;
-    }
-
-    @Override
-    public QpidByteBuffer put(final QpidByteBuffer src)
-    {
-        ByteBuffer underlyingBuffer = src.getUnderlyingBuffer();
-        _buffer.put(underlyingBuffer);
-        src.updateFromLastUnderlying();
-        return this;
-    }
-
-    @Override
-    public QpidByteBuffer get(final byte[] dst, final int offset, final int length)
-    {
-        _buffer.get(dst, offset, length);
-        return this;
-    }
-
-    @Override
-    public QpidByteBuffer get(final ByteBuffer dst)
-    {
-        int destinationRemaining = dst.remaining();
-        int remaining = remaining();
-        if (destinationRemaining < remaining)
-        {
-            throw new BufferUnderflowException();
-        }
-        dst.put(_buffer);
-        return this;
-    }
-
-    @Override
-    public void copyTo(final ByteBuffer dst)
-    {
-        dst.put(_buffer.duplicate());
-    }
-
-    @Override
-    public void putCopyOf(final QpidByteBuffer buf)
-    {
-        _buffer.put(buf.getUnderlyingBuffer().duplicate());
-        if (buf instanceof SlicedQpidByteBuffer)
-        {
-            ((SlicedQpidByteBuffer)buf).clearLastUnderlyingBuffer();
-        }
     }
 
     @Override
@@ -250,13 +124,6 @@ final class QpidByteBufferImpl extends QpidByteBuffer
     }
 
     @Override
-    public QpidByteBuffer putDouble(final double value)
-    {
-        _buffer.putDouble(value);
-        return this;
-    }
-
-    @Override
     public int limit()
     {
         return _buffer.limit();
@@ -277,18 +144,6 @@ final class QpidByteBufferImpl extends QpidByteBuffer
     }
 
     @Override
-    public short getShort()
-    {
-        return _buffer.getShort();
-    }
-
-    @Override
-    public float getFloat()
-    {
-        return _buffer.getFloat();
-    }
-
-    @Override
     public QpidByteBuffer limit(final int newLimit)
     {
         _buffer.limit(newLimit);
@@ -299,13 +154,6 @@ final class QpidByteBufferImpl extends QpidByteBuffer
     public QpidByteBufferImpl duplicate()
     {
         return new QpidByteBufferImpl(_buffer.duplicate(), _ref);
-    }
-
-    @Override
-    public QpidByteBuffer put(final byte[] src, final int offset, final int length)
-    {
-        _buffer.put(src, offset, length);
-        return this;
     }
 
     @Override
@@ -327,35 +175,9 @@ final class QpidByteBufferImpl extends QpidByteBuffer
     }
 
     @Override
-    public byte get()
-    {
-        return _buffer.get();
-    }
-
-    @Override
     public byte get(final int index)
     {
         return _buffer.get(index);
-    }
-
-    @Override
-    public QpidByteBuffer get(final byte[] dst)
-    {
-        _buffer.get(dst);
-        return this;
-    }
-
-    @Override
-    public void copyTo(final byte[] dst)
-    {
-        _buffer.duplicate().get(dst);
-    }
-
-    @Override
-    public QpidByteBuffer putChar(final char value)
-    {
-        _buffer.putChar(value);
-        return this;
     }
 
     @Override
@@ -369,25 +191,6 @@ final class QpidByteBufferImpl extends QpidByteBuffer
     public int arrayOffset()
     {
         return _buffer.arrayOffset();
-    }
-
-    @Override
-    public char getChar()
-    {
-        return _buffer.getChar();
-    }
-
-    @Override
-    public int getInt()
-    {
-        return _buffer.getInt();
-    }
-
-    @Override
-    public QpidByteBuffer putLong(final long value)
-    {
-        _buffer.putLong(value);
-        return this;
     }
 
     @Override
@@ -446,9 +249,4 @@ final class QpidByteBufferImpl extends QpidByteBuffer
         return _buffer;
     }
 
-    @Override
-    void updateFromLastUnderlying()
-    {
-        // noop
-    }
 }

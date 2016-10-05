@@ -615,21 +615,20 @@ public class SlicedQpidByteBufferTest extends QpidTestCase
     public void testAsByteBuffer() throws Exception
     {
         _slicedBuffer = createSlice();
-        byte[] source = getTestBytes(_slicedBuffer.remaining());
-        _slicedBuffer.put(source);
 
         _slicedBuffer.position(1);
         _slicedBuffer.limit(_slicedBuffer.limit() - 1);
 
+        _slicedBuffer.mark();
+        int remaining = _slicedBuffer.remaining();
+        byte[] source = getTestBytes(remaining);
+        _slicedBuffer.put(source);
+        _slicedBuffer.reset();
 
         ByteBuffer buffer = _slicedBuffer.asByteBuffer();
-        assertEquals("Unexpected capacity", _slicedBuffer.capacity(), buffer.capacity());
-        assertEquals("Unexpected position", _slicedBuffer.position(), buffer.position());
-        assertEquals("Unexpected limit", _slicedBuffer.limit(), buffer.limit());
+        assertEquals("Unexpected remaining", remaining, buffer.remaining());
 
-        buffer.clear();
-
-        byte[] target = new byte[source.length];
+        byte[] target = new byte[remaining];
         buffer.get(target);
         Assert.assertArrayEquals("Unexpected asByteBuffer result", source, target);
     }
@@ -674,6 +673,10 @@ public class SlicedQpidByteBufferTest extends QpidTestCase
 
         _slicedBuffer = _parent.slice();
         _parent.limit(_parent.capacity());
+
+        assertEquals("Unexpected position ", 0, _slicedBuffer.position());
+        assertEquals("Unexpected limit ", size, _slicedBuffer.limit());
+        assertEquals("Unexpected capacity ", size, _slicedBuffer.capacity());
 
         String methodSuffix = getMethodSuffix(primitiveTargetClass, unsigned);
         Method put = _slicedBuffer.getClass().getMethod("put" + methodSuffix, Primitives.primitiveTypeOf(value.getClass()));
