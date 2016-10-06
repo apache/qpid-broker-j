@@ -52,6 +52,7 @@ public class QpidByteBuffer
             QpidByteBuffer.class,
             "_disposed");
     private static final ThreadLocal<QpidByteBuffer> _cachedBuffer = new ThreadLocal<>();
+    private static final ByteBuffer[] EMPTY_BYTE_BUFFER_ARRAY = new ByteBuffer[0];
     private volatile static boolean _isPoolInitialized;
     private volatile static BufferPool _bufferPool;
     private volatile static int _pooledBufferSize;
@@ -647,11 +648,19 @@ public class QpidByteBuffer
                                              final Collection<QpidByteBuffer> buffers,
                                              QpidByteBuffer dest) throws SSLException
     {
-        final ByteBuffer[] src = new ByteBuffer[buffers.size()];
-        Iterator<QpidByteBuffer> iterator = buffers.iterator();
-        for (int i = 0; i < src.length; i++)
+        final ByteBuffer[] src;
+        if (buffers.isEmpty())
         {
-            src[i] = iterator.next().getUnderlyingBuffer();
+            src = EMPTY_BYTE_BUFFER_ARRAY;
+        }
+        else
+        {
+            src = new ByteBuffer[buffers.size()];
+            Iterator<QpidByteBuffer> iterator = buffers.iterator();
+            for (int i = 0; i < src.length; i++)
+            {
+                src[i] = iterator.next().getUnderlyingBuffer();
+            }
         }
         return engine.wrap(src, dest.getUnderlyingBuffer());
     }
