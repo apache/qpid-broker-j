@@ -20,12 +20,12 @@
  */
 package org.apache.qpid.server.security.auth.manager.oauth2;
 
-import java.security.Principal;
-
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.security.QpidPrincipal;
 
 
-public class OAuth2UserPrincipal implements Principal
+public class OAuth2UserPrincipal implements QpidPrincipal
 {
     private final String _accessToken;
     private final String _name;
@@ -55,6 +55,12 @@ public class OAuth2UserPrincipal implements Principal
     public String getName()
     {
         return _name;
+    }
+
+    @Override
+    public ConfiguredObject<?> getOrigin()
+    {
+        return _authenticationProvider;
     }
 
     @Override
