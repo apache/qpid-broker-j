@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.security.QpidPrincipal;
 
 public class GenericPrincipal implements Principal
@@ -42,8 +43,17 @@ public class GenericPrincipal implements Principal
     public GenericPrincipal(final QpidPrincipal principal)
     {
         _name = principal.getName();
-        _originType = principal.getOrigin().getType();
-        _originName = principal.getOrigin().getName();
+        ConfiguredObject<?> origin = principal.getOrigin();
+        if (origin != null)
+        {
+            _originType = origin.getType();
+            _originName = origin.getName();
+        }
+        else
+        {
+            _originType = "UNKNOWN";
+            _originName = "";
+        }
     }
 
     public GenericPrincipal(final String name)
