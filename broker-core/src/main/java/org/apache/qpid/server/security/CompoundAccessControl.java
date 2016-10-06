@@ -94,7 +94,7 @@ public class CompoundAccessControl implements AccessControl<CompoundSecurityToke
         Map<AccessControl<?>, SecurityToken> compoundToken = token == null ? null : token.getCompoundToken(underlying);
         for(AccessControl control : underlying)
         {
-            SecurityToken underlyingToken = compoundToken == null ? null : compoundToken.get(underlying);
+            SecurityToken underlyingToken = compoundToken == null ? null : compoundToken.get(control);
             final Result result = control.authorise(underlyingToken, operation, configuredObject, arguments);
             if(result.isFinal())
             {

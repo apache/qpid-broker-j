@@ -42,19 +42,15 @@ class CompoundSecurityToken implements SecurityToken
     }
 
 
-    Map<AccessControl<?>, SecurityToken> getCompoundToken(final List<AccessControl<?>> underlying)
+    Map<AccessControl<?>, SecurityToken> getCompoundToken(final List<AccessControl<?>> accessControls)
     {
         CompoundTokenMapReference ref = _reference.get();
-        if(ref.getAccessControlList() != underlying)
+        if (ref.getAccessControlList() != accessControls)
         {
-            CompoundTokenMapReference oldRef;
-            do
-            {
-                oldRef = ref;
-                ref = new CompoundTokenMapReference(underlying);
-
-            } while(!_reference.compareAndSet(oldRef,ref));
+            CompoundTokenMapReference oldRef = ref;
+            ref = new CompoundTokenMapReference(accessControls);
             ref.init(_subject);
+            _reference.compareAndSet(oldRef, ref);
         }
         return ref.getCompoundTokenMap();
     }
