@@ -124,7 +124,7 @@ public abstract class AMQDecoder<T extends MethodProcessor>
 
             }
         }
-        return required;
+        return buf.hasRemaining() ? required : 0;
     }
 
 
