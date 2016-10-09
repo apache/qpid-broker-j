@@ -169,13 +169,15 @@ public abstract class AbstractUnresolvedObject<C extends ConfiguredObject<C>> im
         }
         else if(attrValue instanceof String)
         {
+            String interpolatedValue = AbstractConfiguredObject.interpolate(_parents[0], (String) attrValue);
+
             try
             {
-                _unresolvedObjects.add(new IdDependency(clazz, attributeName, UUID.fromString((String) attrValue)));
+                _unresolvedObjects.add(new IdDependency(clazz, attributeName, UUID.fromString(interpolatedValue)));
             }
             catch(IllegalArgumentException e)
             {
-                _unresolvedObjects.add(new NameDependency(clazz, attributeName, (String) attrValue));
+                _unresolvedObjects.add(new NameDependency(clazz, attributeName, interpolatedValue));
             }
         }
         else if(!clazz.isInstance(attrValue))
