@@ -1423,9 +1423,9 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         return _remoteContainerId;
     }
 
-    public List<Session_1_0> getSessionModels()
+    public Collection<? extends Session_1_0> getSessionModels()
     {
-        return new ArrayList<>(_sessions);
+        return Collections.unmodifiableCollection(_sessions);
     }
 
     public void unblock()
@@ -1532,11 +1532,11 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     private class ProcessPendingIterator implements Iterator<Runnable>
     {
-        private final List<? extends AMQSessionModel<?>> _sessionsWithPending;
+        private final Collection<? extends AMQSessionModel<?>> _sessionsWithPending;
         private Iterator<? extends AMQSessionModel<?>> _sessionIterator;
         private ProcessPendingIterator()
         {
-            _sessionsWithPending = getSessionModels();
+            _sessionsWithPending = new ArrayList<>(getSessionModels());
             _sessionIterator = _sessionsWithPending.iterator();
         }
 

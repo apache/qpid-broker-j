@@ -150,7 +150,8 @@ class SelectorThread extends Thread
                 }
             }
 
-            return toBeScheduled;
+            // QPID-7447: prevent unnecessary allocation of empty iterator
+            return toBeScheduled.isEmpty() ? Collections.<NonBlockingConnection>emptyList() : toBeScheduled;
         }
 
         private List<NonBlockingConnection> processSelectionKeys()
@@ -261,7 +262,8 @@ class SelectorThread extends Thread
                 }
             }
 
-            return unregisterableConnections;
+            // QPID-7447: prevent unnecessary allocation of empty iterator
+            return unregisterableConnections.isEmpty() ? Collections.<NonBlockingConnection>emptyList() : unregisterableConnections;
         }
 
         private void performSelect()

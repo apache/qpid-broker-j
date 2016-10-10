@@ -216,20 +216,20 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
             final VirtualHost virtualhost = (VirtualHost) addressSpace;
             final List<Ticker> tickers = new ArrayList<>(4);
 
-            final Supplier<Date> transactionStartTimeSupplier = new Supplier<Date>()
+            final Supplier<Long> transactionStartTimeSupplier = new Supplier<Long>()
             {
                 @Override
-                public Date get()
+                public Long get()
                 {
-                    return SessionAdapter.this.getTransactionStartTime();
+                    return SessionAdapter.this._session.getTransactionStartTime();
                 }
             };
-            final Supplier<Date> transactionUpdateTimeSupplier = new Supplier<Date>()
+            final Supplier<Long> transactionUpdateTimeSupplier = new Supplier<Long>()
             {
                 @Override
-                public Date get()
+                public Long get()
                 {
-                    return SessionAdapter.this.getTransactionUpdateTime();
+                    return SessionAdapter.this._session.getTransactionUpdateTime();
                 }
             };
 

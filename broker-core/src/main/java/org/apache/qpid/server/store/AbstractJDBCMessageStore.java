@@ -1193,6 +1193,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
         private void doPostCommitActions()
         {
+            // QPID-7447: prevent unnecessary allocation of empty iterator
             if (!_postCommitActions.isEmpty())
             {
                 for (Runnable action : _postCommitActions)

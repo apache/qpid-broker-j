@@ -24,9 +24,9 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -313,7 +313,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         return _connection.getRemoteContainerName();
     }
 
-    public List<ServerSession> getSessionModels()
+    public Collection<? extends AMQSessionModel<?>> getSessionModels()
     {
         return _connection.getSessionModels();
     }

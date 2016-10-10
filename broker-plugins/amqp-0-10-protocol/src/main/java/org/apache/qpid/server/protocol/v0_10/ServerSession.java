@@ -1209,6 +1209,7 @@ public class ServerSession extends Session
             consumerListNeedsRefreshing = true;
         }
 
+        // QPID-7447: prevent unnecessary allocation of empty iterator
         Iterator<ConsumerTarget> iter = _consumersWithPendingWork.isEmpty() ? Collections.<ConsumerTarget>emptyIterator() : _consumersWithPendingWork.iterator();
 
         boolean consumerHasMoreWork = false;

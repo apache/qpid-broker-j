@@ -3782,6 +3782,7 @@ public class AMQChannel
             consumerListNeedsRefreshing = true;
         }
 
+        // QPID-7447: prevent unnecessary allocation of empty iterator
         Iterator<ConsumerTarget_0_8> iter = _consumersWithPendingWork.isEmpty() ? Collections.<ConsumerTarget_0_8>emptyIterator() : _consumersWithPendingWork.iterator();
 
         boolean consumerHasMoreWork = false;
