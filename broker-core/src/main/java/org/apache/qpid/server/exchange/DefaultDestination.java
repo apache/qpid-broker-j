@@ -42,6 +42,7 @@ import org.apache.qpid.server.util.Action;
 public class DefaultDestination implements MessageDestination, PermissionedObject
 {
 
+    private static final Operation PUBLISH_ACTION = Operation.ACTION("publish");
     private final AccessControl _accessControl;
     private VirtualHost<?> _virtualHost;
 
@@ -71,7 +72,7 @@ public class DefaultDestination implements MessageDestination, PermissionedObjec
 
         if(_accessControl != null)
         {
-            Result result = _accessControl.authorise(token, Operation.ACTION("publish"), this, arguments);
+            Result result = _accessControl.authorise(token, PUBLISH_ACTION, this, arguments);
             if (result == Result.DEFER)
             {
                 result = _accessControl.getDefault();

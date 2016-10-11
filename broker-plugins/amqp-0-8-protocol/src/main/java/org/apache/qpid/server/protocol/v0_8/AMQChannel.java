@@ -225,6 +225,8 @@ public class AMQChannel
      */
     private boolean _logChannelFlowMessages = true;
 
+    private final CachedFrame _txCommitOkFrame;
+
     public AMQChannel(AMQPConnection_0_8 connection, int channelId, final MessageStore messageStore)
     {
         _creditManager = new Pre0_10CreditManager(0l,0l, connection);
@@ -251,6 +253,10 @@ public class AMQChannel
                                                                   Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
         // by default the session is non-transactional
         _transaction = new AsyncAutoCommitTransaction(_messageStore, this);
+
+        MethodRegistry methodRegistry = _connection.getMethodRegistry();
+        AMQMethodBody responseBody = methodRegistry.createTxCommitOkBody();
+        _txCommitOkFrame = new CachedFrame(responseBody.generateFrame(_channelId));
 
         _clientDeliveryMethod = connection.createDeliveryMethod(_channelId);
 
@@ -3646,9 +3652,7 @@ public class AMQChannel
             @Override
             public void run()
             {
-                MethodRegistry methodRegistry = _connection.getMethodRegistry();
-                AMQMethodBody responseBody = methodRegistry.createTxCommitOkBody();
-                _connection.writeFrame(responseBody.generateFrame(_channelId));
+                _connection.writeFrame(_txCommitOkFrame);
             }
         }, true);
 
