@@ -33,10 +33,12 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
 {
 
     private final static MessageMetaData_0_10 DELETED_MESSAGE_METADATA = new MessageMetaData_0_10(null, 0, 0);
+    private final long _size;
 
     public MessageTransferMessage(StoredMessage<MessageMetaData_0_10> storeMessage, Object connectionRef)
     {
         super(storeMessage, connectionRef);
+        _size = storeMessage.getMetaData().getSize();
     }
 
     private MessageMetaData_0_10 getMetaData()
@@ -58,7 +60,7 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
 
     public long getSize()
     {
-        return getMetaData().getSize();
+        return _size;
     }
 
     public boolean isImmediate()
