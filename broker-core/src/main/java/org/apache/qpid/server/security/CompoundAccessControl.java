@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.PermissionedObject;
 import org.apache.qpid.server.security.access.Operation;
 
 public class CompoundAccessControl implements AccessControl<CompoundSecurityToken>
@@ -79,7 +79,7 @@ public class CompoundAccessControl implements AccessControl<CompoundSecurityToke
     @Override
     public Result authorise(final CompoundSecurityToken token,
                             final Operation operation,
-                            final ConfiguredObject<?> configuredObject)
+                            final PermissionedObject configuredObject)
     {
         return authorise(token, operation, configuredObject, Collections.<String,Object>emptyMap());
     }
@@ -87,7 +87,7 @@ public class CompoundAccessControl implements AccessControl<CompoundSecurityToke
     @Override
     public Result authorise(final CompoundSecurityToken token,
                             final Operation operation,
-                            final ConfiguredObject<?> configuredObject,
+                            final PermissionedObject configuredObject,
                             final Map<String, Object> arguments)
     {
         List<AccessControl<?>> underlying = _underlyingControls.get();

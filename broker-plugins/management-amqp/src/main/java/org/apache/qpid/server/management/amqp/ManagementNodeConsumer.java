@@ -20,9 +20,11 @@
  */
 package org.apache.qpid.server.management.amqp;
 
+import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
@@ -32,7 +34,9 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
@@ -156,6 +160,19 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
     public boolean isActive()
     {
         return false;
+    }
+
+    @Override
+    public NamedAddressSpace getAddressSpace()
+    {
+        return _managementNode.getAddressSpace();
+    }
+
+    @Override
+    public void authorisePublish(final SecurityToken token, final Map<String, Object> arguments)
+            throws AccessControlException
+    {
+        _managementNode.authorisePublish(token, arguments);
     }
 
     @Override

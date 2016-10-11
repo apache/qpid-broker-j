@@ -33,7 +33,6 @@ import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -98,6 +97,7 @@ import org.apache.qpid.server.plugin.MessageFilterFactory;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
+import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.store.MessageDurability;
@@ -3492,6 +3492,20 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 }
             }
         }
+    }
+
+    @Override
+    public NamedAddressSpace getAddressSpace()
+    {
+        return _virtualHost;
+    }
+
+
+    @Override
+    public void authorisePublish(final SecurityToken token, final Map<String, Object> arguments)
+            throws AccessControlException
+    {
+        authorise(token, Operation.ACTION("publish"), arguments);
     }
 
     private class DeletedChildListener implements ConfigurationChangeListener

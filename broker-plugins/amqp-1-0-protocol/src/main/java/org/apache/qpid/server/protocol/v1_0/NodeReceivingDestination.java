@@ -23,7 +23,8 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.util.Arrays;
 import java.util.Collections;
 
-import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -31,10 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
-import org.apache.qpid.server.message.InstanceProperties;
-import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.security.SecurityToken;
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.txn.ServerTransaction;
 
 public class NodeReceivingDestination implements ReceivingDestination
@@ -112,15 +110,8 @@ public class NodeReceivingDestination implements ReceivingDestination
     @Override
     public void authorizePublish(final SecurityToken securityToken, final Message_1_0 message)
     {
-        if(_destination instanceof ConfiguredObject)
-        {
-            ConfiguredObject<?> object = (ConfiguredObject)_destination;
-
-            object.authorise(securityToken,
-                             Operation.ACTION("publish"),
-                             Collections.<String, Object>singletonMap("routingKey", getRoutingAddress(message)));
-        }
-
+            _destination.authorisePublish(securityToken,
+                                          Collections.<String, Object>singletonMap("routingKey", getRoutingAddress(message)));
 
     }
 

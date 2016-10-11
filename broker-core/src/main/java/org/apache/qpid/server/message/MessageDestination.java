@@ -20,6 +20,11 @@
  */
 package org.apache.qpid.server.message;
 
+import java.security.AccessControlException;
+import java.util.Map;
+
+import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
@@ -27,7 +32,11 @@ import org.apache.qpid.server.util.Action;
 public interface MessageDestination extends MessageNode
 {
 
-    public String getName();
+    String getName();
+
+    NamedAddressSpace getAddressSpace();
+
+    void authorisePublish(SecurityToken token, Map<String, Object> arguments) throws AccessControlException;
 
     /**
      * Routes a message
