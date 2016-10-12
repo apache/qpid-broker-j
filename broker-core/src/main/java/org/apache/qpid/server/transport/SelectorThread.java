@@ -280,7 +280,7 @@ class SelectorThread extends Thread
                         {
                             if (!_closed.get())
                             {
-                                Thread.currentThread().setName("Selector-" + _scheduler.getName());
+                                Thread.currentThread().setName(_scheduler.getSelectorThreadName());
                                 _inSelect.set(true);
                                 try
                                 {
