@@ -101,7 +101,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     {
         AccessControlProvider accessControlProvider = mock(AccessControlProvider.class);
         when(accessControlProvider.getParent(Broker.class)).thenReturn(_broker);
-        when(accessControlProvider.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
+        when(accessControlProvider.getName()).thenReturn("TEST");
         when(accessControlProvider.getCategoryClass()).thenReturn(AccessControlProvider.class);
 
         assertBrokerChildCreateAuthorization(accessControlProvider);
@@ -114,6 +114,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         Exchange exchange = mock(Exchange.class);
         when(exchange.getParent(VirtualHost.class)).thenReturn(_virtualHost);
         when(exchange.getAttribute(Exchange.NAME)).thenReturn(TEST_EXCHANGE);
+        when(exchange.getName()).thenReturn(TEST_EXCHANGE);
         when(exchange.getCategoryClass()).thenReturn(Exchange.class);
         when(exchange.getParent(VirtualHost.class)).thenReturn(vh);
         when(exchange.getModel()).thenReturn(BrokerModel.getInstance());
@@ -121,6 +122,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         Queue queue = mock(Queue.class);
         when(queue.getParent(VirtualHost.class)).thenReturn(_virtualHost);
         when(queue.getAttribute(Queue.NAME)).thenReturn(TEST_QUEUE);
+        when(queue.getName()).thenReturn(TEST_QUEUE);
         when(queue.getAttribute(Queue.DURABLE)).thenReturn(true);
         when(queue.getAttribute(Queue.LIFETIME_POLICY)).thenReturn(LifetimePolicy.PERMANENT);
         when(queue.getCategoryClass()).thenReturn(Queue.class);
@@ -138,6 +140,8 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(binding.getParent(Exchange.class)).thenReturn(exchange);
         when(binding.getParent(Queue.class)).thenReturn(queue);
         when(binding.getAttribute(Binding.NAME)).thenReturn("bindingKey");
+        when(binding.getName()).thenReturn("bindingKey");
+
         when(binding.getCategoryClass()).thenReturn(Binding.class);
 
         assertCreateAuthorization(binding, LegacyOperation.BIND, ObjectType.EXCHANGE, properties, exchange, queue);
@@ -179,7 +183,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     public void testAuthoriseUpdatePort()
     {
         Port mock = mock(Port.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(Port.class);
         when(mock.getParent(Broker.class)).thenReturn(_broker);
         assertBrokerChildUpdateAuthorization(mock);
@@ -191,10 +195,10 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(authenticationProvider.getCategoryClass()).thenReturn(AuthenticationProvider.class);
         when(authenticationProvider.getName()).thenReturn("testAuthenticationProvider");
         User mock = mock(User.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(User.class);
         when(mock.getParent(AuthenticationProvider.class)).thenReturn(authenticationProvider);
-        ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
+        ObjectProperties properties = new ObjectProperties((String)mock.getName());
         assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.USER, properties, authenticationProvider);
     }
 
@@ -204,10 +208,11 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         VirtualHostNode vhn = getMockVirtualHostNode();
 
         VirtualHost mock = mock(VirtualHost.class);
+        when(mock.getName()).thenReturn("test");
         when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(VirtualHost.class);
         when(mock.getParent(VirtualHostNode.class)).thenReturn(vhn);
-        ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
+        ObjectProperties properties = new ObjectProperties((String)mock.getName());
         assertDeleteAuthorization(mock, LegacyOperation.DELETE, ObjectType.VIRTUALHOST, properties, vhn);
     }
 
@@ -215,11 +220,13 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     {
         Exchange exchange = mock(Exchange.class);
         when(exchange.getParent(VirtualHost.class)).thenReturn(_virtualHost);
+        when(exchange.getName()).thenReturn(TEST_EXCHANGE);
         when(exchange.getAttribute(Exchange.NAME)).thenReturn(TEST_EXCHANGE);
         when(exchange.getCategoryClass()).thenReturn(Exchange.class);
 
         Queue queue = mock(Queue.class);
         when(queue.getParent(VirtualHost.class)).thenReturn(_virtualHost);
+        when(queue.getName()).thenReturn(TEST_QUEUE);
         when(queue.getAttribute(Queue.NAME)).thenReturn(TEST_QUEUE);
         when(queue.getAttribute(Queue.DURABLE)).thenReturn(true);
         when(queue.getAttribute(Queue.LIFETIME_POLICY)).thenReturn(LifetimePolicy.PERMANENT);
@@ -228,7 +235,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         Binding binding = mock(Binding.class);
         when(binding.getParent(Exchange.class)).thenReturn(exchange);
         when(binding.getParent(Queue.class)).thenReturn(queue);
-        when(binding.getAttribute(Binding.NAME)).thenReturn("bindingKey");
+        when(binding.getName()).thenReturn("bindingKey");
         when(binding.getCategoryClass()).thenReturn(Binding.class);
 
         ObjectProperties properties = new ObjectProperties();
@@ -246,7 +253,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     public void testAuthoriseDeleteKeyStore()
     {
         KeyStore mock = mock(KeyStore.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(KeyStore.class);
         when(mock.getParent(Broker.class)).thenReturn(_broker);
         assertBrokerChildDeleteAuthorization(mock);
@@ -255,7 +262,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     public void testAuthoriseDeleteTrustStore()
     {
         TrustStore mock = mock(TrustStore.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(TrustStore.class);
         when(mock.getParent(Broker.class)).thenReturn(_broker);
         assertBrokerChildDeleteAuthorization(mock);
@@ -267,10 +274,10 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(groupProvider.getCategoryClass()).thenReturn(GroupProvider.class);
         when(groupProvider.getName()).thenReturn("testGroupProvider");
         Group mock = mock(Group.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(Group.class);
         when(mock.getParent(GroupProvider.class)).thenReturn(groupProvider);
-        ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
+        ObjectProperties properties = new ObjectProperties((String)mock.getName());
         assertDeleteAuthorization(mock, LegacyOperation.DELETE, ObjectType.GROUP, properties, groupProvider);
     }
 
@@ -280,10 +287,10 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(group.getCategoryClass()).thenReturn(Group.class);
         when(group.getName()).thenReturn("testGroup");
         GroupMember mock = mock(GroupMember.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(GroupMember.class);
         when(mock.getParent(Group.class)).thenReturn(group);
-        ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
+        ObjectProperties properties = new ObjectProperties((String)mock.getName());
         assertDeleteAuthorization(mock, LegacyOperation.UPDATE, ObjectType.GROUP, properties, group);
     }
 
@@ -293,10 +300,10 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(authenticationProvider.getCategoryClass()).thenReturn(AuthenticationProvider.class);
         when(authenticationProvider.getName()).thenReturn("testAuthenticationProvider");
         User mock = mock(User.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(User.class);
         when(mock.getParent(AuthenticationProvider.class)).thenReturn(authenticationProvider);
-        ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
+        ObjectProperties properties = new ObjectProperties((String)mock.getName());
         assertDeleteAuthorization(mock, LegacyOperation.DELETE, ObjectType.USER, properties, authenticationProvider);
     }
 
@@ -306,7 +313,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         ObjectProperties expectedProperties = createExpectedExchangeObjectProperties();
 
         Exchange exchange = mock(Exchange.class);
-        when(exchange.getAttribute(ConfiguredObject.NAME)).thenReturn(TEST_EXCHANGE);
+        when(exchange.getName()).thenReturn(TEST_EXCHANGE);
         when(exchange.getAttribute(ConfiguredObject.LIFETIME_POLICY)).thenReturn(LifetimePolicy.DELETE_ON_CONNECTION_CLOSE);
         when(exchange.getAttribute(Exchange.DURABLE)).thenReturn(false);
         when(exchange.getAttribute(Exchange.TYPE)).thenReturn(TEST_EXCHANGE_TYPE);
@@ -322,6 +329,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         ObjectProperties expectedProperties = createExpectedQueueObjectProperties();
 
         Queue queue = mock(Queue.class);
+        when(queue.getName()).thenReturn(TEST_QUEUE);
         when(queue.getAttribute(ConfiguredObject.NAME)).thenReturn(TEST_QUEUE);
         when(queue.getAttribute(ConfiguredObject.LIFETIME_POLICY)).thenReturn(LifetimePolicy.DELETE_ON_CONNECTION_CLOSE);
         when(queue.getAttribute(Queue.OWNER)).thenReturn(null);
@@ -374,7 +382,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         ObjectProperties expectedProperties = createExpectedExchangeObjectProperties();
 
         Exchange exchange = mock(Exchange.class);
-        when(exchange.getAttribute(Exchange.NAME)).thenReturn(TEST_EXCHANGE);
+        when(exchange.getName()).thenReturn(TEST_EXCHANGE);
         when(exchange.getAttribute(Exchange.LIFETIME_POLICY)).thenReturn(LifetimePolicy.DELETE_ON_CONNECTION_CLOSE);
         when(exchange.getAttribute(Exchange.DURABLE)).thenReturn(false);
         when(exchange.getAttribute(Exchange.TYPE)).thenReturn(TEST_EXCHANGE_TYPE);
@@ -391,6 +399,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
 
         Exchange exchange = mock(Exchange.class);
         when(exchange.getAttribute(Exchange.NAME)).thenReturn(TEST_EXCHANGE);
+        when(exchange.getName()).thenReturn(TEST_EXCHANGE);
         when(exchange.getAttribute(Exchange.LIFETIME_POLICY)).thenReturn(LifetimePolicy.DELETE_ON_CONNECTION_CLOSE);
         when(exchange.getAttribute(Exchange.DURABLE)).thenReturn(false);
         when(exchange.getAttribute(Exchange.TYPE)).thenReturn(TEST_EXCHANGE_TYPE);
@@ -404,11 +413,13 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     {
         Exchange exchange = mock(Exchange.class);
         when(exchange.getParent(VirtualHost.class)).thenReturn(_virtualHost);
+        when(exchange.getName()).thenReturn(TEST_EXCHANGE);
         when(exchange.getAttribute(Exchange.NAME)).thenReturn(TEST_EXCHANGE);
         when(exchange.getCategoryClass()).thenReturn(Exchange.class);
 
         Queue queue = mock(Queue.class);
         when(queue.getParent(VirtualHost.class)).thenReturn(_virtualHost);
+        when(queue.getName()).thenReturn(TEST_QUEUE);
         when(queue.getAttribute(Queue.NAME)).thenReturn(TEST_QUEUE);
         when(queue.getAttribute(Queue.DURABLE)).thenReturn(true);
         when(queue.getAttribute(Queue.LIFETIME_POLICY)).thenReturn(LifetimePolicy.PERMANENT);
@@ -417,6 +428,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         Binding binding = mock(Binding.class);
         when(binding.getParent(Exchange.class)).thenReturn(exchange);
         when(binding.getParent(Queue.class)).thenReturn(queue);
+        when(binding.getName()).thenReturn("bindingKey");
         when(binding.getAttribute(Binding.NAME)).thenReturn("bindingKey");
         when(binding.getCategoryClass()).thenReturn(Binding.class);
 
@@ -441,7 +453,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     {
         Port port = mock(Port.class);
         when(port.getParent(Broker.class)).thenReturn(_broker);
-        when(port.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
+        when(port.getName()).thenReturn("TEST");
         when(port.getCategoryClass()).thenReturn(Port.class);
 
         assertBrokerChildCreateAuthorization(port);
@@ -451,7 +463,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     {
         AuthenticationProvider authenticationProvider = mock(AuthenticationProvider.class);
         when(authenticationProvider.getParent(Broker.class)).thenReturn(_broker);
-        when(authenticationProvider.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
+        when(authenticationProvider.getName()).thenReturn("TEST");
         when(authenticationProvider.getCategoryClass()).thenReturn(AuthenticationProvider.class);
 
         assertBrokerChildCreateAuthorization(authenticationProvider);
@@ -461,7 +473,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     {
         GroupProvider groupProvider = mock(GroupProvider.class);
         when(groupProvider.getParent(Broker.class)).thenReturn(_broker);
-        when(groupProvider.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
+        when(groupProvider.getName()).thenReturn("TEST");
         when(groupProvider.getCategoryClass()).thenReturn(GroupProvider.class);
 
         assertBrokerChildCreateAuthorization(groupProvider);
@@ -472,7 +484,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     {
         KeyStore keyStore = mock(KeyStore.class);
         when(keyStore.getParent(Broker.class)).thenReturn(_broker);
-        when(keyStore.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
+        when(keyStore.getName()).thenReturn("TEST");
         when(keyStore.getCategoryClass()).thenReturn(KeyStore.class);
 
         assertBrokerChildCreateAuthorization(keyStore);
@@ -482,7 +494,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     {
         TrustStore trustStore = mock(TrustStore.class);
         when(trustStore.getParent(Broker.class)).thenReturn(_broker);
-        when(trustStore.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
+        when(trustStore.getName()).thenReturn("TEST");
         when(trustStore.getCategoryClass()).thenReturn(TrustStore.class);
 
         assertBrokerChildCreateAuthorization(trustStore);
@@ -493,12 +505,14 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         GroupProvider groupProvider = mock(GroupProvider.class);
         when(groupProvider.getCategoryClass()).thenReturn(GroupProvider.class);
         when(groupProvider.getAttribute(GroupProvider.NAME)).thenReturn("testGroupProvider");
+        when(groupProvider.getName()).thenReturn("testGroupProvider");
         when(groupProvider.getModel()).thenReturn(BrokerModel.getInstance());
 
         Group group = mock(Group.class);
         when(group.getCategoryClass()).thenReturn(Group.class);
         when(group.getParent(GroupProvider.class)).thenReturn(groupProvider);
         when(group.getAttribute(Group.NAME)).thenReturn("test");
+        when(group.getName()).thenReturn("test");
 
         assertCreateAuthorization(group, LegacyOperation.CREATE, ObjectType.GROUP, new ObjectProperties("test"), groupProvider);
     }
@@ -508,12 +522,14 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         Group group = mock(Group.class);
         when(group.getCategoryClass()).thenReturn(Group.class);
         when(group.getAttribute(Group.NAME)).thenReturn("testGroup");
+        when(group.getName()).thenReturn("testGroup");
         when(group.getModel()).thenReturn(BrokerModel.getInstance());
 
         GroupMember groupMember = mock(GroupMember.class);
         when(groupMember.getCategoryClass()).thenReturn(GroupMember.class);
         when(groupMember.getParent(Group.class)).thenReturn(group);
         when(groupMember.getAttribute(Group.NAME)).thenReturn("test");
+        when(groupMember.getName()).thenReturn("test");
 
         assertCreateAuthorization(groupMember, LegacyOperation.UPDATE, ObjectType.GROUP, new ObjectProperties("test"), group);
     }
@@ -528,6 +544,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         User user = mock(User.class);
         when(user.getCategoryClass()).thenReturn(User.class);
         when(user.getAttribute(User.NAME)).thenReturn("test");
+        when(user.getName()).thenReturn("test");
         when(user.getParent(AuthenticationProvider.class)).thenReturn(authenticationProvider);
         when(user.getModel()).thenReturn(BrokerModel.getInstance());
 
@@ -550,7 +567,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     public void testAuthoriseUpdateAuthenticationProvider()
     {
         AuthenticationProvider mock = mock(AuthenticationProvider.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(AuthenticationProvider.class);
         when(mock.getParent(Broker.class)).thenReturn(_broker);
         assertBrokerChildUpdateAuthorization(mock);
@@ -559,7 +576,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     public void testAuthoriseUpdateGroupProvider()
     {
         GroupProvider mock = mock(GroupProvider.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(GroupProvider.class);
         when(mock.getParent(Broker.class)).thenReturn(_broker);
         assertBrokerChildUpdateAuthorization(mock);
@@ -568,7 +585,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     public void testAuthoriseUpdateAccessControlProvider()
     {
         AccessControlProvider mock = mock(AccessControlProvider.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(AccessControlProvider.class);
         when(mock.getParent(Broker.class)).thenReturn(_broker);
         assertBrokerChildUpdateAuthorization(mock);
@@ -577,7 +594,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     public void testAuthoriseUpdateKeyStore()
     {
         KeyStore mock = mock(KeyStore.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(KeyStore.class);
         when(mock.getParent(Broker.class)).thenReturn(_broker);
         assertBrokerChildUpdateAuthorization(mock);
@@ -586,7 +603,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     public void testAuthoriseUpdateTrustStore()
     {
         TrustStore mock = mock(TrustStore.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(TrustStore.class);
         when(mock.getParent(Broker.class)).thenReturn(_broker);
         assertBrokerChildUpdateAuthorization(mock);
@@ -598,10 +615,10 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(groupProvider.getCategoryClass()).thenReturn(GroupProvider.class);
         when(groupProvider.getName()).thenReturn("testGroupProvider");
         Group mock = mock(Group.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(Group.class);
         when(mock.getParent(GroupProvider.class)).thenReturn(groupProvider);
-        ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
+        ObjectProperties properties = new ObjectProperties((String)mock.getName());
         assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.GROUP, properties, groupProvider);
     }
 
@@ -611,10 +628,10 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(group.getCategoryClass()).thenReturn(Group.class);
         when(group.getName()).thenReturn("testGroup");
         GroupMember mock = mock(GroupMember.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(GroupMember.class);
         when(mock.getParent(Group.class)).thenReturn(group);
-        ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
+        ObjectProperties properties = new ObjectProperties((String)mock.getName());
         assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.GROUP, properties, group);
     }
 
@@ -623,10 +640,11 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         VirtualHostNode vhn = getMockVirtualHostNode();
 
         VirtualHost mock = mock(VirtualHost.class);
+        when(mock.getName()).thenReturn("test");
         when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(VirtualHost.class);
         when(mock.getParent(VirtualHostNode.class)).thenReturn(vhn);
-        ObjectProperties properties = new ObjectProperties((String)mock.getAttribute(ConfiguredObject.NAME));
+        ObjectProperties properties = new ObjectProperties((String)mock.getName());
         assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, properties, vhn);
     }
 
@@ -639,7 +657,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     public void testAuthoriseDeletePort()
     {
         Port mock = mock(Port.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(Port.class);
         when(mock.getParent(Broker.class)).thenReturn(_broker);
         assertBrokerChildDeleteAuthorization(mock);
@@ -648,7 +666,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     public void testAuthoriseDeleteAuthenticationProvider()
     {
         AuthenticationProvider mock = mock(AuthenticationProvider.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(AuthenticationProvider.class);
         when(mock.getParent(Broker.class)).thenReturn(_broker);
         assertBrokerChildDeleteAuthorization(mock);
@@ -657,7 +675,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     public void testAuthoriseDeleteGroupProvider()
     {
         GroupProvider mock = mock(GroupProvider.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(GroupProvider.class);
         when(mock.getParent(Broker.class)).thenReturn(_broker);
         assertBrokerChildDeleteAuthorization(mock);
@@ -666,7 +684,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     public void testAuthoriseDeleteAccessControlProvider()
     {
         AccessControlProvider mock = mock(AccessControlProvider.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         when(mock.getCategoryClass()).thenReturn(AccessControlProvider.class);
         when(mock.getParent(Broker.class)).thenReturn(_broker);
         assertBrokerChildDeleteAuthorization(mock);
@@ -675,12 +693,12 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     public void testAuthoriseBrokerLoggerOperations()
     {
         BrokerLogger mock = mock(BrokerLogger.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
+        when(mock.getName()).thenReturn("TEST");
         when(mock.getCategoryClass()).thenReturn(BrokerLogger.class);
         when(mock.getParent(Broker.class)).thenReturn(_broker);
         assertBrokerChildCreateAuthorization(mock);
 
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         assertBrokerChildUpdateAuthorization(mock);
         assertBrokerChildDeleteAuthorization(mock);
     }
@@ -688,18 +706,18 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
     public void testAuthoriseBrokerLogInclusionRuleOperations()
     {
         BrokerLogger bl = mock(BrokerLogger.class);
-        when(bl.getAttribute(ConfiguredObject.NAME)).thenReturn("LOGGER");
+        when(bl.getName()).thenReturn("LOGGER");
         when(bl.getCategoryClass()).thenReturn(BrokerLogger.class);
         when(bl.getParent(Broker.class)).thenReturn(_broker);
 
         BrokerLogInclusionRule mock = mock(BrokerLogInclusionRule.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
+        when(mock.getName()).thenReturn("TEST");
         when(mock.getCategoryClass()).thenReturn(BrokerLogInclusionRule.class);
         when(mock.getParent(BrokerLogger.class)).thenReturn(bl);
         when(mock.getModel()).thenReturn(BrokerModel.getInstance());
         assertBrokerChildCreateAuthorization(mock, bl);
 
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
         assertBrokerChildUpdateAuthorization(mock, bl);
         assertBrokerChildDeleteAuthorization(mock, bl);
     }
@@ -710,14 +728,14 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         ObjectProperties properties = new ObjectProperties(TEST_VIRTUAL_HOST);
 
         VirtualHostLogger<?> mock = mock(VirtualHostLogger.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
+        when(mock.getName()).thenReturn("TEST");
         doReturn(VirtualHostLogger.class).when(mock).getCategoryClass();
         when(mock.getParent(VirtualHost.class)).thenReturn(_virtualHost);
         when(mock.getModel()).thenReturn(BrokerModel.getInstance());
 
         assertCreateAuthorization(mock, LegacyOperation.CREATE, ObjectType.VIRTUALHOST, properties, _virtualHost);
 
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
 
         assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, properties, _virtualHost);
         assertDeleteAuthorization(mock, LegacyOperation.DELETE, ObjectType.VIRTUALHOST, properties, _virtualHost);
@@ -728,20 +746,20 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         ObjectProperties properties = new ObjectProperties(TEST_VIRTUAL_HOST);
 
         VirtualHostLogger<?> vhl = mock(VirtualHostLogger.class);
-        when(vhl.getAttribute(ConfiguredObject.NAME)).thenReturn("LOGGER");
+        when(vhl.getName()).thenReturn("LOGGER");
         doReturn(VirtualHostLogger.class).when(vhl).getCategoryClass();
         when(vhl.getParent(VirtualHost.class)).thenReturn(_virtualHost);
         when(vhl.getModel()).thenReturn(BrokerModel.getInstance());
 
         VirtualHostLogInclusionRule<?> mock = mock(VirtualHostLogInclusionRule.class);
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
+        when(mock.getName()).thenReturn("TEST");
         doReturn(VirtualHostLogInclusionRule.class).when(mock).getCategoryClass();
         when(mock.getParent(VirtualHostLogger.class)).thenReturn(vhl);
         when(mock.getModel()).thenReturn(BrokerModel.getInstance());
 
         assertCreateAuthorization(mock, LegacyOperation.CREATE, ObjectType.VIRTUALHOST, properties, vhl);
 
-        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        when(mock.getName()).thenReturn("test");
 
         assertUpdateAuthorization(mock, LegacyOperation.UPDATE, ObjectType.VIRTUALHOST, properties, vhl);
         assertDeleteAuthorization(mock, LegacyOperation.DELETE, ObjectType.VIRTUALHOST, properties, vhl);
@@ -840,7 +858,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
 
         Exchange exchange = mock(Exchange.class);
         when(exchange.getCategoryClass()).thenReturn(Exchange.class);
-        when(exchange.getParent(eq(VirtualHost.class))).thenReturn(_virtualHost);
+        when(exchange.getAddressSpace()).thenReturn(_virtualHost);
         when(exchange.getName()).thenReturn(exchangeName);
         Map<String,Object> args = new HashMap<>();
         args.put("routingKey",routingKey);
@@ -922,7 +940,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         String description = String.format("%s %s '%s'",
                                            LegacyOperation.UPDATE.name().toLowerCase(),
                                            configuredObject.getCategoryClass().getSimpleName().toLowerCase(),
-                                           configuredObject.getAttribute(ConfiguredObject.NAME));
+                                           configuredObject.getName());
         ObjectProperties properties = new OperationLoggingDetails(description);
 
         assertUpdateAuthorization(configuredObject, LegacyOperation.CONFIGURE, ObjectType.BROKER,
@@ -944,7 +962,7 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         String description = String.format("%s %s '%s'",
                                            LegacyOperation.DELETE.name().toLowerCase(),
                                            configuredObject.getCategoryClass().getSimpleName().toLowerCase(),
-                                           configuredObject.getAttribute(ConfiguredObject.NAME));
+                                           configuredObject.getName());
         ObjectProperties properties = new OperationLoggingDetails(description);
 
         assertDeleteAuthorization(configuredObject, LegacyOperation.CONFIGURE, ObjectType.BROKER,
