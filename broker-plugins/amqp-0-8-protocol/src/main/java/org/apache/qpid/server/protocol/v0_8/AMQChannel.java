@@ -3854,4 +3854,9 @@ public class AMQChannel
         MessageSource source = getAddressSpace().getAttainedMessageSource(name);
         return source instanceof Queue ? (Queue<?>) source : null;
     }
+
+    public void dispose()
+    {
+        _txCommitOkFrame.dispose();
+    }
 }

@@ -29,6 +29,7 @@ class CachedFrame extends AMQDataBlock
     private final String _toString;
     private final QpidByteBuffer _buffer;
     private final long _size;
+    private boolean _disposed;
 
     CachedFrame(AMQDataBlock original)
     {
@@ -48,6 +49,7 @@ class CachedFrame extends AMQDataBlock
     @Override
     public long writePayload(final ByteBufferSender sender)
     {
+
         QpidByteBuffer dup = _buffer.duplicate();
         sender.send(dup);
         dup.dispose();
@@ -94,5 +96,11 @@ class CachedFrame extends AMQDataBlock
         {
 
         }
+    }
+
+    public void dispose()
+    {
+        _buffer.dispose();
+        _disposed = true;
     }
 }
