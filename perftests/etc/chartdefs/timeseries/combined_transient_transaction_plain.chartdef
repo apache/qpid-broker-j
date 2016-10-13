@@ -1,0 +1,43 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+chartType=TIMELINE
+chartTitle=Transient Transacted AMQP ${qpid.charting.protocolVersion} plain
+chartDescription=10P 10C, transient, transacted, 1kB message, plain, ${qpid.charting.brokerVersionA} / ${qpid.charting.brokerVersionB} / ${qpid.charting.brokerVersionC}
+
+yAxisLowerBound=0
+yAxisUpperBound=40000
+
+xAxisTitle=Date
+yAxisTitle=Messages Per Second
+
+series.1.statement=SELECT insertedTimestamp, throughputMessagesPerS FROM RESULTS WHERE participantName = 'All' AND testName = 'transient_transaction_plain' AND providerVersion LIKE '%${qpid.charting.brokerVersionA}%' AND protocolVersion = '${qpid.charting.protocolVersion}'
+series.1.colourName=blue
+series.1.shape=cross
+series.1.legend=${qpid.charting.brokerVersionA}
+
+series.2.statement=SELECT insertedTimestamp, throughputMessagesPerS FROM RESULTS WHERE participantName = 'All' AND testName = 'transient_transaction_plain' AND providerVersion LIKE '%${qpid.charting.brokerVersionB}%' AND protocolVersion = '${qpid.charting.protocolVersion}'
+series.2.colourName=red
+series.2.shape=cross
+series.2.legend=${qpid.charting.brokerVersionB}
+
+series.3.statement=SELECT insertedTimestamp, throughputMessagesPerS FROM RESULTS WHERE participantName = 'All' AND testName = 'transient_transaction_plain' AND providerVersion LIKE '%${qpid.charting.brokerVersionC}%' AND protocolVersion = '${qpid.charting.protocolVersion}'
+series.3.colourName=dark_green
+series.3.shape=cross
+series.3.legend=${qpid.charting.brokerVersionC}
