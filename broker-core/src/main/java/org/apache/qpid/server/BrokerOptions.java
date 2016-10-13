@@ -283,30 +283,37 @@ public class BrokerOptions
         return Collections.unmodifiableMap(properties);
     }
 
+    private String getProperty(String propName, String altPropName, String defaultValue)
+    {
+        String value = getProperty(propName);
+        if(value == null)
+        {
+            value = getProperty(altPropName);
+            if(value == null)
+            {
+                value = defaultValue;
+            }
+        }
+        return value;
+    }
+
+    private String getProperty(String propName)
+    {
+        return _configProperties.containsKey(propName)
+                ? _configProperties.get(propName)
+                : System.getProperties().containsKey(propName)
+                        ? System.getProperty(propName)
+                        : System.getenv(propName);
+    }
+
     private String getWorkDir()
     {
-        if(!_configProperties.containsKey(QPID_WORK_DIR))
-        {
-            String qpidWork = System.getProperty(BrokerProperties.PROPERTY_QPID_WORK);
-            if (qpidWork == null)
-            {
-                return FALLBACK_WORK_DIR.getAbsolutePath();
-            }
-
-            return qpidWork;
-        }
-
-        return _configProperties.get(QPID_WORK_DIR);
+        return getProperty(QPID_WORK_DIR, BrokerProperties.PROPERTY_QPID_WORK, FALLBACK_WORK_DIR.getAbsolutePath());
     }
 
     private String getHomeDir()
     {
-        if(!_configProperties.containsKey(QPID_HOME_DIR))
-        {
-            return System.getProperty(BrokerProperties.PROPERTY_QPID_HOME);
-        }
-
-        return _configProperties.get(QPID_HOME_DIR);
+        return getProperty(QPID_HOME_DIR, BrokerProperties.PROPERTY_QPID_HOME, null);
     }
 
     /*
