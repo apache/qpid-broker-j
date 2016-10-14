@@ -221,7 +221,7 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
             description = "Extract configuration",
             paramRequiringSecure = "includeSecureAttributes",
             changesConfiguredObjectState = false)
-    Map<String,Object> exportConfig(@Param(name="includeSecureAttributes",
+    Map<String,Object> extractConfig(@Param(name="includeSecureAttributes",
                                             description = "include attributes that may contain passwords or other "
                                                           + "confidential information",
                                             defaultValue = "false") boolean includeSecureAttributes);
