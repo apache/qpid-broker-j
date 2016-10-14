@@ -133,7 +133,7 @@ var jsonObject = {
             ACKNOWLEDGE_MODE_SESSION_TRANSACTED,
             DELIVERY_MODE_TRANSIENT,
             "PLAIN"),
-        createTest("transient_transaction_plain",
+        createTest("transient_transaction_ssl",
             numberOfParticipantPairs,
             ACKNOWLEDGE_MODE_SESSION_TRANSACTED,
             DELIVERY_MODE_TRANSIENT,
