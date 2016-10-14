@@ -51,6 +51,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
@@ -115,6 +116,8 @@ public class AMQChannelTest extends QpidTestCase
         when(_amqConnection.getBroker()).thenReturn((Broker) _broker);
         when(_amqConnection.getMethodRegistry()).thenReturn(new MethodRegistry(ProtocolVersion.v0_9));
         when(_amqConnection.getContextProvider()).thenReturn(_virtualHost);
+        when(_amqConnection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT)).thenReturn(Session.PRODUCER_AUTH_CACHE_TIMEOUT_DEFAULT);
+        when(_amqConnection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Session.PRODUCER_AUTH_CACHE_SIZE_DEFAULT);
         when(_amqConnection.getEventLogger()).thenReturn(mock(EventLogger.class));
         _messageDestination = mock(MessageDestination.class);
     }
