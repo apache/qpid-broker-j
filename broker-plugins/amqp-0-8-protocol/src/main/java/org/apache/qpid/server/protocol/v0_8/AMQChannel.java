@@ -96,6 +96,7 @@ import org.apache.qpid.server.model.UnknownConfiguredObjectException;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
+import org.apache.qpid.server.protocol.PublishAuthorisationCache;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageHandle;
@@ -103,7 +104,6 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.LocalTransaction.ActivityTimeAccessor;
@@ -136,6 +136,10 @@ public class AMQChannel
     private final FlowCreditManager _noAckCreditManager;
     private final AccessControlContext _accessControllerContext;
     private final SecurityToken _token;
+
+    private final PublishAuthorisationCache _publishAuthCahe;
+
+
 
     /**
      * The delivery tag is unique per channel. This is pre-incremented before putting into the deliver frame so that
@@ -247,7 +251,9 @@ public class AMQChannel
 
         _maxUncommittedInMemorySize = connection.getContextProvider().getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
         _logSubject = new ChannelLogSubject(this);
-
+        _publishAuthCahe = new PublishAuthorisationCache(_token,
+                                                         connection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT),
+                                                         connection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE));
         _messageStore = messageStore;
         _blockingTimeout = connection.getBroker().getContextValue(Long.class,
                                                                   Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
@@ -429,7 +435,6 @@ public class AMQChannel
         {
             MessagePublishInfo info = _currentMessage.getMessagePublishInfo();
             String routingKey = AMQShortString.toString(info.getRoutingKey());
-            NamedAddressSpace virtualHost = getAddressSpace();
 
             try
             {
@@ -438,8 +443,7 @@ public class AMQChannel
                 ContentHeaderBody contentHeader = _currentMessage.getContentHeader();
                 _connection.checkAuthorizedMessagePrincipal(AMQShortString.toString(contentHeader.getProperties().getUserId()));
 
-                destination.authorisePublish(_token, AbstractAMQPConnection.PUBLISH_ACTION_MAP_CREATOR.createMap(routingKey, info.isImmediate()));
-
+                _publishAuthCahe.authorisePublish(destination, routingKey, info.isImmediate(), _connection.getLastReadTime());
 
                 if (_confirmOnPublish)
                 {

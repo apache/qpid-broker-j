@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import static org.apache.qpid.server.transport.AbstractAMQPConnection.PUBLISH_ACTION_MAP_CREATOR;
-
 import java.nio.charset.StandardCharsets;
 import java.security.AccessControlException;
 import java.util.Collection;
@@ -443,10 +441,7 @@ public class ServerSessionDelegate extends SessionDelegate
                 try
                 {
                     serverSession.getAMQPConnection().checkAuthorizedMessagePrincipal(getMessageUserId(xfr));
-                    destination.authorisePublish(serverSession.getToken(),
-                                                 PUBLISH_ACTION_MAP_CREATOR.createMap(messageMetaData.getRoutingKey(),
-                                                                                      messageMetaData.isImmediate()));
-
+                    serverSession.authorisePublish(destination, messageMetaData.getRoutingKey(), messageMetaData.isImmediate(), serverSession.getAMQPConnection().getLastReadTime());
 
                 }
                 catch (AccessControlException e)

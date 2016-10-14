@@ -74,6 +74,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
+import org.apache.qpid.server.protocol.PublishAuthorisationCache;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
@@ -142,11 +143,8 @@ public class ServerSession extends Session
     private long _blockingTimeout;
     private boolean _wireBlockingState;
     private final List<ConsumerTarget> _consumersWithPendingWork = new ArrayList<>();
+    private final PublishAuthorisationCache _publishAuthCahe;
 
-    public SecurityToken getToken()
-    {
-        return _token;
-    }
 
     public static interface MessageDispositionChangeListener
     {
@@ -206,9 +204,11 @@ public class ServerSession extends Session
             _token = amqpConnection.getBroker().newToken(_subject);
         }
 
-        _blockingTimeout = serverConnection.getBroker().getContextValue(Long.class,
-                                                                                       Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
+        _blockingTimeout = serverConnection.getBroker().getContextValue(Long.class, Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
         _maxUncommittedInMemorySize = getConnection().getAmqpConnection().getContextProvider().getContextValue(Long.class, org.apache.qpid.server.model.Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
+        _publishAuthCahe = new PublishAuthorisationCache(_token,
+                                                         amqpConnection.getContextValue(Long.class, org.apache.qpid.server.model.Session.PRODUCER_AUTH_CACHE_TIMEOUT),
+                                                         amqpConnection.getContextValue(Integer.class, org.apache.qpid.server.model.Session.PRODUCER_AUTH_CACHE_SIZE));
 
     }
 
@@ -269,6 +269,13 @@ public class ServerSession extends Session
         invoke(mf);
     }
 
+    void authorisePublish(final MessageDestination destination,
+                          final String routingKey,
+                          final boolean immediate,
+                          final long currentTime)
+    {
+        _publishAuthCahe.authorisePublish(destination, routingKey, immediate, currentTime);
+    }
 
     @Override
     protected boolean isFull(int id)
