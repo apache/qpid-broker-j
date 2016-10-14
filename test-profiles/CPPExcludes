@@ -222,6 +222,7 @@ org.apache.qpid.server.protocol.v0_8.*
 //Broker for Java BDB System Tests
 org.apache.qpid.server.store.berkeleydb.*
 org.apache.qpid.server.store.berkeleydb.replication.*
+org.apache.qpid.server.virtualhostnode.berkeleydb.*
 
 // Broker for Java Derby Tests
 org.apache.qpid.server.store.derby.*
