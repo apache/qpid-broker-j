@@ -24,6 +24,7 @@ import java.util.Collection;
 
 import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 
@@ -58,18 +59,24 @@ public class StoreConfigurationChangeListener implements ConfigurationChangeList
         {
             if(object.isDurable() && child.isDurable())
             {
-                child.addChangeListener(this);
-                _store.update(true, child.asObjectRecord());
-
-                Class<? extends ConfiguredObject> categoryClass = child.getCategoryClass();
-                Collection<Class<? extends ConfiguredObject>> childTypes =
-                        child.getModel().getChildTypes(categoryClass);
-
-                for (Class<? extends ConfiguredObject> childClass : childTypes)
+                Model model = child.getModel();
+                Collection<Class<? extends ConfiguredObject>> parentTypes =
+                        model.getParentTypes(child.getCategoryClass());
+                if(parentTypes.size() == 1 || parentTypes.iterator().next().equals(object.getCategoryClass()))
                 {
-                    for (ConfiguredObject<?> grandchild : child.getChildren(childClass))
+                    child.addChangeListener(this);
+                    _store.update(true, child.asObjectRecord());
+
+                    Class<? extends ConfiguredObject> categoryClass = child.getCategoryClass();
+                    Collection<Class<? extends ConfiguredObject>> childTypes =
+                            model.getChildTypes(categoryClass);
+
+                    for (Class<? extends ConfiguredObject> childClass : childTypes)
                     {
-                        childAdded(child, grandchild);
+                        for (ConfiguredObject<?> grandchild : child.getChildren(childClass))
+                        {
+                            childAdded(child, grandchild);
+                        }
                     }
                 }
             }

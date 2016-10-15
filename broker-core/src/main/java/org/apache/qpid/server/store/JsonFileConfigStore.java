@@ -33,6 +33,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -298,13 +301,59 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
         }
         else
         {
-            data = build(_rootClass, rootId);
+            data = build(_rootClass, rootId, createChildMap());
         }
 
         save(data);
     }
 
-    private Map<String, Object> build(final Class<? extends ConfiguredObject> type, final UUID id)
+    private HashMap<UUID, Map<String, SortedSet<ConfiguredObjectRecord>>> createChildMap()
+    {
+        Model model = _parent.getModel();
+        HashMap<UUID, Map<String, SortedSet<ConfiguredObjectRecord>>> map = new HashMap<>();
+
+        for(ConfiguredObjectRecord record : _objectsById.values())
+        {
+            int parentCount = record.getParents().size();
+            if (parentCount == 0)
+            {
+                continue;
+            }
+            Collection<Class<? extends ConfiguredObject>> parentTypes =
+                    model.getParentTypes(_classNameMapping.get(record.getType()));
+            if (parentTypes != null && !parentTypes.isEmpty())
+            {
+
+                final Class<? extends ConfiguredObject> primaryParentCategory =
+                        parentTypes.iterator().next();
+
+                String parentCategoryName = primaryParentCategory.getSimpleName();
+
+                UUID parentId = record.getParents().get(parentCategoryName);
+
+                if (parentId != null)
+                {
+                    Map<String, SortedSet<ConfiguredObjectRecord>> childMap = map.get(parentId);
+                    if (childMap == null)
+                    {
+                        childMap = new TreeMap<>();
+                        map.put(parentId, childMap);
+                    }
+                    SortedSet<ConfiguredObjectRecord> children = childMap.get(record.getType());
+                    if (children == null)
+                    {
+                        children = new TreeSet<>(CONFIGURED_OBJECT_RECORD_COMPARATOR);
+                        childMap.put(record.getType(), children);
+                    }
+                    children.add(record);
+                }
+            }
+        }
+        return map;
+    }
+
+    private Map<String, Object> build(final Class<? extends ConfiguredObject> type, final UUID id,
+                                      Map<UUID, Map<String, SortedSet<ConfiguredObjectRecord>>> childMap)
     {
         ConfiguredObjectRecord record = _objectsById.get(id);
         Map<String,Object> map = new LinkedHashMap<String, Object>();
@@ -332,41 +381,24 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
 
         Collections.sort(childClasses, CATEGORY_CLASS_COMPARATOR);
 
-        for(Class<? extends ConfiguredObject> childClass : childClasses)
+        final Map<String, SortedSet<ConfiguredObjectRecord>> allChildren = childMap.get(id);
+        if(allChildren != null && !allChildren.isEmpty())
         {
-            // only add if this is the "first" parent
-            if(_parent.getModel().getParentTypes(childClass).iterator().next() == type)
+            for(Map.Entry<String, SortedSet<ConfiguredObjectRecord>> entry : allChildren.entrySet())
             {
-                String singularName = childClass.getSimpleName().toLowerCase();
+                String singularName = entry.getKey().toLowerCase();
                 String attrName = singularName + (singularName.endsWith("s") ? "es" : "s");
-                List<UUID> childIds = _idsByType.get(childClass.getSimpleName());
-                if(childIds != null)
+                final SortedSet<ConfiguredObjectRecord> sortedChildren = entry.getValue();
+                List<Map<String,Object>> entities = new ArrayList<Map<String, Object>>();
+
+                for(ConfiguredObjectRecord childRecord : sortedChildren)
                 {
-                    List<Map<String,Object>> entities = new ArrayList<Map<String, Object>>();
-                    List<ConfiguredObjectRecord> sortedChildren = new ArrayList<>();
-                    for(UUID childId : childIds)
-                    {
-                        ConfiguredObjectRecord childRecord = _objectsById.get(childId);
+                    entities.add(build(_classNameMapping.get(entry.getKey()), childRecord.getId(), childMap));
+                }
 
-                        final UUID parent = childRecord.getParents().get(type.getSimpleName());
-                        String parentId = parent.toString();
-                        if(id.toString().equals(parentId))
-                        {
-                            sortedChildren.add(childRecord);
-                        }
-                    }
-
-                    Collections.sort(sortedChildren, CONFIGURED_OBJECT_RECORD_COMPARATOR);
-
-                    for(ConfiguredObjectRecord childRecord : sortedChildren)
-                    {
-                        entities.add(build(childClass, childRecord.getId()));
-                    }
-
-                    if(!entities.isEmpty())
-                    {
-                        map.put(attrName,entities);
-                    }
+                if(!entities.isEmpty())
+                {
+                    map.put(attrName,entities);
                 }
             }
         }
