@@ -105,7 +105,10 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
             @Override
             public void performAction(final ProtocolEngine object)
             {
-                getScheduler().schedule(NonBlockingConnection.this);
+                if(!_scheduled.get())
+                {
+                    getScheduler().schedule(NonBlockingConnection.this);
+                }
             }
         });
 
