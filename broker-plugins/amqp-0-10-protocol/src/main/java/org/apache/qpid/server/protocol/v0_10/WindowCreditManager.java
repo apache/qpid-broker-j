@@ -71,37 +71,32 @@ public class WindowCreditManager extends AbstractFlowCreditManager implements Fl
     public synchronized void restoreCredit(final long messageCredit, final long bytesCredit)
     {
         _messageUsed -= messageCredit;
-        if(_messageUsed < 0L)
+        if (_messageUsed < 0L)
         {
-            LOGGER.error("Message credit used value was negative: "+ _messageUsed);
+            LOGGER.error("Message credit used value was negative: " + _messageUsed);
             _messageUsed = 0;
         }
 
         boolean notifyIncrease = true;
 
-        if(_messageCreditLimit > 0L)
+        if (_messageCreditLimit > 0L)
         {
             notifyIncrease = (_messageUsed != _messageCreditLimit);
         }
 
         _bytesUsed -= bytesCredit;
-        if(_bytesUsed < 0L)
+        if (_bytesUsed < 0L)
         {
-            LOGGER.error("Bytes credit used value was negative: "+ _bytesUsed);
+            LOGGER.error("Bytes credit used value was negative: " + _bytesUsed);
             _bytesUsed = 0;
         }
 
-        if(_bytesCreditLimit > 0L)
+        notifyIncrease = notifyIncrease && bytesCredit > 0 && _bytesCreditLimit > 0L ;
+
+        if (!setSuspended(!hasCredit()) && notifyIncrease)
         {
-            notifyIncrease = notifyIncrease && bytesCredit>0;
-
-            if(notifyIncrease)
-            {
-                notifyIncreaseBytesCredit();
-            }
+            notifyIncreaseBytesCredit();
         }
-
-        setSuspended(!hasCredit());
     }
 
 
