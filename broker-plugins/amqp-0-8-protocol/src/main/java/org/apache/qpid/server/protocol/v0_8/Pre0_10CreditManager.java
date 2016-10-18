@@ -106,15 +106,17 @@ public class Pre0_10CreditManager extends AbstractFlowCreditManager implements F
         {
             long newCredit = _bytesCredit + bytesCredit;
             _bytesCredit = newCredit > bytesCreditLimit ? bytesCreditLimit : newCredit;
-            if(notifyIncrease && bytesCredit>0)
-            {
-                notifyIncreaseBytesCredit();
-            }
+            notifyIncrease = notifyIncrease && bytesCredit>0 ;
+        }
+        else
+        {
+            notifyIncrease = false;
         }
 
-
-
-        setSuspended(!hasCredit());
+        if(!setSuspended(!hasCredit()) && notifyIncrease)
+        {
+            notifyIncreaseBytesCredit();
+        }
 
     }
 

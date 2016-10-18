@@ -59,12 +59,14 @@ public abstract class AbstractFlowCreditManager implements FlowCreditManager
         }
     }
 
-    protected final void setSuspended(final boolean suspended)
+    protected final boolean setSuspended(final boolean suspended)
     {
         if(_suspended.compareAndSet(!suspended, suspended))
         {
             notifyListeners(suspended);
+            return true;
         }
+        return false;
     }
 
     protected final void notifyIncreaseBytesCredit()
