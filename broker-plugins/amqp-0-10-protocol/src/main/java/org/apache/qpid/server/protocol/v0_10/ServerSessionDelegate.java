@@ -217,13 +217,8 @@ public class ServerSessionDelegate extends SessionDelegate
 
                 final Collection<MessageSource> sources = new HashSet<>();
                 final MessageSource queue = addressSpace.getAttainedMessageSource(queueName);
-                if(queue != null)
-                {
-                    sources.add(queue);
-                }
-                else if(getContextValue(session, Boolean.class, "qpid.enableMultiQueueConsumers")
-                        && method.getArguments() != null
-                        && method.getArguments().get("x-multiqueue") instanceof Collection)
+
+                if(method.getArguments() != null && method.getArguments().get("x-multiqueue") instanceof Collection)
                 {
                     for(Object object : (Collection<Object>)method.getArguments().get("x-multiqueue"))
                     {
@@ -244,6 +239,10 @@ public class ServerSessionDelegate extends SessionDelegate
                         }
                     }
                     queueName = method.getArguments().get("x-multiqueue").toString();
+                }
+                else if(queue != null)
+                {
+                    sources.add(queue);
                 }
 
                 if(sources.isEmpty())
@@ -306,13 +305,14 @@ public class ServerSessionDelegate extends SessionDelegate
 
                     }
 
-
+                    boolean multiQueue = sources.size()>1;
                     ConsumerTarget_0_10 target = new ConsumerTarget_0_10((ServerSession)session, destination,
-                                                                                 method.getAcceptMode(),
-                                                                                 method.getAcquireMode(),
-                                                                                 MessageFlowMode.WINDOW,
-                                                                                 creditManager,
-                                                                                 method.getArguments()
+                                                                         method.getAcceptMode(),
+                                                                         method.getAcquireMode(),
+                                                                         MessageFlowMode.WINDOW,
+                                                                         creditManager,
+                                                                         method.getArguments(),
+                                                                         multiQueue
                     );
 
                     Integer priority = null;

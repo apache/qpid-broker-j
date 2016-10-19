@@ -21,6 +21,7 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Collection;
 
 import org.slf4j.Logger;
@@ -33,6 +34,7 @@ import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.Target;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
@@ -40,6 +42,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Modified;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Released;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
@@ -67,22 +70,22 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     private Binary _transactionId;
     private final AMQPDescribedTypeRegistry _typeRegistry;
     private final SectionEncoder _sectionEncoder;
-    private ConsumerImpl _consumer;
     private boolean _queueEmpty;
 
     public ConsumerTarget_1_0(final SendingLink_1_0 link,
                               boolean acquires)
     {
-        super(State.SUSPENDED);
+        super(State.SUSPENDED, isPullOnly(link), false, link.getSession().getAMQPConnection());
         _link = link;
         _typeRegistry = link.getEndpoint().getSession().getConnection().getDescribedTypeRegistry();
         _sectionEncoder = new SectionEncoderImpl(_typeRegistry);
         _acquires = acquires;
     }
 
-    public ConsumerImpl getConsumer()
+    private static boolean isPullOnly(SendingLink_1_0 link)
     {
-        return _consumer;
+        Source source = (Source) link.getEndpoint().getSource();
+        return Arrays.asList(source.getCapabilities()).contains(Symbol.getSymbol("QPID:PULL-ONLY"));
     }
 
     private SendingLinkEndpoint getEndpoint()
@@ -94,12 +97,6 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     public boolean isFlowSuspended()
     {
         return _link.getSession().getAMQPConnection().isConnectionStopped() || getState() != State.ACTIVE;
-
-    }
-
-    @Override
-    protected void afterCloseInternal()
-    {
 
     }
 
@@ -212,7 +209,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                 else
                 {
                     UnsettledAction action = _acquires
-                            ? new DispositionAction(tag, entry)
+                            ? new DispositionAction(tag, entry, consumer)
                             : new DoNothingAction(tag, entry);
 
                     _link.addUnsettled(tag, action, entry);
@@ -239,7 +236,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
                             public void onRollback()
                             {
-                                entry.release(getConsumer());
+                                entry.release(consumer);
                                 _link.getEndpoint().updateDisposition(tag, (DeliveryState) null, true);
                             }
                         });
@@ -251,7 +248,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
             }
             else
             {
-                entry.release(getConsumer());
+                entry.release(consumer);
             }
 
         }
@@ -332,7 +329,10 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
     public void flush()
     {
-        _consumer.flush();
+        for(ConsumerImpl consumer : getConsumers())
+        {
+            consumer.flush();
+        }
     }
 
     private class DispositionAction implements UnsettledAction
@@ -340,11 +340,18 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
         private final MessageInstance _queueEntry;
         private final Binary _deliveryTag;
+        private final ConsumerImpl _consumer;
 
-        public DispositionAction(Binary tag, MessageInstance queueEntry)
+        public DispositionAction(Binary tag, MessageInstance queueEntry, final ConsumerImpl consumer)
         {
             _deliveryTag = tag;
             _queueEntry = queueEntry;
+            _consumer = consumer;
+        }
+
+        public ConsumerImpl getConsumer()
+        {
+            return _consumer;
         }
 
         public boolean process(DeliveryState state, final Boolean settled)
@@ -513,18 +520,6 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
         Target target = _link.getEndpoint().getTarget();
 
         return target instanceof org.apache.qpid.server.protocol.v1_0.type.messaging.Target ? ((org.apache.qpid.server.protocol.v1_0.type.messaging.Target) target).getAddress() : _link.getEndpoint().getName();
-    }
-
-    @Override
-    public void consumerAdded(final ConsumerImpl sub)
-    {
-        _consumer = sub;
-    }
-
-    @Override
-    public void consumerRemoved(final ConsumerImpl sub)
-    {
-        close();
     }
 
     @Override

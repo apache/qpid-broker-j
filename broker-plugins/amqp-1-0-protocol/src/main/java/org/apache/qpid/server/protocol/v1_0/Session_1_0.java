@@ -1581,7 +1581,11 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     {
         for(SendingLink_1_0 link : _sendingLinks)
         {
-            link.getConsumerTarget().notifyCurrentState();
+            ConsumerTarget_1_0 consumerTarget = link.getConsumerTarget();
+            if(!consumerTarget.isPullOnly())
+            {
+                consumerTarget.notifyCurrentState();
+            }
         }
     }
 

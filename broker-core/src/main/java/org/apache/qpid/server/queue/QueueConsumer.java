@@ -53,4 +53,6 @@ public interface QueueConsumer<X extends QueueConsumer<X>> extends Consumer<X>
     void awaitCredit(QueueEntry entry);
 
     boolean hasCredit();
+
+    boolean isPullOnly();
 }

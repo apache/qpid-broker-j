@@ -33,6 +33,10 @@ public interface ConsumerImpl
 
     ConsumerTarget getTarget();
 
+    boolean hasAvailableMessages();
+
+    void pullMessage();
+
     enum Option
     {
         ACQUIRES,

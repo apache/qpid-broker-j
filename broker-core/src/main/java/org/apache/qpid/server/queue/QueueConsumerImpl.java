@@ -120,7 +120,8 @@ class QueueConsumerImpl
     private int _priority;
 
     QueueConsumerImpl(final AbstractQueue<?> queue,
-                      ConsumerTarget target, final String consumerName,
+                      ConsumerTarget target,
+                      final String consumerName,
                       final FilterManager filters,
                       final Class<? extends ServerMessage> messageClass,
                       EnumSet<Option> optionSet,
@@ -157,14 +158,16 @@ class QueueConsumerImpl
         };
         _target.addStateListener(_listener);
 
-        _suspendedConsumerLoggingTicker = new SuspendedConsumerLoggingTicker(queue.getContextValue(Long.class, Consumer.SUSPEND_NOTIFICATION_PERIOD))
-        {
-            @Override
-            protected void log(final long period)
-            {
-                getEventLogger().message(getLogSubject(), SubscriptionMessages.STATE(period));
-            }
-        };
+        _suspendedConsumerLoggingTicker = target.isMultiQueue()
+                ? null
+                : new SuspendedConsumerLoggingTicker(queue.getContextValue(Long.class, Consumer.SUSPEND_NOTIFICATION_PERIOD))
+                    {
+                        @Override
+                        protected void log(final long period)
+                        {
+                            getEventLogger().message(getLogSubject(), SubscriptionMessages.STATE(period));
+                        }
+                    };
     }
 
     private static Map<String, Object> createAttributeMap(String name,
@@ -213,15 +216,17 @@ class QueueConsumerImpl
                 }
             }
 
-
-            if(newState == ConsumerTarget.State.SUSPENDED)
+            if(_suspendedConsumerLoggingTicker != null)
             {
-                _suspendedConsumerLoggingTicker.setStartTime(System.currentTimeMillis());
-                getSessionModel().addTicker(_suspendedConsumerLoggingTicker);
-            }
-            else
-            {
-                getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
+                if (newState == ConsumerTarget.State.SUSPENDED)
+                {
+                    _suspendedConsumerLoggingTicker.setStartTime(System.currentTimeMillis());
+                    getSessionModel().addTicker(_suspendedConsumerLoggingTicker);
+                }
+                else
+                {
+                    getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
+                }
             }
         }
 
@@ -257,7 +262,20 @@ class QueueConsumerImpl
     @Override
     public void externalStateChange()
     {
-        _queue.deliverAsync();
+        if(isPullOnly())
+        {
+            getSessionModel().getAMQPConnection().notifyWork();
+        }
+        else
+        {
+            _queue.deliverAsync();
+        }
+    }
+
+    @Override
+    public boolean hasAvailableMessages()
+    {
+        return !_queue.isEmpty() && _queue.hasAvailableMessages(this);
     }
 
     @Override
@@ -302,6 +320,10 @@ class QueueConsumerImpl
                 _target.consumerRemoved(this);
                 _target.removeStateChangeListener(_listener);
                 _queue.unregisterConsumer(this);
+                if(_suspendedConsumerLoggingTicker != null)
+                {
+                    getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
+                }
                 deleted();
             }
             finally
@@ -321,6 +343,12 @@ class QueueConsumerImpl
     public void flushBatched()
     {
         _target.flushBatched();
+    }
+
+    @Override
+    public boolean isPullOnly()
+    {
+        return _target.isPullOnly();
     }
 
     public void queueDeleted()
@@ -377,6 +405,22 @@ class QueueConsumerImpl
             connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(true);
             _queue.flushConsumer(this);
             _target.processPending();
+        }
+        finally
+        {
+            connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(false);
+        }
+
+    }
+
+    @Override
+    public void pullMessage()
+    {
+        AMQPConnection<?> connection = _target.getSessionModel().getAMQPConnection();
+        try
+        {
+            connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(true);
+            _queue.flushConsumer(this, 1);
         }
         finally
         {
@@ -661,7 +705,14 @@ class QueueConsumerImpl
             entry.addStateChangeListener(this);
             if(!entry.isAvailable())
             {
-                _queue.deliverAsync();
+                if(isPullOnly())
+                {
+                    getSessionModel().getAMQPConnection().notifyWork();
+                }
+                else
+                {
+                    _queue.deliverAsync();
+                }
                 remove();
             }
         }
@@ -681,7 +732,14 @@ class QueueConsumerImpl
         {
             entry.removeStateChangeListener(this);
             _entry.compareAndSet(entry, null);
-            _queue.deliverAsync();
+            if(isPullOnly())
+            {
+                getSessionModel().getAMQPConnection().notifyWork();
+            }
+            else
+            {
+                _queue.deliverAsync();
+            }
         }
 
     }

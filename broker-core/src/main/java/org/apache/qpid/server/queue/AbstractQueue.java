@@ -290,6 +290,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
     private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
     private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
+    private volatile boolean _hasPullOnlyConsumers;
 
     private interface HoldMethod
     {
@@ -945,6 +946,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         if (!isDeleted())
         {
+            if(consumer.isPullOnly())
+            {
+                _hasPullOnlyConsumers = true;
+            }
             _consumerList.add(consumer);
 
             if (isDeleted())
@@ -960,7 +965,14 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         childAdded(consumer);
         consumer.addChangeListener(_deletedChildListener);
 
-        deliverAsync();
+        if(consumer.isPullOnly())
+        {
+            consumer.getSessionModel().getAMQPConnection().notifyWork();
+        }
+        else
+        {
+            deliverAsync();
+        }
 
         return consumer;
     }
@@ -999,6 +1011,18 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             if(_messageGroupManager != null)
             {
                 resetSubPointersForGroups(consumer);
+            }
+
+            if(consumer.isPullOnly())
+            {
+                boolean hasOnlyPushConsumers = true;
+                ConsumerNode consumerNode = _consumerList.getHead().findNext();
+                while (consumerNode != null && hasOnlyPushConsumers)
+                {
+                    hasOnlyPushConsumers = !consumerNode.getConsumer().isPullOnly();
+                    consumerNode = consumerNode.findNext();
+                }
+                _hasPullOnlyConsumers = !hasOnlyPushConsumers;
             }
 
             // auto-delete queues must be deleted if there are no remaining subscribers
@@ -1071,7 +1095,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 updateSubRequeueEntry(sub, entry);
             }
         }
-
+        notifyPullOnlyConsumers();
         deliverAsync();
     }
 
@@ -1224,7 +1248,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             if (entry.isAvailable())
             {
                 checkConsumersNotAheadOfDelivery(entry);
-
+                notifyPullOnlyConsumers();
                 deliverAsync();
             }
 
@@ -1518,7 +1542,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 updateSubRequeueEntry(sub, entry);
             }
         }
-
+        notifyPullOnlyConsumers();
         deliverAsync();
 
     }
@@ -1713,9 +1737,16 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             if (oldState != State.ACTIVE)
             {
                 _activeSubscriberCount.incrementAndGet();
+                if(sub.isPullOnly())
+                {
+                    sub.getSessionModel().getAMQPConnection().notifyWork();
+                }
 
             }
-            deliverAsync();
+            if(!sub.isPullOnly())
+            {
+                deliverAsync();
+            }
         }
     }
 
@@ -2138,6 +2169,23 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     }
 
+    void notifyPullOnlyConsumers()
+    {
+        if(_hasPullOnlyConsumers)
+        {
+            ConsumerNode consumerNode = _consumerList.getHead().findNext();
+            while (consumerNode != null)
+            {
+                QueueConsumer<?> consumer = consumerNode.getConsumer();
+                if (consumer.isActive() && consumer.isPullOnly() && getNextAvailableEntry(consumer) != null)
+                {
+                    consumer.getSessionModel().getAMQPConnection().notifyWork();
+                }
+                consumerNode = consumerNode.findNext();
+            }
+        }
+    }
+
     void flushConsumer(QueueConsumer<?> sub)
     {
 
@@ -2384,6 +2432,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+
+    boolean hasAvailableMessages(final QueueConsumer queueConsumer)
+    {
+        return getNextAvailableEntry(queueConsumer) != null;
+    }
+
     /**
      * Used by queue Runners to asynchronously deliver messages to consumers.
      *
@@ -2450,44 +2504,46 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
                 QueueConsumer<?> sub = consumerNodeIterator.getNode().getConsumer();
 
-                sub.getSendLock();
-
-                try
+                if(!sub.isPullOnly())
                 {
-                    for(int i = 0 ; i < perSub; i++)
+                    sub.getSendLock();
+
+                    try
                     {
-                        //attempt delivery. returns true if no further delivery currently possible to this sub
-                        consumerDone = attemptDelivery(sub, true);
-                        if (consumerDone)
+                        for (int i = 0; i < perSub; i++)
                         {
-                            sub.flushBatched();
-                            boolean noMore = getNextAvailableEntry(sub) == null;
-                            if (lastLoop && noMore)
-                            {
-                                sub.queueEmpty();
-                            }
-                            break;
-                        }
-                        else
-                        {
-                            //this consumer can accept additional deliveries, so we must
-                            //keep going after this (if iteration slicing allows it)
-                            allConsumersDone = false;
-                            lastLoop = false;
-                            if(--iterations == 0)
+                            //attempt delivery. returns true if no further delivery currently possible to this sub
+                            consumerDone = attemptDelivery(sub, true);
+                            if (consumerDone)
                             {
                                 sub.flushBatched();
+                                boolean noMore = getNextAvailableEntry(sub) == null;
+                                if (lastLoop && noMore)
+                                {
+                                    sub.queueEmpty();
+                                }
                                 break;
+                            }
+                            else
+                            {
+                                //this consumer can accept additional deliveries, so we must
+                                //keep going after this (if iteration slicing allows it)
+                                allConsumersDone = false;
+                                lastLoop = false;
+                                if (--iterations == 0)
+                                {
+                                    sub.flushBatched();
+                                    break;
+                                }
                             }
                         }
 
+                        sub.flushBatched();
                     }
-
-                    sub.flushBatched();
-                }
-                finally
-                {
-                    sub.releaseSendLock();
+                    finally
+                    {
+                        sub.releaseSendLock();
+                    }
                 }
             }
 

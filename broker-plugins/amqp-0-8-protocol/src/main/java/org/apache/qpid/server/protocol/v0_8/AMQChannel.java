@@ -103,7 +103,6 @@ import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.LocalTransaction.ActivityTimeAccessor;
@@ -728,20 +727,20 @@ public class AMQChannel
 
         ConsumerTarget_0_8 target;
         EnumSet<ConsumerImpl.Option> options = EnumSet.noneOf(ConsumerImpl.Option.class);
-
+        final boolean multiQueue = sources.size()>1;
         if(arguments != null && Boolean.TRUE.equals(arguments.get(AMQPFilterTypes.NO_CONSUME.getValue())))
         {
-            target = ConsumerTarget_0_8.createBrowserTarget(this, tag, arguments, _noAckCreditManager);
+            target = ConsumerTarget_0_8.createBrowserTarget(this, tag, arguments, _noAckCreditManager, multiQueue);
         }
         else if(acks)
         {
-            target = ConsumerTarget_0_8.createAckTarget(this, tag, arguments, _creditManager);
+            target = ConsumerTarget_0_8.createAckTarget(this, tag, arguments, _creditManager, multiQueue);
             options.add(ConsumerImpl.Option.ACQUIRES);
             options.add(ConsumerImpl.Option.SEES_REQUEUES);
         }
         else
         {
-            target = ConsumerTarget_0_8.createNoAckTarget(this, tag, arguments, _noAckCreditManager);
+            target = ConsumerTarget_0_8.createNoAckTarget(this, tag, arguments, _noAckCreditManager, multiQueue);
             options.add(ConsumerImpl.Option.ACQUIRES);
             options.add(ConsumerImpl.Option.SEES_REQUEUES);
         }
@@ -1416,7 +1415,7 @@ public class AMQChannel
     }
 
     @Override
-    public AMQPConnection<?> getAMQPConnection()
+    public AMQPConnection_0_8 getAMQPConnection()
     {
         return _connection;
     }
@@ -2142,13 +2141,8 @@ public class AMQChannel
 
         MessageSource queue1 = queueName == null ? getDefaultQueue() : vHost.getAttainedMessageSource(queueName);
         final Collection<MessageSource> sources = new HashSet<>();
-        if (queue1 != null)
-        {
-            sources.add(queue1);
-        }
-        else if (_connection.getContextProvider().getContextValue(Boolean.class, "qpid.enableMultiQueueConsumers")
-                 && arguments != null
-                 && arguments.get("x-multiqueue") instanceof Collection)
+
+        if (arguments != null && arguments.get("x-multiqueue") instanceof Collection)
         {
             for (Object object : (Collection<Object>) arguments.get("x-multiqueue"))
             {
@@ -2170,6 +2164,11 @@ public class AMQChannel
             }
             queueName = arguments.get("x-multiqueue").toString();
         }
+        else if (queue1 != null)
+        {
+            sources.add(queue1);
+        }
+
 
         if (sources.isEmpty())
         {
@@ -3822,7 +3821,10 @@ public class AMQChannel
     {
         for(ConsumerTarget_0_8 consumerTarget : getConsumerTargets())
         {
-            consumerTarget.notifyCurrentState();
+            if(!consumerTarget.isPullOnly())
+            {
+                consumerTarget.notifyCurrentState();
+            }
         }
     }
 

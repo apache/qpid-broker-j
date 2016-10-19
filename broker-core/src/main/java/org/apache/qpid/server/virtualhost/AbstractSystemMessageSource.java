@@ -140,6 +140,18 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
+        public boolean hasAvailableMessages()
+        {
+            return !_queue.isEmpty();
+        }
+
+        @Override
+        public void pullMessage()
+        {
+
+        }
+
+        @Override
         public long getBytesOut()
         {
             return 0;

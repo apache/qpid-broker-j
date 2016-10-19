@@ -154,9 +154,9 @@ public class MockConsumer implements ConsumerTarget
     }
 
     @Override
-    public void sendNextMessage()
+    public boolean sendNextMessage()
     {
-
+        return false;
     }
 
     public void flushBatched()
@@ -278,6 +278,17 @@ public class MockConsumer implements ConsumerTarget
         _stateChangeLock.unlock();
     }
 
+    @Override
+    public boolean isPullOnly()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean isMultiQueue()
+    {
+        return false;
+    }
 
     private static class MockSessionModel implements AMQSessionModel<MockSessionModel>
     {

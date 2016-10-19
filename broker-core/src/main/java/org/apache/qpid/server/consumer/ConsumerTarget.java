@@ -41,6 +41,8 @@ public interface ConsumerTarget
 
     boolean hasCredit();
 
+    boolean isMultiQueue();
+
     enum State
     {
         ACTIVE, SUSPENDED, CLOSED
@@ -66,7 +68,7 @@ public interface ConsumerTarget
 
     boolean hasMessagesToSend();
 
-    void sendNextMessage();
+    boolean sendNextMessage();
 
     void flushBatched();
 
@@ -87,5 +89,7 @@ public interface ConsumerTarget
     void getSendLock();
 
     void releaseSendLock();
+
+    boolean isPullOnly();
 
 }
