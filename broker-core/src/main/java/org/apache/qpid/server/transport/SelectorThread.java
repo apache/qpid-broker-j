@@ -332,13 +332,16 @@ class SelectorThread extends Thread
                         {
                             clearSelecting();
                         }
-                        _workQueue.addAll(connections);
-                        _workQueue.add(this);
-                        for (ConnectionProcessor connectionProcessor : connections)
-                        {
-                            connectionProcessor.processConnection();
-                        }
 
+                        if (!connections.isEmpty())
+                        {
+                            _workQueue.addAll(connections);
+                            _workQueue.add(this);
+                            for (ConnectionProcessor connectionProcessor : connections)
+                            {
+                                connectionProcessor.processConnection();
+                            }
+                        }
                     }
                     else
                     {
