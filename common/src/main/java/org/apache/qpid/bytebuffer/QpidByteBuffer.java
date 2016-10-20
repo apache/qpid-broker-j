@@ -804,6 +804,11 @@ public class QpidByteBuffer
         _isPoolInitialized = true;
     }
 
+    public static int getPooledBufferSize()
+    {
+        return _pooledBufferSize;
+    }
+
     private static final class BufferInputStream extends InputStream
     {
         private final QpidByteBuffer _qpidByteBuffer;
