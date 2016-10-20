@@ -36,10 +36,12 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -431,8 +433,9 @@ class SelectorThread extends Thread
         _selectionTasks[0].wakeup();
     }
 
-    public void cancelAcceptingSocket(final ServerSocketChannel socketChannel)
+    public Future<Void> cancelAcceptingSocket(final ServerSocketChannel socketChannel)
     {
+        final SettableFuture<Void> cancellationResult = SettableFuture.create();
         _tasks.add(new Runnable()
         {
             @Override
@@ -443,14 +446,33 @@ class SelectorThread extends Thread
                     LOGGER.debug("Cancelling selector on accepting port {} ",
                                  socketChannel.socket().getLocalSocketAddress());
                 }
-                SelectionKey selectionKey = socketChannel.keyFor(_selectionTasks[0].getSelector());
-                if (selectionKey != null)
+
+                try
                 {
-                    selectionKey.cancel();
+                    SelectionKey selectionKey = null;
+                    try
+                    {
+                        selectionKey = socketChannel.register(_selectionTasks[0].getSelector(), 0);
+                    }
+                    catch (ClosedChannelException e)
+                    {
+                        LOGGER.error("Failed to deregister selector on accepting port {}",
+                                     socketChannel.socket().getLocalSocketAddress(), e);
+                    }
+
+                    if (selectionKey != null)
+                    {
+                        selectionKey.cancel();
+                    }
+                }
+                finally
+                {
+                    cancellationResult.set(null);
                 }
             }
         });
         _selectionTasks[0].wakeup();
+        return cancellationResult;
     }
 
     @Override
