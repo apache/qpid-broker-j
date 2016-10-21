@@ -32,9 +32,12 @@ public class AggregateTicker implements Ticker, SchedulingDelayNotificationListe
     public int getTimeToNextTick(final long currentTime)
     {
         int nextTick = Integer.MAX_VALUE;
-        for(Ticker ticker : _tickers)
+        if (!_tickers.isEmpty())
         {
-            nextTick = Math.min(ticker.getTimeToNextTick(currentTime), nextTick);
+            for (Ticker ticker : _tickers)
+            {
+                nextTick = Math.min(ticker.getTimeToNextTick(currentTime), nextTick);
+            }
         }
         return nextTick;
     }
@@ -68,11 +71,14 @@ public class AggregateTicker implements Ticker, SchedulingDelayNotificationListe
     @Override
     public void notifySchedulingDelay(final long schedulingDelay)
     {
-        for (Ticker ticker : _tickers)
+        if (!_tickers.isEmpty())
         {
-            if (ticker instanceof SchedulingDelayNotificationListener)
+            for (Ticker ticker : _tickers)
             {
-                ((SchedulingDelayNotificationListener) ticker).notifySchedulingDelay(schedulingDelay);
+                if (ticker instanceof SchedulingDelayNotificationListener)
+                {
+                    ((SchedulingDelayNotificationListener) ticker).notifySchedulingDelay(schedulingDelay);
+                }
             }
         }
     }

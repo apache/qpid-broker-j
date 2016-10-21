@@ -68,8 +68,8 @@ import org.apache.qpid.server.plugin.SystemNodeCreator;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.CompoundAccessControl;
 import org.apache.qpid.server.security.Result;
-import org.apache.qpid.server.security.SecurityToken;
-import org.apache.qpid.server.security.access.Operation;
+import org.apache.qpid.server.security.SubjectFixedResultAccessControl;
+import org.apache.qpid.server.security.SubjectFixedResultAccessControl.ResultCalculator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.SimpleAuthenticationManager;
@@ -97,44 +97,14 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     public static final String MANAGEMENT_MODE_AUTHENTICATION = "MANAGEMENT_MODE_AUTHENTICATION";
 
-    private final AccessControl<SecurityToken> _systemUserAllowed = new AccessControl<SecurityToken>()
+    private final AccessControl _systemUserAllowed = new SubjectFixedResultAccessControl(new ResultCalculator()
     {
         @Override
-        public Result getDefault()
+        public Result getResult(final Subject subject)
         {
-            return Result.DEFER;
+            return isSystemSubject(subject) ? Result.ALLOWED : Result.DEFER;
         }
-
-        @Override
-        public SecurityToken newToken()
-        {
-            return null;
-        }
-
-        @Override
-        public SecurityToken newToken(final Subject subject)
-        {
-            return null;
-        }
-
-        @Override
-        public Result authorise(final SecurityToken token,
-                                final Operation operation,
-                                final PermissionedObject configuredObject)
-        {
-            return isSystemProcess() ? Result.ALLOWED : Result.DEFER;
-        }
-
-        @Override
-        public Result authorise(final SecurityToken token,
-                                final Operation operation,
-                                final PermissionedObject configuredObject,
-                                final Map<String, Object> arguments)
-        {
-            return isSystemProcess() ? Result.ALLOWED : Result.DEFER;
-        }
-    };
-
+    }, Result.DEFER);
 
     private final BrokerPrincipal _principal;
 

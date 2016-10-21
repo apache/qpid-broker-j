@@ -2994,7 +2994,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return isSystemSubject(subject);
     }
 
-    private boolean isSystemSubject(final Subject subject)
+    protected boolean isSystemSubject(final Subject subject)
     {
         return subject != null  && subject.getPrincipals().contains(getSystemPrincipal());
     }

@@ -39,62 +39,52 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
         super(false, methodProcessor);
     }
 
-    public void decodeBuffer(ByteBuffer buf)
-            throws AMQFrameDecodingException, AMQProtocolVersionException
+    public void decodeBuffer(ByteBuffer incomingBuffer) throws AMQFrameDecodingException, AMQProtocolVersionException
     {
-
-        buf = buf.slice();
-
-        if(_incompleteBuffer != null)
+        if (_incompleteBuffer == null)
         {
-            if(buf.remaining() < _incompleteBuffer.remaining())
+            QpidByteBuffer qpidByteBuffer = QpidByteBuffer.wrap(incomingBuffer);
+            final int required = decode(qpidByteBuffer);
+            if (required != 0)
             {
-                _incompleteBuffer.put(buf);
-                return;
+                _incompleteBuffer = QpidByteBuffer.allocate(qpidByteBuffer.remaining() + required);
+                _incompleteBuffer.put(qpidByteBuffer);
+            }
+            qpidByteBuffer.dispose();
+        }
+        else
+        {
+            if (incomingBuffer.remaining() < _incompleteBuffer.remaining())
+            {
+                _incompleteBuffer.put(incomingBuffer);
             }
             else
             {
-                final ByteBuffer start = buf.duplicate();
-                start.limit(_incompleteBuffer.remaining());
-                buf.position(buf.position()+_incompleteBuffer.remaining());
-                _incompleteBuffer.put(start);
                 _incompleteBuffer.flip();
-                final int required = decode(_incompleteBuffer);
+                final QpidByteBuffer aggregatedBuffer =
+                        QpidByteBuffer.allocate(_incompleteBuffer.remaining() + incomingBuffer.remaining());
+                aggregatedBuffer.put(_incompleteBuffer);
+                aggregatedBuffer.put(incomingBuffer);
+                aggregatedBuffer.flip();
+                final int required = decode(aggregatedBuffer);
 
-                if(required != 0)
+                _incompleteBuffer.dispose();
+                if (required != 0)
                 {
-                    QpidByteBuffer newBuffer = QpidByteBuffer.allocate(required + _incompleteBuffer.remaining());
-                    newBuffer.put(_incompleteBuffer);
-                    _incompleteBuffer.dispose();
-                    _incompleteBuffer = newBuffer;
-                    if(buf.hasRemaining())
-                    {
-                        decodeBuffer(buf);
-                    }
-                    return;
+                    _incompleteBuffer = QpidByteBuffer.allocate(aggregatedBuffer.remaining() + required);
+                    _incompleteBuffer.put(aggregatedBuffer);
                 }
                 else
                 {
-                    _incompleteBuffer.dispose();
                     _incompleteBuffer = null;
-                    if(!buf.hasRemaining())
-                    {
-                        return;
-                    }
                 }
+                aggregatedBuffer.dispose();
             }
         }
-
-        QpidByteBuffer qpidByteBuffer = QpidByteBuffer.wrap(buf);
-        final int required = decode(qpidByteBuffer);
-        if(required != 0)
-        {
-            _incompleteBuffer = QpidByteBuffer.allocate(qpidByteBuffer.remaining()+required);
-            _incompleteBuffer.put(qpidByteBuffer);
-        }
-
+        // post-condition: assert(!incomingBuffer.hasRemaining());
     }
 
+    @Override
     void processMethod(int channelId,
                        QpidByteBuffer in)
             throws AMQFrameDecodingException
