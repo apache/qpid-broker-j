@@ -83,6 +83,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         implements Exchange<T>
 {
     private static final Logger _logger = LoggerFactory.getLogger(AbstractExchange.class);
+    private static final Operation PUBLISH_ACTION = Operation.ACTION("publish");
     private final AtomicBoolean _closed = new AtomicBoolean();
 
     @ManagedAttributeField(beforeSet = "preSetAlternateExchange", afterSet = "postSetAlternateExchange" )
@@ -956,6 +957,6 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     public void authorisePublish(final SecurityToken token, final Map<String, Object> arguments)
             throws AccessControlException
     {
-        authorise(token, Operation.ACTION("publish"), arguments);
+        authorise(token, PUBLISH_ACTION, arguments);
     }
 }

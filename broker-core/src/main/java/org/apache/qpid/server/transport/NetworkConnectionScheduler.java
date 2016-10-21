@@ -38,6 +38,7 @@ public class NetworkConnectionScheduler
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkConnectionScheduler.class);
     private final ThreadFactory _factory;
+    private final String _selectorThreadName;
     private volatile ThreadPoolExecutor _executor;
     private final AtomicInteger _running = new AtomicInteger();
     private final int _poolSize;
@@ -89,6 +90,7 @@ public class NetworkConnectionScheduler
         _threadKeepAliveTimeout = threadKeepAliveTimeout;
         _factory = factory;
         _numberOfSelectors = numberOfSelectors;
+        _selectorThreadName = "Selector-"+name;
     }
 
 
@@ -187,6 +189,11 @@ public class NetworkConnectionScheduler
     public String getName()
     {
         return _name;
+    }
+
+    public String getSelectorThreadName()
+    {
+        return _selectorThreadName;
     }
 
     public void addAcceptingSocket(final ServerSocketChannel serverSocket,

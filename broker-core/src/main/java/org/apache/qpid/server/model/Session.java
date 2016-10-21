@@ -37,6 +37,18 @@ public interface Session<X extends Session<X>> extends ConfiguredObject<X>
                            description = "Frequency, in milliseconds, with which transaction timeout warnings will be repeated.")
     long TRANSACTION_TIMEOUT_NOTIFICATION_REPEAT_PERIOD_DEFAULT = 10000;
 
+    String PRODUCER_AUTH_CACHE_SIZE = "producer.authCacheSize";
+    @ManagedContextDefault(name = PRODUCER_AUTH_CACHE_SIZE,
+                           description = "Maximum number of distinct destinations for which a cached auth value may be held")
+    int PRODUCER_AUTH_CACHE_SIZE_DEFAULT = 20;
+
+
+    String PRODUCER_AUTH_CACHE_TIMEOUT = "producer.authCacheTimeout";
+    @ManagedContextDefault(name = PRODUCER_AUTH_CACHE_TIMEOUT,
+            description = "Maximum time, in milliseconds, for which a cached auth value may be retained")
+    long PRODUCER_AUTH_CACHE_TIMEOUT_DEFAULT = 300000L;
+
+
     @DerivedAttribute
     int getChannelId();
 

@@ -142,6 +142,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private static final long INITIAL_TARGET_QUEUE_SIZE = 102400l;
     private static final String UTF8 = StandardCharsets.UTF_8.name();
+    private static final Operation PUBLISH_ACTION = Operation.ACTION("publish");
 
     private final VirtualHost<?> _virtualHost;
     private final DeletedChildListener _deletedChildListener = new DeletedChildListener();
@@ -3571,7 +3572,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public void authorisePublish(final SecurityToken token, final Map<String, Object> arguments)
             throws AccessControlException
     {
-        authorise(token, Operation.ACTION("publish"), arguments);
+        authorise(token, PUBLISH_ACTION, arguments);
     }
 
     private class DeletedChildListener extends AbstractConfigurationChangeListener

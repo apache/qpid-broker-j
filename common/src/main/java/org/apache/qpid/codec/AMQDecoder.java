@@ -108,11 +108,7 @@ public abstract class AMQDecoder<T extends MethodProcessor>
         {
             if(!_expectProtocolInitiation)
             {
-                required = decodable(buf);
-                if (required == 0)
-                {
-                    processInput(buf);
-                }
+                required = processAMQPFrames(buf);
             }
             else
             {
@@ -127,8 +123,17 @@ public abstract class AMQDecoder<T extends MethodProcessor>
         return buf.hasRemaining() ? required : 0;
     }
 
+    protected int processAMQPFrames(final QpidByteBuffer buf) throws AMQFrameDecodingException
+    {
+        final int required = decodable(buf);
+        if (required == 0)
+        {
+            processInput(buf);
+        }
+        return required;
+    }
 
-    private int decodable(final QpidByteBuffer in) throws AMQFrameDecodingException
+    protected int decodable(final QpidByteBuffer in) throws AMQFrameDecodingException
     {
         final int remainingAfterAttributes = in.remaining() - FRAME_HEADER_SIZE;
         // type, channel, body length and end byte
@@ -154,7 +159,7 @@ public abstract class AMQDecoder<T extends MethodProcessor>
 
     }
 
-    private void processInput(final QpidByteBuffer in)
+    protected void processInput(final QpidByteBuffer in)
             throws AMQFrameDecodingException, AMQProtocolVersionException
     {
         final byte type = in.get();

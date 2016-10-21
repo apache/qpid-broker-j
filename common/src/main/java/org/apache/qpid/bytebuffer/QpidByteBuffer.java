@@ -93,6 +93,12 @@ public class QpidByteBuffer
         return ((int) getShort()) & 0xffff;
     }
 
+    public final int getUnsignedShort(int pos)
+    {
+        return ((int) getShort(pos)) & 0xffff;
+    }
+
+
     public final long getUnsignedInt()
     {
         return ((long) getInt()) & 0xffffffffL;
@@ -380,7 +386,6 @@ public class QpidByteBuffer
     public final short getShort()
     {
         return _buffer.getShort();
-
     }
 
     public final float getFloat()

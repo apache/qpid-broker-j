@@ -459,7 +459,7 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public Map<String, Object> exportConfig(boolean includeSecureAttributes)
+    public Map<String, Object> extractConfig(boolean includeSecureAttributes)
     {
         return Collections.emptyMap();
     }

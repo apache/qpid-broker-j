@@ -60,43 +60,12 @@ public class BrokerDecoder extends ServerDecoder
                 startTime = System.currentTimeMillis();
             }
             AMQChannel channel = _connection.getChannel(channelId);
-            if(channel == null)
-            {
-                doProcessFrame(channelId, type, bodySize, in);
-            }
-            else
+            if(channel != null)
             {
                 _connection.channelRequiresSync(channel);
-
-                try
-                {
-                    AccessController.doPrivileged(new PrivilegedExceptionAction<Object>()
-                    {
-                        @Override
-                        public Void run() throws IOException, AMQFrameDecodingException
-                        {
-                            doProcessFrame(channelId, type, bodySize, in);
-                            return null;
-                        }
-                    }, channel.getAccessControllerContext());
-                }
-                catch (PrivilegedActionException e)
-                {
-                    Throwable cause = e.getCause();
-                    if(cause instanceof AMQFrameDecodingException)
-                    {
-                        throw (AMQFrameDecodingException) cause;
-                    }
-                    else if(cause instanceof RuntimeException)
-                    {
-                        throw (RuntimeException) cause;
-                    }
-                    else
-                    {
-                        throw new ServerScopedRuntimeException(cause);
-                    }
-                }
             }
+            doProcessFrame(channelId, type, bodySize, in);
+
         }
         finally
         {
@@ -107,6 +76,66 @@ public class BrokerDecoder extends ServerDecoder
         }
     }
 
+    @Override
+    protected int processAMQPFrames(final QpidByteBuffer buf) throws AMQFrameDecodingException
+    {
+        int required = decodable(buf);
+        if (required == 0)
+        {
+            final int channelId = buf.getUnsignedShort(buf.position() + 1);
+            final AMQChannel channel = _connection.getChannel(channelId);
+
+            if (channel == null)
+            {
+                processInput(buf);
+                return 0;
+            }
+
+            else
+            {
+                try
+                {
+                    return AccessController.doPrivileged(new PrivilegedExceptionAction<Integer>()
+                    {
+                        @Override
+                        public Integer run() throws IOException, AMQFrameDecodingException
+                        {
+                            int required;
+                            while (true)
+                            {
+                                processInput(buf);
+
+                                required = decodable(buf);
+                                if (required != 0 || buf.getUnsignedShort(buf.position() + 1) != channelId)
+                                {
+                                    break;
+                                }
+                            }
+
+                            return required;
+                        }
+                    }, channel.getAccessControllerContext());
+                }
+                catch (PrivilegedActionException e)
+                {
+                    Throwable cause = e.getCause();
+                    if (cause instanceof AMQFrameDecodingException)
+                    {
+                        throw (AMQFrameDecodingException) cause;
+                    }
+                    else if (cause instanceof RuntimeException)
+                    {
+                        throw (RuntimeException) cause;
+                    }
+                    else
+                    {
+                        throw new ServerScopedRuntimeException(cause);
+                    }
+                }
+            }
+        }
+        return required;
+    }
 
     private void doProcessFrame(final int channelId, final byte type, final long bodySize, final QpidByteBuffer in)
             throws AMQFrameDecodingException

@@ -825,7 +825,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public Map<String, Object> exportConfig(final boolean includeSecureAttributes)
+    public Map<String, Object> extractConfig(final boolean includeSecureAttributes)
     {
         return doSync(doOnConfigThread(new Task<ListenableFuture<Map<String,Object>>, RuntimeException>()
         {
@@ -847,7 +847,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             @Override
             public String getAction()
             {
-                return "exportConfig";
+                return "extractConfig";
             }
 
             @Override
