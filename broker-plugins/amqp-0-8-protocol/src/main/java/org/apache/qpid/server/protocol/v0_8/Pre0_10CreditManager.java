@@ -90,12 +90,14 @@ public class Pre0_10CreditManager extends AbstractFlowCreditManager implements F
                     _bytesCreditLimit));
         }
 
-        if (_bytesCreditLimit != 0 && _bytesCredit > 0 && bytesCredit > 0 && hadCredit)
+        boolean suspended = !hasCredit();
+        if(!setSuspended(suspended))
         {
-            notifyIncreaseBytesCredit();
+            if (!suspended && _bytesCreditLimit != 0 && _bytesCredit > 0 && bytesCredit > 0 && hadCredit)
+            {
+                notifyIncreaseBytesCredit();
+            }
         }
-
-        setSuspended(!hasCredit());
     }
 
     public synchronized boolean hasCredit()

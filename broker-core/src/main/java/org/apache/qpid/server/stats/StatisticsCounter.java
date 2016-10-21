@@ -18,11 +18,11 @@
  */
 package org.apache.qpid.server.stats;
 
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Date;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This class collects statistics and counts the total, rate per second and
@@ -36,15 +36,7 @@ public class StatisticsCounter
 
     private static final String COUNTER = "counter";
     private static final AtomicLong _counterIds = new AtomicLong(0L);
-    
-    private long _peak = 0L;
-    private long _total = 0L;
-    private long _temp = 0L;
-    private long _last = 0L;
-    private long _rate = 0L;
 
-    private long _start;
-    
     private final long _period;
     private final String _name;
 
@@ -63,10 +55,91 @@ public class StatisticsCounter
         _period = period;
         _name = name + "-" + + _counterIds.incrementAndGet();
 
-        _start = System.currentTimeMillis();
-        _last = _start / _period;
+        _currentSample.set(new Sample(period));
     }
-    
+
+    private static final class Sample
+    {
+        private final long _sampleId;
+        private final AtomicLong _count = new AtomicLong();
+        private final AtomicLong _total;
+        private final long _peak;
+        private final long _lastRate;
+        private final long _start;
+        private final long _period;
+
+        private Sample(final long period)
+        {
+            _period = period;
+            _total = new AtomicLong();
+            _peak = 0L;
+            _lastRate = 0L;
+            _start = System.currentTimeMillis();
+            _sampleId = _start / period;
+
+        }
+
+        private Sample(final long timestamp, Sample priorSample)
+        {
+            _period = priorSample._period;
+            _sampleId = timestamp / _period;
+            _total = priorSample._total;
+            _peak = priorSample.getRate() > priorSample.getPeak() ? priorSample.getRate() : priorSample.getPeak();
+            _lastRate = priorSample.getRate();
+            _start = priorSample._start;
+        }
+
+        public long getTotal()
+        {
+            return _total.get();
+        }
+
+        public long getRate()
+        {
+            return _count.get();
+        }
+
+        public long getPeak()
+        {
+            return _peak;
+        }
+
+        public long getLastRate()
+        {
+            return _lastRate;
+        }
+
+        public long getStart()
+        {
+            return _start;
+        }
+
+        public boolean add(final long value, final long timestamp)
+        {
+            if(timestamp >= _start)
+            {
+                long eventSampleId = timestamp / _period;
+                if(eventSampleId > _sampleId)
+                {
+                    return false;
+                }
+                _total.addAndGet(value);
+                if(eventSampleId == _sampleId)
+                {
+                    _count.addAndGet(value);
+                }
+                return true;
+            }
+            else
+            {
+                // ignore - event occurred before reset;
+                return true;
+            }
+        }
+    }
+
+    private AtomicReference<Sample> _currentSample = new AtomicReference<>();
+
 
     public void registerEvent(long value)
     {
@@ -75,22 +148,12 @@ public class StatisticsCounter
 
     public void registerEvent(long value, long timestamp)
     {
-        long thisSample = (timestamp / _period);
-        synchronized (this)
+        Sample currentSample;
+
+        while(!(currentSample = getSample()).add(value, timestamp))
         {
-            if (thisSample > _last)
-            {
-                _last = thisSample;
-                _rate = _temp;
-                _temp = 0L;
-                if (_rate > _peak)
-                {
-                    _peak = _rate;
-                }
-            }
-            
-            _total += value;
-            _temp += value;
+            Sample nextSample = new Sample(timestamp, currentSample);
+            _currentSample.compareAndSet(currentSample, nextSample);
         }
     }
     
@@ -109,40 +172,37 @@ public class StatisticsCounter
     public void reset()
     {
         _log.info("Resetting statistics for counter: " + _name);
-        _peak = 0L;
-        _rate = 0L;
-        _total = 0L;
-        _start = System.currentTimeMillis();
-        _last = _start / _period;
+
+        _currentSample.set(new Sample(_period));
     }
 
     public double getPeak()
     {
         update();
-        return (double) _peak / ((double) _period / 1000.0d);
+        return (double) getSample().getPeak() / ((double) _period / 1000.0d);
+    }
+
+    private Sample getSample()
+    {
+        return _currentSample.get();
     }
 
     public double getRate()
     {
         update();
-        return (double) _rate / ((double) _period / 1000.0d);
+        return (double) getSample().getLastRate() / ((double) _period / 1000.0d);
     }
 
     public long getTotal()
     {
-        return _total;
+        return getSample().getTotal();
     }
 
     public long getStart()
     {
-        return _start;
+        return getSample().getStart();
     }
 
-    public Date getStartTime()
-    {
-        return new Date(_start);
-    }
-    
     public String getName()
     {
         return _name;

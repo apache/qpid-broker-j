@@ -87,9 +87,9 @@ public abstract class NonBlockingConnection implements SchedulableConnection
             public void performAction(final ProtocolEngine object)
             {
                 NetworkConnectionScheduler scheduler = getScheduler();
-                if(scheduler != null)
+                if(scheduler != null && !_scheduled.get())
                 {
-                    scheduler.schedule(NonBlockingConnection.this);
+                    getScheduler().schedule(NonBlockingConnection.this);
                 }
             }
         });

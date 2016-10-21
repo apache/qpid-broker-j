@@ -75,6 +75,7 @@ public class StoreConfigurationChangeListenerTest extends QpidTestCase
         when(child.getCategoryClass()).thenReturn(VirtualHost.class);
         Model model = mock(Model.class);
         when(model.getChildTypes(any(Class.class))).thenReturn(Collections.<Class<? extends ConfiguredObject>>emptyList());
+        when(model.getParentTypes(eq(VirtualHost.class))).thenReturn(Collections.<Class<? extends ConfiguredObject>>singleton(Broker.class));
         when(child.getModel()).thenReturn(model);
         when(child.isDurable()).thenReturn(true);
         _listener.childAdded(broker, child);

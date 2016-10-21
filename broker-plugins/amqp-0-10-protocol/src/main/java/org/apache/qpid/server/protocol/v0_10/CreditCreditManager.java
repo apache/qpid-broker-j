@@ -61,17 +61,17 @@ public class CreditCreditManager extends AbstractFlowCreditManager implements Fl
             notifyIncrease = notifyIncrease && bytesCredit>0;
             _bytesCredit += bytesCredit;
 
-
-
-            if(notifyIncrease)
-            {
-                notifyIncreaseBytesCredit();
-            }
+        }
+        else
+        {
+            notifyIncrease = false;
         }
 
+        if(!setSuspended(!hasCredit()) && notifyIncrease)
+        {
+            notifyIncreaseBytesCredit();
 
-
-        setSuspended(!hasCredit());
+        }
 
     }
 
