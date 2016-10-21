@@ -18,43 +18,15 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
+package org.apache.qpid.server.federation;
 
-public class NoopConfigurationChangeListener implements ConfigurationChangeListener
+import org.apache.qpid.server.transport.ProtocolEngine;
+import org.apache.qpid.server.transport.SchedulableConnection;
+import org.apache.qpid.server.util.Action;
+
+public interface OutboundProtocolEngine extends ProtocolEngine
 {
-    @Override
-    public void stateChanged(ConfiguredObject<?> object, State oldState, State newState)
-    {
+    void setConnection(SchedulableConnection connection);
 
-    }
-
-    @Override
-    public void childAdded(ConfiguredObject<?> object, ConfiguredObject<?> child)
-    {
-
-    }
-
-    @Override
-    public void childRemoved(ConfiguredObject<?> object, ConfiguredObject<?> child)
-    {
-
-    }
-
-    @Override
-    public void attributeSet(ConfiguredObject<?> object, String attributeName, Object oldAttributeValue, Object newAttributeValue)
-    {
-
-    }
-
-    @Override
-    public void bulkChangeStart(ConfiguredObject<?> object)
-    {
-
-    }
-
-    @Override
-    public void bulkChangeEnd(ConfiguredObject<?> object)
-    {
-
-    }
+    void setOnClosedTask(Action<Boolean> onConnectionLoss);
 }

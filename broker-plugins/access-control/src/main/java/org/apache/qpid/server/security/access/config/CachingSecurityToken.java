@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.PermissionedObject;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
@@ -53,7 +53,7 @@ class CachingSecurityToken implements SecurityToken
     }
 
     Result authorise(final RuleBasedAccessControl ruleBasedAccessControl, final Operation operation,
-                     final ConfiguredObject<?> configuredObject,
+                     final PermissionedObject configuredObject,
                      final Map<String, Object> arguments)
     {
         AccessControlCache cache;
@@ -73,12 +73,12 @@ class CachingSecurityToken implements SecurityToken
 
     private static final class CachedMethodAuthKey
     {
-        private final ConfiguredObject<?> _configuredObject;
+        private final PermissionedObject _configuredObject;
         private final Operation _operation;
         private final Map<String, Object> _arguments;
         private final int _hashCode;
 
-        public CachedMethodAuthKey(final ConfiguredObject<?> configuredObject,
+        public CachedMethodAuthKey(final PermissionedObject configuredObject,
                                    final Operation operation,
                                    final Map<String, Object> arguments)
         {

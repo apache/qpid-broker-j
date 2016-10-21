@@ -116,7 +116,7 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
     @Override
     public Result authorise(final CachingSecurityToken token,
                             final Operation operation,
-                            final ConfiguredObject<?> configuredObject)
+                            final PermissionedObject configuredObject)
     {
         return authorise(token, operation, configuredObject, Collections.<String,Object>emptyMap());
     }
@@ -124,7 +124,7 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
     @Override
     public Result authorise(final CachingSecurityToken token,
                             final Operation operation,
-                            final ConfiguredObject<?> configuredObject,
+                            final PermissionedObject configuredObject,
                             final Map<String, Object> arguments)
     {
         if(token != null)
@@ -138,7 +138,7 @@ public class RuleBasedAccessControl implements AccessControl<CachingSecurityToke
     }
 
     Result authorise(final Operation operation,
-                     final ConfiguredObject<?> configuredObject,
+                     final PermissionedObject configuredObject,
                      final Map<String, Object> arguments)
     {
         return _adapter.authorise(operation, configuredObject, arguments);

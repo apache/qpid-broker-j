@@ -20,20 +20,20 @@
 */
 package org.apache.qpid.server.queue;
 
+import org.apache.qpid.server.message.AcquiringMessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
-import org.apache.qpid.server.model.Queue;
 
 public interface QueueEntry extends MessageInstance, Comparable<QueueEntry>
 {
 
-    Queue<?> getQueue();
+    RecoverableBaseQueue getQueue();
 
     long getSize();
 
     boolean acquireOrSteal(final Runnable delayedAcquisitionTask);
 
-    QueueConsumer getDeliveredConsumer();
+    AcquiringMessageInstanceConsumer<?,?> getDeliveredConsumer();
 
     boolean isQueueDeleted();
 

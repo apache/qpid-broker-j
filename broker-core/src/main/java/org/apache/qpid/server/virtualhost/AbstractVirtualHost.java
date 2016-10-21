@@ -30,9 +30,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.security.AccessControlContext;
 import java.security.Principal;
@@ -131,8 +133,11 @@ import org.apache.qpid.server.store.preferences.PreferenceStoreUpdaterImpl;
 import org.apache.qpid.server.store.preferences.PreferencesRecoverer;
 import org.apache.qpid.server.store.preferences.PreferencesRoot;
 import org.apache.qpid.server.store.serializer.MessageStoreSerializer;
+import org.apache.qpid.server.transfer.TransferQueue;
+import org.apache.qpid.server.transfer.TransferQueueImpl;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.NetworkConnectionScheduler;
+import org.apache.qpid.server.transport.NonBlockingOutboundConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.txn.LocalTransaction;
@@ -153,6 +158,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final AccessControlContext _fileSystemSpaceCheckerJobContext;
     private final AtomicBoolean _acceptsConnections = new AtomicBoolean(false);
     private TaskExecutor _preferenceTaskExecutor;
+
+    private Map<String,MessageDestination> _availableRoutes = new HashMap<>();
+    private TransferQueue _transferQueue;
 
     private static enum BlockingType { STORE, FILESYSTEM };
 
@@ -230,7 +238,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         @Override
         public Result authorise(final SecurityToken token,
                                 final Operation operation,
-                                final ConfiguredObject<?> configuredObject)
+                                final PermissionedObject configuredObject)
         {
             return isSystemProcess() ? Result.ALLOWED : Result.DEFER;
         }
@@ -238,7 +246,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         @Override
         public Result authorise(final SecurityToken token,
                                 final Operation operation,
-                                final ConfiguredObject<?> configuredObject,
+                                final PermissionedObject configuredObject,
                                 final Map<String, Object> arguments)
         {
             return isSystemProcess() ? Result.ALLOWED : Result.DEFER;
@@ -331,6 +339,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _fileSystemSpaceCheckerJobContext = getSystemTaskControllerContext("FileSystemSpaceChecker["+getName()+"]", _principal);
 
         _fileSystemSpaceChecker = new FileSystemSpaceChecker();
+        _transferQueue = new TransferQueueImpl(this);
 
         addChangeListener(new TargetSizeAssigningListener());
     }
@@ -465,6 +474,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     {
         super.postResolveChildren();
         addChangeListener(_accessControlProviderListener);
+        for(RemoteHost<?> remoteHost : getChildren(RemoteHost.class))
+        {
+            for(String address : remoteHost.getRoutableAddresses())
+            {
+                _availableRoutes.put(address, _transferQueue);
+            }
+        }
     }
 
     private void validateNodeAutoCreationPolicy(final NodeAutoCreationPolicy policy)
@@ -820,7 +836,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             throw new UnsupportedOperationException();
         }
-        else if(childClass == VirtualHostLogger.class || childClass == VirtualHostAccessControlProvider.class)
+        else if(childClass == VirtualHostLogger.class
+                || childClass == VirtualHostAccessControlProvider.class
+                || childClass == RemoteHost.class)
         {
             return getObjectFactory().createAsync(childClass, attributes, this);
         }
@@ -1360,10 +1378,58 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
         if(destination == null)
         {
-
             destination = autoCreateNode(name, MessageDestination.class, true);
         }
+        if(destination == null)
+        {
+            destination = getTransferAgent( name );
+        }
         return destination;
+    }
+
+    private MessageDestination getTransferAgent(final String address)
+    {
+        if(address.contains("/") && getGlobalAddressDomains() != null)
+        {
+            for(String domain : getGlobalAddressDomains())
+            {
+                if(address.startsWith(domain + "/"))
+                {
+                    return null;
+                }
+            }
+        }
+        for(Map.Entry<String, MessageDestination> route : _availableRoutes.entrySet())
+        {
+            if(address.equals(route.getKey()) || address.startsWith(route.getKey() + "/"))
+            {
+                return route.getValue();
+            }
+        }
+        return null;
+    }
+
+    private boolean isGlobalAddress(final String address)
+    {
+        if(address.contains("/") && getGlobalAddressDomains() != null)
+        {
+            for(String domain : getGlobalAddressDomains())
+            {
+                if(address.startsWith(domain + "/"))
+                {
+                    return false;
+                }
+            }
+        }
+        Set<String> routes = _availableRoutes.keySet();
+        for(String route : routes)
+        {
+            if(address.equals(route) || address.startsWith(address + "/"))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -1437,7 +1503,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             {
                 if(localAddress.length() > routingAddress.length() - domain.length() && routingAddress.startsWith(domain + "/"))
                 {
-                    localAddress = routingAddress.substring(domain.length());
+                    localAddress = routingAddress.substring(domain.length()+1);
                 }
             }
         }
@@ -1779,7 +1845,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }
 
-    private class TargetSizeAssigningListener implements ConfigurationChangeListener
+    private class TargetSizeAssigningListener extends AbstractConfigurationChangeListener
     {
         @Override
         public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
@@ -1807,23 +1873,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
         }
 
-        @Override
-        public void attributeSet(final ConfiguredObject<?> object,
-                                 final String attributeName,
-                                 final Object oldAttributeValue,
-                                 final Object newAttributeValue)
-        {
-        }
-
-        @Override
-        public void bulkChangeStart(final ConfiguredObject<?> object)
-        {
-        }
-
-        @Override
-        public void bulkChangeEnd(final ConfiguredObject<?> object)
-        {
-        }
     }
 
     private class VirtualHostHouseKeepingTask extends HouseKeepingTask
@@ -2586,6 +2635,29 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }
 
+    public boolean makeConnection(final RemoteHostAddress<?> address, final Action<Boolean> onConnectionLoss)
+    {
+        try
+        {
+
+            _logger.info("Attempting to connect to {}", address);
+            SocketChannel socketChannel = SocketChannel.open();
+            socketChannel.configureBlocking(false);
+            socketChannel.connect(new InetSocketAddress(address.getAddress(), address.getPort()));
+            NonBlockingOutboundConnection connection = new NonBlockingOutboundConnection(socketChannel,
+                                                                                         address,
+                                                                                         _networkConnectionScheduler,
+                                                                                         this, onConnectionLoss);
+            _networkConnectionScheduler.addConnection(connection);
+            return true;
+        }
+        catch (IOException e)
+        {
+            _logger.debug("Failed to make connection to {}", address, e);
+            return false;
+        }
+    }
+
     protected void startFileSystemSpaceChecking()
     {
         File storeLocationAsFile = _messageStore.getStoreLocationAsFile();
@@ -2729,6 +2801,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
+    public TransferQueue getTransferQueue()
+    {
+        return _transferQueue;
+    }
+
+    @Override
     public <T extends MessageDestination> T createMessageDestination(final Class<T> clazz,
                                                                      final Map<String, Object> attributes)
     {
@@ -2752,15 +2830,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return !(_systemNodeSources.isEmpty() && getChildren(Queue.class).isEmpty());
     }
 
-    private final class AccessControlProviderListener implements ConfigurationChangeListener
+    private final class AccessControlProviderListener extends AbstractConfigurationChangeListener
     {
         private final Set<ConfiguredObject<?>> _bulkChanges = new HashSet<>();
-
-        @Override
-        public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
-        {
-
-        }
 
         @Override
         public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)

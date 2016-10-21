@@ -40,7 +40,8 @@ import org.apache.qpid.server.store.ConfiguredObjectRecord;
 /**
  * An object that can be "managed" (eg via the web interface) and usually read from configuration.
  */
-public interface ConfiguredObject<X extends ConfiguredObject<X>> extends ContextProvider, TaskExecutorProvider
+public interface ConfiguredObject<X extends ConfiguredObject<X>> extends ContextProvider, TaskExecutorProvider,
+                                                                         PermissionedObject
 {
     String OVER_SIZED_ATTRIBUTE_ALTERNATIVE_TEXT = "Value is too long to display";
 

@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.transport;
 
+import static org.apache.qpid.transport.ConnectionSettings.WILDCARD_ADDRESS;
+
 import java.io.IOException;
 import java.net.BindException;
 import java.net.InetSocketAddress;
@@ -30,15 +32,13 @@ import java.nio.channels.SocketChannel;
 import java.util.EnumSet;
 import java.util.Set;
 
-import org.apache.qpid.server.model.port.AmqpPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.configuration.CommonProperties;
+import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.TransportEncryption;
-
-import static org.apache.qpid.transport.ConnectionSettings.WILDCARD_ADDRESS;
 
 public class NonBlockingNetworkTransport
 {
@@ -156,10 +156,10 @@ public class NonBlockingNetworkTransport
 
 
                     NonBlockingConnection connection =
-                            new NonBlockingConnection(socketChannel,
-                                                      engine,
-                                                      _encryptionSet,
-                                                      new Runnable()
+                            new NonBlockingInboundConnection(socketChannel,
+                                                             engine,
+                                                             _encryptionSet,
+                                                             new Runnable()
                                                       {
 
                                                           @Override
@@ -168,8 +168,8 @@ public class NonBlockingNetworkTransport
                                                               engine.encryptedTransport();
                                                           }
                                                       },
-                                                      _scheduler,
-                                                      _port);
+                                                             _scheduler,
+                                                             _port);
 
                     engine.setNetworkConnection(connection);
 

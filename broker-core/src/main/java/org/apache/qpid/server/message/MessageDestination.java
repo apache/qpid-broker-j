@@ -44,5 +44,5 @@ public interface MessageDestination extends MessageNode
                                                                           final String routingAddress,
                                                                           InstanceProperties instanceProperties,
                                                                           ServerTransaction txn,
-                                                                          Action<? super MessageInstance> postEnqueueAction);
+                                                                          Action<? super BaseMessageInstance> postEnqueueAction);
 }

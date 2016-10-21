@@ -20,11 +20,12 @@
  */
 package org.apache.qpid.server.queue;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.AMQMessageHeader;
+import org.apache.qpid.server.message.BaseMessageInstance;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -49,7 +50,7 @@ public class MockMessageInstance implements MessageInstance
     }
 
     @Override
-    public int routeToAlternate(final Action<? super MessageInstance> action,
+    public int routeToAlternate(final Action<? super BaseMessageInstance> action,
                                 final ServerTransaction txn)
     {
         return 0;
@@ -61,7 +62,7 @@ public class MockMessageInstance implements MessageInstance
     }
 
     @Override
-    public ConsumerImpl getAcquiringConsumer()
+    public MessageInstanceConsumer getAcquiringConsumer()
     {
         return null;
     }
@@ -73,13 +74,13 @@ public class MockMessageInstance implements MessageInstance
     }
 
     @Override
-    public boolean isAcquiredBy(final ConsumerImpl consumer)
+    public boolean isAcquiredBy(final MessageInstanceConsumer consumer)
     {
         return false;
     }
 
     @Override
-    public boolean removeAcquisitionFromConsumer(final ConsumerImpl consumer)
+    public boolean removeAcquisitionFromConsumer(final MessageInstanceConsumer consumer)
     {
         return false;
     }
@@ -95,13 +96,13 @@ public class MockMessageInstance implements MessageInstance
     }
 
     @Override
-    public boolean acquire(final ConsumerImpl sub)
+    public boolean acquire(final MessageInstanceConsumer sub)
     {
         return false;
     }
 
     @Override
-    public boolean makeAcquisitionUnstealable(final ConsumerImpl consumer)
+    public boolean makeAcquisitionUnstealable(final MessageInstanceConsumer consumer)
     {
         return false;
     }
@@ -117,7 +118,7 @@ public class MockMessageInstance implements MessageInstance
         return false;
     }
 
-    public ConsumerImpl getDeliveredConsumer()
+    public MessageInstanceConsumer getDeliveredConsumer()
     {
         return null;
     }
@@ -147,7 +148,7 @@ public class MockMessageInstance implements MessageInstance
     }
 
     @Override
-    public boolean isRejectedBy(final ConsumerImpl consumer)
+    public boolean isRejectedBy(final MessageInstanceConsumer consumer)
     {
         return false;
     }
@@ -158,7 +159,7 @@ public class MockMessageInstance implements MessageInstance
     }
 
     @Override
-    public void release(final ConsumerImpl release)
+    public void release(final MessageInstanceConsumer release)
     {
     }
 

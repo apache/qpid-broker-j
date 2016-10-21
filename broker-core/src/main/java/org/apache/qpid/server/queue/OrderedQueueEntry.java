@@ -34,12 +34,12 @@ public abstract class OrderedQueueEntry extends QueueEntryImpl
 
     private volatile OrderedQueueEntry _next;
 
-    public OrderedQueueEntry(OrderedQueueEntryList queueEntryList)
+    public OrderedQueueEntry(OrderedBaseQueueEntryList queueEntryList)
     {
         super(queueEntryList);
     }
 
-    public OrderedQueueEntry(OrderedQueueEntryList queueEntryList,
+    public OrderedQueueEntry(OrderedBaseQueueEntryList queueEntryList,
                              ServerMessage message,
                              final MessageEnqueueRecord messageEnqueueRecord)
     {
@@ -63,7 +63,7 @@ public abstract class OrderedQueueEntry extends QueueEntryImpl
             final OrderedQueueEntry newNext = next.getNextNode();
             if(newNext != null)
             {
-                OrderedQueueEntryList._nextUpdater.compareAndSet(this,next, newNext);
+                OrderedBaseQueueEntryList._nextUpdater.compareAndSet(this, next, newNext);
                 next = getNextNode();
             }
             else

@@ -19,22 +19,22 @@
 
 package org.apache.qpid.server.transport;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.transport.network.TransportEncryption;
-
 import java.io.IOException;
 import java.security.Principal;
 import java.security.cert.Certificate;
 import java.util.Collection;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.transport.network.TransportEncryption;
+
 public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnectionDelegate
 {
     private static final int NUMBER_OF_BYTES_FOR_TLS_CHECK = 6;
-    public final NonBlockingConnection _parent;
+    public final NonBlockingInboundConnection _parent;
 
     private QpidByteBuffer _netInputBuffer;
 
-    public NonBlockingConnectionUndecidedDelegate(NonBlockingConnection parent)
+    public NonBlockingConnectionUndecidedDelegate(NonBlockingInboundConnection parent)
     {
         _parent = parent;
         _netInputBuffer = QpidByteBuffer.allocateDirect(NUMBER_OF_BYTES_FOR_TLS_CHECK);

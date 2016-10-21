@@ -35,21 +35,20 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.FilterManager;
-import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.message.ConsumerOption;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.message.internal.InternalMessageHeader;
-import org.apache.qpid.server.model.ConfigurationChangeListener;
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.virtualhost.AbstractSystemMessageSource;
 
-public class TrustStoreMessageSource extends AbstractSystemMessageSource implements MessageSource
+public class TrustStoreMessageSource extends AbstractSystemMessageSource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(TrustStoreMessageSource.class);
 
@@ -63,7 +62,7 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource impleme
         super(getSourceNameFromTrustStore(trustStore), virtualHost);
         _virtualHost = virtualHost;
         _trustStore = trustStore;
-        _trustStore.addChangeListener(new ConfigurationChangeListener()
+        _trustStore.addChangeListener(new AbstractConfigurationChangeListener()
         {
             @Override
             public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
@@ -75,18 +74,6 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource impleme
             }
 
             @Override
-            public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-            {
-
-            }
-
-            @Override
-            public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-            {
-
-            }
-
-            @Override
             public void attributeSet(final ConfiguredObject<?> object,
                                      final String attributeName,
                                      final Object oldAttributeValue,
@@ -95,17 +82,7 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource impleme
                 updateCertCache();
             }
 
-            @Override
-            public void bulkChangeStart(final ConfiguredObject<?> object)
-            {
 
-            }
-
-            @Override
-            public void bulkChangeEnd(final ConfiguredObject<?> object)
-            {
-
-            }
         });
         if(_trustStore.getState() == State.ACTIVE)
         {
@@ -114,15 +91,16 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource impleme
     }
 
     @Override
-    public Consumer addConsumer(final ConsumerTarget target,
-                                final FilterManager filters,
-                                final Class<? extends ServerMessage> messageClass,
-                                final String consumerName,
-                                final EnumSet<ConsumerImpl.Option> options, final Integer priority)
+    public SystemMessageSourceConsumer addConsumer(final ConsumerTarget target,
+                                                   final FilterManager filters,
+                                                   final Class<? extends ServerMessage> messageClass,
+                                                   final String consumerName,
+                                                   final EnumSet<ConsumerOption> options, final Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
                    ConsumerAccessRefused
     {
-        final Consumer consumer = super.addConsumer(target, filters, messageClass, consumerName, options, priority);
+        final SystemMessageSourceConsumer
+                consumer = super.addConsumer(target, filters, messageClass, consumerName, options, priority);
         consumer.send(createMessage());
         target.queueEmpty();
         return consumer;
@@ -141,7 +119,7 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource impleme
     {
         InternalMessage message = createMessage();
 
-        for(Consumer c : new ArrayList<>(getConsumers()))
+        for(SystemMessageSourceConsumer c : new ArrayList<>(getConsumers()))
         {
             c.send(message);
         }

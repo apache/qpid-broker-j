@@ -57,7 +57,6 @@ import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.framing.*;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.connection.SessionPrincipal;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.filter.ArrivalTimeFilter;
@@ -73,12 +72,16 @@ import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.logging.subjects.ChannelLogSubject;
+import org.apache.qpid.server.message.BaseMessageInstance;
+import org.apache.qpid.server.message.ConsumerOption;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -297,7 +300,7 @@ public class AMQChannel
         final RecordDeliveryMethod getRecordMethod = new RecordDeliveryMethod()
         {
 
-            public void recordMessageDelivery(final ConsumerImpl sub,
+            public void recordMessageDelivery(final MessageInstanceConsumer sub,
                                               final MessageInstance entry,
                                               final long deliveryTag)
             {
@@ -306,8 +309,8 @@ public class AMQChannel
         };
 
         ConsumerTarget_0_8 target;
-        EnumSet<ConsumerImpl.Option> options = EnumSet.of(ConsumerImpl.Option.TRANSIENT, ConsumerImpl.Option.ACQUIRES,
-                                                          ConsumerImpl.Option.SEES_REQUEUES);
+        EnumSet<ConsumerOption> options = EnumSet.of(ConsumerOption.TRANSIENT, ConsumerOption.ACQUIRES,
+                                                     ConsumerOption.SEES_REQUEUES);
         if (acks)
         {
 
@@ -322,7 +325,7 @@ public class AMQChannel
                                                              singleMessageCredit, getDeliveryMethod, getRecordMethod);
         }
 
-        ConsumerImpl sub = queue.addConsumer(target, null, AMQMessage.class, "", options, null);
+        MessageInstanceConsumer sub = queue.addConsumer(target, null, AMQMessage.class, "", options, null);
         sub.flush();
         sub.close();
         return getDeliveryMethod.hasDeliveredMessage();
@@ -433,6 +436,7 @@ public class AMQChannel
 
                 if(_currentMessage.getDestination() instanceof ConfiguredObject)
                 {
+
                     ((ConfiguredObject)_currentMessage.getDestination()).authorise(_token,
                                                                                    Operation.ACTION("publish"),
                                                                                    AbstractAMQPConnection.PUBLISH_ACTION_MAP_CREATOR.createMap(routingKey, info.isImmediate()));
@@ -626,12 +630,13 @@ public class AMQChannel
         }
         else
         {
+            if(_confirmOnPublish)
+            {
+                _connection.writeFrame(new AMQFrame(_channelId, new BasicNackBody(_confirmedMessageCounter, false, false)));
+            }
+
             if (mandatory || message.isImmediate())
             {
-                if(_confirmOnPublish)
-                {
-                    _connection.writeFrame(new AMQFrame(_channelId, new BasicNackBody(_confirmedMessageCounter, false, false)));
-                }
                 _transaction.addPostTransactionAction(new WriteReturnAction(AMQConstant.NO_ROUTE,
                                                                             "No Route for message "
                                                                             + description,
@@ -723,7 +728,7 @@ public class AMQChannel
         }
 
         ConsumerTarget_0_8 target;
-        EnumSet<ConsumerImpl.Option> options = EnumSet.noneOf(ConsumerImpl.Option.class);
+        EnumSet<ConsumerOption> options = EnumSet.noneOf(ConsumerOption.class);
 
         if(arguments != null && Boolean.TRUE.equals(arguments.get(AMQPFilterTypes.NO_CONSUME.getValue())))
         {
@@ -732,19 +737,19 @@ public class AMQChannel
         else if(acks)
         {
             target = ConsumerTarget_0_8.createAckTarget(this, tag, arguments, _creditManager);
-            options.add(ConsumerImpl.Option.ACQUIRES);
-            options.add(ConsumerImpl.Option.SEES_REQUEUES);
+            options.add(ConsumerOption.ACQUIRES);
+            options.add(ConsumerOption.SEES_REQUEUES);
         }
         else
         {
             target = ConsumerTarget_0_8.createNoAckTarget(this, tag, arguments, _noAckCreditManager);
-            options.add(ConsumerImpl.Option.ACQUIRES);
-            options.add(ConsumerImpl.Option.SEES_REQUEUES);
+            options.add(ConsumerOption.ACQUIRES);
+            options.add(ConsumerOption.SEES_REQUEUES);
         }
 
         if(exclusive)
         {
-            options.add(ConsumerImpl.Option.EXCLUSIVE);
+            options.add(ConsumerOption.EXCLUSIVE);
         }
 
 
@@ -828,7 +833,7 @@ public class AMQChannel
 
             for(MessageSource source : sources)
             {
-                ConsumerImpl sub =
+                MessageInstanceConsumer sub =
                         source.addConsumer(target,
                                            filterManager,
                                            AMQMessage.class,
@@ -868,15 +873,15 @@ public class AMQChannel
         }
 
         ConsumerTarget_0_8 target = _tag2SubscriptionTargetMap.remove(consumerTag);
-        Collection<ConsumerImpl> subs = target == null ? null : target.getConsumers();
-        if (subs != null)
+        Collection<MessageInstanceConsumer> consumers = target == null ? null : target.getConsumers();
+        if (consumers != null)
         {
-            for(ConsumerImpl sub : subs)
+            for(MessageInstanceConsumer consumer : consumers)
             {
-                sub.close();
-                if (sub instanceof Consumer<?>)
+                consumer.close();
+                if (consumer instanceof Consumer<?>)
                 {
-                    _consumers.remove(sub);
+                    _consumers.remove(consumer);
                 }
             }
             return true;
@@ -956,13 +961,12 @@ public class AMQChannel
 
     /**
      * Add a message to the channel-based list of unacknowledged messages
-     *
-     * @param entry       the record of the message on the queue that was delivered
+     *  @param entry       the record of the message on the queue that was delivered
      * @param deliveryTag the delivery tag used when delivering the message (see protocol spec for description of the
      *                    delivery tag)
      * @param consumer The consumer that is to acknowledge this message.
      */
-    public void addUnacknowledgedMessage(MessageInstance entry, long deliveryTag, ConsumerImpl consumer)
+    public void addUnacknowledgedMessage(MessageInstance entry, long deliveryTag, MessageInstanceConsumer consumer)
     {
         if (_logger.isDebugEnabled())
         {
@@ -1208,9 +1212,9 @@ public class AMQChannel
                 // may need to deliver queued messages
                 for (ConsumerTarget_0_8 s : getConsumerTargets())
                 {
-                    for(ConsumerImpl sub : s.getConsumers())
+                    for(MessageInstanceConsumer consumer : s.getConsumers())
                     {
-                        sub.externalStateChange();
+                        consumer.externalStateChange();
                     }
                 }
             }
@@ -1316,7 +1320,7 @@ public class AMQChannel
 
         for(MessageInstance entry : _resendList)
         {
-            ConsumerImpl sub = entry.getAcquiringConsumer();
+            MessageInstanceConsumer sub = entry.getAcquiringConsumer();
             if (sub == null || sub.isClosed())
             {
                 entry.release(sub);
@@ -1333,9 +1337,9 @@ public class AMQChannel
             _suspended.set(false);
             for(ConsumerTarget_0_8 target : getConsumerTargets())
             {
-                for(ConsumerImpl sub : target.getConsumers())
+                for(MessageInstanceConsumer consumer : target.getConsumers())
                 {
-                    sub.externalStateChange();
+                    consumer.externalStateChange();
                 }
             }
 
@@ -1385,7 +1389,7 @@ public class AMQChannel
     private final RecordDeliveryMethod _recordDeliveryMethod = new RecordDeliveryMethod()
         {
 
-            public void recordMessageDelivery(final ConsumerImpl sub, final MessageInstance entry, final long deliveryTag)
+            public void recordMessageDelivery(final MessageInstanceConsumer sub, final MessageInstance entry, final long deliveryTag)
             {
                 addUnacknowledgedMessage(entry, deliveryTag, sub);
             }
@@ -1505,7 +1509,7 @@ public class AMQChannel
         }
 
         @Override
-        public long deliverToClient(final ConsumerImpl sub, final ServerMessage message,
+        public long deliverToClient(final MessageInstanceConsumer consumer, final ServerMessage message,
                                     final InstanceProperties props, final long deliveryTag)
         {
             _singleMessageCredit.useCreditForMessage(message.getSize());
@@ -1527,14 +1531,14 @@ public class AMQChannel
     }
 
 
-    private class ImmediateAction implements Action<MessageInstance>
+    private class ImmediateAction implements Action<BaseMessageInstance>
     {
 
         public ImmediateAction()
         {
         }
 
-        public void performAction(MessageInstance entry)
+        public void performAction(BaseMessageInstance entry)
         {
             TransactionLogResource queue = entry.getOwningResource();
 
@@ -1592,10 +1596,10 @@ public class AMQChannel
         }
     }
 
-    private final class CapacityCheckAction implements Action<MessageInstance>
+    private final class CapacityCheckAction implements Action<BaseMessageInstance>
     {
         @Override
-        public void performAction(final MessageInstance entry)
+        public void performAction(final BaseMessageInstance entry)
         {
             TransactionLogResource queue = entry.getOwningResource();
             if(queue instanceof CapacityChecker)
@@ -1797,10 +1801,10 @@ public class AMQChannel
             int requeues = 0;
             if (rejectedQueueEntry.makeAcquisitionUnstealable(rejectedQueueEntry.getAcquiringConsumer()))
             {
-                requeues = rejectedQueueEntry.routeToAlternate(new Action<MessageInstance>()
+                requeues = rejectedQueueEntry.routeToAlternate(new Action<BaseMessageInstance>()
                 {
                     @Override
-                    public void performAction(final MessageInstance requeueEntry)
+                    public void performAction(final BaseMessageInstance requeueEntry)
                     {
                         messageWithSubject(ChannelMessages.DEADLETTERMSG(msg.getMessageNumber(),
                                                                          requeueEntry.getOwningResource()
@@ -1938,7 +1942,7 @@ public class AMQChannel
         return Collections.unmodifiableCollection(_consumers);
     }
 
-    private class ConsumerClosedListener implements ConfigurationChangeListener
+    private class ConsumerClosedListener extends AbstractConfigurationChangeListener
     {
         @Override
         public void stateChanged(final ConfiguredObject object, final State oldState, final State newState)
@@ -1949,38 +1953,6 @@ public class AMQChannel
             }
         }
 
-        @Override
-        public void childAdded(final ConfiguredObject object, final ConfiguredObject child)
-        {
-
-        }
-
-        @Override
-        public void childRemoved(final ConfiguredObject object, final ConfiguredObject child)
-        {
-
-        }
-
-        @Override
-        public void attributeSet(final ConfiguredObject object,
-                                 final String attributeName,
-                                 final Object oldAttributeValue,
-                                 final Object newAttributeValue)
-        {
-
-        }
-
-        @Override
-        public void bulkChangeStart(final ConfiguredObject<?> object)
-        {
-
-        }
-
-        @Override
-        public void bulkChangeEnd(final ConfiguredObject<?> object)
-        {
-
-        }
     }
 
     private void consumerAdded(final Consumer<?> consumer)

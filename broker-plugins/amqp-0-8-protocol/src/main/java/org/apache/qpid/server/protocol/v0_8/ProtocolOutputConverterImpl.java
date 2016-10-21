@@ -246,57 +246,6 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         return GZIP_ENCODING.equals(contentHeaderBody.getProperties().getEncoding());
     }
 
-    private class MessageContentSourceBody implements AMQBody
-    {
-        public static final byte TYPE = 3;
-        private final int _length;
-        private final MessageContentSource _content;
-        private final int _offset;
-
-        public MessageContentSourceBody(MessageContentSource content, int offset, int length)
-        {
-            _content = content;
-            _offset = offset;
-            _length = length;
-        }
-
-        public byte getFrameType()
-        {
-            return TYPE;
-        }
-
-        public int getSize()
-        {
-            return _length;
-        }
-
-        @Override
-        public long writePayload(final ByteBufferSender sender)
-        {
-            long size = 0L;
-            for(QpidByteBuffer buf : _content.getContent(_offset, _length))
-            {
-                size += buf.remaining();
-
-                sender.send(buf);
-                buf.dispose();
-            }
-            return size;
-        }
-
-        public void handle(int channelId, AMQVersionAwareProtocolSession amqProtocolSession) throws QpidException
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "[" + getClass().getSimpleName() + " offset: " + _offset + ", length: " + _length + "]";
-        }
-
-    }
-
     public long writeGetOk(final ServerMessage msg,
                            final InstanceProperties props,
                            int channelId,

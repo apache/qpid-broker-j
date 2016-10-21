@@ -24,7 +24,6 @@ import java.security.Principal;
 import java.security.cert.Certificate;
 import java.util.Collection;
 
-import org.apache.qpid.server.model.port.AmqpPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,14 +33,14 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingConnectionPlainDelegate.class);
 
-    private final NonBlockingConnection _parent;
+    private final SchedulableConnection _parent;
     private final int _networkBufferSize;
     private volatile QpidByteBuffer _netInputBuffer;
 
-    public NonBlockingConnectionPlainDelegate(NonBlockingConnection parent, AmqpPort<?> port)
+    public NonBlockingConnectionPlainDelegate(SchedulableConnection parent, int networkBufferSize)
     {
         _parent = parent;
-        _networkBufferSize = port.getNetworkBufferSize();
+        _networkBufferSize = networkBufferSize;
         _netInputBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
     }
 

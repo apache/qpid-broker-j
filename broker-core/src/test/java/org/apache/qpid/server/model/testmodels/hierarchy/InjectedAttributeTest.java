@@ -385,11 +385,13 @@ public class InjectedAttributeTest extends QpidTestCase
 
         final ConfiguredObjectOperation foundOperation = allOperations.get("fly");
 
-        Object result = foundOperation.perform(testCar, Collections.<String, Object>singletonMap("height", 0));
+        Object result = foundOperation.perform(testCar, Collections.<String, Object>singletonMap("height", 0)
+                                              );
 
         assertEquals("Car should be able to fly at 0m", Boolean.TRUE, result);
 
-        result = foundOperation.perform(testCar, Collections.<String, Object>singletonMap("height", 5000));
+        result = foundOperation.perform(testCar, Collections.<String, Object>singletonMap("height", 5000)
+                                       );
 
         assertEquals("Car should not be able to fly at 5000m", Boolean.FALSE, result);
     }
@@ -436,11 +438,13 @@ public class InjectedAttributeTest extends QpidTestCase
         final ConfiguredObjectOperation helloOperation = allOperations.get("sayHello");
         final ConfiguredObjectOperation goodbyeOperation = allOperations.get("sayGoodbye");
 
-        Object result = helloOperation.perform(testCar, Collections.<String, Object>singletonMap("count", 3));
+        Object result = helloOperation.perform(testCar, Collections.<String, Object>singletonMap("count", 3)
+                                              );
 
         assertEquals("Car should say 'Hello' 3 times", Arrays.asList("Hello", "Hello", "Hello"), result);
 
-        result = goodbyeOperation.perform(testCar, Collections.<String, Object>singletonMap("count", 1));
+        result = goodbyeOperation.perform(testCar, Collections.<String, Object>singletonMap("count", 1)
+                                         );
 
         assertEquals("Car say 'Goodbye' once", Collections.singletonList("Goodbye"), result);
     }

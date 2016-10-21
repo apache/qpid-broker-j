@@ -331,18 +331,18 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     @Override
     public void pushScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
     {
-        if(_network instanceof NonBlockingConnection)
+        if(_network instanceof NonBlockingInboundConnection)
         {
-            ((NonBlockingConnection) _network).pushScheduler(networkConnectionScheduler);
+            ((NonBlockingInboundConnection) _network).pushScheduler(networkConnectionScheduler);
         }
     }
 
     @Override
     public NetworkConnectionScheduler popScheduler()
     {
-        if(_network instanceof NonBlockingConnection)
+        if(_network instanceof NonBlockingInboundConnection)
         {
-            return ((NonBlockingConnection) _network).popScheduler();
+            return ((NonBlockingInboundConnection) _network).popScheduler();
         }
         return null;
     }

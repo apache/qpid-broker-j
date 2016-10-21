@@ -113,7 +113,7 @@ public class NetworkConnectionScheduler
         }
     }
 
-    void processConnection(final NonBlockingConnection connection)
+    void processConnection(final SchedulableConnection connection)
     {
         Thread.currentThread().setName(connection.getThreadName());
         connection.doPreWork();
@@ -200,12 +200,12 @@ public class NetworkConnectionScheduler
         _selectorThread.cancelAcceptingSocket(serverSocket);
     }
 
-    public void addConnection(final NonBlockingConnection connection)
+    public void addConnection(final SchedulableConnection connection)
     {
         _selectorThread.addConnection(connection);
     }
 
-    public void removeConnection(final NonBlockingConnection connection)
+    public void removeConnection(final SchedulableConnection connection)
     {
         _selectorThread.removeConnection(connection);
     }
@@ -215,7 +215,7 @@ public class NetworkConnectionScheduler
         return _poolSize;
     }
 
-    public void schedule(final NonBlockingConnection connection)
+    public void schedule(final SchedulableConnection connection)
     {
         _selectorThread.addToWork(connection);
     }

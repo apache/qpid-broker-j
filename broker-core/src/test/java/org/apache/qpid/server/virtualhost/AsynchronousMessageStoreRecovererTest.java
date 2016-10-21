@@ -37,6 +37,7 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
+import org.apache.qpid.server.transfer.TransferQueue;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -54,6 +55,9 @@ public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
         _virtualHost = mock(VirtualHost.class);
         _store = mock(MessageStore.class);
         _storeReader = mock(MessageStore.MessageStoreReader.class);
+        TransferQueue tq = mock(TransferQueue.class);
+        when(tq.getName()).thenReturn("$transfer");
+        when(_virtualHost.getTransferQueue()).thenReturn(tq);
 
         when(_virtualHost.getEventLogger()).thenReturn(new EventLogger());
         when(_virtualHost.getMessageStore()).thenReturn(_store);

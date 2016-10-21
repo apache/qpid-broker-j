@@ -32,15 +32,14 @@ import static org.mockito.Mockito.when;
 
 import java.util.UUID;
 
-import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.message.BaseMessageInstance;
 import org.apache.qpid.server.message.EnqueueableMessage;
-import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -55,9 +54,11 @@ import org.apache.qpid.server.store.Transaction.EnqueueRecord;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
+import org.apache.qpid.server.transfer.TransferQueue;
 import org.apache.qpid.server.txn.DtxBranch;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.Xid;
 
 public class SynchronousMessageStoreRecovererTest extends QpidTestCase
@@ -70,7 +71,11 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
         super.setUp();
 
         _virtualHost = mock(VirtualHost.class);
+        TransferQueue tq = mock(TransferQueue.class);
+        UUID tqId = UUID.randomUUID();
+        when(tq.getId()).thenReturn(tqId);
         when(_virtualHost.getEventLogger()).thenReturn(new EventLogger());
+        when(_virtualHost.getTransferQueue()).thenReturn(tq);
 
     }
 
@@ -294,7 +299,7 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
         branch.commit();
 
         ServerMessage<?> message = storedMessage.getMetaData().getType().createMessage(storedMessage);
-        verify(queue, times(1)).enqueue(eq(message), (Action<? super MessageInstance>)isNull(), any(MessageEnqueueRecord.class));
+        verify(queue, times(1)).enqueue(eq(message), (Action<? super BaseMessageInstance>)isNull(), any(MessageEnqueueRecord.class));
         verify(transaction).commitTran();
     }
 

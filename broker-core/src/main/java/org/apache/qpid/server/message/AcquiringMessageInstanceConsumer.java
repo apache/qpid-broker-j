@@ -18,8 +18,19 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.queue;
+package org.apache.qpid.server.message;
 
-public interface QueueEntryListBase extends QueueEntryList
+import org.apache.qpid.server.queue.QueueEntry;
+
+public interface AcquiringMessageInstanceConsumer<X extends AcquiringMessageInstanceConsumer<X, T>, T> extends MessageInstanceConsumer
 {
+    MessageInstance.StealableConsumerAcquiredState<X> getOwningState();
+
+    T getTarget();
+
+    void acquisitionRemoved(QueueEntry queueEntry);
+
+    long getConsumerNumber();
+
+    boolean resend(QueueEntry queueEntry);
 }

@@ -20,9 +20,13 @@
  */
 package org.apache.qpid.server.queue;
 
+import org.apache.qpid.server.message.BaseMessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.queue.SortedQueueEntry.Colour;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
+import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.util.Action;
 
 /**
  * A sorted implementation of QueueEntryList.
@@ -51,6 +55,50 @@ public class SortedQueueEntryList implements QueueEntryList
     {
         return _queue;
     }
+
+
+    @Override
+    public void onAcquiredByConsumer(final QueueEntry queueEntry, final MessageInstanceConsumer consumer)
+    {
+        getQueue().incrementUnackedMsgCount(queueEntry);
+    }
+
+    @Override
+    public void onNoLongerAcquiredByConsumer(final QueueEntry queueEntry)
+    {
+        getQueue().decrementUnackedMsgCount(queueEntry);
+    }
+
+    @Override
+    public void requeue(final QueueEntry queueEntry)
+    {
+        getQueue().requeue(queueEntry);
+    }
+
+    @Override
+    public boolean isHeld(final QueueEntry queueEntry, final long evaluationTime)
+    {
+        return getQueue().isHeld(queueEntry, evaluationTime);
+    }
+
+    @Override
+    public void dequeue(final QueueEntry queueEntry)
+    {
+        getQueue().dequeue(queueEntry);
+    }
+
+    @Override
+    public int routeToAlternate(final QueueEntry queueEntry, final Action<? super BaseMessageInstance> action, ServerTransaction txn)
+    {
+        return getQueue().routeToAlternate(queueEntry, action, txn);
+    }
+
+    @Override
+    public int getMaximumDeliveryAttempts()
+    {
+        return getQueue().getMaximumDeliveryAttempts();
+    }
+
 
     public SortedQueueEntry add(final ServerMessage message, final MessageEnqueueRecord enqueueRecord)
     {

@@ -37,7 +37,9 @@ import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.preferences.UserPreferencesCreator;
+import org.apache.qpid.server.transfer.TransferQueue;
 import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.virtualhost.HouseKeepingTask;
 import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
 
@@ -261,7 +263,11 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     String getLocalAddress(String routingAddress);
 
+    TransferQueue getTransferQueue();
+
     void setFirstOpening(boolean firstOpening);
+
+    boolean makeConnection(RemoteHostAddress<?> address, final Action<Boolean> onConnectionLoss);
 
     interface Transaction
     {

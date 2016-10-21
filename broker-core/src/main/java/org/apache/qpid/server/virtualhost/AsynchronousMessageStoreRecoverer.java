@@ -48,6 +48,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.queue.QueueEntry;
+import org.apache.qpid.server.queue.RecoverableBaseQueue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -127,6 +128,9 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                 ListenableFuture<Void> result = _queueRecoveryExecutor.submit(new QueueRecoveringTask(queue), null);
                 queueRecoveryFutures.add(result);
             }
+            ListenableFuture<Void> result = _queueRecoveryExecutor.submit(new QueueRecoveringTask(_virtualHost.getTransferQueue()), null);
+            queueRecoveryFutures.add(result);
+
             ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(queueRecoveryFutures);
             return Futures.transform(combinedFuture, new Function<List<?>, Void>()
             {
@@ -163,7 +167,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             return _recoveringQueues.contains(queue);
         }
 
-        private void recoverQueue(Queue<?> queue)
+        private void recoverQueue(RecoverableBaseQueue queue)
         {
             MessageInstanceVisitor handler = new MessageInstanceVisitor(queue);
             _storeReader.visitMessageInstances(queue, handler);
@@ -434,9 +438,9 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
         private class QueueRecoveringTask implements Runnable
         {
-            private final Queue<?> _queue;
+            private final RecoverableBaseQueue _queue;
 
-            public QueueRecoveringTask(final Queue<?> queue)
+            public QueueRecoveringTask(final RecoverableBaseQueue queue)
             {
                 _queue = queue;
             }
@@ -461,10 +465,10 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
         private class MessageInstanceVisitor implements MessageInstanceHandler
         {
-            private final Queue<?> _queue;
+            private final RecoverableBaseQueue _queue;
             long _recoveredCount;
 
-            private MessageInstanceVisitor(Queue<?> queue)
+            private MessageInstanceVisitor(RecoverableBaseQueue queue)
             {
                 _queue = queue;
             }

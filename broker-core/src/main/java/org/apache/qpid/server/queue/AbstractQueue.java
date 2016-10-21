@@ -33,7 +33,6 @@ import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -73,7 +72,6 @@ import org.apache.qpid.filter.selector.TokenMgrError;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.connection.SessionPrincipal;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.JMSSelectorFilter;
@@ -83,6 +81,8 @@ import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.QueueMessages;
 import org.apache.qpid.server.logging.subjects.QueueLogSubject;
+import org.apache.qpid.server.message.BaseMessageInstance;
+import org.apache.qpid.server.message.ConsumerOption;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDeletedException;
 import org.apache.qpid.server.message.MessageInfo;
@@ -724,7 +724,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                          final FilterManager filters,
                                          final Class<? extends ServerMessage> messageClass,
                                          final String consumerName,
-                                         final EnumSet<ConsumerImpl.Option> optionSet,
+                                         final EnumSet<ConsumerOption> optionSet,
                                          final Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
                    ConsumerAccessRefused
@@ -777,7 +777,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                   FilterManager filters,
                                                   final Class<? extends ServerMessage> messageClass,
                                                   final String consumerName,
-                                                  EnumSet<ConsumerImpl.Option> optionSet,
+                                                  EnumSet<ConsumerOption> optionSet,
                                                   final Integer priority)
             throws ExistingExclusiveConsumer, ConsumerAccessRefused,
                    ExistingConsumerPreventsExclusive
@@ -787,6 +787,125 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             throw new ExistingExclusiveConsumer();
         }
 
+        if(_noLocal && !optionSet.contains(ConsumerOption.NO_LOCAL))
+        {
+            optionSet = EnumSet.copyOf(optionSet);
+            optionSet.add(ConsumerOption.NO_LOCAL);
+        }
+
+        if(_ensureNondestructiveConsumers)
+        {
+            optionSet = EnumSet.copyOf(optionSet);
+            optionSet.removeAll(EnumSet.of(ConsumerOption.SEES_REQUEUES, ConsumerOption.ACQUIRES));
+        }
+
+
+
+        boolean exclusive =  optionSet.contains(ConsumerOption.EXCLUSIVE);
+        boolean isTransient =  optionSet.contains(ConsumerOption.TRANSIENT);
+
+
+
+        if(exclusive && getConsumerCount() != 0)
+        {
+            throw new ExistingConsumerPreventsExclusive();
+        }
+
+        if(!_defaultFiltersMap.isEmpty())
+        {
+            if(filters == null)
+            {
+                filters = new FilterManager();
+            }
+            for (Map.Entry<String,Callable<MessageFilter>> filter : _defaultFiltersMap.entrySet())
+            {
+                if(!filters.hasFilter(filter.getKey()))
+                {
+                    MessageFilter f;
+                    try
+                    {
+                        f = filter.getValue().call();
+                    }
+                    catch (Exception e)
+                    {
+                        if (e instanceof RuntimeException)
+                        {
+                            throw (RuntimeException) e;
+                        }
+                        else
+                        {
+                            // Should never happen
+                            throw new ServerScopedRuntimeException(e);
+                        }
+                    }
+                    filters.add(filter.getKey(), f);
+                }
+            }
+        }
+
+
+        QueueConsumerImpl consumer = new QueueConsumerImpl(this,
+                                                           target,
+                                                           consumerName,
+                                                           filters,
+                                                           messageClass,
+                                                           optionSet,
+                                                           priority);
+
+        checkExclusivity(target);
+
+
+        consumer.open();
+
+        target.consumerAdded(consumer);
+
+
+        if (exclusive && !isTransient)
+        {
+            _exclusiveSubscriber = consumer;
+        }
+
+        if(consumer.isActive())
+        {
+            _activeSubscriberCount.incrementAndGet();
+        }
+
+        consumer.setStateListener(this);
+        QueueContext queueContext;
+        if(filters == null || !filters.startAtTail())
+        {
+            queueContext = new QueueContext(getEntries().getHead());
+        }
+        else
+        {
+            queueContext = new QueueContext(getEntries().getTail());
+        }
+        consumer.setQueueContext(queueContext);
+
+        if (!isDeleted())
+        {
+            _consumerList.add(consumer);
+
+            if (isDeleted())
+            {
+                consumer.queueDeleted();
+            }
+        }
+        else
+        {
+            // TODO
+        }
+
+        childAdded(consumer);
+        consumer.addChangeListener(_deletedChildListener);
+
+        deliverAsync();
+
+        return consumer;
+    }
+
+    private void checkExclusivity(final ConsumerTarget target) throws ConsumerAccessRefused
+    {
         Object exclusiveOwner = _exclusiveOwner;
         switch(_exclusive)
         {
@@ -856,112 +975,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             default:
                 throw new ServerScopedRuntimeException("Unknown exclusivity policy " + _exclusive);
         }
-
-        boolean exclusive =  optionSet.contains(ConsumerImpl.Option.EXCLUSIVE);
-        boolean isTransient =  optionSet.contains(ConsumerImpl.Option.TRANSIENT);
-
-        if(_noLocal && !optionSet.contains(ConsumerImpl.Option.NO_LOCAL))
-        {
-            optionSet = EnumSet.copyOf(optionSet);
-            optionSet.add(ConsumerImpl.Option.NO_LOCAL);
-        }
-
-        if(exclusive && getConsumerCount() != 0)
-        {
-            throw new ExistingConsumerPreventsExclusive();
-        }
-        if(!_defaultFiltersMap.isEmpty())
-        {
-            if(filters == null)
-            {
-                filters = new FilterManager();
-            }
-            for (Map.Entry<String,Callable<MessageFilter>> filter : _defaultFiltersMap.entrySet())
-            {
-                if(!filters.hasFilter(filter.getKey()))
-                {
-                    MessageFilter f;
-                    try
-                    {
-                        f = filter.getValue().call();
-                    }
-                    catch (Exception e)
-                    {
-                        if (e instanceof RuntimeException)
-                        {
-                            throw (RuntimeException) e;
-                        }
-                        else
-                        {
-                            // Should never happen
-                            throw new ServerScopedRuntimeException(e);
-                        }
-                    }
-                    filters.add(filter.getKey(), f);
-                }
-            }
-        }
-
-        if(_ensureNondestructiveConsumers)
-        {
-            optionSet = EnumSet.copyOf(optionSet);
-            optionSet.removeAll(EnumSet.of(ConsumerImpl.Option.SEES_REQUEUES, ConsumerImpl.Option.ACQUIRES));
-        }
-
-        QueueConsumerImpl consumer = new QueueConsumerImpl(this,
-                                                           target,
-                                                           consumerName,
-                                                           filters,
-                                                           messageClass,
-                                                           optionSet,
-                                                           priority);
-
         _exclusiveOwner = exclusiveOwner;
-        target.consumerAdded(consumer);
-
-
-        if (exclusive && !isTransient)
-        {
-            _exclusiveSubscriber = consumer;
-        }
-
-        if(consumer.isActive())
-        {
-            _activeSubscriberCount.incrementAndGet();
-        }
-
-        consumer.setStateListener(this);
-        QueueContext queueContext;
-        if(filters == null || !filters.startAtTail())
-        {
-            queueContext = new QueueContext(getEntries().getHead());
-        }
-        else
-        {
-            queueContext = new QueueContext(getEntries().getTail());
-        }
-        consumer.setQueueContext(queueContext);
-
-        if (!isDeleted())
-        {
-            _consumerList.add(consumer);
-
-            if (isDeleted())
-            {
-                consumer.queueDeleted();
-            }
-        }
-        else
-        {
-            // TODO
-        }
-
-        childAdded(consumer);
-        consumer.addChangeListener(_deletedChildListener);
-
-        deliverAsync();
-
-        return consumer;
     }
 
     @Override
@@ -1112,7 +1126,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     // ------ Enqueue / Dequeue
 
-    public final void enqueue(ServerMessage message, Action<? super MessageInstance> action, MessageEnqueueRecord enqueueRecord)
+    public final void enqueue(ServerMessage message, Action<? super BaseMessageInstance> action, MessageEnqueueRecord enqueueRecord)
     {
         incrementQueueCount();
         incrementQueueSize(message);
@@ -2056,6 +2070,57 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         txn.commit();
     }
+
+    int routeToAlternate(final QueueEntry queueEntry, final Action<? super BaseMessageInstance> action, ServerTransaction txn)
+    {
+        if (!queueEntry.isAcquired())
+        {
+            throw new IllegalStateException("Illegal queue entry state. " + this + " is not acquired.");
+        }
+
+        Exchange<?> alternateExchange = getAlternateExchange();
+        boolean autocommit =  txn == null;
+        int enqueues;
+
+        if(autocommit)
+        {
+            txn = new LocalTransaction(getVirtualHost().getMessageStore());
+        }
+
+        if (alternateExchange != null)
+        {
+            enqueues = alternateExchange.send(queueEntry.getMessage(),
+                                              queueEntry.getMessage().getInitialRoutingAddress(),
+                                              queueEntry.getInstanceProperties(),
+                                              txn,
+                                              action);
+        }
+        else
+        {
+            enqueues = 0;
+        }
+
+        txn.dequeue(queueEntry.getEnqueueRecord(), new ServerTransaction.Action()
+        {
+            public void postCommit()
+            {
+                queueEntry.delete();
+            }
+
+            public void onRollback()
+            {
+
+            }
+        });
+
+        if(autocommit)
+        {
+            txn.commit();
+        }
+
+        return enqueues;
+    }
+
 
     private void performQueueDeleteTasks()
     {
@@ -3038,7 +3103,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                                                         final String routingAddress,
                                                                                         final InstanceProperties instanceProperties,
                                                                                         final ServerTransaction txn,
-                                                                                        final Action<? super MessageInstance> postEnqueueAction)
+                                                                                        final Action<? super BaseMessageInstance> postEnqueueAction)
     {
         if (_virtualHost.getState() != State.ACTIVE)
         {
@@ -3169,7 +3234,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case CONTAINER:
             case CONNECTION:
                 AMQSessionModel session = null;
-                for(ConsumerImpl c : getConsumers())
+                for(QueueConsumer c : getConsumers())
                 {
                     if(session == null)
                     {
@@ -3195,7 +3260,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case CONTAINER:
             case PRINCIPAL:
                 AMQPConnection con = null;
-                for(ConsumerImpl c : getConsumers())
+                for(QueueConsumer c : getConsumers())
                 {
                     if(con == null)
                     {
@@ -3223,7 +3288,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case NONE:
             case PRINCIPAL:
                 String containerID = null;
-                for(ConsumerImpl c : getConsumers())
+                for(QueueConsumer c : getConsumers())
                 {
                     if(containerID == null)
                     {
@@ -3254,7 +3319,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case NONE:
             case CONTAINER:
                 Principal principal = null;
-                for(ConsumerImpl c : getConsumers())
+                for(QueueConsumer c : getConsumers())
                 {
                     if(principal == null)
                     {
@@ -3494,7 +3559,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    private class DeletedChildListener implements ConfigurationChangeListener
+    private class DeletedChildListener extends AbstractConfigurationChangeListener
     {
         @Override
         public void stateChanged(final ConfiguredObject object, final State oldState, final State newState)
@@ -3503,39 +3568,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 AbstractQueue.this.childRemoved(object);
             }
-        }
-
-        @Override
-        public void childAdded(final ConfiguredObject object, final ConfiguredObject child)
-        {
-
-        }
-
-        @Override
-        public void childRemoved(final ConfiguredObject object, final ConfiguredObject child)
-        {
-
-        }
-
-        @Override
-        public void attributeSet(final ConfiguredObject object,
-                                 final String attributeName,
-                                 final Object oldAttributeValue,
-                                 final Object newAttributeValue)
-        {
-
-        }
-
-        @Override
-        public void bulkChangeStart(final ConfiguredObject<?> object)
-        {
-
-        }
-
-        @Override
-        public void bulkChangeEnd(final ConfiguredObject<?> object)
-        {
-
         }
     }
 

@@ -36,9 +36,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.LogInclusionRule;
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.BrokerLogInclusionRule;
-import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.ManagedObject;
@@ -149,7 +149,7 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
         }
     }
 
-    private class LogInclusionRuleListener implements ConfigurationChangeListener
+    private class LogInclusionRuleListener extends AbstractConfigurationChangeListener
     {
 
         @Override
@@ -170,28 +170,6 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
             }
         }
 
-        @Override
-        public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
-        {
-        }
-
-        @Override
-        public void attributeSet(final ConfiguredObject<?> object,
-                                 final String attributeName,
-                                 final Object oldAttributeValue,
-                                 final Object newAttributeValue)
-        {
-        }
-
-        @Override
-        public void bulkChangeStart(final ConfiguredObject<?> object)
-        {
-        }
-
-        @Override
-        public void bulkChangeEnd(final ConfiguredObject<?> object)
-        {
-        }
     }
 
     public static Map<String, Collection<String>> getSupportedVirtualHostLoggerChildTypes()

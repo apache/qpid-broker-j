@@ -36,6 +36,7 @@ import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
@@ -136,7 +137,7 @@ public class MockConsumer implements ConsumerTarget
     {
     }
 
-    public long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
+    public long send(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
     {
         long size = entry.getMessage().getSize();
         if (messages.contains(entry))
@@ -188,12 +189,12 @@ public class MockConsumer implements ConsumerTarget
     }
 
     @Override
-    public void consumerAdded(final ConsumerImpl sub)
+    public void consumerAdded(final MessageInstanceConsumer consumer)
     {
     }
 
     @Override
-    public void consumerRemoved(final ConsumerImpl sub)
+    public void consumerRemoved(final MessageInstanceConsumer consumer)
     {
        close();
     }

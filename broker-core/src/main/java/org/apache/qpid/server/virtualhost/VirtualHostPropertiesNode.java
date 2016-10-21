@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.FilterManager;
+import org.apache.qpid.server.message.ConsumerOption;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.message.internal.InternalMessageHeader;
@@ -47,15 +47,16 @@ public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
     }
 
     @Override
-    public Consumer addConsumer(final ConsumerTarget target,
-                                final FilterManager filters,
-                                final Class<? extends ServerMessage> messageClass,
-                                final String consumerName,
-                                final EnumSet<ConsumerImpl.Option> options, final Integer priority)
+    public SystemMessageSourceConsumer addConsumer(final ConsumerTarget target,
+                                                   final FilterManager filters,
+                                                   final Class<? extends ServerMessage> messageClass,
+                                                   final String consumerName,
+                                                   final EnumSet<ConsumerOption> options, final Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
                    ConsumerAccessRefused
     {
-        final Consumer consumer = super.addConsumer(target, filters, messageClass, consumerName, options, priority);
+        final SystemMessageSourceConsumer
+                consumer = super.addConsumer(target, filters, messageClass, consumerName, options, priority);
         consumer.send(createMessage());
         target.queueEmpty();
         return consumer;
@@ -66,7 +67,7 @@ public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
 
         Map<String, Object> headers = new HashMap<>();
 
-        final List<String> globalAddresseDomains = _addressSpace.getGlobalAddressDomains();
+        final List<String> globalAddresseDomains = getAddressSpace().getGlobalAddressDomains();
         if (globalAddresseDomains != null && !globalAddresseDomains.isEmpty())
         {
             String primaryDomain = globalAddresseDomains.get(0);
@@ -80,13 +81,13 @@ public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
                 headers.put("virtualHost.temporaryQueuePrefix", primaryDomain);
             }
         }
-
+        headers.put("virtualhost.globalDomains", globalAddresseDomains);
         InternalMessageHeader header = new InternalMessageHeader(headers,
                                                                  null, 0l, null, null, UUID.randomUUID().toString(),
                                                                  null, null, (byte) 4, System.currentTimeMillis(),
                                                                  0L, null, null);
         final InternalMessage message =
-                InternalMessage.createBytesMessage(_addressSpace.getMessageStore(), header, new byte[0]);
+                InternalMessage.createBytesMessage(getAddressSpace().getMessageStore(), header, new byte[0]);
         message.setInitialRoutingAddress(getName());
         return message;
     }

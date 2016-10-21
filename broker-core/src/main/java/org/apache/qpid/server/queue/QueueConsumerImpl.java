@@ -46,9 +46,9 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.SubscriptionMessages;
 import org.apache.qpid.server.logging.subjects.QueueLogSubject;
+import org.apache.qpid.server.message.ConsumerOption;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
-import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Consumer;
@@ -123,7 +123,7 @@ class QueueConsumerImpl
                       ConsumerTarget target, final String consumerName,
                       final FilterManager filters,
                       final Class<? extends ServerMessage> messageClass,
-                      EnumSet<Option> optionSet,
+                      EnumSet<ConsumerOption> optionSet,
                       final Integer priority)
     {
         super(parentsMap(queue, target.getSessionModel().getModelObject()),
@@ -132,18 +132,16 @@ class QueueConsumerImpl
         _sessionReference = target.getSessionModel().getConnectionReference();
         _consumerNumber = CONSUMER_NUMBER_GENERATOR.getAndIncrement();
         _filters = filters;
-        _acquires = optionSet.contains(Option.ACQUIRES);
-        _seesRequeues = optionSet.contains(Option.SEES_REQUEUES);
-        _isTransient = optionSet.contains(Option.TRANSIENT);
+        _acquires = optionSet.contains(ConsumerOption.ACQUIRES);
+        _seesRequeues = optionSet.contains(ConsumerOption.SEES_REQUEUES);
+        _isTransient = optionSet.contains(ConsumerOption.TRANSIENT);
         _target = target;
         _queue = queue;
 
         // Access control
         authorise(Operation.CREATE);
 
-        open();
 
-        setupLogging();
 
         _listener = new StateChangeListener<ConsumerTarget, ConsumerTarget.State>()
         {
@@ -165,20 +163,29 @@ class QueueConsumerImpl
                 getEventLogger().message(getLogSubject(), SubscriptionMessages.STATE(period));
             }
         };
+
+
+    }
+
+    @Override
+    protected void onOpen()
+    {
+        super.onOpen();
+        setupLogging();
     }
 
     private static Map<String, Object> createAttributeMap(String name,
                                                           FilterManager filters,
-                                                          EnumSet<Option> optionSet,
+                                                          EnumSet<ConsumerOption> optionSet,
                                                           Integer priority)
     {
         Map<String,Object> attributes = new HashMap<String, Object>();
         attributes.put(ID, UUID.randomUUID());
         attributes.put(NAME, name);
-        attributes.put(EXCLUSIVE, optionSet.contains(Option.EXCLUSIVE));
-        attributes.put(NO_LOCAL, optionSet.contains(Option.NO_LOCAL));
-        attributes.put(DISTRIBUTION_MODE, optionSet.contains(Option.ACQUIRES) ? "MOVE" : "COPY");
-        attributes.put(DURABLE,optionSet.contains(Option.DURABLE));
+        attributes.put(EXCLUSIVE, optionSet.contains(ConsumerOption.EXCLUSIVE));
+        attributes.put(NO_LOCAL, optionSet.contains(ConsumerOption.NO_LOCAL));
+        attributes.put(DISTRIBUTION_MODE, optionSet.contains(ConsumerOption.ACQUIRES) ? "MOVE" : "COPY");
+        attributes.put(DURABLE,optionSet.contains(ConsumerOption.DURABLE));
         attributes.put(LIFETIME_POLICY, LifetimePolicy.DELETE_ON_SESSION_END);
         if(priority != null)
         {
@@ -279,9 +286,9 @@ class QueueConsumerImpl
     }
 
     @Override
-    public MessageSource getMessageSource()
+    public Object getIdentifier()
     {
-        return _queue;
+        return getConsumerNumber();
     }
 
     @Override

@@ -28,8 +28,8 @@ import java.util.EnumSet;
 
 import junit.framework.AssertionFailedError;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.AMQMessageHeader;
+import org.apache.qpid.server.message.ConsumerOption;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 
@@ -63,7 +63,7 @@ public class PriorityQueueTest extends AbstractQueueTestBase
         queue.enqueue(createMessage(9L, (byte) 0), null, null);
 
         // Register subscriber
-        queue.addConsumer(getConsumer(), null, null, "test", EnumSet.noneOf(ConsumerImpl.Option.class), 0);
+        queue.addConsumer(getConsumer(), null, null, "test", EnumSet.noneOf(ConsumerOption.class), 0);
         Thread.sleep(150);
 
         ArrayList<MessageInstance> msgs = getConsumer().getMessages();

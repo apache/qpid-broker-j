@@ -20,23 +20,25 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import org.apache.qpid.QpidException;
-import org.apache.qpid.server.consumer.ConsumerImpl;
-import org.apache.qpid.server.message.MessageInstance;
-import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.queue.QueueEntry;
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import org.apache.qpid.QpidException;
+import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
+import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Consumer;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.queue.QueueEntry;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
  * QPID-1385 : Race condition between added to unacked map and resending due to a rollback.
@@ -62,7 +64,7 @@ public class ExtractResendAndRequeueTest extends QpidTestCase
     private static final int INITIAL_MSG_COUNT = 10;
     private Queue _queue;
     private LinkedList<MessageInstance> _referenceList = new LinkedList<MessageInstance>();
-    private ConsumerImpl _consumer;
+    private MessageInstanceConsumer _consumer;
     private boolean _queueDeleted;
 
     @Override
@@ -73,8 +75,8 @@ public class ExtractResendAndRequeueTest extends QpidTestCase
         _queue = mock(Queue.class);
         when(_queue.getName()).thenReturn(getName());
         when(_queue.isDeleted()).thenReturn(_queueDeleted);
-        _consumer = mock(ConsumerImpl.class);
-        when(_consumer.getConsumerNumber()).thenReturn(ConsumerImpl.CONSUMER_NUMBER_GENERATOR.getAndIncrement());
+        _consumer = mock(MessageInstanceConsumer.class);
+        when(_consumer.getIdentifier()).thenReturn(Consumer.CONSUMER_NUMBER_GENERATOR.getAndIncrement());
 
 
         long id = 0;

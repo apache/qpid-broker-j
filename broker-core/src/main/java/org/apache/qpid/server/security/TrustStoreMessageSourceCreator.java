@@ -22,8 +22,8 @@ package org.apache.qpid.server.security;
 
 import java.util.Collection;
 
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.TrustStore;
@@ -58,12 +58,8 @@ public class TrustStoreMessageSourceCreator implements SystemNodeCreator
             updateTrustStoreSourceRegistration(registry, trustStore);
             trustStore.addChangeListener(trustStoreChangeListener);
         }
-        broker.addChangeListener(new ConfigurationChangeListener()
+        broker.addChangeListener(new AbstractConfigurationChangeListener()
         {
-            @Override
-            public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
-            {
-            }
 
             @Override
             public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
@@ -90,26 +86,6 @@ public class TrustStoreMessageSourceCreator implements SystemNodeCreator
                 }
             }
 
-            @Override
-            public void attributeSet(final ConfiguredObject<?> object,
-                                     final String attributeName,
-                                     final Object oldAttributeValue,
-                                     final Object newAttributeValue)
-            {
-
-            }
-
-            @Override
-            public void bulkChangeStart(final ConfiguredObject<?> object)
-            {
-
-            }
-
-            @Override
-            public void bulkChangeEnd(final ConfiguredObject<?> object)
-            {
-
-            }
         });
     }
 
@@ -141,7 +117,7 @@ public class TrustStoreMessageSourceCreator implements SystemNodeCreator
         }
     }
 
-    private class TrustStoreChangeListener implements ConfigurationChangeListener
+    private class TrustStoreChangeListener extends AbstractConfigurationChangeListener
     {
 
         private final SystemNodeRegistry _registry;
@@ -159,19 +135,6 @@ public class TrustStoreMessageSourceCreator implements SystemNodeCreator
             updateTrustStoreSourceRegistration(_registry, (TrustStore<?>)object);
         }
 
-
-        @Override
-        public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-        {
-
-        }
-
-        @Override
-        public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-        {
-
-        }
-
         @Override
         public void attributeSet(final ConfiguredObject<?> object,
                                  final String attributeName,
@@ -181,16 +144,5 @@ public class TrustStoreMessageSourceCreator implements SystemNodeCreator
             updateTrustStoreSourceRegistration(_registry, (TrustStore<?>)object);
         }
 
-        @Override
-        public void bulkChangeStart(final ConfiguredObject<?> object)
-        {
-
-        }
-
-        @Override
-        public void bulkChangeEnd(final ConfiguredObject<?> object)
-        {
-
-        }
     }
 }

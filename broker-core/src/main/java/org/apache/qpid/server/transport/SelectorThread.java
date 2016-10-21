@@ -69,10 +69,10 @@ class SelectorThread extends Thread
          * Queue of connections that are not currently scheduled and not registered with the selector.
          * These need to go back into the Selector.
          */
-        private final Queue<NonBlockingConnection> _unregisteredConnections = new ConcurrentLinkedQueue<>();
+        private final Queue<SchedulableConnection> _unregisteredConnections = new ConcurrentLinkedQueue<>();
 
         /** Set of connections that are currently being selected upon */
-        private final Set<NonBlockingConnection> _unscheduledConnections = new HashSet<>();
+        private final Set<SchedulableConnection> _unscheduledConnections = new HashSet<>();
 
 
 
@@ -102,17 +102,17 @@ class SelectorThread extends Thread
             return _selector;
         }
 
-        public Queue<NonBlockingConnection> getUnregisteredConnections()
+        public Queue<SchedulableConnection> getUnregisteredConnections()
         {
             return _unregisteredConnections;
         }
 
-        public Set<NonBlockingConnection> getUnscheduledConnections()
+        public Set<SchedulableConnection> getUnscheduledConnections()
         {
             return _unscheduledConnections;
         }
 
-        private List<NonBlockingConnection> processUnscheduledConnections()
+        private List<SchedulableConnection> processUnscheduledConnections()
         {
             _nextTimeout = Integer.MAX_VALUE;
             if (getUnscheduledConnections().isEmpty())
@@ -120,13 +120,13 @@ class SelectorThread extends Thread
                 return Collections.emptyList();
             }
 
-            List<NonBlockingConnection> toBeScheduled = new ArrayList<>();
+            List<SchedulableConnection> toBeScheduled = new ArrayList<>();
 
             long currentTime = System.currentTimeMillis();
-            Iterator<NonBlockingConnection> iterator = getUnscheduledConnections().iterator();
+            Iterator<SchedulableConnection> iterator = getUnscheduledConnections().iterator();
             while (iterator.hasNext())
             {
-                NonBlockingConnection connection = iterator.next();
+                SchedulableConnection connection = iterator.next();
 
                 int period = connection.getTicker().getTimeToNextTick(currentTime);
 
@@ -153,7 +153,7 @@ class SelectorThread extends Thread
             return toBeScheduled;
         }
 
-        private List<NonBlockingConnection> processSelectionKeys()
+        private List<SchedulableConnection> processSelectionKeys()
         {
             Set<SelectionKey> selectionKeys = _selector.selectedKeys();
             if (selectionKeys.isEmpty())
@@ -161,7 +161,7 @@ class SelectorThread extends Thread
                 return Collections.emptyList();
             }
 
-            List<NonBlockingConnection> toBeScheduled = new ArrayList<>();
+            List<SchedulableConnection> toBeScheduled = new ArrayList<>();
             for (SelectionKey key : selectionKeys)
             {
                 if(key.isAcceptable())
@@ -212,7 +212,7 @@ class SelectorThread extends Thread
                 }
                 else
                 {
-                    NonBlockingConnection connection = (NonBlockingConnection) key.attachment();
+                    SchedulableConnection connection = (SchedulableConnection) key.attachment();
                     if(connection != null)
                     {
                         try
@@ -235,15 +235,15 @@ class SelectorThread extends Thread
             return toBeScheduled;
         }
 
-        private List<NonBlockingConnection> reregisterUnregisteredConnections()
+        private List<SchedulableConnection> reregisterUnregisteredConnections()
         {
             if (getUnregisteredConnections().isEmpty())
             {
                 return Collections.emptyList();
             }
-            List<NonBlockingConnection> unregisterableConnections = new ArrayList<>();
+            List<SchedulableConnection> unregisterableConnections = new ArrayList<>();
 
-            NonBlockingConnection unregisteredConnection;
+            SchedulableConnection unregisteredConnection;
             while ((unregisteredConnection = getUnregisteredConnections().poll()) != null)
             {
                 getUnscheduledConnections().add(unregisteredConnection);
@@ -302,21 +302,21 @@ class SelectorThread extends Thread
                                 {
                                     _inSelect.set(false);
                                 }
-                                for (NonBlockingConnection connection : processSelectionKeys())
+                                for (SchedulableConnection connection : processSelectionKeys())
                                 {
                                     if (connection.setScheduled())
                                     {
                                         connections.add(new ConnectionProcessor(_scheduler, connection));
                                     }
                                 }
-                                for (NonBlockingConnection connection : reregisterUnregisteredConnections())
+                                for (SchedulableConnection connection : reregisterUnregisteredConnections())
                                 {
                                     if (connection.setScheduled())
                                     {
                                         connections.add(new ConnectionProcessor(_scheduler, connection));
                                     }
                                 }
-                                for (NonBlockingConnection connection : processUnscheduledConnections())
+                                for (SchedulableConnection connection : processUnscheduledConnections())
                                 {
                                     if (connection.setScheduled())
                                     {
@@ -474,10 +474,10 @@ class SelectorThread extends Thread
     {
 
         private final NetworkConnectionScheduler _scheduler;
-        private final NonBlockingConnection _connection;
+        private final SchedulableConnection _connection;
         private AtomicBoolean _running = new AtomicBoolean();
 
-        public ConnectionProcessor(final NetworkConnectionScheduler scheduler, final NonBlockingConnection connection)
+        public ConnectionProcessor(final NetworkConnectionScheduler scheduler, final SchedulableConnection connection)
         {
             _scheduler = scheduler;
             _connection = connection;
@@ -506,7 +506,7 @@ class SelectorThread extends Thread
         }
     }
 
-    private void unregisterConnection(final NonBlockingConnection connection) throws ClosedChannelException
+    private void unregisterConnection(final SchedulableConnection connection) throws ClosedChannelException
     {
         SelectionKey register = connection.getSocketChannel().register(connection.getSelectionTask().getSelector(), 0);
         register.cancel();
@@ -521,14 +521,15 @@ class SelectorThread extends Thread
         }
     }
 
-    private boolean selectionInterestRequiresUpdate(NonBlockingConnection connection)
+    private boolean selectionInterestRequiresUpdate(SchedulableConnection connection)
     {
         SelectionTask selectionTask = connection.getSelectionTask();
         if(selectionTask != null)
         {
             final SelectionKey selectionKey = connection.getSocketChannel().keyFor(selectionTask.getSelector());
             int expectedOps = (connection.wantsRead() ? SelectionKey.OP_READ : 0)
-                              | (connection.wantsWrite() ? SelectionKey.OP_WRITE : 0);
+                              | (connection.wantsWrite() ? SelectionKey.OP_WRITE : 0)
+                              | (connection.wantsConnect() ? SelectionKey.OP_CONNECT : 0);
 
             try
             {
@@ -545,7 +546,7 @@ class SelectorThread extends Thread
         }
     }
 
-    public void addConnection(final NonBlockingConnection connection)
+    public void addConnection(final SchedulableConnection connection)
     {
         if(selectionInterestRequiresUpdate(connection))
         {
@@ -557,7 +558,7 @@ class SelectorThread extends Thread
 
     }
 
-    public void returnConnectionToSelector(final NonBlockingConnection connection)
+    public void returnConnectionToSelector(final SchedulableConnection connection)
     {
         if(selectionInterestRequiresUpdate(connection))
         {
@@ -583,7 +584,7 @@ class SelectorThread extends Thread
         return _selectionTasks[index];
     }
 
-    void removeConnection(NonBlockingConnection connection)
+    void removeConnection(SchedulableConnection connection)
     {
         try
         {
@@ -631,7 +632,7 @@ class SelectorThread extends Thread
 
     }
 
-     public void addToWork(final NonBlockingConnection connection)
+     public void addToWork(final SchedulableConnection connection)
      {
          if (_closed.get())
          {

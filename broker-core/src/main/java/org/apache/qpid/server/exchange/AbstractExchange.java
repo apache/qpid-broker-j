@@ -39,18 +39,18 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import org.apache.qpid.server.configuration.updater.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.binding.BindingImpl;
+import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.logging.subjects.ExchangeLogSubject;
+import org.apache.qpid.server.message.BaseMessageInstance;
 import org.apache.qpid.server.message.InstanceProperties;
-import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
@@ -442,7 +442,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                                                                                         final String routingAddress,
                                                                                         final InstanceProperties instanceProperties,
                                                                                         final ServerTransaction txn,
-                                                                                        final Action<? super MessageInstance> postEnqueueAction)
+                                                                                        final Action<? super BaseMessageInstance> postEnqueueAction)
     {
         if (_virtualHost.getState() != State.ACTIVE)
         {

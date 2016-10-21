@@ -89,7 +89,7 @@ class LegacyAccessControlAdapter
         return _model;
     }
 
-    Result authorise(final LegacyOperation operation, final ConfiguredObject<?> configuredObject)
+    Result authorise(final LegacyOperation operation, final PermissionedObject configuredObject)
     {
         if (isAllowedOperation(operation, configuredObject))
         {
@@ -109,7 +109,7 @@ class LegacyAccessControlAdapter
 
     }
 
-    private boolean isAllowedOperation(LegacyOperation operation, ConfiguredObject<?> configuredObject)
+    private boolean isAllowedOperation(LegacyOperation operation, PermissionedObject configuredObject)
     {
         if (configuredObject instanceof Session && (operation == LegacyOperation.CREATE || operation == LegacyOperation.UPDATE
                                                     || operation == LegacyOperation.DELETE))
@@ -206,18 +206,18 @@ class LegacyAccessControlAdapter
     }
 
 
-    private ObjectProperties getACLObjectProperties(ConfiguredObject<?> configuredObject, LegacyOperation configuredObjectOperation)
+    private ObjectProperties getACLObjectProperties(PermissionedObject configuredObject, LegacyOperation configuredObjectOperation)
     {
-        String objectName = (String)configuredObject.getAttribute(ConfiguredObject.NAME);
+        String objectName = configuredObject.getName();
         Class<? extends ConfiguredObject> configuredObjectType = configuredObject.getCategoryClass();
         ObjectProperties properties = new ObjectProperties(objectName);
         if (configuredObject instanceof Binding)
         {
-            Exchange<?> exchange = (Exchange<?>)configuredObject.getParent(Exchange.class);
-            Queue<?> queue = (Queue<?>)configuredObject.getParent(Queue.class);
+            Exchange<?> exchange = (Exchange<?>)((Binding)configuredObject).getParent(Exchange.class);
+            Queue<?> queue = (Queue<?>)((Binding)configuredObject).getParent(Queue.class);
             properties.setName((String)exchange.getAttribute(Exchange.NAME));
             properties.put(ObjectProperties.Property.QUEUE_NAME, (String)queue.getAttribute(Queue.NAME));
-            properties.put(ObjectProperties.Property.ROUTING_KEY, (String)configuredObject.getAttribute(Binding.NAME));
+            properties.put(ObjectProperties.Property.ROUTING_KEY, objectName);
             properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)queue.getParent(VirtualHost.class).getAttribute(VirtualHost.NAME));
 
             // The temporary attribute (inherited from the binding's queue) seems to exist to allow the user to
@@ -227,21 +227,22 @@ class LegacyAccessControlAdapter
         }
         else if (configuredObject instanceof Queue)
         {
-            setQueueProperties(configuredObject, properties);
+            setQueueProperties((Queue)configuredObject, properties);
         }
         else if (configuredObject instanceof Exchange)
         {
-            Object lifeTimePolicy = configuredObject.getAttribute(ConfiguredObject.LIFETIME_POLICY);
+            Exchange<?> exchange = (Exchange<?>)configuredObject;
+            Object lifeTimePolicy = exchange.getAttribute(ConfiguredObject.LIFETIME_POLICY);
             properties.put(ObjectProperties.Property.AUTO_DELETE, lifeTimePolicy != LifetimePolicy.PERMANENT);
             properties.put(ObjectProperties.Property.TEMPORARY, lifeTimePolicy != LifetimePolicy.PERMANENT);
-            properties.put(ObjectProperties.Property.DURABLE, (Boolean) configuredObject.getAttribute(ConfiguredObject.DURABLE));
-            properties.put(ObjectProperties.Property.TYPE, (String) configuredObject.getAttribute(Exchange.TYPE));
-            VirtualHost virtualHost = configuredObject.getParent(VirtualHost.class);
+            properties.put(ObjectProperties.Property.DURABLE, (Boolean) exchange.getAttribute(ConfiguredObject.DURABLE));
+            properties.put(ObjectProperties.Property.TYPE, (String) exchange.getAttribute(Exchange.TYPE));
+            VirtualHost virtualHost = exchange.getParent(VirtualHost.class);
             properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)virtualHost.getAttribute(virtualHost.NAME));
         }
         else if (configuredObject instanceof QueueConsumer)
         {
-            Queue<?> queue = (Queue<?>)configuredObject.getParent(Queue.class);
+            Queue<?> queue = (Queue<?>)((QueueConsumer)configuredObject).getParent(Queue.class);
             setQueueProperties(queue, properties);
         }
         else if (isBrokerType(configuredObjectType))
@@ -254,7 +255,7 @@ class LegacyAccessControlAdapter
         }
         else if (isVirtualHostType(configuredObjectType))
         {
-            ConfiguredObject<?> virtualHost = getModel().getAncestor(VirtualHost.class, configuredObject);
+            ConfiguredObject<?> virtualHost = getModel().getAncestor(VirtualHost.class, (ConfiguredObject<?>)configuredObject);
             properties = new ObjectProperties((String)virtualHost.getAttribute(ConfiguredObject.NAME));
         }
         return properties;
@@ -333,7 +334,7 @@ class LegacyAccessControlAdapter
         return operation;
     }
 
-    Result authoriseAction(final ConfiguredObject<?> configuredObject,
+    Result authoriseAction(final PermissionedObject configuredObject,
                            String actionName,
                            final Map<String, Object> arguments)
     {
@@ -386,7 +387,7 @@ class LegacyAccessControlAdapter
 
     }
 
-    Result authoriseMethod(final ConfiguredObject<?> configuredObject,
+    Result authoriseMethod(final PermissionedObject configuredObject,
                            final String methodName,
                            final Map<String, Object> arguments)
     {
@@ -461,7 +462,7 @@ class LegacyAccessControlAdapter
         {
             if(BDB_VIRTUAL_HOST_NODE_OPERATIONS.contains(methodName))
             {
-                ObjectProperties properties = getACLObjectProperties(configuredObject.getParent(Broker.class), LegacyOperation.UPDATE);
+                ObjectProperties properties = getACLObjectProperties(((ConfiguredObject)configuredObject).getParent(Broker.class), LegacyOperation.UPDATE);
                 return _accessControl.authorise(LegacyOperation.UPDATE, ObjectType.BROKER, properties);
             }
         }
@@ -490,7 +491,7 @@ class LegacyAccessControlAdapter
 
 
     Result authorise(final Operation operation,
-                     final ConfiguredObject<?> configuredObject,
+                     final PermissionedObject configuredObject,
                      final Map<String, Object> arguments)
     {
         switch(operation.getType())

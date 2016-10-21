@@ -20,13 +20,16 @@
 */
 package org.apache.qpid.server.queue;
 
+import org.apache.qpid.server.message.BaseMessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
+import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.util.Action;
 
 public interface QueueEntryList
 {
-    Queue<?> getQueue();
+    RecoverableBaseQueue getQueue();
 
     QueueEntry add(ServerMessage message, final MessageEnqueueRecord enqueueRecord);
 
@@ -44,4 +47,17 @@ public interface QueueEntryList
     
     int getPriorities();
 
+    void onAcquiredByConsumer(QueueEntry queueEntry, final MessageInstanceConsumer consumer);
+
+    void onNoLongerAcquiredByConsumer(QueueEntry queueEntry);
+
+    void requeue(QueueEntry queueEntry);
+
+    boolean isHeld(QueueEntry queueEntry, long evaluationTime);
+
+    void dequeue(QueueEntry queueEntry);
+
+    int routeToAlternate(QueueEntry queueEntry, Action<? super BaseMessageInstance> action, ServerTransaction txn);
+
+    int getMaximumDeliveryAttempts();
 }

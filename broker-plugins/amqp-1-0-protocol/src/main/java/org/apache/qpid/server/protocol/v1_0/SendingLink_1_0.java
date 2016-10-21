@@ -35,6 +35,9 @@ import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.message.ConsumerOption;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -61,7 +64,6 @@ import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.filter.selector.ParseException;
 import org.apache.qpid.filter.selector.TokenMgrError;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.JMSSelectorFilter;
 import org.apache.qpid.server.message.MessageInstance;
@@ -84,7 +86,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
     private NamedAddressSpace _addressSpace;
     private SendingDestination _destination;
 
-    private ConsumerImpl _consumer;
+    private MessageInstanceConsumer _consumer;
     private ConsumerTarget_1_0 _target;
 
     private boolean _draining;
@@ -114,7 +116,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
         linkAttachment.setDeliveryStateHandler(this);
         QueueDestination qd = null;
 
-        EnumSet<ConsumerImpl.Option> options = EnumSet.noneOf(ConsumerImpl.Option.class);
+        EnumSet<ConsumerOption> options = EnumSet.noneOf(ConsumerOption.class);
 
 
         boolean noLocal = false;
@@ -170,8 +172,8 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
             _target = new ConsumerTarget_1_0(this, source.getDistributionMode() != StdDistMode.COPY);
             if(source.getDistributionMode() != StdDistMode.COPY)
             {
-                options.add(ConsumerImpl.Option.ACQUIRES);
-                options.add(ConsumerImpl.Option.SEES_REQUEUES);
+                options.add(ConsumerOption.ACQUIRES);
+                options.add(ConsumerOption.SEES_REQUEUES);
             }
 
         }
@@ -330,8 +332,8 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
 
 
             _target = new ConsumerTarget_1_0(this, true);
-            options.add(ConsumerImpl.Option.ACQUIRES);
-            options.add(ConsumerImpl.Option.SEES_REQUEUES);
+            options.add(ConsumerOption.ACQUIRES);
+            options.add(ConsumerOption.SEES_REQUEUES);
 
         }
         else
@@ -343,13 +345,13 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
         {
             if(noLocal)
             {
-                options.add(ConsumerImpl.Option.NO_LOCAL);
+                options.add(ConsumerOption.NO_LOCAL);
             }
 
             if(_durability == TerminusDurability.CONFIGURATION ||
                _durability == TerminusDurability.UNSETTLED_STATE )
             {
-                options.add(ConsumerImpl.Option.DURABLE);
+                options.add(ConsumerOption.DURABLE);
             }
 
             try
@@ -588,7 +590,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
     public synchronized void setLinkAttachment(SendingLinkAttachment linkAttachment)
     {
 
-        if(_consumer.isActive())
+        if(_target.getState() == ConsumerTarget.State.ACTIVE)
         {
             _target.suspend();
         }
@@ -694,7 +696,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
         return _addressSpace;
     }
 
-    public ConsumerImpl getConsumer()
+    public MessageInstanceConsumer getConsumer()
     {
         return _consumer;
     }

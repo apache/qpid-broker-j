@@ -95,4 +95,10 @@ public class HeartbeatBody implements AMQBody
         }
         processor.receiveHeartbeat();
     }
+
+    @Override
+    public String toString()
+    {
+        return "[HeartbeatBody]";
+    }
 }

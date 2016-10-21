@@ -414,6 +414,28 @@ public class FieldTable
         }
     }
 
+    public FieldArray getFieldArray(String string)
+    {
+        return getFieldArray(AMQShortString.valueOf(string));
+    }
+
+    public FieldArray getFieldArray(AMQShortString string)
+    {
+        AMQTypedValue value = getProperty(string);
+
+        if ((value != null) && (value.getType() == AMQType.FIELD_ARRAY))
+        {
+            return (FieldArray) value.getValue();
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+
+
+
     public Object getObject(String string)
     {
         return getObject(AMQShortString.valueOf(string));

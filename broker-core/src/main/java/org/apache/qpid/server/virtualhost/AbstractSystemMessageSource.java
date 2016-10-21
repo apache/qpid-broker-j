@@ -29,12 +29,14 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.Filterable;
+import org.apache.qpid.server.message.BaseMessageInstance;
+import org.apache.qpid.server.message.ConsumerOption;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
@@ -48,12 +50,12 @@ import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
 
-public abstract class AbstractSystemMessageSource implements MessageSource
+public abstract class AbstractSystemMessageSource implements MessageSource<AbstractSystemMessageSource.SystemMessageSourceConsumer>
 {
-    protected final UUID _id;
-    protected final String _name;
-    protected final NamedAddressSpace _addressSpace;
-    private List<Consumer> _consumers = new CopyOnWriteArrayList<>();
+    private final UUID _id;
+    private final String _name;
+    private final NamedAddressSpace _addressSpace;
+    private List<SystemMessageSourceConsumer> _consumers = new CopyOnWriteArrayList<>();
 
     public AbstractSystemMessageSource(String name, final NamedAddressSpace addressSpace)
     {
@@ -82,22 +84,22 @@ public abstract class AbstractSystemMessageSource implements MessageSource
     }
 
     @Override
-    public Consumer addConsumer(final ConsumerTarget target,
-                                final FilterManager filters,
-                                final Class<? extends ServerMessage> messageClass,
-                                final String consumerName,
-                                final EnumSet<ConsumerImpl.Option> options, final Integer priority)
+    public SystemMessageSourceConsumer addConsumer(final ConsumerTarget target,
+                                                   final FilterManager filters,
+                                                   final Class<? extends ServerMessage> messageClass,
+                                                   final String consumerName,
+                                                   final EnumSet<ConsumerOption> options, final Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
                    ConsumerAccessRefused
     {
-        final Consumer consumer = new Consumer(consumerName, target);
+        final SystemMessageSourceConsumer consumer = new SystemMessageSourceConsumer(consumerName, target);
         target.consumerAdded(consumer);
         _consumers.add(consumer);
         return consumer;
     }
 
     @Override
-    public Collection<Consumer> getConsumers()
+    public Collection<SystemMessageSourceConsumer> getConsumers()
     {
         return new ArrayList<>(_consumers);
     }
@@ -108,19 +110,23 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         return true;
     }
 
-    protected class Consumer implements ConsumerImpl
+    public NamedAddressSpace getAddressSpace()
+    {
+        return _addressSpace;
+    }
+
+    protected class SystemMessageSourceConsumer implements MessageInstanceConsumer
     {
 
-        private final long _id = ConsumerImpl.CONSUMER_NUMBER_GENERATOR.getAndIncrement();
         private final List<PropertiesMessageInstance> _queue =
                 Collections.synchronizedList(new ArrayList<PropertiesMessageInstance>());
         private final ConsumerTarget _target;
         private final String _name;
         private final StateChangeListener<ConsumerTarget, ConsumerTarget.State> _targetChangeListener =
-                new Consumer.TargetChangeListener();
+                new SystemMessageSourceConsumer.TargetChangeListener();
+        private final Object _identifier = new Object();
 
-
-        public Consumer(final String consumerName, ConsumerTarget target)
+        SystemMessageSourceConsumer(final String consumerName, ConsumerTarget target)
         {
             _name = consumerName;
             _target = target;
@@ -133,58 +139,19 @@ public abstract class AbstractSystemMessageSource implements MessageSource
 
         }
 
-        @Override
+        public Object getIdentifier()
+        {
+            return _identifier;
+        }
+
         public ConsumerTarget getTarget()
         {
             return _target;
         }
 
-        @Override
-        public long getBytesOut()
-        {
-            return 0;
-        }
-
-        @Override
-        public long getMessagesOut()
-        {
-            return 0;
-        }
-
-        @Override
-        public long getUnacknowledgedBytes()
-        {
-            return 0;
-        }
-
-        @Override
-        public long getUnacknowledgedMessages()
-        {
-            return 0;
-        }
-
-        @Override
         public AMQSessionModel getSessionModel()
         {
             return _target.getSessionModel();
-        }
-
-        @Override
-        public MessageSource getMessageSource()
-        {
-            return AbstractSystemMessageSource.this;
-        }
-
-        @Override
-        public long getConsumerNumber()
-        {
-            return _id;
-        }
-
-        @Override
-        public boolean isSuspended()
-        {
-            return false;
         }
 
         @Override
@@ -200,39 +167,9 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public boolean seesRequeues()
-        {
-            return false;
-        }
-
-        @Override
         public void close()
         {
             _consumers.remove(this);
-        }
-
-        @Override
-        public boolean trySendLock()
-        {
-            return _target.trySendLock();
-        }
-
-        @Override
-        public void getSendLock()
-        {
-            _target.getSendLock();
-        }
-
-        @Override
-        public void releaseSendLock()
-        {
-            _target.releaseSendLock();
-        }
-
-        @Override
-        public boolean isActive()
-        {
-            return false;
         }
 
         @Override
@@ -322,16 +259,15 @@ public abstract class AbstractSystemMessageSource implements MessageSource
 
     }
 
-    class PropertiesMessageInstance implements MessageInstance
+    private class PropertiesMessageInstance implements MessageInstance
     {
-        private final Consumer _consumer;
+        private final SystemMessageSourceConsumer _consumer;
         private int _deliveryCount;
         private boolean _isRedelivered;
-        private boolean _isDelivered;
         private boolean _isDeleted;
         private InternalMessage _message;
 
-        PropertiesMessageInstance(final Consumer consumer, final InternalMessage message)
+        PropertiesMessageInstance(final SystemMessageSourceConsumer consumer, final InternalMessage message)
         {
             _consumer = consumer;
             _message = message;
@@ -340,7 +276,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         @Override
         public int getDeliveryCount()
         {
-            return 0;
+            return _deliveryCount;
         }
 
         @Override
@@ -375,7 +311,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public ConsumerImpl getAcquiringConsumer()
+        public MessageInstanceConsumer getAcquiringConsumer()
         {
             return _consumer;
         }
@@ -387,13 +323,13 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public boolean isAcquiredBy(final ConsumerImpl consumer)
+        public boolean isAcquiredBy(final MessageInstanceConsumer consumer)
         {
             return consumer == _consumer && !isDeleted();
         }
 
         @Override
-        public boolean removeAcquisitionFromConsumer(final ConsumerImpl consumer)
+        public boolean removeAcquisitionFromConsumer(final MessageInstanceConsumer consumer)
         {
             return consumer == _consumer;
         }
@@ -411,7 +347,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public Consumer getDeliveredConsumer()
+        public SystemMessageSourceConsumer getDeliveredConsumer()
         {
             return isDeleted() ? null : _consumer;
         }
@@ -423,7 +359,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public boolean isRejectedBy(final ConsumerImpl consumer)
+        public boolean isRejectedBy(final MessageInstanceConsumer consumer)
         {
             return false;
         }
@@ -431,7 +367,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         @Override
         public boolean getDeliveredToConsumer()
         {
-            return _isDelivered;
+            return _deliveryCount > 0;
         }
 
         @Override
@@ -441,13 +377,13 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public boolean acquire(final ConsumerImpl sub)
+        public boolean acquire(final MessageInstanceConsumer sub)
         {
             return false;
         }
 
         @Override
-        public boolean makeAcquisitionUnstealable(final ConsumerImpl consumer)
+        public boolean makeAcquisitionUnstealable(final MessageInstanceConsumer consumer)
         {
             return false;
         }
@@ -465,7 +401,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public int routeToAlternate(final Action<? super MessageInstance> action,
+        public int routeToAlternate(final Action<? super BaseMessageInstance> action,
                                     final ServerTransaction txn)
         {
             return 0;
@@ -503,7 +439,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public void release(ConsumerImpl consumer)
+        public void release(MessageInstanceConsumer consumer)
         {
             release();
         }

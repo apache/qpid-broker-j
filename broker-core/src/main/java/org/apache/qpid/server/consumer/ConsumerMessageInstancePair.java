@@ -20,16 +20,17 @@
 package org.apache.qpid.server.consumer;
 
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageReference;
 
 public class ConsumerMessageInstancePair
 {
-    private final ConsumerImpl _consumer;
+    private final MessageInstanceConsumer _consumer;
     private final MessageInstance _entry;
     private final boolean _batch;
     private final MessageReference _reference;
 
-    public ConsumerMessageInstancePair(final ConsumerImpl consumer, final MessageInstance entry, final boolean batch)
+    public ConsumerMessageInstancePair(final MessageInstanceConsumer consumer, final MessageInstance entry, final boolean batch)
     {
         _consumer = consumer;
         _entry = entry;
@@ -38,7 +39,7 @@ public class ConsumerMessageInstancePair
 
     }
 
-    public ConsumerImpl getConsumer()
+    public MessageInstanceConsumer getConsumer()
     {
         return _consumer;
     }

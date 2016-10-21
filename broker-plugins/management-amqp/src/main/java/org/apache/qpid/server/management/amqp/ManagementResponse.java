@@ -20,10 +20,11 @@
  */
 package org.apache.qpid.server.management.amqp;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.filter.Filterable;
+import org.apache.qpid.server.message.BaseMessageInstance;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -85,7 +86,7 @@ class ManagementResponse implements MessageInstance
     }
 
     @Override
-    public ConsumerImpl getAcquiringConsumer()
+    public MessageInstanceConsumer getAcquiringConsumer()
     {
         return _consumer;
     }
@@ -97,13 +98,13 @@ class ManagementResponse implements MessageInstance
     }
 
     @Override
-    public boolean isAcquiredBy(final ConsumerImpl consumer)
+    public boolean isAcquiredBy(final MessageInstanceConsumer consumer)
     {
         return consumer == _consumer && !isDeleted();
     }
 
     @Override
-    public boolean removeAcquisitionFromConsumer(final ConsumerImpl consumer)
+    public boolean removeAcquisitionFromConsumer(final MessageInstanceConsumer consumer)
     {
         return consumer == _consumer;
     }
@@ -133,7 +134,7 @@ class ManagementResponse implements MessageInstance
     }
 
     @Override
-    public boolean isRejectedBy(final ConsumerImpl consumer)
+    public boolean isRejectedBy(final MessageInstanceConsumer consumer)
     {
         return false;
     }
@@ -151,13 +152,13 @@ class ManagementResponse implements MessageInstance
     }
 
     @Override
-    public boolean acquire(final ConsumerImpl sub)
+    public boolean acquire(final MessageInstanceConsumer sub)
     {
         return false;
     }
 
     @Override
-    public boolean makeAcquisitionUnstealable(final ConsumerImpl consumer)
+    public boolean makeAcquisitionUnstealable(final MessageInstanceConsumer consumer)
     {
         return false;
     }
@@ -175,7 +176,7 @@ class ManagementResponse implements MessageInstance
     }
 
     @Override
-    public int routeToAlternate(final Action<? super MessageInstance> action,
+    public int routeToAlternate(final Action<? super BaseMessageInstance> action,
                                 final ServerTransaction txn)
     {
         return 0;
@@ -213,7 +214,7 @@ class ManagementResponse implements MessageInstance
     }
 
     @Override
-    public void release(final ConsumerImpl release)
+    public void release(final MessageInstanceConsumer release)
     {
         release();
     }

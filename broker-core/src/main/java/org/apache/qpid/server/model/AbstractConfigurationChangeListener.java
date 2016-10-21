@@ -18,47 +18,42 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.store.berkeleydb;
+package org.apache.qpid.server.model;
 
-import org.apache.qpid.server.model.ConfigurationChangeListener;
-import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.State;
-
-public class NoopConfigurationChangeListener implements ConfigurationChangeListener
+public abstract class AbstractConfigurationChangeListener implements ConfigurationChangeListener
 {
-
-    public NoopConfigurationChangeListener() {
-    }
-
     @Override
     public void stateChanged(ConfiguredObject<?> object, State oldState, State newState)
     {
+
     }
 
     @Override
     public void childAdded(ConfiguredObject<?> object, ConfiguredObject<?> child)
     {
+
     }
 
     @Override
     public void childRemoved(ConfiguredObject<?> object, ConfiguredObject<?> child)
     {
+
     }
 
     @Override
-    public void attributeSet(ConfiguredObject<?> object, String attributeName, Object oldAttributeValue,
-                             Object newAttributeValue)
-    {
-    }
-
-    @Override
-    public void bulkChangeStart(final ConfiguredObject<?> object)
+    public void attributeSet(ConfiguredObject<?> object, String attributeName, Object oldAttributeValue, Object newAttributeValue)
     {
 
     }
 
     @Override
-    public void bulkChangeEnd(final ConfiguredObject<?> object)
+    public void bulkChangeStart(ConfiguredObject<?> object)
+    {
+
+    }
+
+    @Override
+    public void bulkChangeEnd(ConfiguredObject<?> object)
     {
 
     }

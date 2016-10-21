@@ -44,7 +44,7 @@ import org.apache.qpid.server.store.TransactionLogResource;
 public class SimpleQueueEntryImplTest extends QueueEntryImplTestBase
 {
 
-    private OrderedQueueEntryList queueEntryList;
+    private OrderedBaseQueueEntryList queueEntryList;
 
     @Override
     public void setUp() throws Exception

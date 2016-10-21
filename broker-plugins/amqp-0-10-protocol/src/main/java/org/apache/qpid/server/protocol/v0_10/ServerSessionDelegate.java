@@ -42,12 +42,12 @@ import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.message.ConsumerOption;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.transport.ProtocolEngine;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
@@ -342,18 +342,18 @@ public class ServerSessionDelegate extends SessionDelegate
                     ((ServerSession)session).register(destination, target);
                     try
                     {
-                        EnumSet<ConsumerImpl.Option> options = EnumSet.noneOf(ConsumerImpl.Option.class);
+                        EnumSet<ConsumerOption> options = EnumSet.noneOf(ConsumerOption.class);
                         if(method.getAcquireMode() == MessageAcquireMode.PRE_ACQUIRED)
                         {
-                            options.add(ConsumerImpl.Option.ACQUIRES);
+                            options.add(ConsumerOption.ACQUIRES);
                         }
                         if(method.getAcquireMode() != MessageAcquireMode.NOT_ACQUIRED || method.getAcceptMode() == MessageAcceptMode.EXPLICIT)
                         {
-                            options.add(ConsumerImpl.Option.SEES_REQUEUES);
+                            options.add(ConsumerOption.SEES_REQUEUES);
                         }
                         if(method.getExclusive())
                         {
-                            options.add(ConsumerImpl.Option.EXCLUSIVE);
+                            options.add(ConsumerOption.EXCLUSIVE);
                         }
                         for(MessageSource source : sources)
                         {

@@ -28,9 +28,9 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
+import org.apache.qpid.server.message.BaseMessageInstance;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
-import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
@@ -222,7 +222,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
                                                                                      final String routingAddress,
                                                                                      final InstanceProperties instanceProperties,
                                                                                      final ServerTransaction txn,
-                                                                                     final Action<? super MessageInstance> postEnqueueAction)
+                                                                                     final Action<? super BaseMessageInstance> postEnqueueAction)
         {
             MessageDestination destination = getAttainedMessageDestination(routingAddress);
             if(destination == null || destination == this)

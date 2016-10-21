@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.RemoteReplicationNode;
@@ -269,7 +270,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
 
         final AtomicReference<RemoteReplicationNode<?>> lastSeenReplica = new AtomicReference<>();
         final CountDownLatch remoteNodeLatch = new CountDownLatch(2);
-        node1.addChangeListener(new NoopConfigurationChangeListener()
+        node1.addChangeListener(new AbstractConfigurationChangeListener()
         {
             @Override
             public void childAdded(ConfiguredObject<?> object, ConfiguredObject<?> child)
@@ -557,7 +558,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         Map<String, Object> node1Attributes = _helper.createNodeAttributes(nodeName, groupName, helperAddress, helperAddress, nodeName, nodePortNumber);
         BDBHAVirtualHostNode<?> node = _helper.createAndStartHaVHN(node1Attributes);
         final CountDownLatch stopLatch = new CountDownLatch(1);
-        ConfigurationChangeListener listener = new NoopConfigurationChangeListener()
+        ConfigurationChangeListener listener = new AbstractConfigurationChangeListener()
         {
             @Override
             public void stateChanged(ConfiguredObject<?> object, State oldState, State newState)
@@ -578,7 +579,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
 
         final CountDownLatch stateChangeLatch = new CountDownLatch(1);
         final CountDownLatch roleChangeLatch = new CountDownLatch(1);
-        node.addChangeListener(new NoopConfigurationChangeListener()
+        node.addChangeListener(new AbstractConfigurationChangeListener()
         {
             @Override
             public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
@@ -637,7 +638,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         BDBHAVirtualHostNode<?> node = _helper.createAndStartHaVHN(nodeAttributes);
 
         final CountDownLatch stopLatch = new CountDownLatch(1);
-        ConfigurationChangeListener listener = new NoopConfigurationChangeListener()
+        ConfigurationChangeListener listener = new AbstractConfigurationChangeListener()
         {
             @Override
             public void stateChanged(ConfiguredObject<?> object, State oldState, State newState)
@@ -666,7 +667,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
 
         final CountDownLatch stateChangeLatch = new CountDownLatch(1);
         final CountDownLatch roleChangeLatch = new CountDownLatch(1);
-        node.addChangeListener(new NoopConfigurationChangeListener()
+        node.addChangeListener(new AbstractConfigurationChangeListener()
         {
             @Override
             public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
@@ -719,7 +720,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
 
         final AtomicInteger permittedNodesChangeCounter = new AtomicInteger();
         final CountDownLatch _permittedNodesLatch = new CountDownLatch(1);
-        node2.addChangeListener(new NoopConfigurationChangeListener()
+        node2.addChangeListener(new AbstractConfigurationChangeListener()
         {
             @Override
             public void attributeSet(ConfiguredObject<?> object, String attributeName, Object oldAttributeValue, Object newAttributeValue)
@@ -776,7 +777,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         BDBHAVirtualHostNode<?> node1 = _helper.createAndStartHaVHN(node1Attributes);
 
         final CountDownLatch stopLatch = new CountDownLatch(1);
-        ConfigurationChangeListener listener = new NoopConfigurationChangeListener()
+        ConfigurationChangeListener listener = new AbstractConfigurationChangeListener()
         {
             @Override
             public void stateChanged(ConfiguredObject<?> object, State oldState, State newState)

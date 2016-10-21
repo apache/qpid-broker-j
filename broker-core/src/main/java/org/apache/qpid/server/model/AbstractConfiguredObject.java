@@ -2596,11 +2596,11 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     public ListenableFuture<Void> setAttributesAsync(final Map<String, Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException
     {
         final Map<String,Object> updateAttributes = new HashMap<>(attributes);
-        Object desiredState = updateAttributes.remove(ConfiguredObject.DESIRED_STATE);
-        runTask(new Task<Void, RuntimeException>()
+        final Object desiredState = updateAttributes.remove(ConfiguredObject.DESIRED_STATE);
+        return doOnConfigThread(new Task<ListenableFuture<Void>, RuntimeException>()
         {
             @Override
-            public Void execute()
+            public ListenableFuture<Void> execute()
             {
                 authoriseSetAttributes(createProxyForValidation(attributes), attributes.keySet());
                 if (!isSystemProcess())
@@ -2609,7 +2609,29 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 }
 
                 changeAttributes(updateAttributes);
-                return null;
+                if(desiredState != null)
+                {
+                    State state;
+                    if(desiredState instanceof State)
+                    {
+                        state = (State)desiredState;
+                    }
+                    else if(desiredState instanceof String)
+                    {
+                        state = State.valueOf((String)desiredState);
+                    }
+                    else
+                    {
+                        throw new IllegalArgumentException("Cannot convert an object of type " + desiredState.getClass().getName() + " to a State");
+                    }
+                    return setDesiredState(state);
+                }
+                else
+                {
+                    return Futures.immediateFuture(null);
+                }
+
+
             }
 
             @Override
@@ -2630,27 +2652,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 return "attributes number=" + attributes.size();
             }
         });
-        if(desiredState != null)
-        {
-            State state;
-            if(desiredState instanceof State)
-            {
-                state = (State)desiredState;
-            }
-            else if(desiredState instanceof String)
-            {
-                state = State.valueOf((String)desiredState);
-            }
-            else
-            {
-                throw new IllegalArgumentException("Cannot convert an object of type " + desiredState.getClass().getName() + " to a State");
-            }
-            return setDesiredState(state);
-        }
-        else
-        {
-            return Futures.immediateFuture(null);
-        }
     }
 
     public void forceUpdateAllSecureAttributes()

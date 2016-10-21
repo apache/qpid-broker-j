@@ -20,10 +20,12 @@
  */
 package org.apache.qpid.server.model;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.qpid.server.protocol.AMQSessionModel;
 
 @ManagedObject
-public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>, ConsumerImpl
+public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>
 {
     String DISTRIBUTION_MODE = "distributionMode";
     String EXCLUSIVE = "exclusive";
@@ -36,7 +38,7 @@ public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>, Co
     String SUSPEND_NOTIFICATION_PERIOD = "consumer.suspendNotificationPeriod";
 
     @ManagedContextDefault( name = SUSPEND_NOTIFICATION_PERIOD)
-    long SUSPEND_NOTIFICATION_PERIOD_DEFAULT = 10000;
+    long SUSPEND_NOTIFICATION_PERIOD_DEFAULT = 10000;AtomicLong CONSUMER_NUMBER_GENERATOR = new AtomicLong(0);
 
     @ManagedAttribute
     String getDistributionMode();
@@ -70,4 +72,21 @@ public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>, Co
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Prefetch")
     long getUnacknowledgedMessages();
 
+
+    AMQSessionModel getSessionModel();
+
+    long getConsumerNumber();
+
+    boolean isSuspended();
+
+    boolean seesRequeues();
+
+    boolean trySendLock();
+
+
+    void getSendLock();
+
+    void releaseSendLock();
+
+    boolean isActive();
 }

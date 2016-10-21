@@ -120,7 +120,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         @Override
         public Result authorise(final SecurityToken token,
                                 final Operation operation,
-                                final ConfiguredObject<?> configuredObject)
+                                final PermissionedObject configuredObject)
         {
             return isSystemProcess() ? Result.ALLOWED : Result.DEFER;
         }
@@ -128,7 +128,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         @Override
         public Result authorise(final SecurityToken token,
                                 final Operation operation,
-                                final ConfiguredObject<?> configuredObject,
+                                final PermissionedObject configuredObject,
                                 final Map<String, Object> arguments)
         {
             return isSystemProcess() ? Result.ALLOWED : Result.DEFER;
@@ -1135,15 +1135,9 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     }
 
 
-    private final class AccessControlProviderListener implements ConfigurationChangeListener
+    private final class AccessControlProviderListener extends AbstractConfigurationChangeListener
     {
         private final Set<ConfiguredObject<?>> _bulkChanges = new HashSet<>();
-
-        @Override
-        public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
-        {
-
-        }
 
         @Override
         public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)

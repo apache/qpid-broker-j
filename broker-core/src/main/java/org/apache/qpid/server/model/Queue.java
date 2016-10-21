@@ -34,11 +34,11 @@ import org.apache.qpid.server.message.MessageInfo;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.protocol.CapacityChecker;
-import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.queue.NotificationCheck;
 import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.queue.QueueEntryVisitor;
+import org.apache.qpid.server.queue.RecoverableBaseQueue;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.util.Deletable;
@@ -46,8 +46,8 @@ import org.apache.qpid.server.util.Deletable;
 @ManagedObject( defaultType = "standard", description = Queue.CLASS_DESCRIPTION )
 public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                                                    Comparable<X>, ExchangeReferrer,
-                                                   BaseQueue,
-                                                   MessageSource,
+                                                   RecoverableBaseQueue,
+                                                   MessageSource<QueueConsumer<?>>,
                                                    CapacityChecker,
                                                    MessageDestination,
                                                    Deletable<X>
@@ -220,7 +220,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     Collection<? extends Binding<?>> getBindings();
 
 
-    Collection<? extends Consumer<?>> getConsumers();
+    Collection<QueueConsumer<?>> getConsumers();
 
     //operations
 

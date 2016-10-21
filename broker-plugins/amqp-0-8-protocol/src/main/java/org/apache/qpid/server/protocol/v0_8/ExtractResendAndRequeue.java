@@ -25,8 +25,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 
 public class ExtractResendAndRequeue implements UnacknowledgedMessageMap.Visitor
 {
@@ -49,7 +49,7 @@ public class ExtractResendAndRequeue implements UnacknowledgedMessageMap.Visitor
     {
 
         message.setRedelivered();
-        final ConsumerImpl consumer = message.getDeliveredConsumer();
+        final MessageInstanceConsumer consumer = message.getDeliveredConsumer();
         if (consumer != null)
         {
             // Consumer exists

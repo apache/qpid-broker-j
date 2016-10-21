@@ -469,11 +469,13 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         return preferenceStoreFactory.createInstance(this, attributes);
     }
 
+    @Override
     protected final Principal getSystemPrincipal()
     {
         return _systemPrincipal;
     }
 
+    @Override
     public Runnable getOnContainerResolveTask()
     {
         return _onContainerResolveTask;
@@ -485,11 +487,13 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         _onContainerResolveTask = onContainerResolveTask;
     }
 
+    @Override
     public Runnable getOnContainerCloseTask()
     {
         return _onContainerCloseTask;
     }
 
+    @Override
     public void setOnContainerCloseTask(final Runnable onContainerCloseTask)
     {
         _onContainerCloseTask = onContainerCloseTask;
@@ -497,6 +501,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
     private class ShutdownService implements Runnable
     {
+        @Override
         public void run()
         {
             Subject.doAs(getSystemTaskSubject("Shutdown"),

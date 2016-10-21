@@ -1,5 +1,5 @@
 /*
-*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -40,228 +39,232 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.Ticker;
-import org.apache.qpid.transport.network.TransportEncryption;
 import org.apache.qpid.util.SystemUtils;
 
-public class NonBlockingConnection implements ServerNetworkConnection, ByteBufferSender
+public abstract class NonBlockingConnection implements SchedulableConnection
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingConnection.class);
 
+    final AtomicLong _usedOutboundMessageSpace = new AtomicLong();
     private final SocketChannel _socketChannel;
-    private NonBlockingConnectionDelegate _delegate;
     private final Deque<NetworkConnectionScheduler> _schedulerDeque = new ConcurrentLinkedDeque<>();
-    private final ConcurrentLinkedQueue<QpidByteBuffer> _buffers = new ConcurrentLinkedQueue<>();
-
-    private final String _remoteSocketAddress;
-    private final AtomicBoolean _closed = new AtomicBoolean(false);
-    private final ProtocolEngine _protocolEngine;
-    private final Runnable _onTransportEncryptionAction;
-    private final AtomicLong _usedOutboundMessageSpace = new AtomicLong();
-    private final long _outboundMessageBufferLimit;
-
-    private volatile boolean _fullyWritten = true;
-
-    private boolean _partialRead = false;
-
-    private final AmqpPort _port;
+    private final String _remoteAddressString;
     private final AtomicBoolean _scheduled = new AtomicBoolean();
-    private volatile long _scheduledTime;
-    private volatile boolean _unexpectedByteBufferSizeReported;
-    private final String _threadName;
-    private volatile SelectorThread.SelectionTask _selectionTask;
-    private Iterator<Runnable> _pendingIterator;
     private final AtomicLong _maxWriteIdleMillis = new AtomicLong();
     private final AtomicLong _maxReadIdleMillis = new AtomicLong();
-    private final List<SchedulingDelayNotificationListener> _schedulingDelayNotificationListeners = new CopyOnWriteArrayList<>();
-    private final AtomicBoolean _hasShutdown = new AtomicBoolean();
+    private final List<SchedulingDelayNotificationListener>
+            _schedulingDelayNotificationListeners = new CopyOnWriteArrayList<>();
+    private final String _threadName;
+    private final ConcurrentLinkedQueue<QpidByteBuffer> _buffers = new ConcurrentLinkedQueue<>();
+    private NonBlockingConnectionDelegate _delegate;
+    private final AtomicBoolean _closed = new AtomicBoolean(false);
 
-    public NonBlockingConnection(SocketChannel socketChannel,
-                                 ProtocolEngine protocolEngine,
-                                 final Set<TransportEncryption> encryptionSet,
-                                 final Runnable onTransportEncryptionAction,
-                                 final NetworkConnectionScheduler scheduler,
-                                 final AmqpPort port)
+    private volatile SelectorThread.SelectionTask _selectionTask;
+    private volatile long _scheduledTime;
+    private final AtomicBoolean _hasShutdown = new AtomicBoolean();
+    private final AtomicBoolean _unexpectedByteBufferSizeReported = new AtomicBoolean();
+    private final ProtocolEngine _protocolEngine;
+    private volatile Iterator<Runnable> _pendingIterator;
+    private volatile boolean _fullyWritten = true;
+    private volatile boolean _partialRead = false;
+
+    protected NonBlockingConnection(final SocketChannel socketChannel, ProtocolEngine protocolEngine,
+                                    final NetworkConnectionScheduler scheduler,
+                                    String remoteAddressString)
     {
         _socketChannel = socketChannel;
-        pushScheduler(scheduler);
-
         _protocolEngine = protocolEngine;
-        _onTransportEncryptionAction = onTransportEncryptionAction;
-
-        _remoteSocketAddress = _socketChannel.socket().getRemoteSocketAddress().toString();
-        _port = port;
-        _threadName = SelectorThread.IO_THREAD_NAME_PREFIX + _remoteSocketAddress.toString();
-
-        _outboundMessageBufferLimit = (long) _port.getContextValue(Long.class,
-                                                                   AmqpPort.PORT_AMQP_OUTBOUND_MESSAGE_BUFFER_SIZE);
-
+        _remoteAddressString = remoteAddressString;
+        _threadName = SelectorThread.IO_THREAD_NAME_PREFIX + _remoteAddressString;
+        pushScheduler(scheduler);
         protocolEngine.setWorkListener(new Action<ProtocolEngine>()
         {
             @Override
             public void performAction(final ProtocolEngine object)
             {
-                getScheduler().schedule(NonBlockingConnection.this);
+                NetworkConnectionScheduler scheduler = getScheduler();
+                if(scheduler != null)
+                {
+                    scheduler.schedule(NonBlockingConnection.this);
+                }
             }
         });
 
-        if(encryptionSet.size() == 1)
-        {
-            setTransportEncryption(encryptionSet.iterator().next());
-        }
-        else
-        {
-            _delegate = new NonBlockingConnectionUndecidedDelegate(this);
-        }
 
     }
 
-    String getThreadName()
+    @Override
+    public final String getThreadName()
     {
         return _threadName;
     }
 
-    public boolean isPartialRead()
+
+    protected final String getRemoteAddressString()
     {
-        return _partialRead;
+        return _remoteAddressString;
     }
 
-    Ticker getTicker()
+    protected final boolean isClosed()
     {
-        return _protocolEngine.getAggregateTicker();
+        return _closed.get();
     }
 
-    SocketChannel getSocketChannel()
+    protected final boolean setClosed()
+    {
+        return _closed.compareAndSet(false,true);
+    }
+
+    @Override
+    public final SocketChannel getSocketChannel()
     {
         return _socketChannel;
     }
 
+
     @Override
-    public void start()
+    public final SocketAddress getRemoteAddress()
     {
+        return getSocketChannel().socket().getRemoteSocketAddress();
     }
 
     @Override
-    public ByteBufferSender getSender()
+    public final SocketAddress getLocalAddress()
     {
-        return this;
+        return getSocketChannel().socket().getLocalSocketAddress();
+    }
+
+
+    public final void pushScheduler(NetworkConnectionScheduler scheduler)
+    {
+        _schedulerDeque.addFirst(scheduler);
+    }
+
+    public final NetworkConnectionScheduler popScheduler()
+    {
+        return _schedulerDeque.removeFirst();
     }
 
     @Override
-    public void close()
+    public final NetworkConnectionScheduler getScheduler()
     {
-        LOGGER.debug("Closing " + _remoteSocketAddress);
-        if(_closed.compareAndSet(false,true))
-        {
-            _protocolEngine.notifyWork();
-            _selectionTask.wakeup();
-        }
+        return _schedulerDeque.peekFirst();
     }
 
     @Override
-    public SocketAddress getRemoteAddress()
-    {
-        return _socketChannel.socket().getRemoteSocketAddress();
-    }
-
-    @Override
-    public SocketAddress getLocalAddress()
-    {
-        return _socketChannel.socket().getLocalSocketAddress();
-    }
-
-    @Override
-    public void setMaxWriteIdleMillis(final long millis)
-    {
-        _maxWriteIdleMillis.set(millis);
-    }
-
-    @Override
-    public void setMaxReadIdleMillis(final long millis)
-    {
-        _maxReadIdleMillis.set(millis);
-    }
-
-    @Override
-    public Principal getPeerPrincipal()
+    public final Principal getPeerPrincipal()
     {
         return _delegate.getPeerPrincipal();
     }
 
     @Override
-    public Certificate getPeerCertificate()
+    public final Certificate getPeerCertificate()
     {
         return _delegate.getPeerCertificate();
     }
 
     @Override
-    public long getMaxReadIdleMillis()
+    public final String getTransportInfo()
+    {
+        return _delegate.getTransportInfo();
+    }
+
+
+    @Override
+    public final SelectorThread.SelectionTask getSelectionTask()
+    {
+        return _selectionTask;
+    }
+
+    @Override
+    public final void setSelectionTask(final SelectorThread.SelectionTask selectionTask)
+    {
+        _selectionTask = selectionTask;
+    }
+
+    @Override
+    public final boolean setScheduled()
+    {
+        final boolean scheduled = _scheduled.compareAndSet(false, true);
+        if (scheduled)
+        {
+            _scheduledTime = System.currentTimeMillis();
+        }
+        return scheduled;
+    }
+
+    @Override
+    public final void clearScheduled()
+    {
+        _scheduled.set(false);
+        _scheduledTime = 0;
+    }
+
+    @Override
+    public final long getScheduledTime()
+    {
+        return _scheduledTime;
+    }
+
+    @Override
+    public final void setMaxWriteIdleMillis(final long millis)
+    {
+        _maxWriteIdleMillis.set(millis);
+    }
+
+    @Override
+    public final void setMaxReadIdleMillis(final long millis)
+    {
+        _maxReadIdleMillis.set(millis);
+    }
+
+    @Override
+    public final long getMaxReadIdleMillis()
     {
         return _maxReadIdleMillis.get();
     }
 
     @Override
-    public long getMaxWriteIdleMillis()
+    public final long getMaxWriteIdleMillis()
     {
         return _maxWriteIdleMillis.get();
     }
-
     @Override
-    public void reserveOutboundMessageSpace(long size)
-    {
-        if (_usedOutboundMessageSpace.addAndGet(size) > _outboundMessageBufferLimit)
-        {
-            _protocolEngine.setMessageAssignmentSuspended(true, false);
-        }
-    }
-
-    @Override
-    public String getTransportInfo()
-    {
-        return _delegate.getTransportInfo();
-    }
-
-    boolean wantsRead()
-    {
-        return _fullyWritten;
-    }
-
-    boolean wantsWrite()
-    {
-        return !_fullyWritten;
-    }
-
-    public boolean isStateChanged()
+    public final boolean isStateChanged()
     {
         return _protocolEngine.hasWork();
     }
 
-    public void doPreWork()
+    @Override
+    public final boolean wantsRead()
     {
-        if (!_closed.get())
-        {
-            long currentTime = System.currentTimeMillis();
-            long schedulingDelay = currentTime - getScheduledTime();
-            if (!_schedulingDelayNotificationListeners.isEmpty())
-            {
-                for (SchedulingDelayNotificationListener listener : _schedulingDelayNotificationListeners)
-                {
-                    listener.notifySchedulingDelay(schedulingDelay);
-                }
-            }
-        }
+        return _fullyWritten;
     }
 
+    @Override
+    public final boolean wantsWrite()
+    {
+        return !_fullyWritten;
+    }
+
+    @Override
+    public final boolean isPartialRead()
+    {
+        return _partialRead;
+    }
+
+    @Override
     public boolean doWork()
     {
         _protocolEngine.clearWork();
-        if (!_closed.get())
+        try
         {
-            try
+
+            if (!isClosed() && (!wantsConnect() || completeConnection()))
             {
                 long currentTime = System.currentTimeMillis();
                 int tick = getTicker().getTimeToNextTick(currentTime);
@@ -275,14 +278,16 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
                 boolean processPendingComplete = processPending();
 
-                if(processPendingComplete)
+                if (processPendingComplete)
                 {
                     _pendingIterator = null;
                     _protocolEngine.setTransportBlockedForWriting(false);
                     boolean dataRead = doRead();
-                    _protocolEngine.setTransportBlockedForWriting(!doWrite());
+                    _fullyWritten = doWrite();
+                    _protocolEngine.setTransportBlockedForWriting(!_fullyWritten);
 
-                    if (!_fullyWritten || dataRead || (_delegate.needsWork() && _delegate.getNetInputBuffer().position() != 0))
+                    if (!_fullyWritten || dataRead || (_delegate.needsWork()
+                                                       && _delegate.getNetInputBuffer().position() != 0))
                     {
                         _protocolEngine.notifyWork();
                     }
@@ -296,34 +301,33 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                 {
                     _protocolEngine.notifyWork();
                 }
-
-            }
-            catch (IOException |
-                    ConnectionScopedRuntimeException e)
-            {
-                if (LOGGER.isDebugEnabled())
-                {
-                    LOGGER.debug("Exception performing I/O for connection '{}'",
-                                 _remoteSocketAddress, e);
-                }
-                else
-                {
-                    LOGGER.info("Exception performing I/O for connection '{}' : {}",
-                                _remoteSocketAddress, e.getMessage());
-                }
-
-                if(_closed.compareAndSet(false,true))
-                {
-                    _protocolEngine.notifyWork();
-                }
-            }
-            finally
-            {
-                _protocolEngine.setIOThread(null);
             }
         }
+        catch (IOException |
+                ConnectionScopedRuntimeException e)
+        {
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug("Exception performing I/O for connection '{}'",
+                             getRemoteAddressString(), e);
+            }
+            else
+            {
+                LOGGER.info("Exception performing I/O for connection '{}' : {}",
+                            getRemoteAddressString(), e.getMessage());
+            }
 
-        final boolean closed = _closed.get();
+            if(setClosed())
+            {
+                _protocolEngine.notifyWork();
+            }
+        }
+        finally
+        {
+            _protocolEngine.setIOThread(null);
+        }
+
+        final boolean closed = isClosed();
         if (closed)
         {
             shutdown();
@@ -333,17 +337,12 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
     }
 
-    @Override
-    public void addSchedulingDelayNotificationListeners(final SchedulingDelayNotificationListener listener)
+    private boolean completeConnection() throws IOException
     {
-        _schedulingDelayNotificationListeners.add(listener);
+        boolean finishConnect = getSocketChannel().finishConnect();
+        return finishConnect  && !wantsConnect();
     }
 
-    @Override
-    public void removeSchedulingDelayNotificationListeners(final SchedulingDelayNotificationListener listener)
-    {
-        _schedulingDelayNotificationListeners.remove(listener);
-    }
 
     private boolean processPending() throws IOException
     {
@@ -352,14 +351,14 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
             _pendingIterator = _protocolEngine.processPendingIterator();
         }
 
-        final int networkBufferSize = _port.getNetworkBufferSize();
+        final int networkBufferSize = getNetworkBufferSize();
 
         while(_pendingIterator.hasNext())
         {
             long size = getBufferedSize();
             if(size >= networkBufferSize)
             {
-                doWrite();
+                _fullyWritten = doWrite();
                 long bytesWritten = size - getBufferedSize();
                 if(bytesWritten < (networkBufferSize / 2))
                 {
@@ -376,19 +375,123 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         boolean complete = !_pendingIterator.hasNext();
         if (getBufferedSize() >= networkBufferSize)
         {
-            doWrite();
+            _fullyWritten = doWrite();
             complete &= getBufferedSize() < networkBufferSize /2;
         }
         return complete;
     }
 
-    private long getBufferedSize()
+    protected abstract int getNetworkBufferSize();
+
+
+    @Override
+    public final void doPreWork()
+    {
+        if (!isClosed())
+        {
+            long currentTime = System.currentTimeMillis();
+            long schedulingDelay = currentTime - getScheduledTime();
+            if (!_schedulingDelayNotificationListeners.isEmpty())
+            {
+                for (SchedulingDelayNotificationListener listener : _schedulingDelayNotificationListeners)
+                {
+                    listener.notifySchedulingDelay(schedulingDelay);
+                }
+            }
+        }
+    }
+
+
+    /**
+     * doRead is not reentrant.
+     */
+    boolean doRead() throws IOException
+    {
+        _partialRead = false;
+        if(!isClosed() && _delegate.readyForRead())
+        {
+            int readData = readFromNetwork();
+
+            if (readData > 0)
+            {
+                return _delegate.processData();
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    @Override
+    public long writeToTransport(Collection<QpidByteBuffer> buffers) throws IOException
+    {
+        long written  = QpidByteBuffer.write(getSocketChannel(), buffers);
+        if (LOGGER.isDebugEnabled())
+        {
+            LOGGER.debug("Written " + written + " bytes");
+        }
+        return written;
+    }
+
+    protected int readFromNetwork() throws IOException
+    {
+        QpidByteBuffer buffer = _delegate.getNetInputBuffer();
+
+        int read = buffer.read(getSocketChannel());
+        if (read == -1)
+        {
+            setClosed();
+        }
+
+        _partialRead = read != 0;
+
+        if (LOGGER.isDebugEnabled())
+        {
+            LOGGER.debug("Read " + read + " byte(s)");
+        }
+        return read;
+    }
+
+
+
+
+    @Override
+    public final void addSchedulingDelayNotificationListeners(final SchedulingDelayNotificationListener listener)
+    {
+        _schedulingDelayNotificationListeners.add(listener);
+    }
+
+    @Override
+    public final void removeSchedulingDelayNotificationListeners(final SchedulingDelayNotificationListener listener)
+    {
+        _schedulingDelayNotificationListeners.remove(listener);
+    }
+
+    @Override
+    public final ByteBufferSender getSender()
+    {
+        return this;
+    }
+
+    @Override
+    public final boolean isDirectBufferPreferred()
+    {
+        return true;
+    }
+
+    private final long getBufferedSize()
     {
         // Avoids iterator garbage if empty
         if (_buffers.isEmpty())
         {
             return 0L;
         }
+
         long totalSize = 0L;
         for(QpidByteBuffer buf : _buffers)
         {
@@ -397,7 +500,44 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         return totalSize;
     }
 
-    private void shutdown()
+    final boolean doWrite() throws IOException
+    {
+        boolean fullyWritten = _delegate.doWrite(_buffers);
+        while(!_buffers.isEmpty())
+        {
+            QpidByteBuffer buf = _buffers.peek();
+            if(buf.hasRemaining())
+            {
+                break;
+            }
+            _buffers.poll();
+            buf.dispose();
+        }
+        if (fullyWritten)
+        {
+            _usedOutboundMessageSpace.set(0);
+        }
+        return fullyWritten;
+
+    }
+
+    @Override
+    public final void send(final QpidByteBuffer msg)
+    {
+
+        if (isClosed())
+        {
+            LOGGER.warn("Send ignored as the connection is already closed");
+        }
+        else if (msg.remaining() > 0)
+        {
+            _buffers.add(msg.duplicate());
+        }
+        msg.position(msg.limit());
+    }
+
+
+    protected final void shutdown()
     {
         if (_hasShutdown.getAndSet(true))
         {
@@ -408,7 +548,9 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         {
             shutdownInput();
             shutdownFinalWrite();
+
             _protocolEngine.closed();
+
             shutdownOutput();
         }
         finally
@@ -425,12 +567,12 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                 }
                 finally
                 {
-                    _socketChannel.close();
+                    getSocketChannel().close();
                 }
             }
             catch (IOException e)
             {
-                LOGGER.info("Exception closing socket '{}': {}", _remoteSocketAddress, e.getMessage());
+                LOGGER.info("Exception closing socket '{}': {}", getRemoteAddressString(), e.getMessage());
             }
 
             if (SystemUtils.isWindows())
@@ -451,7 +593,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         }
         catch (IOException e)
         {
-            LOGGER.info("Exception performing final write/close for '{}': {}", _remoteSocketAddress, e.getMessage());
+            LOGGER.info("Exception performing final write/close for '{}': {}", getRemoteAddressString(), e.getMessage());
         }
     }
 
@@ -461,11 +603,11 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         {
             try
             {
-                _socketChannel.shutdownOutput();
+                getSocketChannel().shutdownOutput();
             }
             catch (IOException e)
             {
-                LOGGER.info("Exception closing socket '{}': {}", _remoteSocketAddress, e.getMessage());
+                LOGGER.info("Exception closing socket '{}': {}", getRemoteAddressString(), e.getMessage());
             }
             finally
             {
@@ -481,11 +623,11 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         {
             try
             {
-                _socketChannel.shutdownInput();
+                getSocketChannel().shutdownInput();
             }
             catch (IOException e)
             {
-                LOGGER.info("Exception shutting down input for '{}': {}", _remoteSocketAddress, e.getMessage());
+                LOGGER.info("Exception shutting down input for '{}': {}", getRemoteAddressString(), e.getMessage());
             }
             finally
             {
@@ -494,197 +636,78 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         }
     }
 
-    /**
-     * doRead is not reentrant.
-     */
-    boolean doRead() throws IOException
+
+    @Override
+    public final void start()
     {
-        _partialRead = false;
-        if(!_closed.get() && _delegate.readyForRead())
-        {
-            int readData = readFromNetwork();
-
-            if (readData > 0)
-            {
-                return _delegate.processData();
-            }
-            else
-            {
-                return false;
-            }
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    long writeToTransport(Collection<QpidByteBuffer> buffers) throws IOException
-    {
-        long written  = QpidByteBuffer.write(_socketChannel, buffers);
-        if (LOGGER.isDebugEnabled())
-        {
-            LOGGER.debug("Written " + written + " bytes");
-        }
-        return written;
-    }
-
-    private boolean doWrite() throws IOException
-    {
-        _fullyWritten = _delegate.doWrite(_buffers);
-        while(!_buffers.isEmpty())
-        {
-            QpidByteBuffer buf = _buffers.peek();
-            if(buf.hasRemaining())
-            {
-                break;
-            }
-            _buffers.poll();
-            buf.dispose();
-        }
-        if (_fullyWritten)
-        {
-            _usedOutboundMessageSpace.set(0);
-        }
-        return _fullyWritten;
-
-    }
-
-    protected int readFromNetwork() throws IOException
-    {
-        QpidByteBuffer buffer = _delegate.getNetInputBuffer();
-
-        int read = buffer.read(_socketChannel);
-        if (read == -1)
-        {
-            _closed.set(true);
-        }
-
-        _partialRead = read != 0;
-
-        if (LOGGER.isDebugEnabled())
-        {
-            LOGGER.debug("Read " + read + " byte(s)");
-        }
-        return read;
     }
 
     @Override
-    public boolean isDirectBufferPreferred()
+    public final void flush()
     {
-        return true;
     }
 
-    @Override
-    public void send(final QpidByteBuffer msg)
-    {
 
-        if (_closed.get())
+    @Override
+    public final void close()
+    {
+        LOGGER.debug("Closing " + getRemoteAddressString());
+        if(setClosed())
         {
-            LOGGER.warn("Send ignored as the connection is already closed");
+            _protocolEngine.notifyWork();
+            getSelectionTask().wakeup();
         }
-        else if (msg.remaining() > 0)
-        {
-            _buffers.add(msg.duplicate());
-        }
-        msg.position(msg.limit());
     }
+
 
     @Override
-    public void flush()
-    {
-    }
-
-    public final void pushScheduler(NetworkConnectionScheduler scheduler)
-    {
-        _schedulerDeque.addFirst(scheduler);
-    }
-
-    public final NetworkConnectionScheduler popScheduler()
-    {
-        return _schedulerDeque.removeFirst();
-    }
-
-    public final NetworkConnectionScheduler getScheduler()
-    {
-        return _schedulerDeque.peekFirst();
-    }
-
-    @Override
-    public String toString()
-    {
-        return "[NonBlockingConnection " + _remoteSocketAddress + "]";
-    }
-
     public void processAmqpData(QpidByteBuffer applicationData)
     {
         _protocolEngine.received(applicationData);
     }
 
-    public void setTransportEncryption(TransportEncryption transportEncryption)
-    {
-        NonBlockingConnectionDelegate oldDelegate = _delegate;
-        switch (transportEncryption)
-        {
-            case TLS:
-                _onTransportEncryptionAction.run();
-                _delegate = new NonBlockingConnectionTLSDelegate(this, _port);
-                break;
-            case NONE:
-                _delegate = new NonBlockingConnectionPlainDelegate(this, _port);
-                break;
-            default:
-                throw new IllegalArgumentException("unknown TransportEncryption " + transportEncryption);
-        }
-        if(oldDelegate != null)
-        {
-            QpidByteBuffer src = oldDelegate.getNetInputBuffer().duplicate();
-            src.flip();
-            _delegate.getNetInputBuffer().put(src);
-            src.dispose();
-        }
-        LOGGER.debug("Identified transport encryption as " + transportEncryption);
-    }
-
-    public boolean setScheduled()
-    {
-        final boolean scheduled = _scheduled.compareAndSet(false, true);
-        if (scheduled)
-        {
-            _scheduledTime = System.currentTimeMillis();
-        }
-        return scheduled;
-    }
-
-    public void clearScheduled()
-    {
-        _scheduled.set(false);
-        _scheduledTime = 0;
-    }
 
     @Override
-    public long getScheduledTime()
+    public final void reserveOutboundMessageSpace(long size)
     {
-        return _scheduledTime;
-    }
-
-    void reportUnexpectedByteBufferSizeUsage()
-    {
-        if (!_unexpectedByteBufferSizeReported)
+        if (_usedOutboundMessageSpace.addAndGet(size) > getOutboundMessageBufferLimit())
         {
-            LOGGER.info("At least one frame unexpectedly does not fit into default byte buffer size ({}B) on a connection {}.",
-                    _port.getNetworkBufferSize(), this.toString());
-            _unexpectedByteBufferSizeReported = true;
+            _protocolEngine.setMessageAssignmentSuspended(true, false);
         }
     }
 
-    public SelectorThread.SelectionTask getSelectionTask()
+
+    @Override
+    public final Ticker getTicker()
     {
-        return _selectionTask;
+        return _protocolEngine.getAggregateTicker();
     }
 
-    public void setSelectionTask(final SelectorThread.SelectionTask selectionTask)
+
+    protected abstract long getOutboundMessageBufferLimit();
+
+
+    public final void reportUnexpectedByteBufferSizeUsage()
     {
-        _selectionTask = selectionTask;
+        if (_unexpectedByteBufferSizeReported.compareAndSet(false,true))
+        {
+            LOGGER.info("At least one frame unexpectedly does not fit into default byte buffer size ({}B) on a connection {}.",
+                        getNetworkBufferSize(), this.toString());
+        }
+    }
+
+    protected NonBlockingConnectionDelegate getDelegate()
+    {
+        return _delegate;
+    }
+
+    protected void setDelegate(NonBlockingConnectionDelegate delegate)
+    {
+        _delegate = delegate;
+    }
+
+    public final ProtocolEngine getProtocolEngine()
+    {
+        return _protocolEngine;
     }
 }

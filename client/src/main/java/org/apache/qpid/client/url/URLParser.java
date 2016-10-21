@@ -21,15 +21,18 @@
 package org.apache.qpid.client.url;
 
 
-import org.apache.qpid.client.BrokerDetails;
-import org.apache.qpid.client.AMQConnectionFactory;
-import org.apache.qpid.client.AMQConnectionURL;
-import org.apache.qpid.url.URLHelper;
-import org.apache.qpid.url.URLSyntaxException;
-
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.StringTokenizer;
+
+import org.apache.qpid.client.AMQConnectionFactory;
+import org.apache.qpid.client.AMQConnectionURL;
+import org.apache.qpid.client.BrokerDetails;
+import org.apache.qpid.url.URLHelper;
+import org.apache.qpid.url.URLSyntaxException;
 
 public class URLParser
 {
@@ -82,12 +85,12 @@ public class URLParser
                 _url.setClientName(connection.getHost());
             }
             
-            String userInfo = connection.getUserInfo();
+            String userInfo = connection.getRawUserInfo();
 
             if (userInfo == null)
             {
-                // Fix for Java 1.5 which doesn't parse UserInfo for non http URIs
-                userInfo = connection.getAuthority();
+                // Fix for Java Environments which don't parse UserInfo for non http URIs
+                userInfo = connection.getRawAuthority();
 
                 if (userInfo != null)
                 {
@@ -178,8 +181,16 @@ public class URLParser
         }
         else
         {
-            _url.setUsername(userinfo.substring(0, colonIndex));
-            _url.setPassword(userinfo.substring(colonIndex + 1));
+            try
+            {
+                _url.setUsername(URLDecoder.decode(userinfo.substring(0, colonIndex), StandardCharsets.UTF_8.name()));
+                _url.setPassword(URLDecoder.decode(userinfo.substring(colonIndex + 1), StandardCharsets.UTF_8.name()));
+            }
+            catch (UnsupportedEncodingException e)
+            {
+                throw URLHelper.parseError(AMQConnectionURL.AMQ_PROTOCOL.length() + 3, userinfo.length(),
+                                           e.getLocalizedMessage(), _url.getURL());
+            }
         }
 
     }

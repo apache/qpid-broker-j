@@ -160,7 +160,7 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
 
     public void testScavenge() throws Exception
     {
-        OrderedQueueEntryList sqel = new StandardQueueEntryList(mock(StandardQueueImpl.class));
+        OrderedBaseQueueEntryList sqel = new StandardQueueEntryList(mock(StandardQueueImpl.class));
         ConcurrentMap<Integer,QueueEntry> entriesMap = new ConcurrentHashMap<Integer,QueueEntry>();
 
 
@@ -265,7 +265,7 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
     {
         final int numberOfEntries = 5;
         final OrderedQueueEntry[] entries = new OrderedQueueEntry[numberOfEntries];
-        final OrderedQueueEntryList queueEntryList = getTestList(true);
+        final OrderedBaseQueueEntryList queueEntryList = getTestList(true);
 
         // create test entries
         for(int i = 0; i < numberOfEntries; i++)

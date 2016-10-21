@@ -98,7 +98,8 @@ public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
                 (ConfiguredObjectOperation<TestCar>) kitCarOperations.get("openDoor");
 
         // test explicitly setting parameter
-        Object returnVal = operation.perform(object, Collections.<String, Object>singletonMap("door", "DRIVER"));
+        Object returnVal = operation.perform(object, Collections.<String, Object>singletonMap("door", "DRIVER")
+                                            );
         assertEquals(TestCar.Door.DRIVER, returnVal);
 
         // test default parameter
@@ -117,7 +118,8 @@ public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
 
         try
         {
-            operation.perform(object, Collections.<String, Object>singletonMap("door", "[\"eggs\", \"flour\", \"milk\"]"));
+            operation.perform(object, Collections.<String, Object>singletonMap("door", "[\"eggs\", \"flour\", \"milk\"]")
+                             );
             fail("Should not be able to pass in a parameter of the wrong type");
         }
         catch(IllegalArgumentException e)

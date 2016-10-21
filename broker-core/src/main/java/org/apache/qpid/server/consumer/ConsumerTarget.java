@@ -21,6 +21,7 @@
 package org.apache.qpid.server.consumer;
 
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.util.StateChangeListener;
@@ -48,9 +49,9 @@ public interface ConsumerTarget
 
     State getState();
 
-    void consumerAdded(ConsumerImpl sub);
+    void consumerAdded(MessageInstanceConsumer consumer);
 
-    void consumerRemoved(ConsumerImpl sub);
+    void consumerRemoved(MessageInstanceConsumer consumer);
 
     void notifyCurrentState();
 
@@ -62,7 +63,7 @@ public interface ConsumerTarget
 
     AMQSessionModel getSessionModel();
 
-    long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch);
+    long send(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch);
 
     boolean hasMessagesToSend();
 

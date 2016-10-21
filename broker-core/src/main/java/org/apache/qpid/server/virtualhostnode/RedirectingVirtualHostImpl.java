@@ -47,6 +47,7 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.RemoteHostAddress;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -55,8 +56,10 @@ import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
+import org.apache.qpid.server.transfer.TransferQueue;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
+import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.virtualhost.HouseKeepingTask;
 import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
@@ -524,6 +527,12 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
+    public TransferQueue getTransferQueue()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Principal getPrincipal()
     {
         return _principal;
@@ -551,6 +560,13 @@ class RedirectingVirtualHostImpl
     public void setFirstOpening(final boolean firstOpening)
     {
 
+    }
+
+    @Override
+    public boolean makeConnection(final RemoteHostAddress<?> address, final Action<Boolean> onConnectionLoss)
+    {
+        throwUnsupportedForRedirector();
+        return false;
     }
 
     @Override

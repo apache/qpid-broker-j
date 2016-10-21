@@ -24,12 +24,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.message.BaseMessageInstance;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
-import org.apache.qpid.server.message.MessageInstance;
-import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -38,15 +37,14 @@ import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
 
-class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
+class ManagementNodeConsumer implements MessageInstanceConsumer, MessageDestination
 {
-    private final long _id = ConsumerImpl.CONSUMER_NUMBER_GENERATOR.getAndIncrement();
     private final ManagementNode _managementNode;
     private final List<ManagementResponse> _queue = Collections.synchronizedList(new ArrayList<ManagementResponse>());
     private final ConsumerTarget _target;
     private final String _name;
     private final StateChangeListener<ConsumerTarget, ConsumerTarget.State> _targetChangeListener = new TargetChangeListener();
-
+    private final Object _identifier = new Object();
 
     public ManagementNodeConsumer(final String consumerName, final ManagementNode managementNode, ConsumerTarget target)
     {
@@ -63,52 +61,16 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
     }
 
     @Override
-    public long getBytesOut()
+    public Object getIdentifier()
     {
-        return 0;
+        return _identifier;
     }
 
-    @Override
-    public long getMessagesOut()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getUnacknowledgedBytes()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getUnacknowledgedMessages()
-    {
-        return 0;
-    }
-
-    @Override
     public AMQSessionModel getSessionModel()
     {
         return _target.getSessionModel();
     }
 
-    @Override
-    public MessageSource getMessageSource()
-    {
-        return _managementNode;
-    }
-
-    @Override
-    public long getConsumerNumber()
-    {
-        return _id;
-    }
-
-    @Override
-    public boolean isSuspended()
-    {
-        return false;
-    }
 
     @Override
     public boolean isClosed()
@@ -123,39 +85,8 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
     }
 
     @Override
-    public boolean seesRequeues()
-    {
-        return false;
-    }
-
-    @Override
     public void close()
     {
-    }
-
-    @Override
-    public boolean trySendLock()
-    {
-        return _target.trySendLock();
-    }
-
-    @Override
-    public void getSendLock()
-    {
-        _target.getSendLock();
-    }
-
-    @Override
-    public void releaseSendLock()
-    {
-        _target.releaseSendLock();
-    }
-
-
-    @Override
-    public boolean isActive()
-    {
-        return false;
     }
 
     @Override
@@ -169,7 +100,7 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
                                                                                  final String routingAddress,
                                                                                  final InstanceProperties instanceProperties,
                                                                                  final ServerTransaction txn,
-                                                                                 final Action<? super MessageInstance> postEnqueueAction)
+                                                                                 final Action<? super BaseMessageInstance> postEnqueueAction)
     {
         send((InternalMessage)message);
         return 1;
@@ -181,7 +112,6 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
 
     }
 
-    @Override
     public ConsumerTarget getTarget()
     {
         return _target;

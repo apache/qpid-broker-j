@@ -26,9 +26,10 @@ import static org.mockito.Mockito.when;
 
 import java.util.EnumSet;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.message.ConsumerOption;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageStore;
@@ -52,11 +53,11 @@ public class VirtualHostPropertiesNodeTest extends QpidTestCase
 
     public void testAddConsumer() throws Exception
     {
-        final EnumSet<ConsumerImpl.Option> options = EnumSet.noneOf(ConsumerImpl.Option.class);
+        final EnumSet<ConsumerOption> options = EnumSet.noneOf(ConsumerOption.class);
         final ConsumerTarget target = mock(ConsumerTarget.class);
         when(target.allocateCredit(any(ServerMessage.class))).thenReturn(true);
 
         _virtualHostPropertiesNode.addConsumer(target, null, ServerMessage.class, getTestName(), options, 0);
-        verify(target).send(any(ConsumerImpl.class), any(MessageInstance.class), anyBoolean());
+        verify(target).send(any(MessageInstanceConsumer.class), any(MessageInstance.class), anyBoolean());
     }
 }

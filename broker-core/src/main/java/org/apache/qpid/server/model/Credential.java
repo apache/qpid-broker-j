@@ -18,11 +18,15 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.message;
+package org.apache.qpid.server.model;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
-import org.apache.qpid.server.model.Consumer;
+import java.util.List;
 
-public interface MessageSourceConsumer<X extends MessageSourceConsumer<X>> extends ConsumerImpl, Consumer<MessageSourceConsumer<X>>
+import javax.security.sasl.SaslClient;
+
+@ManagedObject(creatable = false)
+public interface Credential<X extends Credential<X>> extends ConfiguredObject<X>
 {
+
+    SaslClient getSaslClient(List<String> mechanisms);
 }

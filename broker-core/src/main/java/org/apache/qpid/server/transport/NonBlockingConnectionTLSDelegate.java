@@ -19,19 +19,6 @@
 
 package org.apache.qpid.server.transport;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.transport.network.security.ssl.SSLUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLEngineResult;
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLPeerUnverifiedException;
-import javax.net.ssl.SSLSession;
-
 import java.io.IOException;
 import java.security.Principal;
 import java.security.cert.Certificate;
@@ -41,12 +28,24 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
+
 public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDelegate
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingConnectionTLSDelegate.class);
 
     private final SSLEngine _sslEngine;
-    private final NonBlockingConnection _parent;
+    private final SchedulableConnection _parent;
     private final int _networkBufferSize;
     private SSLEngineResult _status;
     private final List<QpidByteBuffer> _encryptedOutput = new ArrayList<>();
@@ -58,11 +57,11 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     private QpidByteBuffer _applicationBuffer;
 
 
-    public NonBlockingConnectionTLSDelegate(NonBlockingConnection parent, AmqpPort port)
+    public NonBlockingConnectionTLSDelegate(SchedulableConnection parent, int networkBufferSize, SSLEngine sslEngine)
     {
         _parent = parent;
-        _sslEngine = createSSLEngine(port);
-        _networkBufferSize = port.getNetworkBufferSize();
+        _sslEngine = sslEngine;
+        _networkBufferSize = networkBufferSize;
 
         final int tlsPacketBufferSize = _sslEngine.getSession().getPacketBufferSize();
         if (tlsPacketBufferSize > _networkBufferSize)
@@ -311,28 +310,6 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
 
             _principalChecked = true;
         }
-    }
-
-    private SSLEngine createSSLEngine(AmqpPort<?> port)
-    {
-        SSLEngine sslEngine = port.getSSLContext().createSSLEngine();
-        sslEngine.setUseClientMode(false);
-        SSLUtil.updateEnabledTlsProtocols(sslEngine, port.getTlsProtocolWhiteList(), port.getTlsProtocolBlackList());
-        SSLUtil.updateEnabledCipherSuites(sslEngine, port.getTlsCipherSuiteWhiteList(), port.getTlsCipherSuiteBlackList());
-        if(port.getTlsCipherSuiteWhiteList() != null && !port.getTlsCipherSuiteWhiteList().isEmpty())
-        {
-            SSLUtil.useCipherOrderIfPossible(sslEngine);
-        }
-
-        if(port.getNeedClientAuth())
-        {
-            sslEngine.setNeedClientAuth(true);
-        }
-        else if(port.getWantClientAuth())
-        {
-            sslEngine.setWantClientAuth(true);
-        }
-        return sslEngine;
     }
 
     @Override

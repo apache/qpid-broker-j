@@ -26,6 +26,7 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
@@ -46,7 +47,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageConverter;
@@ -67,7 +67,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     private Binary _transactionId;
     private final AMQPDescribedTypeRegistry _typeRegistry;
     private final SectionEncoder _sectionEncoder;
-    private ConsumerImpl _consumer;
+    private MessageInstanceConsumer _consumer;
     private boolean _queueEmpty;
 
     public ConsumerTarget_1_0(final SendingLink_1_0 link,
@@ -80,7 +80,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
         _acquires = acquires;
     }
 
-    public ConsumerImpl getConsumer()
+    public MessageInstanceConsumer getConsumer()
     {
         return _consumer;
     }
@@ -109,7 +109,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
     }
 
-    public void doSend(final ConsumerImpl consumer, final MessageInstance entry, boolean batch)
+    public void doSend(final MessageInstanceConsumer consumer, final MessageInstance entry, boolean batch)
     {
         // TODO
         ServerMessage serverMessage = entry.getMessage();
@@ -516,13 +516,13 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     }
 
     @Override
-    public void consumerAdded(final ConsumerImpl sub)
+    public void consumerAdded(final MessageInstanceConsumer consumer)
     {
-        _consumer = sub;
+        _consumer = consumer;
     }
 
     @Override
-    public void consumerRemoved(final ConsumerImpl sub)
+    public void consumerRemoved(final MessageInstanceConsumer consumer)
     {
         close();
     }

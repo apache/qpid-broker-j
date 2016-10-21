@@ -19,9 +19,9 @@
 package org.apache.qpid.server.exchange;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
+import org.apache.qpid.server.message.BaseMessageInstance;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
-import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.VirtualHost;
@@ -50,13 +50,13 @@ public class DefaultDestination implements MessageDestination
                                                                                         String routingAddress,
                                                                                         final InstanceProperties instanceProperties,
                                                                                         final ServerTransaction txn,
-                                                                                        final Action<? super MessageInstance> postEnqueueAction)
+                                                                                        final Action<? super BaseMessageInstance> postEnqueueAction)
     {
         if(routingAddress == null || routingAddress.trim().equals(""))
         {
             return 0;
         }
-        final MessageDestination dest = _virtualHost.getAttainedMessageDestination(routingAddress);
+        MessageDestination dest = _virtualHost.getAttainedMessageDestination(routingAddress);
         if(dest == null)
         {
             routingAddress = _virtualHost.getLocalAddress(routingAddress);
@@ -71,10 +71,10 @@ public class DefaultDestination implements MessageDestination
             }
             else if(!routingAddress.contains("/"))
             {
-                Exchange<?> exchange = _virtualHost.getAttainedChildFromAddress(Exchange.class, routingAddress);
-                if(exchange != null)
+                dest = _virtualHost.getAttainedMessageDestination(routingAddress);
+                if(dest != null)
                 {
-                    return exchange.send(message, "", instanceProperties, txn, postEnqueueAction);
+                    return dest.send(message, dest instanceof Exchange ? "" : routingAddress, instanceProperties, txn, postEnqueueAction);
                 }
             }
             return 0;

@@ -96,6 +96,11 @@ public final class BrokerModel extends Model
         addRelationship(VirtualHost.class, VirtualHostAccessControlProvider.class);
         addRelationship(VirtualHost.class, Exchange.class);
         addRelationship(VirtualHost.class, Queue.class);
+        addRelationship(VirtualHost.class, RemoteHost.class);
+
+
+        addRelationship(RemoteHost.class, RemoteHostAddress.class);
+        addRelationship(RemoteHost.class, Credential.class);
 
         addRelationship(VirtualHostLogger.class, VirtualHostLogInclusionRule.class);
 

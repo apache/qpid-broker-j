@@ -30,11 +30,11 @@ import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.flow.FlowCreditManager;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstance.EntryState;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -56,7 +56,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
 
     private final AtomicLong _unacknowledgedCount = new AtomicLong(0);
     private final AtomicLong _unacknowledgedBytes = new AtomicLong(0);
-    private final List<ConsumerImpl> _consumers = new CopyOnWriteArrayList<>();
+    private final List<MessageInstanceConsumer> _consumers = new CopyOnWriteArrayList<>();
     private final AtomicBoolean _needToClose = new AtomicBoolean();
     private final String _targetAddress;
 
@@ -78,7 +78,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         return new GetNoAckConsumer(channel, consumerTag, filters, creditManager, deliveryMethod, recordMethod);
     }
 
-    public List<ConsumerImpl> getConsumers()
+    public List<MessageInstanceConsumer> getConsumers()
     {
         return _consumers;
     }
@@ -108,7 +108,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
          * @throws QpidException
          */
         @Override
-        public void doSend(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
+        public void doSend(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
         {
             // We don't decrement the reference here as we don't want to consume the message
             // but we do want to send it to the client.
@@ -157,13 +157,12 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         /**
          * This method can be called by each of the publisher threads. As a result all changes to the channel object must be
          * thread safe.
-         *
-         * @param consumer
+         *  @param consumer
          * @param entry   The message to send
          * @param batch
          */
         @Override
-        public void doSend(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
+        public void doSend(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
         {
             // if we do not need to wait for client acknowledgements
             // we can decrement the reference count immediately.
@@ -256,13 +255,12 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         /**
          * This method can be called by each of the publisher threads. As a result all changes to the channel object must be
          * thread safe.
-         *
-         * @param consumer
+         *  @param consumer
          * @param entry   The message to send
          * @param batch
          */
         @Override
-        public void doSend(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
+        public void doSend(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
         {
 
             // put queue entry on a list and then notify the connection to read list.
@@ -347,9 +345,9 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
     }
 
     @Override
-    public void consumerRemoved(final ConsumerImpl sub)
+    public void consumerRemoved(final MessageInstanceConsumer consumer)
     {
-        _consumers.remove(sub);
+        _consumers.remove(consumer);
         if(_consumers.isEmpty())
         {
             close();
@@ -357,9 +355,9 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
     }
 
     @Override
-    public void consumerAdded(final ConsumerImpl sub)
+    public void consumerAdded(final MessageInstanceConsumer consumer)
     {
-        _consumers.add( sub );
+        _consumers.add(consumer);
     }
 
     @Override
@@ -460,7 +458,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         }
     }
 
-    protected long sendToClient(final ConsumerImpl consumer, final ServerMessage message,
+    protected long sendToClient(final MessageInstanceConsumer consumer, final ServerMessage message,
                                 final InstanceProperties props,
                                 final long deliveryTag)
     {
@@ -469,7 +467,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
     }
 
 
-    protected void recordMessageDelivery(final ConsumerImpl consumer,
+    protected void recordMessageDelivery(final MessageInstanceConsumer consumer,
                                          final MessageInstance entry,
                                          final long deliveryTag)
     {

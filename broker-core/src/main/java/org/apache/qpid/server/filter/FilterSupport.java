@@ -31,10 +31,9 @@ import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.filter.selector.ParseException;
 import org.apache.qpid.filter.selector.TokenMgrError;
-import org.apache.qpid.server.consumer.ConsumerImpl;
-import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.PluggableService;
+import org.apache.qpid.server.queue.QueueConsumer;
 
 public class FilterSupport
 {
@@ -119,9 +118,9 @@ public class FilterSupport
     @PluggableService
     public static final class NoLocalFilter implements MessageFilter
     {
-        private final MessageSource _queue;
+        private final Queue<?> _queue;
 
-        private NoLocalFilter(MessageSource queue)
+        private NoLocalFilter(Queue<?> queue)
         {
             _queue = queue;
         }
@@ -135,8 +134,8 @@ public class FilterSupport
         public boolean matches(Filterable message)
         {
 
-            final Collection<? extends ConsumerImpl> consumers = _queue.getConsumers();
-            for(ConsumerImpl c : consumers)
+            final Collection<QueueConsumer<?>> consumers = _queue.getConsumers();
+            for(QueueConsumer<?> c : consumers)
             {
                 if(c.getSessionModel().getConnectionReference() == message.getConnectionReference())
                 {

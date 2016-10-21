@@ -22,7 +22,7 @@ import java.util.Map;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.PermissionedObject;
 import org.apache.qpid.server.security.access.Operation;
 
 public interface AccessControl<T extends SecurityToken>
@@ -34,9 +34,9 @@ public interface AccessControl<T extends SecurityToken>
 
     T newToken(Subject subject);
 
-    Result authorise(T token, Operation operation, ConfiguredObject<?> configuredObject);
+    Result authorise(T token, Operation operation, PermissionedObject configuredObject);
 
-    Result authorise(T token, Operation operation, ConfiguredObject<?> configuredObject, Map<String,Object> arguments);
+    Result authorise(T token, Operation operation, PermissionedObject configuredObject, Map<String,Object> arguments);
 
     final class FixedResultAccessControl implements AccessControl<SecurityToken>
     {
@@ -68,7 +68,7 @@ public interface AccessControl<T extends SecurityToken>
         @Override
         public Result authorise(final SecurityToken token,
                                 final Operation operation,
-                                final ConfiguredObject<?> configuredObject)
+                                final PermissionedObject configuredObject)
         {
             return _result;
         }
@@ -76,7 +76,7 @@ public interface AccessControl<T extends SecurityToken>
         @Override
         public Result authorise(final SecurityToken token,
                                 final Operation operation,
-                                final ConfiguredObject<?> configuredObject,
+                                final PermissionedObject configuredObject,
                                 final Map<String, Object> arguments)
         {
             return _result;

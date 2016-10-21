@@ -40,6 +40,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.queue.QueueEntry;
+import org.apache.qpid.server.queue.RecoverableBaseQueue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -49,6 +50,7 @@ import org.apache.qpid.server.store.Transaction.EnqueueRecord;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
+import org.apache.qpid.server.transfer.TransferQueue;
 import org.apache.qpid.server.txn.DtxBranch;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -85,7 +87,11 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         {
             eventLogger.message(logSubject, TransactionLogMessages.RECOVERED(entry.getValue(), entry.getKey()));
             eventLogger.message(logSubject, TransactionLogMessages.RECOVERY_COMPLETE(entry.getKey(), true));
-            virtualHost.getAttainedChildFromAddress(Queue.class, entry.getKey()).completeRecovery();
+            Queue queue = virtualHost.getAttainedChildFromAddress(Queue.class, entry.getKey());
+            if(queue != null)
+            {
+                queue.completeRecovery();
+            }
         }
 
         for(Queue<?> q : virtualHost.getChildren(Queue.class))
@@ -95,6 +101,8 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                 q.completeRecovery();
             }
         }
+        TransferQueue q = virtualHost.getTransferQueue();
+        q.completeRecovery();
 
         storeReader.visitDistributedTransactions(new DistributedTransactionVisitor(virtualHost, store, eventLogger,
                                                                              logSubject, recoveredMessages, unusedMessages));
@@ -179,7 +187,11 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         {
             final UUID queueId = record.getQueueId();
             long messageId = record.getMessageNumber();
-            Queue<?> queue = _virtualHost.getAttainedQueue(queueId);
+            RecoverableBaseQueue queue = _virtualHost.getAttainedQueue(queueId);
+            if(queue == null && _virtualHost.getTransferQueue().getId().equals(queueId))
+            {
+                queue = _virtualHost.getTransferQueue();
+            }
             if(queue != null)
             {
                 String queueName = queue.getName();

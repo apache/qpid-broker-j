@@ -21,12 +21,11 @@
 package org.apache.qpid.server.queue;
 
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
-import org.apache.qpid.server.message.MessageInstance;
-import org.apache.qpid.test.utils.QpidTestCase;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 public class ConsumerListTest extends QpidTestCase
 {
@@ -147,7 +146,7 @@ public class ConsumerListTest extends QpidTestCase
      * Traverses the list nodes in a non-mutating fashion, returning the first node which matches the given
      * Consumer, or null if none is found.
      */
-    private ConsumerNode getNodeForConsumer(final QueueConsumerList list, final ConsumerImpl sub)
+    private ConsumerNode getNodeForConsumer(final QueueConsumerList list, final QueueConsumer sub)
     {
         ConsumerNode node = list.getHead();
         while (node != null && node.getConsumer() != sub)

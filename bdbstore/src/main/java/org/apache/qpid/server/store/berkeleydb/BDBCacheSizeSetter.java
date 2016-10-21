@@ -28,14 +28,14 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.NoopConfigurationChangeListener;
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost;
 
-public class BDBCacheSizeSetter extends NoopConfigurationChangeListener
+public class BDBCacheSizeSetter extends AbstractConfigurationChangeListener
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BDBCacheSizeSetter.class);
 

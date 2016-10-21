@@ -56,15 +56,17 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.connection.SessionPrincipal;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.logging.subjects.ChannelLogSubject;
+import org.apache.qpid.server.message.BaseMessageInstance;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -529,7 +531,7 @@ public class ServerSession extends Session
         // Broker shouldn't block awaiting close - thus do override this method to do nothing
     }
 
-    public void acknowledge(final ConsumerImpl consumer,
+    public void acknowledge(final MessageInstanceConsumer consumer,
                             final ConsumerTarget_0_10 target,
                             final MessageInstance entry)
     {
@@ -566,14 +568,14 @@ public class ServerSession extends Session
     }
 
 
-    public void register(final ConsumerImpl consumerImpl)
+    public void register(final MessageInstanceConsumer consumer)
     {
-        if(consumerImpl instanceof Consumer<?>)
+        if(consumer instanceof Consumer<?>)
         {
-            final Consumer<?> consumer = (Consumer<?>) consumerImpl;
-            _consumers.add(consumer);
-            consumer.addChangeListener(_consumerClosedListener);
-            consumerAdded(consumer);
+            final Consumer<?> modelConsumer = (Consumer<?>) consumer;
+            _consumers.add(modelConsumer);
+            modelConsumer.addChangeListener(_consumerClosedListener);
+            consumerAdded(modelConsumer);
         }
     }
 
@@ -1285,10 +1287,10 @@ public class ServerSession extends Session
         return getId().compareTo(o.getId());
     }
 
-    private class CheckCapacityAction implements Action<MessageInstance>
+    private class CheckCapacityAction implements Action<BaseMessageInstance>
     {
         @Override
-        public void performAction(final MessageInstance entry)
+        public void performAction(final BaseMessageInstance entry)
         {
             TransactionLogResource queue = entry.getOwningResource();
             if(queue instanceof CapacityChecker)
@@ -1298,7 +1300,7 @@ public class ServerSession extends Session
         }
     }
 
-    private class ConsumerClosedListener implements ConfigurationChangeListener
+    private class ConsumerClosedListener extends AbstractConfigurationChangeListener
     {
         @Override
         public void stateChanged(final ConfiguredObject object, final org.apache.qpid.server.model.State oldState, final org.apache.qpid.server.model.State newState)
@@ -1309,37 +1311,5 @@ public class ServerSession extends Session
             }
         }
 
-        @Override
-        public void childAdded(final ConfiguredObject object, final ConfiguredObject child)
-        {
-
-        }
-
-        @Override
-        public void childRemoved(final ConfiguredObject object, final ConfiguredObject child)
-        {
-
-        }
-
-        @Override
-        public void attributeSet(final ConfiguredObject object,
-                                 final String attributeName,
-                                 final Object oldAttributeValue,
-                                 final Object newAttributeValue)
-        {
-
-        }
-
-        @Override
-        public void bulkChangeStart(final ConfiguredObject<?> object)
-        {
-
-        }
-
-        @Override
-        public void bulkChangeEnd(final ConfiguredObject<?> object)
-        {
-
-        }
     }
 }

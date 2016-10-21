@@ -60,6 +60,7 @@ import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.framing.*;
 import org.apache.qpid.properties.ConnectionStartProperties;
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
@@ -67,7 +68,6 @@ import org.apache.qpid.server.security.*;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.configuration.BrokerProperties;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.ServerMessage;
@@ -756,7 +756,7 @@ public class AMQPConnection_0_8Impl
         }, getAccessControllerContext());
     }
 
-    public synchronized void writerIdle()
+    public void writerIdle()
     {
         writeFrame(HeartbeatBody.FRAME);
     }
@@ -1268,14 +1268,14 @@ public class AMQPConnection_0_8Impl
         }
 
         @Override
-        public long deliverToClient(final ConsumerImpl sub, final ServerMessage message,
+        public long deliverToClient(final MessageInstanceConsumer consumer, final ServerMessage message,
                                     final InstanceProperties props, final long deliveryTag)
         {
             long size = _protocolOutputConverter.writeDeliver(message,
                                                   props,
                                                   _channelId,
                                                   deliveryTag,
-                                                  new AMQShortString(sub.getName()));
+                                                  new AMQShortString(consumer.getName()));
             registerMessageDelivered(size);
             return size;
         }

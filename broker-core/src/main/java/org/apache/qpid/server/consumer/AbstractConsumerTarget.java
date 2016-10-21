@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.StateChangeListener;
 
@@ -193,7 +194,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
     }
 
     @Override
-    public final long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
+    public final long send(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
     {
         AMQPConnection<?> amqpConnection = getSessionModel().getAMQPConnection();
         amqpConnection.reserveOutboundMessageSpace(entry.getMessage().getSize());
@@ -202,7 +203,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
         return entry.getMessage().getSize();
     }
 
-    protected abstract void doSend(final ConsumerImpl consumer, MessageInstance entry, boolean batch);
+    protected abstract void doSend(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch);
 
     @Override
     public boolean hasMessagesToSend()
@@ -219,7 +220,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
             try
             {
 
-                ConsumerImpl consumer = consumerMessage.getConsumer();
+                MessageInstanceConsumer consumer = consumerMessage.getConsumer();
                 MessageInstance entry = consumerMessage.getEntry();
                 boolean batch = consumerMessage.isBatch();
                 doSend(consumer, entry, batch);

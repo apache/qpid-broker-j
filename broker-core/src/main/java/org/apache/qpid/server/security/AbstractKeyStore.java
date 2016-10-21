@@ -37,9 +37,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.KeyStoreMessages;
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.KeyStore;
@@ -115,7 +115,7 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
         else
         {
             final int frequency = checkFrequency;
-            getBroker().addChangeListener(new ConfigurationChangeListener()
+            getBroker().addChangeListener(new AbstractConfigurationChangeListener()
             {
                 @Override
                 public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
@@ -135,38 +135,6 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
                     }
                 }
 
-                @Override
-                public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-                {
-
-                }
-
-                @Override
-                public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-                {
-
-                }
-
-                @Override
-                public void attributeSet(final ConfiguredObject<?> object,
-                                         final String attributeName,
-                                         final Object oldAttributeValue,
-                                         final Object newAttributeValue)
-                {
-
-                }
-
-                @Override
-                public void bulkChangeStart(final ConfiguredObject<?> object)
-                {
-
-                }
-
-                @Override
-                public void bulkChangeEnd(final ConfiguredObject<?> object)
-                {
-
-                }
             });
         }
     }

@@ -34,6 +34,26 @@ import org.apache.qpid.url.URLSyntaxException;
 
 public class ConnectionURLTest extends QpidTestCase
 {
+
+    public void testPasswordWithColon() throws URLSyntaxException
+    {
+        String url = "amqp://PQ-RST-UV-W:VPN%3amwrst@/test?brokerlist='tcp://localhost:5672'";
+        ConnectionURL connectionurl = new AMQConnectionURL(url);
+        assertEquals("PQ-RST-UV-W", connectionurl.getUsername());
+        assertEquals("VPN:mwrst", connectionurl.getPassword());
+        assertEquals("/test",connectionurl.getVirtualHost());
+    }
+
+    public void testUsernameWithColon() throws URLSyntaxException
+    {
+        String url = "amqp://PQ%3aRST-UV-W:VPN%3amwrst@/test?brokerlist='tcp://localhost:5672'";
+        ConnectionURL connectionurl = new AMQConnectionURL(url);
+        assertEquals("PQ:RST-UV-W", connectionurl.getUsername());
+        assertEquals("VPN:mwrst", connectionurl.getPassword());
+        assertEquals("/test",connectionurl.getVirtualHost());
+    }
+
+
     public void testFailoverURL() throws URLSyntaxException
     {
         String url = "amqp://ritchiem:bob@/test?brokerlist='tcp://localhost:5672;tcp://fancyserver:3000/',failover='roundrobin?cyclecount='100''";

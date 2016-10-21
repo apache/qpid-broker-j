@@ -38,9 +38,10 @@ import java.util.List;
 import org.mockito.ArgumentCaptor;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.message.ConsumerOption;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.TrustStore;
@@ -74,14 +75,14 @@ public class TrustStoreMessageSourceTest extends QpidTestCase
 
     public void testAddConsumer() throws Exception
     {
-        final EnumSet<ConsumerImpl.Option> options = EnumSet.noneOf(ConsumerImpl.Option.class);
+        final EnumSet<ConsumerOption> options = EnumSet.noneOf(ConsumerOption.class);
         final ConsumerTarget target = mock(ConsumerTarget.class);
         when(target.allocateCredit(any(ServerMessage.class))).thenReturn(true);
 
         _trustStoreMessageSource.addConsumer(target, null, ServerMessage.class, getTestName(), options, 0);
 
         ArgumentCaptor<MessageInstance> argumentCaptor = ArgumentCaptor.forClass(MessageInstance.class);
-        verify(target).send(any(ConsumerImpl.class), argumentCaptor.capture(), anyBoolean());
+        verify(target).send(any(MessageInstanceConsumer.class), argumentCaptor.capture(), anyBoolean());
         final ServerMessage message = argumentCaptor.getValue().getMessage();
         assertCertificates(getCertificatesFromMessage(message));
     }

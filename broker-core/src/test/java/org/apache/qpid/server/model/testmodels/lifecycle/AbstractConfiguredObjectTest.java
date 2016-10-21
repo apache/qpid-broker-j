@@ -30,7 +30,7 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
-import org.apache.qpid.server.model.NoopConfigurationChangeListener;
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -231,7 +231,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         final AtomicReference<State> newState = new AtomicReference<>();
         final AtomicInteger callCounter = new AtomicInteger();
-        parent.addChangeListener(new NoopConfigurationChangeListener()
+        parent.addChangeListener(new AbstractConfigurationChangeListener()
         {
             @Override
             public void stateChanged(final ConfiguredObject<?> object, final State old, final State state)
@@ -262,7 +262,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         parent.create();
 
         final AtomicInteger callCounter = new AtomicInteger();
-        parent.addChangeListener(new NoopConfigurationChangeListener()
+        parent.addChangeListener(new AbstractConfigurationChangeListener()
         {
             @Override
             public void stateChanged(final ConfiguredObject<?> object, final State old, final State state)
@@ -300,7 +300,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         configuredObject.create();
 
         final List<ChangeEvent> events = new ArrayList<>();
-        configuredObject.addChangeListener(new NoopConfigurationChangeListener()
+        configuredObject.addChangeListener(new AbstractConfigurationChangeListener()
         {
             @Override
             public void attributeSet(ConfiguredObject<?> object, String attributeName, Object oldAttributeValue, Object newAttributeValue)

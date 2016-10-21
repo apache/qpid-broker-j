@@ -21,15 +21,12 @@
 package org.apache.qpid.server.message;
 
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.filter.Filterable;
-import org.apache.qpid.server.store.MessageEnqueueRecord;
-import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
 
-public interface MessageInstance
+public interface MessageInstance extends BaseMessageInstance
 {
 
 
@@ -50,39 +47,37 @@ public interface MessageInstance
 
     boolean acquiredByConsumer();
 
-    boolean isAcquiredBy(ConsumerImpl consumer);
+    boolean isAcquiredBy(MessageInstanceConsumer consumer);
 
-    boolean removeAcquisitionFromConsumer(ConsumerImpl consumer);
+    boolean removeAcquisitionFromConsumer(MessageInstanceConsumer consumer);
 
     void setRedelivered();
 
     boolean isRedelivered();
 
-    ConsumerImpl getDeliveredConsumer();
+    MessageInstanceConsumer getDeliveredConsumer();
 
     void reject();
 
-    boolean isRejectedBy(ConsumerImpl consumer);
-
-    boolean getDeliveredToConsumer();
+    boolean isRejectedBy(MessageInstanceConsumer consumer);
 
     boolean expired();
 
-    boolean acquire(ConsumerImpl sub);
+    boolean acquire(MessageInstanceConsumer sub);
 
-    boolean makeAcquisitionUnstealable(final ConsumerImpl consumer);
+    boolean makeAcquisitionUnstealable(final MessageInstanceConsumer consumer);
 
     boolean makeAcquisitionStealable();
 
     int getMaximumDeliveryCount();
 
-    int routeToAlternate(Action<? super MessageInstance> action, ServerTransaction txn);
+    int routeToAlternate(Action<? super BaseMessageInstance> action, ServerTransaction txn);
 
     Filterable asFilterable();
 
-    ConsumerImpl getAcquiringConsumer();
+    MessageInstanceConsumer getAcquiringConsumer();
 
-    MessageEnqueueRecord getEnqueueRecord();
+    InstanceProperties getInstanceProperties();
 
     enum State
     {
@@ -171,7 +166,7 @@ public interface MessageInstance
         }
     }
 
-    abstract class ConsumerAcquiredState<C extends ConsumerImpl> extends EntryState
+    abstract class ConsumerAcquiredState<C extends AcquiringMessageInstanceConsumer<C,?>> extends EntryState
     {
         public abstract C getConsumer();
 
@@ -188,7 +183,7 @@ public interface MessageInstance
         }
     }
 
-    final class StealableConsumerAcquiredState<C extends ConsumerImpl> extends ConsumerAcquiredState
+    final class StealableConsumerAcquiredState<C extends AcquiringMessageInstanceConsumer<C,?>> extends ConsumerAcquiredState
     {
         private final C _consumer;
         private final UnstealableConsumerAcquiredState<C> _unstealableState;
@@ -211,7 +206,7 @@ public interface MessageInstance
         }
     }
 
-    final class UnstealableConsumerAcquiredState<C extends ConsumerImpl> extends ConsumerAcquiredState
+    final class UnstealableConsumerAcquiredState<C extends AcquiringMessageInstanceConsumer<C,?>> extends ConsumerAcquiredState
     {
         private final StealableConsumerAcquiredState<C> _stealableState;
 
@@ -240,25 +235,15 @@ public interface MessageInstance
 
     boolean isAvailable();
 
-    boolean acquire();
-
     boolean isAcquired();
 
     void release();
 
-    void release(ConsumerImpl release);
+    void release(MessageInstanceConsumer release);
 
     boolean resend();
-
-    void delete();
 
     boolean isDeleted();
 
     boolean isHeld();
-
-    ServerMessage getMessage();
-
-    InstanceProperties getInstanceProperties();
-
-    TransactionLogResource getOwningResource();
 }
