@@ -446,6 +446,11 @@ public final class QpidByteBuffer
         return new BufferDataOutput();
     }
 
+    public static QpidByteBuffer allocate(boolean direct, int size)
+    {
+        return direct ? allocateDirect(size) : allocate(size);
+    }
+
     public static QpidByteBuffer allocate(int size)
     {
         return new QpidByteBuffer(new NonPooledByteBufferRef(ByteBuffer.allocate(size)));
