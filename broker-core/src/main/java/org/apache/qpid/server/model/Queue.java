@@ -86,13 +86,19 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>
                                                  + "\"image/tiff\":\".tiff\","
                                                  + "\"text/plain\":\".txt\"}";
 
+    @ManagedContextDefault( name = "queue.defaultExclusivityPolicy")
+    String DEFAULT_EXCLUSIVITY = "NONE";
+
     @ManagedAttribute
     Exchange getAlternateExchange();
 
-    @ManagedAttribute( defaultValue = "NONE" )
+    @ManagedAttribute( defaultValue = "${queue.defaultExclusivityPolicy}")
     ExclusivityPolicy getExclusive();
 
-    @ManagedAttribute( defaultValue = "false" )
+    @ManagedContextDefault( name = "queue.defaultEnsureNonDestructiveConsumers")
+    String DEFAULT_ENSURE_NON_DESTRUCTIVE_CONSUMERS = "false";
+
+    @ManagedAttribute( defaultValue = "${queue.defaultEnsureNonDestructiveConsumers}" )
     boolean isEnsureNondestructiveConsumers();
 
     @DerivedAttribute( persist = true )
@@ -174,7 +180,10 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>
     @ManagedAttribute( defaultValue = "${queue.alertRepeatGap}")
     long getAlertRepeatGap();
 
-    @ManagedAttribute( defaultValue = "DEFAULT" )
+    @ManagedContextDefault( name = "queue.defaultMessageDurability")
+    String DEFAULT_MESSAGE_DURABILTY = "DEFAULT";
+
+    @ManagedAttribute( defaultValue = "${queue.defaultMessageDurability}" )
     MessageDurability getMessageDurability();
 
     @ManagedAttribute
