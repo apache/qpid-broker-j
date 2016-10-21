@@ -61,52 +61,52 @@ public class StatisticsCounter
     private static final class Sample
     {
         private final long _sampleId;
-        private final AtomicLong _count = new AtomicLong();
-        private final AtomicLong _total;
-        private final long _peak;
-        private final long _lastRate;
+        private final AtomicLong _sampleTotal = new AtomicLong();
+        private final AtomicLong _cumulativeTotal;
+        private final long _peakTotal;
+        private final long _previousSampleTotal;
         private final long _start;
         private final long _period;
 
         private Sample(final long period)
         {
             _period = period;
-            _total = new AtomicLong();
-            _peak = 0L;
-            _lastRate = 0L;
+            _cumulativeTotal = new AtomicLong();
+            _peakTotal = 0L;
+            _previousSampleTotal = 0L;
             _start = System.currentTimeMillis();
-            _sampleId = _start / period;
+            _sampleId = 0;
 
         }
 
         private Sample(final long timestamp, Sample priorSample)
         {
             _period = priorSample._period;
-            _sampleId = timestamp / _period;
-            _total = priorSample._total;
-            _peak = priorSample.getRate() > priorSample.getPeak() ? priorSample.getRate() : priorSample.getPeak();
-            _lastRate = priorSample.getRate();
+            _cumulativeTotal = priorSample._cumulativeTotal;
+            _peakTotal = priorSample.getSampleTotal() > priorSample.getPeakSampleTotal() ? priorSample.getSampleTotal() : priorSample.getPeakSampleTotal();
+            _previousSampleTotal = priorSample.getSampleTotal();
             _start = priorSample._start;
+            _sampleId = (timestamp - _start) / _period;
         }
 
-        public long getTotal()
+        public long getCumulativeTotal()
         {
-            return _total.get();
+            return _cumulativeTotal.get();
         }
 
-        public long getRate()
+        public long getSampleTotal()
         {
-            return _count.get();
+            return _sampleTotal.get();
         }
 
-        public long getPeak()
+        public long getPeakSampleTotal()
         {
-            return _peak;
+            return _peakTotal;
         }
 
-        public long getLastRate()
+        public long getPreviousSampleTotal()
         {
-            return _lastRate;
+            return _previousSampleTotal;
         }
 
         public long getStart()
@@ -118,15 +118,15 @@ public class StatisticsCounter
         {
             if(timestamp >= _start)
             {
-                long eventSampleId = timestamp / _period;
+                long eventSampleId = (timestamp - _start) / _period;
                 if(eventSampleId > _sampleId)
                 {
                     return false;
                 }
-                _total.addAndGet(value);
+                _cumulativeTotal.addAndGet(value);
                 if(eventSampleId == _sampleId)
                 {
-                    _count.addAndGet(value);
+                    _sampleTotal.addAndGet(value);
                 }
                 return true;
             }
@@ -179,7 +179,7 @@ public class StatisticsCounter
     public double getPeak()
     {
         update();
-        return (double) getSample().getPeak() / ((double) _period / 1000.0d);
+        return (double) getSample().getPeakSampleTotal() / ((double) _period / 1000.0d);
     }
 
     private Sample getSample()
@@ -190,12 +190,12 @@ public class StatisticsCounter
     public double getRate()
     {
         update();
-        return (double) getSample().getLastRate() / ((double) _period / 1000.0d);
+        return (double) getSample().getPreviousSampleTotal() / ((double) _period / 1000.0d);
     }
 
     public long getTotal()
     {
-        return getSample().getTotal();
+        return getSample().getCumulativeTotal();
     }
 
     public long getStart()

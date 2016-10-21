@@ -30,21 +30,23 @@ import org.apache.qpid.transport.codec.AbstractEncoder;
 
 public final class ServerEncoder extends AbstractEncoder
 {
-    public static final int DEFAULT_CAPACITY = 8192;
+    public static final int DEFAULT_CAPACITY = 256 * 1024;
+    private final boolean _useDirectMemory;
     private final int _threshold;
     private QpidByteBuffer _out;
     private int _initialCapacity;
 
     public ServerEncoder()
     {
-        this(DEFAULT_CAPACITY);
+        this(QpidByteBuffer.getPooledBufferSize(), true);
     }
 
-    public ServerEncoder(int capacity)
+    public ServerEncoder(int capacity, boolean useDirectMemory)
     {
-        _initialCapacity = capacity;
-        _threshold = capacity/16;
-        _out = QpidByteBuffer.allocateDirect(capacity);
+        _useDirectMemory = useDirectMemory;
+        _initialCapacity = (capacity > 0 ? capacity : DEFAULT_CAPACITY);
+        _threshold = Math.min(_initialCapacity/16, 256);
+        _out = QpidByteBuffer.allocate(useDirectMemory, _initialCapacity);
     }
 
     public void init()
@@ -52,7 +54,7 @@ public final class ServerEncoder extends AbstractEncoder
         if(_out.capacity() < _threshold)
         {
             _out.dispose();
-            _out = QpidByteBuffer.allocateDirect(_initialCapacity);
+            _out = QpidByteBuffer.allocate(_useDirectMemory, _initialCapacity);
         }
         else
         {
@@ -81,7 +83,7 @@ public final class ServerEncoder extends AbstractEncoder
     {
         QpidByteBuffer old = _out;
         int capacity = old.capacity();
-        _out = QpidByteBuffer.allocateDirect(Math.max(Math.max(capacity + size, 2*capacity), _initialCapacity));
+        _out = QpidByteBuffer.allocate(_useDirectMemory, Math.max(Math.max(capacity + size, 2 * capacity), _initialCapacity));
         old.flip();
         _out.put(old);
         old.dispose();

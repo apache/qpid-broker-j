@@ -22,16 +22,20 @@ package org.apache.qpid.server.transport;
 
 import java.io.IOException;
 import java.nio.channels.ServerSocketChannel;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.transport.TransportException;
 
 public class NetworkConnectionScheduler
@@ -204,7 +208,31 @@ public class NetworkConnectionScheduler
 
     public void cancelAcceptingSocket(final ServerSocketChannel serverSocket)
     {
-        _selectorThread.cancelAcceptingSocket(serverSocket);
+        Future<Void> result = cancelAcceptingSocketAsync(serverSocket);
+        try
+        {
+            result.get(Integer.getInteger(CommonProperties.IO_NETWORK_TRANSPORT_TIMEOUT_PROP_NAME,
+                                          CommonProperties.IO_NETWORK_TRANSPORT_TIMEOUT_DEFAULT),
+                       TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException e)
+        {
+            LOGGER.warn("Cancellation of accepting socket was interrupted");
+            Thread.currentThread().interrupt();
+        }
+        catch (ExecutionException e)
+        {
+            LOGGER.warn("Cancellation of accepting socket failed", e.getCause());
+        }
+        catch (TimeoutException e)
+        {
+            LOGGER.warn("Cancellation of accepting socket timed out");
+        }
+    }
+
+    private Future<Void> cancelAcceptingSocketAsync(final ServerSocketChannel serverSocket)
+    {
+        return _selectorThread.cancelAcceptingSocket(serverSocket);
     }
 
     public void addConnection(final SchedulableConnection connection)
