@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.security.Result;
@@ -341,12 +342,12 @@ class LegacyAccessControlAdapter
         Class<? extends ConfiguredObject> categoryClass = configuredObject.getCategoryClass();
         if(categoryClass == Exchange.class)
         {
-            Exchange exchange = (Exchange) configuredObject;
+            MessageDestination exchange = (MessageDestination) configuredObject;
             if("publish".equals(actionName))
             {
 
                 final ObjectProperties _props =
-                        new ObjectProperties(exchange.getParent(VirtualHost.class).getName(), exchange.getName(), (String)arguments.get("routingKey"), (Boolean)arguments.get("immediate"));
+                        new ObjectProperties(exchange.getAddressSpace().getName(), exchange.getName(), (String)arguments.get("routingKey"), (Boolean)arguments.get("immediate"));
                 return _accessControl.authorise(PUBLISH, EXCHANGE, _props);
             }
         }

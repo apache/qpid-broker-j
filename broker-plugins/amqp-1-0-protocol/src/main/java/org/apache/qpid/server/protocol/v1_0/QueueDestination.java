@@ -22,12 +22,11 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import java.util.Collections;
 
-import org.apache.qpid.server.protocol.v1_0.type.Outcome;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.security.SecurityToken;
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.txn.ServerTransaction;
 
@@ -102,9 +101,8 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
     public void authorizePublish(final SecurityToken securityToken, final Message_1_0 message)
     {
 
-        _queue.authorise(securityToken,
-                         Operation.ACTION("publish"),
-                         Collections.<String,Object>singletonMap("routingKey", getRoutingAddress(message)));
+        _queue.authorisePublish(securityToken,
+                                Collections.<String,Object>singletonMap("routingKey", getRoutingAddress(message)));
 
 
     }

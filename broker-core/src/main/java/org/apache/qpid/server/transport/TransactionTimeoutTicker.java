@@ -21,7 +21,6 @@
 
 package org.apache.qpid.server.transport;
 
-import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Supplier;
@@ -33,7 +32,7 @@ public class TransactionTimeoutTicker implements Ticker, SchedulingDelayNotifica
 {
     private final long _timeoutValue;
     private final Action<Long> _notification;
-    private final Supplier<Date> _timeSupplier;
+    private final Supplier<Long> _timeSupplier;
     private final long _notificationRepeatPeriod;
 
     private AtomicLong _accumulatedSchedulingDelay = new AtomicLong();
@@ -44,12 +43,12 @@ public class TransactionTimeoutTicker implements Ticker, SchedulingDelayNotifica
 
     public TransactionTimeoutTicker(long timeoutValue,
                                     long notificationRepeatPeriod,
-                                    Supplier<Date> timeStampSupplier,
+                                    Supplier<Long> timeStampSupplier,
                                     Action<Long> notification)
     {
         _timeoutValue = timeoutValue;
         _notification = notification;
-        _lastTransactionTimeStamp = timeStampSupplier.get().getTime();
+        _lastTransactionTimeStamp = timeStampSupplier.get();
         _timeSupplier = timeStampSupplier;
         _notificationRepeatPeriod = notificationRepeatPeriod;
     }
@@ -57,7 +56,7 @@ public class TransactionTimeoutTicker implements Ticker, SchedulingDelayNotifica
     @Override
     public int getTimeToNextTick(final long currentTime)
     {
-        final long transactionTimeStamp = _timeSupplier.get().getTime();
+        final long transactionTimeStamp = _timeSupplier.get();
         int tick = calculateTimeToNextTick(currentTime, transactionTimeStamp);
         if (tick <= 0 && _nextNotificationTime > currentTime)
         {
@@ -69,7 +68,7 @@ public class TransactionTimeoutTicker implements Ticker, SchedulingDelayNotifica
     @Override
     public int tick(final long currentTime)
     {
-        final long transactionTimeStamp = _timeSupplier.get().getTime();
+        final long transactionTimeStamp = _timeSupplier.get();
         int tick = calculateTimeToNextTick(currentTime, transactionTimeStamp);
         if (tick <= 0)
         {

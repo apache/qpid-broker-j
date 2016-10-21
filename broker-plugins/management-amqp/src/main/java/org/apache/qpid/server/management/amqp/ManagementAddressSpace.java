@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.management.amqp;
 
+import java.security.AccessControlException;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,6 +41,7 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
 import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.protocol.LinkRegistry;
+import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.MemoryMessageStore;
 import org.apache.qpid.server.store.MessageStore;
@@ -211,6 +213,19 @@ public class ManagementAddressSpace implements NamedAddressSpace
 
     private class DefaultDestination implements MessageDestination
     {
+        @Override
+        public NamedAddressSpace getAddressSpace()
+        {
+            return ManagementAddressSpace.this;
+        }
+
+        @Override
+        public void authorisePublish(final SecurityToken token, final Map<String, Object> arguments)
+                throws AccessControlException
+        {
+
+        }
+
         @Override
         public String getName()
         {

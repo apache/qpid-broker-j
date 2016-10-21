@@ -31,6 +31,7 @@ import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -849,9 +850,9 @@ public class AMQPConnection_0_8Impl
     }
 
     @Override
-    public List<AMQChannel> getSessionModels()
+    public Collection<? extends AMQChannel> getSessionModels()
     {
-        return new ArrayList<>(_channelMap.values());
+        return Collections.unmodifiableCollection(_channelMap.values());
     }
 
     @Override
@@ -1414,11 +1415,11 @@ public class AMQPConnection_0_8Impl
 
     private class ProcessPendingIterator implements Iterator<Runnable>
     {
-        private final List<? extends AMQSessionModel<?>> _sessionsWithPending;
+        private final Collection<? extends AMQChannel> _sessionsWithPending;
         private Iterator<? extends AMQSessionModel<?>> _sessionIterator;
         private ProcessPendingIterator()
         {
-            _sessionsWithPending = getSessionModels();
+            _sessionsWithPending = new ArrayList<>(getSessionModels());
             _sessionIterator = _sessionsWithPending.iterator();
         }
 

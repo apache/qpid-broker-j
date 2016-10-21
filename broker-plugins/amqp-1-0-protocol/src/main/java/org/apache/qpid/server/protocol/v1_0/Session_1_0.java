@@ -1545,6 +1545,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
             consumerListNeedsRefreshing = true;
         }
 
+        // QPID-7447: prevent unnecessary allocation of empty iterator
         Iterator<ConsumerTarget_1_0> iter = _consumersWithPendingWork.isEmpty() ? Collections.<ConsumerTarget_1_0>emptyIterator() : _consumersWithPendingWork.iterator();
         boolean consumerHasMoreWork = false;
         while(iter.hasNext())

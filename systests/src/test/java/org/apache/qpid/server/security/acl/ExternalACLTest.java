@@ -485,4 +485,77 @@ public class ExternalACLTest extends AbstractACLTestCase
             // pass
         }
     }
+
+
+    public void setUpClientPublishToAnonymousSuccess() throws Exception
+    {
+        writeACLFile("ACL ALLOW-LOG client ACCESS VIRTUALHOST",
+                     "ACL ALLOW-LOG client CREATE QUEUE",
+                     "ACL ALLOW-LOG client BIND EXCHANGE" ,
+                     "ACL ALLOW-LOG client PUBLISH EXCHANGE name=\"\" routingKey=\"example.RequestQueue\"",
+                     "ACL DENY-LOG ALL ALL");
+    }
+
+    public void testClientPublishToAnonymousSuccess() throws Exception
+    {
+        Connection conn = getConnection("test", "client", "guest");
+
+        Session sess = conn.createSession(true, Session.SESSION_TRANSACTED);
+
+        conn.start();
+
+        Queue queue = sess.createQueue("example.RequestQueue");
+
+        ((AMQSession<?,?>)sess).declareAndBind((AMQDestination)queue);
+
+        MessageProducer sender = sess.createProducer(sess.createQueue("ADDR: example.RequestQueue"));
+
+        sender.send(sess.createTextMessage("test"));
+
+        //Send the message using a transaction as this will allow us to retrieve any errors that occur on the broker.
+        sess.commit();
+
+        conn.close();
+    }
+
+
+
+    public void setUpClientPublishToAnonymousFailure() throws Exception
+    {
+        writeACLFile("ACL ALLOW-LOG client ACCESS VIRTUALHOST",
+                     "ACL ALLOW-LOG client CREATE QUEUE",
+                     "ACL ALLOW-LOG client BIND EXCHANGE",
+                     "ACL DENY-LOG ALL ALL");
+    }
+
+    public void testClientPublishToAnonymousFailure() throws Exception
+    {
+        try
+        {
+            Connection conn = getConnection("test", "client", "guest");
+
+            Session sess = conn.createSession(true, Session.SESSION_TRANSACTED);
+
+            conn.start();
+
+            Queue queue = sess.createQueue("example.RequestQueue");
+
+            ((AMQSession<?, ?>) sess).declareAndBind((AMQDestination) queue);
+
+            MessageProducer sender = sess.createProducer(sess.createQueue("ADDR: example.RequestQueue"));
+
+            sender.send(sess.createTextMessage("test"));
+
+            //Send the message using a transaction as this will allow us to retrieve any errors that occur on the broker.
+            sess.commit();
+
+            fail("Sending to the anonymousExchange without permission should fail");
+        }
+        catch (JMSException e)
+        {
+            assertEquals("403",e.getErrorCode());
+        }
+    }
+
+
 }

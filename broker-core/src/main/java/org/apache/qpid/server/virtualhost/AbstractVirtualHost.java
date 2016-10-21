@@ -286,7 +286,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         _eventLogger.message(VirtualHostMessages.CREATED(getName()));
 
-        _defaultDestination = new DefaultDestination(this);
 
         _messagesDelivered = new StatisticsCounter("messages-delivered-" + getName());
         _dataDelivered = new StatisticsCounter("bytes-delivered-" + getName());
@@ -304,6 +303,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     Collections.<AccessControl<?>>emptyList(), Result.DEFER
             );
         }
+
+        _defaultDestination = new DefaultDestination(this, _accessControl);
+
 
         _housekeepingJobContext = getSystemTaskControllerContext("Housekeeping["+getName()+"]", _principal);
         _fileSystemSpaceCheckerJobContext = getSystemTaskControllerContext("FileSystemSpaceChecker["+getName()+"]", _principal);

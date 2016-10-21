@@ -20,13 +20,18 @@
  */
 package org.apache.qpid.server.transfer;
 
+import java.security.AccessControlException;
+import java.util.Map;
+
 import org.apache.qpid.server.message.BaseMessageInstance;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -48,6 +53,19 @@ public class OutboundTransferDestination implements MessageDestination
     public String getName()
     {
         return "$transfer";
+    }
+
+    @Override
+    public NamedAddressSpace getAddressSpace()
+    {
+        return _virtualHost;
+    }
+
+    @Override
+    public void authorisePublish(final SecurityToken token, final Map<String, Object> arguments)
+            throws AccessControlException
+    {
+
     }
 
     @Override

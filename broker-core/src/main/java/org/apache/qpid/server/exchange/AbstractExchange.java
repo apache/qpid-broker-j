@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.exchange;
 
+import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -59,12 +60,14 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.ManagedAttributeField;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Publisher;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -943,5 +946,16 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         return binding;
     }
 
+    @Override
+    public NamedAddressSpace getAddressSpace()
+    {
+        return _virtualHost;
+    }
 
+    @Override
+    public void authorisePublish(final SecurityToken token, final Map<String, Object> arguments)
+            throws AccessControlException
+    {
+        authorise(token, Operation.ACTION("publish"), arguments);
+    }
 }

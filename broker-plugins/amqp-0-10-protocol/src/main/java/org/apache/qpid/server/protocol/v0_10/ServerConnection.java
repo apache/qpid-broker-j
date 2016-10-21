@@ -28,6 +28,8 @@ import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -335,16 +337,16 @@ public class ServerConnection extends Connection
         super.removeSession(ssn);
     }
 
-    public List<ServerSession> getSessionModels()
+    public Collection<? extends ServerSession> getSessionModels()
     {
-        List<ServerSession> sessions = new ArrayList<>();
-        for (Session ssn : getChannels())
-        {
-            sessions.add((ServerSession) ssn);
-        }
-        return sessions;
+        return Collections.unmodifiableCollection(getChannels());
     }
 
+    @Override
+    protected Collection<ServerSession> getChannels()
+    {
+        return  (Collection<ServerSession>) super.getChannels();
+    }
 
     /**
      * @return authorizedSubject
@@ -502,11 +504,11 @@ public class ServerConnection extends Connection
 
     private class ProcessPendingIterator implements Iterator<Runnable>
     {
-        private final List<? extends AMQSessionModel<?>> _sessionsWithPending;
+        private final Collection<? extends ServerSession> _sessionsWithPending;
         private Iterator<? extends AMQSessionModel<?>> _sessionIterator;
         private ProcessPendingIterator()
         {
-            _sessionsWithPending = getSessionModels();
+            _sessionsWithPending = new ArrayList<>(getSessionModels());
             _sessionIterator = _sessionsWithPending.iterator();
         }
 

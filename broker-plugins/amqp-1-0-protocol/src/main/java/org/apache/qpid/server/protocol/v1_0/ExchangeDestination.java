@@ -26,16 +26,15 @@ import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
-import org.apache.qpid.server.message.InstanceProperties;
-import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.security.SecurityToken;
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.txn.ServerTransaction;
 
 public class ExchangeDestination implements ReceivingDestination, SendingDestination
@@ -116,8 +115,7 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
     @Override
     public void authorizePublish(final SecurityToken securityToken, final Message_1_0 message)
     {
-        _exchange.authorise(securityToken,
-                            Operation.ACTION("publish"),
+        _exchange.authorisePublish(securityToken,
                             Collections.<String,Object>singletonMap("routingKey", getRoutingAddress(message)));
 
 

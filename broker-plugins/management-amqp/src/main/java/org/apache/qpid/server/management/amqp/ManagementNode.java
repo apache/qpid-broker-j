@@ -64,6 +64,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
+import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -1017,6 +1018,20 @@ class ManagementNode implements MessageSource<ManagementNodeConsumer>, MessageDe
     public boolean verifySessionAccess(final AMQSessionModel<?> session)
     {
         return true;
+    }
+
+    @Override
+    public NamedAddressSpace getAddressSpace()
+    {
+        return _addressSpace;
+    }
+
+
+    @Override
+    public void authorisePublish(final SecurityToken token, final Map<String, Object> arguments)
+            throws AccessControlException
+    {
+        // ? special permissions to publish to the management node
     }
 
     @Override

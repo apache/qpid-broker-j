@@ -41,36 +41,32 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.message.ConsumerOption;
-import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.model.NamedAddressSpace;
-import org.apache.qpid.server.security.access.Operation;
-import org.apache.qpid.server.transport.ProtocolEngine;
-import org.apache.qpid.server.store.MessageHandle;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.filter.ArrivalTimeFilter;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.FilterManagerFactory;
 import org.apache.qpid.server.filter.MessageFilter;
+import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
+import org.apache.qpid.server.message.ConsumerOption;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.NoFactoryForTypeException;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.UnknownConfiguredObjectException;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
+import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.StoredMessage;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.txn.AlreadyKnownDtxException;
 import org.apache.qpid.server.txn.DtxNotSelectedException;
 import org.apache.qpid.server.txn.IncorrectDtxStateException;
@@ -81,12 +77,14 @@ import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.txn.SuspendAndFailDtxException;
 import org.apache.qpid.server.txn.TimeoutDtxException;
 import org.apache.qpid.server.txn.UnknownDtxBranchException;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.ExchangeExistsException;
 import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
+import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.transport.*;
 
 public class ServerSessionDelegate extends SessionDelegate
@@ -445,15 +443,11 @@ public class ServerSessionDelegate extends SessionDelegate
                 try
                 {
                     serverSession.getAMQPConnection().checkAuthorizedMessagePrincipal(getMessageUserId(xfr));
-                    if(destination instanceof ConfiguredObject)
-                    {
+                    destination.authorisePublish(serverSession.getToken(),
+                                                 PUBLISH_ACTION_MAP_CREATOR.createMap(messageMetaData.getRoutingKey(),
+                                                                                      messageMetaData.isImmediate()));
 
-                        ((ConfiguredObject)destination).authorise(serverSession.getToken(),
-                                                                  Operation.ACTION("publish"),
-                                                                  PUBLISH_ACTION_MAP_CREATOR.createMap(messageMetaData.getRoutingKey(),
-                                                                                                       messageMetaData.isImmediate()));
 
-                    };
                 }
                 catch (AccessControlException e)
                 {

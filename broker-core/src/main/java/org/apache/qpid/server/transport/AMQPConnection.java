@@ -23,7 +23,7 @@ package org.apache.qpid.server.transport;
 import java.net.SocketAddress;
 import java.security.AccessControlContext;
 import java.security.Principal;
-import java.util.List;
+import java.util.Collection;
 
 import javax.security.auth.Subject;
 
@@ -83,11 +83,11 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
     void stopConnection();
 
     /**
-     * Returns the a list of session models.  Required to return a copy.
+     * Returns the a view of session models.  Callers may not modify the returned view Required to return a copy.
      *
      * @return list of sessions
      */
-    List<? extends AMQSessionModel<?>> getSessionModels();
+    Collection<? extends AMQSessionModel<?>> getSessionModels();
 
     void resetStatistics();
 }

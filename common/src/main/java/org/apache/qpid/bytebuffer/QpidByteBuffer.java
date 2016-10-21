@@ -649,6 +649,7 @@ public class QpidByteBuffer
                                              QpidByteBuffer dest) throws SSLException
     {
         final ByteBuffer[] src;
+        // QPID-7447: prevent unnecessary allocations
         if (buffers.isEmpty())
         {
             src = EMPTY_BYTE_BUFFER_ARRAY;

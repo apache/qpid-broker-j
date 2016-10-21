@@ -32,6 +32,7 @@ public class AggregateTicker implements Ticker, SchedulingDelayNotificationListe
     public int getTimeToNextTick(final long currentTime)
     {
         int nextTick = Integer.MAX_VALUE;
+        // QPID-7447: prevent unnecessary allocation of empty iterator
         if (!_tickers.isEmpty())
         {
             for (Ticker ticker : _tickers)
@@ -46,9 +47,13 @@ public class AggregateTicker implements Ticker, SchedulingDelayNotificationListe
     public int tick(final long currentTime)
     {
         int nextTick = Integer.MAX_VALUE;
-        for(Ticker ticker : _tickers)
+        // QPID-7447: prevent unnecessary allocation of empty iterator
+        if (!_tickers.isEmpty())
         {
-            nextTick = Math.min(ticker.tick(currentTime), nextTick);
+            for(Ticker ticker : _tickers)
+            {
+                nextTick = Math.min(ticker.tick(currentTime), nextTick);
+            }
         }
         return nextTick;
     }
@@ -71,6 +76,7 @@ public class AggregateTicker implements Ticker, SchedulingDelayNotificationListe
     @Override
     public void notifySchedulingDelay(final long schedulingDelay)
     {
+        // QPID-7447: prevent unnecessary allocation of empty iterator
         if (!_tickers.isEmpty())
         {
             for (Ticker ticker : _tickers)

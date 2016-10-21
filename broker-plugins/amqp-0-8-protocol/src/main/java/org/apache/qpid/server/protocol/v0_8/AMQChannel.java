@@ -101,7 +101,6 @@ import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.security.SecurityToken;
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
@@ -431,18 +430,12 @@ public class AMQChannel
 
             try
             {
+                final MessageDestination destination = _currentMessage.getDestination();
+
                 ContentHeaderBody contentHeader = _currentMessage.getContentHeader();
                 _connection.checkAuthorizedMessagePrincipal(AMQShortString.toString(contentHeader.getProperties().getUserId()));
 
-                if(_currentMessage.getDestination() instanceof ConfiguredObject)
-                {
-
-                    ((ConfiguredObject)_currentMessage.getDestination()).authorise(_token,
-                                                                                   Operation.ACTION("publish"),
-                                                                                   AbstractAMQPConnection.PUBLISH_ACTION_MAP_CREATOR.createMap(routingKey, info.isImmediate()));
-
-                };
-
+                destination.authorisePublish(_token, AbstractAMQPConnection.PUBLISH_ACTION_MAP_CREATOR.createMap(routingKey, info.isImmediate()));
 
                 if (_confirmOnPublish)
                 {
@@ -457,7 +450,6 @@ public class AMQChannel
                 {
 
                     final MessagePublishInfo messagePublishInfo = _currentMessage.getMessagePublishInfo();
-                    final MessageDestination destination = _currentMessage.getDestination();
 
                     final MessageMetaData messageMetaData =
                             new MessageMetaData(messagePublishInfo,
@@ -3754,6 +3746,7 @@ public class AMQChannel
             consumerListNeedsRefreshing = true;
         }
 
+        // QPID-7447: prevent unnecessary allocation of empty iterator
         Iterator<ConsumerTarget_0_8> iter = _consumersWithPendingWork.isEmpty() ? Collections.<ConsumerTarget_0_8>emptyIterator() : _consumersWithPendingWork.iterator();
 
         boolean consumerHasMoreWork = false;

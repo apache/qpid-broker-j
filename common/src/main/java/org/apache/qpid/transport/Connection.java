@@ -721,7 +721,7 @@ public class Connection extends ConnectionInvoker
         return connectionLost.get();
     }
 
-    protected Collection<Session> getChannels()
+    protected Collection<? extends Session> getChannels()
     {
         return new ArrayList<>(channels.values());
     }

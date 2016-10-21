@@ -104,13 +104,23 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                                                  + "\"image/tiff\":\".tiff\","
                                                  + "\"text/plain\":\".txt\"}";
 
+    @ManagedContextDefault( name = "queue.defaultExclusivityPolicy",
+            description = "the ExclusivityPolicy to apply to queues where none is explicitly set")
+    String DEFAULT_EXCLUSIVITY = "NONE";
+
     @ManagedAttribute
     Exchange getAlternateExchange();
 
-    @ManagedAttribute( defaultValue = "NONE" )
+    @ManagedAttribute( defaultValue = "${queue.defaultExclusivityPolicy}")
     ExclusivityPolicy getExclusive();
 
-    @ManagedAttribute( defaultValue = "false" )
+    @ManagedContextDefault( name = "queue.defaultEnsureNonDestructiveConsumers",
+            description = "the value to use for the ensureNondestructiveCnsumers attribute of a queue where "
+                          + "none is explicitly set")
+    String DEFAULT_ENSURE_NON_DESTRUCTIVE_CONSUMERS = "false";
+
+
+    @ManagedAttribute( defaultValue = "${queue.defaultEnsureNonDestructiveConsumers}" )
     boolean isEnsureNondestructiveConsumers();
 
     @DerivedAttribute( persist = true )
@@ -192,7 +202,14 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedAttribute( defaultValue = "${queue.alertRepeatGap}")
     long getAlertRepeatGap();
 
-    @ManagedAttribute( defaultValue = "DEFAULT" )
+    @ManagedContextDefault( name = "queue.defaultMessageDurability",
+            description = "the value to use for the messageDurability attribute of a queue where "
+                          + "none is explicitly set")
+    String DEFAULT_MESSAGE_DURABILTY = "DEFAULT";
+
+
+
+    @ManagedAttribute( defaultValue = "${queue.defaultMessageDurability}" )
     MessageDurability getMessageDurability();
 
     @ManagedAttribute

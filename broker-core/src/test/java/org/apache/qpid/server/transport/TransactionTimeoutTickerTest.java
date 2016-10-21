@@ -29,8 +29,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Date;
-
 import com.google.common.base.Supplier;
 import org.mockito.InOrder;
 
@@ -41,7 +39,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
 {
 
     private TransactionTimeoutTicker _ticker;
-    private Supplier<Date> _dateSupplier = mock(Supplier.class);
+    private Supplier<Long> _dateSupplier = mock(Supplier.class);
     private Action<Long> _notificationAction = mock(Action.class);
     private long _timeoutValue = 100;
     private long _notificationRepeatPeriod = 5000;
@@ -50,7 +48,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
     {
         final long timeNow = System.currentTimeMillis();
 
-        when(_dateSupplier.get()).thenReturn(new Date(0));
+        when(_dateSupplier.get()).thenReturn(0L);
 
         _ticker = new TransactionTimeoutTicker(_timeoutValue, _notificationRepeatPeriod,
                                                _dateSupplier,
@@ -68,7 +66,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         final long timeNow = System.currentTimeMillis();
         final long transactionTime = timeNow - 90;
 
-        when(_dateSupplier.get()).thenReturn(new Date(transactionTime));
+        when(_dateSupplier.get()).thenReturn(transactionTime);
 
         _ticker = new TransactionTimeoutTicker(_timeoutValue, _notificationRepeatPeriod,
                                                _dateSupplier,
@@ -87,7 +85,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         final long timeNow = System.currentTimeMillis();
         final long transactionTime = timeNow - 90;
 
-        when(_dateSupplier.get()).thenReturn(new Date(transactionTime));
+        when(_dateSupplier.get()).thenReturn(transactionTime);
 
         _ticker = new TransactionTimeoutTicker(_timeoutValue, _notificationRepeatPeriod,
                                                _dateSupplier,
@@ -109,7 +107,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         final long firstTransactionTime = timeNow - 10;
 
         // First transaction
-        when(_dateSupplier.get()).thenReturn(new Date(firstTransactionTime));
+        when(_dateSupplier.get()).thenReturn(firstTransactionTime);
 
         _ticker = new TransactionTimeoutTicker(_timeoutValue, _notificationRepeatPeriod,
                                                _dateSupplier,
@@ -124,7 +122,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         timeNow += 100;
         final long secondTransactionTime = timeNow - 5;
 
-        when(_dateSupplier.get()).thenReturn(new Date(secondTransactionTime));
+        when(_dateSupplier.get()).thenReturn(secondTransactionTime);
 
         final int expectedTickForSecondTransaction = 95;
         assertTickTime("Unexpected ticker value for second transaction",
@@ -140,7 +138,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         final long firstTransactionTime = timeNow - 10;
 
         // First transaction
-        when(_dateSupplier.get()).thenReturn(new Date(firstTransactionTime));
+        when(_dateSupplier.get()).thenReturn(firstTransactionTime);
 
         _ticker = new TransactionTimeoutTicker(_timeoutValue, _notificationRepeatPeriod,
                                                _dateSupplier,
@@ -156,7 +154,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         timeNow += 100;
         final long secondTransactionTime = timeNow - 5;
 
-        when(_dateSupplier.get()).thenReturn(new Date(secondTransactionTime));
+        when(_dateSupplier.get()).thenReturn(secondTransactionTime);
 
         final int expectedTickForSecondTransaction = 95;
         assertTickTime("Unexpected ticker value for second transaction",
@@ -171,7 +169,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         long timeNow = System.currentTimeMillis();
         final long transactionTime = timeNow - 110;
 
-        when(_dateSupplier.get()).thenReturn(new Date(transactionTime));
+        when(_dateSupplier.get()).thenReturn(transactionTime);
 
         _ticker = new TransactionTimeoutTicker(_timeoutValue, _notificationRepeatPeriod,
                                                _dateSupplier,
@@ -192,7 +190,7 @@ public class TransactionTimeoutTickerTest extends QpidTestCase
         long timeNow = System.currentTimeMillis();
         final long transactionTime = timeNow - 110;
 
-        when(_dateSupplier.get()).thenReturn(new Date(transactionTime));
+        when(_dateSupplier.get()).thenReturn(transactionTime);
 
         _ticker = new TransactionTimeoutTicker(_timeoutValue, _notificationRepeatPeriod,
                                                _dateSupplier,
