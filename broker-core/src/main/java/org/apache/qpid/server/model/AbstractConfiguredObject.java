@@ -2888,8 +2888,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             LOGGER.debug("authorise returned {}", result);
             if (result == Result.DEFER)
             {
-                LOGGER.debug("authorise returned DEFER, returing default: {}", accessControl.getDefault());
                 result = accessControl.getDefault();
+                LOGGER.debug("authorise returned DEFER, returing default: {}", result);
             }
 
             if (result == Result.DENIED)

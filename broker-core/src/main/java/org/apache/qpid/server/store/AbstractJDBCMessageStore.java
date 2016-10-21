@@ -1193,11 +1193,14 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
         private void doPostCommitActions()
         {
-            for(Runnable action : _postCommitActions)
+            if (!_postCommitActions.isEmpty())
             {
-                action.run();
+                for (Runnable action : _postCommitActions)
+                {
+                    action.run();
+                }
+                _postCommitActions.clear();
             }
-            _postCommitActions.clear();
         }
 
         @Override
