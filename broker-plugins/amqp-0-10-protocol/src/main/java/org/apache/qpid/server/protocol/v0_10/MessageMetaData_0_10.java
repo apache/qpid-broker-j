@@ -20,6 +20,11 @@
 */
 package org.apache.qpid.server.protocol.v0_10;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
@@ -30,13 +35,6 @@ import org.apache.qpid.transport.MessageDeliveryMode;
 import org.apache.qpid.transport.MessageProperties;
 import org.apache.qpid.transport.MessageTransfer;
 import org.apache.qpid.transport.Struct;
-import org.apache.qpid.transport.codec.BBEncoder;
-
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 
 public class MessageMetaData_0_10 implements StorableMessageMetaData
 {
@@ -86,7 +84,7 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
         return TYPE;
     }
 
-    public int getStorableSize()
+    public synchronized int getStorableSize()
     {
         QpidByteBuffer buf = _encoded;
 
@@ -96,13 +94,12 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
             _encoded = buf;
         }
 
-        //TODO -- need to add stuff
         return buf.limit();
     }
 
     private QpidByteBuffer encodeAsBuffer()
     {
-        ServerEncoder encoder = new ServerEncoder(ENCODER_SIZE);
+        ServerEncoder encoder = new ServerEncoder(ENCODER_SIZE, false);
 
         encoder.writeInt64(_arrivalTime);
         encoder.writeInt32(_bodySize);
@@ -144,32 +141,22 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
         return buf;
     }
 
-    public int writeToBuffer(QpidByteBuffer dest)
+    public synchronized int writeToBuffer(QpidByteBuffer dest)
     {
-        QpidByteBuffer buf = _encoded;
-
-        if(buf == null)
+        if (_encoded == null)
         {
-            buf = encodeAsBuffer();
-            _encoded = buf;
+            _encoded = encodeAsBuffer();
         }
-
-        buf = buf.duplicate();
-
-        buf.position(0);
-
-        if(dest.remaining() < buf.limit())
-        {
-            buf.limit(dest.remaining());
-        }
-        dest.put(buf);
-        final int length = buf.limit();
-        buf.dispose();
-        return length;
+        dest.put(_encoded);
+        final int bytesWritten = _encoded.limit();
+        // We have special knowledge that we no longer need the encoded form after this call
+        // to reduce memory usage associated with the metadata free the encoded form here (QPID-7465)
+        clearEncodedForm();
+        return bytesWritten;
     }
 
     @Override
-    public Collection<QpidByteBuffer> asByteBuffers()
+    public synchronized Collection<QpidByteBuffer> asByteBuffers()
     {
         QpidByteBuffer buf = _encoded;
 
@@ -199,13 +186,17 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
     @Override
     public void dispose()
     {
-
+        clearEncodedForm();
     }
 
     @Override
-    public void clearEncodedForm()
+    public synchronized void clearEncodedForm()
     {
-
+        if (_encoded != null)
+        {
+            _encoded.dispose();
+            _encoded = null;
+        }
     }
 
     public String getRoutingKey()
