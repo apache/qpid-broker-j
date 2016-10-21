@@ -49,18 +49,15 @@ public final class ServerEncoder extends AbstractEncoder
 
     public void init()
     {
-        _out.position(_out.limit());
-        _out.limit(_out.capacity());
-        QpidByteBuffer old = _out;
-        if(_out.remaining() < _threshold)
+        if(_out.capacity() < _threshold)
         {
+            _out.dispose();
             _out = QpidByteBuffer.allocateDirect(_initialCapacity);
         }
         else
         {
-            _out = _out.slice();
+            _out.clear();
         }
-        old.dispose();
     }
 
     public QpidByteBuffer getBuffer()
