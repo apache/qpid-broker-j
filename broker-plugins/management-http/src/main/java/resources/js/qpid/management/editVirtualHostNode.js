@@ -77,7 +77,7 @@ define(["dojox/html/entities",
          this.context.placeAt(dom.byId("editVirtualHostNode.context"));
         }
         this.dialog.set("title", "Edit Virtual Host Node - " + entities.encode(String(effectiveData.name)));
-        util.loadData(management, modelObj, lang.hitch(this, this._show));
+        util.loadData(management, modelObj, lang.hitch(this, this._show), {depth: 1});
       },
       destroy: function()
       {
