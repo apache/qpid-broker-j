@@ -34,7 +34,6 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.TransportEncryption;
 
@@ -44,12 +43,10 @@ public class NonBlockingNetworkTransport
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingNetworkTransport.class);
-    private static final int TIMEOUT = Integer.getInteger(CommonProperties.IO_NETWORK_TRANSPORT_TIMEOUT_PROP_NAME,
-                                                          CommonProperties.IO_NETWORK_TRANSPORT_TIMEOUT_DEFAULT);
+
     private final Set<TransportEncryption> _encryptionSet;
     private final MultiVersionProtocolEngineFactory _factory;
     private final ServerSocketChannel _serverSocket;
-    private final int _timeout;
     private final NetworkConnectionScheduler _scheduler;
     private final AmqpPort<?> _port;
     private final InetSocketAddress _address;
@@ -63,7 +60,6 @@ public class NonBlockingNetworkTransport
         {
 
             _factory = factory;
-            _timeout = TIMEOUT;
 
             String bindingAddress = port.getBindingAddress();
             if (WILDCARD_ADDRESS.equals(bindingAddress))

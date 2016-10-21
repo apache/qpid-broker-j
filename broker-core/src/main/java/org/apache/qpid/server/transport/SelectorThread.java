@@ -36,8 +36,11 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -45,10 +48,15 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.configuration.CommonProperties;
+
 
 class SelectorThread extends Thread
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectorThread.class);
+    private static final long ACCEPT_CANCELATION_TIMEOUT =
+            Integer.getInteger(CommonProperties.IO_NETWORK_TRANSPORT_TIMEOUT_PROP_NAME,
+                               CommonProperties.IO_NETWORK_TRANSPORT_TIMEOUT_DEFAULT);
 
     static final String IO_THREAD_NAME_PREFIX  = "IO-";
     private final Queue<Runnable> _tasks = new ConcurrentLinkedQueue<>();
@@ -433,7 +441,29 @@ class SelectorThread extends Thread
         _selectionTasks[0].wakeup();
     }
 
-    public Future<Void> cancelAcceptingSocket(final ServerSocketChannel socketChannel)
+    public void cancelAcceptingSocket(final ServerSocketChannel socketChannel)
+    {
+        Future<Void> result = cancelAcceptingSocketAsync(socketChannel);
+        try
+        {
+            result.get(ACCEPT_CANCELATION_TIMEOUT, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException e)
+        {
+            LOGGER.warn("Cancellation of accepting socket was interrupted");
+            Thread.currentThread().interrupt();
+        }
+        catch (ExecutionException e)
+        {
+            LOGGER.warn("Cancellation of accepting socket failed", e.getCause());
+        }
+        catch (TimeoutException e)
+        {
+            LOGGER.warn("Cancellation of accepting socket timed out");
+        }
+    }
+
+    private Future<Void> cancelAcceptingSocketAsync(final ServerSocketChannel socketChannel)
     {
         final SettableFuture<Void> cancellationResult = SettableFuture.create();
         _tasks.add(new Runnable()
