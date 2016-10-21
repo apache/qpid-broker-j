@@ -21,27 +21,33 @@
 package org.apache.qpid.server.consumer;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.logging.LogSubject;
+import org.apache.qpid.server.logging.messages.SubscriptionMessages;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
+import org.apache.qpid.server.model.Consumer;
+import org.apache.qpid.server.queue.SuspendedConsumerLoggingTicker;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.StateChangeListener;
 
-public abstract class AbstractConsumerTarget implements ConsumerTarget
+public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubject
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractConsumerTarget.class);
+    protected static final String PULL_ONLY_CONSUMER = "x-pull-only";
     private final AtomicReference<State> _state;
 
     private final Set<StateChangeListener<ConsumerTarget, State>> _stateChangeListeners = new
@@ -49,12 +55,39 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
 
     private final Lock _stateChangeLock = new ReentrantLock();
     private final AtomicInteger _stateActivates = new AtomicInteger();
+    private final boolean _isMultiQueue;
+    private final SuspendedConsumerLoggingTicker _suspendedConsumerLoggingTicker;
     private ConcurrentLinkedQueue<ConsumerMessageInstancePair> _queue = new ConcurrentLinkedQueue();
+    private final List<MessageInstanceConsumer> _consumers = new CopyOnWriteArrayList<>();
+
+    private final boolean _isPullOnly;
+    private Iterator<MessageInstanceConsumer> _pullIterator;
 
 
-    protected AbstractConsumerTarget(final State initialState)
+    protected AbstractConsumerTarget(final State initialState,
+                                     final boolean isPullOnly,
+                                     final boolean isMultiQueue,
+                                     final AMQPConnection<?> amqpConnection)
     {
         _state = new AtomicReference<State>(initialState);
+        _isPullOnly = isPullOnly;
+        _isMultiQueue = isMultiQueue;
+        _suspendedConsumerLoggingTicker = isMultiQueue
+                ? new SuspendedConsumerLoggingTicker(amqpConnection.getContextValue(Long.class, Consumer.SUSPEND_NOTIFICATION_PERIOD))
+                {
+                    @Override
+                    protected void log(final long period)
+                    {
+                        amqpConnection.getEventLogger().message(AbstractConsumerTarget.this, SubscriptionMessages.STATE(period));
+                    }
+                }
+                : null;
+
+    }
+
+    public boolean isMultiQueue()
+    {
+        return _isMultiQueue;
     }
 
     @Override
@@ -64,9 +97,8 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
         {
             return false;
         }
-        if(hasMessagesToSend())
+        if(sendNextMessage())
         {
-            sendNextMessage();
             return true;
         }
         else
@@ -90,6 +122,28 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
     protected abstract void processStateChanged();
 
     protected abstract void processClosed();
+
+    @Override
+    public void consumerAdded(final MessageInstanceConsumer sub)
+    {
+        _consumers.add(sub);
+    }
+
+    @Override
+    public void consumerRemoved(final MessageInstanceConsumer sub)
+    {
+        _consumers.remove(sub);
+        if(_consumers.isEmpty())
+        {
+            close();
+        }
+    }
+
+    public List<MessageInstanceConsumer> getConsumers()
+    {
+        return _consumers;
+    }
+
 
     @Override
     public final boolean isSuspended()
@@ -144,9 +198,24 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
             }
             else
             {
-                for (StateChangeListener<ConsumerTarget, State> listener : _stateChangeListeners)
+                if(!_stateChangeListeners.isEmpty())
                 {
-                    listener.stateChanged(this, from, to);
+                    for (StateChangeListener<ConsumerTarget, State> listener : _stateChangeListeners)
+                    {
+                        listener.stateChanged(this, from, to);
+                    }
+                }
+            }
+            if(_suspendedConsumerLoggingTicker != null)
+            {
+                if (to == State.SUSPENDED)
+                {
+                    _suspendedConsumerLoggingTicker.setStartTime(System.currentTimeMillis());
+                    getSessionModel().addTicker(_suspendedConsumerLoggingTicker);
+                }
+                else
+                {
+                    getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
                 }
             }
             return true;
@@ -176,6 +245,11 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
     public void removeStateChangeListener(final StateChangeListener<ConsumerTarget, State> listener)
     {
         _stateChangeListeners.remove(listener);
+    }
+
+    public boolean isPullOnly()
+    {
+        return _isPullOnly;
     }
 
     public final boolean trySendLock()
@@ -208,12 +282,39 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
     @Override
     public boolean hasMessagesToSend()
     {
-        return !_queue.isEmpty();
+        return !_queue.isEmpty() || (isPullOnly() && messagesAvailable());
+    }
+
+    private boolean messagesAvailable()
+    {
+        if(hasCredit())
+        {
+            for (MessageInstanceConsumer consumer : _consumers)
+            {
+                if (consumer.hasAvailableMessages())
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
-    public void sendNextMessage()
+    public boolean sendNextMessage()
     {
+        if(isPullOnly())
+        {
+            if(_pullIterator == null || !_pullIterator.hasNext())
+            {
+                _pullIterator = getConsumers().iterator();
+            }
+            if(_pullIterator.hasNext())
+            {
+                MessageInstanceConsumer consumer = _pullIterator.next();
+                consumer.pullMessage();
+            }
+        }
         ConsumerMessageInstancePair consumerMessage = _queue.poll();
         if (consumerMessage != null)
         {
@@ -234,7 +335,13 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
             {
                 consumerMessage.release();
             }
+            return true;
         }
+        else
+        {
+            return false;
+        }
+
 
     }
 
@@ -268,12 +375,26 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
             releaseSendLock();
         }
 
-        afterCloseInternal();
+        for (MessageInstanceConsumer consumer : _consumers)
+        {
+            consumer.close();
+        }
+        if(_suspendedConsumerLoggingTicker != null)
+        {
+            getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
+        }
+
         return closed;
 
     }
 
-    protected abstract void afterCloseInternal();
+    @Override
+    public String toLogString()
+    {
+
+        return "[(** Multi-Queue **)] ";
+    }
+
 
     protected abstract void doCloseInternal();
 }

@@ -36,4 +36,8 @@ public interface MessageInstanceConsumer
     void externalStateChange();
 
     Object getIdentifier();
+
+    boolean hasAvailableMessages();
+
+    void pullMessage();
 }

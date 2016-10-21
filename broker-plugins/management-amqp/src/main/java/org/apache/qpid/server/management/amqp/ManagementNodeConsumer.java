@@ -70,6 +70,18 @@ class ManagementNodeConsumer implements MessageInstanceConsumer, MessageDestinat
         return _identifier;
     }
 
+    public boolean hasAvailableMessages()
+    {
+        return !_queue.isEmpty();
+    }
+
+    @Override
+    public void pullMessage()
+    {
+
+    }
+
+
     public AMQSessionModel getSessionModel()
     {
         return _target.getSessionModel();

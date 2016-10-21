@@ -149,6 +149,17 @@ public abstract class AbstractSystemMessageSource implements MessageSource<Abstr
             return _target;
         }
 
+        public boolean hasAvailableMessages()
+        {
+            return !_queue.isEmpty();
+        }
+
+        @Override
+        public void pullMessage()
+        {
+
+        }
+
         public AMQSessionModel getSessionModel()
         {
             return _target.getSessionModel();

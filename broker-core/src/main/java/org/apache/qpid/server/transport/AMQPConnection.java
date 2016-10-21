@@ -28,11 +28,12 @@ import java.util.Collection;
 import javax.security.auth.Subject;
 
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.util.Deletable;
 
-public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<C>, Deletable<C>
+public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<C>, Deletable<C>, EventLoggerProvider
 {
     boolean isMessageAssignmentSuspended();
 

@@ -189,38 +189,12 @@ public class TransferQueueImpl implements TransferQueue
         _consumers.add(consumer);
         consumer.notifyWork();
 
-
-  /*      consumer.setStateListener(this);
-        QueueContext queueContext;
-        if(filters == null || !filters.startAtTail())
-        {
-            queueContext = new QueueContext(getEntries().getHead());
-        }
-        else
-        {
-            queueContext = new QueueContext(getEntries().getTail());
-        }
-        consumer.setQueueContext(queueContext);
-
-        if (!isDeleted())
-        {
-            _consumerList.add(consumer);
-
-            if (isDeleted())
-            {
-                consumer.queueDeleted();
-            }
-        }
-        else
-        {
-            // TODO
-        }
-
-        consumer.addChangeListener(_deletedChildListener);
-
-        deliverAsync();
-*/
         return consumer;
+    }
+
+    boolean hasAvailableMessages(final TransferQueueConsumer queueConsumer)
+    {
+        return getNextAvailableEntry(queueConsumer) != null;
     }
 
 
@@ -394,6 +368,11 @@ public class TransferQueueImpl implements TransferQueue
     public MessageDurability getMessageDurability()
     {
         return MessageDurability.DEFAULT;
+    }
+
+    public void flushConsumer(final TransferQueueConsumer consumer, final int count)
+    {
+
     }
 
     private static class EnqueueRequest

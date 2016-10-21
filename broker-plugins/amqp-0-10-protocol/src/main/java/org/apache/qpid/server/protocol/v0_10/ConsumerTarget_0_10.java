@@ -22,9 +22,7 @@ package org.apache.qpid.server.protocol.v0_10;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -89,7 +87,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
 
     private int _deferredMessageCredit;
     private long _deferredSizeCredit;
-    private final List<MessageInstanceConsumer> _consumers = new CopyOnWriteArrayList<>();
 
     private final StateChangeListener<MessageInstance, EntryState> _unacknowledgedMessageListener = new StateChangeListener<MessageInstance, EntryState>()
     {
@@ -117,9 +114,10 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
                                MessageAcquireMode acquireMode,
                                MessageFlowMode flowMode,
                                FlowCreditManager_0_10 creditManager,
-                               Map<String, Object> arguments)
+                               Map<String, Object> arguments,
+                               boolean multiQueue)
     {
-        super(State.SUSPENDED);
+        super(State.SUSPENDED, isPullOnly(arguments), multiQueue, session.getAMQPConnection());
         _session = session;
         _postIdSettingAction = new AddMessageDispositionListenerAction(session);
         _acceptMode = acceptMode;
@@ -138,6 +136,12 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         }
     }
 
+    private static boolean isPullOnly(Map<String, Object> arguments)
+    {
+        return arguments.containsKey(PULL_ONLY_CONSUMER)
+               && Boolean.valueOf(String.valueOf(arguments.get(PULL_ONLY_CONSUMER)));
+    }
+
     @Override
     public boolean isFlowSuspended()
     {
@@ -145,17 +149,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         // TODO check for Session suspension
     }
 
-    @Override
-    protected void afterCloseInternal()
-    {
-
-        for (MessageInstanceConsumer consumer : _consumers)
-        {
-            consumer.close();
-        }
-    }
-
-    @Override
     protected void doCloseInternal()
     {
         _creditManager.removeListener(this);
@@ -621,7 +614,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     public void flush()
     {
         flushCreditState(true);
-        for(MessageInstanceConsumer consumer : _consumers)
+        for(MessageInstanceConsumer consumer : getConsumers())
         {
             consumer.flush();
         }
@@ -650,22 +643,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     public String getTargetAddress()
     {
         return _targetAddress;
-    }
-
-    @Override
-    public void consumerAdded(final MessageInstanceConsumer consumer)
-    {
-        _consumers.add(consumer);
-    }
-
-    @Override
-    public void consumerRemoved(final MessageInstanceConsumer consumer)
-    {
-        _consumers.remove(consumer);
-        if(_consumers.isEmpty())
-        {
-            close();
-        }
     }
 
     public long getUnacknowledgedBytes()

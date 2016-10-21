@@ -196,6 +196,18 @@ public class TransferQueueConsumer implements AcquiringMessageInstanceConsumer<T
         return _identifier;
     }
 
+    @Override
+    public boolean hasAvailableMessages()
+    {
+        return _transferQueue.hasAvailableMessages(this);
+    }
+
+    @Override
+    public void pullMessage()
+    {
+
+    }
+
     public void send(final TransferQueueEntry entry)
     {
         _target.send(entry);

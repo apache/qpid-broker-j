@@ -1257,7 +1257,10 @@ public class ServerSession extends Session
         Collection<ConsumerTarget_0_10> consumerTargets = getSubscriptions();
         for(ConsumerTarget_0_10 consumerTarget: consumerTargets)
         {
-            consumerTarget.notifyCurrentState();
+            if(!consumerTarget.isPullOnly())
+            {
+                consumerTarget.notifyCurrentState();
+            }
         }
     }
 
