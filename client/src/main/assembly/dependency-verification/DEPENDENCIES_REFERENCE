@@ -21,6 +21,7 @@
 # TRIMMED 3RD PARTY DEPENDENCY INFORMATION FOR MODIFICATION CHECKS
 #// ------------------------------------------------------------------
 
+Apache Qpid JMS Client for AMQP 0-9-1/0-10
 
 
 From: 'QOS.ch' (http://www.qos.ch)

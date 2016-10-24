@@ -21,6 +21,7 @@
 # TRIMMED 3RD PARTY DEPENDENCY INFORMATION FOR MODIFICATION CHECKS
 #// ------------------------------------------------------------------
 
+Apache Qpid Broker for Java
 
 
 From: 'an unknown organization'
@@ -80,7 +81,7 @@ From: 'The Apache Software Foundation' (http://www.apache.org/)
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid BDB Message Store Broker Plug-in (http://qpid.apache.org/components/qpid-bdbstore) org.apache.qpid:qpid-bdbstore:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Apache Qpid BDB Message Store JMX (http://qpid.apache.org/components/bdbstore/qpid-bdbstore-jmx) org.apache.qpid:qpid-bdbstore-jmx:jar
+  - Qpid BDB Message Store JMX (http://qpid.apache.org/components/bdbstore/qpid-bdbstore-jmx) org.apache.qpid:qpid-bdbstore-jmx:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Broker Core (http://qpid.apache.org/components/qpid-broker-core) org.apache.qpid:qpid-broker-core:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
@@ -106,7 +107,7 @@ From: 'The Apache Software Foundation' (http://www.apache.org/)
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid HTTP Management Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-management-http) org.apache.qpid:qpid-broker-plugins-management-http:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Apache Qpid JMX Management Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-management-jmx) org.apache.qpid:qpid-broker-plugins-management-jmx:jar
+  - Qpid JMX Management Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-management-jmx) org.apache.qpid:qpid-broker-plugins-management-jmx:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Memory Message Store Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-memory-store) org.apache.qpid:qpid-broker-plugins-memory-store:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
@@ -114,7 +115,7 @@ From: 'The Apache Software Foundation' (http://www.apache.org/)
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Common (http://qpid.apache.org/components/management/qpid-common) org.apache.qpid:qpid-common:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Apache Qpid Management Common (http://qpid.apache.org/components/management/qpid-management-common) org.apache.qpid:qpid-management-common:jar
+  - Qpid Management Common (http://qpid.apache.org/components/management/qpid-management-common) org.apache.qpid:qpid-management-common:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 From: 'The Dojo Foundation' (http://dojotoolkit.org/foundation)
