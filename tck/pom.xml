@@ -215,8 +215,8 @@
                                 <phase>integration-test</phase>
                                 <configuration>
                                     <tasks>
-                                        <delete dir="${tck.work.directory}"/>
-                                        <mkdir dir="${tck.work.directory}"/>
+                                        <delete dir="${tck.work.directory}" />
+                                        <mkdir dir="${tck.work.directory}" />
                                     </tasks>
                                 </configuration>
                                 <goals>
@@ -254,7 +254,7 @@
                                     <executable>java</executable>
                                     <arguments>
                                         <argument>-classpath</argument>
-                                        <classpath/>
+                                        <classpath />
                                         <argument>-Dcts.harness.debug=false</argument>
                                         <argument>-Dcts.jtroutput=true</argument>
                                         <argument>-Dbuild.level=1</argument>
@@ -298,7 +298,7 @@
                 <java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</java.naming.factory.initial>
                 <java.naming.provider.url>${project.build.testOutputDirectory}/qpid-jms-client/jndi.properties</java.naming.provider.url>
                 <tck.ts.jtx>${project.build.testOutputDirectory}/qpid-jms-client/ts.jtx</tck.ts.jtx>
-                <tck.test.options></tck.test.options>
+                <tck.test.options />
             </properties>
             <build>
                 <plugins>

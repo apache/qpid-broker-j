@@ -55,7 +55,7 @@
                         <configuration>
                             <includes>JMS-Performance-Test-Framework.xml</includes>
                             <postProcess>
-                                <copy file="${docbook.target}/JMS-Performance-Test-Framework.html" tofile="${docbook.target}/index.html"/>
+                                <copy file="${docbook.target}/JMS-Performance-Test-Framework.html" tofile="${docbook.target}/index.html" />
                             </postProcess>
                         </configuration>
                     </plugin>

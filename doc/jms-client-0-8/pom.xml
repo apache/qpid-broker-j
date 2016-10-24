@@ -54,7 +54,7 @@
                         <configuration>
                             <includes>JMS-Client-Book.xml</includes>
                             <postProcess>
-                                <copy file="${docbook.target}/JMS-Client-Book.html" tofile="${docbook.target}/index.html"/>
+                                <copy file="${docbook.target}/JMS-Client-Book.html" tofile="${docbook.target}/index.html" />
                             </postProcess>
                         </configuration>
                     </plugin>
