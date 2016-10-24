@@ -21,7 +21,7 @@
     <parent>
         <artifactId>qpid-java-build</artifactId>
         <groupId>org.apache.qpid</groupId>
-        <version>6.0.5</version>
+        <version>6.0.6-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
