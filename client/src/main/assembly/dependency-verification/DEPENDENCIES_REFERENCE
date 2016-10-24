@@ -21,6 +21,7 @@
 # TRIMMED 3RD PARTY DEPENDENCY INFORMATION FOR MODIFICATION CHECKS
 #// ------------------------------------------------------------------
 
+Apache Qpid JMS Client for AMQP 0-9-1/0-10
 
 
 From: 'QOS.ch' (http://www.qos.ch)
@@ -28,7 +29,7 @@ From: 'QOS.ch' (http://www.qos.ch)
     License: MIT License  (http://www.opensource.org/licenses/mit-license.php)
 
 From: 'The Apache Software Foundation' (http://www.apache.org/)
-  - Apache Qpid Common (http://qpid.apache.org/components/management/qpid-common) org.apache.qpid:qpid-common:jar
+  - Apache Qpid Common (http://qpid.apache.org/components/qpid-common) org.apache.qpid:qpid-common:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 

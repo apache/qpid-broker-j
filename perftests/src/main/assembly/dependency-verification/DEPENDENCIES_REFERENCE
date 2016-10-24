@@ -21,6 +21,7 @@
 # TRIMMED 3RD PARTY DEPENDENCY INFORMATION FOR MODIFICATION CHECKS
 #// ------------------------------------------------------------------
 
+Apache Qpid Performance Tests
 
 
 From: 'an unknown organization'
@@ -44,9 +45,17 @@ From: 'QOS.ch' (http://www.qos.ch)
     License: MIT License  (http://www.opensource.org/licenses/mit-license.php)
 
 From: 'The Apache Software Foundation' (http://www.apache.org/)
+  - Apache Commons Codec (http://commons.apache.org/proper/commons-codec/) commons-codec:commons-codec:jar:1.9
+    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Apache Commons Logging (http://commons.apache.org/proper/commons-logging/) commons-logging:commons-logging:jar:1.2
+    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Apache HttpClient (http://hc.apache.org/httpcomponents-client) org.apache.httpcomponents:httpclient:jar:4.4
+    License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Apache HttpCore (http://hc.apache.org/httpcomponents-core-ga) org.apache.httpcomponents:httpcore:jar:4.4
+    License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid JMS Client for AMQP 0-9-1/0-10 (http://qpid.apache.org/components/qpid-client) org.apache.qpid:qpid-client:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Apache Qpid Common (http://qpid.apache.org/components/management/qpid-common) org.apache.qpid:qpid-common:jar
+  - Apache Qpid Common (http://qpid.apache.org/components/qpid-common) org.apache.qpid:qpid-common:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 

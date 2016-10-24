@@ -21,6 +21,7 @@
 # TRIMMED 3RD PARTY DEPENDENCY INFORMATION FOR MODIFICATION CHECKS
 #// ------------------------------------------------------------------
 
+Apache Qpid Broker for Java
 
 
 From: 'an unknown organization'
@@ -28,6 +29,10 @@ From: 'an unknown organization'
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - bcel  org.apache.bcel:bcel:jar:5.2
 
+  - dgrid (http://webjars.org) org.webjars.bower:dgrid:jar:1.0.0
+    License: BSD-3-Clause  (https://spdx.org/licenses/BSD-3-Clause#licenseText)
+  - dstore (http://webjars.org) org.webjars.bower:dstore:jar:1.1.1
+    License: AFL-2.1  (https://spdx.org/licenses/AFL-2.1#licenseText)    License: BSD-3-Clause  (https://spdx.org/licenses/BSD-3-Clause#licenseText)
 
 From: 'Apache Software Foundation' (http://db.apache.org/)
   - Apache Derby Database Engine and Embedded JDBC Driver (http://db.apache.org/derby/derby/) org.apache.derby:derby:jar:10.11.1.1
@@ -46,6 +51,8 @@ From: 'JolBox' (http://jolbox.com)
     License: Apache v2  (http://www.apache.org/licenses/LICENSE-2.0.html)
 
 From: 'Mort Bay Consulting' (http://www.mortbay.com)
+  - Jetty :: Asynchronous HTTP Client (http://www.eclipse.org/jetty) org.eclipse.jetty:jetty-client:jar:8.1.17.v20150415
+    License: Apache Software License - Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0)    License: Eclipse Public License - Version 1.0  (http://www.eclipse.org/org/documents/epl-v10.php)
   - Jetty :: Continuation (http://www.eclipse.org/jetty) org.eclipse.jetty:jetty-continuation:jar:8.1.17.v20150415
     License: Apache Software License - Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0)    License: Eclipse Public License - Version 1.0  (http://www.eclipse.org/org/documents/epl-v10.php)
   - Jetty :: Http Utility (http://www.eclipse.org/jetty) org.eclipse.jetty:jetty-http:jar:8.1.17.v20150415
@@ -57,6 +64,8 @@ From: 'Mort Bay Consulting' (http://www.mortbay.com)
   - Jetty :: Server Core (http://www.eclipse.org/jetty) org.eclipse.jetty:jetty-server:jar:8.1.17.v20150415
     License: Apache Software License - Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0)    License: Eclipse Public License - Version 1.0  (http://www.eclipse.org/org/documents/epl-v10.php)
   - Jetty :: Servlet Handling (http://www.eclipse.org/jetty) org.eclipse.jetty:jetty-servlet:jar:8.1.17.v20150415
+    License: Apache Software License - Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0)    License: Eclipse Public License - Version 1.0  (http://www.eclipse.org/org/documents/epl-v10.php)
+  - Jetty :: Utility Servlets and Filters (http://www.eclipse.org/jetty) org.eclipse.jetty:jetty-servlets:jar:8.1.17.v20150415
     License: Apache Software License - Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0)    License: Eclipse Public License - Version 1.0  (http://www.eclipse.org/org/documents/epl-v10.php)
   - Jetty :: Utilities (http://www.eclipse.org/jetty) org.eclipse.jetty:jetty-util:jar:8.1.17.v20150415
     License: Apache Software License - Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0)    License: Eclipse Public License - Version 1.0  (http://www.eclipse.org/org/documents/epl-v10.php)
@@ -102,15 +111,15 @@ From: 'The Apache Software Foundation' (http://www.apache.org/)
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid JDBC Message Store Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-jdbc-store) org.apache.qpid:qpid-broker-plugins-jdbc-store:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+  - Apache Qpid LogBack Logging Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-logging-logback) org.apache.qpid:qpid-broker-plugins-logging-logback:jar
+    License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid HTTP Management Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-management-http) org.apache.qpid:qpid-broker-plugins-management-http:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid Memory Message Store Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-memory-store) org.apache.qpid:qpid-broker-plugins-memory-store:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - Apache Qpid WebSocket Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-websocket) org.apache.qpid:qpid-broker-plugins-websocket:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Apache Qpid Common (http://qpid.apache.org/components/management/qpid-common) org.apache.qpid:qpid-common:jar
-    License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Apache Qpid Management Common (http://qpid.apache.org/components/management/qpid-management-common) org.apache.qpid:qpid-management-common:jar
+  - Apache Qpid Common (http://qpid.apache.org/components/qpid-common) org.apache.qpid:qpid-common:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
 
 From: 'The Dojo Foundation' (http://dojotoolkit.org/foundation)
