@@ -137,7 +137,8 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
 
     private static boolean isPullOnly(Map<String, Object> arguments)
     {
-        return arguments.containsKey(PULL_ONLY_CONSUMER)
+        return arguments != null
+               && arguments.containsKey(PULL_ONLY_CONSUMER)
                && Boolean.valueOf(String.valueOf(arguments.get(PULL_ONLY_CONSUMER)));
     }
 

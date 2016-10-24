@@ -346,7 +346,8 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
 
     private static boolean isPullOnly(FieldTable arguments)
     {
-        return arguments.containsKey(PULL_ONLY_CONSUMER)
+        return arguments != null
+               && arguments.containsKey(PULL_ONLY_CONSUMER)
                && Boolean.valueOf(String.valueOf(arguments.get(PULL_ONLY_CONSUMER)));
     }
 
