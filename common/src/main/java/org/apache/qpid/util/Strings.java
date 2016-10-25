@@ -130,7 +130,7 @@ public final class Strings
     public static byte[] decodeBase64(String base64String)
     {
         base64String = base64String.replaceAll("\\s","");
-        if(!base64String.matches("[A-Za-z0-9+/]*[=]*"))
+        if(!base64String.matches("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"))
         {
             throw new IllegalArgumentException("Cannot convert string '"+ base64String+ "'to a byte[] - it does not appear to be base64 data");
         }
