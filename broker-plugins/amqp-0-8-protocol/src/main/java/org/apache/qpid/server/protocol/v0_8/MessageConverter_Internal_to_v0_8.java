@@ -38,6 +38,7 @@ import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.framing.MessagePublishInfo;
 import org.apache.qpid.server.message.internal.InternalMessage;
+import org.apache.qpid.server.message.internal.InternalMessageHeader;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
@@ -73,7 +74,7 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
     {
         final byte[] messageContent = convertToBody(serverMsg.getMessageBody());
         final MessageMetaData messageMetaData_0_8 = convertMetaData(serverMsg,
-                                                                    getBodyMimeType(serverMsg.getMessageBody()),
+                                                                    getBodyMimeType(serverMsg.getMessageBody(), serverMsg.getMessageHeader()),
                                                                     messageContent.length);
 
         return new StoredMessage<MessageMetaData>()
@@ -207,15 +208,31 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
         }
     }
 
-    public static String getBodyMimeType(Object object)
+    public static String getBodyMimeType(Object object, final InternalMessageHeader header)
     {
         if(object instanceof String)
         {
-            return "text/plain";
+            String mimeType;
+            if(header == null || (mimeType = header.getMimeType()) == null || !mimeType.trim().startsWith("text/"))
+            {
+                return "text/plain";
+            }
+            else
+            {
+                return mimeType;
+            }
         }
         else if(object instanceof byte[])
         {
-            return "application/octet-stream";
+            String mimeType;
+            if(header == null || (mimeType = header.getMimeType()) == null || "".equals(mimeType.trim()))
+            {
+                return "application/octet-stream";
+            }
+            else
+            {
+                return mimeType;
+            }
         }
         else if(object instanceof Map)
         {

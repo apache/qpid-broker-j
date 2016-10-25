@@ -32,6 +32,7 @@ import java.util.Map;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Section;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
@@ -75,6 +76,10 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
         properties.setCorrelationId(serverMessage.getMessageHeader().getCorrelationId());
         properties.setCreationTime(new Date(serverMessage.getMessageHeader().getTimestamp()));
         properties.setMessageId(serverMessage.getMessageHeader().getMessageId());
+        if(bodySection instanceof Data)
+        {
+            properties.setContentType(Symbol.valueOf(serverMessage.getMessageHeader().getMimeType()));
+        }
         final String userId = serverMessage.getMessageHeader().getUserId();
         if(userId != null)
         {
@@ -97,7 +102,7 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
 
     }
 
-    protected Section getBodySection(final InternalMessage serverMessage, final String mimeType)
+    protected Section getBodySection(final InternalMessage serverMessage)
     {
         return convertToBody(serverMessage.getMessageBody());
     }

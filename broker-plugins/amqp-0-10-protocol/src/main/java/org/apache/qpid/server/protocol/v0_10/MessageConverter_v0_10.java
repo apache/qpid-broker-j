@@ -31,6 +31,7 @@ import java.util.Map;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.message.internal.InternalMessageHeader;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
@@ -182,15 +183,31 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
         }
     }
 
-    public static String getBodyMimeType(Object object)
+    public static String getBodyMimeType(Object object, final InternalMessageHeader header)
     {
         if(object instanceof String)
         {
-            return "text/plain";
+            String mimeType;
+            if(header == null || (mimeType = header.getMimeType()) == null || !mimeType.trim().startsWith("text/"))
+            {
+                return "text/plain";
+            }
+            else
+            {
+                return mimeType;
+            }
         }
         else if(object instanceof byte[])
         {
-            return "application/octet-stream";
+            String mimeType;
+            if(header == null || (mimeType = header.getMimeType()) == null || "".equals(mimeType.trim()))
+            {
+                return "application/octet-stream";
+            }
+            else
+            {
+                return mimeType;
+            }
         }
         else if(object instanceof Map)
         {
