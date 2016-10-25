@@ -63,12 +63,12 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
-import javax.xml.bind.DatatypeConverter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.transport.TransportException;
+import org.apache.qpid.util.Strings;
 
 public class SSLUtil
 {
@@ -388,7 +388,7 @@ public class SSLUtil
                     keyBuilder.append(line);
                 }
 
-                content = DatatypeConverter.parseBase64Binary(keyBuilder.toString());
+                content = Strings.decodeBase64(keyBuilder.toString());
             }
         }
         return readPrivateKey(content, "RSA");

@@ -47,6 +47,7 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.util.Strings;
 
 public class SaslServlet extends AbstractServlet
 {
@@ -208,7 +209,7 @@ public class SaslServlet extends AbstractServlet
     {
         byte[] saslResponseBytes = saslResponse == null
                 ? new byte[0]
-                : DatatypeConverter.parseBase64Binary(saslResponse);
+                : Strings.decodeBase64(saslResponse);
         SubjectAuthenticationResult authenticationResult = subjectCreator.authenticate(saslServer, saslResponseBytes);
         byte[] challenge = authenticationResult.getChallenge();
         Map<String, Object> outputObject = new LinkedHashMap<>();

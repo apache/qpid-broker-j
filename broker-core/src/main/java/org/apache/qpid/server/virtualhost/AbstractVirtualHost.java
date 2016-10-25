@@ -62,7 +62,6 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import javax.security.auth.Subject;
-import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
@@ -142,6 +141,7 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.HousekeepingExecutor;
 import org.apache.qpid.server.util.MapValueConverter;
+import org.apache.qpid.util.Strings;
 
 public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> extends AbstractConfiguredObject<X>
         implements VirtualHost<X>, EventListener
@@ -725,7 +725,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 {
                     try
                     {
-                        body = DatatypeConverter.parseBase64Binary((String)messageContent);
+                        body = Strings.decodeBase64((String) messageContent);
 
                     }
                     catch(IllegalArgumentException e)

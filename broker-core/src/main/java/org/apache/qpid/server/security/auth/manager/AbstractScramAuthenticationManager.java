@@ -50,6 +50,7 @@ import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainAdapterSaslServer;
 import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServer;
 import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServerSource;
+import org.apache.qpid.util.Strings;
 
 public abstract class AbstractScramAuthenticationManager<X extends AbstractScramAuthenticationManager<X>>
         extends ConfigModelPasswordManagingAuthenticationProvider<X>
@@ -159,7 +160,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
         final String[] passwordFields = user.getPassword().split(",");
         if (passwordFields.length == 2)
         {
-            byte[] saltedPassword = DatatypeConverter.parseBase64Binary(passwordFields[PasswordField.SALTED_PASSWORD.ordinal()]);
+            byte[] saltedPassword = Strings.decodeBase64(passwordFields[PasswordField.SALTED_PASSWORD.ordinal()]);
 
             try
             {
@@ -320,9 +321,9 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
         {
             updateStoredPasswordFormatIfNecessary(user);
             final String[] passwordFields = user.getPassword().split(",");
-            salt = DatatypeConverter.parseBase64Binary(passwordFields[PasswordField.SALT.ordinal()]);
-            storedKey = DatatypeConverter.parseBase64Binary(passwordFields[PasswordField.STORED_KEY.ordinal()]);
-            serverKey = DatatypeConverter.parseBase64Binary(passwordFields[PasswordField.SERVER_KEY.ordinal()]);
+            salt = Strings.decodeBase64(passwordFields[PasswordField.SALT.ordinal()]);
+            storedKey = Strings.decodeBase64(passwordFields[PasswordField.STORED_KEY.ordinal()]);
+            serverKey = Strings.decodeBase64(passwordFields[PasswordField.SERVER_KEY.ordinal()]);
             iterationCount = Integer.parseInt(passwordFields[PasswordField.ITERATION_COUNT.ordinal()]);
             exception = null;
         }
