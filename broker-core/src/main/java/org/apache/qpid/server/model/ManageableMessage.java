@@ -51,4 +51,6 @@ public interface ManageableMessage extends ManagedAttributeValue
     Map<String,Object> getHeaders();
 
     Object getContent();
+
+    String getContentTransferEncoding();
 }
