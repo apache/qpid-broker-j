@@ -1235,4 +1235,9 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         return _consumerTarget;
     }
 
+    public long getQueueRunnerWaitTime()
+    {
+        return _queueRunnerWaitTime;
+    }
+
 }
