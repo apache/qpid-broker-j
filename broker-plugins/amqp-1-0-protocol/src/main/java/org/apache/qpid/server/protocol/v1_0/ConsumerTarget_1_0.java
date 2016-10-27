@@ -85,7 +85,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     private static boolean isPullOnly(SendingLink_1_0 link)
     {
         Source source = (Source) link.getEndpoint().getSource();
-        return Arrays.asList(source.getCapabilities()).contains(Symbol.getSymbol("QPID:PULL-ONLY"));
+        return source.getCapabilities() != null && Arrays.asList(source.getCapabilities()).contains(Symbol.getSymbol("QPID:PULL-ONLY"));
     }
 
     private SendingLinkEndpoint getEndpoint()
