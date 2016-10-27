@@ -52,7 +52,6 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.protocol.LinkRegistry;
-import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -69,7 +68,6 @@ class RedirectingVirtualHostImpl
 {
     public static final String VIRTUAL_HOST_TYPE = "REDIRECTOR";
 
-    private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
     private final Broker<?> _broker;
     private final VirtualHostPrincipal _principal;
 
@@ -117,10 +115,6 @@ class RedirectingVirtualHostImpl
         super(parentsMap(virtualHostNode), attributes);
 
         _broker = virtualHostNode.getParent(Broker.class);
-        _messagesDelivered = new StatisticsCounter("messages-delivered-" + getName());
-        _dataDelivered = new StatisticsCounter("bytes-delivered-" + getName());
-        _messagesReceived = new StatisticsCounter("messages-received-" + getName());
-        _dataReceived = new StatisticsCounter("bytes-received-" + getName());
         _principal = new VirtualHostPrincipal(this);
         setState(State.UNAVAILABLE);
     }
@@ -439,47 +433,6 @@ class RedirectingVirtualHostImpl
     public EventLogger getEventLogger()
     {
         return null;
-    }
-
-    @Override
-    public void registerMessageReceived(final long messageSize, final long timestamp)
-    {
-        throwUnsupportedForRedirector();
-    }
-
-    @Override
-    public void registerMessageDelivered(final long messageSize)
-    {
-        throwUnsupportedForRedirector();
-    }
-
-    @Override
-    public StatisticsCounter getMessageDeliveryStatistics()
-    {
-        return _messagesDelivered;
-    }
-
-    @Override
-    public StatisticsCounter getMessageReceiptStatistics()
-    {
-        return _messagesReceived;
-    }
-
-    @Override
-    public StatisticsCounter getDataDeliveryStatistics()
-    {
-        return _dataDelivered;
-    }
-
-    @Override
-    public StatisticsCounter getDataReceiptStatistics()
-    {
-        return _dataReceived;
-    }
-
-    @Override
-    public void resetStatistics()
-    {
     }
 
     @Override
