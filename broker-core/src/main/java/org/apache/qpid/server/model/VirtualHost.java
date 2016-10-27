@@ -201,7 +201,6 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     Broker<?> getBroker();
 
-    // LQ TODO: I think this is not being processed correctly because it is not annotated on the base. At least is does not show up in the generated overrides
     @Override
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
     Collection<? extends Connection<?>> getConnections();
