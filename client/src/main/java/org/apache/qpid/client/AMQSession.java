@@ -906,7 +906,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         }
         catch (QpidException e)
         {
-            throw toJMSException("Exception during commit: " + e.getMessage() + ":" + e.getCause(), e);
+            throw toJMSException("Exception during commit: " + e.getMessage() + (e.getCause() == null ? "" : " (Caused by : " + e.getCause() + ")"), e);
         }
         catch (FailoverException e)
         {
