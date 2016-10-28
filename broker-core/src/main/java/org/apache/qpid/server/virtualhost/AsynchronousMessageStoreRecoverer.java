@@ -122,20 +122,27 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             getStoreReader().visitDistributedTransactions(new DistributedTransactionVisitor());
 
             List<ListenableFuture<Void>> queueRecoveryFutures = new ArrayList<>();
-            for(Queue<?> queue : _recoveringQueues)
+            if(_recoveringQueues.isEmpty())
             {
-                ListenableFuture<Void> result = _queueRecoveryExecutor.submit(new QueueRecoveringTask(queue), null);
-                queueRecoveryFutures.add(result);
+                return _queueRecoveryExecutor.submit(new RemoveOrphanedMessagesTask(), null);
             }
-            ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(queueRecoveryFutures);
-            return Futures.transform(combinedFuture, new Function<List<?>, Void>()
+            else
             {
-                @Override
-                public Void apply(List<?> voids)
+                for (Queue<?> queue : _recoveringQueues)
                 {
-                    return null;
+                    ListenableFuture<Void> result = _queueRecoveryExecutor.submit(new QueueRecoveringTask(queue), null);
+                    queueRecoveryFutures.add(result);
                 }
-            });
+                ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(queueRecoveryFutures);
+                return Futures.transform(combinedFuture, new Function<List<?>, Void>()
+                {
+                    @Override
+                    public Void apply(List<?> voids)
+                    {
+                        return null;
+                    }
+                });
+            }
         }
 
         public VirtualHost<?> getVirtualHost()
@@ -458,6 +465,32 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             }
 
         }
+
+
+        private class RemoveOrphanedMessagesTask implements Runnable
+        {
+            public RemoveOrphanedMessagesTask()
+            {
+            }
+
+            @Override
+            public void run()
+            {
+                String originalThreadName = Thread.currentThread().getName();
+                Thread.currentThread().setName("Orphaned message removal");
+
+                try
+                {
+                    completeRecovery();
+                }
+                finally
+                {
+                    Thread.currentThread().setName(originalThreadName);
+                }
+            }
+
+        }
+
 
         private class MessageInstanceVisitor implements MessageInstanceHandler
         {
