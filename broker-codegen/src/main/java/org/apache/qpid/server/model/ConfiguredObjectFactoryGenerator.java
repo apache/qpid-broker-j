@@ -24,10 +24,8 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -211,12 +209,13 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
 
             for(Element element : typeElement.getEnclosedElements())
             {
-                if(element instanceof ExecutableElement && element.getKind() == ElementKind.METHOD && processedMethods.add(element.getSimpleName().toString()))
+                if(element instanceof ExecutableElement && element.getKind() == ElementKind.METHOD && !processedMethods.contains(element.getSimpleName().toString()))
                 {
                     for(AnnotationMirror annotationMirror : element.getAnnotationMirrors())
                     {
                         if(annotationMirror.getAnnotationType().toString().equals("org.apache.qpid.server.model.ManagedOperation"))
                         {
+                            processedMethods.add(element.getSimpleName().toString());
                             processManagedOperation(pw, className, (ExecutableElement) element, annotationMirror);
                             break;
                         }
