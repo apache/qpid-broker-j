@@ -132,7 +132,9 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedAttribute( defaultValue = "256" )
     int getConnection_sessionCountLimit();
 
-    @ManagedAttribute( defaultValue = "0")
+    @ManagedAttribute( defaultValue = "0", description = "The default frequency with which Broker and client will exchange heartbeat messages (in seconds). "
+                                                         + "Clients may negotiate a different heartbeat frequency or disable it altogether. "
+                                                         + "A value of 0 disables heart beating.")
     int getConnection_heartBeatDelay();
 
     @ManagedAttribute( defaultValue = "true" )
