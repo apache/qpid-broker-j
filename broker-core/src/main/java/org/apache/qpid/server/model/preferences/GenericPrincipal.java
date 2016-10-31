@@ -33,7 +33,7 @@ import org.apache.qpid.server.security.QpidPrincipal;
 
 public class GenericPrincipal implements Principal
 {
-    private static final Pattern PATTERN = Pattern.compile("([a-zA-Z_0-9.%~-]+)@(\\w*)\\('([a-zA-Z_0-9.%~-]*)'\\)");
+    private static final Pattern PATTERN = Pattern.compile("([a-zA-Z_0-9.%~-]+)@([^('@]*)\\('([a-zA-Z_0-9.%~-]*)'\\)");
     public static final String UTF8 = StandardCharsets.UTF_8.name();
 
     private final String _name;

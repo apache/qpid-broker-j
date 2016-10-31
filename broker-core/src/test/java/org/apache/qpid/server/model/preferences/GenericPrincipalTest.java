@@ -61,6 +61,17 @@ public class GenericPrincipalTest extends QpidTestCase
         }
     }
 
+    public void testParseWithDash() throws Exception
+    {
+        String username = "user-name";
+        String originType = "origin-type";
+        String originName = "origin-name";
+        GenericPrincipal p = new GenericPrincipal(String.format("%s@%s('%s')", username, originType, originName));
+        assertEquals("unexpected principal name", username, p.getName());
+        assertEquals("unexpected origin type", originType, p.getOriginType());
+        assertEquals("unexpected origin name", originName, p.getOriginName());
+    }
+
     public void testRejectQuotes() throws Exception
     {
         final String usernameWithQuote = "_username'withQuote";
@@ -88,6 +99,41 @@ public class GenericPrincipalTest extends QpidTestCase
         {
             new GenericPrincipal(String.format("%s@%s('%s')", _username, _originType, originNameWithQuote));
             fail("GenericPricinpal should reject origin name with quotes");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // pass
+        }
+
+    }
+
+    public void testRejectParenthesis() throws Exception
+    {
+        final String usernameWithParenthesis = "username(withParenthesis";
+        final String originTypeWithParenthesis = "authType(withParenthesis";
+        final String originNameWithParenthesis = "authName(withParenthesis";
+        try
+        {
+            new GenericPrincipal(String.format("%s@%s('%s')", usernameWithParenthesis, _originType, _originName));
+            fail("GenericPricinpal should reject _username with parenthesis");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // pass
+        }
+        try
+        {
+            new GenericPrincipal(String.format("%s@%s('%s')", _username, originTypeWithParenthesis, _originName));
+            fail("GenericPricinpal should reject origin type with parenthesis");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // pass
+        }
+        try
+        {
+            new GenericPrincipal(String.format("%s@%s('%s')", _username, _originType, originNameWithParenthesis));
+            fail("GenericPricinpal should reject origin name with parenthesis");
         }
         catch (IllegalArgumentException e)
         {
