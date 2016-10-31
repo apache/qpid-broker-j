@@ -140,7 +140,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedAttribute( defaultValue = "true" )
     boolean getConnection_closeWhenNoRoute();
 
-    @ManagedAttribute( defaultValue = "0", description = "Frequency with which statistics are reported to the log")
+    @ManagedAttribute( defaultValue = "0", description = "Period (in seconds) of the statistic report.")
     int getStatisticsReportingPeriod();
 
     @ManagedAttribute( defaultValue = "false", description = "If enabled, statistics are automatically reset to zero after each statistics report is made.")
