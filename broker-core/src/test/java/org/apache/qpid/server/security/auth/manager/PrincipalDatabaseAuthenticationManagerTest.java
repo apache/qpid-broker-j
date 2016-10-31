@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
@@ -147,6 +148,16 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         _principalDatabase = new PlainPasswordFilePrincipalDatabase(mockAuthProvider);
         setupManager(true);
 
+        createPasswordFile();
+        _manager.initialise();
+        List<Principal> users = _principalDatabase.getUsers();
+        assertEquals("Unexpected uses size", 1, users.size());
+        Principal p = _principalDatabase.getUser("admin");
+        assertEquals("Unexpected principal name", "admin", p.getName());
+    }
+
+    private void createPasswordFile() throws IOException
+    {
         File f = new File(_passwordFileLocation);
         f.createNewFile();
         FileOutputStream fos = null;
@@ -162,11 +173,32 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
                 fos.close();
             }
         }
+    }
+
+    public void testChangePathToNonExistentFile() throws Exception
+    {
+        AuthenticationProvider mockAuthProvider = mock(AuthenticationProvider.class);
+        when(mockAuthProvider.getContextValue(Integer.class, AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT)).thenReturn(4096);
+        _principalDatabase = new PlainPasswordFilePrincipalDatabase(mockAuthProvider);
+        setupManager(true);
+
+        createPasswordFile();
         _manager.initialise();
-        List<Principal> users = _principalDatabase.getUsers();
-        assertEquals("Unexpected uses size", 1, users.size());
-        Principal p = _principalDatabase.getUser("admin");
-        assertEquals("Unexpected principal name", "admin", p.getName());
+
+        File file = new File(_passwordFileLocation + System.currentTimeMillis());
+        assertFalse("Password file should not exist", file.exists());
+
+        try
+        {
+            _manager.setAttributes(Collections.singletonMap(PrincipalDatabaseAuthenticationManager.PATH,
+                                                               file.getAbsoluteFile()));
+            fail("Changing password file location to nonexisting file should not be allowed");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+
     }
 
     /**
