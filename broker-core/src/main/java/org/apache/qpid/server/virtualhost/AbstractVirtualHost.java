@@ -1545,6 +1545,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return _dataDelivered;
     }
 
+    @Override
     public void resetStatistics()
     {
         _messagesDelivered.reset();

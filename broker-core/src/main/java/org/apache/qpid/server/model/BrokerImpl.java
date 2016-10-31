@@ -87,7 +87,7 @@ import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
 import org.apache.qpid.util.SystemUtils;
 
 @ManagedObject( category = false, type = "Broker" )
-public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<BrokerImpl>, StatisticsGatherer
+public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<BrokerImpl>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BrokerImpl.class);
 
@@ -836,6 +836,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         return _dataDelivered;
     }
 
+    @Override
     public void resetStatistics()
     {
         _messagesDelivered.reset();

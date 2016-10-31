@@ -277,10 +277,13 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
             changesConfiguredObjectState = false)
     Set<Principal> getGroups();
 
-    @ManagedOperation(description = "Removes a user and all associated preferences from the brokers configuration",
+    @ManagedOperation(description = "Removes a user and all associated preferences from the broker's configuration",
             changesConfiguredObjectState = true)
     void purgeUser(@Param(name="origin", description="The AuthenticationProvider the username is associated with")AuthenticationProvider<?> origin,
                    @Param(name="username", description="The unqualified username that should be purged from the broker")String username);
+
+    @ManagedOperation(description = "Resets statistics on this object and all child objects", changesConfiguredObjectState = false, nonModifying = true)
+    void resetStatistics();
 
     //children
     Collection<VirtualHostNode<?>> getVirtualHostNodes();
