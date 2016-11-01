@@ -83,6 +83,7 @@ import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.stats.StatisticsCounter;
+import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.Event;
@@ -104,7 +105,7 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.MapValueConverter;
 
 public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> extends AbstractConfiguredObject<X>
-        implements VirtualHostImpl<X, AMQQueue<?>, ExchangeImpl<?>>, EventListener
+        implements VirtualHostImpl<X, AMQQueue<?>, ExchangeImpl<?>>, EventListener, StatisticsGatherer
 {
     private final Collection<ConnectionValidator> _connectionValidators = new ArrayList<>();
 

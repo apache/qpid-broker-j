@@ -45,8 +45,7 @@ import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
 
 public interface VirtualHostImpl< X extends VirtualHostImpl<X,Q,E>, Q extends AMQQueue<?>, E extends ExchangeImpl<?> >
-        extends StatisticsGatherer,
-                EventLoggerProvider,
+        extends EventLoggerProvider,
                 VirtualHost<X,Q,E>
 {
     String DEFAULT_DLE_NAME_SUFFIX = "_DLE";

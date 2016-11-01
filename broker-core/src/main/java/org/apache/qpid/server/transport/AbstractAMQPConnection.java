@@ -63,6 +63,7 @@ import org.apache.qpid.server.model.adapter.SessionAdapter;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.stats.StatisticsCounter;
+import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.network.AggregateTicker;
@@ -367,14 +368,22 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     {
         _messagesDelivered.registerEvent(1L);
         _dataDelivered.registerEvent(messageSize);
-        ((VirtualHostImpl<?,?,?>)getVirtualHost()).registerMessageDelivered(messageSize);
+        VirtualHost<?, ?, ?> virtualHost = getVirtualHost();
+        if (virtualHost instanceof StatisticsGatherer)
+        {
+            ((StatisticsGatherer) virtualHost).registerMessageDelivered(messageSize);
+        }
     }
 
     public void registerMessageReceived(long messageSize, long timestamp)
     {
         _messagesReceived.registerEvent(1L, timestamp);
         _dataReceived.registerEvent(messageSize, timestamp);
-        ((VirtualHostImpl<?,?,?>)getVirtualHost()).registerMessageReceived(messageSize, timestamp);
+        VirtualHost<?, ?, ?> virtualHost = getVirtualHost();
+        if (virtualHost instanceof StatisticsGatherer)
+        {
+            ((StatisticsGatherer) getVirtualHost()).registerMessageReceived(messageSize, timestamp);
+        }
     }
 
     @Override
