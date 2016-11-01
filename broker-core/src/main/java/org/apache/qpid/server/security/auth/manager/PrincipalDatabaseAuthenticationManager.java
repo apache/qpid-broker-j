@@ -374,23 +374,6 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         {
             throw new IllegalConfigurationException("Changing the type of authentication provider is not supported");
         }
-
-        if (changedAttributes.contains(PATH) && !updated.getPath().equals(getPath()))
-        {
-            PrincipalDatabase db = createDatabase();
-            try
-            {
-                db.open(new File(updated.getPath()));
-            }
-            catch (FileNotFoundException e)
-            {
-                throw new IllegalConfigurationException("User database does not exists at specified location : " + e.getMessage(), e);
-            }
-            catch (IOException e)
-            {
-                throw new IllegalConfigurationException("Cannot use password database at :" + _path, e);
-            }
-        }
     }
 
     @Override
