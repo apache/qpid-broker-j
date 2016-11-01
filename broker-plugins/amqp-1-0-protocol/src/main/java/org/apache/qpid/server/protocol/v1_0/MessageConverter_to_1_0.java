@@ -259,7 +259,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         };
     }
 
-    private Section getBodySection(final M serverMessage)
+    protected Section getBodySection(final M serverMessage)
     {
         final String mimeType = serverMessage.getMessageHeader().getMimeType();
         byte[] data = new byte[(int) serverMessage.getSize()];
