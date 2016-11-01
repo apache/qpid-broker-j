@@ -18,17 +18,24 @@
  * under the License.
  *
  */
-define(["dojo/query", "dijit/registry", "qpid/common/util"], function (query, registry, util)
+define(["dojo/query", "dijit/registry", "qpid/common/util", "dojo/dom-class"], function (query, registry, util, domClass)
 {
     return {
         show: function (data)
         {
             util.parseHtmlIntoDiv(data.containerNode, "authenticationprovider/filebased/add.html", function ()
             {
-                if (data.data)
+                var path = registry.byNode(query(".path", data.containerNode)[0]);
+                if (data.data && data.data.id)
                 {
-                    var path = registry.byNode(query(".path", data.containerNode)[0]);
                     path.set("value", data.data.path);
+                    path.set("readOnly", true);
+                    domClass.add(path.domNode, "readOnly")
+                }
+                else
+                {
+                    path.set("readOnly", false);
+                    domClass.remove(path.domNode, "readOnly")
                 }
             });
         }

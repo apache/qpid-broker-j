@@ -262,11 +262,12 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
         try
         {
             principalDatabase = getDefaultBrokerConfiguration().createTemporaryPasswordFile(new String[]{"admin2", "guest2", "test2"});
-            attributes = new HashMap<String, Object>();
+            attributes = new HashMap<>();
             attributes.put(AuthenticationProvider.NAME, providerName);
             attributes.put(AuthenticationProvider.ID, id);
             attributes.put(AuthenticationProvider.TYPE, PlainPasswordDatabaseAuthenticationManager.PROVIDER_TYPE);
-            attributes.put(ExternalFileBasedAuthenticationManager.PATH, principalDatabase.getAbsolutePath());
+
+            file.createNewFile();
 
             int status = getRestTestHelper().submitRequest("authenticationprovider/" + providerName, "PUT", attributes);
             assertEquals("ACL was not deleted", 200, status);
@@ -274,7 +275,7 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
             provider = getRestTestHelper().getJsonAsSingletonList("authenticationprovider/" + providerName);
             assertEquals("Unexpected id", id.toString(), provider.get(AuthenticationProvider.ID));
             assertEquals("Unexpected name", providerName, provider.get(AuthenticationProvider.NAME));
-            assertEquals("Unexpected path", principalDatabase.getAbsolutePath() , provider.get(
+            assertEquals("Unexpected path", file.getAbsolutePath() , provider.get(
                     ExternalFileBasedAuthenticationManager.PATH));
             assertEquals("Unexpected state", State.ACTIVE.name() , provider.get(AuthenticationProvider.STATE));
         }
