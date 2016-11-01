@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 
 import javax.security.auth.Subject;
 import javax.servlet.http.HttpServletRequest;
-import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpRequestPreemptiveAuthenticator;
@@ -34,6 +33,7 @@ import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.UsernamePasswordAuthenticationProvider;
+import org.apache.qpid.util.Strings;
 
 @PluggableService
 public class BasicAuthPreemptiveAuthenticator implements HttpRequestPreemptiveAuthenticator
@@ -67,7 +67,7 @@ public class BasicAuthPreemptiveAuthenticator implements HttpRequestPreemptiveAu
                 if (isBasicAuthSupported)
                 {
                     String base64UsernameAndPassword = tokens[1];
-                    String[] credentials = (new String(DatatypeConverter.parseBase64Binary(base64UsernameAndPassword),
+                    String[] credentials = (new String(Strings.decodeBase64(base64UsernameAndPassword),
                                                        StandardCharsets.UTF_8)).split(":", 2);
                     if (credentials.length == 2)
                     {

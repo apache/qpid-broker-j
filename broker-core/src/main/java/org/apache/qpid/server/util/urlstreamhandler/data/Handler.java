@@ -31,7 +31,7 @@ import java.net.URLDecoder;
 import java.net.URLStreamHandler;
 import java.nio.charset.StandardCharsets;
 
-import javax.xml.bind.DatatypeConverter;
+import org.apache.qpid.util.Strings;
 
 public class Handler extends URLStreamHandler
 {
@@ -79,7 +79,7 @@ public class Handler extends URLStreamHandler
                 _base64 = parts[0].endsWith(";base64");
                 if(_base64)
                 {
-                    _content = DatatypeConverter.parseBase64Binary(parts[1]);
+                    _content = Strings.decodeBase64(parts[1]);
                 }
                 else
                 {
