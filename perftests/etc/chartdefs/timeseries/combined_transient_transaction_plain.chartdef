@@ -19,7 +19,7 @@
 
 chartType=TIMELINE
 chartTitle=Transient Transacted AMQP ${qpid.charting.protocolVersion} plain
-chartDescription=10P 10C, transient, transacted, 1kB message, plain, ${qpid.charting.brokerVersionA} / ${qpid.charting.brokerVersionB} / ${qpid.charting.brokerVersionC}
+chartDescription=10P 10C, transient, transacted, 1kB message, plain, ${qpid.charting.brokerVersionA} / ${qpid.charting.brokerVersionB} / ${qpid.charting.brokerVersionC} / ${qpid.charting.brokerVersionD}
 
 yAxisLowerBound=0
 yAxisUpperBound=40000
@@ -41,3 +41,8 @@ series.3.statement=SELECT insertedTimestamp, throughputMessagesPerS FROM RESULTS
 series.3.colourName=dark_green
 series.3.shape=cross
 series.3.legend=${qpid.charting.brokerVersionC}
+
+series.4.statement=SELECT insertedTimestamp, throughputMessagesPerS FROM RESULTS WHERE participantName = 'All' AND testName = 'transient_transaction_plain' AND providerVersion LIKE '%${qpid.charting.brokerVersionD}%' AND protocolVersion = '${qpid.charting.protocolVersion}'
+series.4.colourName=dark_yellow
+series.4.shape=cross
+series.4.legend=${qpid.charting.brokerVersionD}
