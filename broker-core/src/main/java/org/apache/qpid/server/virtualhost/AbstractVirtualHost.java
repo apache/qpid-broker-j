@@ -744,7 +744,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                                                + " is invalid as a MIME type for this message. "
                                                                + "Only MIME types of the text type can be used if a string is supplied as the content");
                         }
-                        else if (mimeType.matches(".*;\\s*charset\\s*="))
+                        else if (mimeType.matches(".*;\\s*charset\\s*=.*"))
                         {
                             throw new IllegalArgumentException(message.getMimeType()
                                                                + " is invalid as a MIME type for this message. "
