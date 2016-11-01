@@ -61,6 +61,10 @@ public class HillClimbingTestRunner extends AbstractTestRunner
         final int maxNumberOfRuns = Integer.valueOf(_options.get(HILL_CLIMBER_MAX_NUMBER_OF_RUNS));
         double rate = Double.valueOf(_options.get(HILL_CLIMBER_START_TARGET_RATE));
         double bias = Double.valueOf(_options.get(HILL_CLIMBER_BIAS));
+        if (bias < 0)
+        {
+            bias = 1. / (maxNumberOfRuns + 1.);
+        }
         double initialDelta = rate - 1;
         HillClimber hillClimber = new HillClimber(rate, initialDelta, bias);
         TestResult bestSuccessfulTestResult = null;

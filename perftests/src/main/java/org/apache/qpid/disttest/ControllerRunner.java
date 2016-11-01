@@ -68,7 +68,7 @@ public class ControllerRunner extends AbstractRunner
     private static final String HILL_CLIMBER_CONSUMPTION_TO_PRODUCTION_RATIO_SUCCESS_THRESHOLD_DEFAULT = "0.95";
     private static final String HILL_CLIMBER_PRODUCTION_TO_TARGET_RATIO_SUCCESS_THRESHOLD_DEFAULT = "0.95";
     private static final String HILL_CLIMBER_MINIMUM_DELTA_DEFAULT = "1";
-    private static final String HILL_CLIMBER_BIAS_DEFAULT = "0.25";
+    private static final String HILL_CLIMBER_BIAS_DEFAULT = "-1";
 
     private final Aggregator _aggregator = new Aggregator();
 
