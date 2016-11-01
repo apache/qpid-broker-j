@@ -49,6 +49,7 @@ import javax.xml.bind.DatatypeConverter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.util.Strings;
 
 abstract class AttributeValueConverter<T>
 {
@@ -145,20 +146,8 @@ abstract class AttributeValueConverter<T>
             {
                 String interpolated = AbstractConfiguredObject.interpolate(object,
                                                                           (String) value);
-                try
-                {
-                    interpolated = interpolated.replaceAll("\\s","");
-                    if(!interpolated.matches("[A-Za-z0-9+/]*[=]*"))
-                    {
-                        throw new IllegalArgumentException("Cannot convert string '"+ interpolated+ "'to a byte[] - it does not appear to be base64 data");
-                    }
+                return Strings.decodeBase64(interpolated);
 
-                    return DatatypeConverter.parseBase64Binary(interpolated);
-                }
-                catch(ArrayIndexOutOfBoundsException e)
-                {
-                    throw new IllegalArgumentException("Cannot convert string '"+ interpolated+ "'to a byte[] - it does not appear to be base64 data");
-                }
             }
             else
             {

@@ -80,6 +80,7 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
+import org.apache.qpid.util.Strings;
 
 
 public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Source, ValueWriter.Registry.Source,
@@ -1437,7 +1438,7 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
             {
                 throw new SaslException("Server final message did not contain verifier");
             }
-            byte[] serverSignature = DatatypeConverter.parseBase64Binary(parts[0].substring(2));
+            byte[] serverSignature = Strings.decodeBase64(parts[0].substring(2));
             if (!Arrays.equals(_serverSignature, serverSignature))
             {
                 throw new SaslException("Server signature did not match");
@@ -1477,7 +1478,7 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
                                             + "' cannot be parsed, cannot find salt");
                 }
                 String base64Salt = parts[1].substring(2);
-                _salt = DatatypeConverter.parseBase64Binary(base64Salt);
+                _salt = Strings.decodeBase64(base64Salt);
                 if (!parts[2].startsWith("i="))
                 {
                     throw new SaslException("Server challenge '"

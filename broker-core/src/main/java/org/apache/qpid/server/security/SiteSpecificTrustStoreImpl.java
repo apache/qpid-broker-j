@@ -67,6 +67,7 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.transport.util.Functions;
+import org.apache.qpid.util.Strings;
 
 @ManagedObject( category = false )
 public class SiteSpecificTrustStoreImpl
@@ -250,7 +251,7 @@ public class SiteSpecificTrustStoreImpl
 
     private void decodeCertificate()
     {
-        byte[] certificateEncoded = DatatypeConverter.parseBase64Binary((String) getActualAttributes().get(CERTIFICATE));
+        byte[] certificateEncoded = Strings.decodeBase64((String) getActualAttributes().get(CERTIFICATE));
 
 
         try(ByteArrayInputStream input = new ByteArrayInputStream(certificateEncoded))

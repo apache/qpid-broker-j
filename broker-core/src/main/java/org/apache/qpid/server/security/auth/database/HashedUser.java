@@ -25,10 +25,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-
 import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.util.Strings;
 
 
 public class HashedUser implements PasswordPrincipal
@@ -59,7 +59,7 @@ public class HashedUser implements PasswordPrincipal
         }
 
         _encodedPassword = encoded_password;
-        byte[] decoded = DatatypeConverter.parseBase64Binary(data[1]);
+        byte[] decoded = Strings.decodeBase64(data[1]);
         _password = new char[decoded.length];
 
         int index = 0;

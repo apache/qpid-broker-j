@@ -36,6 +36,8 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.xml.bind.DatatypeConverter;
 
+import org.apache.qpid.util.Strings;
+
 class AESKeyFileEncrypter implements ConfigurationSecretEncrypter
 {
     private static final String CIPHER_NAME = "AES/CBC/PKCS5Padding";
@@ -87,7 +89,7 @@ class AESKeyFileEncrypter implements ConfigurationSecretEncrypter
         {
             throw new IllegalArgumentException("Encrypted value is not valid Base 64 data: '" + encrypted + "'");
         }
-        byte[] encryptedBytes = DatatypeConverter.parseBase64Binary(encrypted);
+        byte[] encryptedBytes = Strings.decodeBase64(encrypted);
         try
         {
             Cipher cipher = Cipher.getInstance(CIPHER_NAME);

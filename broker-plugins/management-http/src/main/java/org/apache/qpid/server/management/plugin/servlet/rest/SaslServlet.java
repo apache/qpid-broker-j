@@ -47,6 +47,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.util.Strings;
 
 public class SaslServlet extends AbstractServlet
 {
@@ -207,7 +208,7 @@ public class SaslServlet extends AbstractServlet
         {
             challenge  = saslServer.evaluateResponse(saslResponse == null
                                                              ? new byte[0]
-                                                             : DatatypeConverter.parseBase64Binary(saslResponse));
+                                                             : Strings.decodeBase64(saslResponse));
         }
         catch(SaslException e)
         {

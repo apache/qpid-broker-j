@@ -52,6 +52,7 @@ import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5HexSaslServer;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainAdapterSaslServer;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainSaslServer;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.util.Strings;
 
 @ManagedObject( category = false, type = "MD5" )
 public class MD5AuthenticationProvider
@@ -179,7 +180,7 @@ public class MD5AuthenticationProvider
                         if(user != null)
                         {
                             String passwordData = user.getPassword();
-                            byte[] passwordBytes = DatatypeConverter.parseBase64Binary(passwordData);
+                            byte[] passwordBytes = Strings.decodeBase64(passwordData);
                             char[] password;
                             if(_hexify)
                             {
