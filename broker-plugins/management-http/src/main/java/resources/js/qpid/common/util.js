@@ -988,5 +988,16 @@ define(["dojo/_base/xhr",
             return serializedUserName;
         };
 
+        util.stopEventPropagation = function(domNode, eventName)
+        {
+            on(domNode, eventName, function(evt)
+            {
+                if (evt)
+                {
+                    evt.stopPropagation();
+                }
+            });
+        }
+
         return util;
     });
