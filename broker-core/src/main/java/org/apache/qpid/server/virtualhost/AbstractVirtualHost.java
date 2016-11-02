@@ -38,6 +38,7 @@ import java.security.AccessControlContext;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -718,25 +719,43 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             if(messageContent instanceof Map || messageContent instanceof List)
             {
+                if(message.getMimeType() != null || message.getEncoding() != null)
+                {
+                    throw new IllegalArgumentException("If the message content is provided as map or list, the mime type and encoding must be left unset");
+                }
                 body = (Serializable)messageContent;
             }
             else if(messageContent instanceof String)
             {
-                if(message.getMimeType() != null || message.getEncoding() != null)
+                String contentTransferEncoding = message.getContentTransferEncoding();
+                if("base64".equalsIgnoreCase(contentTransferEncoding))
                 {
-                    try
+                    body = Strings.decodeBase64((String) messageContent);
+                }
+                else if(contentTransferEncoding == null || contentTransferEncoding.trim().equals("") || contentTransferEncoding.trim().equalsIgnoreCase("identity"))
+                {
+                    String mimeType = message.getMimeType();
+                    if(mimeType != null && !(mimeType = mimeType.trim().toLowerCase()).equals(""))
                     {
-                        body = Strings.decodeBase64((String) messageContent);
-
+                        if (!(mimeType.startsWith("text/") || Arrays.asList("application/json", "application/xml")
+                                                                    .contains(mimeType)))
+                        {
+                            throw new IllegalArgumentException(message.getMimeType()
+                                                               + " is invalid as a MIME type for this message. "
+                                                               + "Only MIME types of the text type can be used if a string is supplied as the content");
+                        }
+                        else if (mimeType.matches(".*;\\s*charset\\s*=.*"))
+                        {
+                            throw new IllegalArgumentException(message.getMimeType()
+                                                               + " is invalid as a MIME type for this message. "
+                                                               + "If a string is supplied as the content, the MIME type must not include a charset parameter");
+                        }
                     }
-                    catch(IllegalArgumentException e)
-                    {
-                        body = (String) messageContent;
-                    }
+                    body = (String) messageContent;
                 }
                 else
                 {
-                    body = (String) messageContent;
+                    throw new IllegalArgumentException("contentTransferEncoding value '" + contentTransferEncoding + "' is invalid.  The only valid values are base64 and identity");
                 }
             }
             else
