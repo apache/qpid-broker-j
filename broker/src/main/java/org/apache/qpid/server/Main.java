@@ -282,7 +282,7 @@ public class Main
             }
             else if(systemProperties.containsKey(PROPERTY_QPID_HOME))
             {
-                context.put(QPID_HOME_DIR, environment.get(PROPERTY_QPID_HOME));
+                context.put(QPID_HOME_DIR, systemProperties.getProperty(PROPERTY_QPID_HOME));
             }
             else if(environment.containsKey(PROPERTY_QPID_HOME))
             {
