@@ -268,7 +268,7 @@ public class Main
         {
             Properties systemProperties = System.getProperties();
             final Map<String, String> environment = System.getenv();
-            if(systemProperties.contains(QPID_HOME_DIR))
+            if(systemProperties.containsKey(QPID_HOME_DIR))
             {
                 context.put(QPID_HOME_DIR, systemProperties.getProperty(QPID_HOME_DIR));
             }
@@ -280,7 +280,7 @@ public class Main
             {
                 context.put(QPID_HOME_DIR, context.get(PROPERTY_QPID_HOME));
             }
-            else if(systemProperties.contains(PROPERTY_QPID_HOME))
+            else if(systemProperties.containsKey(PROPERTY_QPID_HOME))
             {
                 context.put(QPID_HOME_DIR, environment.get(PROPERTY_QPID_HOME));
             }
