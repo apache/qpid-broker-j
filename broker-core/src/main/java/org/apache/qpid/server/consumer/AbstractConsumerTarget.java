@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -61,6 +62,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
 
     private final boolean _isPullOnly;
     private Iterator<ConsumerImpl> _pullIterator;
+    private final AtomicBoolean _waitingOnStateChange = new AtomicBoolean();
 
 
     protected AbstractConsumerTarget(final State initialState,
@@ -69,7 +71,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
                                      final AMQPConnection<?> amqpConnection)
     {
         _state = new AtomicReference<State>(initialState);
-        _isPullOnly = isPullOnly;
+        _isPullOnly = true;
         _isMultiQueue = isMultiQueue;
         _suspendedConsumerLoggingTicker = isMultiQueue
                 ? new SuspendedConsumerLoggingTicker(amqpConnection.getContextValue(Long.class, Consumer.SUSPEND_NOTIFICATION_PERIOD))
@@ -87,6 +89,13 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     public boolean isMultiQueue()
     {
         return _isMultiQueue;
+    }
+
+    @Override
+    public void notifyWork()
+    {
+        _waitingOnStateChange.set(false);
+        getSessionModel().getAMQPConnection().notifyWork();
     }
 
     @Override
@@ -287,7 +296,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
 
     private boolean messagesAvailable()
     {
-        if(hasCredit())
+        if(!_waitingOnStateChange.get() && hasCredit())
         {
             for (ConsumerImpl consumer : _consumers)
             {
@@ -303,8 +312,10 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     @Override
     public boolean sendNextMessage()
     {
+
         if(isPullOnly())
         {
+
             if(_pullIterator == null || !_pullIterator.hasNext())
             {
                 _pullIterator = getConsumers().iterator();
@@ -312,12 +323,19 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
             if(_pullIterator.hasNext())
             {
                 ConsumerImpl consumer = _pullIterator.next();
+
+                _waitingOnStateChange.set(true);
+
                 consumer.pullMessage();
             }
         }
         ConsumerMessageInstancePair consumerMessage = _queue.poll();
         if (consumerMessage != null)
         {
+            if(isPullOnly())
+            {
+                _waitingOnStateChange.set(false);
+            }
             try
             {
 

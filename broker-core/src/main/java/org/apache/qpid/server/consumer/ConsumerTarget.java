@@ -43,6 +43,8 @@ public interface ConsumerTarget
 
     boolean isMultiQueue();
 
+    void notifyWork();
+
     enum State
     {
         ACTIVE, SUSPENDED, CLOSED

@@ -290,6 +290,12 @@ public class MockConsumer implements ConsumerTarget
         return false;
     }
 
+    @Override
+    public void notifyWork()
+    {
+
+    }
+
     private static class MockSessionModel implements AMQSessionModel<MockSessionModel>
     {
         private final UUID _id = UUID.randomUUID();

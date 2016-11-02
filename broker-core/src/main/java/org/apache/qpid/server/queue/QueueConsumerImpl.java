@@ -264,7 +264,7 @@ class QueueConsumerImpl
     {
         if(isPullOnly())
         {
-            getSessionModel().getAMQPConnection().notifyWork();
+            _target.notifyWork();
         }
         else
         {
@@ -349,6 +349,12 @@ class QueueConsumerImpl
     public boolean isPullOnly()
     {
         return _target.isPullOnly();
+    }
+
+    @Override
+    public void notifyWork()
+    {
+        _target.notifyWork();
     }
 
     public void queueDeleted()
@@ -707,7 +713,7 @@ class QueueConsumerImpl
             {
                 if(isPullOnly())
                 {
-                    getSessionModel().getAMQPConnection().notifyWork();
+                    _target.notifyWork();
                 }
                 else
                 {
@@ -734,7 +740,7 @@ class QueueConsumerImpl
             _entry.compareAndSet(entry, null);
             if(isPullOnly())
             {
-                getSessionModel().getAMQPConnection().notifyWork();
+                _target.notifyWork();
             }
             else
             {

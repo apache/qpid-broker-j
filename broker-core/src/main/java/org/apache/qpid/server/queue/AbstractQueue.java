@@ -964,10 +964,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         childAdded(consumer);
         consumer.addChangeListener(_deletedChildListener);
-
+        if(isEmpty())
+        {
+            consumer.queueEmpty();
+        }
         if(consumer.isPullOnly())
         {
-            consumer.getSessionModel().getAMQPConnection().notifyWork();
+            consumer.notifyWork();
         }
         else
         {
@@ -1739,13 +1742,17 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 _activeSubscriberCount.incrementAndGet();
                 if(sub.isPullOnly())
                 {
-                    sub.getSessionModel().getAMQPConnection().notifyWork();
+                    sub.notifyWork();
                 }
 
             }
             if(!sub.isPullOnly())
             {
                 deliverAsync();
+            }
+            else
+            {
+                sub.notifyWork();
             }
         }
     }
@@ -2179,7 +2186,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 QueueConsumer<?> consumer = consumerNode.getConsumer();
                 if (consumer.isActive() && consumer.isPullOnly() && getNextAvailableEntry(consumer) != null)
                 {
-                    consumer.getSessionModel().getAMQPConnection().notifyWork();
+                    consumer.notifyWork();
                 }
                 consumerNode = consumerNode.findNext();
             }
@@ -2335,7 +2342,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 }
 
             }
-            atTail = (node == null) || (getEntries().next(node) == null);
+            atTail = (node == null) || (getNextAvailableEntry(sub) == null);
         }
         return atTail || !subActive;
     }
