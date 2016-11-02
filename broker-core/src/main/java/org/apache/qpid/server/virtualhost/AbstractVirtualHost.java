@@ -75,7 +75,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.pool.SuppressingInheritedAccessControlContextThreadFactory;
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -2310,12 +2309,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private static String getDeadLetterQueueName(String name)
     {
-        return name + System.getProperty(BrokerProperties.PROPERTY_DEAD_LETTER_QUEUE_SUFFIX, AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX);
+        return name + System.getProperty(VirtualHost.PROPERTY_DEAD_LETTER_QUEUE_SUFFIX, AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX);
     }
 
     private static String getDeadLetterExchangeName(String name)
     {
-        return name + System.getProperty(BrokerProperties.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, VirtualHost.DEFAULT_DLE_NAME_SUFFIX);
+        return name + System.getProperty(VirtualHost.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, VirtualHost.DEFAULT_DLE_NAME_SUFFIX);
     }
 
     @Override

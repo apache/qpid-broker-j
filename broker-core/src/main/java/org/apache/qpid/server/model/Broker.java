@@ -111,6 +111,10 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedContextDefault(name = QPID_DOCUMENTATION_URL)
     String DEFAULT_DOCUMENTATION_URL = "http://qpid.apache.org/releases/qpid-java-${qpid.version}/java-broker/book/";
 
+    String PROPERTY_DISABLED_FEATURES = "qpid.broker_disabled_features";
+
+    String PROPERTY_LOCALE = "qpid.broker_locale";
+
     @DerivedAttribute
     String getBuildVersion();
 

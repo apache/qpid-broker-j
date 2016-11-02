@@ -48,7 +48,6 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.logging.messages.PortMessages;
@@ -453,8 +452,8 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
 
     private Protocol getDefaultAmqpSupportedReply()
     {
-        String defaultAmqpSupportedReply = getContextKeys(false).contains(BrokerProperties.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY) ?
-                getContextValue(String.class, BrokerProperties.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY) : null;
+        String defaultAmqpSupportedReply = getContextKeys(false).contains(AmqpPort.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY) ?
+                getContextValue(String.class, AmqpPort.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY) : null;
         Protocol protocol = null;
         if (defaultAmqpSupportedReply != null && defaultAmqpSupportedReply.length() != 0)
         {

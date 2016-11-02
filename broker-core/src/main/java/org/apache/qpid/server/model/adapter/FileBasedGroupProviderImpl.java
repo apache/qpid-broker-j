@@ -36,7 +36,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -164,7 +163,7 @@ public class FileBasedGroupProviderImpl
 
             try
             {
-                String posixFileAttributes = getContextValue(String.class, BrokerProperties.POSIX_FILE_PERMISSIONS);
+                String posixFileAttributes = getContextValue(String.class, SystemConfig.POSIX_FILE_PERMISSIONS);
                 new FileHelper().createNewFile(file, posixFileAttributes);
             }
             catch (IOException e)

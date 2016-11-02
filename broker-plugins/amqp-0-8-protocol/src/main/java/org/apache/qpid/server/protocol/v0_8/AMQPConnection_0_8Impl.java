@@ -60,7 +60,6 @@ import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.framing.*;
 import org.apache.qpid.properties.ConnectionStartProperties;
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.message.InstanceProperties;
@@ -1214,7 +1213,7 @@ public class AMQPConnection_0_8Impl
         if (heartbeat > 0)
         {
             long writerDelay = 1000L * heartbeat;
-            long readerDelay = 1000L * BrokerProperties.HEARTBEAT_TIMEOUT_FACTOR * heartbeat;
+            long readerDelay = 1000L * AMQPConnection_0_8.HEARTBEAT_TIMEOUT_FACTOR * heartbeat;
             initialiseHeartbeating(writerDelay, readerDelay);
         }
 

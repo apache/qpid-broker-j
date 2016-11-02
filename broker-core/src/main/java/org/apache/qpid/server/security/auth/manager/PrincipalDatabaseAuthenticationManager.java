@@ -45,7 +45,6 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -54,6 +53,7 @@ import org.apache.qpid.server.model.ExternalFileBasedAuthenticationManager;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.User;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
@@ -100,7 +100,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         {
             try
             {
-                Path path = new FileHelper().createNewFile(passwordFile, getContextValue(String.class, BrokerProperties.POSIX_FILE_PERMISSIONS));
+                Path path = new FileHelper().createNewFile(passwordFile, getContextValue(String.class, SystemConfig.POSIX_FILE_PERMISSIONS));
                 if (!Files.exists(path))
                 {
                     throw new IllegalConfigurationException(String.format("Cannot create password file at '%s'", _path));

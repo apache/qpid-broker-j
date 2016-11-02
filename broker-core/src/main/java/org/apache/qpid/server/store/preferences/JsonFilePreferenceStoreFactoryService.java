@@ -21,9 +21,9 @@ package org.apache.qpid.server.store.preferences;
 
 import java.util.Map;
 
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.plugin.PluggableService;
 
 @SuppressWarnings("unused")
@@ -42,7 +42,7 @@ public class JsonFilePreferenceStoreFactoryService implements PreferenceStoreFac
         {
             throw new IllegalConfigurationException("JsonFilePreferenceStore requires path");
         }
-        final String posixFilePermissions = parent.getContextValue(String.class, BrokerProperties.POSIX_FILE_PERMISSIONS);
+        final String posixFilePermissions = parent.getContextValue(String.class, SystemConfig.POSIX_FILE_PERMISSIONS);
         return new JsonFilePreferenceStore((String) path, posixFilePermissions);
     }
 

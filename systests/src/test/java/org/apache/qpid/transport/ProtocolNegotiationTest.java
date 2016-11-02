@@ -43,7 +43,6 @@ import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.framing.HeartbeatBody;
 import org.apache.qpid.framing.ProtocolInitiation;
 import org.apache.qpid.framing.ProtocolVersion;
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
@@ -69,14 +68,14 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
                                   Port.PROTOCOLS,
                                   Arrays.asList(getBrokerProtocol()));
         Map<String,String> overriddenPortContext = new HashMap<>();
-        overriddenPortContext.put(BrokerProperties.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY, null);
+        overriddenPortContext.put(AmqpPort.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY, null);
         overriddenPortContext.put(AmqpPort.PROTOCOL_HANDSHAKE_TIMEOUT, String.valueOf(AmqpPort.DEFAULT_PROTOCOL_HANDSHAKE_TIMEOUT));
         config.setObjectAttribute(Port.class,
                                   TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT,
                                   Port.CONTEXT,
                                   overriddenPortContext);
         config.setBrokerAttribute(Broker.CONTEXT,
-                                  Collections.singletonMap(BrokerProperties.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY, null));
+                                  Collections.singletonMap(AmqpPort.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY, null));
 
         super.setUp();
         _expectedProtocolInit = convertProtocolToProtocolVersion(getBrokerProtocol());

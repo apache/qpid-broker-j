@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.store.StoreConfigurationChangeListener;
 import org.apache.qpid.server.filter.FilterSupport;
@@ -452,7 +451,7 @@ public class VirtualHostStoreUpgraderAndRecoverer
                     throw new IllegalConfigurationException("Queue name is not found in queue configuration entry attributes: " + attributes);
                 }
 
-                String dleSuffix = System.getProperty(BrokerProperties.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, DEFAULT_DLE_NAME_SUFFIX);
+                String dleSuffix = System.getProperty(VirtualHost.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, DEFAULT_DLE_NAME_SUFFIX);
                 String dleExchangeName = queueName + dleSuffix;
 
                 ConfiguredObjectRecord exchangeRecord = findConfiguredObjectRecordInUpdateMap("Exchange", dleExchangeName);

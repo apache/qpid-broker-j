@@ -43,12 +43,12 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.ContainerType;
 import org.apache.qpid.server.model.DynamicModel;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 
@@ -113,7 +113,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
         FileBasedSettings fileBasedSettings = (FileBasedSettings) _parent;
         setup(parent.getName(),
               fileBasedSettings.getStorePath(),
-              parent.getContextValue(String.class, BrokerProperties.POSIX_FILE_PERMISSIONS),
+              parent.getContextValue(String.class, SystemConfig.POSIX_FILE_PERMISSIONS),
               Collections.emptyMap());
         changeState(State.CLOSED, State.CONFIGURED);
 

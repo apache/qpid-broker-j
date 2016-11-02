@@ -32,8 +32,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.framing.ProtocolVersion;
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.AMQPProtocolVersionWrapper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
@@ -144,7 +144,7 @@ public class SupportedProtocolVersionsTest extends QpidBrokerTestCase
         //disable 0-10 support, and set the default unsupported protocol initiation reply to 0-9
         setSystemProperty(QpidBrokerTestCase.TEST_AMQP_PORT_PROTOCOLS_PROPERTY, getProtocolsWithExclusions(Protocol.AMQP_1_0, Protocol.AMQP_0_10));
 
-        setSystemProperty(BrokerProperties.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY, "v0_9");
+        setSystemProperty(AmqpPort.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY, "v0_9");
 
         super.setUp();
 

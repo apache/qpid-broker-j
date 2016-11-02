@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.apache.commons.cli.CommandLine;
 
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -42,9 +41,9 @@ public class MainTest extends QpidTestCase
     public void testNoOptionsSpecified()
     {
         String qpidWork = "/qpid/work";
-        setTestSystemProperty(BrokerProperties.PROPERTY_QPID_WORK, qpidWork);
+        setTestSystemProperty(SystemConfig.PROPERTY_QPID_WORK, qpidWork);
         String qpidHome = "/qpid/home";
-        setTestSystemProperty(BrokerProperties.PROPERTY_QPID_HOME, qpidHome);
+        setTestSystemProperty(Main.PROPERTY_QPID_HOME, qpidHome);
 
         Map<String,Object> attributes = startDummyMain("");
 

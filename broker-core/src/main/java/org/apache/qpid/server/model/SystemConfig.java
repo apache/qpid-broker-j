@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.model;
 
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
@@ -40,20 +39,33 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
     String STARTUP_LOGGED_TO_SYSTEM_OUT = "startupLoggedToSystemOut";
 
 
-    @ManagedContextDefault(name=BrokerProperties.PROPERTY_QPID_WORK)
+    String PROPERTY_QPID_WORK = "QPID_WORK";
+    @ManagedContextDefault(name= SystemConfig.PROPERTY_QPID_WORK)
     String DEFAULT_QPID_WORK = "${user.dir}${file.separator}work";
 
-    @ManagedContextDefault(name=BrokerProperties.QPID_WORK_DIR)
+    /**
+     * Configuration property name for the absolute path to use for the broker work directory.
+     *
+     * If not otherwise set, the value for this configuration property defaults to the location
+     * set in the "QPID_WORK" system property if that was set, or the 'work' sub-directory of
+     * the JVM working directory ("user.dir" property) for the Java process if it was not.
+     */
+    String QPID_WORK_DIR  = "qpid.work_dir";
+
+    @ManagedContextDefault(name= SystemConfig.QPID_WORK_DIR)
     String DEFAULT_QPID_WORK_DIR = "${QPID_WORK}";
 
     @ManagedContextDefault(name="qpid.broker.defaultPreferenceStoreAttributes")
     String DEFAULT_PREFERENCE_STORE_ATTRIBUTES = "{\"type\": \"JSON\", \"attributes\":{\"path\": \"${json:qpid.work_dir}${json:file.separator}preferences.json\"}}";
 
-    @ManagedContextDefault(name = BrokerProperties.POSIX_FILE_PERMISSIONS)
+    String POSIX_FILE_PERMISSIONS = "qpid.default_posix_file_permissions";
+    @ManagedContextDefault(name = SystemConfig.POSIX_FILE_PERMISSIONS)
     String DEFAULT_POSIX_FILE_PERMISSIONS = "rw-r-----";
 
 
     String MANAGEMENT_MODE_USER_NAME = "mm_admin";
+
+    String PROPERTY_STATUS_UPDATES = "qpid.broker_status_updates";
 
     @ManagedAttribute(immutable = true, defaultValue = Broker.BROKER_TYPE)
     String getDefaultContainerType();

@@ -20,14 +20,20 @@
  */
 package org.apache.qpid.server;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.URL;
 import java.security.Principal;
 import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -38,7 +44,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.configuration.BrokerProperties;
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
@@ -90,6 +96,36 @@ public class SystemLauncher
     public SystemLauncher()
     {
         this(DEFAULT_SYSTEM_LAUNCHER_LISTENER);
+    }
+
+    public static void populateSystemPropertiesFromDefaults(final String initialProperties) throws IOException
+    {
+        URL initialPropertiesLocation;
+        if(initialProperties == null)
+        {
+            initialPropertiesLocation = SystemLauncher.class.getClassLoader().getResource("system.properties");
+        }
+        else
+        {
+            initialPropertiesLocation = (new File(initialProperties)).toURI().toURL();
+        }
+
+        Properties props = new Properties(CommonProperties.asProperties());
+        if(initialPropertiesLocation != null)
+        {
+
+            try(InputStream inStream = initialPropertiesLocation.openStream())
+            {
+                props.load(inStream);
+            }
+        }
+
+        Set<String> propertyNames = new HashSet<>(props.stringPropertyNames());
+        propertyNames.removeAll(System.getProperties().stringPropertyNames());
+        for (String propName : propertyNames)
+        {
+            System.setProperty(propName, props.getProperty(propName));
+        }
     }
 
     public Principal getSystemPrincipal()
@@ -175,12 +211,12 @@ public class SystemLauncher
 
     private void startupImpl(Map<String,Object> systemConfigAttributes) throws Exception
     {
-        BrokerProperties.populateSystemPropertiesFromDefaults((String) systemConfigAttributes.get(SystemConfig.INITIAL_SYSTEM_PROPERTIES_LOCATION));
+        populateSystemPropertiesFromDefaults((String) systemConfigAttributes.get(SystemConfig.INITIAL_SYSTEM_PROPERTIES_LOCATION));
 
         String storeType = (String) systemConfigAttributes.get(SystemConfig.TYPE);
 
         // Create the RootLogger to be used during broker operation
-        boolean statusUpdatesEnabled = Boolean.parseBoolean(System.getProperty(BrokerProperties.PROPERTY_STATUS_UPDATES, "true"));
+        boolean statusUpdatesEnabled = Boolean.parseBoolean(System.getProperty(SystemConfig.PROPERTY_STATUS_UPDATES, "true"));
         MessageLogger messageLogger = new LoggingMessageLogger(statusUpdatesEnabled);
         _eventLogger.setMessageLogger(messageLogger);
 

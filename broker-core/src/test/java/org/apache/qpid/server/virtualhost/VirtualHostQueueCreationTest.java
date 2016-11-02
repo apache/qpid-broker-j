@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
@@ -392,8 +391,8 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         try
         {
             // change DLQ name to make its length bigger than exchange name
-            setTestSystemProperty(BrokerProperties.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, "_DLE");
-            setTestSystemProperty(BrokerProperties.PROPERTY_DEAD_LETTER_QUEUE_SUFFIX, "_DLQUEUE");
+            setTestSystemProperty(VirtualHost.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, "_DLE");
+            setTestSystemProperty(VirtualHost.PROPERTY_DEAD_LETTER_QUEUE_SUFFIX, "_DLQUEUE");
 
             Map<String,Object> attributes = new HashMap<String, Object>();
             attributes.put(Queue.ID, UUID.randomUUID());
@@ -422,8 +421,8 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         try
         {
             // change DLQ name to make its length bigger than exchange name
-            setTestSystemProperty(BrokerProperties.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, "_DLEXCHANGE");
-            setTestSystemProperty(BrokerProperties.PROPERTY_DEAD_LETTER_QUEUE_SUFFIX, "_DLQ");
+            setTestSystemProperty(VirtualHost.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, "_DLEXCHANGE");
+            setTestSystemProperty(VirtualHost.PROPERTY_DEAD_LETTER_QUEUE_SUFFIX, "_DLQ");
 
             Map<String,Object> attributes = new HashMap<String, Object>();
             attributes.put(Queue.ID, UUID.randomUUID());

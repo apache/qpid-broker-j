@@ -41,7 +41,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.properties.ConnectionStartProperties;
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -128,7 +127,7 @@ public class ServerConnectionDelegate extends ServerDelegate
 
     private static List<String> getFeatures(Broker<?> broker)
     {
-        String brokerDisabledFeatures = System.getProperty(BrokerProperties.PROPERTY_DISABLED_FEATURES);
+        String brokerDisabledFeatures = System.getProperty(Broker.PROPERTY_DISABLED_FEATURES);
         final List<String> features = new ArrayList<String>();
         if (brokerDisabledFeatures == null || !brokerDisabledFeatures.contains(ServerPropertyNames.FEATURE_QPID_JMS_SELECTOR))
         {

@@ -23,6 +23,8 @@ package org.apache.qpid.server.model.port;
 import java.net.SocketAddress;
 import java.util.Set;
 
+import javax.net.ssl.SSLContext;
+
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
@@ -35,8 +37,6 @@ import org.apache.qpid.server.model.StatisticType;
 import org.apache.qpid.server.model.StatisticUnit;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
-
-import javax.net.ssl.SSLContext;
 
 @ManagedObject( category = false, type = "AMQP")
 public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X>
@@ -101,6 +101,8 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
                                          + " If the connection does not send a protocol header within this time,"
                                          + " the connection will be aborted.")
     long DEFAULT_PROTOCOL_HANDSHAKE_TIMEOUT = 2000;
+
+    String PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY = "qpid.broker_default_supported_protocol_version_reply";
 
     SSLContext getSSLContext();
 

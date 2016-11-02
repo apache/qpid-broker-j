@@ -74,10 +74,13 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     String NODE_AUTO_CREATION_POLICIES = "nodeAutoCreationPolicies";
 
     @ManagedContextDefault( name = VIRTUALHOST_WORK_DIR_VAR)
-    public static final String VIRTUALHOST_WORK_DIR = VIRTUALHOST_WORK_DIR_VAR_EXPRESSION;
+    String VIRTUALHOST_WORK_DIR = VIRTUALHOST_WORK_DIR_VAR_EXPRESSION;
     @ManagedContextDefault( name = "queue.deadLetterQueueEnabled")
-    public static final boolean DEFAULT_DEAD_LETTER_QUEUE_ENABLED = false;
+    boolean DEFAULT_DEAD_LETTER_QUEUE_ENABLED = false;
+
     String DEFAULT_DLE_NAME_SUFFIX = "_DLE";
+    String PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX = "qpid.broker_dead_letter_exchange_suffix";
+    String PROPERTY_DEAD_LETTER_QUEUE_SUFFIX = "qpid.broker_dead_letter_queue_suffix";
 
     @ManagedAttribute( defaultValue = "${queue.deadLetterQueueEnabled}", initialization = materialize)
     boolean isQueue_deadLetterQueueEnabled();

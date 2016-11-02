@@ -38,8 +38,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
-import org.apache.qpid.server.configuration.BrokerProperties;
-import org.apache.qpid.server.logging.logback.StartupAppender;
+
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class StartupAppenderTest extends QpidTestCase
@@ -89,7 +88,7 @@ public class StartupAppenderTest extends QpidTestCase
 
     public void testLogToConsoleWithOverriddenLogLevel() throws Exception
     {
-        setTestSystemProperty(BrokerProperties.PROPERTY_STARTUP_FAILOVER_CONSOLE_LOG_LEVEL, "DEBUG");
+        setTestSystemProperty(StartupAppender.PROPERTY_STARTUP_FAILOVER_CONSOLE_LOG_LEVEL, "DEBUG");
 
         _startupAppender = createAndStartStartupAppender();
 

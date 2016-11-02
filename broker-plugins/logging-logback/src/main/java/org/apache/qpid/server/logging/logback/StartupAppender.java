@@ -32,10 +32,10 @@ import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
-import org.apache.qpid.server.configuration.BrokerProperties;
 
 public class StartupAppender  extends AppenderBase<ILoggingEvent>
 {
+    public static final String PROPERTY_STARTUP_FAILOVER_CONSOLE_LOG_LEVEL = "qpid.startup_failover_console_log_level";
     private List<ILoggingEvent> _accumulatedLoggingEvents = new ArrayList<>();
     private Level _consoleAppenderAcceptLogLevel = Level.INFO;
 
@@ -43,7 +43,7 @@ public class StartupAppender  extends AppenderBase<ILoggingEvent>
     {
         super();
         setName(StartupAppender.class.getName());
-        String overriddenLogLevel = System.getProperty(BrokerProperties.PROPERTY_STARTUP_FAILOVER_CONSOLE_LOG_LEVEL);
+        String overriddenLogLevel = System.getProperty(PROPERTY_STARTUP_FAILOVER_CONSOLE_LOG_LEVEL);
         if (overriddenLogLevel != null)
         {
             _consoleAppenderAcceptLogLevel = Level.valueOf(overriddenLogLevel);

@@ -23,8 +23,9 @@ package org.apache.qpid.server.logging.messages;
 import static org.apache.qpid.server.logging.AbstractMessageLogger.DEFAULT_LOG_HIERARCHY_PREFIX;
 
 import org.slf4j.LoggerFactory;
-import org.apache.qpid.server.configuration.BrokerProperties;
+
 import org.apache.qpid.server.logging.LogMessage;
+import org.apache.qpid.server.model.Broker;
 
 import java.text.MessageFormat;
 import java.util.Locale;
@@ -41,7 +42,26 @@ import java.util.ResourceBundle;
 public class ChannelMessages
 {
     private static ResourceBundle _messages;
-    private static Locale _currentLocale = BrokerProperties.getLocale();
+    private static Locale _currentLocale;
+
+    static
+    {
+        Locale locale = Locale.US;
+        String localeSetting = System.getProperty(Broker.PROPERTY_LOCALE);
+        if (localeSetting != null)
+        {
+            String[] localeParts = localeSetting.split("_");
+            String language = (localeParts.length > 0 ? localeParts[0] : "");
+            String country = (localeParts.length > 1 ? localeParts[1] : "");
+            String variant = "";
+            if (localeParts.length > 2)
+            {
+                variant = localeSetting.substring(language.length() + 1 + country.length() + 1);
+            }
+            locale = new Locale(language, country, variant);
+        }
+        _currentLocale = locale;
+    }
 
     public static final String CHANNEL_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "channel";
     public static final String FLOW_ENFORCED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "channel.flow_enforced";

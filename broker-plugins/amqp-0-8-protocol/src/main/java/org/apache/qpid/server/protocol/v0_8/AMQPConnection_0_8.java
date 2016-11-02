@@ -32,6 +32,10 @@ import org.apache.qpid.server.transport.ProtocolEngine;
 
 interface AMQPConnection_0_8<C extends AMQPConnection_0_8<C>> extends AMQPConnection<C>, ProtocolEngine, EventLoggerProvider
 {
+    int  DEFAULT_HEARTBEAT_TIMEOUT_FACTOR = 2;
+    String PROPERTY_HEARTBEAT_TIMEOUT_FACTOR = "qpid.broker_heartbeat_timeout_factor";
+    int HEARTBEAT_TIMEOUT_FACTOR = Integer.getInteger(PROPERTY_HEARTBEAT_TIMEOUT_FACTOR, DEFAULT_HEARTBEAT_TIMEOUT_FACTOR);
+
     Broker<?> getBroker();
 
     MethodRegistry getMethodRegistry();

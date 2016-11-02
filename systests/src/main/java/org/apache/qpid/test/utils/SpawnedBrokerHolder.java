@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.configuration.BrokerProperties;
+import org.apache.qpid.server.Main;
 import org.apache.qpid.server.logging.logback.BrokerLogbackSocketLogger;
 import org.apache.qpid.server.logging.logback.BrokerNameAndLevelLogInclusionRule;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
@@ -102,8 +102,8 @@ public class SpawnedBrokerHolder extends AbstractBrokerHolder
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(true);
         Map<String, String> processEnv = pb.environment();
-        String qpidHome = System.getProperty(BrokerProperties.PROPERTY_QPID_HOME);
-        processEnv.put(BrokerProperties.PROPERTY_QPID_HOME, qpidHome);
+        String qpidHome = System.getProperty(Main.PROPERTY_QPID_HOME);
+        processEnv.put(Main.PROPERTY_QPID_HOME, qpidHome);
 
         //Augment Path with bin directory in QPID_HOME.
         boolean foundPath = false;

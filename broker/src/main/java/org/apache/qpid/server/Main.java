@@ -42,7 +42,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.configuration.CommonProperties;
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.logback.LogbackLoggingSystemLauncherListener;
 import org.apache.qpid.server.model.AbstractSystemConfig;
@@ -60,6 +59,15 @@ import org.apache.qpid.util.FileUtils;
  */
 public class Main
 {
+    public static final String PROPERTY_QPID_HOME = "QPID_HOME";
+    /**
+     * Configuration property name for the absolute path to use for the broker home directory.
+     *
+     * If not otherwise set, the value for this configuration property defaults to the location
+     * set in the "QPID_HOME" system property if that was set, or remains unset if it was not.
+     */
+    private static final String QPID_HOME_DIR  = "qpid.home_dir";
+
     private static final int MANAGEMENT_MODE_PASSWORD_LENGTH = 10;
 
     private static final Option OPTION_HELP = new Option("h", "help", false, "print this message");
@@ -166,7 +174,7 @@ public class Main
         Map<String,Object> attributes = new HashMap<>();
 
         String initialProperties = _commandLine.getOptionValue(OPTION_INITIAL_SYSTEM_PROPERTIES.getOpt());
-        BrokerProperties.populateSystemPropertiesFromDefaults(initialProperties);
+        SystemLauncher.populateSystemPropertiesFromDefaults(initialProperties);
 
         String initialConfigLocation = _commandLine.getOptionValue(OPTION_INITIAL_CONFIGURATION_PATH.getOpt());
         if(initialConfigLocation != null)
@@ -256,29 +264,29 @@ public class Main
                 context.put(name, value);
             }
         }
-        if(!context.containsKey(BrokerProperties.QPID_HOME_DIR))
+        if(!context.containsKey(QPID_HOME_DIR))
         {
             Properties systemProperties = System.getProperties();
             final Map<String, String> environment = System.getenv();
-            if(systemProperties.contains(BrokerProperties.QPID_HOME_DIR))
+            if(systemProperties.contains(QPID_HOME_DIR))
             {
-                context.put(BrokerProperties.QPID_HOME_DIR, systemProperties.getProperty(BrokerProperties.QPID_HOME_DIR));
+                context.put(QPID_HOME_DIR, systemProperties.getProperty(QPID_HOME_DIR));
             }
-            else if(environment.containsKey(BrokerProperties.QPID_HOME_DIR))
+            else if(environment.containsKey(QPID_HOME_DIR))
             {
-                context.put(BrokerProperties.QPID_HOME_DIR, environment.get(BrokerProperties.QPID_HOME_DIR));
+                context.put(QPID_HOME_DIR, environment.get(QPID_HOME_DIR));
             }
-            else if(context.containsKey(BrokerProperties.PROPERTY_QPID_HOME))
+            else if(context.containsKey(PROPERTY_QPID_HOME))
             {
-                context.put(BrokerProperties.QPID_HOME_DIR, context.get(BrokerProperties.PROPERTY_QPID_HOME));
+                context.put(QPID_HOME_DIR, context.get(PROPERTY_QPID_HOME));
             }
-            else if(systemProperties.contains(BrokerProperties.PROPERTY_QPID_HOME))
+            else if(systemProperties.contains(PROPERTY_QPID_HOME))
             {
-                context.put(BrokerProperties.QPID_HOME_DIR, environment.get(BrokerProperties.PROPERTY_QPID_HOME));
+                context.put(QPID_HOME_DIR, environment.get(PROPERTY_QPID_HOME));
             }
-            else if(environment.containsKey(BrokerProperties.PROPERTY_QPID_HOME))
+            else if(environment.containsKey(PROPERTY_QPID_HOME))
             {
-                context.put(BrokerProperties.QPID_HOME_DIR, environment.get(BrokerProperties.PROPERTY_QPID_HOME));
+                context.put(QPID_HOME_DIR, environment.get(PROPERTY_QPID_HOME));
             }
         }
         return context;
