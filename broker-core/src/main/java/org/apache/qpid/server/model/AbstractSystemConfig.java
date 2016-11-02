@@ -66,6 +66,7 @@ import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 import org.apache.qpid.server.store.preferences.PreferenceStoreFactoryService;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.server.util.urlstreamhandler.classpath.Handler;
 
 public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         extends AbstractConfiguredObject<X> implements SystemConfig<X>, DynamicModel
@@ -111,6 +112,11 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     private String _defaultContainerType;
 
     private final Thread _shutdownHook = new Thread(new ShutdownService(), "QpidBrokerShutdownHook");
+
+    static
+    {
+        Handler.register();
+    }
 
     public AbstractSystemConfig(final TaskExecutor taskExecutor,
                                 final EventLogger eventLogger,
@@ -275,8 +281,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
     private Container<?> initateStoreAndRecovery() throws IOException
     {
-        ConfiguredObjectRecord[] initialRecords = convertToConfigurationRecords(getInitialConfigurationLocation()
-                                                                               );
+        ConfiguredObjectRecord[] initialRecords = convertToConfigurationRecords(getInitialConfigurationLocation());
         final DurableConfigurationStore store = getConfigurationStore();
         final List<ConfiguredObjectRecord> records = new ArrayList<>();
 

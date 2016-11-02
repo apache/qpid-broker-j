@@ -21,10 +21,12 @@
 package org.apache.qpid.server;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.Principal;
 import java.security.PrivilegedExceptionAction;
@@ -58,12 +60,22 @@ import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.plugin.PluggableFactoryLoader;
 import org.apache.qpid.server.plugin.SystemConfigFactory;
 import org.apache.qpid.server.security.auth.TaskPrincipal;
+import org.apache.qpid.server.util.urlstreamhandler.classpath.Handler;
 
 public class SystemLauncher
 {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemLauncher.class);
-    public static final SystemLauncherListener.DefaultSystemLauncherListener DEFAULT_SYSTEM_LAUNCHER_LISTENER =
+    private static final String DEFAULT_INITIAL_PROPERTIES_LOCATION = "classpath:system.properties";
+
+    private static final SystemLauncherListener.DefaultSystemLauncherListener DEFAULT_SYSTEM_LAUNCHER_LISTENER =
             new SystemLauncherListener.DefaultSystemLauncherListener();
+
+    static
+    {
+        Handler.register();
+    }
+
 
     private EventLogger _eventLogger;
     private final TaskExecutor _taskExecutor = new TaskExecutorImpl();
@@ -103,20 +115,32 @@ public class SystemLauncher
         URL initialPropertiesLocation;
         if(initialProperties == null)
         {
-            initialPropertiesLocation = SystemLauncher.class.getClassLoader().getResource("system.properties");
+            initialPropertiesLocation = new URL(DEFAULT_INITIAL_PROPERTIES_LOCATION);
         }
         else
         {
-            initialPropertiesLocation = (new File(initialProperties)).toURI().toURL();
+            try
+            {
+                initialPropertiesLocation = new URL(initialProperties);
+            }
+            catch (MalformedURLException e)
+            {
+                initialPropertiesLocation = new File(initialProperties).toURI().toURL();
+
+            }
         }
 
         Properties props = new Properties(CommonProperties.asProperties());
-        if(initialPropertiesLocation != null)
-        {
 
-            try(InputStream inStream = initialPropertiesLocation.openStream())
+        try(InputStream inStream = initialPropertiesLocation.openStream())
+        {
+            props.load(inStream);
+        }
+        catch (FileNotFoundException e)
+        {
+            if(initialProperties != null)
             {
-                props.load(inStream);
+                throw e;
             }
         }
 
