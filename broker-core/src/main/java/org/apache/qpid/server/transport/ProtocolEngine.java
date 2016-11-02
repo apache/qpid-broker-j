@@ -53,10 +53,6 @@ public interface ProtocolEngine extends TransportActivity
 
     void setTransportBlockedForWriting(boolean blocked);
 
-    void setMessageAssignmentSuspended(boolean value, final boolean notifyConsumers);
-
-    boolean isMessageAssignmentSuspended();
-
     Iterator<Runnable> processPendingIterator();
 
     boolean hasWork();

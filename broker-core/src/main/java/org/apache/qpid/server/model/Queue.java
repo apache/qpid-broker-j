@@ -401,8 +401,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     Set<NotificationCheck> getNotificationChecks();
 
-    void deliverAsync();
-
     Collection<String> getAvailableAttributes();
 
     void completeRecovery();

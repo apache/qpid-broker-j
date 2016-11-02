@@ -63,6 +63,9 @@ public class MockConsumer implements ConsumerTarget
     private final Lock _stateChangeLock = new ReentrantLock();
 
     private boolean _isActive = true;
+    private ConsumerImpl _consumer;
+    private boolean _messageSent;
+    private MockSessionModel _sessionModel = new MockSessionModel();
 
     public MockConsumer()
     {
@@ -107,7 +110,7 @@ public class MockConsumer implements ConsumerTarget
 
     public AMQSessionModel getSessionModel()
     {
-        return new MockSessionModel();
+        return _sessionModel;
     }
 
     public boolean isActive()
@@ -138,6 +141,7 @@ public class MockConsumer implements ConsumerTarget
 
     public long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
     {
+        _messageSent = true;
         long size = entry.getMessage().getSize();
         if (messages.contains(entry))
         {
@@ -190,6 +194,7 @@ public class MockConsumer implements ConsumerTarget
     @Override
     public void consumerAdded(final ConsumerImpl sub)
     {
+        _consumer = sub;
     }
 
     @Override
@@ -232,7 +237,16 @@ public class MockConsumer implements ConsumerTarget
     @Override
     public boolean processPending()
     {
-        return false;
+        _consumer.pullMessage();
+        if(_messageSent)
+        {
+            _messageSent = false;
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     @Override
@@ -281,7 +295,7 @@ public class MockConsumer implements ConsumerTarget
     @Override
     public boolean isPullOnly()
     {
-        return false;
+        return true;
     }
 
     @Override
@@ -300,6 +314,7 @@ public class MockConsumer implements ConsumerTarget
     {
         private final UUID _id = UUID.randomUUID();
         private Session _modelObject;
+        private AMQPConnection<?> _connection = mock(AMQPConnection.class);
 
         private MockSessionModel()
         {
@@ -322,7 +337,7 @@ public class MockConsumer implements ConsumerTarget
         @Override
         public AMQPConnection<?> getAMQPConnection()
         {
-            return null;
+            return _connection;
         }
 
         @Override

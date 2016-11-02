@@ -64,7 +64,8 @@ public class PriorityQueueTest extends AbstractQueueTestBase
 
         // Register subscriber
         queue.addConsumer(getConsumer(), null, null, "test", EnumSet.noneOf(ConsumerImpl.Option.class), 0);
-        Thread.sleep(getQueueRunnerWaitTime());
+
+        while(getConsumer().processPending());
 
         ArrayList<MessageInstance> msgs = getConsumer().getMessages();
         try

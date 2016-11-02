@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.queue;
 
-import java.security.AccessController;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -156,6 +155,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
 
         // put test messages into a queue
         putGivenNumberOfMessages(queue, 4);
+        while(consumer.processPending());
 
         // assert received messages
         List<MessageInstance> messages = consumer.getMessages();
@@ -167,8 +167,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
     }
 
     /**
-     * Tests whether dequeued entry is sent to subscriber in result of
-     * invocation of {@link AbstractQueue#processQueue(QueueRunner)}
+     * Tests whether dequeued entry is sent to subscriber
      */
     public void testProcessQueueWithDequeuedEntry() throws Exception
     {
@@ -195,6 +194,13 @@ public class StandardQueueTest extends AbstractQueueTestBase
         // create a consumer
         MockConsumer consumer = new MockConsumer()
         {
+
+            @Override
+            public void notifyWork()
+            {
+                while(processPending());
+            }
+
             /**
              * Send a message and decrement latch
              * @param consumer
@@ -217,14 +223,6 @@ public class StandardQueueTest extends AbstractQueueTestBase
                               EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                          ConsumerImpl.Option.SEES_REQUEUES), 0);
 
-        // process queue
-        testQueue.processQueue(new QueueRunner(testQueue, AccessController.getContext())
-        {
-            public void run()
-            {
-                // do nothing
-            }
-        });
 
         // wait up to 1 minute for message receipt
         try

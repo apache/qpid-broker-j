@@ -91,18 +91,6 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         _onCloseTask = onCloseTask;
     }
 
-    @Override
-    public void setMessageAssignmentSuspended(final boolean value, final boolean notifyConsumers)
-    {
-        _delegate.setMessageAssignmentSuspended(value, notifyConsumers);
-    }
-
-    @Override
-    public boolean isMessageAssignmentSuspended()
-    {
-        return _delegate.isMessageAssignmentSuspended();
-    }
-
     public void closed()
     {
         _logger.debug("Closed");
@@ -244,18 +232,6 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
     {
 
         @Override
-        public void setMessageAssignmentSuspended(final boolean value, final boolean notifyConsumers)
-        {
-
-        }
-
-        @Override
-        public boolean isMessageAssignmentSuspended()
-        {
-            return false;
-        }
-
-        @Override
         public Iterator<Runnable> processPendingIterator()
         {
             return Collections.emptyIterator();
@@ -364,17 +340,6 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         private final QpidByteBuffer _header = QpidByteBuffer.allocate(MINIMUM_REQUIRED_HEADER_BYTES);
         private long _lastReadTime = System.currentTimeMillis();
         private final AtomicBoolean _hasWork = new AtomicBoolean();
-
-        @Override
-        public void setMessageAssignmentSuspended(final boolean value, final boolean notifyConsumers)
-        {
-        }
-
-        @Override
-        public boolean isMessageAssignmentSuspended()
-        {
-            return false;
-        }
 
         @Override
         public Iterator<Runnable> processPendingIterator()

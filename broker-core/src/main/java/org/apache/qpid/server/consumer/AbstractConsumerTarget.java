@@ -156,7 +156,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     @Override
     public final boolean isSuspended()
     {
-        return getSessionModel().getAMQPConnection().isMessageAssignmentSuspended() || isFlowSuspended();
+        return isFlowSuspended();
     }
 
     @Override

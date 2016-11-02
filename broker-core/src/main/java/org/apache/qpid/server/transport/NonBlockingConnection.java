@@ -218,7 +218,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     {
         if (_usedOutboundMessageSpace.addAndGet(size) > _outboundMessageBufferLimit)
         {
-            _protocolEngine.setMessageAssignmentSuspended(true, false);
+            // RG - TODO
         }
     }
 
@@ -274,7 +274,6 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                 }
 
                 _protocolEngine.setIOThread(Thread.currentThread());
-                _protocolEngine.setMessageAssignmentSuspended(true, true);
 
                 boolean processPendingComplete = processPending();
 
@@ -290,10 +289,6 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                         _protocolEngine.notifyWork();
                     }
 
-                    if (_fullyWritten)
-                    {
-                        _protocolEngine.setMessageAssignmentSuspended(false, true);
-                    }
                 }
                 else
                 {

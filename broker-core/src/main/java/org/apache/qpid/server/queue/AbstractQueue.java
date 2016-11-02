@@ -285,7 +285,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private final ConcurrentLinkedQueue<EnqueueRequest> _postRecoveryQueue = new ConcurrentLinkedQueue<>();
 
-    private final QueueRunner _queueRunner;
     private boolean _closing;
     private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
     private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
@@ -305,8 +304,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         _virtualHost = virtualHost;
         _immediateDeliveryContext = getSystemTaskControllerContext("Immediate Delivery", virtualHost.getPrincipal());
 
-        _queueRunner = new QueueRunner(this, getSystemTaskControllerContext("Queue Delivery",
-                                                                            virtualHost.getPrincipal()));
     }
 
     @Override
@@ -972,10 +969,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             consumer.notifyWork();
         }
-        else
-        {
-            deliverAsync();
-        }
 
         return consumer;
     }
@@ -1099,7 +1092,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
         }
         notifyPullOnlyConsumers();
-        deliverAsync();
     }
 
     public void addBinding(final Binding<?> binding)
@@ -1234,25 +1226,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         try
         {
-            if (action != null || (exclusiveSub == null  && _queueRunner.isIdle()))
-            {
-                AccessController.doPrivileged(
-                        new PrivilegedAction<Void>()
-                        {
-                            @Override
-                            public Void run()
-                            {
-                                tryDeliverStraightThrough(entry);
-                                return null;
-                            }
-                        }, _immediateDeliveryContext);
-            }
-
             if (entry.isAvailable())
             {
                 checkConsumersNotAheadOfDelivery(entry);
                 notifyPullOnlyConsumers();
-                deliverAsync();
             }
 
             checkForNotificationOnNewMessage(entry.getMessage());
@@ -1546,7 +1523,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
         }
         notifyPullOnlyConsumers();
-        deliverAsync();
 
     }
 
@@ -1740,20 +1716,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             if (oldState != State.ACTIVE)
             {
                 _activeSubscriberCount.incrementAndGet();
-                if(sub.isPullOnly())
-                {
-                    sub.notifyWork();
-                }
+            }
+            sub.notifyWork();
 
-            }
-            if(!sub.isPullOnly())
-            {
-                deliverAsync();
-            }
-            else
-            {
-                sub.notifyWork();
-            }
         }
     }
 
@@ -2168,14 +2133,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    public void deliverAsync()
-    {
-        _stateChangeCount.incrementAndGet();
-
-        _queueRunner.execute();
-
-    }
-
     void notifyPullOnlyConsumers()
     {
         if(_hasPullOnlyConsumers)
@@ -2184,7 +2141,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             while (consumerNode != null)
             {
                 QueueConsumer<?> consumer = consumerNode.getConsumer();
-                if (consumer.isActive() && consumer.isPullOnly() && getNextAvailableEntry(consumer) != null)
+                if (consumer.isActive() && getNextAvailableEntry(consumer) != null)
                 {
                     consumer.notifyWork();
                 }
@@ -2443,151 +2400,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     boolean hasAvailableMessages(final QueueConsumer queueConsumer)
     {
         return getNextAvailableEntry(queueConsumer) != null;
-    }
-
-    /**
-     * Used by queue Runners to asynchronously deliver messages to consumers.
-     *
-     * A queue Runner is started whenever a state change occurs, e.g when a new
-     * message arrives on the queue and cannot be immediately delivered to a
-     * consumer (i.e. asynchronous delivery is required).
-     *
-     * processQueue should be running while there are messages on the queue AND
-     * there are consumers that can deliver them. If there are no
-     * consumers capable of delivering the remaining messages on the queue
-     * then processQueue should stop to prevent spinning.
-     *
-     * Since processQueue is runs in a fixed size Executor, it should not run
-     * indefinitely to prevent starving other tasks of CPU (e.g jobs to process
-     * incoming messages may not be able to be scheduled in the thread pool
-     * because all threads are working on clearing down large queues). To solve
-     * this problem, after an arbitrary number of message deliveries the
-     * processQueue job stops iterating, resubmits itself to the executor, and
-     * ends the current instance
-     *
-     * @param runner the Runner to schedule
-     */
-    public long processQueue(QueueRunner runner)
-    {
-        long stateChangeCount;
-        long previousStateChangeCount = Long.MIN_VALUE;
-        long rVal = Long.MIN_VALUE;
-        boolean deliveryIncomplete = true;
-
-        boolean lastLoop = false;
-        int iterations = getMaxAsyncDeliveries();
-
-        final int numSubs = _consumerList.size();
-
-        final int perSub = Math.max(iterations / Math.max(numSubs,1), 1);
-
-        // For every message enqueue/requeue the we fire deliveryAsync() which
-        // increases _stateChangeCount. If _sCC changes whilst we are in our loop
-        // (detected by setting previousStateChangeCount to stateChangeCount in the loop body)
-        // then we will continue to run for a maximum of iterations.
-        // So whilst delivery/rejection is going on a processQueue thread will be running
-        while (iterations != 0 && ((previousStateChangeCount != (stateChangeCount = _stateChangeCount.get())) || deliveryIncomplete))
-        {
-            // we want to have one extra loop after every consumer has reached the point where it cannot move
-            // further, just in case the advance of one consumer in the last loop allows a different consumer to
-            // move forward in the next iteration
-
-            if (previousStateChangeCount != stateChangeCount)
-            {
-                //further asynchronous delivery is required since the
-                //previous loop. keep going if iteration slicing allows.
-                lastLoop = false;
-                rVal = stateChangeCount;
-            }
-
-            previousStateChangeCount = stateChangeCount;
-            boolean allConsumersDone = true;
-            boolean consumerDone;
-
-            ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
-            //iterate over the subscribers and try to advance their pointer
-            while (consumerNodeIterator.advance())
-            {
-
-                QueueConsumer<?> sub = consumerNodeIterator.getNode().getConsumer();
-
-                if(!sub.isPullOnly())
-                {
-                    sub.getSendLock();
-
-                    try
-                    {
-                        for (int i = 0; i < perSub; i++)
-                        {
-                            //attempt delivery. returns true if no further delivery currently possible to this sub
-                            consumerDone = attemptDelivery(sub, true);
-                            if (consumerDone)
-                            {
-                                sub.flushBatched();
-                                boolean noMore = getNextAvailableEntry(sub) == null;
-                                if (lastLoop && noMore)
-                                {
-                                    sub.queueEmpty();
-                                }
-                                break;
-                            }
-                            else
-                            {
-                                //this consumer can accept additional deliveries, so we must
-                                //keep going after this (if iteration slicing allows it)
-                                allConsumersDone = false;
-                                lastLoop = false;
-                                if (--iterations == 0)
-                                {
-                                    sub.flushBatched();
-                                    break;
-                                }
-                            }
-                        }
-
-                        sub.flushBatched();
-                    }
-                    finally
-                    {
-                        sub.releaseSendLock();
-                    }
-                }
-            }
-
-            if(allConsumersDone && lastLoop)
-            {
-                //We have done an extra loop already and there are again
-                //again no further delivery attempts possible, only
-                //keep going if state change demands it.
-                deliveryIncomplete = false;
-            }
-            else if(allConsumersDone)
-            {
-                //All consumers reported being done, but we have to do
-                //an extra loop if the iterations are not exhausted and
-                //there is still any work to be done
-                deliveryIncomplete = _consumerList.size() != 0;
-                lastLoop = true;
-            }
-            else
-            {
-                //some consumers can still accept more messages,
-                //keep going if iteration count allows.
-                lastLoop = false;
-                deliveryIncomplete = true;
-            }
-
-        }
-
-        // If iterations == 0 then the limiting factor was the time-slicing rather than available messages or credit
-        // therefore we should schedule this runner again (unless someone beats us to it :-) ).
-        if (iterations == 0)
-        {
-            _logger.debug("Rescheduling runner: {}", runner);
-            return 0L;
-        }
-        return rVal;
-
     }
 
     public void checkMessageStatus()

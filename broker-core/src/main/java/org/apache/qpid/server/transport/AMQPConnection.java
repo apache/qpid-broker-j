@@ -35,9 +35,6 @@ import org.apache.qpid.server.util.Deletable;
 
 public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<C>, Deletable<C>, EventLoggerProvider
 {
-    boolean isMessageAssignmentSuspended();
-
-    void alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(boolean override);
 
     AccessControlContext getAccessControlContextFromSubject(Subject subject);
 

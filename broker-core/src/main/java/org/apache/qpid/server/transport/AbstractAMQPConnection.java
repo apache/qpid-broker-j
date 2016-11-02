@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
 import javax.security.auth.SubjectDomainCombiner;
@@ -96,8 +95,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
             new CopyOnWriteArrayList<>();
 
     private final LogSubject _logSubject;
-    private final AtomicReference<Thread> _messageAssignmentAllowedThread = new AtomicReference<>();
-    private final AtomicBoolean _messageAssignmentSuspended = new AtomicBoolean();
     private volatile ContextProvider _contextProvider;
     private volatile EventLoggerProvider _eventLoggerProvider;
     private String _clientProduct;
@@ -486,50 +483,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     public void setClientId(final String clientId)
     {
         _clientId = clientId;
-    }
-
-    @Override
-    public boolean isMessageAssignmentSuspended()
-    {
-        Thread currentThread = Thread.currentThread();
-        if (_messageAssignmentAllowedThread.get() == currentThread && currentThread == _ioThread)
-        {
-            return false;
-        }
-        return _messageAssignmentSuspended.get();
-    }
-
-    @Override
-    public void setMessageAssignmentSuspended(final boolean messageAssignmentSuspended, final boolean notifyConsumers)
-    {
-        _messageAssignmentSuspended.set(messageAssignmentSuspended);
-        if(notifyConsumers)
-        {
-            for (AMQSessionModel<?> session : getSessionModels())
-            {
-                if (messageAssignmentSuspended)
-                {
-                    session.ensureConsumersNoticedStateChange();
-                }
-                else
-                {
-                    session.notifyConsumerTargetCurrentStates();
-                }
-            }
-        }
-    }
-
-    @Override
-    public void alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(boolean allowed)
-    {
-        if (allowed)
-        {
-            _messageAssignmentAllowedThread.set(Thread.currentThread());
-        }
-        else
-        {
-            _messageAssignmentAllowedThread.set(null);
-        }
     }
 
     @Override

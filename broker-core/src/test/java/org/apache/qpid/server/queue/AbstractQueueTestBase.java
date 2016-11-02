@@ -40,10 +40,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.qpid.server.model.Binding;
-import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.util.StateChangeListener;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -60,12 +56,16 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Binding;
+import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.AbstractQueue.QueueEntryFilter;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 abstract class AbstractQueueTestBase extends QpidTestCase
@@ -182,7 +182,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         // Check sending a message ends up with the subscriber
         _queue.enqueue(messageA, null, null);
-        Thread.sleep(_queueRunnerWaitTime);
+        while(_consumerTarget.processPending());
 
         assertEquals(messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage());
         assertNull(_consumer.getQueueContext().getReleasedEntry());
@@ -207,7 +207,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                                   ConsumerImpl.Option.SEES_REQUEUES), 0);
-        Thread.sleep(_queueRunnerWaitTime);
+        while(_consumerTarget.processPending());
         assertEquals(messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage());
         assertNull("There should be no releasedEntry after an enqueue",
                    _consumer.getQueueContext().getReleasedEntry());
@@ -225,7 +225,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                                   ConsumerImpl.Option.SEES_REQUEUES), 0);
-        Thread.sleep(_queueRunnerWaitTime);
+        while(_consumerTarget.processPending());
         assertEquals(messageB, _consumer.getQueueContext().getLastSeenEntry().getMessage());
         assertNull("There should be no releasedEntry after enqueues",
                    _consumer.getQueueContext().getReleasedEntry());
@@ -248,12 +248,12 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                                                      ConsumerImpl.Option.SEES_REQUEUES), 0);
-        Thread.sleep(_queueRunnerWaitTime);
+        while(_consumerTarget.processPending());
 
         assertEquals("Message which was not yet valid was received", 0, _consumerTarget.getMessages().size());
         when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()-100L);
         _queue.checkMessageStatus();
-        Thread.sleep(_queueRunnerWaitTime);
+        while(_consumerTarget.processPending());
         assertEquals("Message which was valid was not received", 1, _consumerTarget.getMessages().size());
     }
 
@@ -274,7 +274,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                                                      ConsumerImpl.Option.SEES_REQUEUES), 0);
-        Thread.sleep(_queueRunnerWaitTime);
+        while(_consumerTarget.processPending());
 
         assertEquals("Message was held despite queue not having holding enabled", 1, _consumerTarget.getMessages().size());
 
@@ -300,14 +300,14 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                                                      ConsumerImpl.Option.SEES_REQUEUES), 0);
-        Thread.sleep(_queueRunnerWaitTime);
+        while(_consumerTarget.processPending());
 
         assertEquals("Expect one message (message B)", 1, _consumerTarget.getMessages().size());
         assertEquals("Wrong message received", messageB.getMessageHeader().getMessageId(), _consumerTarget.getMessages().get(0).getMessage().getMessageHeader().getMessageId());
 
         when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()-100L);
         _queue.checkMessageStatus();
-        Thread.sleep(_queueRunnerWaitTime);
+        while(_consumerTarget.processPending());
         assertEquals("Message which was valid was not received", 2, _consumerTarget.getMessages().size());
         assertEquals("Wrong message received", messageA.getMessageHeader().getMessageId(), _consumerTarget.getMessages().get(1).getMessage().getMessageHeader().getMessageId());
 
@@ -338,7 +338,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue.enqueue(messageB, postEnqueueAction, null);
         _queue.enqueue(messageC, postEnqueueAction, null);
 
-        Thread.sleep(_queueRunnerWaitTime);  // Work done by QueueRunner Thread
+        while(_consumerTarget.processPending());
 
         assertEquals("Unexpected total number of messages sent to consumer",
                      3,
@@ -351,7 +351,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         queueEntries.get(0).release();
 
-        Thread.sleep(_queueRunnerWaitTime); // Work done by QueueRunner Thread
+        while(_consumerTarget.processPending());
 
         assertEquals("Unexpected total number of messages sent to consumer",
                      4,
@@ -374,6 +374,13 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         final CountDownLatch sendIndicator = new CountDownLatch(1);
         _consumerTarget = new MockConsumer()
         {
+
+            @Override
+            public void notifyWork()
+            {
+                while(processPending());
+            }
+
             @Override
             public long send(ConsumerImpl consumer, MessageInstance entry, boolean batch)
             {
@@ -472,7 +479,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue.enqueue(messageB, postEnqueueAction, null);
         _queue.enqueue(messageC, postEnqueueAction, null);
 
-        Thread.sleep(_queueRunnerWaitTime);  // Work done by QueueRunner Thread
+        while(_consumerTarget.processPending());
 
         assertEquals("Unexpected total number of messages sent to consumer",
                      3,
@@ -486,7 +493,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         queueEntries.get(2).release();
         queueEntries.get(0).release();
 
-        Thread.sleep(_queueRunnerWaitTime); // Work done by QueueRunner Thread
+        while(_consumerTarget.processPending());
 
         assertEquals("Unexpected total number of messages sent to consumer",
                      5,
@@ -529,7 +536,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue.enqueue(messageA, postEnqueueAction, null);
         _queue.enqueue(messageB, postEnqueueAction, null);
 
-        Thread.sleep(_queueRunnerWaitTime);  // Work done by QueueRunner Thread
+        while(target1.processPending());
+        while(target2.processPending());
 
         assertEquals("Unexpected total number of messages sent to both after enqueue",
                      2,
@@ -538,7 +546,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         /* Now release the first message only, causing it to be requeued */
         queueEntries.get(0).release();
 
-        Thread.sleep(_queueRunnerWaitTime); // Work done by QueueRunner Thread
+        while(target1.processPending());
+        while(target2.processPending());
 
         assertEquals("Unexpected total number of messages sent to both consumers after release",
                      3,
@@ -569,12 +578,15 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         final long timeout = System.currentTimeMillis() + _queueRunnerWaitTime;
 
         QueueEntry lastSeen = null;
-        while (timeout > System.currentTimeMillis() &&
+
+        while(_consumerTarget.processPending());
+
+        /*while (timeout > System.currentTimeMillis() &&
                ((lastSeen = _consumer.getQueueContext().getLastSeenEntry()) == null || lastSeen.getMessage() == null))
         {
             Thread.sleep(10);
         }
-
+*/
         assertEquals("Queue context did not see expected message within timeout",
                      messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage());
 
@@ -1062,14 +1074,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
             queue.enqueue(message,null, null);
 
         }
-        try
-        {
-            Thread.sleep(2000L);
-        }
-        catch (InterruptedException e)
-        {
-            _logger.error("Thread interrupted", e);
-        }
+
     }
 
     /**

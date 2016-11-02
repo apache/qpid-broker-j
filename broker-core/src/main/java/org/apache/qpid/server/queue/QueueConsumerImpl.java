@@ -262,14 +262,7 @@ class QueueConsumerImpl
     @Override
     public void externalStateChange()
     {
-        if(isPullOnly())
-        {
-            _target.notifyWork();
-        }
-        else
-        {
-            _queue.deliverAsync();
-        }
+        _target.notifyWork();
     }
 
     @Override
@@ -406,16 +399,8 @@ class QueueConsumerImpl
     public final void flush()
     {
         AMQPConnection<?> connection = _target.getSessionModel().getAMQPConnection();
-        try
-        {
-            connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(true);
-            _queue.flushConsumer(this);
-            _target.processPending();
-        }
-        finally
-        {
-            connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(false);
-        }
+        _queue.flushConsumer(this);
+        _target.processPending();
 
     }
 
@@ -423,15 +408,8 @@ class QueueConsumerImpl
     public void pullMessage()
     {
         AMQPConnection<?> connection = _target.getSessionModel().getAMQPConnection();
-        try
-        {
-            connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(true);
-            _queue.flushConsumer(this, 1);
-        }
-        finally
-        {
-            connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(false);
-        }
+        _queue.flushConsumer(this, 1);
+
 
     }
 
@@ -711,14 +689,7 @@ class QueueConsumerImpl
             entry.addStateChangeListener(this);
             if(!entry.isAvailable())
             {
-                if(isPullOnly())
-                {
-                    _target.notifyWork();
-                }
-                else
-                {
-                    _queue.deliverAsync();
-                }
+                _target.notifyWork();
                 remove();
             }
         }
@@ -738,14 +709,7 @@ class QueueConsumerImpl
         {
             entry.removeStateChangeListener(this);
             _entry.compareAndSet(entry, null);
-            if(isPullOnly())
-            {
-                _target.notifyWork();
-            }
-            else
-            {
-                _queue.deliverAsync();
-            }
+            _target.notifyWork();
         }
 
     }

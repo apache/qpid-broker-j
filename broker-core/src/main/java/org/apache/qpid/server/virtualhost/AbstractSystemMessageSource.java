@@ -150,25 +150,17 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         {
             AMQPConnection<?> connection = _target.getSessionModel().getAMQPConnection();
             _target.getSendLock();
+
             try
             {
-                connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(true);
-
-                try
+                if (!_queue.isEmpty())
                 {
-                    if (!_queue.isEmpty())
+                    final PropertiesMessageInstance propertiesMessageInstance = _queue.get(0);
+                    if (!_target.isSuspended() && _target.allocateCredit(propertiesMessageInstance.getMessage()))
                     {
-                        final PropertiesMessageInstance propertiesMessageInstance = _queue.get(0);
-                        if (!_target.isSuspended() && _target.allocateCredit(propertiesMessageInstance.getMessage()))
-                        {
-                            _queue.remove(0);
-                            _target.send(this, propertiesMessageInstance, false);
-                        }
+                        _queue.remove(0);
+                        _target.send(this, propertiesMessageInstance, false);
                     }
-                }
-                finally
-                {
-                    connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(false);
                 }
             }
             finally
@@ -285,16 +277,8 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         public void flush()
         {
             AMQPConnection<?> connection = getSessionModel().getAMQPConnection();
-            try
-            {
-                connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(true);
-                deliverMessages();
-                _target.processPending();
-            }
-            finally
-            {
-                connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(false);
-            }
+            deliverMessages();
+            _target.processPending();
         }
 
 
