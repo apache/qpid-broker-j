@@ -53,9 +53,9 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.ssl.SSLContextFactory;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -552,7 +552,7 @@ public class RestTestHelper
 
     public void setManagementModeCredentials()
     {
-        setUsernameAndPassword(BrokerOptions.MANAGEMENT_MODE_USER_NAME, QpidBrokerTestCase.MANAGEMENT_MODE_PASSWORD);
+        setUsernameAndPassword(SystemConfig.MANAGEMENT_MODE_USER_NAME, QpidBrokerTestCase.MANAGEMENT_MODE_PASSWORD);
     }
 
     public void tearDown()

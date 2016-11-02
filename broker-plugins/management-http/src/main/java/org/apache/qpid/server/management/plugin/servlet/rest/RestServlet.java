@@ -1141,9 +1141,9 @@ public class RestServlet extends AbstractServlet
                 {
                     LOGGER.warn("... caused by " + t.getClass().getSimpleName() + "  : " + t.getMessage());
                 }
-                if (LOGGER.isTraceEnabled())
+                if (LOGGER.isDebugEnabled())
                 {
-                    LOGGER.trace(e.getClass().getSimpleName() + " processing request", e);
+                    LOGGER.debug(e.getClass().getSimpleName() + " processing request", e);
                 }
                 responseCode = SC_UNPROCESSABLE_ENTITY;
             }

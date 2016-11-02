@@ -99,6 +99,9 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     private String _initialConfigurationLocation;
 
     @ManagedAttributeField
+    private String _initialSystemPropertiesLocation;
+
+    @ManagedAttributeField
     private boolean _startupLoggedToSystemOut;
 
     @ManagedAttributeField
@@ -436,6 +439,12 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     }
 
     @Override
+    public String getInitialSystemPropertiesLocation()
+    {
+        return _initialSystemPropertiesLocation;
+    }
+
+    @Override
     public boolean isStartupLoggedToSystemOut()
     {
         return _startupLoggedToSystemOut;
@@ -493,6 +502,21 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     public void setOnContainerCloseTask(final Runnable onContainerCloseTask)
     {
         _onContainerCloseTask = onContainerCloseTask;
+    }
+
+    public static String getDefaultValue(String attrName)
+    {
+        Model model = SystemConfigBootstrapModel.getInstance();
+        ConfiguredObjectTypeRegistry typeRegistry = model.getTypeRegistry();
+        final ConfiguredObjectAttribute<?, ?> attr = typeRegistry.getAttributeTypes(SystemConfig.class).get(attrName);
+        if(attr instanceof ConfiguredSettableAttribute)
+        {
+            return interpolate(model, ((ConfiguredSettableAttribute)attr).defaultValue());
+        }
+        else
+        {
+            return null;
+        }
     }
 
     private class ShutdownService implements Runnable

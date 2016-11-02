@@ -28,7 +28,6 @@ import java.util.UUID;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.BrokerModel;
@@ -37,6 +36,7 @@ import org.apache.qpid.server.model.ExternalFileBasedAuthenticationManager;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.User;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.PlainPasswordDatabaseAuthenticationManager;
@@ -213,7 +213,7 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
         config.setSaved(false);
         startDefaultBroker(true);
 
-        getRestTestHelper().setUsernameAndPassword(BrokerOptions.MANAGEMENT_MODE_USER_NAME, MANAGEMENT_MODE_PASSWORD);
+        getRestTestHelper().setUsernameAndPassword(SystemConfig.MANAGEMENT_MODE_USER_NAME, MANAGEMENT_MODE_PASSWORD);
 
         Map<String, Object> provider = getRestTestHelper().getJsonAsSingletonList("authenticationprovider/" + providerName);
         assertEquals("Unexpected id", id.toString(), provider.get(AuthenticationProvider.ID));
@@ -250,7 +250,7 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
         config.setSaved(false);
         startDefaultBroker(true);
 
-        getRestTestHelper().setUsernameAndPassword(BrokerOptions.MANAGEMENT_MODE_USER_NAME, MANAGEMENT_MODE_PASSWORD);
+        getRestTestHelper().setUsernameAndPassword(SystemConfig.MANAGEMENT_MODE_USER_NAME, MANAGEMENT_MODE_PASSWORD);
 
         Map<String, Object> provider = getRestTestHelper().getJsonAsSingletonList("authenticationprovider/" + providerName);
         assertEquals("Unexpected id", id.toString(), provider.get(AuthenticationProvider.ID));

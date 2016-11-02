@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.logging.logback.BrokerLogbackSocketLogger;
 import org.apache.qpid.server.logging.logback.BrokerNameAndLevelLogInclusionRule;
@@ -76,28 +75,27 @@ public class SpawnedBrokerHolder extends AbstractBrokerHolder
         _pseudoThreadName = "BROKER-" + getBrokerIndex();
     }
 
-
     @Override
-    public void start(BrokerOptions brokerOptions) throws Exception
+    public void start(final boolean managementMode, final int amqpPort) throws Exception
     {
         Map<String, String> mdc = new HashMap<>();
         mdc.put(QpidBrokerTestCase.CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
         mdc.put("origin", getLogPrefix());
 
-        LOGGER.debug("Spawning broker with options: {} jvmOptions: {} environmentSettings: {} permitted start-up time: {}",
-                     brokerOptions, _jvmOptions, _environmentSettings, BROKER_STARTUP_TIME);
+        LOGGER.debug("Spawning broker with jvmOptions: {} environmentSettings: {} permitted start-up time: {}",
+                     _jvmOptions, _environmentSettings, BROKER_STARTUP_TIME);
 
-        String[] cmd = _brokerCommandHelper.getBrokerCommand(Integer.parseInt(brokerOptions.getConfigProperties().get("test.port")),
-                                                             brokerOptions.getConfigProperties().get("qpid.work_dir"),
-                                                             brokerOptions.getConfigurationStoreLocation(),
-                                                             brokerOptions.getConfigurationStoreType());
-        if (brokerOptions.isManagementMode())
+        String[] cmd = _brokerCommandHelper.getBrokerCommand(amqpPort,
+                                                             getWorkDir().toString(),
+                                                             getConfigurationPath(),
+                                                             getBrokerStoreType());
+        if (managementMode)
         {
             String[] newCmd = new String[cmd.length + 3];
             System.arraycopy(cmd, 0, newCmd, 0, cmd.length);
             newCmd[cmd.length] = "-mm";
             newCmd[cmd.length + 1] = "-mmpass";
-            newCmd[cmd.length + 2] = brokerOptions.getManagementModePassword();
+            newCmd[cmd.length + 2] = QpidBrokerTestCase.MANAGEMENT_MODE_PASSWORD;
             cmd = newCmd;
         }
 

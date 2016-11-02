@@ -20,72 +20,76 @@
  */
 package org.apache.qpid.server;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.security.Principal;
 import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Properties;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.security.auth.Subject;
 
-import ch.qos.logback.classic.Level;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LoggingMessageLogger;
 import org.apache.qpid.server.logging.MessageLogger;
 import org.apache.qpid.server.logging.SystemOutMessageLogger;
-import org.apache.qpid.server.logging.logback.QpidLoggerTurboFilter;
-import org.apache.qpid.server.logging.logback.StartupAppender;
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.plugin.PluggableFactoryLoader;
 import org.apache.qpid.server.plugin.SystemConfigFactory;
 import org.apache.qpid.server.security.auth.TaskPrincipal;
-import org.apache.qpid.server.util.Action;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class Broker
+public class SystemLauncher
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Broker.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SystemLauncher.class);
+    public static final SystemLauncherListener.DefaultSystemLauncherListener DEFAULT_SYSTEM_LAUNCHER_LISTENER =
+            new SystemLauncherListener.DefaultSystemLauncherListener();
 
     private EventLogger _eventLogger;
     private final TaskExecutor _taskExecutor = new TaskExecutorImpl();
 
     private volatile SystemConfig _systemConfig;
 
-    private final Action<Integer> _shutdownAction;
+    private SystemLauncherListener _listener;
+
     private final Principal _systemPrincipal = new SystemPrincipal();
     private final Subject _brokerTaskSubject;
 
 
-    public Broker()
+    public SystemLauncher(SystemLauncherListener listener)
     {
-        this(null);
-    }
-
-    public Broker(Action<Integer> shutdownAction)
-    {
-        _shutdownAction = shutdownAction;
+        _listener = listener;
         _brokerTaskSubject = new Subject(true,
                                          new HashSet<>(Arrays.asList(_systemPrincipal, new TaskPrincipal("Broker"))),
                                          Collections.emptySet(),
                                          Collections.emptySet());
 
+    }
+
+    public SystemLauncher(SystemLauncherListener... listeners)
+    {
+        this(new SystemLauncherListener.ChainedSystemLauncherListener(listeners));
+    }
+
+
+
+    public SystemLauncher()
+    {
+        this(DEFAULT_SYSTEM_LAUNCHER_LISTENER);
     }
 
     public Principal getSystemPrincipal()
@@ -112,6 +116,13 @@ public class Broker
         catch (TimeoutException | InterruptedException | ExecutionException e)
         {
             LOGGER.warn("Attempting to cleanly shutdown took too long, exiting immediately");
+            _listener.exceptionOnShutdown(e);
+
+        }
+        catch(RuntimeException e)
+        {
+            _listener.exceptionOnShutdown(e);
+            throw e;
         }
         finally
         {
@@ -123,54 +134,38 @@ public class Broker
     {
         _taskExecutor.stop();
 
-        if (_shutdownAction != null)
-        {
-            _shutdownAction.performAction(exitStatusCode);
-        }
+        _listener.onShutdown(exitStatusCode);
 
         _systemConfig = null;
     }
 
-    public void startup() throws Exception
-    {
-        startup(new BrokerOptions());
-    }
 
-    public void startup(final BrokerOptions options) throws Exception
+    public void startup(final Map<String,Object> systemConfigAttributes) throws Exception
     {
-        _eventLogger = new EventLogger(new SystemOutMessageLogger());
+        final SystemOutMessageLogger systemOutMessageLogger = new SystemOutMessageLogger();
+
+        _eventLogger = new EventLogger(systemOutMessageLogger);
         Subject.doAs(_brokerTaskSubject, new PrivilegedExceptionAction<Object>()
         {
             @Override
             public Object run() throws Exception
             {
-                ch.qos.logback.classic.Logger logger =
-                        (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-                if (!logger.iteratorForAppenders().hasNext())
-                {
-                    logger.setLevel(Level.ALL);
-                    logger.setAdditive(true);
-                }
-
-                StartupAppender startupAppender = new StartupAppender();
-                startupAppender.setContext(logger.getLoggerContext());
-                startupAppender.start();
-                logger.addAppender(startupAppender);
+                _listener.beforeStartup();
 
                 try
                 {
-                    startupImpl(options);
+                    startupImpl(systemConfigAttributes);
                 }
                 catch (RuntimeException e)
                 {
+                    systemOutMessageLogger.message(new SystemStartupMessage(e));
                     LOGGER.error("Exception during startup", e);
-                    startupAppender.logToConsole();
+                    _listener.errorOnStartup(e);
                     closeSystemConfigAndCleanUp();
                 }
                 finally
                 {
-                    logger.detachAppender(startupAppender);
-                    startupAppender.stop();
+                    _listener.afterStartup();
                 }
                 return null;
             }
@@ -178,11 +173,11 @@ public class Broker
 
     }
 
-    private void startupImpl(final BrokerOptions options) throws Exception
+    private void startupImpl(Map<String,Object> systemConfigAttributes) throws Exception
     {
-        populateSystemPropertiesFromDefaults(options.getInitialSystemProperties());
+        BrokerProperties.populateSystemPropertiesFromDefaults((String) systemConfigAttributes.get(SystemConfig.INITIAL_SYSTEM_PROPERTIES_LOCATION));
 
-        String storeType = options.getConfigurationStoreType();
+        String storeType = (String) systemConfigAttributes.get(SystemConfig.TYPE);
 
         // Create the RootLogger to be used during broker operation
         boolean statusUpdatesEnabled = Boolean.parseBoolean(System.getProperty(BrokerProperties.PROPERTY_STATUS_UPDATES, "true"));
@@ -203,41 +198,32 @@ public class Broker
         _systemConfig = configFactory.newInstance(_taskExecutor,
                                                   _eventLogger,
                                                   _systemPrincipal,
-                                                  options.convertToSystemConfigAttributes());
+                                                  systemConfigAttributes);
 
-        _systemConfig.setOnContainerResolveTask(new Runnable() {
-
-            @Override
-            public void run()
-            {
-
-                ch.qos.logback.classic.Logger rootLogger =
-                        (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-
-                StartupAppender startupAppender = (StartupAppender) rootLogger.getAppender(StartupAppender.class.getName());
-                if (startupAppender != null)
+        _systemConfig.setOnContainerResolveTask(
+                new Runnable()
                 {
-                    rootLogger.detachAppender(startupAppender);
-                    startupAppender.stop();
-                }
+                    @Override
+                    public void run()
+                    {
+                        _listener.onContainerResolve(_systemConfig);
+                    }
+                });
 
-            }
-        });
-        _systemConfig.setOnContainerCloseTask(new Runnable()
-        {
+        _systemConfig.setOnContainerCloseTask(
+                new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        _listener.onContainerClose(_systemConfig);
 
-            @Override
-            public void run()
-            {
-
-                QpidLoggerTurboFilter.uninstallFromRootContext();
-
-            }
-        });
+                    }
+                });
 
 
         _systemConfig.open();
-        if (_systemConfig.getChild(org.apache.qpid.server.model.Broker.class).getState() == State.ERRORED)
+        if (_systemConfig.getChild(Broker.class).getState() == State.ERRORED)
         {
             throw new RuntimeException("Closing broker as it cannot operate due to errors");
         }
@@ -265,36 +251,6 @@ public class Broker
         }
     }
 
-    public static void populateSystemPropertiesFromDefaults(final String initialProperties) throws IOException
-    {
-        URL initialPropertiesLocation;
-        if(initialProperties == null)
-        {
-            initialPropertiesLocation = Broker.class.getClassLoader().getResource("system.properties");
-        }
-        else
-        {
-            initialPropertiesLocation = (new File(initialProperties)).toURI().toURL();
-        }
-
-        Properties props = new Properties(CommonProperties.asProperties());
-        if(initialPropertiesLocation != null)
-        {
-
-            try(InputStream inStream = initialPropertiesLocation.openStream())
-            {
-                props.load(inStream);
-            }
-        }
-
-        Set<String> propertyNames = new HashSet<>(props.stringPropertyNames());
-        propertyNames.removeAll(System.getProperties().stringPropertyNames());
-        for (String propName : propertyNames)
-        {
-            System.setProperty(propName, props.getProperty(propName));
-        }
-    }
-
     private static final class SystemPrincipal implements Principal
     {
         private SystemPrincipal()
@@ -305,6 +261,30 @@ public class Broker
         public String getName()
         {
             return "SYSTEM";
+        }
+    }
+
+    private static class SystemStartupMessage implements LogMessage
+    {
+        private final RuntimeException _exception;
+
+        public SystemStartupMessage(final RuntimeException exception)
+        {
+            _exception = exception;
+        }
+
+        @Override
+        public String getLogHierarchy()
+        {
+            return "system";
+        }
+
+        @Override
+        public String toString()
+        {
+            StringWriter writer = new StringWriter();
+            _exception.printStackTrace(new PrintWriter(writer));
+            return "Exception during startup: \n" + writer.toString();
         }
     }
 }

@@ -30,7 +30,7 @@ import org.apache.qpid.server.store.preferences.PreferenceStoreProvider;
 public interface BDBSystemConfig<X extends BDBSystemConfig<X>> extends SystemConfig<X>, FileBasedSettings,
                                                                        SizeMonitoringSettings, PreferenceStoreProvider
 {
-    @ManagedAttribute(mandatory = true)
+    @ManagedAttribute(defaultValue = "${qpid.work_dir}${file.separator}config")
     String getStorePath();
 
     @ManagedAttribute(mandatory = true, defaultValue = "0")

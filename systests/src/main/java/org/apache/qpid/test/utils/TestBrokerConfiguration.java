@@ -43,12 +43,25 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.management.plugin.HttpManagement;
-import org.apache.qpid.server.model.*;
+import org.apache.qpid.server.model.AbstractSystemConfig;
+import org.apache.qpid.server.model.AccessControlProvider;
+import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.GroupProvider;
+import org.apache.qpid.server.model.JsonSystemConfigImpl;
+import org.apache.qpid.server.model.Plugin;
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.model.UUIDGenerator;
+import org.apache.qpid.server.model.VirtualHostAlias;
+import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProvider;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProviderImpl;
 import org.apache.qpid.server.plugin.PluggableFactoryLoader;
@@ -93,15 +106,15 @@ public class TestBrokerConfiguration
 
     public TestBrokerConfiguration(String storeType, String initialStoreLocation)
     {
-        BrokerOptions brokerOptions = new BrokerOptions();
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
         _storeType = storeType;
-        brokerOptions.setInitialConfigurationLocation(initialStoreLocation);
+        Map<String,Object> config = new HashMap<>();
+        config.put("storePath", initialStoreLocation);
         final AbstractSystemConfig parentObject = new JsonSystemConfigImpl(_taskExecutor,
                                                                            mock(EventLogger.class),
                                                                            null,
-                                                                           brokerOptions.convertToSystemConfigAttributes())
+                                                                           config)
         {
 
             {
@@ -200,13 +213,13 @@ public class TestBrokerConfiguration
 
     public boolean save(File configFile)
     {
-        BrokerOptions brokerOptions = new BrokerOptions();
-        brokerOptions.setConfigurationStoreLocation(configFile.getAbsolutePath());
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("storePath", configFile.getAbsolutePath());
 
         SystemConfigFactory configFactory =
                 (new PluggableFactoryLoader<>(SystemConfigFactory.class)).get(_storeType);
 
-        Map<String, Object> attributes = new HashMap<>(brokerOptions.convertToSystemConfigAttributes());
         attributes.put(SystemConfig.STARTUP_LOGGED_TO_SYSTEM_OUT, false);
         attributes.put(ConfiguredObject.DESIRED_STATE, State.QUIESCED);
         final SystemConfig parentObject = configFactory.newInstance(_taskExecutor,

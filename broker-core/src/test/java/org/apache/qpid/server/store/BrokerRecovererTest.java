@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
@@ -63,7 +62,7 @@ public class BrokerRecovererTest extends QpidTestCase
         _taskExecutor.start();
         _systemConfig = new JsonSystemConfigImpl(_taskExecutor,
                                                  mock(EventLogger.class),
-                                                 null, new BrokerOptions().convertToSystemConfigAttributes())
+                                                 null, new HashMap<String,Object>())
         {
 
             {

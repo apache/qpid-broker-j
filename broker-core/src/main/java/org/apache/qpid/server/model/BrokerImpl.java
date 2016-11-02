@@ -51,7 +51,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.configuration.CommonProperties;
-import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.BrokerPrincipal;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -157,7 +156,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
             authManagerAttrs.put(NAME,"MANAGEMENT_MODE_AUTHENTICATION");
             authManagerAttrs.put(ID, UUID.randomUUID());
             SimpleAuthenticationManager authManager = new SimpleAuthenticationManager(authManagerAttrs, this);
-            authManager.addUser(BrokerOptions.MANAGEMENT_MODE_USER_NAME, _parent.getManagementModePassword());
+            authManager.addUser(SystemConfig.MANAGEMENT_MODE_USER_NAME, _parent.getManagementModePassword());
             _managementModeAuthenticationProvider = authManager;
             _accessControl = AccessControl.ALWAYS_ALLOWED;
         }
@@ -418,7 +417,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
         if (isManagementMode())
         {
-            _eventLogger.message(BrokerMessages.MANAGEMENT_MODE(BrokerOptions.MANAGEMENT_MODE_USER_NAME,
+            _eventLogger.message(BrokerMessages.MANAGEMENT_MODE(SystemConfig.MANAGEMENT_MODE_USER_NAME,
                                                                 _parent.getManagementModePassword()));
         }
         setState(State.ACTIVE);

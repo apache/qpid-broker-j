@@ -42,7 +42,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -66,7 +65,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 public class ManagementModeStoreHandlerTest extends QpidTestCase
 {
     private ManagementModeStoreHandler _handler;
-    private BrokerOptions _options;
+    private Map<String,Object> _systemConfigAttributes;
     private DurableConfigurationStore _store;
     private ConfiguredObjectRecord _root;
     private ConfiguredObjectRecord _portEntry;
@@ -84,7 +83,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         _taskExecutor.start();
 
         _systemConfig = new JsonSystemConfigImpl(_taskExecutor, mock(EventLogger.class),
-                                                 null, new BrokerOptions().convertToSystemConfigAttributes());
+                                                 null, new HashMap<String, Object>());
 
 
         ConfiguredObjectRecord systemContextRecord = _systemConfig.asObjectRecord();
@@ -113,7 +112,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
                     }
                 }
                 ).when(_store).openConfigurationStore(recovererArgumentCaptor.capture());
-        _options = new BrokerOptions();
+        _systemConfigAttributes = new HashMap<>();
 
         _handler = new ManagementModeStoreHandler(_store, _systemConfig);;
 
@@ -123,8 +122,10 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
     private ManagementModeStoreHandler createManagementModeStoreHandler()
     {
         _systemConfig.close();
-        Map<String, Object> attributes = new HashMap<>(_options.convertToSystemConfigAttributes());
+        Map<String, Object> attributes = new HashMap<>(_systemConfigAttributes);
         attributes.put(ConfiguredObject.DESIRED_STATE, State.QUIESCED);
+        attributes.remove(ConfiguredObject.TYPE);
+
         _systemConfig = new AbstractSystemConfig(_taskExecutor,
                                                  mock(EventLogger.class),
                                                  mock(Principal.class), attributes)
@@ -236,7 +237,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
 
     public void testGetRootEntryWithHttpPortOverriden()
     {
-        _options.setManagementModeHttpPortOverride(9090);
+        _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,9090);
         _handler = createManagementModeStoreHandler();
         _handler.init(_systemConfig);
         Collection<ConfiguredObjectRecord> records = openAndGetRecords();
@@ -250,7 +251,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
 
     public void testGetRootEntryWithManagementPortsOverriden()
     {
-        _options.setManagementModeHttpPortOverride(1000);
+        _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,1000);
         _handler = createManagementModeStoreHandler();
         _handler.init(_systemConfig);
         Collection<ConfiguredObjectRecord> records = openAndGetRecords();
@@ -283,7 +284,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
 
     public void testGetEntryByCLIHttpPortId()
     {
-        _options.setManagementModeHttpPortOverride(9090);
+        _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,9090);
         _handler = createManagementModeStoreHandler();
         _handler.init(_systemConfig);
 
@@ -299,7 +300,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Port.PROTOCOLS, Collections.singleton(Protocol.HTTP));
         when(_portEntry.getAttributes()).thenReturn(attributes);
-        _options.setManagementModeHttpPortOverride(9090);
+        _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,9090);
         _handler = createManagementModeStoreHandler();
         _handler.init(_systemConfig);
 
@@ -345,7 +346,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         State expectedState = mmQuiesceVhosts ? State.QUIESCED : null;
         if(mmQuiesceVhosts)
         {
-            _options.setManagementModeQuiesceVirtualHosts(mmQuiesceVhosts);
+            _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_QUIESCE_VIRTUAL_HOSTS, mmQuiesceVhosts);
         }
 
         _handler = createManagementModeStoreHandler();
@@ -375,7 +376,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
 
     public void testSavePort()
     {
-        _options.setManagementModeHttpPortOverride(1000);
+        _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,1000);
         _handler = createManagementModeStoreHandler();
         _handler.init(_systemConfig);
         Collection<ConfiguredObjectRecord> records = openAndGetRecords();
@@ -391,7 +392,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
 
     public void testSaveRoot()
     {
-        _options.setManagementModeHttpPortOverride(1000);
+        _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,1000);
         _handler = createManagementModeStoreHandler();
         _handler.init(_systemConfig);
         Collection<ConfiguredObjectRecord> records = openAndGetRecords();
@@ -407,7 +408,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
 
     public void testSaveCLIHttpPort()
     {
-        _options.setManagementModeHttpPortOverride(1000);
+        _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,1000);
         _handler = createManagementModeStoreHandler();
         _handler.init(_systemConfig);
         Collection<ConfiguredObjectRecord> records = openAndGetRecords();
@@ -432,7 +433,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
 
     public void testRemove()
     {
-        _options.setManagementModeHttpPortOverride(1000);
+        _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,1000);
         _handler = createManagementModeStoreHandler();
         _handler.init(_systemConfig);
         Collection<ConfiguredObjectRecord> records = openAndGetRecords();
@@ -469,7 +470,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
 
     public void testRemoveCLIPort()
     {
-        _options.setManagementModeHttpPortOverride(1000);
+        _systemConfigAttributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE,1000);
         _handler = createManagementModeStoreHandler();
         _handler.init(_systemConfig);
         Collection<ConfiguredObjectRecord> records = openAndGetRecords();

@@ -32,6 +32,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
 import org.apache.qpid.server.model.Model;
@@ -39,6 +42,7 @@ import org.apache.qpid.server.model.Named;
 
 public class ConfiguredObjectToMapConverter
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConfiguredObjectToMapConverter.class);
     /** Name of the key used for the statistics map */
     public static final String STATISTICS_MAP_KEY = "statistics";
 

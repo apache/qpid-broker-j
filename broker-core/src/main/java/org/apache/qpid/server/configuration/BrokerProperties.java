@@ -20,7 +20,17 @@
  */
 package org.apache.qpid.server.configuration;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Properties;
+import java.util.Set;
+
+import org.apache.qpid.configuration.CommonProperties;
+import org.apache.qpid.server.SystemLauncher;
 
 /**
  * Declares broker system property names
@@ -43,6 +53,21 @@ public class BrokerProperties
     public static final String PROPERTY_QPID_WORK = "QPID_WORK";
     public static final String POSIX_FILE_PERMISSIONS = "qpid.default_posix_file_permissions";
     public static final String PROPERTY_STARTUP_FAILOVER_CONSOLE_LOG_LEVEL = "qpid.startup_failover_console_log_level";
+    /**
+     * Configuration property name for the absolute path to use for the broker work directory.
+     *
+     * If not otherwise set, the value for this configuration property defaults to the location
+     * set in the "QPID_WORK" system property if that was set, or the 'work' sub-directory of
+     * the JVM working directory ("user.dir" property) for the Java process if it was not.
+     */
+    public static final String QPID_WORK_DIR  = "qpid.work_dir";
+    /**
+     * Configuration property name for the absolute path to use for the broker home directory.
+     *
+     * If not otherwise set, the value for this configuration property defaults to the location
+     * set in the "QPID_HOME" system property if that was set, or remains unset if it was not.
+     */
+    public static final String QPID_HOME_DIR  = "qpid.home_dir";
 
     private BrokerProperties()
     {
@@ -65,5 +90,35 @@ public class BrokerProperties
             locale = new Locale(language, country, variant);
         }
         return locale;
+    }
+
+    public static void populateSystemPropertiesFromDefaults(final String initialProperties) throws IOException
+    {
+        URL initialPropertiesLocation;
+        if(initialProperties == null)
+        {
+            initialPropertiesLocation = SystemLauncher.class.getClassLoader().getResource("system.properties");
+        }
+        else
+        {
+            initialPropertiesLocation = (new File(initialProperties)).toURI().toURL();
+        }
+
+        Properties props = new Properties(CommonProperties.asProperties());
+        if(initialPropertiesLocation != null)
+        {
+
+            try(InputStream inStream = initialPropertiesLocation.openStream())
+            {
+                props.load(inStream);
+            }
+        }
+
+        Set<String> propertyNames = new HashSet<>(props.stringPropertyNames());
+        propertyNames.removeAll(System.getProperties().stringPropertyNames());
+        for (String propName : propertyNames)
+        {
+            System.setProperty(propName, props.getProperty(propName));
+        }
     }
 }

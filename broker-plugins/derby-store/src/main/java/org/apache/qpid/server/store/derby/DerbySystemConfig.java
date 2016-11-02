@@ -29,7 +29,7 @@ import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 public interface DerbySystemConfig<X extends DerbySystemConfig<X>> extends SystemConfig<X>, FileBasedSettings,
                                                                            SizeMonitoringSettings
 {
-    @ManagedAttribute(mandatory = true)
+    @ManagedAttribute(defaultValue = "${qpid.work_dir}${file.separator}config.json")
     String getStorePath();
 
     @ManagedAttribute(mandatory = true, defaultValue = "0")

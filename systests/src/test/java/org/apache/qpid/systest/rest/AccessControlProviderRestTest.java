@@ -27,11 +27,11 @@ import java.util.UUID;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
 import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.security.AllowAllAccessControlProvider;
 import org.apache.qpid.server.security.access.plugins.AclFileAccessControlProvider;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -190,7 +190,7 @@ public class AccessControlProviderRestTest extends QpidRestTestCase
         configuration.setSaved(false);
         startDefaultBroker(true);
 
-        getRestTestHelper().setUsernameAndPassword(BrokerOptions.MANAGEMENT_MODE_USER_NAME, MANAGEMENT_MODE_PASSWORD);
+        getRestTestHelper().setUsernameAndPassword(SystemConfig.MANAGEMENT_MODE_USER_NAME, MANAGEMENT_MODE_PASSWORD);
 
         Map<String, Object> acl = getRestTestHelper().getJsonAsSingletonList("accesscontrolprovider/" + TestBrokerConfiguration.ENTRY_NAME_ACL_FILE + "?" + RestServlet.OVERSIZE_PARAM + "=" + (file.getAbsolutePath().length()+10));
         assertEquals("Unexpected id", id.toString(), acl.get(AccessControlProvider.ID));

@@ -20,11 +20,14 @@
  */
 package org.apache.qpid.server;
 
-import java.io.File;
+import static org.junit.Assert.assertNotEquals;
+
 import java.util.Map;
 
 import org.apache.commons.cli.CommandLine;
+
 import org.apache.qpid.server.configuration.BrokerProperties;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
@@ -43,43 +46,29 @@ public class MainTest extends QpidTestCase
         String qpidHome = "/qpid/home";
         setTestSystemProperty(BrokerProperties.PROPERTY_QPID_HOME, qpidHome);
 
-        String expectedStorePath = new File(qpidWork, BrokerOptions.DEFAULT_CONFIG_NAME_PREFIX + ".json").getAbsolutePath();
+        Map<String,Object> attributes = startDummyMain("");
 
-        BrokerOptions options = startDummyMain("");
-
-        assertEquals("JSON", options.getConfigurationStoreType());
-        assertEquals(expectedStorePath, options.getConfigurationStoreLocation());
-        assertEquals(BrokerOptions.DEFAULT_INITIAL_CONFIG_LOCATION, options.getInitialConfigurationLocation());
-        assertFalse(options.isOverwriteConfigurationStore());
-        assertFalse(options.isManagementMode());
-        assertEquals(0, options.getManagementModeHttpPortOverride());
+        assertEquals("JSON", attributes.get(SystemConfig.TYPE));
+        assertNotEquals("true", String.valueOf(attributes.get(SystemConfig.MANAGEMENT_MODE)));
     }
+
 
     public void testConfigurationStoreLocation()
     {
-        BrokerOptions options = startDummyMain("-sp abcd/config.xml");
-        assertEquals("abcd/config.xml", options.getConfigurationStoreLocation());
+        Map<String,Object> attributes = startDummyMain("-sp abcd/config.xml");
+        assertEquals("abcd/config.xml", attributes.get("storePath"));
 
-        options = startDummyMain("-store-path abcd/config2.xml");
-        assertEquals("abcd/config2.xml", options.getConfigurationStoreLocation());
+        attributes = startDummyMain("-store-path abcd/config2.xml");
+        assertEquals("abcd/config2.xml", attributes.get("storePath"));
     }
 
     public void testConfigurationStoreType()
     {
-        BrokerOptions options = startDummyMain("-st dby");
-        assertEquals("dby", options.getConfigurationStoreType());
+        Map<String,Object> attributes = startDummyMain("-st dby");
+        assertEquals("dby", attributes.get(SystemConfig.TYPE));
 
-        options = startDummyMain("-store-type bdb");
-        assertEquals("bdb", options.getConfigurationStoreType());
-    }
-
-    public void testOverwriteConfigurationStore()
-    {
-        BrokerOptions options = startDummyMain("-os");
-        assertTrue(options.isOverwriteConfigurationStore());
-
-        options = startDummyMain("-overwrite-store");
-        assertTrue(options.isOverwriteConfigurationStore());
+        attributes = startDummyMain("-store-type bdb");
+        assertEquals("bdb", attributes.get(SystemConfig.TYPE));
     }
 
     public void testVersion()
@@ -98,76 +87,76 @@ public class MainTest extends QpidTestCase
         assertTrue("Parsed command line didnt pick up help option", main.getCommandLine().hasOption("h"));
     }
 
-    public void testInitailConfigurationLocation()
+    public void testInitialConfigurationLocation()
     {
-        BrokerOptions options = startDummyMain("-icp abcd/initial-config.json");
-        assertEquals("abcd/initial-config.json", options.getInitialConfigurationLocation());
+        Map<String,Object> attributes = startDummyMain("-icp abcd/initial-config.json");
+        assertEquals("abcd/initial-config.json", attributes.get(SystemConfig.INITIAL_CONFIGURATION_LOCATION));
 
-        options = startDummyMain("-initial-config-path abcd/initial-config.json");
-        assertEquals("abcd/initial-config.json", options.getInitialConfigurationLocation());
+        attributes = startDummyMain("-initial-config-path abcd/initial-config.json");
+        assertEquals("abcd/initial-config.json", attributes.get(SystemConfig.INITIAL_CONFIGURATION_LOCATION));
     }
 
     public void testManagementMode()
     {
-        BrokerOptions options = startDummyMain("-mm");
-        assertTrue(options.isManagementMode());
+        Map<String,Object> attributes = startDummyMain("-mm");
+        assertEquals("true", String.valueOf(attributes.get(SystemConfig.MANAGEMENT_MODE)));
 
-        options = startDummyMain("--management-mode");
-        assertTrue(options.isManagementMode());
+        attributes = startDummyMain("--management-mode");
+        assertEquals("true", String.valueOf(attributes.get(SystemConfig.MANAGEMENT_MODE)));
     }
 
     public void testManagementModeHttpPortOverride()
     {
-        BrokerOptions options = startDummyMain("-mm -mmhttp 9999");
-        assertTrue(options.isManagementMode());
-        assertEquals(9999, options.getManagementModeHttpPortOverride());
+        Map<String,Object> attributes = startDummyMain("-mm -mmhttp 9999");
+        assertEquals("true", String.valueOf(attributes.get(SystemConfig.MANAGEMENT_MODE)));
+        assertEquals("9999", String.valueOf(attributes.get(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE)));
 
-        options = startDummyMain("-mm --management-mode-http-port 9999");
-        assertTrue(options.isManagementMode());
-        assertEquals(9999, options.getManagementModeHttpPortOverride());
+        attributes = startDummyMain("-mm --management-mode-http-port 9999");
+        assertEquals("true", String.valueOf(attributes.get(SystemConfig.MANAGEMENT_MODE)));
+        assertEquals("9999", String.valueOf(attributes.get(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE)));
 
-        options = startDummyMain("-mmhttp 9999");
-        assertEquals(0, options.getManagementModeHttpPortOverride());
+        attributes = startDummyMain("-mmhttp 9999");
+        assertNotEquals("9999", String.valueOf(attributes.get(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE)));
     }
 
     public void testManagementModePassword()
     {
         String password = getTestName();
-        BrokerOptions options = startDummyMain("-mm -mmpass " + password);
-        assertTrue(options.isManagementMode());
-        assertEquals(password, options.getManagementModePassword());
+        Map<String,Object> attributes = startDummyMain("-mm -mmpass " + password);
+        assertEquals("true", String.valueOf(attributes.get(SystemConfig.MANAGEMENT_MODE)));
+        assertEquals(password, attributes.get(SystemConfig.MANAGEMENT_MODE_PASSWORD));
 
-        options = startDummyMain("-mm --management-mode-password " + password);
-        assertTrue(options.isManagementMode());
-        assertEquals(password, options.getManagementModePassword());
+        attributes = startDummyMain("-mm --management-mode-password " + password);
+        assertEquals("true", String.valueOf(attributes.get(SystemConfig.MANAGEMENT_MODE)));
+        assertEquals(password, attributes.get(SystemConfig.MANAGEMENT_MODE_PASSWORD));
 
-        options = startDummyMain("-mm -mmpass " + password);
-        assertNotNull(options.getManagementModePassword());
+        attributes = startDummyMain("-mm -mmpass " + password);
+        assertEquals(password, attributes.get(SystemConfig.MANAGEMENT_MODE_PASSWORD));
     }
 
     public void testDefaultManagementModePassword()
     {
-        BrokerOptions options = startDummyMain("-mm");
-        assertTrue(options.isManagementMode());
-        assertNotNull(options.getManagementModePassword());
+        Map<String,Object> attributes = startDummyMain("-mm");
+        assertEquals("true", String.valueOf(attributes.get(SystemConfig.MANAGEMENT_MODE)));
+        assertNotNull(attributes.get(SystemConfig.MANAGEMENT_MODE_PASSWORD));
     }
 
     public void testSetConfigProperties()
     {
         //short name
         String newPort = "12345";
-        BrokerOptions options = startDummyMain("-prop name=value -prop " + org.apache.qpid.server.model.Broker.QPID_AMQP_PORT + "=" + newPort);
+        Map<String,Object> attributes = startDummyMain("-prop name=value -prop " + org.apache.qpid.server.model.Broker.QPID_AMQP_PORT + "=" + newPort);
 
-        Map<String, String> props = options.getConfigProperties();
+        Map<String, String> props = (Map<String,String>) attributes.get(SystemConfig.CONTEXT);
 
         assertEquals(newPort, props.get(org.apache.qpid.server.model.Broker.QPID_AMQP_PORT));
         assertEquals("value", props.get("name"));
 
         //long name
         newPort = "678910";
-        options = startDummyMain("--config-property name2=value2 --config-property " + org.apache.qpid.server.model.Broker.QPID_AMQP_PORT + "=" + newPort);
+        attributes = startDummyMain("--config-property name2=value2 --config-property " + org.apache.qpid.server.model.Broker.QPID_AMQP_PORT + "=" + newPort);
 
-        props = options.getConfigProperties();
+        props = (Map<String,String>) attributes.get(SystemConfig.CONTEXT);
 
         assertEquals(newPort, props.get(org.apache.qpid.server.model.Broker.QPID_AMQP_PORT));
         assertEquals("value2", props.get("name2"));
@@ -186,14 +175,14 @@ public class MainTest extends QpidTestCase
                 _startupException instanceof IllegalArgumentException);
     }
 
-    private BrokerOptions startDummyMain(String commandLine)
+    private Map<String,Object> startDummyMain(String commandLine)
     {
-        return (new TestMain(commandLine.split("\\s"))).getOptions();
+        return (new TestMain(commandLine.split("\\s"))).getAttributes();
     }
 
     private class TestMain extends Main
     {
-        private BrokerOptions _options;
+        private Map<String, Object> _attributes;
 
         public TestMain(String[] args)
         {
@@ -214,9 +203,9 @@ public class MainTest extends QpidTestCase
         }
 
         @Override
-        protected void startBroker(BrokerOptions options)
+        protected void startBroker(Map<String,Object> attributes)
         {
-            _options = options;
+            _attributes = attributes;
         }
 
         @Override
@@ -224,9 +213,9 @@ public class MainTest extends QpidTestCase
         {
         }
 
-        public BrokerOptions getOptions()
+        public Map<String,Object> getAttributes()
         {
-            return _options;
+            return _attributes;
         }
 
         public CommandLine getCommandLine()

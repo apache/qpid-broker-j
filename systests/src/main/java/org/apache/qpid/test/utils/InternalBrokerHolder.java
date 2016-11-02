@@ -24,7 +24,9 @@ import java.io.File;
 import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.security.auth.Subject;
@@ -32,25 +34,56 @@ import javax.security.auth.Subject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.Broker;
-import org.apache.qpid.server.BrokerOptions;
+import org.apache.qpid.server.SystemLauncher;
+import org.apache.qpid.server.SystemLauncherListener;
+import org.apache.qpid.server.logging.logback.LogbackLoggingSystemLauncherListener;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.IllegalStateTransitionException;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.security.auth.TaskPrincipal;
-import org.apache.qpid.server.util.Action;
 
 public class InternalBrokerHolder extends AbstractBrokerHolder
 {
     private final static Logger LOGGER = LoggerFactory.getLogger(InternalBrokerHolder.class);
     private final static UncaughtExceptionHandler UNCAUGHT_EXCEPTION_HANDLER = new UncaughtExceptionHandler();
 
-    private volatile Broker _broker;
+    private volatile SystemLauncher _systemLauncher;
 
     public InternalBrokerHolder(int port, final String classQualifiedTestName, final File logFile)
     {
         super(port, classQualifiedTestName, logFile);
     }
 
+
     @Override
-    public void start(final BrokerOptions options) throws Exception
+    protected void start(final boolean managementMode, final int amqpPort) throws Exception
+    {
+
+        Map<String,String> context = new HashMap<>();
+        context.put("test.hport", String.valueOf(getHttpPort()));
+        context.put("qpid.home_dir", System.getProperty("QPID_HOME"));
+        context.put("qpid.work_dir", getWorkDir().toString());
+
+        context.put("test.port", String.valueOf(amqpPort));
+
+        Map<String,Object> attributes = new HashMap<>();
+
+        attributes.put(ConfiguredObject.CONTEXT, context);
+        attributes.put(ConfiguredObject.TYPE, getBrokerStoreType());
+        attributes.put("storePath", getConfigurationPath());
+
+        attributes.put(SystemConfig.MANAGEMENT_MODE, managementMode);
+
+        if(managementMode)
+        {
+            attributes.put(SystemConfig.MANAGEMENT_MODE_PASSWORD, QpidBrokerTestCase.MANAGEMENT_MODE_PASSWORD);
+        }
+
+        start(attributes);
+
+    }
+
+    public void start(final Map<String,Object> systemConfig) throws Exception
     {
         if (Thread.getDefaultUncaughtExceptionHandler() == null)
         {
@@ -59,42 +92,39 @@ public class InternalBrokerHolder extends AbstractBrokerHolder
 
         LOGGER.info("Starting internal broker (same JVM)");
 
-        _broker = new Broker(new Action<Integer>()
-        {
-            @Override
-            public void performAction(final Integer object)
-            {
-                _broker = null;
-            }
-        })
-        {
-            @Override
-            public void shutdown()
-            {
-                try
-                {
-                    super.shutdown();
-                }
-                catch (IllegalStateException e)
-                {
-                    System.out.println("IllegalStateException occurred on broker shutdown in test "
-                                       + getClassQualifiedTestName());
-                    throw e;
-                }
-            }
-        };
+        _systemLauncher = new SystemLauncher(new LogbackLoggingSystemLauncherListener(),
+                                             new SystemLauncherListener.DefaultSystemLauncherListener()
+                                             {
+                                                 @Override
+                                                 public void onShutdown(final int exitCode)
+                                                 {
+                                                     _systemLauncher = null;
+                                                 }
 
-        _broker.startup(options);
+                                                 @Override
+                                                 public void exceptionOnShutdown(final Exception e)
+                                                 {
+                                                     if (e instanceof IllegalStateException
+                                                         || e instanceof IllegalStateTransitionException)
+                                                     {
+                                                         System.out.println(
+                                                                 "IllegalStateException occurred on broker shutdown in test "
+                                                                 + getClassQualifiedTestName());
+                                                     }
+                                                 }
+                                             });
+
+        _systemLauncher.startup(systemConfig);
     }
 
     @Override
     public void shutdown()
     {
-        if (_broker != null)
+        if (_systemLauncher != null)
         {
             LOGGER.info("Shutting down Broker instance");
             Subject shutdownSubject = new Subject(true,
-                                                  new HashSet<>(Arrays.asList(_broker.getSystemPrincipal(), new TaskPrincipal("Shutdown"))),
+                                                  new HashSet<>(Arrays.asList(_systemLauncher.getSystemPrincipal(), new TaskPrincipal("Shutdown"))),
                                                   Collections.emptySet(),
                                                   Collections.emptySet());
             Subject.doAs(shutdownSubject, new PrivilegedAction<Object>()
@@ -102,9 +132,9 @@ public class InternalBrokerHolder extends AbstractBrokerHolder
                 @Override
                 public Object run()
                 {
-                    if (_broker != null)
+                    if (_systemLauncher != null)
                     {
-                        _broker.shutdown();
+                        _systemLauncher.shutdown();
                     }
                     return null;
                 }

@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.BrokerModel;
@@ -78,7 +77,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         _taskExecutor.start();
         _systemConfig = new JsonSystemConfigImpl(_taskExecutor,
                                                  mock(EventLogger.class),
-                                                 null, new BrokerOptions().convertToSystemConfigAttributes());
+                                                 null, new HashMap<String,Object>());
     }
 
     public void testUpgradeVirtualHostWithJDBCStoreAndBoneCPPool()

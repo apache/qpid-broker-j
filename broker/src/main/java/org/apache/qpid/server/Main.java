@@ -25,6 +25,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -35,15 +38,19 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
-import org.apache.qpid.configuration.CommonProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.configuration.CommonProperties;
+import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.logging.logback.LogbackLoggingSystemLauncherListener;
+import org.apache.qpid.server.model.AbstractSystemConfig;
+import org.apache.qpid.server.model.JsonSystemConfigImpl;
 import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
-import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StringUtil;
 import org.apache.qpid.util.FileUtils;
 
@@ -72,7 +79,7 @@ public class Main
             .withLongOpt("overwrite-store").create("os");
 
     private static final Option OPTION_CREATE_INITIAL_CONFIG = OptionBuilder.withArgName("path").hasOptionalArg().withDescription("create a copy of the initial config file, either to an" +
-            " optionally specified file path, or as " + BrokerOptions.DEFAULT_INITIAL_CONFIG_NAME + " in the current directory")
+            " optionally specified file path, or as " + SystemConfig.DEFAULT_INITIAL_CONFIG_NAME + " in the current directory")
             .withLongOpt("create-initial-config").create("cic");
 
     private static final Option OPTION_CONFIGURATION_PROPERTY = OptionBuilder.withArgName("name=value").hasArg()
@@ -86,7 +93,7 @@ public class Main
     private static final Option OPTION_MM_HTTP_PORT = OptionBuilder.withArgName("port").hasArg()
             .withDescription("override http management port in management mode").withLongOpt("management-mode-http-port").create("mmhttp");
     private static final Option OPTION_MM_PASSWORD = OptionBuilder.withArgName("password").hasArg()
-            .withDescription("Set the password for the management mode user " + BrokerOptions.MANAGEMENT_MODE_USER_NAME).withLongOpt("management-mode-password").create("mmpass");
+                                                                  .withDescription("Set the password for the management mode user " + SystemConfig.MANAGEMENT_MODE_USER_NAME).withLongOpt("management-mode-password").create("mmpass");
 
     private static final Option OPTION_INITIAL_SYSTEM_PROPERTIES = OptionBuilder.withArgName("path").hasArg()
             .withDescription("set the location of initial properties file to set otherwise unset system properties").withLongOpt("system-properties-file").create("props");
@@ -156,19 +163,15 @@ public class Main
 
     protected void execute() throws Exception
     {
-        String initialProperties = _commandLine.getOptionValue(OPTION_INITIAL_SYSTEM_PROPERTIES.getOpt());
-        Broker.populateSystemPropertiesFromDefaults(initialProperties);
+        Map<String,Object> attributes = new HashMap<>();
 
-        BrokerOptions options = new BrokerOptions();
-        if (initialProperties != null)
-        {
-            options.setInitialSystemProperties(initialProperties);
-        }
+        String initialProperties = _commandLine.getOptionValue(OPTION_INITIAL_SYSTEM_PROPERTIES.getOpt());
+        BrokerProperties.populateSystemPropertiesFromDefaults(initialProperties);
 
         String initialConfigLocation = _commandLine.getOptionValue(OPTION_INITIAL_CONFIGURATION_PATH.getOpt());
-        if (initialConfigLocation != null)
+        if(initialConfigLocation != null)
         {
-            options.setInitialConfigurationLocation(initialConfigLocation);
+            attributes.put(SystemConfig.INITIAL_CONFIGURATION_LOCATION, initialConfigLocation);
         }
 
         //process the remaining options
@@ -179,115 +182,159 @@ public class Main
         }
         else if (_commandLine.hasOption(OPTION_CREATE_INITIAL_CONFIG.getOpt()))
         {
-            File destinationFile = null;
-
-            String destinationOption = _commandLine.getOptionValue(OPTION_CREATE_INITIAL_CONFIG.getOpt());
-            if (destinationOption != null)
-            {
-                destinationFile = new File(destinationOption);
-            }
-            else
-            {
-                destinationFile = new File(System.getProperty("user.dir"), BrokerOptions.DEFAULT_INITIAL_CONFIG_NAME);
-            }
-
-            copyInitialConfigFile(options, destinationFile);
-
-            System.out.println("Initial config written to: " + destinationFile.getAbsolutePath());
+            createInitialConficCopy(initialConfigLocation);
         }
         else if (_commandLine.hasOption(OPTION_VERSION.getOpt()))
         {
-            final StringBuilder protocol = new StringBuilder("AMQP version(s) [major.minor]: ");
-            boolean first = true;
-            Set<Protocol> protocols = new TreeSet<>();
-            for(ProtocolEngineCreator installedEngine : (new QpidServiceLoader()).instancesOf(ProtocolEngineCreator.class))
-            {
-                protocols.add(installedEngine.getVersion());
-            }
-            for(Protocol supportedProtocol : protocols)
-            {
-                if (first)
-                {
-                    first = false;
-                }
-                else
-                {
-                    protocol.append(", ");
-                }
-
-                protocol.append(supportedProtocol.getProtocolVersion());
-            }
-
-            System.out.println(CommonProperties.getVersionString() + " (" + protocol + ")");
+            printVersion();
         }
         else
         {
             String[] configPropPairs = _commandLine.getOptionValues(OPTION_CONFIGURATION_PROPERTY.getOpt());
-            if(configPropPairs != null && configPropPairs.length > 0)
+
+            Map<String, String> context = calculateConfigContext(configPropPairs);
+            if(!context.isEmpty())
             {
-                for(String s : configPropPairs)
-                {
-                    int firstEquals = s.indexOf("=");
-                    if(firstEquals == -1)
-                    {
-                        throw new IllegalArgumentException("Configuration property argument is not of the format name=value: " + s);
-                    }
-                    String name = s.substring(0, firstEquals);
-                    String value = s.substring(firstEquals + 1);
-
-                    if(name.equals(""))
-                    {
-                        throw new IllegalArgumentException("Configuration property argument is not of the format name=value: " + s);
-                    }
-
-                    options.setConfigProperty(name, value);
-                }
+                attributes.put(SystemConfig.CONTEXT, context);
             }
 
             String configurationStore = _commandLine.getOptionValue(OPTION_CONFIGURATION_STORE_PATH.getOpt());
-            if (configurationStore != null)
+            if(configurationStore != null)
             {
-                options.setConfigurationStoreLocation(configurationStore);
+                attributes.put("storePath", configurationStore);
             }
-
             String configurationStoreType = _commandLine.getOptionValue(OPTION_CONFIGURATION_STORE_TYPE.getOpt());
-            if (configurationStoreType != null)
-            {
-                options.setConfigurationStoreType(configurationStoreType);
-            }
-
-            boolean overwriteConfigurationStore = _commandLine.hasOption(OPTION_OVERWRITE_CONFIGURATION_STORE.getOpt());
-            options.setOverwriteConfigurationStore(overwriteConfigurationStore);
+            attributes.put(SystemConfig.TYPE, configurationStoreType == null ? JsonSystemConfigImpl.SYSTEM_CONFIG_TYPE : configurationStoreType);
 
             boolean managementMode = _commandLine.hasOption(OPTION_MANAGEMENT_MODE.getOpt());
             if (managementMode)
             {
-                options.setManagementMode(true);
+                attributes.put(SystemConfig.MANAGEMENT_MODE, true);
                 String httpPort = _commandLine.getOptionValue(OPTION_MM_HTTP_PORT.getOpt());
-                if (httpPort != null)
+                if(httpPort != null)
                 {
-                    options.setManagementModeHttpPortOverride(Integer.parseInt(httpPort));
+                    attributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE, httpPort);
                 }
 
                 boolean quiesceVhosts = _commandLine.hasOption(OPTION_MM_QUIESCE_VHOST.getOpt());
-                options.setManagementModeQuiesceVirtualHosts(quiesceVhosts);
+                attributes.put(SystemConfig.MANAGEMENT_MODE_QUIESCE_VIRTUAL_HOSTS, quiesceVhosts);
 
                 String password = _commandLine.getOptionValue(OPTION_MM_PASSWORD.getOpt());
                 if (password == null)
                 {
                     password = new StringUtil().randomAlphaNumericString(MANAGEMENT_MODE_PASSWORD_LENGTH);
                 }
-                options.setManagementModePassword(password);
+                attributes.put(SystemConfig.MANAGEMENT_MODE_PASSWORD, password);
             }
             setExceptionHandler();
 
-            startBroker(options);
+            startBroker(attributes);
         }
     }
 
-    private void copyInitialConfigFile(final BrokerOptions options, final File destinationFile)
+    private Map<String, String> calculateConfigContext(final String[] configPropPairs)
     {
-        String initialConfigLocation = options.getInitialConfigurationLocation();
+        Map<String,String> context = new HashMap<>();
+
+        if(configPropPairs != null && configPropPairs.length > 0)
+        {
+            for(String s : configPropPairs)
+            {
+                int firstEquals = s.indexOf("=");
+                if(firstEquals == -1)
+                {
+                    throw new IllegalArgumentException("Configuration property argument is not of the format name=value: " + s);
+                }
+                String name = s.substring(0, firstEquals);
+                String value = s.substring(firstEquals + 1);
+
+                if(name.equals(""))
+                {
+                    throw new IllegalArgumentException("Configuration property argument is not of the format name=value: " + s);
+                }
+
+                context.put(name, value);
+            }
+        }
+        if(!context.containsKey(BrokerProperties.QPID_HOME_DIR))
+        {
+            Properties systemProperties = System.getProperties();
+            final Map<String, String> environment = System.getenv();
+            if(systemProperties.contains(BrokerProperties.QPID_HOME_DIR))
+            {
+                context.put(BrokerProperties.QPID_HOME_DIR, systemProperties.getProperty(BrokerProperties.QPID_HOME_DIR));
+            }
+            else if(environment.containsKey(BrokerProperties.QPID_HOME_DIR))
+            {
+                context.put(BrokerProperties.QPID_HOME_DIR, environment.get(BrokerProperties.QPID_HOME_DIR));
+            }
+            else if(context.containsKey(BrokerProperties.PROPERTY_QPID_HOME))
+            {
+                context.put(BrokerProperties.QPID_HOME_DIR, context.get(BrokerProperties.PROPERTY_QPID_HOME));
+            }
+            else if(systemProperties.contains(BrokerProperties.PROPERTY_QPID_HOME))
+            {
+                context.put(BrokerProperties.QPID_HOME_DIR, environment.get(BrokerProperties.PROPERTY_QPID_HOME));
+            }
+            else if(environment.containsKey(BrokerProperties.PROPERTY_QPID_HOME))
+            {
+                context.put(BrokerProperties.QPID_HOME_DIR, environment.get(BrokerProperties.PROPERTY_QPID_HOME));
+            }
+        }
+        return context;
+    }
+
+    private void printVersion()
+    {
+        final StringBuilder protocol = new StringBuilder("AMQP version(s) [major.minor]: ");
+        boolean first = true;
+        Set<Protocol> protocols = new TreeSet<>();
+        for(ProtocolEngineCreator installedEngine : (new QpidServiceLoader()).instancesOf(ProtocolEngineCreator.class))
+        {
+            protocols.add(installedEngine.getVersion());
+        }
+        for(Protocol supportedProtocol : protocols)
+        {
+            if (first)
+            {
+                first = false;
+            }
+            else
+            {
+                protocol.append(", ");
+            }
+
+            protocol.append(supportedProtocol.getProtocolVersion());
+        }
+
+        System.out.println(CommonProperties.getVersionString() + " (" + protocol + ")");
+    }
+
+    private void createInitialConficCopy(String initialConfigLocation)
+    {
+        File destinationFile = null;
+
+        String destinationOption = _commandLine.getOptionValue(OPTION_CREATE_INITIAL_CONFIG.getOpt());
+        if (destinationOption != null)
+        {
+            destinationFile = new File(destinationOption);
+        }
+        else
+        {
+            destinationFile = new File(System.getProperty("user.dir"), SystemConfig.DEFAULT_INITIAL_CONFIG_NAME);
+        }
+
+        if(initialConfigLocation == null)
+        {
+            initialConfigLocation = AbstractSystemConfig.getDefaultValue(SystemConfig.INITIAL_CONFIGURATION_LOCATION);
+        }
+        copyInitialConfigFile(initialConfigLocation, destinationFile);
+
+        System.out.println("Initial config written to: " + destinationFile.getAbsolutePath());
+    }
+
+    private void copyInitialConfigFile(final String initialConfigLocation, final File destinationFile)
+    {
         URL url = null;
         try
         {
@@ -342,21 +389,9 @@ public class Main
             {
                 handler = (Thread.UncaughtExceptionHandler) Class.forName(handlerClass).newInstance();
             }
-            catch (ClassNotFoundException e)
+            catch (ClassNotFoundException | InstantiationException | IllegalAccessException | ClassCastException e)
             {
                 
-            }
-            catch (InstantiationException e)
-            {
-                
-            }
-            catch (IllegalAccessException e)
-            {
-                
-            }
-            catch (ClassCastException e)
-            {
-
             }
         }
         
@@ -400,20 +435,22 @@ public class Main
         } 
     }
 
-    protected void startBroker(final BrokerOptions options) throws Exception
+    protected void startBroker(Map<String,Object> attributes) throws Exception
     {
-        Broker broker = new Broker(new Action<Integer>()
-                                    {
-                                        @Override
-                                        public void performAction(final Integer exitStatusCode)
-                                        {
-                                            if (exitStatusCode != 0)
-                                            {
-                                                shutdown(exitStatusCode);
-                                            }
-                                        }
-                                    });
-        broker.startup(options);
+        SystemLauncher systemLauncher = new SystemLauncher(new LogbackLoggingSystemLauncherListener(),
+                                                           new SystemLauncherListener.DefaultSystemLauncherListener()
+                                                           {
+                                                               @Override
+                                                               public void onShutdown(final int exitCode)
+                                                               {
+                                                                   if (exitCode != 0)
+                                                                   {
+                                                                       shutdown(exitCode);
+                                                                   }
+                                                               }
+                                                           });
+
+        systemLauncher.startup(attributes);
     }
 
     protected void shutdown(final int status)

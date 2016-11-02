@@ -24,6 +24,6 @@ import org.apache.qpid.server.store.FileBasedSettings;
 
 public interface JsonSystemConfig<X extends JsonSystemConfig<X>> extends SystemConfig<X>, FileBasedSettings
 {
-    @ManagedAttribute( mandatory = true )
+    @ManagedAttribute( defaultValue = "${qpid.work_dir}${file.separator}config.json")
     public String getStorePath();
 }

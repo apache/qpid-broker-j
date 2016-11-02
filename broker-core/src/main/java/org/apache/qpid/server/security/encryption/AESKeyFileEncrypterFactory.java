@@ -55,7 +55,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.BrokerOptions;
+import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.plugin.ConditionallyAvailable;
@@ -115,7 +115,7 @@ public class AESKeyFileEncrypterFactory implements ConfigurationSecretEncrypterF
         else
         {
 
-            fileLocation = object.getContextValue(String.class, BrokerOptions.QPID_WORK_DIR)
+            fileLocation = object.getContextValue(String.class, BrokerProperties.QPID_WORK_DIR)
                            + File.separator + DEFAULT_KEYS_SUBDIR_NAME + File.separator
                            + object.getCategoryClass().getSimpleName() + "_"
                            + object.getName() + ".key";

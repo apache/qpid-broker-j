@@ -27,17 +27,18 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.JsonSystemConfigImpl;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.util.FileUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.MDC;
-
-public class BrokerTest extends QpidTestCase
+public class SystemLauncherTest extends QpidTestCase
 {
     private static final String INITIAL_SYSTEM_PROPERTY = "test";
     private static final String INITIAL_SYSTEM_PROPERTY_VALUE = "testValue";
@@ -45,7 +46,7 @@ public class BrokerTest extends QpidTestCase
     private File _initialSystemProperties;
     private File _initialConfiguration;
     private File _brokerWork;
-    private Broker _broker;
+    private SystemLauncher _systemLauncher;
 
     @Override
     public void setUp() throws Exception
@@ -75,9 +76,9 @@ public class BrokerTest extends QpidTestCase
         }
         finally
         {
-            if (_broker != null)
+            if (_systemLauncher != null)
             {
-                _broker.shutdown();
+                _systemLauncher.shutdown();
             }
             System.clearProperty(INITIAL_SYSTEM_PROPERTY);
             FileUtils.delete(_brokerWork, true);
@@ -88,12 +89,13 @@ public class BrokerTest extends QpidTestCase
 
     public void testInitialSystemPropertiesAreSetOnBrokerStartup() throws Exception
     {
-        BrokerOptions options = new BrokerOptions();
-        options.setInitialSystemProperties(_initialSystemProperties.getAbsolutePath());
-        options.setStartupLoggedToSystemOut(true);
-        options.setInitialConfigurationLocation(_initialConfiguration.getAbsolutePath());
-        _broker = new Broker();
-        _broker.startup(options);
+        Map<String,Object> attributes = new HashMap<>();
+        attributes.put(SystemConfig.INITIAL_SYSTEM_PROPERTIES_LOCATION, _initialSystemProperties.getAbsolutePath());
+        attributes.put(SystemConfig.INITIAL_CONFIGURATION_LOCATION, _initialConfiguration.getAbsolutePath());
+        attributes.put(SystemConfig.TYPE, JsonSystemConfigImpl.SYSTEM_CONFIG_TYPE);
+        attributes.put(SystemConfig.STARTUP_LOGGED_TO_SYSTEM_OUT, Boolean.TRUE);
+        _systemLauncher = new SystemLauncher();
+        _systemLauncher.startup(attributes);
 
         // test JVM system property should be set from initial system config file
         assertEquals("Unexpected JVM system property", INITIAL_SYSTEM_PROPERTY_VALUE, System.getProperty(INITIAL_SYSTEM_PROPERTY));
@@ -104,54 +106,46 @@ public class BrokerTest extends QpidTestCase
 
     public void testConsoleLogsOnSuccessfulStartup() throws Exception
     {
-        String startupConsoleAppenderLogPrefix = getTestName() + "__$$ ";
-        byte[] outputBytes = startBrokerAndCollectSystemOutput(startupConsoleAppenderLogPrefix);
-        String outputString = new String(outputBytes);
-        assertFalse("Detected unexpected startup console appender prefix", outputString.contains(startupConsoleAppenderLogPrefix));
+        byte[] outputBytes = startBrokerAndCollectSystemOutput();
+        String output = new String(outputBytes);
+        assertFalse("Detected unexpected Exception: " + output, output.contains("Exception"));
+        assertTrue("Output does not contain Broker Ready Message", output.contains(BrokerMessages.READY().toString()));
     }
 
     public void testConsoleLogsOnUnsuccessfulStartup() throws Exception
     {
         Map<String,Object> initialConfig = new HashMap<>();
-        initialConfig.put(ConfiguredObject.NAME, "test");
-        initialConfig.put(org.apache.qpid.server.model.Broker.MODEL_VERSION, new Integer(Integer.MAX_VALUE).toString());
 
         ObjectMapper mapper = new ObjectMapper();
         String config = mapper.writeValueAsString(initialConfig);
         TestFileUtils.saveTextContentInFile(config, _initialConfiguration);
 
-        String startupConsoleAppenderLogPrefix = getTestName() + "__$$ ";
-        byte[] outputBytes = startBrokerAndCollectSystemOutput(startupConsoleAppenderLogPrefix);
-        assertTrue("Startup console appender prefix is not found", new String(outputBytes).contains(startupConsoleAppenderLogPrefix));
+        byte[] outputBytes = startBrokerAndCollectSystemOutput();
+        String output = new String(outputBytes);
+        assertTrue("No Exception detected in output: " + output, output.contains("Exception"));
+        assertFalse("Output contains Broker Ready Message", output.contains(BrokerMessages.READY().toString()));
     }
 
-    private byte[] startBrokerAndCollectSystemOutput(String startupConsoleAppenderLogPrefix) throws Exception
+    private byte[] startBrokerAndCollectSystemOutput() throws Exception
     {
         try(ByteArrayOutputStream out = new ByteArrayOutputStream())
         {
 
             PrintStream originalOutput = System.out;
-            String originalPrefix = MDC.get("qpid.log.prefix");
-            MDC.put("qpid.log.prefix", startupConsoleAppenderLogPrefix);
             try
             {
                 System.setOut(new PrintStream(out));
-                BrokerOptions options = new BrokerOptions();
-                options.setInitialConfigurationLocation(_initialConfiguration.getAbsolutePath());
-                _broker = new Broker();
-                _broker.startup(options);
+
+                Map<String,Object> attributes = new HashMap<>();
+                attributes.put(SystemConfig.INITIAL_CONFIGURATION_LOCATION, _initialConfiguration.getAbsolutePath());
+                attributes.put(SystemConfig.TYPE, JsonSystemConfigImpl.SYSTEM_CONFIG_TYPE);
+
+                _systemLauncher = new SystemLauncher();
+                _systemLauncher.startup(attributes);
             }
             finally
             {
                 System.setOut(originalOutput);
-                if (originalPrefix == null)
-                {
-                    MDC.remove("qpid.log.prefix");
-                }
-                else
-                {
-                    MDC.put("qpid.log.prefix", originalPrefix);
-                }
             }
 
             return out.toByteArray();

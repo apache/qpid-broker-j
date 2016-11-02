@@ -29,19 +29,31 @@ import org.apache.qpid.server.store.preferences.PreferencesRoot;
 @ManagedObject (creatable = false)
 public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObject<X>, ModelRoot, PreferencesRoot
 {
+
     String MANAGEMENT_MODE = "managementMode";
     
     String MANAGEMENT_MODE_QUIESCE_VIRTUAL_HOSTS = "managementModeQuiesceVirtualHosts";
     String MANAGEMENT_MODE_HTTP_PORT_OVERRIDE = "managementModeHttpPortOverride";
     String MANAGEMENT_MODE_PASSWORD = "managementModePassword";
     String INITIAL_CONFIGURATION_LOCATION = "initialConfigurationLocation";
+    String INITIAL_SYSTEM_PROPERTIES_LOCATION = "initialSystemPropertiesLocation";
     String STARTUP_LOGGED_TO_SYSTEM_OUT = "startupLoggedToSystemOut";
+
+
+    @ManagedContextDefault(name=BrokerProperties.PROPERTY_QPID_WORK)
+    String DEFAULT_QPID_WORK = "${user.dir}${file.separator}work";
+
+    @ManagedContextDefault(name=BrokerProperties.QPID_WORK_DIR)
+    String DEFAULT_QPID_WORK_DIR = "${QPID_WORK}";
 
     @ManagedContextDefault(name="qpid.broker.defaultPreferenceStoreAttributes")
     String DEFAULT_PREFERENCE_STORE_ATTRIBUTES = "{\"type\": \"JSON\", \"attributes\":{\"path\": \"${json:qpid.work_dir}${json:file.separator}preferences.json\"}}";
 
     @ManagedContextDefault(name = BrokerProperties.POSIX_FILE_PERMISSIONS)
     String DEFAULT_POSIX_FILE_PERMISSIONS = "rw-r-----";
+
+
+    String MANAGEMENT_MODE_USER_NAME = "mm_admin";
 
     @ManagedAttribute(immutable = true, defaultValue = Broker.BROKER_TYPE)
     String getDefaultContainerType();
@@ -58,8 +70,16 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
     @ManagedAttribute(secure = true)
     String getManagementModePassword();
 
-    @ManagedAttribute
+    String DEFAULT_INITIAL_CONFIG_NAME = "initial-config.json";
+
+    @ManagedContextDefault(name="qpid.initialConfigurationLocation")
+    String DEFAULT_INITIAL_CONFIG_LOCATION = SystemConfig.class.getClassLoader().getResource(DEFAULT_INITIAL_CONFIG_NAME).toExternalForm();
+
+    @ManagedAttribute(defaultValue = "${qpid.initialConfigurationLocation}")
     String getInitialConfigurationLocation();
+
+    @ManagedAttribute
+    String getInitialSystemPropertiesLocation();
 
     @ManagedAttribute(defaultValue = "true")
     boolean isStartupLoggedToSystemOut();

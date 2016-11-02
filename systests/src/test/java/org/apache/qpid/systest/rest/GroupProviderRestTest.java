@@ -32,13 +32,13 @@ import java.util.UUID;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Group;
 import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProvider;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProviderImpl;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -315,7 +315,7 @@ public class GroupProviderRestTest extends QpidRestTestCase
         config.setSaved(false);
         startDefaultBroker(true);
 
-        getRestTestHelper().setUsernameAndPassword(BrokerOptions.MANAGEMENT_MODE_USER_NAME, MANAGEMENT_MODE_PASSWORD);
+        getRestTestHelper().setUsernameAndPassword(SystemConfig.MANAGEMENT_MODE_USER_NAME, MANAGEMENT_MODE_PASSWORD);
 
         Map<String, Object> groupProvider = getRestTestHelper().getJsonAsSingletonList("groupprovider/" + TestBrokerConfiguration.ENTRY_NAME_GROUP_FILE);
         assertEquals("Unexpected id", id.toString(), groupProvider.get(GroupProvider.ID));

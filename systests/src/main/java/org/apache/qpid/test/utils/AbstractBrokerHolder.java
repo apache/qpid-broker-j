@@ -34,7 +34,6 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.util.FileUtils;
 
 public abstract class AbstractBrokerHolder implements BrokerHolder
@@ -167,8 +166,7 @@ public abstract class AbstractBrokerHolder implements BrokerHolder
     public void start(boolean managementMode) throws Exception
     {
         saveConfiguration(getConfiguration());
-        BrokerOptions options = createBrokerOptions(managementMode, _amqpPort);
-        start(options);
+        start(managementMode, _amqpPort);
         if (_amqpPort <= 0)
         {
             _amqpPort = scrapePortFromLog(_logFile, _amqpTcpPortRegExp);
@@ -221,7 +219,8 @@ public abstract class AbstractBrokerHolder implements BrokerHolder
 
     abstract protected String getLogPrefix();
 
-    abstract void start(final BrokerOptions options) throws Exception;
+
+    protected abstract void start(final boolean managementMode, final int amqpPort) throws Exception;
 
     private void saveConfiguration(TestBrokerConfiguration testConfiguration)
     {
@@ -231,24 +230,6 @@ public abstract class AbstractBrokerHolder implements BrokerHolder
             testConfiguration.save(new File(_configurationPath));
             testConfiguration.setSaved(true);
         }
-    }
-
-    private BrokerOptions createBrokerOptions(boolean managementMode, int amqpPort)
-    {
-        BrokerOptions options = new BrokerOptions();
-
-        options.setConfigProperty("qpid.work_dir", getWorkDir().toString());
-        options.setConfigProperty("test.port", String.valueOf(amqpPort));
-        options.setConfigProperty("test.hport", String.valueOf(getHttpPort()));
-        options.setConfigurationStoreType(_brokerStoreType);
-        options.setConfigurationStoreLocation(_configurationPath);
-        options.setManagementMode(managementMode);
-        if (managementMode)
-        {
-            options.setManagementModePassword(QpidBrokerTestCase.MANAGEMENT_MODE_PASSWORD);
-        }
-        options.setStartupLoggedToSystemOut(false);
-        return options;
     }
 
     private int scrapePortFromLog(final File logFile, final String portRegEx) throws IOException
@@ -273,4 +254,8 @@ public abstract class AbstractBrokerHolder implements BrokerHolder
         return 0;
     }
 
+    String getBrokerStoreType()
+    {
+        return _brokerStoreType;
+    }
 }

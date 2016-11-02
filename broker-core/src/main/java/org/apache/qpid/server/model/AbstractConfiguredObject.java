@@ -3233,6 +3233,16 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
+    static String interpolate(Model model, String value)
+    {
+            return Strings.expand(value, false,
+                                  JSON_SUBSTITUTION_RESOLVER,
+                                  Strings.JAVA_SYS_PROPS_RESOLVER,
+                                  Strings.ENV_VARS_RESOLVER,
+                                  model.getTypeRegistry().getDefaultContextResolver());
+    }
+
+
     private static OwnAttributeResolver getOwnAttributeResolver(final ConfiguredObject<?> object)
     {
         return object instanceof AbstractConfiguredObject

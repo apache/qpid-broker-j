@@ -49,7 +49,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.apache.qpid.server.BrokerOptions;
+import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -67,7 +67,7 @@ public class AESKeyFileEncrypterFactoryTest extends QpidTestCase
         _tmpDir = Files.createTempDirectory(getTestName());
 
         when(_broker.getContextKeys(eq(false))).thenReturn(Collections.<String>emptySet());
-        when(_broker.getContextValue(eq(String.class), eq(BrokerOptions.QPID_WORK_DIR))).thenReturn(_tmpDir.toString());
+        when(_broker.getContextValue(eq(String.class), eq(BrokerProperties.QPID_WORK_DIR))).thenReturn(_tmpDir.toString());
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
         when(_broker.getName()).thenReturn(getName());
         final ArgumentCaptor<Map> attributesCaptor = ArgumentCaptor.forClass(Map.class);
