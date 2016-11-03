@@ -178,7 +178,7 @@ define(["dojo/dom",
 
         TrustStore.prototype.deleteKeyStore = function ()
         {
-            if (confirm("Are you sure you want to delete trust store '" + this.keyStoreName + "'?"))
+            if (confirm("Are you sure you want to delete trust store '" + this.name + "'?"))
             {
                 var that = this;
                 this.management.remove(this.modelObj)
