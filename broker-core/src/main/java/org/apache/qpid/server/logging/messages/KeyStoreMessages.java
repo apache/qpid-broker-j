@@ -25,7 +25,6 @@ import static org.apache.qpid.server.logging.AbstractMessageLogger.DEFAULT_LOG_H
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.LogMessage;
-import org.apache.qpid.server.model.Broker;
 
 import java.text.MessageFormat;
 import java.util.Locale;
@@ -47,7 +46,7 @@ public class KeyStoreMessages
     static
     {
         Locale locale = Locale.US;
-        String localeSetting = System.getProperty(Broker.PROPERTY_LOCALE);
+        String localeSetting = System.getProperty("qpid.broker_locale");
         if (localeSetting != null)
         {
             String[] localeParts = localeSetting.split("_");
