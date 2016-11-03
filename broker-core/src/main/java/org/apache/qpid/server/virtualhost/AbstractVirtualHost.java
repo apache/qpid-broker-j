@@ -649,7 +649,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 attributes.put(Exchange.ID, UUIDGenerator.generateExchangeUUID(name, getName()));
                 final ListenableFuture<Exchange<?>> future = addExchangeAsync(attributes);
                 final SettableFuture<Void> returnVal = SettableFuture.create();
-                Futures.addCallback(future, new FutureCallback<Exchange<?>>()
+                addFutureCallback(future, new FutureCallback<Exchange<?>>()
                 {
                     @Override
                     public void onSuccess(final Exchange<?> result)
@@ -1393,7 +1393,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                    NoFactoryForTypeException
     {
         final SettableFuture<Exchange<?>> returnVal = SettableFuture.create();
-        Futures.addCallback(getObjectFactory().createAsync(Exchange.class, attributes, this),
+        addFutureCallback(getObjectFactory().createAsync(Exchange.class, attributes, this),
                             new FutureCallback<Exchange>()
                             {
                                 @Override
@@ -1415,7 +1415,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                         returnVal.setException(t);
                                     }
                                 }
-                            });
+                            }, getTaskExecutor());
         return returnVal;
 
     }
@@ -2630,7 +2630,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                         final ListenableFuture<Void> childOpenFuture = child.openAsync();
                         childOpenFutures.add(childOpenFuture);
 
-                        Futures.addCallback(childOpenFuture, new FutureCallback<Void>()
+                        addFutureCallback(childOpenFuture, new FutureCallback<Void>()
                         {
                             @Override
                             public void onSuccess(final Void result)
@@ -2644,7 +2644,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                               child.getClass().getSimpleName(), child.getName(), t);
                             }
 
-                        });
+                        }, getTaskExecutor());
                     }
                 });
                 return null;

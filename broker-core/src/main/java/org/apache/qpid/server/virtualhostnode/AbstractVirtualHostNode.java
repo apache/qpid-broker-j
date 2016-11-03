@@ -164,7 +164,7 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
 
         try
         {
-            Futures.addCallback(activate(),
+            addFutureCallback(activate(),
                                 new FutureCallback<Void>()
                                 {
                                     @Override
@@ -295,12 +295,12 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
         final SettableFuture<Void> futureResult = SettableFuture.create();
 
         // Delete the node only if deletion of the virtualhost succeeds.
-        Futures.addCallback(deleteVirtualHostIfExists(), new FutureCallback<Void>()
+        addFutureCallback(deleteVirtualHostIfExists(), new FutureCallback<Void>()
         {
             @Override
             public void onSuccess(final Void result)
             {
-                Futures.addCallback(closeAsync(), new FutureCallback<Void>()
+                addFutureCallback(closeAsync(), new FutureCallback<Void>()
                 {
                     @Override
                     public void onSuccess(final Void result)
@@ -339,7 +339,7 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
                             configurationStore.onDelete(AbstractVirtualHostNode.this);
                         }
                     }
-                });
+                }, getTaskExecutor());
             }
 
             @Override
@@ -347,7 +347,7 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
             {
                 futureResult.setException(t);
             }
-        });
+        }, getTaskExecutor());
 
         return futureResult;
     }

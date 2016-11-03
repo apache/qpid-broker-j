@@ -393,7 +393,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         final SettableFuture<Void> returnVal = SettableFuture.create();
 
         ListenableFuture<Void> superFuture = super.doStop();
-        Futures.addCallback(superFuture, new FutureCallback<Void>()
+        addFutureCallback(superFuture, new FutureCallback<Void>()
         {
             @Override
             public void onSuccess(final Void result)
@@ -424,7 +424,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                 }
 
             }
-        });
+        }, getTaskExecutor());
         return returnVal;
     }
 
@@ -1330,7 +1330,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
             }
         });
 
-        Futures.addCallback(future, new FutureCallback<Void>()
+        addFutureCallback(future, new FutureCallback<Void>()
         {
             @Override
             public void onSuccess(final Void result)
@@ -1342,7 +1342,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
             {
                 LOGGER.error("Failed to close children when handling intruder", t);
             }
-        });
+        }, getTaskExecutor());
     }
 
     private abstract class VirtualHostNodeGroupTask implements Task<Void, RuntimeException>

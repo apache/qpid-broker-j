@@ -90,7 +90,7 @@ public class RedirectingVirtualHostNodeImpl
 
         final ListenableFuture<VirtualHost> virtualHostFuture = getObjectFactory().createAsync(VirtualHost.class, attributes, this);
 
-        Futures.addCallback(virtualHostFuture, new FutureCallback<VirtualHost>()
+        addFutureCallback(virtualHostFuture, new FutureCallback<VirtualHost>()
         {
             @Override
             public void onSuccess(final VirtualHost virtualHost)
@@ -115,7 +115,7 @@ public class RedirectingVirtualHostNodeImpl
                     resultFuture.setException(t);
                 }
             }
-        });
+        }, getTaskExecutor());
 
         return resultFuture;
     }
