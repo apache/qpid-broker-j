@@ -3720,6 +3720,9 @@ public class AMQChannel
         };
 
         rollback(task);
+
+        // TODO: This is not spec compliant but we currently seem to rely on this behaviour
+        resend();
     }
 
     @Override
