@@ -24,14 +24,16 @@ define(["dojo/_base/declare",
         "dojo/Deferred",
         "dojo/Evented",
         "dojox/widget/Portlet",
-        "qpid/common/MessageDialog"],
+        "qpid/common/MessageDialog",
+        "qpid/common/util"],
     function (declare,
               lang,
               json,
               Deferred,
               Evented,
               Portlet,
-              MessageDialog)
+              MessageDialog,
+              util)
     {
 
         return declare(Evented, {
@@ -66,11 +68,13 @@ define(["dojo/_base/declare",
                 if (portlet.closeIcon)
                 {
                     portlet.closeIcon.title = "Remove this query from the dashboard.";
+                    util.stopEventPropagation(portlet.closeIcon, "mousedown");
                 }
 
                 if (portlet.arrowNode)
                 {
                     portlet.arrowNode.title = "Maximise/minimise this widget.";
+                    util.stopEventPropagation(portlet.arrowNode, "mousedown");
                 }
 
                 portlet.on("hide", lang.hitch(this, function(){

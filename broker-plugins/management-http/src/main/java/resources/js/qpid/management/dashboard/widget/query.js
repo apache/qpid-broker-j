@@ -201,6 +201,7 @@ define(["dojo/_base/declare",
                             if (settingsIconNodes && settingsIconNodes.length == 1)
                             {
                                 settingsIconNodes[0].title = "Configure the settings of this widget.";
+                                util.stopEventPropagation(settingsIconNodes[0], "mousedown");
                             }
                         }
                     });
@@ -208,11 +209,13 @@ define(["dojo/_base/declare",
                     if (portlet.closeIcon)
                     {
                         portlet.closeIcon.title = "Remove this query from the dashboard.";
+                        util.stopEventPropagation(portlet.closeIcon, "mousedown");
                     }
 
                     if (portlet.arrowNode)
                     {
                         portlet.arrowNode.title = "Maximise/minimise this widget.";
+                        util.stopEventPropagation(portlet.arrowNode, "mousedown");
                     }
 
                     portlet._preferenceAccessIcon = portlet._createIcon("preferenceAccessIcon",
@@ -228,6 +231,7 @@ define(["dojo/_base/declare",
                             this.controller.showTab(tabData);
                         }));
                     portlet._preferenceAccessIcon.title = "Open this query in a separate tab.";
+                    util.stopEventPropagation(portlet._preferenceAccessIcon, "mousedown");
 
                     var settings = new QueryWidgetSettings();
                     settings.set("limit", this.limit);
