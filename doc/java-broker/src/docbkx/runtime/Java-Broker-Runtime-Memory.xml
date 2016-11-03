@@ -214,12 +214,14 @@
       <para>
         <informalequation>
           <mathphrase>
-            memory<subscript>heap</subscript> = 15 MB + 15 kB * N<subscript>sessions</subscript> + 1 kB * N<subscript>messages</subscript> + 17 kB * N<subscript>connections</subscript>
+            memory<subscript>heap</subscript> = 15 MB + 15 kB * N<subscript>sessions</subscript> + 1.5 kB * N<subscript>messages</subscript> + 17 kB * N<subscript>connections</subscript>
           </mathphrase>
         </informalequation>
+      </para>
+      <para>
         <informalequation>
           <mathphrase>
-            memory<subscript>direct</subscript> = 2 MB + (200 B + averageSize<subscript>msg</subscript> *2)*  N<subscript>messages</subscript> + 512 kB * N<subscript>connections</subscript>
+            memory<subscript>direct</subscript> = 2 MB + (200 B + averageSize<subscript>msg</subscript> *2)*  N<subscript>messages</subscript> + 1MB * N<subscript>connections</subscript>
           </mathphrase>
         </informalequation>
         Where <mathphrase>N</mathphrase> denotes the total number of connections/sessions/messages on the broker. Furthermore, for direct memory only the messages that have not been flown to disk are relevant.
