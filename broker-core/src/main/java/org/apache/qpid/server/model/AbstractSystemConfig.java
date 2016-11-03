@@ -252,7 +252,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
             container.setEventLogger(startupLogger);
             final SettableFuture<Void> returnVal = SettableFuture.create();
-            Futures.addCallback(container.openAsync(), new FutureCallback()
+            addFutureCallback(container.openAsync(), new FutureCallback()
                                 {
                                     @Override
                                     public void onSuccess(final Object result)

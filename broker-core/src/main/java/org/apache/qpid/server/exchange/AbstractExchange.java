@@ -736,7 +736,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
                 final SettableFuture<Boolean> returnVal = SettableFuture.create();
 
-                Futures.addCallback(b.createAsync(), new FutureCallback<Void>()
+                addFutureCallback(b.createAsync(), new FutureCallback<Void>()
                 {
                     @Override
                     public void onSuccess(final Void result)
