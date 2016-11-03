@@ -333,7 +333,7 @@ public class AMQChannel
         }
 
         ConsumerImpl sub = queue.addConsumer(target, null, AMQMessage.class, "", options, null);
-        sub.flush();
+        target.sendNextMessage();
         sub.close();
         return getDeliveryMethod.hasDeliveredMessage();
 

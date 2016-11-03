@@ -205,12 +205,6 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
     }
 
     @Override
-    public void flush()
-    {
-
-    }
-
-    @Override
     public ConsumerTarget getTarget()
     {
         return _target;

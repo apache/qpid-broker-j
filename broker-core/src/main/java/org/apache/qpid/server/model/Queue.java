@@ -90,10 +90,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedContextDefault( name = QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD)
     long DEFAULT_ESTIMATED_MESSAGE_MEMORY_OVERHEAD = 1024l;
 
-    String MAX_ASYNCHRONOUS_DELIVERIES = "queue.maxAsynchronousDeliveries";
-    @ManagedContextDefault(name = MAX_ASYNCHRONOUS_DELIVERIES )
-    int DEFAULT_MAX_ASYNCHRONOUS_DELIVERIES = 80;
-
     String MIME_TYPE_TO_FILE_EXTENSION = "qpid.mimeTypeToFileExtension";
     @SuppressWarnings("unused")
     @ManagedContextDefault(name = MIME_TYPE_TO_FILE_EXTENSION, description = "A mapping of MIME types to file extensions.")

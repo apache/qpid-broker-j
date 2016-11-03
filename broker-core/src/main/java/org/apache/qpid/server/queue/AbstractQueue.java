@@ -222,7 +222,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             Collections.synchronizedSet(EnumSet.noneOf(NotificationCheck.class));
 
 
-    private volatile int _maxAsyncDeliveries;
     private volatile long _estimatedAverageMessageHeaderSize;
 
     private AtomicInteger _deliveredMessages = new AtomicInteger();
@@ -489,7 +488,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
         _estimatedAverageMessageHeaderSize = getContextValue(Long.class, QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD);
-        _maxAsyncDeliveries = getContextValue(Integer.class, Queue.MAX_ASYNCHRONOUS_DELIVERIES);
         _mimeTypeToFileExtension = getContextValue(Map.class, MAP_OF_STRING_STRING, MIME_TYPE_TO_FILE_EXTENSION);
 
         if(_defaultFilters != null)
@@ -2120,50 +2118,22 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    void flushConsumer(QueueConsumer<?> sub)
-    {
-        flushConsumer(sub, Long.MAX_VALUE);
-    }
-
-    boolean flushConsumer(QueueConsumer<?> sub, long iterations)
+    boolean deliverSingleMessage(QueueConsumer<?> sub)
     {
         boolean atTail = false;
-        final boolean keepSendLockHeld = iterations <=  getMaxAsyncDeliveries();
         boolean queueEmpty = false;
         boolean deliveryAttempted = false;
 
+        sub.getSendLock();
         try
         {
-            if(keepSendLockHeld)
+            if (!sub.isSuspended())
             {
-                sub.getSendLock();
-            }
-            while (!sub.isSuspended() && !atTail && iterations != 0)
-            {
-                try
+                atTail = attemptDelivery(sub, true);
+                deliveryAttempted = true;
+                if (atTail && getNextAvailableEntry(sub) == null)
                 {
-                    if(!keepSendLockHeld)
-                    {
-                        sub.getSendLock();
-                    }
-
-                    atTail = attemptDelivery(sub, true);
-                    deliveryAttempted = true;
-                    if (atTail && getNextAvailableEntry(sub) == null)
-                    {
-                        queueEmpty = true;
-                    }
-                    else if (!atTail)
-                    {
-                        iterations--;
-                    }
-                }
-                finally
-                {
-                    if(!keepSendLockHeld)
-                    {
-                        sub.releaseSendLock();
-                    }
+                    queueEmpty = true;
                 }
             }
 
@@ -2175,10 +2145,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
         finally
         {
-            if(keepSendLockHeld)
-            {
-                sub.releaseSendLock();
-            }
+            sub.releaseSendLock();
             if(queueEmpty)
             {
                 sub.queueEmpty();
@@ -2187,7 +2154,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             sub.flushBatched();
 
         }
-
 
         // if there's (potentially) more than one consumer the others will potentially not have been advanced to the
         // next entry they are interested in yet.  This would lead to holding on to references to expired messages, etc
@@ -3293,13 +3259,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return super.changeAttribute(name, desired);
 
     }
-
-    int getMaxAsyncDeliveries()
-    {
-        return _maxAsyncDeliveries;
-    }
-
-
 
     private static final String[] NON_NEGATIVE_NUMBERS = {
         ALERT_REPEAT_GAP,

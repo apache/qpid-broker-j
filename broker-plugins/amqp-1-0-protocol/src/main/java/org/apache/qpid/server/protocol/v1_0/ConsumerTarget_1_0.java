@@ -323,10 +323,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
     public void flush()
     {
-        for(ConsumerImpl consumer : getConsumers())
-        {
-            consumer.flush();
-        }
+        while(sendNextMessage());
     }
 
     private class DispositionAction implements UnsettledAction

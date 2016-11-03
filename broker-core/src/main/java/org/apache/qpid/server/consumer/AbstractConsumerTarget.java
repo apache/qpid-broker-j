@@ -299,17 +299,27 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     @Override
     public boolean sendNextMessage()
     {
-        if(_pullIterator == null || !_pullIterator.hasNext())
+        boolean iteratedCompleteList = false;
+        while (_queue.isEmpty())
         {
-            _pullIterator = getConsumers().iterator();
-        }
-        if(_pullIterator.hasNext())
-        {
-            ConsumerImpl consumer = _pullIterator.next();
+            if (_pullIterator == null || !_pullIterator.hasNext())
+            {
+                if (iteratedCompleteList)
+                {
+                    break;
+                }
+                iteratedCompleteList = true;
 
-            _waitingOnStateChange.set(true);
+                _pullIterator = getConsumers().iterator();
+            }
+            if (_pullIterator.hasNext())
+            {
+                ConsumerImpl consumer = _pullIterator.next();
 
-            consumer.pullMessage();
+                _waitingOnStateChange.set(true);
+
+                consumer.pullMessage();
+            }
         }
 
         ConsumerMessageInstancePair consumerMessage = _queue.poll();

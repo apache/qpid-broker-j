@@ -59,7 +59,6 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.security.access.Operation;
-import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.StateChangeListener;
 
 class QueueConsumerImpl
@@ -390,21 +389,9 @@ class QueueConsumerImpl
     }
 
     @Override
-    public final void flush()
-    {
-        AMQPConnection<?> connection = _target.getSessionModel().getAMQPConnection();
-        _queue.flushConsumer(this);
-        _target.processPending();
-
-    }
-
-    @Override
     public void pullMessage()
     {
-        AMQPConnection<?> connection = _target.getSessionModel().getAMQPConnection();
-        _queue.flushConsumer(this, 1);
-
-
+        _queue.deliverSingleMessage(this);
     }
 
     public boolean resend(final QueueEntry entry)

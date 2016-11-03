@@ -608,10 +608,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     public void flush()
     {
         flushCreditState(true);
-        for(ConsumerImpl consumer : getConsumers())
-        {
-            consumer.flush();
-        }
+        while(sendNextMessage());
         stop();
     }
 

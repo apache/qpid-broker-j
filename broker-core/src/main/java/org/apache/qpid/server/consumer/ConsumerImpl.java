@@ -81,6 +81,4 @@ public interface ConsumerImpl
     boolean isActive();
 
     String getName();
-
-    void flush();
 }

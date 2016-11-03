@@ -273,14 +273,6 @@ public abstract class AbstractSystemMessageSource implements MessageSource
             return _name;
         }
 
-        @Override
-        public void flush()
-        {
-            AMQPConnection<?> connection = getSessionModel().getAMQPConnection();
-            deliverMessages();
-            _target.processPending();
-        }
-
 
         public void send(final InternalMessage response)
         {
