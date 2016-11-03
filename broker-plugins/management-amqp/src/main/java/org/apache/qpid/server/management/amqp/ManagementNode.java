@@ -1233,12 +1233,6 @@ class ManagementNode implements MessageSource, MessageDestination
         }
 
         @Override
-        public boolean resend()
-        {
-            return false;
-        }
-
-        @Override
         public void delete()
         {
 

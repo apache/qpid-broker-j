@@ -369,8 +369,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     void incrementUnackedMsgCount(QueueEntry entry);
 
-    boolean resend(QueueEntry entry, QueueConsumer<?> consumer);
-
     List<? extends QueueEntry> getMessagesOnTheQueue();
 
     List<Long> getMessagesOnTheQueue(int num);

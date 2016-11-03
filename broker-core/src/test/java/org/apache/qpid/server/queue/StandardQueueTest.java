@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
-import org.apache.qpid.server.consumer.MockConsumer;
+import org.apache.qpid.server.consumer.TestConsumerTarget;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.LifetimePolicy;
@@ -74,7 +74,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
         final StandardQueueImpl queue = new StandardQueueImpl(queueAttributes, getVirtualHost());
         queue.open();
         //verify adding an active consumer increases the count
-        final MockConsumer consumer1 = new MockConsumer();
+        final TestConsumerTarget consumer1 = new TestConsumerTarget();
         consumer1.setActive(true);
         consumer1.setState(ConsumerTarget.State.ACTIVE);
         assertEquals("Unexpected active consumer count", 0, queue.getConsumerCountWithCredit());
@@ -87,7 +87,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
         assertEquals("Unexpected active consumer count", 1, queue.getConsumerCountWithCredit());
 
         //verify adding an inactive consumer doesn't increase the count
-        final MockConsumer consumer2 = new MockConsumer();
+        final TestConsumerTarget consumer2 = new TestConsumerTarget();
         consumer2.setActive(false);
         consumer2.setState(ConsumerTarget.State.SUSPENDED);
         assertEquals("Unexpected active consumer count", 1, queue.getConsumerCountWithCredit());
@@ -143,7 +143,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
         AbstractQueue queue = new DequeuedQueue(getVirtualHost());
         queue.create();
         // create a consumer
-        MockConsumer consumer = new MockConsumer();
+        TestConsumerTarget consumer = new TestConsumerTarget();
 
         // register consumer
         queue.addConsumer(consumer,
@@ -192,7 +192,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
         final CountDownLatch latch = new CountDownLatch(messageNumber -1);
 
         // create a consumer
-        MockConsumer consumer = new MockConsumer()
+        TestConsumerTarget consumer = new TestConsumerTarget()
         {
 
             @Override

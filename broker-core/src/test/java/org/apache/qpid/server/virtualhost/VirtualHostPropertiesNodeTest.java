@@ -31,6 +31,7 @@ import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.queue.AbstractQueue;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TestMemoryMessageStore;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -56,7 +57,8 @@ public class VirtualHostPropertiesNodeTest extends QpidTestCase
         final ConsumerTarget target = mock(ConsumerTarget.class);
         when(target.allocateCredit(any(ServerMessage.class))).thenReturn(true);
 
-        _virtualHostPropertiesNode.addConsumer(target, null, ServerMessage.class, getTestName(), options, 0);
-        verify(target).send(any(ConsumerImpl.class), any(MessageInstance.class), anyBoolean());
+        ConsumerImpl consumer = _virtualHostPropertiesNode.addConsumer(target, null, ServerMessage.class, getTestName(), options, 0);
+        final AbstractQueue.MessageContainer messageContainer = consumer.pullMessage();
+        assertNotNull("Could not pull message from VirtualHostPropertyNode", messageContainer);
     }
 }

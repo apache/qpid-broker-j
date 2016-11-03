@@ -40,6 +40,7 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.queue.AbstractQueue;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -116,15 +117,12 @@ public abstract class AbstractSystemMessageSource implements MessageSource
                 Collections.synchronizedList(new ArrayList<PropertiesMessageInstance>());
         private final ConsumerTarget _target;
         private final String _name;
-        private final StateChangeListener<ConsumerTarget, ConsumerTarget.State> _targetChangeListener =
-                new Consumer.TargetChangeListener();
 
 
         public Consumer(final String consumerName, ConsumerTarget target)
         {
             _name = consumerName;
             _target = target;
-            target.addStateListener(_targetChangeListener);
         }
 
         @Override
@@ -146,11 +144,9 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public void pullMessage()
+        public AbstractQueue.MessageContainer pullMessage()
         {
-            AMQPConnection<?> connection = _target.getSessionModel().getAMQPConnection();
             _target.getSendLock();
-
             try
             {
                 if (!_queue.isEmpty())
@@ -159,7 +155,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
                     if (!_target.isSuspended() && _target.allocateCredit(propertiesMessageInstance.getMessage()))
                     {
                         _queue.remove(0);
-                        _target.send(this, propertiesMessageInstance, false);
+                        return new AbstractQueue.MessageContainer(propertiesMessageInstance, null);
                     }
                 }
             }
@@ -167,8 +163,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
             {
                 _target.releaseSendLock();
             }
-
-
+            return null;
         }
 
         @Override
@@ -276,66 +271,9 @@ public abstract class AbstractSystemMessageSource implements MessageSource
 
         public void send(final InternalMessage response)
         {
-            _target.getSendLock();
-            try
-            {
-                final PropertiesMessageInstance
-                        responseEntry = new PropertiesMessageInstance(this, response);
-                if (_queue.isEmpty() && _target.allocateCredit(response))
-                {
-                    _target.send(this, responseEntry, false);
-                }
-                else
-                {
-                    _queue.add(responseEntry);
-                }
-            }
-            finally
-            {
-                _target.releaseSendLock();
-            }
+            _queue.add(new PropertiesMessageInstance(this, response));
+            _target.notifyWork();
         }
-
-        private class TargetChangeListener implements StateChangeListener<ConsumerTarget, ConsumerTarget.State>
-        {
-            @Override
-            public void stateChanged(final ConsumerTarget object,
-                                     final ConsumerTarget.State oldState,
-                                     final ConsumerTarget.State newState)
-            {
-                if (newState == ConsumerTarget.State.ACTIVE)
-                {
-                    deliverMessages();
-                }
-            }
-        }
-
-        private void deliverMessages()
-        {
-            _target.getSendLock();
-            try
-            {
-                while (!_queue.isEmpty())
-                {
-
-                    final PropertiesMessageInstance propertiesMessageInstance = _queue.get(0);
-                    if (!_target.isSuspended() && _target.allocateCredit(propertiesMessageInstance.getMessage()))
-                    {
-                        _queue.remove(0);
-                        _target.send(this, propertiesMessageInstance, false);
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-            }
-            finally
-            {
-                _target.releaseSendLock();
-            }
-        }
-
     }
 
     class PropertiesMessageInstance implements MessageInstance
@@ -522,12 +460,6 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         public void release(ConsumerImpl consumer)
         {
             release();
-        }
-
-        @Override
-        public boolean resend()
-        {
-            return false;
         }
 
         @Override

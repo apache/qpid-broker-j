@@ -81,7 +81,6 @@ class WebSocketProvider implements AcceptingTransport
     private final Protocol _defaultSupportedProtocolReply;
     private final MultiVersionProtocolEngineFactory _factory;
     private Server _server;
-    private final long _outboundMessageBufferLimit;
 
     WebSocketProvider(final Transport transport,
                       final SSLContext sslContext,
@@ -95,8 +94,6 @@ class WebSocketProvider implements AcceptingTransport
         _supported = supported;
         _defaultSupportedProtocolReply = defaultSupportedProtocolReply;
 
-        _outboundMessageBufferLimit = (long) _port.getContextValue(Long.class,
-                                                                   AmqpPort.PORT_AMQP_OUTBOUND_MESSAGE_BUFFER_SIZE);
         _factory = new MultiVersionProtocolEngineFactory(
                         _port.getParent(Broker.class),
                         _supported,
@@ -460,15 +457,6 @@ class WebSocketProvider implements AcceptingTransport
         @Override
         public void removeSchedulingDelayNotificationListeners(final SchedulingDelayNotificationListener listener)
         {
-        }
-
-        @Override
-        public void reserveOutboundMessageSpace(final long size)
-        {
-            if (_usedOutboundMessageSpace.addAndGet(size) > _outboundMessageBufferLimit)
-            {
-                // RG - TODO
-            }
         }
 
         @Override

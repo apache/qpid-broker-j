@@ -162,12 +162,6 @@ public class MockMessageInstance implements MessageInstance
     {
     }
 
-    @Override
-    public boolean resend()
-    {
-        return false;
-    }
-
 
     public void setRedelivered()
     {

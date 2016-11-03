@@ -45,12 +45,13 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
+import org.apache.qpid.server.queue.AbstractQueue;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.transport.network.Ticker;
 
-public class MockConsumer implements ConsumerTarget
+public class TestConsumerTarget implements ConsumerTarget
 {
 
     private final List<String> _messageIds;
@@ -59,7 +60,7 @@ public class MockConsumer implements ConsumerTarget
     private Queue<?> queue = null;
     private StateChangeListener<ConsumerTarget, State> _listener = null;
     private State _state = State.ACTIVE;
-    private ArrayList<MessageInstance> messages = new ArrayList<MessageInstance>();
+    private ArrayList<MessageInstance> _messages = new ArrayList<MessageInstance>();
     private final Lock _stateChangeLock = new ReentrantLock();
 
     private boolean _isActive = true;
@@ -67,12 +68,12 @@ public class MockConsumer implements ConsumerTarget
     private boolean _messageSent;
     private MockSessionModel _sessionModel = new MockSessionModel();
 
-    public MockConsumer()
+    public TestConsumerTarget()
     {
         _messageIds = null;
     }
 
-    public MockConsumer(List<String> messageIds)
+    public TestConsumerTarget(List<String> messageIds)
     {
         _messageIds = messageIds;
     }
@@ -143,11 +144,11 @@ public class MockConsumer implements ConsumerTarget
     {
         _messageSent = true;
         long size = entry.getMessage().getSize();
-        if (messages.contains(entry))
+        if (_messages.contains(entry))
         {
             entry.setRedelivered();
         }
-        messages.add(entry);
+        _messages.add(entry);
         return size;
     }
 
@@ -237,16 +238,14 @@ public class MockConsumer implements ConsumerTarget
     @Override
     public boolean processPending()
     {
-        _consumer.pullMessage();
-        if(_messageSent)
-        {
-            _messageSent = false;
-            return true;
-        }
-        else
+        AbstractQueue.MessageContainer messageContainter = _consumer.pullMessage();
+        if (messageContainter == null)
         {
             return false;
         }
+
+        send(_consumer, messageContainter._messageInstance, false);
+        return true;
     }
 
     @Override
@@ -257,7 +256,7 @@ public class MockConsumer implements ConsumerTarget
 
     public ArrayList<MessageInstance> getMessages()
     {
-        return messages;
+        return _messages;
     }
 
 

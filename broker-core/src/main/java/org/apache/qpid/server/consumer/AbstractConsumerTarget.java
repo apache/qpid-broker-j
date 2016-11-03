@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,6 +39,7 @@ import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.SubscriptionMessages;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.model.Consumer;
+import org.apache.qpid.server.queue.AbstractQueue;
 import org.apache.qpid.server.queue.SuspendedConsumerLoggingTicker;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.StateChangeListener;
@@ -56,7 +56,6 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     private final AtomicInteger _stateActivates = new AtomicInteger();
     private final boolean _isMultiQueue;
     private final SuspendedConsumerLoggingTicker _suspendedConsumerLoggingTicker;
-    private ConcurrentLinkedQueue<ConsumerMessageInstancePair> _queue = new ConcurrentLinkedQueue();
     private final List<ConsumerImpl> _consumers = new CopyOnWriteArrayList<>();
 
     private Iterator<ConsumerImpl> _pullIterator;
@@ -269,7 +268,12 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     @Override
     public final long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
     {
-        _queue.add(new ConsumerMessageInstancePair(consumer, entry, batch));
+        doSend(consumer, entry, batch);
+
+        if (consumer.acquires())
+        {
+            entry.makeAcquisitionStealable();
+        }
         return entry.getMessage().getSize();
     }
 
@@ -278,12 +282,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     @Override
     public boolean hasMessagesToSend()
     {
-        return !_queue.isEmpty() || messagesAvailable();
-    }
-
-    private boolean messagesAvailable()
-    {
-        if(!_waitingOnStateChange.get() && hasCredit())
+        if (!_waitingOnStateChange.get() && hasCredit())
         {
             for (ConsumerImpl consumer : _consumers)
             {
@@ -299,8 +298,12 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     @Override
     public boolean sendNextMessage()
     {
+        _waitingOnStateChange.set(true);
+
+        AbstractQueue.MessageContainer messageContainer = null;
+        ConsumerImpl consumer = null;
         boolean iteratedCompleteList = false;
-        while (_queue.isEmpty())
+        while (messageContainer == null)
         {
             if (_pullIterator == null || !_pullIterator.hasNext())
             {
@@ -314,34 +317,25 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
             }
             if (_pullIterator.hasNext())
             {
-                ConsumerImpl consumer = _pullIterator.next();
-
-                _waitingOnStateChange.set(true);
-
-                consumer.pullMessage();
+                consumer = _pullIterator.next();
+                messageContainer = consumer.pullMessage();
             }
         }
 
-        ConsumerMessageInstancePair consumerMessage = _queue.poll();
-        if (consumerMessage != null)
+        if (messageContainer != null)
         {
             _waitingOnStateChange.set(false);
+            MessageInstance entry = messageContainer._messageInstance;
             try
             {
-
-                ConsumerImpl consumer = consumerMessage.getConsumer();
-                MessageInstance entry = consumerMessage.getEntry();
-                boolean batch = consumerMessage.isBatch();
-                doSend(consumer, entry, batch);
-
-                if (consumer.acquires())
-                {
-                    entry.makeAcquisitionStealable();
-                }
+                send(consumer, entry, false);
             }
             finally
             {
-                consumerMessage.release();
+                if (messageContainer._messageReference != null)
+                {
+                    messageContainer._messageReference.release();
+                }
             }
             return true;
         }
@@ -370,12 +364,6 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
                 }
             }
             ConsumerMessageInstancePair instance;
-            while((instance = _queue.poll()) != null)
-            {
-                MessageInstance entry = instance.getEntry();
-                entry.release(instance.getConsumer());
-                instance.release();
-            }
             doCloseInternal();
         }
         finally

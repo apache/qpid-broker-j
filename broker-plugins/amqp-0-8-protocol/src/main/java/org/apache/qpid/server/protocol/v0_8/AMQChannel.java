@@ -98,6 +98,8 @@ import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.PublishAuthorisationCache;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
+import org.apache.qpid.server.queue.QueueConsumer;
+import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
@@ -1066,6 +1068,29 @@ public class AMQChannel
         return false;
     }
 
+    private boolean resendInternal(MessageInstance messageInstance)
+    {
+        ConsumerImpl subscriber = messageInstance.getDeliveredConsumer();
+        if (subscriber != null && subscriber.getSessionModel() == this)
+        {
+            ConsumerTarget target = subscriber.getTarget();
+            target.getSendLock();
+            try
+            {
+                if (target.getState() != ConsumerTarget.State.CLOSED)
+                {
+                    target.send(subscriber, messageInstance, false);
+                    return true;
+                }
+            }
+            finally
+            {
+                target.releaseSendLock();
+            }
+        }
+        return false;
+    }
+
     /**
      * Called to resend all outstanding unacknowledged messages to this same channel.
      *
@@ -1116,7 +1141,7 @@ public class AMQChannel
             // all messages in the unacked map as redelivered.
             message.setRedelivered();
 
-            if (!message.resend())
+            if (!resendInternal(message))
             {
                 msgToRequeue.put(deliveryTag, message);
             }
@@ -1326,7 +1351,7 @@ public class AMQChannel
             }
             else
             {
-                entry.resend();
+                resendInternal(entry);
             }
         }
         _resendList.clear();
@@ -2417,7 +2442,14 @@ public class AMQChannel
             _logger.debug("RECV[" + _channelId + "] BasicRecover[" + " requeue: " + requeue + " sync: " + sync + " ]");
         }
 
-        resend();
+        if (requeue)
+        {
+            requeue();
+        }
+        else
+        {
+            resend();
+        }
 
         if (sync)
         {
@@ -3688,11 +3720,6 @@ public class AMQChannel
         };
 
         rollback(task);
-
-        //Now resend all the unacknowledged messages back to the original subscribers.
-        //(Must be done after the TxnRollback-ok response).
-        // Why, are we not allowed to send messages back to client before the ok method?
-        resend();
     }
 
     @Override

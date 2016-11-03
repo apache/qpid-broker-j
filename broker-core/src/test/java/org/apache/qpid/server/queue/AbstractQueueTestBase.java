@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.consumer.ConsumerImpl;
-import org.apache.qpid.server.consumer.MockConsumer;
+import org.apache.qpid.server.consumer.TestConsumerTarget;
 import org.apache.qpid.server.exchange.DirectExchange;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
@@ -77,7 +77,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
     private String _owner = "owner";
     private String _routingKey = "routing key";
     private DirectExchange _exchange;
-    private MockConsumer _consumerTarget = new MockConsumer();
+    private TestConsumerTarget _consumerTarget = new TestConsumerTarget();
     private QueueConsumer<?> _consumer;
     private Map<String,Object> _arguments = Collections.emptyMap();
 
@@ -369,7 +369,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
     {
         ServerMessage messageA = createMessage(new Long(24));
         final CountDownLatch sendIndicator = new CountDownLatch(1);
-        _consumerTarget = new MockConsumer()
+        _consumerTarget = new TestConsumerTarget()
         {
 
             @Override
@@ -512,8 +512,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         ServerMessage messageA = createMessage(new Long(24));
         ServerMessage messageB = createMessage(new Long(25));
 
-        MockConsumer target1 = new MockConsumer();
-        MockConsumer target2 = new MockConsumer();
+        TestConsumerTarget target1 = new TestConsumerTarget();
+        TestConsumerTarget target2 = new TestConsumerTarget();
 
 
         QueueConsumer consumer1 = (QueueConsumer) _queue.addConsumer(target1, null, messageA.getClass(), "test",
@@ -578,7 +578,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
                      messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage());
 
         // Check we cannot add a second subscriber to the queue
-        MockConsumer subB = new MockConsumer();
+        TestConsumerTarget subB = new TestConsumerTarget();
         Exception ex = null;
         try
         {
@@ -613,32 +613,6 @@ abstract class AbstractQueueTestBase extends QpidTestCase
            ex = e;
         }
         assertNotNull(ex);
-    }
-
-
-    public void testResend() throws Exception
-    {
-        Long id = new Long(26);
-        ServerMessage message = createMessage(id);
-
-        _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, message.getClass(), "test",
-                                                          EnumSet.of(ConsumerImpl.Option.ACQUIRES, ConsumerImpl.Option.SEES_REQUEUES),
-                                                          0);
-
-        _queue.enqueue(message, new Action<MessageInstance>()
-        {
-            @Override
-            public void performAction(final MessageInstance object)
-            {
-                QueueEntryImpl entry = (QueueEntryImpl) object;
-                entry.setRedelivered();
-                _consumer.resend(entry);
-
-            }
-        }, null);
-
-
-
     }
 
     public void testGetFirstMessageId() throws Exception
@@ -1105,7 +1079,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue = queue;
     }
 
-    public MockConsumer getConsumer()
+    public TestConsumerTarget getConsumer()
     {
         return _consumerTarget;
     }
@@ -1222,7 +1196,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         return _exchange;
     }
 
-    public MockConsumer getConsumerTarget()
+    public TestConsumerTarget getConsumerTarget()
     {
         return _consumerTarget;
     }

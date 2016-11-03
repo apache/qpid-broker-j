@@ -36,15 +36,11 @@ public interface QueueConsumer<X extends QueueConsumer<X>> extends Consumer<X>
 
     void restoreCredit(QueueEntry entry);
 
-    void send(QueueEntry entry, boolean batch);
-
     void acquisitionRemoved(QueueEntry node);
 
     void queueDeleted();
 
     Queue<?> getQueue();
-
-    boolean resend(QueueEntry e);
 
     MessageInstance.StealableConsumerAcquiredState<X> getOwningState();
 

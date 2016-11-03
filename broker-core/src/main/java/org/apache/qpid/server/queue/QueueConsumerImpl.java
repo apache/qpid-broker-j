@@ -389,19 +389,15 @@ class QueueConsumerImpl
     }
 
     @Override
-    public void pullMessage()
+    public AbstractQueue.MessageContainer pullMessage()
     {
-        _queue.deliverSingleMessage(this);
-    }
-
-    public boolean resend(final QueueEntry entry)
-    {
-        boolean messageWasResent = getQueue().resend(entry, this);
-        if (messageWasResent)
+        AbstractQueue.MessageContainer messageContainer = _queue.deliverSingleMessage(this);
+        if (messageContainer != null)
         {
-            _target.processPending();
+            _deliveredCount.incrementAndGet();
+            _deliveredBytes.addAndGet(messageContainer._messageInstance.getMessage().getSize());
         }
-        return messageWasResent;
+        return messageContainer;
     }
 
     public final long getConsumerNumber()
@@ -576,13 +572,6 @@ class QueueConsumerImpl
     public final long getMessagesOut()
     {
         return _deliveredCount.longValue();
-    }
-
-    public final void send(final QueueEntry entry, final boolean batch)
-    {
-        _deliveredCount.incrementAndGet();
-        long size = _target.send(this, entry, batch);
-        _deliveredBytes.addAndGet(size);
     }
 
     @Override
