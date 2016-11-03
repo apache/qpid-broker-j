@@ -116,7 +116,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
                                Map<String, Object> arguments,
                                boolean multiQueue)
     {
-        super(State.SUSPENDED, isPullOnly(arguments), multiQueue, session.getAMQPConnection());
+        super(State.SUSPENDED, multiQueue, session.getAMQPConnection());
         _session = session;
         _postIdSettingAction = new AddMessageDispositionListenerAction(session);
         _acceptMode = acceptMode;
@@ -133,13 +133,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         {
             _targetAddress = name;
         }
-    }
-
-    private static boolean isPullOnly(Map<String, Object> arguments)
-    {
-        return arguments != null
-               && arguments.containsKey(PULL_ONLY_CONSUMER)
-               && Boolean.valueOf(String.valueOf(arguments.get(PULL_ONLY_CONSUMER)));
     }
 
     @Override

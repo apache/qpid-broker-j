@@ -71,7 +71,6 @@ import org.apache.qpid.test.utils.QpidTestCase;
 abstract class AbstractQueueTestBase extends QpidTestCase
 {
     private static final Logger _logger = LoggerFactory.getLogger(AbstractQueueTestBase.class);
-    private long _queueRunnerWaitTime;
     private Queue<?> _queue;
     private VirtualHost<?> _virtualHost;
     private String _qname = "qname";
@@ -97,8 +96,6 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue = _virtualHost.createChild(Queue.class, attributes);
 
         _exchange = (DirectExchange) _virtualHost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
-        _queueRunnerWaitTime = Long.getLong("AbstractQueueTestBase.queueRunnerWaitTime", 150L);
-        _logger.debug("Using AbstractQueueTestBase.queueRunnerWaitTime {}", _queueRunnerWaitTime);
     }
 
     @Override
@@ -404,7 +401,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         /* Enqueue one message with expiration set for a short time in the future */
 
-        final long expiration = System.currentTimeMillis() + _queueRunnerWaitTime;
+        final long expiration = System.currentTimeMillis() + 100L;
         when(messageA.getExpiration()).thenReturn(expiration);
 
         _queue.enqueue(messageA, postEnqueueAction, null);
@@ -575,19 +572,9 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         // Check sending a message ends up with the subscriber
         _queue.enqueue(messageA, null, null);
 
-        final long timeout = System.currentTimeMillis() + _queueRunnerWaitTime;
-
-        QueueEntry lastSeen = null;
-
         while(_consumerTarget.processPending());
 
-        /*while (timeout > System.currentTimeMillis() &&
-               ((lastSeen = _consumer.getQueueContext().getLastSeenEntry()) == null || lastSeen.getMessage() == null))
-        {
-            Thread.sleep(10);
-        }
-*/
-        assertEquals("Queue context did not see expected message within timeout",
+        assertEquals("Queue context did not see expected message",
                      messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage());
 
         // Check we cannot add a second subscriber to the queue
@@ -1238,11 +1225,6 @@ abstract class AbstractQueueTestBase extends QpidTestCase
     public MockConsumer getConsumerTarget()
     {
         return _consumerTarget;
-    }
-
-    public long getQueueRunnerWaitTime()
-    {
-        return _queueRunnerWaitTime;
     }
 
 }

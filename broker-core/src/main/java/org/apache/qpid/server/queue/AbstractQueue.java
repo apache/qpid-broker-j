@@ -225,8 +225,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private volatile int _maxAsyncDeliveries;
     private volatile long _estimatedAverageMessageHeaderSize;
 
-    private final AtomicLong _stateChangeCount = new AtomicLong(Long.MIN_VALUE);
-
     private AtomicInteger _deliveredMessages = new AtomicInteger();
     private AtomicBoolean _stopped = new AtomicBoolean(false);
 
@@ -289,7 +287,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
     private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
     private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
-    private volatile boolean _hasPullOnlyConsumers;
 
     private interface HoldMethod
     {
@@ -943,10 +940,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         if (!isDeleted())
         {
-            if(consumer.isPullOnly())
-            {
-                _hasPullOnlyConsumers = true;
-            }
             _consumerList.add(consumer);
 
             if (isDeleted())
@@ -965,10 +958,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             consumer.queueEmpty();
         }
-        if(consumer.isPullOnly())
-        {
-            consumer.notifyWork();
-        }
+        consumer.notifyWork();
 
         return consumer;
     }
@@ -1007,18 +997,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             if(_messageGroupManager != null)
             {
                 resetSubPointersForGroups(consumer);
-            }
-
-            if(consumer.isPullOnly())
-            {
-                boolean hasOnlyPushConsumers = true;
-                ConsumerNode consumerNode = _consumerList.getHead().findNext();
-                while (consumerNode != null && hasOnlyPushConsumers)
-                {
-                    hasOnlyPushConsumers = !consumerNode.getConsumer().isPullOnly();
-                    consumerNode = consumerNode.findNext();
-                }
-                _hasPullOnlyConsumers = !hasOnlyPushConsumers;
             }
 
             // auto-delete queues must be deleted if there are no remaining subscribers
@@ -1091,7 +1069,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 updateSubRequeueEntry(sub, entry);
             }
         }
-        notifyPullOnlyConsumers();
+        notifyAllConsumers();
     }
 
     public void addBinding(final Binding<?> binding)
@@ -1229,7 +1207,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             if (entry.isAvailable())
             {
                 checkConsumersNotAheadOfDelivery(entry);
-                notifyPullOnlyConsumers();
+                notifyAllConsumers();
             }
 
             checkForNotificationOnNewMessage(entry.getMessage());
@@ -1522,7 +1500,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 updateSubRequeueEntry(sub, entry);
             }
         }
-        notifyPullOnlyConsumers();
+        notifyAllConsumers();
 
     }
 
@@ -1745,11 +1723,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private void setExclusiveSubscriber(QueueConsumer<?> exclusiveSubscriber)
     {
         _exclusiveSubscriber = exclusiveSubscriber;
-    }
-
-    long getStateChangeCount()
-    {
-        return _stateChangeCount.get();
     }
 
     /** Used to track bindings to exchanges so that on deletion they can easily be cancelled. */
@@ -2133,26 +2106,22 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    void notifyPullOnlyConsumers()
+    void notifyAllConsumers()
     {
-        if(_hasPullOnlyConsumers)
+        ConsumerNode consumerNode = _consumerList.getHead().findNext();
+        while (consumerNode != null)
         {
-            ConsumerNode consumerNode = _consumerList.getHead().findNext();
-            while (consumerNode != null)
+            QueueConsumer<?> consumer = consumerNode.getConsumer();
+            if (consumer.isActive() && getNextAvailableEntry(consumer) != null)
             {
-                QueueConsumer<?> consumer = consumerNode.getConsumer();
-                if (consumer.isActive() && getNextAvailableEntry(consumer) != null)
-                {
-                    consumer.notifyWork();
-                }
-                consumerNode = consumerNode.findNext();
+                consumer.notifyWork();
             }
+            consumerNode = consumerNode.findNext();
         }
     }
 
     void flushConsumer(QueueConsumer<?> sub)
     {
-
         flushConsumer(sub, Long.MAX_VALUE);
     }
 

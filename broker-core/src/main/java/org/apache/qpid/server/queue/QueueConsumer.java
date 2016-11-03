@@ -54,7 +54,5 @@ public interface QueueConsumer<X extends QueueConsumer<X>> extends Consumer<X>
 
     boolean hasCredit();
 
-    boolean isPullOnly();
-
     void notifyWork();
 }

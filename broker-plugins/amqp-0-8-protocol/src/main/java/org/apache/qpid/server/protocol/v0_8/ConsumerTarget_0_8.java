@@ -305,7 +305,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
                               RecordDeliveryMethod recordMethod,
                               boolean multiQueue)
     {
-        super(State.ACTIVE, isPullOnly(arguments), multiQueue, channel.getAMQPConnection());
+        super(State.ACTIVE, multiQueue, channel.getAMQPConnection());
 
         _channel = channel;
         _consumerTag = consumerTag;
@@ -343,15 +343,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
 
         }
     }
-
-    private static boolean isPullOnly(FieldTable arguments)
-    {
-        return arguments != null
-               && arguments.containsKey(PULL_ONLY_CONSUMER)
-               && Boolean.valueOf(String.valueOf(arguments.get(PULL_ONLY_CONSUMER)));
-    }
-
-
 
     @Override
     public String getTargetAddress()

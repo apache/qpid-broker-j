@@ -47,7 +47,6 @@ import org.apache.qpid.server.util.StateChangeListener;
 public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubject
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractConsumerTarget.class);
-    protected static final String PULL_ONLY_CONSUMER = "x-pull-only";
     private final AtomicReference<State> _state;
 
     private final Set<StateChangeListener<ConsumerTarget, State>> _stateChangeListeners = new
@@ -60,18 +59,15 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     private ConcurrentLinkedQueue<ConsumerMessageInstancePair> _queue = new ConcurrentLinkedQueue();
     private final List<ConsumerImpl> _consumers = new CopyOnWriteArrayList<>();
 
-    private final boolean _isPullOnly;
     private Iterator<ConsumerImpl> _pullIterator;
     private final AtomicBoolean _waitingOnStateChange = new AtomicBoolean();
 
 
     protected AbstractConsumerTarget(final State initialState,
-                                     final boolean isPullOnly,
                                      final boolean isMultiQueue,
                                      final AMQPConnection<?> amqpConnection)
     {
         _state = new AtomicReference<State>(initialState);
-        _isPullOnly = true;
         _isMultiQueue = isMultiQueue;
         _suspendedConsumerLoggingTicker = isMultiQueue
                 ? new SuspendedConsumerLoggingTicker(amqpConnection.getContextValue(Long.class, Consumer.SUSPEND_NOTIFICATION_PERIOD))
@@ -271,18 +267,9 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     }
 
     @Override
-    public boolean isPullOnly()
-    {
-        return _isPullOnly;
-    }
-
-    @Override
     public final long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
     {
-        AMQPConnection<?> amqpConnection = getSessionModel().getAMQPConnection();
-        amqpConnection.reserveOutboundMessageSpace(entry.getMessage().getSize());
         _queue.add(new ConsumerMessageInstancePair(consumer, entry, batch));
-        amqpConnection.notifyWork();
         return entry.getMessage().getSize();
     }
 
@@ -291,7 +278,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     @Override
     public boolean hasMessagesToSend()
     {
-        return !_queue.isEmpty() || (isPullOnly() && messagesAvailable());
+        return !_queue.isEmpty() || messagesAvailable();
     }
 
     private boolean messagesAvailable()
@@ -312,30 +299,23 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     @Override
     public boolean sendNextMessage()
     {
-
-        if(isPullOnly())
+        if(_pullIterator == null || !_pullIterator.hasNext())
         {
-
-            if(_pullIterator == null || !_pullIterator.hasNext())
-            {
-                _pullIterator = getConsumers().iterator();
-            }
-            if(_pullIterator.hasNext())
-            {
-                ConsumerImpl consumer = _pullIterator.next();
-
-                _waitingOnStateChange.set(true);
-
-                consumer.pullMessage();
-            }
+            _pullIterator = getConsumers().iterator();
         }
+        if(_pullIterator.hasNext())
+        {
+            ConsumerImpl consumer = _pullIterator.next();
+
+            _waitingOnStateChange.set(true);
+
+            consumer.pullMessage();
+        }
+
         ConsumerMessageInstancePair consumerMessage = _queue.poll();
         if (consumerMessage != null)
         {
-            if(isPullOnly())
-            {
-                _waitingOnStateChange.set(false);
-            }
+            _waitingOnStateChange.set(false);
             try
             {
 

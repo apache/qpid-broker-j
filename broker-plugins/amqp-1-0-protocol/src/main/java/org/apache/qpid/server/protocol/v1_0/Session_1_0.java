@@ -1577,19 +1577,6 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     }
 
     @Override
-    public void notifyConsumerTargetCurrentStates()
-    {
-        for(SendingLink_1_0 link : _sendingLinks)
-        {
-            ConsumerTarget_1_0 consumerTarget = link.getConsumerTarget();
-            if(!consumerTarget.isPullOnly())
-            {
-                consumerTarget.notifyCurrentState();
-            }
-        }
-    }
-
-    @Override
     public void ensureConsumersNoticedStateChange()
     {
         for(SendingLink_1_0 link : _sendingLinks)

@@ -293,12 +293,6 @@ public class MockConsumer implements ConsumerTarget
     }
 
     @Override
-    public boolean isPullOnly()
-    {
-        return true;
-    }
-
-    @Override
     public boolean isMultiQueue()
     {
         return false;
@@ -510,12 +504,6 @@ public class MockConsumer implements ConsumerTarget
 
         @Override
         public void removeTicker(final Ticker ticker)
-        {
-
-        }
-
-        @Override
-        public void notifyConsumerTargetCurrentStates()
         {
 
         }

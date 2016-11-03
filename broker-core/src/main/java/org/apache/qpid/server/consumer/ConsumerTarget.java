@@ -92,6 +92,4 @@ public interface ConsumerTarget
 
     void releaseSendLock();
 
-    boolean isPullOnly();
-
 }

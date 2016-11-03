@@ -72,8 +72,6 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
 
     void sendConnectionCloseAsync(AMQConstant connectionForced, String reason);
 
-    void reserveOutboundMessageSpace(long size);
-
     boolean isIOThread();
 
     void checkAuthorizedMessagePrincipal(String messageUserId);

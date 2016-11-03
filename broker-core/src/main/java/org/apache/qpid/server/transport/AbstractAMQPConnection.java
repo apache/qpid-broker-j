@@ -718,12 +718,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return getSessionModels().size();
     }
 
-    @Override
-    public void reserveOutboundMessageSpace(final long size)
-    {
-        _network.reserveOutboundMessageSpace(size);
-    }
-
     protected void markTransportClosed()
     {
         _transportClosedFuture.set(null);

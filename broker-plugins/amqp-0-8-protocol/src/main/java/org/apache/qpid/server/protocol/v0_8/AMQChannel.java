@@ -3817,18 +3817,6 @@ public class AMQChannel
     }
 
     @Override
-    public void notifyConsumerTargetCurrentStates()
-    {
-        for(ConsumerTarget_0_8 consumerTarget : getConsumerTargets())
-        {
-            if(!consumerTarget.isPullOnly())
-            {
-                consumerTarget.notifyCurrentState();
-            }
-        }
-    }
-
-    @Override
     public void ensureConsumersNoticedStateChange()
     {
         for (ConsumerTarget_0_8 consumerTarget : getConsumerTargets())

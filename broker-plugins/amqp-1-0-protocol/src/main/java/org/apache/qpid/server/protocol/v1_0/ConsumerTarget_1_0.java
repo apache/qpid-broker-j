@@ -75,17 +75,11 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     public ConsumerTarget_1_0(final SendingLink_1_0 link,
                               boolean acquires)
     {
-        super(State.SUSPENDED, isPullOnly(link), false, link.getSession().getAMQPConnection());
+        super(State.SUSPENDED, false, link.getSession().getAMQPConnection());
         _link = link;
         _typeRegistry = link.getEndpoint().getSession().getConnection().getDescribedTypeRegistry();
         _sectionEncoder = new SectionEncoderImpl(_typeRegistry);
         _acquires = acquires;
-    }
-
-    private static boolean isPullOnly(SendingLink_1_0 link)
-    {
-        Source source = (Source) link.getEndpoint().getSource();
-        return source.getCapabilities() != null && Arrays.asList(source.getCapabilities()).contains(Symbol.getSymbol("QPID:PULL-ONLY"));
     }
 
     private SendingLinkEndpoint getEndpoint()

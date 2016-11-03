@@ -339,12 +339,6 @@ class QueueConsumerImpl
     }
 
     @Override
-    public boolean isPullOnly()
-    {
-        return _target.isPullOnly();
-    }
-
-    @Override
     public void notifyWork()
     {
         _target.notifyWork();

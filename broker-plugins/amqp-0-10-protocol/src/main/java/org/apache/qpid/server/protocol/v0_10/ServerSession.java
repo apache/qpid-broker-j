@@ -1250,19 +1250,6 @@ public class ServerSession extends Session
     }
 
     @Override
-    public void notifyConsumerTargetCurrentStates()
-    {
-        Collection<ConsumerTarget_0_10> consumerTargets = getSubscriptions();
-        for(ConsumerTarget_0_10 consumerTarget: consumerTargets)
-        {
-            if(!consumerTarget.isPullOnly())
-            {
-                consumerTarget.notifyCurrentState();
-            }
-        }
-    }
-
-    @Override
     public void ensureConsumersNoticedStateChange()
     {
         Collection<ConsumerTarget_0_10> consumerTargets = getSubscriptions();
