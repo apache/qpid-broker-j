@@ -43,6 +43,7 @@ import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProvider;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProviderImpl;
@@ -154,13 +155,10 @@ public class BrokerACLTest extends QpidRestTestCase
 
         assertAuthenticationProviderExists(providerName);
 
-        File file = TestFileUtils.createTempFile(this, ".users", "guest:guest\n" + ALLOWED_USER + ":" + ALLOWED_USER + "\n"
-                + DENIED_USER + ":" + DENIED_USER);
-
-        Map<String, Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<>();
         attributes.put(AuthenticationProvider.NAME, providerName);
         attributes.put(AuthenticationProvider.TYPE, PlainPasswordDatabaseAuthenticationManager.PROVIDER_TYPE);
-        attributes.put(ExternalFileBasedAuthenticationManager.PATH, file.getAbsolutePath());
+        attributes.put(AuthenticationProvider.STATE, State.DELETED.name());
 
         int responseCode = getRestTestHelper().submitRequest("authenticationprovider/" + providerName, "PUT", attributes);
         assertEquals("Setting of provider attribites should be allowed", 200, responseCode);

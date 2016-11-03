@@ -428,12 +428,13 @@ div .messages {
   width:100%;
 }
 
-.criteriaControl.dijitTextBoxReadOnly,
-.claro .criteriaControl.dijitTextBoxReadOnly,
-.claro .criteriaControl.dijitTextBoxReadOnlyFocused .dijitInputContainer
+.readOnly.dijitTextBoxReadOnly,
+.claro .readOnly.dijitTextBoxReadOnly,
+.claro .readOnly.dijitTextBoxReadOnlyFocused .dijitInputContainer
 {
   background-color: #efefef !important;
   background-image: none !important;
+  border-color: #d3d3d3;
 }
 
 .advancedSearchItem
