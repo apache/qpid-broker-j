@@ -1992,7 +1992,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
             ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(removeBindingFutures);
 
-            Futures.addCallback(combinedFuture, new FutureCallback<List<Void>>()
+            addFutureCallback(combinedFuture, new FutureCallback<List<Void>>()
             {
                 @Override
                 public void onSuccess(final List<Void> result)

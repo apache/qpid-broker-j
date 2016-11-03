@@ -29,7 +29,6 @@ import java.util.ResourceBundle;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.LogMessage;
-import org.apache.qpid.server.model.Broker;
 
 /**
  * DO NOT EDIT DIRECTLY, THIS FILE WAS GENERATED.
@@ -47,7 +46,7 @@ public class AccessControlMessages
     static
     {
         Locale locale = Locale.US;
-        String localeSetting = System.getProperty(Broker.PROPERTY_LOCALE);
+        String localeSetting = System.getProperty("qpid.broker_locale");
         if (localeSetting != null)
         {
             String[] localeParts = localeSetting.split("_");

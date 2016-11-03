@@ -44,21 +44,23 @@ public class Handler extends URLStreamHandler
         return new DataUrlConnection(u);
     }
 
-    public synchronized static void register()
+    public static void register()
     {
-        if(!_registered)
+        synchronized (System.getProperties())
         {
-            String registeredPackages = System.getProperty(PROTOCOL_HANDLER_PROPERTY);
-            String thisPackage = Handler.class.getPackage().getName();
-            String packageToRegister = thisPackage.substring(0, thisPackage.lastIndexOf('.') );
-            System.setProperty(PROTOCOL_HANDLER_PROPERTY,
-                               registeredPackages == null
-                                       ? packageToRegister
-                                       : packageToRegister + "|" + registeredPackages);
+            if (!_registered)
+            {
+                String registeredPackages = System.getProperty(PROTOCOL_HANDLER_PROPERTY);
+                String thisPackage = Handler.class.getPackage().getName();
+                String packageToRegister = thisPackage.substring(0, thisPackage.lastIndexOf('.'));
+                System.setProperty(PROTOCOL_HANDLER_PROPERTY,
+                                   registeredPackages == null
+                                           ? packageToRegister
+                                           : packageToRegister + "|" + registeredPackages);
 
-            _registered = true;
+                _registered = true;
+            }
         }
-
 
 
     }

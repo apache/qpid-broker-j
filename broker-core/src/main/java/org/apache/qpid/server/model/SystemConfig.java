@@ -85,7 +85,7 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
     String DEFAULT_INITIAL_CONFIG_NAME = "initial-config.json";
 
     @ManagedContextDefault(name="qpid.initialConfigurationLocation")
-    String DEFAULT_INITIAL_CONFIG_LOCATION = SystemConfig.class.getClassLoader().getResource(DEFAULT_INITIAL_CONFIG_NAME).toExternalForm();
+    String DEFAULT_INITIAL_CONFIG_LOCATION = "classpath:"+DEFAULT_INITIAL_CONFIG_NAME;
 
     @ManagedAttribute(defaultValue = "${qpid.initialConfigurationLocation}")
     String getInitialConfigurationLocation();
@@ -102,7 +102,7 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
 
     EventLogger getEventLogger();
 
-    <C extends ConfiguredObject<C>> C getChild(Class<C> childClass);
+    Container<?> getContainer();
 
     DurableConfigurationStore getConfigurationStore();
 
@@ -113,4 +113,6 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
     Runnable getOnContainerCloseTask();
 
     void setOnContainerCloseTask(Runnable runnable);
+
+    <T extends Container<? extends T>> T getContainer(Class<T> clazz);
 }

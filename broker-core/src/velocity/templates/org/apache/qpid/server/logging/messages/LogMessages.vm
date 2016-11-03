@@ -46,7 +46,7 @@ public class ${type.name}Messages
     static
     {
         Locale locale = Locale.US;
-        String localeSetting = System.getProperty(Broker.PROPERTY_LOCALE);
+        String localeSetting = System.getProperty("qpid.broker_locale");
         if (localeSetting != null)
         {
             String[] localeParts = localeSetting.split("_");

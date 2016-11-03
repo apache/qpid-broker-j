@@ -74,7 +74,7 @@ abstract public class AbstractConfiguredObjectTypeFactory<X extends AbstractConf
         final SettableFuture<X> returnVal = SettableFuture.create();
         final X instance = createInstance(attributes, parents);
         final ListenableFuture<Void> createFuture = instance.createAsync();
-        Futures.addCallback(createFuture, new FutureCallback<Void>()
+        AbstractConfiguredObject.addFutureCallback(createFuture, new FutureCallback<Void>()
         {
             @Override
             public void onSuccess(final Void result)
@@ -87,7 +87,7 @@ abstract public class AbstractConfiguredObjectTypeFactory<X extends AbstractConf
             {
                 returnVal.setException(t);
             }
-        },MoreExecutors.directExecutor());
+        }, MoreExecutors.directExecutor());
 
         return returnVal;
     }

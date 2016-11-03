@@ -66,6 +66,7 @@ import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 import org.apache.qpid.server.store.preferences.PreferenceStoreFactoryService;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.server.util.urlstreamhandler.classpath.Handler;
 
 public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         extends AbstractConfiguredObject<X> implements SystemConfig<X>, DynamicModel
@@ -111,6 +112,11 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     private String _defaultContainerType;
 
     private final Thread _shutdownHook = new Thread(new ShutdownService(), "QpidBrokerShutdownHook");
+
+    static
+    {
+        Handler.register();
+    }
 
     public AbstractSystemConfig(final TaskExecutor taskExecutor,
                                 final EventLogger eventLogger,
@@ -190,20 +196,50 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     }
 
     @Override
-    public <C extends ConfiguredObject<C>> C getChild(Class<C> childClass)
+    public final <T extends Container<? extends T>> T getContainer(Class<T> clazz)
     {
-        Collection<C> children = getChildren(childClass);
+        Collection<? extends T> children = getChildren(clazz);
         if(children == null || children.isEmpty())
         {
             return null;
         }
         else if(children.size() != 1)
         {
-            throw new IllegalConfigurationException("More than one broker has been registered in a single context");
+            throw new IllegalConfigurationException("More than one " + clazz.getSimpleName() + " has been registered in a single context");
         }
+
         return children.iterator().next();
+
     }
 
+    @Override
+    public final Container<?> getContainer()
+    {
+        final Collection<Class<? extends ConfiguredObject>> containerTypes =
+                getModel().getChildTypes(SystemConfig.class);
+        Class containerClass = null;
+        for(Class<? extends ConfiguredObject> clazz : containerTypes)
+        {
+            if(Container.class.isAssignableFrom(clazz))
+            {
+                if(containerClass == null)
+                {
+                    containerClass = clazz;
+                }
+                else
+                {
+                    throw new IllegalArgumentException("Model has more than one child Container class beneath SystemConfig");
+                }
+            }
+        }
+
+        if(containerClass == null)
+        {
+            throw new IllegalArgumentException("Model has no child Container class beneath SystemConfig");
+        }
+
+        return getContainer(containerClass);
+    }
 
     @Override
     protected void onOpen()
@@ -237,7 +273,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
             container.setEventLogger(startupLogger);
             final SettableFuture<Void> returnVal = SettableFuture.create();
-            Futures.addCallback(container.openAsync(), new FutureCallback()
+            addFutureCallback(container.openAsync(), new FutureCallback()
                                 {
                                     @Override
                                     public void onSuccess(final Object result)
@@ -275,8 +311,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
     private Container<?> initateStoreAndRecovery() throws IOException
     {
-        ConfiguredObjectRecord[] initialRecords = convertToConfigurationRecords(getInitialConfigurationLocation()
-                                                                               );
+        ConfiguredObjectRecord[] initialRecords = convertToConfigurationRecords(getInitialConfigurationLocation());
         final DurableConfigurationStore store = getConfigurationStore();
         final List<ConfiguredObjectRecord> records = new ArrayList<>();
 
@@ -313,7 +348,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         }
 
         final Class categoryClass = containerType.getCategoryClass();
-        return (Container<?>) getChild(categoryClass);
+        return (Container<?>) getContainer(categoryClass);
     }
 
 

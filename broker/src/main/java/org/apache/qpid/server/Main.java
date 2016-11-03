@@ -190,7 +190,7 @@ public class Main
         }
         else if (_commandLine.hasOption(OPTION_CREATE_INITIAL_CONFIG.getOpt()))
         {
-            createInitialConficCopy(initialConfigLocation);
+            createInitialConfigCopy(initialConfigLocation);
         }
         else if (_commandLine.hasOption(OPTION_VERSION.getOpt()))
         {
@@ -318,7 +318,7 @@ public class Main
         System.out.println(CommonProperties.getVersionString() + " (" + protocol + ")");
     }
 
-    private void createInitialConficCopy(String initialConfigLocation)
+    private void createInitialConfigCopy(String initialConfigLocation)
     {
         File destinationFile = null;
 
