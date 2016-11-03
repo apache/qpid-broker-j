@@ -196,20 +196,29 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     }
 
     @Override
-    public <C extends ConfiguredObject<C>> C getChild(Class<C> childClass)
+    public final <T extends Container<? extends T>> T getContainer(Class<T> clazz)
     {
-        Collection<C> children = getChildren(childClass);
+        Collection<? extends Container> children = getChildren(Container.class);
         if(children == null || children.isEmpty())
         {
             return null;
         }
         else if(children.size() != 1)
         {
-            throw new IllegalConfigurationException("More than one broker has been registered in a single context");
+            throw new IllegalConfigurationException("More than one " + clazz.getSimpleName() + " has been registered in a single context");
         }
-        return children.iterator().next();
-    }
 
+        Container container = children.iterator().next();
+        if(clazz.isAssignableFrom(container.getClass()))
+        {
+            return (T) container;
+        }
+        else
+        {
+            throw new IllegalConfigurationException("Child is not of expected class, expected " + clazz.getSimpleName() + " but was " + container.getClass().getSimpleName());
+        }
+
+    }
 
     @Override
     protected void onOpen()
@@ -318,7 +327,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         }
 
         final Class categoryClass = containerType.getCategoryClass();
-        return (Container<?>) getChild(categoryClass);
+        return (Container<?>) getContainer(categoryClass);
     }
 
 

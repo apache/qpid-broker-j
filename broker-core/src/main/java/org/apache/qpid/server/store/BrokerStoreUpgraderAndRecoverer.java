@@ -919,7 +919,7 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
         new GenericRecoverer(_systemConfig).recover(upgradedRecords, false);
 
         final StoreConfigurationChangeListener configChangeListener = new StoreConfigurationChangeListener(store);
-        applyRecursively(_systemConfig.getChild(Broker.class), new RecursiveAction<ConfiguredObject<?>>()
+        applyRecursively(_systemConfig.getContainer(Broker.class), new RecursiveAction<ConfiguredObject<?>>()
         {
             @Override
             public void performAction(final ConfiguredObject<?> object)
@@ -934,7 +934,7 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
             }
         });
 
-        return _systemConfig.getChild(Broker.class);
+        return _systemConfig.getContainer(Broker.class);
     }
 
     List<ConfiguredObjectRecord> upgrade(final DurableConfigurationStore store,

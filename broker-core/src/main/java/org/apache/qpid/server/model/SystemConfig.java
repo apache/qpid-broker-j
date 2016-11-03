@@ -102,8 +102,6 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
 
     EventLogger getEventLogger();
 
-    <C extends ConfiguredObject<C>> C getChild(Class<C> childClass);
-
     DurableConfigurationStore getConfigurationStore();
 
     Runnable getOnContainerResolveTask();
@@ -113,4 +111,6 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
     Runnable getOnContainerCloseTask();
 
     void setOnContainerCloseTask(Runnable runnable);
+
+    <T extends Container<? extends T>> T getContainer(Class<T> clazz);
 }

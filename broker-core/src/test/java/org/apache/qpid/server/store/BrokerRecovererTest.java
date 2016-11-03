@@ -119,7 +119,7 @@ public class BrokerRecovererTest extends QpidTestCase
         when(_brokerEntry.getAttributes()).thenReturn(entryAttributes);
 
         resolveObjects(_brokerEntry);
-        Broker<?> broker = _systemConfig.getChild(Broker.class);
+        Broker<?> broker = _systemConfig.getContainer(Broker.class);
 
         assertNotNull(broker);
 
@@ -178,7 +178,7 @@ public class BrokerRecovererTest extends QpidTestCase
                 portId,
                 5672,
                 "authProvider"));
-        Broker<?> broker = _systemConfig.getChild(Broker.class);
+        Broker<?> broker = _systemConfig.getContainer(Broker.class);
 
 
         assertNotNull(broker);
@@ -192,7 +192,7 @@ public class BrokerRecovererTest extends QpidTestCase
         UUID authProviderId = UUID.randomUUID();
 
         resolveObjects(_brokerEntry, createAuthProviderRecord(authProviderId, "authProvider"));
-        Broker<?> broker = _systemConfig.getChild(Broker.class);
+        Broker<?> broker = _systemConfig.getContainer(Broker.class);
 
 
         assertNotNull(broker);
@@ -214,7 +214,7 @@ public class BrokerRecovererTest extends QpidTestCase
                                       createPortRecord(portId, 5672, "authProvider"),
                                       createAuthProviderRecord(authProvider2Id, "authProvider2"),
                                       createPortRecord(port2Id, 5673, "authProvider2"));
-        Broker<?> broker = _systemConfig.getChild(Broker.class);
+        Broker<?> broker = _systemConfig.getContainer(Broker.class);
 
 
         assertNotNull(broker);
@@ -232,7 +232,7 @@ public class BrokerRecovererTest extends QpidTestCase
         UUID authProviderId = UUID.randomUUID();
 
         resolveObjects(_brokerEntry, createGroupProviderRecord(authProviderId, "groupProvider"));
-        Broker<?> broker = _systemConfig.getChild(Broker.class);
+        Broker<?> broker = _systemConfig.getContainer(Broker.class);
 
 
         assertNotNull(broker);
@@ -255,7 +255,7 @@ public class BrokerRecovererTest extends QpidTestCase
             when(_brokerEntry.getAttributes()).thenReturn(brokerAttributes);
 
             resolveObjects(_brokerEntry);
-            Broker<?> broker = _systemConfig.getChild(Broker.class);
+            Broker<?> broker = _systemConfig.getContainer(Broker.class);
             broker.open();
             assertEquals("Unexpected broker state", State.ERRORED, broker.getState());
         }

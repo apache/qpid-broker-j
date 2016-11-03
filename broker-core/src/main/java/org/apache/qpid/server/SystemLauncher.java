@@ -54,7 +54,7 @@ import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LoggingMessageLogger;
 import org.apache.qpid.server.logging.MessageLogger;
 import org.apache.qpid.server.logging.SystemOutMessageLogger;
-import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.plugin.PluggableFactoryLoader;
@@ -283,9 +283,9 @@ public class SystemLauncher
 
 
         _systemConfig.open();
-        if (_systemConfig.getChild(Broker.class).getState() == State.ERRORED)
+        if (_systemConfig.getContainer(Container.class).getState() == State.ERRORED)
         {
-            throw new RuntimeException("Closing broker as it cannot operate due to errors");
+            throw new RuntimeException("Closing due to errors");
         }
     }
 

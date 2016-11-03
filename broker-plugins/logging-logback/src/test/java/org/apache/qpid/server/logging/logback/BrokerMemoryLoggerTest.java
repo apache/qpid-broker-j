@@ -86,7 +86,7 @@ public class BrokerMemoryLoggerTest extends QpidTestCase
         final String brokerLoggerName = "TestBrokerLogger";
         ch.qos.logback.classic.Logger rootLogger =
                 (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        Broker broker = _systemConfig.getChild(Broker.class);
+        Broker broker = _systemConfig.getContainer(Broker.class);
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(ConfiguredObject.NAME, brokerLoggerName);
         attributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
@@ -114,7 +114,7 @@ public class BrokerMemoryLoggerTest extends QpidTestCase
     {
         final String brokerLoggerName = "TestBrokerLogger";
 
-        Broker broker = _systemConfig.getChild(Broker.class);
+        Broker broker = _systemConfig.getContainer(Broker.class);
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(ConfiguredObject.NAME, brokerLoggerName);
         attributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
