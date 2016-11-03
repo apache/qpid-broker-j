@@ -2335,7 +2335,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 }
 
             }
-            atTail = (node == null) || (getEntries().next(node) == null);
+            atTail = (node == null) || (getNextAvailableEntry(sub) == null);
         }
         return atTail || !subActive;
     }
