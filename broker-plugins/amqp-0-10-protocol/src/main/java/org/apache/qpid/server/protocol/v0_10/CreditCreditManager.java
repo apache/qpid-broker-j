@@ -47,30 +47,22 @@ public class CreditCreditManager extends AbstractFlowCreditManager implements Fl
 
     public synchronized void addCredit(final long messageCredit, final long bytesCredit)
     {
-        boolean notifyIncrease = true;
         if(_messageCredit >= 0L && messageCredit > 0L)
         {
-            notifyIncrease = _messageCredit != 0L;
             _messageCredit += messageCredit;
         }
 
-
+        boolean notifyIncrease = false;
 
         if(_bytesCredit >= 0L && bytesCredit > 0L)
         {
-            notifyIncrease = notifyIncrease && bytesCredit>0;
+            notifyIncrease = _messageCredit != 0L && bytesCredit > 0L;
             _bytesCredit += bytesCredit;
-
-        }
-        else
-        {
-            notifyIncrease = false;
         }
 
         if(!setSuspended(!hasCredit()) && notifyIncrease)
         {
             notifyIncreaseBytesCredit();
-
         }
 
     }
