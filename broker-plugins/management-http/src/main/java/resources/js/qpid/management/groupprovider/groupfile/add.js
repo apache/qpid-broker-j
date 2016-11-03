@@ -32,11 +32,9 @@ define(["dojo/dom",
             var that = this;
             util.parse(data.containerNode, template, function ()
             {
-                if (data.data)
-                {
-                    var pathWidget = registry.byNode(query(".addGroupProviderPath", data.containerNode)[0]);
-                    pathWidget.set("value", data.data.path);
-                }
+                var pathWidget = registry.byNode(query(".addGroupProviderPath", data.containerNode)[0]);
+                pathWidget.set("disabled", data.data && data.data.id ? true : false);
+                pathWidget.set("value",  data.data ? data.data.path : "");
             });
         }
     };
