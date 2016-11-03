@@ -102,6 +102,8 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
 
     EventLogger getEventLogger();
 
+    Container<?> getContainer();
+
     DurableConfigurationStore getConfigurationStore();
 
     Runnable getOnContainerResolveTask();

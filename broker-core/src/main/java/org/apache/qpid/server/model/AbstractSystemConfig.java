@@ -198,7 +198,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     @Override
     public final <T extends Container<? extends T>> T getContainer(Class<T> clazz)
     {
-        Collection<? extends Container> children = getChildren(Container.class);
+        Collection<? extends T> children = getChildren(clazz);
         if(children == null || children.isEmpty())
         {
             return null;
@@ -208,16 +208,37 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
             throw new IllegalConfigurationException("More than one " + clazz.getSimpleName() + " has been registered in a single context");
         }
 
-        Container container = children.iterator().next();
-        if(clazz.isAssignableFrom(container.getClass()))
+        return children.iterator().next();
+
+    }
+
+    @Override
+    public final Container<?> getContainer()
+    {
+        final Collection<Class<? extends ConfiguredObject>> containerTypes =
+                getModel().getChildTypes(SystemConfig.class);
+        Class containerClass = null;
+        for(Class<? extends ConfiguredObject> clazz : containerTypes)
         {
-            return (T) container;
-        }
-        else
-        {
-            throw new IllegalConfigurationException("Child is not of expected class, expected " + clazz.getSimpleName() + " but was " + container.getClass().getSimpleName());
+            if(Container.class.isAssignableFrom(clazz))
+            {
+                if(containerClass == null)
+                {
+                    containerClass = clazz;
+                }
+                else
+                {
+                    throw new IllegalArgumentException("Model has more than one child Container class beneath SystemConfig");
+                }
+            }
         }
 
+        if(containerClass == null)
+        {
+            throw new IllegalArgumentException("Model has no child Container class beneath SystemConfig");
+        }
+
+        return getContainer(containerClass);
     }
 
     @Override
