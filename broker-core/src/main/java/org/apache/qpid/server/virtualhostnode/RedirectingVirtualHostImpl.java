@@ -38,13 +38,11 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
-import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -61,10 +59,6 @@ class RedirectingVirtualHostImpl
 
     private final Broker<?> _broker;
     private final VirtualHostPrincipal _principal;
-
-    @ManagedAttributeField
-    private List<String> _globalAddressDomains;
-
 
     @ManagedObjectFactoryConstructor
     public RedirectingVirtualHostImpl(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
@@ -181,25 +175,6 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
-    public void setTargetSize(final long targetSize)
-    {
-
-    }
-
-    @Override
-    public long getTargetSize()
-    {
-        return 0l;
-    }
-
-    @Override
-    public long getTotalQueueDepthBytes()
-    {
-        return 0l;
-    }
-
-
-    @Override
     public DtxRegistry getDtxRegistry()
     {
         return null;
@@ -226,7 +201,7 @@ class RedirectingVirtualHostImpl
     @Override
     public List<String> getGlobalAddressDomains()
     {
-        return _globalAddressDomains;
+        return Collections.emptyList();
     }
 
     @Override
@@ -253,10 +228,4 @@ class RedirectingVirtualHostImpl
                                         + " does not permit this operation.");
     }
 
-    @Override
-    public UserPreferences createUserPreferences(final ConfiguredObject<?> object)
-    {
-        throwUnsupportedForRedirector();
-        return null;
-    }
 }

@@ -82,6 +82,7 @@ import org.apache.qpid.server.store.preferences.PreferenceStoreUpdaterImpl;
 import org.apache.qpid.server.store.preferences.PreferencesRecoverer;
 import org.apache.qpid.server.store.preferences.PreferencesRoot;
 import org.apache.qpid.server.util.HousekeepingExecutor;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
 import org.apache.qpid.util.SystemUtils;
 
@@ -499,14 +500,15 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         LOGGER.debug("Assigning target sizes based on total target {}", totalTarget);
         long totalSize = 0l;
         Collection<VirtualHostNode<?>> vhns = getVirtualHostNodes();
-        Map<VirtualHost<?>, Long> vhs = new HashMap<>();
+        Map<QueueManagingVirtualHost<?>, Long> vhs = new HashMap<>();
         for (VirtualHostNode<?> vhn : vhns)
         {
             VirtualHost<?> vh = vhn.getVirtualHost();
-            if (vh != null)
+            if (vh instanceof QueueManagingVirtualHost)
             {
-                long totalQueueDepthBytes = vh.getTotalQueueDepthBytes();
-                vhs.put(vh, totalQueueDepthBytes);
+                QueueManagingVirtualHost<?> host = (QueueManagingVirtualHost<?>)vh;
+                long totalQueueDepthBytes = host.getTotalQueueDepthBytes();
+                vhs.put(host, totalQueueDepthBytes);
                 totalSize += totalQueueDepthBytes;
             }
         }
@@ -525,7 +527,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         }
 
         final long proportionalShare = (long) ((double) totalTarget / (double) vhs.size());
-        for (Map.Entry<VirtualHost<?>, Long> entry : vhs.entrySet())
+        for (Map.Entry<QueueManagingVirtualHost<?>, Long> entry : vhs.entrySet())
         {
             long virtualHostTotalQueueSize = entry.getValue();
             final long size;

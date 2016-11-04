@@ -55,6 +55,7 @@ import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.SimpleAuthenticationManager;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.server.virtualhostnode.TestVirtualHostNode;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -258,9 +259,13 @@ public class BrokerImplTest extends QpidTestCase
         long totalAssignedTargetSize = 0;
         for(VirtualHostNode<?> vhn : _brokerImpl.getVirtualHostNodes())
         {
-            long targetSize = vhn.getVirtualHost().getTargetSize();
-            assertTrue("A virtualhost's target size cannot be zero", targetSize > 0);
-            totalAssignedTargetSize += targetSize;
+            VirtualHost<?> virtualHost = vhn.getVirtualHost();
+            if(virtualHost instanceof QueueManagingVirtualHost)
+            {
+                long targetSize = ((QueueManagingVirtualHost<?>)virtualHost).getTargetSize();
+                assertTrue("A virtualhost's target size cannot be zero", targetSize > 0);
+                totalAssignedTargetSize += targetSize;
+            }
         }
 
         long diff = Math.abs(flowToDiskThreshold - totalAssignedTargetSize);

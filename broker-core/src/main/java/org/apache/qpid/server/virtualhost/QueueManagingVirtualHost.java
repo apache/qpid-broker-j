@@ -46,10 +46,12 @@ import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.EventListener;
+import org.apache.qpid.server.store.preferences.UserPreferencesCreator;
 
 public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>> extends VirtualHost<X>,
                                                                                          EventListener,
-                                                                                         StatisticsGatherer
+                                                                                         StatisticsGatherer,
+                                                                                         UserPreferencesCreator
 {
     String HOUSEKEEPING_CHECK_PERIOD            = "housekeepingCheckPeriod";
     String STORE_TRANSACTION_IDLE_TIMEOUT_CLOSE = "storeTransactionIdleTimeoutClose";
@@ -169,6 +171,9 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     @ManagedAttribute( defaultValue = "${virtualhost.disabledConnectionValidators}")
     List<String> getDisabledConnectionValidators();
 
+    @ManagedAttribute( defaultValue = "[]")
+    List<String> getGlobalAddressDomains();
+
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Queues")
     long getQueueCount();
@@ -246,6 +251,10 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
                                                                   String address);
 
     void setFirstOpening(boolean firstOpening);
+
+    long getTargetSize();
+    void setTargetSize(long targetSize);
+    long getTotalQueueDepthBytes();
 
     interface Transaction
     {

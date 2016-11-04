@@ -36,13 +36,11 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
-import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -58,9 +56,6 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
 {
     private final Broker<?> _broker;
     private final VirtualHostPrincipal _principal;
-
-    @ManagedAttributeField
-    private List<String> _globalAddressDomains;
 
     @ManagedObjectFactoryConstructor(conditionallyAvailable = true, condition = "org.apache.qpid.server.JECheck#isAvailable()")
     public BDBHAReplicaVirtualHostImpl(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
@@ -166,24 +161,6 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public void setTargetSize(final long targetSize)
-    {
-
-    }
-
-    @Override
-    public long getTargetSize()
-    {
-        return 0l;
-    }
-
-    @Override
-    public long getTotalQueueDepthBytes()
-    {
-        return 0l;
-    }
-
-    @Override
     public DtxRegistry getDtxRegistry()
     {
         return null;
@@ -210,7 +187,7 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     @Override
     public List<String> getGlobalAddressDomains()
     {
-        return _globalAddressDomains;
+        return Collections.emptyList();
     }
 
     @Override
@@ -237,10 +214,4 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
                                         + " does not permit this operation.");
     }
 
-    @Override
-    public UserPreferences createUserPreferences(final ConfiguredObject<?> object)
-    {
-        throwUnsupportedForReplica();
-        return null;
-    }
 }
