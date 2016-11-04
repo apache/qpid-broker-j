@@ -37,7 +37,6 @@ import org.apache.qpid.server.logging.subjects.MessageStoreLogSubject;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -62,7 +61,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
     private static final Logger _logger = LoggerFactory.getLogger(SynchronousMessageStoreRecoverer.class);
 
     @Override
-    public ListenableFuture<Void> recover(VirtualHost<?> virtualHost)
+    public ListenableFuture<Void> recover(QueueManagingVirtualHost<?> virtualHost)
     {
         EventLogger eventLogger = virtualHost.getEventLogger();
         MessageStore store = virtualHost.getMessageStore();
@@ -154,14 +153,14 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
     private static class MessageInstanceVisitor implements MessageInstanceHandler
     {
-        private final VirtualHost<?> _virtualHost;
+        private final QueueManagingVirtualHost<?> _virtualHost;
         private final MessageStore _store;
 
         private final Map<String, Integer> _queueRecoveries;
         private final Map<Long, ServerMessage<?>> _recoveredMessages;
         private final Map<Long, StoredMessage<?>> _unusedMessages;
 
-        private MessageInstanceVisitor(final VirtualHost<?> virtualHost,
+        private MessageInstanceVisitor(final QueueManagingVirtualHost<?> virtualHost,
                                        final MessageStore store,
                                        final Map<String, Integer> queueRecoveries,
                                        final Map<Long, ServerMessage<?>> recoveredMessages,
@@ -225,7 +224,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
     private static class DistributedTransactionVisitor implements DistributedTransactionHandler
     {
 
-        private final VirtualHost<?> _virtualHost;
+        private final QueueManagingVirtualHost<?> _virtualHost;
         private final MessageStore _store;
         private final EventLogger _eventLogger;
         private final MessageStoreLogSubject _logSubject;
@@ -233,7 +232,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         private final Map<Long, ServerMessage<?>> _recoveredMessages;
         private final Map<Long, StoredMessage<?>> _unusedMessages;
 
-        private DistributedTransactionVisitor(final VirtualHost<?> virtualHost,
+        private DistributedTransactionVisitor(final QueueManagingVirtualHost<?> virtualHost,
                                               final MessageStore store,
                                               final EventLogger eventLogger,
                                               final MessageStoreLogSubject logSubject,

@@ -38,9 +38,9 @@ import javax.jms.Topic;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
@@ -126,7 +126,7 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
                     }
             };
 
-            blueprintMap.put(VirtualHost.NODE_AUTO_CREATION_POLICIES, Arrays.asList(policies));
+            blueprintMap.put(QueueManagingVirtualHost.NODE_AUTO_CREATION_POLICIES, Arrays.asList(policies));
             String newprint = mapper.writeValueAsString(blueprintMap);
             return newprint;
         }

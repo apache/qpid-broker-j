@@ -66,13 +66,14 @@ import org.apache.qpid.server.queue.AbstractQueue.QueueEntryFilter;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 abstract class AbstractQueueTestBase extends QpidTestCase
 {
     private static final Logger _logger = LoggerFactory.getLogger(AbstractQueueTestBase.class);
     private Queue<?> _queue;
-    private VirtualHost<?> _virtualHost;
+    private QueueManagingVirtualHost<?> _virtualHost;
     private String _qname = "qname";
     private String _owner = "owner";
     private String _routingKey = "routing key";
@@ -1171,7 +1172,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
     }
 
 
-    public VirtualHost<?> getVirtualHost()
+    public QueueManagingVirtualHost<?> getVirtualHost()
     {
         return _virtualHost;
     }

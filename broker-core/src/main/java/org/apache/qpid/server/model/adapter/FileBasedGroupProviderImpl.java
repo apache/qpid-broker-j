@@ -102,16 +102,6 @@ public class FileBasedGroupProviderImpl
     }
 
     @Override
-    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
-    {
-        super.validateChange(proxyForValidation, changedAttributes);
-        if(changedAttributes.contains(PATH))
-        {
-            throw new IllegalArgumentException("Cannot change the path");
-        }
-    }
-
-    @Override
     protected void onOpen()
     {
         super.onOpen();

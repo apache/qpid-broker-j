@@ -70,6 +70,7 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
@@ -112,7 +113,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
     private String queueOwner = "MST";
 
-    private VirtualHost<?> _virtualHost;
+    private QueueManagingVirtualHost<?> _virtualHost;
     private String _storePath;
     private VirtualHostNode<?> _node;
     private TaskExecutor _taskExecutor;
@@ -155,7 +156,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         virtualHostAttributes.putAll(attrs);
         _node.createChild(VirtualHost.class, virtualHostAttributes, _node);
 
-        _virtualHost = (VirtualHost<?>)_node.getVirtualHost();
+        _virtualHost = (QueueManagingVirtualHost<?>)_node.getVirtualHost();
 
     }
 
@@ -188,7 +189,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         _node.start();
         currentState = _node.getState();
         assertEquals("Virtual host node is not active", State.ACTIVE, currentState);
-        _virtualHost = _node.getVirtualHost();
+        _virtualHost = (QueueManagingVirtualHost<?>) _node.getVirtualHost();
     }
 
     public void testQueueExchangeAndBindingCreation() throws Exception

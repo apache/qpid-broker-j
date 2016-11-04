@@ -477,10 +477,11 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
     private String generateObjectFactory(final Filer filer, final ExecutableElement constructorElement)
     {
         TypeElement classElement = (TypeElement) constructorElement.getEnclosingElement();
-        String factoryName = classElement.getQualifiedName().toString() + "Factory";
+        String objectQualifiedClassName = classElement.getQualifiedName().toString();
+        String factoryName = objectQualifiedClassName + "Factory";
         String factorySimpleName = classElement.getSimpleName().toString() + "Factory";
         String objectSimpleName = classElement.getSimpleName().toString();
-        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Generating factory file for " + classElement.getQualifiedName().toString());
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Generating factory file for " + objectQualifiedClassName);
         final ManagedObjectFactoryConstructor annotation =
                 constructorElement.getAnnotation(ManagedObjectFactoryConstructor.class);
         PackageElement packageElement = (PackageElement) classElement.getEnclosingElement();
@@ -544,13 +545,32 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
             pw.println("    }");
             if(annotation.conditionallyAvailable())
             {
+                final String condition = annotation.condition();
                 pw.println();
                 pw.println("    @Override");
                 pw.println("    public boolean isAvailable()");
                 pw.println("    {");
-                pw.println("        return " + objectSimpleName + ".isAvailable();");
-                pw.println("    }");
+                if ("".equals(condition))
+                {
+                    pw.println("        return " + objectSimpleName + ".isAvailable();");
+                }
+                else
+                {
+                    if (condition.matches("([\\w][\\w\\d_]+\\.)+[\\w][\\w\\d_\\$]*#[\\w\\d_]+\\s*\\(\\s*\\)"))
+                    {
+                        pw.println("        return " + condition.replace('#', '.') + ";");
 
+                    }
+                    else
+                    {
+                        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                                                                 String.format(
+                                                                         "Invalid condition expression for '%s' : %s",
+                                                                         objectQualifiedClassName,
+                                                                         condition));
+                    }
+                }
+                pw.println("    }");
             }
 
             pw.println("}");

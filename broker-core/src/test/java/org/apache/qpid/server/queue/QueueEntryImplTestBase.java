@@ -45,9 +45,9 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.StateChangeListener;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
@@ -285,7 +285,7 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
         Map<String,Object> queueAttributes = new HashMap<String, Object>();
         queueAttributes.put(Queue.ID, UUID.randomUUID());
         queueAttributes.put(Queue.NAME, getName());
-        final VirtualHost virtualHost = mock(VirtualHost.class);
+        final QueueManagingVirtualHost virtualHost = mock(QueueManagingVirtualHost.class);
         when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
 
         ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());

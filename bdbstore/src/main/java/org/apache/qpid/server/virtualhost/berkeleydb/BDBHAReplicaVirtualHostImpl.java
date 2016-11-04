@@ -19,19 +19,15 @@
 
 package org.apache.qpid.server.virtualhost.berkeleydb;
 
-import java.security.AccessControlContext;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ScheduledFuture;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
@@ -39,23 +35,15 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
-import org.apache.qpid.server.model.Content;
-import org.apache.qpid.server.model.ManageableMessage;
-import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.protocol.LinkRegistry;
-import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
-import org.apache.qpid.server.virtualhost.HouseKeepingTask;
-import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 
 /**
@@ -68,45 +56,7 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     private final Broker<?> _broker;
     private final VirtualHostPrincipal _principal;
 
-    @ManagedAttributeField
-    private boolean _queue_deadLetterQueueEnabled;
-
-    @ManagedAttributeField
-    private long _housekeepingCheckPeriod;
-
-    @ManagedAttributeField
-    private long _storeTransactionIdleTimeoutClose;
-
-    @ManagedAttributeField
-    private long _storeTransactionIdleTimeoutWarn;
-
-    @ManagedAttributeField
-    private long _storeTransactionOpenTimeoutClose;
-
-    @ManagedAttributeField
-    private long _storeTransactionOpenTimeoutWarn;
-    @ManagedAttributeField
-    private int _housekeepingThreadCount;
-
-    @ManagedAttributeField
-    private int _connectionThreadPoolSize;
-
-    @ManagedAttributeField
-    private int _numberOfSelectors;
-
-    @ManagedAttributeField
-    private List<String> _enabledConnectionValidators;
-
-    @ManagedAttributeField
-    private List<String> _disabledConnectionValidators;
-
-    @ManagedAttributeField
-    private List<String> _globalAddressDomains;
-
-    @ManagedAttributeField
-    private List<NodeAutoCreationPolicy> _nodeAutoCreationPolicies;
-
-    @ManagedObjectFactoryConstructor
+    @ManagedObjectFactoryConstructor(conditionallyAvailable = true, condition = "org.apache.qpid.server.JECheck#isAvailable()")
     public BDBHAReplicaVirtualHostImpl(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
         super(parentsMap(virtualHostNode), attributes);
@@ -137,12 +87,6 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public void executeTask(final String name, Runnable task, AccessControlContext context)
-    {
-        throwUnsupportedForReplica();
-    }
-
-    @Override
     public Broker<?> getBroker()
     {
         return _broker;
@@ -164,124 +108,9 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public <T extends ConfiguredObject<?>> T getAttainedChildFromAddress(final Class<T> childClass,
-                                                                         final String address)
-    {
-        return null;
-    }
-
-    @Override
-    public void executeTransaction(final TransactionalOperation op)
-    {
-        throwUnsupportedForReplica();
-    }
-
-    @Override
     public String getRedirectHost(final AmqpPort<?> port)
     {
         return null;
-    }
-
-    @Override
-    public boolean isQueue_deadLetterQueueEnabled()
-    {
-        return false;
-    }
-
-    @Override
-    public long getHousekeepingCheckPeriod()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getStoreTransactionIdleTimeoutClose()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getStoreTransactionIdleTimeoutWarn()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getStoreTransactionOpenTimeoutClose()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getStoreTransactionOpenTimeoutWarn()
-    {
-        return 0;
-    }
-
-    @Override
-    public int getHousekeepingThreadCount()
-    {
-        return 0;
-    }
-
-    @Override
-    public List<NodeAutoCreationPolicy> getNodeAutoCreationPolicies()
-    {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public int getConnectionThreadPoolSize()
-    {
-        return 0;
-    }
-
-    @Override
-    public int getNumberOfSelectors()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getQueueCount()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getExchangeCount()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getConnectionCount()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getBytesIn()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getBytesOut()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getMessagesIn()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getMessagesOut()
-    {
-        return 0;
     }
 
     @Override
@@ -290,33 +119,9 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
         return Collections.emptyList();
     }
 
-    @Override
-    public Connection<?> getConnection(String name)
-    {
-        return null;
-    }
-
-    @Override
-    public int publishMessage(final ManageableMessage message)
-    {
-        throwUnsupportedForReplica();
-        return 0;
-    }
 
     @Override
     public MessageSource getAttainedMessageSource(final String name)
-    {
-        return null;
-    }
-
-    @Override
-    public Queue<?> getAttainedQueue(final UUID id)
-    {
-        return null;
-    }
-
-    @Override
-    public DurableConfigurationStore getDurableConfigurationStore()
     {
         return null;
     }
@@ -355,29 +160,6 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public void setTargetSize(final long targetSize)
-    {
-
-    }
-
-    @Override
-    public long getTargetSize()
-    {
-        return 0l;
-    }
-
-    @Override
-    public long getTotalQueueDepthBytes()
-    {
-        return 0l;
-    }
-
-    @Override
-    public void scheduleHouseKeepingTask(final long period, final HouseKeepingTask task)
-    {
-    }
-
-    @Override
     public DtxRegistry getDtxRegistry()
     {
         return null;
@@ -390,77 +172,15 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public ScheduledFuture<?> scheduleTask(final long delay, final Runnable timeoutTask)
-    {
-        throwUnsupportedForReplica();
-        return null;
-    }
-
-    @Override
-    public EventLogger getEventLogger()
-    {
-        return null;
-    }
-
-    @Override
     public boolean authoriseCreateConnection(final AMQPConnection<?> connection)
     {
         return false;
     }
 
     @Override
-    public Map<String, Object> extractConfig(boolean includeSecureAttributes)
-    {
-        return Collections.emptyMap();
-    }
-
-    @Override
-    public Content exportMessageStore()
-    {
-        throwUnsupportedForReplica();
-
-        return null;
-    }
-
-    @Override
-    public void importMessageStore(final String source)
-    {
-        throwUnsupportedForReplica();
-    }
-
-    @Override
-    public List<String> getEnabledConnectionValidators()
-    {
-        return _enabledConnectionValidators;
-    }
-
-    @Override
-    public List<String> getDisabledConnectionValidators()
-    {
-        return _disabledConnectionValidators;
-    }
-
-    @Override
     public List<String> getGlobalAddressDomains()
     {
-        return _globalAddressDomains;
-    }
-
-    @Override
-    public String getLocalAddress(final String routingAddress)
-    {
-        String localAddress = routingAddress;
-        if(getGlobalAddressDomains() != null)
-        {
-            for(String domain : getGlobalAddressDomains())
-            {
-                if(localAddress.length() > routingAddress.length() - domain.length() && routingAddress.startsWith(domain + "/"))
-                {
-                    localAddress = routingAddress.substring(domain.length());
-                }
-            }
-        }
-        return localAddress;
+        return Collections.emptyList();
     }
 
     @Override
@@ -487,16 +207,4 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
                                         + " does not permit this operation.");
     }
 
-    @Override
-    public void setFirstOpening(final boolean firstOpening)
-    {
-
-    }
-
-    @Override
-    public UserPreferences createUserPreferences(final ConfiguredObject<?> object)
-    {
-        throwUnsupportedForReplica();
-        return null;
-    }
 }

@@ -33,23 +33,17 @@ import java.util.Map;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
-
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogFileDetails;
-import org.apache.qpid.server.logging.logback.VirtualHostFileLogger;
-import org.apache.qpid.server.logging.logback.VirtualHostFileLoggerImpl;
-import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.server.security.AccessControl;
-import org.apache.qpid.server.store.DurableConfigurationStore;
-import org.apache.qpid.server.store.preferences.PreferenceStore;
-import org.apache.qpid.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.LogFileDetails;
+import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.State;
@@ -57,8 +51,12 @@ import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.security.AccessControl;
+import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.util.FileUtils;
 
 public class VirtualHostLoggerTest  extends QpidTestCase
 {
@@ -185,7 +183,7 @@ public class VirtualHostLoggerTest  extends QpidTestCase
     public void testLoggersRemovedOnVirtualHostStop()
     {
         VirtualHostLogger logger = createVirtualHostLogger();
-        _virtualHost.stop();
+        ((AbstractConfiguredObject<?>)_virtualHost).stop();
 
         Appender<ILoggingEvent> appender = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME))
                 .getAppender(logger.getName());

@@ -53,6 +53,7 @@ import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -156,13 +157,13 @@ public class BrokerTestHelper
     {
     }
 
-    public static VirtualHost<?> createVirtualHost(Map<String, Object> attributes)
+    public static QueueManagingVirtualHost<?> createVirtualHost(Map<String, Object> attributes)
     {
         Broker<?> broker = createBrokerMock(createAccessControlMock());
         return createVirtualHost(attributes, broker, false, createAccessControlMock());
     }
 
-    private static VirtualHost<?> createVirtualHost(final Map<String, Object> attributes,
+    private static QueueManagingVirtualHost<?> createVirtualHost(final Map<String, Object> attributes,
                                                         final Broker<?> broker, boolean defaultVHN, AccessControl accessControl)
     {
         ConfiguredObjectFactory objectFactory = broker.getObjectFactory();
@@ -201,17 +202,17 @@ public class BrokerTestHelper
         return host;
     }
 
-    public static VirtualHost<?> createVirtualHost(String name) throws Exception
+    public static QueueManagingVirtualHost<?> createVirtualHost(String name) throws Exception
     {
         return createVirtualHost(name, createBrokerMock(createAccessControlMock()), false, createAccessControlMock());
     }
 
-    public static VirtualHost<?> createVirtualHost(String name, Broker<?> broker, boolean defaultVHN) throws Exception
+    public static QueueManagingVirtualHost<?> createVirtualHost(String name, Broker<?> broker, boolean defaultVHN) throws Exception
     {
         return createVirtualHost(name, broker, defaultVHN, createAccessControlMock());
     }
 
-    private static VirtualHost<?> createVirtualHost(String name, Broker<?> broker, boolean defaultVHN, AccessControl accessControl) throws Exception
+    private static QueueManagingVirtualHost<?> createVirtualHost(String name, Broker<?> broker, boolean defaultVHN, AccessControl accessControl) throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(org.apache.qpid.server.model.VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
@@ -252,7 +253,7 @@ public class BrokerTestHelper
 
     public static Exchange<?> createExchange(String hostName, final boolean durable, final EventLogger eventLogger) throws Exception
     {
-        final VirtualHost virtualHost =  mockWithSystemPrincipal(VirtualHost.class, SYSTEM_PRINCIPAL);
+        final QueueManagingVirtualHost virtualHost =  mockWithSystemPrincipal(QueueManagingVirtualHost.class, SYSTEM_PRINCIPAL);
         when(virtualHost.getName()).thenReturn(hostName);
         when(virtualHost.getEventLogger()).thenReturn(eventLogger);
         when(virtualHost.getDurableConfigurationStore()).thenReturn(mock(DurableConfigurationStore.class));

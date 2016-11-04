@@ -182,7 +182,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
     {
 
         String queueName = "testDeadLetterQueueEnabled";
-        String dlExchangeName = queueName + VirtualHost.DEFAULT_DLE_NAME_SUFFIX;
+        String dlExchangeName = queueName + QueueManagingVirtualHost.DEFAULT_DLE_NAME_SUFFIX;
         String dlQueueName = queueName + AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX;
 
         assertNull("The DLQ should not yet exist", _virtualHost.getChildByName(Queue.class, dlQueueName));
@@ -222,7 +222,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
     {
 
         String queueName = "testDeadLetterQueueEnabled";
-        String dlExchangeName = queueName + VirtualHost.DEFAULT_DLE_NAME_SUFFIX;
+        String dlExchangeName = queueName + QueueManagingVirtualHost.DEFAULT_DLE_NAME_SUFFIX;
         String dlQueueName = queueName + AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX;
 
         assertNull("The DLQ should not yet exist", _virtualHost.getChildByName(Queue.class, dlQueueName));
@@ -265,7 +265,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
 
 
         String queueName = "testDeadLetterQueueDisabled";
-        String dlExchangeName = queueName + VirtualHost.DEFAULT_DLE_NAME_SUFFIX;
+        String dlExchangeName = queueName + QueueManagingVirtualHost.DEFAULT_DLE_NAME_SUFFIX;
         String dlQueueName = queueName + AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX;
 
         assertNull("The DLQ should not yet exist", _virtualHost.getChildByName(Queue.class, dlQueueName));
@@ -295,7 +295,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
     {
 
         String queueName = "testDeadLetterQueueNotCreatedForAutodeleteQueues";
-        String dlExchangeName = queueName + VirtualHost.DEFAULT_DLE_NAME_SUFFIX;
+        String dlExchangeName = queueName + QueueManagingVirtualHost.DEFAULT_DLE_NAME_SUFFIX;
         String dlQueueName = queueName + AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX;
 
         assertNull("The DLQ should not yet exist", _virtualHost.getChildByName(Queue.class, dlQueueName));
@@ -391,8 +391,8 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         try
         {
             // change DLQ name to make its length bigger than exchange name
-            setTestSystemProperty(VirtualHost.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, "_DLE");
-            setTestSystemProperty(VirtualHost.PROPERTY_DEAD_LETTER_QUEUE_SUFFIX, "_DLQUEUE");
+            setTestSystemProperty(QueueManagingVirtualHost.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, "_DLE");
+            setTestSystemProperty(QueueManagingVirtualHost.PROPERTY_DEAD_LETTER_QUEUE_SUFFIX, "_DLQUEUE");
 
             Map<String,Object> attributes = new HashMap<String, Object>();
             attributes.put(Queue.ID, UUID.randomUUID());
@@ -421,8 +421,8 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         try
         {
             // change DLQ name to make its length bigger than exchange name
-            setTestSystemProperty(VirtualHost.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, "_DLEXCHANGE");
-            setTestSystemProperty(VirtualHost.PROPERTY_DEAD_LETTER_QUEUE_SUFFIX, "_DLQ");
+            setTestSystemProperty(QueueManagingVirtualHost.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, "_DLEXCHANGE");
+            setTestSystemProperty(QueueManagingVirtualHost.PROPERTY_DEAD_LETTER_QUEUE_SUFFIX, "_DLQ");
 
             Map<String,Object> attributes = new HashMap<String, Object>();
             attributes.put(Queue.ID, UUID.randomUUID());

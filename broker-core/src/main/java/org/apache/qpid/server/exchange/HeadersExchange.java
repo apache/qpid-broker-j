@@ -40,8 +40,8 @@ import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 /**
  * An exchange that binds queues based on a set of required headers and header values
@@ -83,7 +83,7 @@ public class HeadersExchange extends AbstractExchange<HeadersExchange>
                             new CopyOnWriteArrayList<HeadersBinding>();
 
     @ManagedObjectFactoryConstructor
-    public HeadersExchange(final Map<String, Object> attributes, final VirtualHost<?> vhost)
+    public HeadersExchange(final Map<String, Object> attributes, final QueueManagingVirtualHost<?> vhost)
     {
         super(attributes, vhost);
     }

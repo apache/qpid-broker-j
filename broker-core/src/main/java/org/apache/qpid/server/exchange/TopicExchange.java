@@ -45,9 +45,9 @@ import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 @ManagedObject( category = false, type = ExchangeDefaults.TOPIC_EXCHANGE_CLASS )
 public class TopicExchange extends AbstractExchange<TopicExchange>
@@ -62,7 +62,7 @@ public class TopicExchange extends AbstractExchange<TopicExchange>
     private final Map<Binding<?>, Map<String,Object>> _bindings = new HashMap<>();
 
     @ManagedObjectFactoryConstructor
-    public TopicExchange(final Map<String,Object> attributes, final VirtualHost<?> vhost)
+    public TopicExchange(final Map<String,Object> attributes, final QueueManagingVirtualHost<?> vhost)
     {
         super(attributes, vhost);
     }

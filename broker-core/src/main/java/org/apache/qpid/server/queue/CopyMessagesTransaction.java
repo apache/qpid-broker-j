@@ -25,8 +25,7 @@ import java.util.List;
 import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class CopyMessagesTransaction extends QueueEntryTransaction
 {
@@ -42,10 +41,10 @@ public class CopyMessagesTransaction extends QueueEntryTransaction
     }
 
     @Override
-    protected void updateEntry(QueueEntry entry, VirtualHost.Transaction txn)
+    protected void updateEntry(QueueEntry entry, QueueManagingVirtualHost.Transaction txn)
     {
         ServerMessage msg = entry.getMessage();
-        if(msg != null && !msg.isReferenced((TransactionLogResource)_destinationQueue))
+        if(msg != null && !msg.isReferenced(_destinationQueue))
         {
             txn.copy(entry, _destinationQueue);
         }

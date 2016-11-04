@@ -110,11 +110,9 @@ import org.apache.qpid.server.security.SubjectFixedResultAccessControl.ResultCal
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.stats.StatisticsCounter;
-import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.Event;
-import org.apache.qpid.server.store.EventListener;
 import org.apache.qpid.server.store.GenericRecoverer;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
@@ -145,7 +143,7 @@ import org.apache.qpid.server.util.MapValueConverter;
 import org.apache.qpid.util.Strings;
 
 public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> extends AbstractConfiguredObject<X>
-        implements VirtualHost<X>, EventListener, StatisticsGatherer
+        implements QueueManagingVirtualHost<X>
 {
     private final Collection<ConnectionValidator> _connectionValidators = new ArrayList<>();
 
@@ -392,7 +390,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
-        VirtualHost<?> virtualHost = (VirtualHost<?>) proxyForValidation;
+        QueueManagingVirtualHost<?> virtualHost = (QueueManagingVirtualHost<?>) proxyForValidation;
 
         if(changedAttributes.contains(GLOBAL_ADDRESS_DOMAINS))
         {
@@ -508,7 +506,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return _messageStore;
     }
 
-    private void validateConnectionThreadPoolSettings(VirtualHost<?> virtualHost)
+    private void validateConnectionThreadPoolSettings(QueueManagingVirtualHost<?> virtualHost)
     {
         if (virtualHost.getConnectionThreadPoolSize() < 1)
         {
@@ -1772,7 +1770,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }
 
-    private class TargetSizeAssigningListener implements ConfigurationChangeListener
+    private class TargetSizeAssigningListener extends AbstractConfigurationChangeListener
     {
         @Override
         public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
@@ -1791,31 +1789,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             {
                 allocateTargetSizeToQueues();
             }
-        }
-
-        @Override
-        public void stateChanged(final ConfiguredObject<?> object,
-                                 final State oldState,
-                                 final State newState)
-        {
-        }
-
-        @Override
-        public void attributeSet(final ConfiguredObject<?> object,
-                                 final String attributeName,
-                                 final Object oldAttributeValue,
-                                 final Object newAttributeValue)
-        {
-        }
-
-        @Override
-        public void bulkChangeStart(final ConfiguredObject<?> object)
-        {
-        }
-
-        @Override
-        public void bulkChangeEnd(final ConfiguredObject<?> object)
-        {
         }
     }
 
@@ -2309,12 +2282,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private static String getDeadLetterQueueName(String name)
     {
-        return name + System.getProperty(VirtualHost.PROPERTY_DEAD_LETTER_QUEUE_SUFFIX, AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX);
+        return name + System.getProperty(QueueManagingVirtualHost.PROPERTY_DEAD_LETTER_QUEUE_SUFFIX, AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX);
     }
 
     private static String getDeadLetterExchangeName(String name)
     {
-        return name + System.getProperty(VirtualHost.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, VirtualHost.DEFAULT_DLE_NAME_SUFFIX);
+        return name + System.getProperty(QueueManagingVirtualHost.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, QueueManagingVirtualHost.DEFAULT_DLE_NAME_SUFFIX);
     }
 
     @Override
@@ -2745,15 +2718,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return !(_systemNodeSources.isEmpty() && getChildren(Queue.class).isEmpty());
     }
 
-    private final class AccessControlProviderListener implements ConfigurationChangeListener
+    private final class AccessControlProviderListener extends AbstractConfigurationChangeListener
     {
         private final Set<ConfiguredObject<?>> _bulkChanges = new HashSet<>();
-
-        @Override
-        public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
-        {
-
-        }
 
         @Override
         public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)

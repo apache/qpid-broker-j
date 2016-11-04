@@ -57,11 +57,11 @@ import com.sleepycat.je.rep.StateChangeEvent;
 import com.sleepycat.je.rep.StateChangeListener;
 import com.sleepycat.je.rep.util.ReplicationGroupAdmin;
 import com.sleepycat.je.rep.utilint.HostPortPair;
-import org.apache.qpid.server.configuration.updater.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.logging.messages.ConfigStoreMessages;
 import org.apache.qpid.server.logging.messages.HighAvailabilityMessages;
@@ -81,20 +81,21 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.VirtualHostStoreUpgraderAndRecoverer;
+import org.apache.qpid.server.store.berkeleydb.BDBCacheSizeSetter;
 import org.apache.qpid.server.store.berkeleydb.BDBConfigurationStore;
 import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
-import org.apache.qpid.server.store.berkeleydb.BDBCacheSizeSetter;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacadeFactory;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicationGroupListener;
-import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 import org.apache.qpid.server.store.preferences.ProvidedPreferenceStoreFactoryService;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.PortUtil;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBHAVirtualHostImpl;
 import org.apache.qpid.server.virtualhostnode.AbstractVirtualHostNode;
 
@@ -154,7 +155,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
 
     private boolean _isClosed;
 
-    @ManagedObjectFactoryConstructor
+    @ManagedObjectFactoryConstructor(conditionallyAvailable = true, condition = "org.apache.qpid.server.JECheck#isAvailable()")
     public BDBHAVirtualHostNodeImpl(Map<String, Object> attributes, Broker<?> broker)
     {
         super(broker, attributes);
@@ -645,7 +646,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
 
             getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.RECOVERY_COMPLETE());
 
-            VirtualHost<?>  host = getVirtualHost();
+            VirtualHost<?> host = getVirtualHost();
 
 
             if (host == null)
@@ -659,7 +660,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                 hostAttributes.put(VirtualHost.MODEL_VERSION, BrokerModel.MODEL_VERSION);
                 hostAttributes.put(VirtualHost.NAME, getGroupName());
                 hostAttributes.put(VirtualHost.TYPE, BDBHAVirtualHostImpl.VIRTUAL_HOST_TYPE);
-                host = createChild(VirtualHost.class, hostAttributes);
+                createChild(VirtualHost.class, hostAttributes);
 
             }
             else
@@ -670,7 +671,12 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                 }
 
                 final VirtualHost<?> recoveredHost = host;
-                recoveredHost.setFirstOpening(firstOpening);
+                // Since we are the master, the host should always be a proper (queue managing) virtual host
+                // so the following test should always return true
+                if(recoveredHost instanceof QueueManagingVirtualHost)
+                {
+                    ((QueueManagingVirtualHost<?>) recoveredHost).setFirstOpening(firstOpening);
+                }
                 Subject.doAs(getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
                 {
                     @Override

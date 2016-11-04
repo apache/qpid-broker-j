@@ -30,7 +30,6 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.PermissionedObject;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SecurityToken;
@@ -38,15 +37,16 @@ import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class DefaultDestination implements MessageDestination, PermissionedObject
 {
 
     private static final Operation PUBLISH_ACTION = Operation.ACTION("publish");
     private final AccessControl _accessControl;
-    private VirtualHost<?> _virtualHost;
+    private QueueManagingVirtualHost<?> _virtualHost;
 
-    public DefaultDestination(VirtualHost<?> virtualHost, final AccessControl accessControl)
+    public DefaultDestination(QueueManagingVirtualHost<?> virtualHost, final AccessControl accessControl)
     {
         _virtualHost =  virtualHost;
         _accessControl = accessControl;

@@ -39,7 +39,7 @@ import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
@@ -158,7 +158,7 @@ public class HeadersBindingTest extends QpidTestCase
         _queue = mock(Queue.class);
         TaskExecutor executor = new CurrentThreadTaskExecutor();
         executor.start();
-        VirtualHost vhost = mock(VirtualHost.class);
+        QueueManagingVirtualHost vhost = mock(QueueManagingVirtualHost.class);
         when(_queue.getVirtualHost()).thenReturn(vhost);
         when(_queue.getModel()).thenReturn(BrokerModel.getInstance());
         when(_queue.getTaskExecutor()).thenReturn(executor);

@@ -34,10 +34,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
-import org.apache.qpid.server.model.NoopConfigurationChangeListener;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
@@ -789,7 +789,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         final AtomicInteger listenerCount = new AtomicInteger();
         final LinkedHashMap<String, String> updates = new LinkedHashMap<>();
-        object.addChangeListener(new NoopConfigurationChangeListener()
+        object.addChangeListener(new AbstractConfigurationChangeListener()
         {
             @Override
             public void attributeSet(final ConfiguredObject<?> object,
@@ -844,7 +844,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
 
         final AtomicInteger listenerCount = new AtomicInteger();
-        object.addChangeListener(new NoopConfigurationChangeListener()
+        object.addChangeListener(new AbstractConfigurationChangeListener()
         {
             @Override
             public void attributeSet(final ConfiguredObject<?> object,
