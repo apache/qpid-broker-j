@@ -54,7 +54,7 @@ public class BDBHAVirtualHostImpl extends AbstractVirtualHost<BDBHAVirtualHostIm
     @ManagedAttributeField
     private Long _storeOverfullSize;
 
-    @ManagedObjectFactoryConstructor
+    @ManagedObjectFactoryConstructor(conditionallyAvailable = true, condition = "org.apache.qpid.server.JECheck#isAvailable()")
     public BDBHAVirtualHostImpl(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
         super(attributes, virtualHostNode);

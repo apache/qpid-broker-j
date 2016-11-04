@@ -46,7 +46,7 @@ public class BDBVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<BDBV
     @ManagedAttributeField
     private String _storePath;
 
-    @ManagedObjectFactoryConstructor
+    @ManagedObjectFactoryConstructor(conditionallyAvailable = true, condition = "org.apache.qpid.server.JECheck#isAvailable()")
     public BDBVirtualHostNodeImpl(Map<String, Object> attributes, Broker<?> parent)
     {
         super(attributes, parent);

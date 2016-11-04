@@ -62,7 +62,7 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     @ManagedAttributeField
     private List<String> _globalAddressDomains;
 
-    @ManagedObjectFactoryConstructor
+    @ManagedObjectFactoryConstructor(conditionallyAvailable = true, condition = "org.apache.qpid.server.JECheck#isAvailable()")
     public BDBHAReplicaVirtualHostImpl(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
         super(parentsMap(virtualHostNode), attributes);
