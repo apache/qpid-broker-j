@@ -35,13 +35,12 @@ import java.util.UUID;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.store.StoreConfigurationChangeListener;
 import org.apache.qpid.server.filter.FilterSupport;
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Binding;
-import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
@@ -627,14 +626,8 @@ public class VirtualHostStoreUpgraderAndRecoverer
                 }
             });
         }
-        _virtualHostNode.addChangeListener(new ConfigurationChangeListener()
+        _virtualHostNode.addChangeListener(new AbstractConfigurationChangeListener()
         {
-            @Override
-            public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
-            {
-
-            }
-
             @Override
             public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
             {
@@ -665,26 +658,6 @@ public class VirtualHostStoreUpgraderAndRecoverer
                 }
             }
 
-            @Override
-            public void attributeSet(final ConfiguredObject<?> object,
-                                     final String attributeName,
-                                     final Object oldAttributeValue,
-                                     final Object newAttributeValue)
-            {
-
-            }
-
-            @Override
-            public void bulkChangeStart(final ConfiguredObject<?> object)
-            {
-
-            }
-
-            @Override
-            public void bulkChangeEnd(final ConfiguredObject<?> object)
-            {
-
-            }
         });
         if(isNew)
         {

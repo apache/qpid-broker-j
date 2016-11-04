@@ -1770,7 +1770,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
     }
 
-    private class TargetSizeAssigningListener implements ConfigurationChangeListener
+    private class TargetSizeAssigningListener extends AbstractConfigurationChangeListener
     {
         @Override
         public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
@@ -1789,31 +1789,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             {
                 allocateTargetSizeToQueues();
             }
-        }
-
-        @Override
-        public void stateChanged(final ConfiguredObject<?> object,
-                                 final State oldState,
-                                 final State newState)
-        {
-        }
-
-        @Override
-        public void attributeSet(final ConfiguredObject<?> object,
-                                 final String attributeName,
-                                 final Object oldAttributeValue,
-                                 final Object newAttributeValue)
-        {
-        }
-
-        @Override
-        public void bulkChangeStart(final ConfiguredObject<?> object)
-        {
-        }
-
-        @Override
-        public void bulkChangeEnd(final ConfiguredObject<?> object)
-        {
         }
     }
 
@@ -2743,15 +2718,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return !(_systemNodeSources.isEmpty() && getChildren(Queue.class).isEmpty());
     }
 
-    private final class AccessControlProviderListener implements ConfigurationChangeListener
+    private final class AccessControlProviderListener extends AbstractConfigurationChangeListener
     {
         private final Set<ConfiguredObject<?>> _bulkChanges = new HashSet<>();
-
-        @Override
-        public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
-        {
-
-        }
 
         @Override
         public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)

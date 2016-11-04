@@ -20,40 +20,43 @@
  */
 package org.apache.qpid.server.model;
 
-public class NoopConfigurationChangeListener implements ConfigurationChangeListener
+public abstract class AbstractConfigurationChangeListener implements ConfigurationChangeListener
 {
     @Override
-    public void stateChanged(ConfiguredObject<?> object, State oldState, State newState)
+    public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
     {
 
     }
 
     @Override
-    public void childAdded(ConfiguredObject<?> object, ConfiguredObject<?> child)
+    public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
     {
 
     }
 
     @Override
-    public void childRemoved(ConfiguredObject<?> object, ConfiguredObject<?> child)
+    public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
     {
 
     }
 
     @Override
-    public void attributeSet(ConfiguredObject<?> object, String attributeName, Object oldAttributeValue, Object newAttributeValue)
+    public void attributeSet(final ConfiguredObject<?> object,
+                             final String attributeName,
+                             final Object oldAttributeValue,
+                             final Object newAttributeValue)
     {
 
     }
 
     @Override
-    public void bulkChangeStart(ConfiguredObject<?> object)
+    public void bulkChangeStart(final ConfiguredObject<?> object)
     {
 
     }
 
     @Override
-    public void bulkChangeEnd(ConfiguredObject<?> object)
+    public void bulkChangeEnd(final ConfiguredObject<?> object)
     {
 
     }

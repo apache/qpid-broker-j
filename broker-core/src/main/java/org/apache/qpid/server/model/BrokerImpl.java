@@ -1106,15 +1106,10 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     }
 
 
-    private final class AccessControlProviderListener implements ConfigurationChangeListener
+    private final class AccessControlProviderListener extends AbstractConfigurationChangeListener
     {
         private final Set<ConfiguredObject<?>> _bulkChanges = new HashSet<>();
 
-        @Override
-        public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
-        {
-
-        }
 
         @Override
         public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)

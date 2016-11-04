@@ -42,7 +42,7 @@ import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.message.internal.InternalMessageHeader;
-import org.apache.qpid.server.model.ConfigurationChangeListener;
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.TrustStore;
@@ -63,7 +63,7 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource impleme
         super(getSourceNameFromTrustStore(trustStore), virtualHost);
         _virtualHost = virtualHost;
         _trustStore = trustStore;
-        _trustStore.addChangeListener(new ConfigurationChangeListener()
+        _trustStore.addChangeListener(new AbstractConfigurationChangeListener()
         {
             @Override
             public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
@@ -75,18 +75,6 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource impleme
             }
 
             @Override
-            public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-            {
-
-            }
-
-            @Override
-            public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-            {
-
-            }
-
-            @Override
             public void attributeSet(final ConfiguredObject<?> object,
                                      final String attributeName,
                                      final Object oldAttributeValue,
@@ -95,17 +83,6 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource impleme
                 updateCertCache();
             }
 
-            @Override
-            public void bulkChangeStart(final ConfiguredObject<?> object)
-            {
-
-            }
-
-            @Override
-            public void bulkChangeEnd(final ConfiguredObject<?> object)
-            {
-
-            }
         });
         if(_trustStore.getState() == State.ACTIVE)
         {

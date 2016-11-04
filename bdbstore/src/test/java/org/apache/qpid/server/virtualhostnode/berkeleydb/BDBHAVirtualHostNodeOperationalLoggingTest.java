@@ -20,7 +20,11 @@
  */
 package org.apache.qpid.server.virtualhostnode.berkeleydb;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.EnumSet;
@@ -28,17 +32,18 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.hamcrest.Description;
+import org.mockito.ArgumentMatcher;
+
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.HighAvailabilityMessages;
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.server.store.berkeleydb.NoopConfigurationChangeListener;
 import org.apache.qpid.test.utils.PortHelper;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.hamcrest.Description;
-import org.mockito.ArgumentMatcher;
 
 /**
  * Class to test that specific VHN operations result in the expected Operational Log message(s) being performed.
@@ -264,7 +269,7 @@ public class BDBHAVirtualHostNodeOperationalLoggingTest extends QpidTestCase
         BDBHAVirtualHostNodeImpl node1 = (BDBHAVirtualHostNodeImpl)_helper.createHaVHN(node1Attributes);
 
         final CountDownLatch remoteNodeAdded = new CountDownLatch(1);
-        node1.addChangeListener(new NoopConfigurationChangeListener()
+        node1.addChangeListener(new AbstractConfigurationChangeListener()
         {
             @Override
             public void childAdded(ConfiguredObject<?> object, ConfiguredObject<?> child)

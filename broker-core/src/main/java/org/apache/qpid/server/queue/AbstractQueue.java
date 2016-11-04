@@ -3566,7 +3566,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         authorise(token, PUBLISH_ACTION, arguments);
     }
 
-    private class DeletedChildListener implements ConfigurationChangeListener
+    private class DeletedChildListener extends AbstractConfigurationChangeListener
     {
         @Override
         public void stateChanged(final ConfiguredObject object, final State oldState, final State newState)
@@ -3575,39 +3575,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 AbstractQueue.this.childRemoved(object);
             }
-        }
-
-        @Override
-        public void childAdded(final ConfiguredObject object, final ConfiguredObject child)
-        {
-
-        }
-
-        @Override
-        public void childRemoved(final ConfiguredObject object, final ConfiguredObject child)
-        {
-
-        }
-
-        @Override
-        public void attributeSet(final ConfiguredObject object,
-                                 final String attributeName,
-                                 final Object oldAttributeValue,
-                                 final Object newAttributeValue)
-        {
-
-        }
-
-        @Override
-        public void bulkChangeStart(final ConfiguredObject<?> object)
-        {
-
-        }
-
-        @Override
-        public void bulkChangeEnd(final ConfiguredObject<?> object)
-        {
-
         }
     }
 
