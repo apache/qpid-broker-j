@@ -22,8 +22,8 @@ package org.apache.qpid.transport.codec;
 
 import static org.apache.qpid.transport.util.Functions.lsb;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -145,18 +145,6 @@ public abstract class AbstractEncoder implements Encoder
         writeUint64(l);
     }
 
-    private static final byte[] encode(String s, String charset)
-    {
-        try
-        {
-            return s.getBytes(charset);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
     public void writeStr8(String s)
     {
         if (s == null)
@@ -167,7 +155,11 @@ public abstract class AbstractEncoder implements Encoder
         byte[] bytes = str8cache.get(s);
         if (bytes == null)
         {
-            bytes = encode(s, "UTF-8");
+            bytes = s.getBytes(StandardCharsets.UTF_8);
+            if (bytes.length > 255)
+            {
+                throw new IllegalArgumentException(String.format("String too long (%d) for str8", bytes.length));
+            }
             str8cache.put(s, bytes);
         }
         writeUint8((short) bytes.length);
@@ -181,7 +173,12 @@ public abstract class AbstractEncoder implements Encoder
             s = "";
         }
 
-        byte[] bytes = encode(s, "UTF-8");
+        byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length > 65535)
+        {
+            throw new IllegalArgumentException(String.format("String too long (%d) for str16", bytes.length));
+        }
+
         writeUint16(bytes.length);
         put(bytes);
     }
