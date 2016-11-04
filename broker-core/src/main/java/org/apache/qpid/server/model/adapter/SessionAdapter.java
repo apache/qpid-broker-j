@@ -44,12 +44,12 @@ import org.apache.qpid.server.model.Publisher;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
-import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.transport.TransactionTimeoutTicker;
+import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.transport.network.Ticker;
 
 public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapter> implements Session<SessionAdapter>
@@ -210,10 +210,10 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
                                                    final AMQSessionModel session)
     {
         NamedAddressSpace addressSpace = amqpConnection.getAddressSpace();
-        if (addressSpace instanceof VirtualHost)
+        if (addressSpace instanceof QueueManagingVirtualHost)
         {
             final EventLogger eventLogger = amqpConnection.getEventLogger();
-            final VirtualHost virtualhost = (VirtualHost) addressSpace;
+            final QueueManagingVirtualHost<?> virtualhost = (QueueManagingVirtualHost<?>) addressSpace;
             final List<Ticker> tickers = new ArrayList<>(4);
 
             final Supplier<Long> transactionStartTimeSupplier = new Supplier<Long>()

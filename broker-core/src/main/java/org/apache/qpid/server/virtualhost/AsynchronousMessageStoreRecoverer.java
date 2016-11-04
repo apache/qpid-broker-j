@@ -45,7 +45,6 @@ import org.apache.qpid.server.logging.subjects.MessageStoreLogSubject;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -70,7 +69,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
     private AsynchronousRecoverer _asynchronousRecoverer;
 
     @Override
-    public ListenableFuture<Void> recover(final VirtualHost<?> virtualHost)
+    public ListenableFuture<Void> recover(final QueueManagingVirtualHost<?> virtualHost)
     {
         _asynchronousRecoverer = new AsynchronousRecoverer(virtualHost);
 
@@ -91,7 +90,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         private static final Logger LOGGER = LoggerFactory.getLogger(AsynchronousRecoverer.class);
 
         public static final int THREAD_POOL_SHUTDOWN_TIMEOUT = 5000;
-        private final VirtualHost<?> _virtualHost;
+        private final QueueManagingVirtualHost<?> _virtualHost;
         private final EventLogger _eventLogger;
         private final MessageStore _store;
         private final MessageStoreLogSubject _logSubject;
@@ -103,7 +102,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         private final MessageStore.MessageStoreReader _storeReader;
         private AtomicBoolean _continueRecovery = new AtomicBoolean(true);
 
-        private AsynchronousRecoverer(final VirtualHost<?> virtualHost)
+        private AsynchronousRecoverer(final QueueManagingVirtualHost<?> virtualHost)
         {
             _virtualHost = virtualHost;
             _eventLogger = virtualHost.getEventLogger();
@@ -145,7 +144,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             }
         }
 
-        public VirtualHost<?> getVirtualHost()
+        public QueueManagingVirtualHost<?> getVirtualHost()
         {
             return _virtualHost;
         }

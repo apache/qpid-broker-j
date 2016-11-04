@@ -27,18 +27,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 
-import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
-import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.transport.Xid;
 
 public class DtxRegistry
 {
     private final Map<ComparableXid, DtxBranch> _branches = new HashMap<ComparableXid, DtxBranch>();
-    private final VirtualHost<?> _virtualHost;
+    private final QueueManagingVirtualHost<?> _virtualHost;
 
-    public DtxRegistry(final VirtualHost<?> virtualHost)
+    public DtxRegistry(final QueueManagingVirtualHost<?> virtualHost)
     {
         _virtualHost = virtualHost;
     }

@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class DeleteMessagesTransaction extends QueueEntryTransaction
 {
@@ -37,7 +37,7 @@ public class DeleteMessagesTransaction extends QueueEntryTransaction
     }
 
     @Override
-    protected void updateEntry(QueueEntry entry, VirtualHost.Transaction txn)
+    protected void updateEntry(QueueEntry entry, QueueManagingVirtualHost.Transaction txn)
     {
         txn.dequeue(entry);
     }

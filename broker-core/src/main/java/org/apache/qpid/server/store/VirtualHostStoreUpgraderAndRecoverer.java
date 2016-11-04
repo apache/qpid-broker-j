@@ -48,6 +48,7 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class VirtualHostStoreUpgraderAndRecoverer
 {
@@ -451,7 +452,7 @@ public class VirtualHostStoreUpgraderAndRecoverer
                     throw new IllegalConfigurationException("Queue name is not found in queue configuration entry attributes: " + attributes);
                 }
 
-                String dleSuffix = System.getProperty(VirtualHost.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, DEFAULT_DLE_NAME_SUFFIX);
+                String dleSuffix = System.getProperty(QueueManagingVirtualHost.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, DEFAULT_DLE_NAME_SUFFIX);
                 String dleExchangeName = queueName + dleSuffix;
 
                 ConfiguredObjectRecord exchangeRecord = findConfiguredObjectRecordInUpdateMap("Exchange", dleExchangeName);

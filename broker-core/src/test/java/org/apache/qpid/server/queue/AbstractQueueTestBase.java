@@ -40,10 +40,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.qpid.server.model.Binding;
-import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.util.StateChangeListener;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -60,12 +56,16 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Binding;
+import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
 import org.apache.qpid.server.queue.AbstractQueue.QueueEntryFilter;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.util.StateChangeListener;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 abstract class AbstractQueueTestBase extends QpidTestCase
@@ -73,7 +73,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
     private static final Logger _logger = LoggerFactory.getLogger(AbstractQueueTestBase.class);
     private long _queueRunnerWaitTime;
     private Queue<?> _queue;
-    private VirtualHost<?> _virtualHost;
+    private QueueManagingVirtualHost<?> _virtualHost;
     private String _qname = "qname";
     private String _owner = "owner";
     private String _routingKey = "routing key";
@@ -1205,7 +1205,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
     }
 
 
-    public VirtualHost<?> getVirtualHost()
+    public QueueManagingVirtualHost<?> getVirtualHost()
     {
         return _virtualHost;
     }

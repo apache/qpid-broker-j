@@ -20,11 +20,13 @@
 package org.apache.qpid.server.virtualhost.derby;
 
 import org.apache.qpid.server.model.ManagedAttribute;
-import org.apache.qpid.server.model.ManagedOperation;
-import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.store.FileBasedSettings;
 import org.apache.qpid.server.store.SizeMonitoringSettings;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
-public interface DerbyVirtualHost<X extends DerbyVirtualHost<X>> extends VirtualHost<X>, org.apache.qpid.server.store.FileBasedSettings, SizeMonitoringSettings
+public interface DerbyVirtualHost<X extends DerbyVirtualHost<X>> extends QueueManagingVirtualHost<X>,
+                                                                         FileBasedSettings,
+                                                                         SizeMonitoringSettings
 {
     String STORE_PATH = "storePath";
 
@@ -37,6 +39,4 @@ public interface DerbyVirtualHost<X extends DerbyVirtualHost<X>> extends Virtual
     @ManagedAttribute(mandatory = true, defaultValue = "0")
     Long getStoreOverfullSize();
 
-    @ManagedOperation(description = "Resets statistics on this object and all child objects", changesConfiguredObjectState = false, nonModifying = true)
-    void resetStatistics();
 }

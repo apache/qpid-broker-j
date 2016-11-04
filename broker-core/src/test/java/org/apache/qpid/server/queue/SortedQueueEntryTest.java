@@ -41,8 +41,8 @@ import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class SortedQueueEntryTest extends QueueEntryImplTestBase
 {
@@ -61,7 +61,7 @@ public class SortedQueueEntryTest extends QueueEntryImplTestBase
         attributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.PERMANENT);
         attributes.put(SortedQueue.SORT_KEY, "KEY");
 
-        final VirtualHost virtualHost = mock(VirtualHost.class);
+        final QueueManagingVirtualHost virtualHost = mock(QueueManagingVirtualHost.class);
         when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
         ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(virtualHost.getObjectFactory()).thenReturn(factory);

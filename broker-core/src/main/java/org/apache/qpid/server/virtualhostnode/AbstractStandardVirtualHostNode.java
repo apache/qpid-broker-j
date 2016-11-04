@@ -45,6 +45,7 @@ import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.VirtualHostStoreUpgraderAndRecoverer;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandardVirtualHostNode<X>> extends AbstractVirtualHostNode<X>
                 implements VirtualHostNode<X>
@@ -107,11 +108,11 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
 
         getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.RECOVERY_COMPLETE());
 
-        VirtualHost<?>  host = getVirtualHost();
+        QueueManagingVirtualHost<?>  host = getVirtualHost();
 
         if (host != null)
         {
-            final VirtualHost<?> recoveredHost = host;
+            final QueueManagingVirtualHost<?> recoveredHost = host;
             final ListenableFuture<Void> openFuture;
             recoveredHost.setFirstOpening(isNew && initialRecords.length == 0);
             openFuture = Subject.doAs(getSubjectWithAddedSystemRights(),
@@ -132,6 +133,19 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
         }
     }
 
+    @Override
+    public QueueManagingVirtualHost<?> getVirtualHost()
+    {
+        VirtualHost<?> vhost = super.getVirtualHost();
+        if(vhost == null || vhost instanceof QueueManagingVirtualHost)
+        {
+            return (QueueManagingVirtualHost<?>)vhost;
+        }
+        else
+        {
+            throw new IllegalStateException(this + " has a virtual host which is not a queue managing virtual host " + vhost);
+        }
+    }
 
     @Override
     protected ConfiguredObjectRecord enrichInitialVirtualHostRootRecord(final ConfiguredObjectRecord vhostRecord)

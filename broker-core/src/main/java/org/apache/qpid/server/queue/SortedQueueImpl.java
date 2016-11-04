@@ -25,9 +25,9 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class SortedQueueImpl extends OutOfOrderQueue<SortedQueueImpl> implements SortedQueue<SortedQueueImpl>
 {
@@ -41,7 +41,7 @@ public class SortedQueueImpl extends OutOfOrderQueue<SortedQueueImpl> implements
     private SortedQueueEntryList _entries;
 
     @ManagedObjectFactoryConstructor
-    public SortedQueueImpl(Map<String, Object> attributes, VirtualHost<?> virtualHost)
+    public SortedQueueImpl(Map<String, Object> attributes, QueueManagingVirtualHost<?> virtualHost)
     {
         super(attributes, virtualHost);
     }

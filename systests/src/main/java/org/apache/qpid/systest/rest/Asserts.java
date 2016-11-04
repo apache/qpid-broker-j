@@ -49,6 +49,7 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.queue.LastValueQueue;
 import org.apache.qpid.server.queue.PriorityQueue;
 import org.apache.qpid.server.queue.SortedQueue;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 public class Asserts
@@ -75,9 +76,9 @@ public class Asserts
                                 ConfiguredObject.DESCRIPTION,
                                 ConfiguredObject.CONTEXT,
                                 ConfiguredObject.DESIRED_STATE,
-                                VirtualHost.ENABLED_CONNECTION_VALIDATORS,
-                                VirtualHost.DISABLED_CONNECTION_VALIDATORS,
-                                VirtualHost.GLOBAL_ADDRESS_DOMAINS,
+                                QueueManagingVirtualHost.ENABLED_CONNECTION_VALIDATORS,
+                                QueueManagingVirtualHost.DISABLED_CONNECTION_VALIDATORS,
+                                QueueManagingVirtualHost.GLOBAL_ADDRESS_DOMAINS,
                                 VirtualHost.TYPE,
                                 VirtualHost.PREFERENCE_STORE_ATTRIBUTES);
 
@@ -91,8 +92,8 @@ public class Asserts
                      virtualHost.get(VirtualHost.DURABLE));
         assertEquals("Unexpected value of attribute " + VirtualHost.LIFETIME_POLICY, LifetimePolicy.PERMANENT.name(),
                      virtualHost.get(VirtualHost.LIFETIME_POLICY));
-        assertEquals("Unexpected value of attribute " + VirtualHost.QUEUE_DEAD_LETTER_QUEUE_ENABLED, Boolean.FALSE,
-                     virtualHost.get(VirtualHost.QUEUE_DEAD_LETTER_QUEUE_ENABLED));
+        assertEquals("Unexpected value of attribute " + QueueManagingVirtualHost.QUEUE_DEAD_LETTER_QUEUE_ENABLED, Boolean.FALSE,
+                     virtualHost.get(QueueManagingVirtualHost.QUEUE_DEAD_LETTER_QUEUE_ENABLED));
 
         @SuppressWarnings("unchecked")
         Map<String, Object> statistics = (Map<String, Object>) virtualHost.get(STATISTICS_ATTRIBUTE);

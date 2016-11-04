@@ -36,12 +36,12 @@ import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class PriorityQueueListTest extends QpidTestCase
@@ -62,7 +62,7 @@ public class PriorityQueueListTest extends QpidTestCase
         queueAttributes.put(Queue.ID, UUID.randomUUID());
         queueAttributes.put(Queue.NAME, getName());
         queueAttributes.put(PriorityQueue.PRIORITIES, 10);
-        final VirtualHost virtualHost = mock(VirtualHost.class);
+        final QueueManagingVirtualHost virtualHost = mock(QueueManagingVirtualHost.class);
         when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
         ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(virtualHost.getObjectFactory()).thenReturn(factory);

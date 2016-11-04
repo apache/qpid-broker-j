@@ -46,6 +46,7 @@ import org.apache.qpid.server.queue.PriorityQueue;
 import org.apache.qpid.server.queue.SortedQueue;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.derby.DerbyVirtualHostImpl;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNodeImpl;
 
@@ -278,12 +279,12 @@ public class VirtualHostRestTest extends QpidRestTestCase
                     }
                 }
         };
-        Map<String, Object> newAttributes = Collections.<String, Object>singletonMap(VirtualHost.NODE_AUTO_CREATION_POLICIES,
+        Map<String, Object> newAttributes = Collections.<String, Object>singletonMap(QueueManagingVirtualHost.NODE_AUTO_CREATION_POLICIES,
                                                                                      Arrays.asList(policies));
         getRestTestHelper().submitRequest(restHostUrl, "POST", newAttributes, HttpServletResponse.SC_OK);
         Map<String, Object> rereadHostDetails = getRestTestHelper().getJsonAsSingletonList(restHostUrl);
 
-        Object retrievedPolicies = rereadHostDetails.get(VirtualHost.NODE_AUTO_CREATION_POLICIES);
+        Object retrievedPolicies = rereadHostDetails.get(QueueManagingVirtualHost.NODE_AUTO_CREATION_POLICIES);
         assertNotNull("Retrieved node policies are null", retrievedPolicies);
         assertTrue("Retrieved node policies are not of expected type", retrievedPolicies instanceof List);
         List retrievedPoliciesList = (List) retrievedPolicies;
@@ -344,13 +345,13 @@ public class VirtualHostRestTest extends QpidRestTestCase
                     }
                 }
         };
-        Map<String, Object> newAttributes = Collections.<String, Object>singletonMap(VirtualHost.NODE_AUTO_CREATION_POLICIES,
+        Map<String, Object> newAttributes = Collections.<String, Object>singletonMap(QueueManagingVirtualHost.NODE_AUTO_CREATION_POLICIES,
                                                                                      Arrays.asList(policies));
         getRestTestHelper().submitRequest(restHostUrl, "POST", newAttributes, 422);
 
         Map<String, Object> rereadHostDetails = getRestTestHelper().getJsonAsSingletonList(restHostUrl);
 
-        Object retrievedPolicies = rereadHostDetails.get(VirtualHost.NODE_AUTO_CREATION_POLICIES);
+        Object retrievedPolicies = rereadHostDetails.get(QueueManagingVirtualHost.NODE_AUTO_CREATION_POLICIES);
         assertNotNull("Retrieved node policies are null", retrievedPolicies);
         assertTrue("Retrieved node policies are not of expected type", retrievedPolicies instanceof List);
         assertTrue("Retrieved node policies is not empty", ((List)retrievedPolicies).isEmpty());

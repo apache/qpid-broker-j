@@ -22,11 +22,9 @@ package org.apache.qpid.server.virtualhost;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.server.model.VirtualHost;
-
 public interface MessageStoreRecoverer
 {
-    ListenableFuture<Void> recover(VirtualHost<?> virtualHost);
+    ListenableFuture<Void> recover(QueueManagingVirtualHost<?> virtualHost);
 
     /**
      * Cancels any in-progress message store recovery.  If message store recovery has already

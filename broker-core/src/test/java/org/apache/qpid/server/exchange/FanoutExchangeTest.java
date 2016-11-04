@@ -31,10 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -45,15 +41,20 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 public class FanoutExchangeTest extends QpidTestCase
 {
     private FanoutExchange _exchange;
-    private VirtualHost _virtualHost;
+    private QueueManagingVirtualHost _virtualHost;
     private TaskExecutor _taskExecutor;
 
     public void setUp()
@@ -74,7 +75,7 @@ public class FanoutExchangeTest extends QpidTestCase
 
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
-        _virtualHost = mock(VirtualHost.class);
+        _virtualHost = mock(QueueManagingVirtualHost.class);
 
         when(_virtualHost.getEventLogger()).thenReturn(new EventLogger());
         when(_virtualHost.getTaskExecutor()).thenReturn(_taskExecutor);

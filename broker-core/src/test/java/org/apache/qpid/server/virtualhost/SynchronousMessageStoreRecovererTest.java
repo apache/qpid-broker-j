@@ -32,15 +32,13 @@ import static org.mockito.Mockito.when;
 
 import java.util.UUID;
 
-import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -58,18 +56,19 @@ import org.apache.qpid.server.store.handler.MessageInstanceHandler;
 import org.apache.qpid.server.txn.DtxBranch;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.Xid;
 
 public class SynchronousMessageStoreRecovererTest extends QpidTestCase
 {
-    private VirtualHost<?> _virtualHost;
+    private QueueManagingVirtualHost<?> _virtualHost;
 
     @Override
     protected void setUp() throws Exception
     {
         super.setUp();
 
-        _virtualHost = mock(VirtualHost.class);
+        _virtualHost = mock(QueueManagingVirtualHost.class);
         when(_virtualHost.getEventLogger()).thenReturn(new EventLogger());
 
     }

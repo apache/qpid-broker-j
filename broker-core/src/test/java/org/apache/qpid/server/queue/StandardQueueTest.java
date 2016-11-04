@@ -36,9 +36,9 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class StandardQueueTest extends AbstractQueueTestBase
 {
@@ -261,7 +261,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
 
         private QueueEntryList _entries = new DequeuedQueueEntryList(this);
 
-        public DequeuedQueue(VirtualHost<?> virtualHost)
+        public DequeuedQueue(QueueManagingVirtualHost<?> virtualHost)
         {
             super(attributes(), virtualHost);
         }

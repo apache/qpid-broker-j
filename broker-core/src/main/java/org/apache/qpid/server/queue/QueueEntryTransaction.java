@@ -26,9 +26,9 @@ import java.util.List;
 import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
-abstract class QueueEntryTransaction implements VirtualHost.TransactionalOperation
+abstract class QueueEntryTransaction implements QueueManagingVirtualHost.TransactionalOperation
 {
     private final Queue _sourceQueue;
     private final List<Long> _messageIds;
@@ -45,7 +45,7 @@ abstract class QueueEntryTransaction implements VirtualHost.TransactionalOperati
     }
 
     @Override
-    public final void withinTransaction(final VirtualHost.Transaction txn)
+    public final void withinTransaction(final QueueManagingVirtualHost.Transaction txn)
     {
         if(_limit != 0)
         {
@@ -77,7 +77,7 @@ abstract class QueueEntryTransaction implements VirtualHost.TransactionalOperati
     }
 
 
-    protected abstract void updateEntry(QueueEntry entry, VirtualHost.Transaction txn);
+    protected abstract void updateEntry(QueueEntry entry, QueueManagingVirtualHost.Transaction txn);
 
     @Override
     public final List<Long> getModifiedMessageIds()

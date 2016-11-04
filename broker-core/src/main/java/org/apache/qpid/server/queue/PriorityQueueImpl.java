@@ -27,7 +27,7 @@ import org.apache.qpid.server.logging.messages.QueueMessages;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class PriorityQueueImpl extends OutOfOrderQueue<PriorityQueueImpl> implements PriorityQueue<PriorityQueueImpl>
 {
@@ -38,7 +38,7 @@ public class PriorityQueueImpl extends OutOfOrderQueue<PriorityQueueImpl> implem
     private int _priorities;
 
     @ManagedObjectFactoryConstructor
-    public PriorityQueueImpl(Map<String, Object> attributes, VirtualHost<?> virtualHost)
+    public PriorityQueueImpl(Map<String, Object> attributes, QueueManagingVirtualHost<?> virtualHost)
     {
         super(attributes, virtualHost);
     }

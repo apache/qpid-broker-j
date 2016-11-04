@@ -33,7 +33,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
@@ -42,7 +41,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
 {
-    private VirtualHost _virtualHost;
+    private QueueManagingVirtualHost _virtualHost;
     private MessageStore _store;
     private MessageStore.MessageStoreReader _storeReader;
 
@@ -51,7 +50,7 @@ public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
     {
         super.setUp();
 
-        _virtualHost = mock(VirtualHost.class);
+        _virtualHost = mock(QueueManagingVirtualHost.class);
         _store = mock(MessageStore.class);
         _storeReader = mock(MessageStore.MessageStoreReader.class);
 

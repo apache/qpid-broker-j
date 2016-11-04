@@ -74,6 +74,7 @@ import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
@@ -91,7 +92,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     @ManagedAttributeField
     private UnroutableMessageBehaviour _unroutableMessageBehaviour;
 
-    private VirtualHost<?> _virtualHost;
+    private QueueManagingVirtualHost<?> _virtualHost;
 
     /**
      * Whether the exchange is automatically deleted once all queues have detached from it
@@ -112,7 +113,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     private final ConcurrentMap<BindingIdentifier, Binding<?>> _bindingsMap = new ConcurrentHashMap<>();
 
-    public AbstractExchange(Map<String, Object> attributes, VirtualHost<?> vhost)
+    public AbstractExchange(Map<String, Object> attributes, QueueManagingVirtualHost<?> vhost)
     {
         super(parentsMap(vhost), attributes);
         Set<String> providedAttributeNames = new HashSet<>(attributes.keySet());

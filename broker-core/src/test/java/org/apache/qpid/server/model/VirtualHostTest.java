@@ -67,6 +67,7 @@ import org.apache.qpid.server.store.preferences.PreferenceStoreUpdater;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -78,7 +79,7 @@ public class VirtualHostTest extends QpidTestCase
     private TaskExecutor _taskExecutor;
     private VirtualHostNode _virtualHostNode;
     private DurableConfigurationStore _configStore;
-    private VirtualHost<?> _virtualHost;
+    private QueueManagingVirtualHost<?> _virtualHost;
     private StoreConfigurationChangeListener _storeConfigurationChangeListener;
     private PreferenceStore _preferenceStore;
 
@@ -144,7 +145,7 @@ public class VirtualHostTest extends QpidTestCase
     public void testNewVirtualHost()
     {
         String virtualHostName = getName();
-        VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
+        QueueManagingVirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
         assertNotNull("Unexpected id", virtualHost.getId());
         assertEquals("Unexpected name", virtualHostName, virtualHost.getName());
@@ -172,11 +173,11 @@ public class VirtualHostTest extends QpidTestCase
         VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
-        virtualHost.stop();
+        ((AbstractConfiguredObject<?>)virtualHost).stop();
         assertEquals("Unexpected state", State.STOPPED, virtualHost.getState());
         verify(_preferenceStore).close();
 
-        virtualHost.start();
+        ((AbstractConfiguredObject<?>)virtualHost).start();
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
         verify(_configStore, times(1)).update(eq(true), matchesRecord(virtualHost.getId(), virtualHost.getType()));
@@ -215,7 +216,7 @@ public class VirtualHostTest extends QpidTestCase
         }
 
 
-        virtualHost.stop();
+        ((AbstractConfiguredObject<?>)virtualHost).stop();
         assertEquals("Unexpected state", State.STOPPED, virtualHost.getState());
         assertEquals("Unexpected number of queues after stop", 0, virtualHost.getChildren(Queue.class).size());
         assertEquals("Unexpected number of exchanges after stop", 0, virtualHost.getChildren(Exchange.class).size());
@@ -240,7 +241,7 @@ public class VirtualHostTest extends QpidTestCase
             }
         }).when(_configStore).reload(any(ConfiguredObjectRecordHandler.class));
 
-        virtualHost.start();
+        ((AbstractConfiguredObject<?>)virtualHost).start();
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
         assertEquals("Unexpected number of queues after restart", 1, virtualHost.getChildren(Queue.class).size());
@@ -252,7 +253,7 @@ public class VirtualHostTest extends QpidTestCase
     {
         String virtualHostName = getName();
 
-        VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
+        QueueManagingVirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
         AbstractAMQPConnection connection = createMockProtocolConnection(virtualHost);
@@ -264,7 +265,7 @@ public class VirtualHostTest extends QpidTestCase
 
         assertEquals("Unexpected number of connections after connection registered", 1, virtualHost.getConnectionCount());
 
-        virtualHost.stop();
+        ((AbstractConfiguredObject<?>)virtualHost).stop();
         assertEquals("Unexpected state", State.STOPPED, virtualHost.getState());
 
         assertEquals("Unexpected number of connections after virtualhost stopped",
@@ -278,7 +279,7 @@ public class VirtualHostTest extends QpidTestCase
     {
         String virtualHostName = getName();
 
-        VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
+        QueueManagingVirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
         AbstractAMQPConnection connection = createMockProtocolConnection(virtualHost);
@@ -374,7 +375,7 @@ public class VirtualHostTest extends QpidTestCase
 
         try
         {
-            virtualHost.stop();
+            ((AbstractConfiguredObject<?>)virtualHost).stop();
             fail("Exception not thrown");
         }
         catch (AccessControlException ace)
@@ -419,7 +420,7 @@ public class VirtualHostTest extends QpidTestCase
     {
         try
         {
-            createVirtualHost(getTestName(), Collections.<String, Object>singletonMap(VirtualHost.NUMBER_OF_SELECTORS, "-1"));
+            createVirtualHost(getTestName(), Collections.<String, Object>singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, "-1"));
             fail("Exception not thrown for negative number of selectors");
         }
         catch (IllegalConfigurationException e)
@@ -428,7 +429,7 @@ public class VirtualHostTest extends QpidTestCase
         }
         try
         {
-            createVirtualHost(getTestName(), Collections.<String, Object>singletonMap(VirtualHost.CONNECTION_THREAD_POOL_SIZE, "-1"));
+            createVirtualHost(getTestName(), Collections.<String, Object>singletonMap(QueueManagingVirtualHost.CONNECTION_THREAD_POOL_SIZE, "-1"));
             fail("Exception not thrown for negative connection thread pool size");
         }
         catch (IllegalConfigurationException e)
@@ -437,7 +438,7 @@ public class VirtualHostTest extends QpidTestCase
         }
         try
         {
-            createVirtualHost(getTestName(), Collections.<String, Object>singletonMap(VirtualHost.NUMBER_OF_SELECTORS, VirtualHost.DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE));
+            createVirtualHost(getTestName(), Collections.<String, Object>singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, QueueManagingVirtualHost.DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE));
             fail("Exception not thrown for number of selectors equal to connection thread pool size");
         }
         catch (IllegalConfigurationException e)
@@ -448,10 +449,10 @@ public class VirtualHostTest extends QpidTestCase
 
     public void testChangeValidation() throws Exception
     {
-        VirtualHost<?> virtualHost = createVirtualHost(getTestName());
+        QueueManagingVirtualHost<?> virtualHost = createVirtualHost(getTestName());
         try
         {
-            virtualHost.setAttributes(Collections.<String, Object>singletonMap(VirtualHost.NUMBER_OF_SELECTORS, "-1"));
+            virtualHost.setAttributes(Collections.<String, Object>singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, "-1"));
             fail("Exception not thrown for negative number of selectors");
         }
         catch (IllegalConfigurationException e)
@@ -460,7 +461,7 @@ public class VirtualHostTest extends QpidTestCase
         }
         try
         {
-            virtualHost.setAttributes(Collections.<String, Object>singletonMap(VirtualHost.CONNECTION_THREAD_POOL_SIZE,
+            virtualHost.setAttributes(Collections.<String, Object>singletonMap(QueueManagingVirtualHost.CONNECTION_THREAD_POOL_SIZE,
                                                                                "-1"));
             fail("Exception not thrown for negative connection thread pool size");
         }
@@ -470,7 +471,7 @@ public class VirtualHostTest extends QpidTestCase
         }
         try
         {
-            virtualHost.setAttributes(Collections.<String, Object>singletonMap(VirtualHost.NUMBER_OF_SELECTORS, VirtualHost.DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE));
+            virtualHost.setAttributes(Collections.<String, Object>singletonMap(QueueManagingVirtualHost.NUMBER_OF_SELECTORS, QueueManagingVirtualHost.DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE));
             fail("Exception not thrown for number of selectors equal to connection thread pool size");
         }
         catch (IllegalConfigurationException e)
@@ -481,7 +482,7 @@ public class VirtualHostTest extends QpidTestCase
 
     public void testRegisterConnection() throws Exception
     {
-        VirtualHost<?> vhost = createVirtualHost("sdf");
+        QueueManagingVirtualHost<?> vhost = createVirtualHost("sdf");
         AMQPConnection<?> connection = getMockConnection();
 
         assertEquals("unexpected number of connections before test", 0, vhost.getConnectionCount());
@@ -492,23 +493,23 @@ public class VirtualHostTest extends QpidTestCase
 
     public void testStopVirtualhostClosesConnections() throws Exception
     {
-        VirtualHost<?> vhost = createVirtualHost("sdf");
+        QueueManagingVirtualHost<?> vhost = createVirtualHost("sdf");
         AMQPConnection<?> connection = getMockConnection();
 
         vhost.registerConnection(connection);
         assertEquals("unexpected number of connections after registerConnection", 1, vhost.getConnectionCount());
         assertEquals("unexpected connection object", Collections.singleton(connection), vhost.getConnections());
-        vhost.stop();
+        ((AbstractConfiguredObject<?>)vhost).stop();
         verify(connection).stopConnection();
         verify(connection).closeAsync();
     }
 
     public void testRegisterConnectionOnStoppedVirtualhost() throws Exception
     {
-        VirtualHost<?> vhost = createVirtualHost("sdf");
+        QueueManagingVirtualHost<?> vhost = createVirtualHost("sdf");
         AMQPConnection<?> connection = getMockConnection();
 
-        vhost.stop();
+        ((AbstractConfiguredObject<?>)vhost).stop();
         try
         {
             vhost.registerConnection(connection);
@@ -519,7 +520,7 @@ public class VirtualHostTest extends QpidTestCase
             // pass
         }
         assertEquals("unexpected number of connections", 0, vhost.getConnectionCount());
-        vhost.start();
+        ((AbstractConfiguredObject<?>)vhost).start();
         vhost.registerConnection(connection);
         assertEquals("unexpected number of connections", 1, vhost.getConnectionCount());
     }
@@ -532,12 +533,12 @@ public class VirtualHostTest extends QpidTestCase
         return connection;
     }
 
-    private VirtualHost<?> createVirtualHost(final String virtualHostName)
+    private QueueManagingVirtualHost<?> createVirtualHost(final String virtualHostName)
     {
         return createVirtualHost(virtualHostName, Collections.<String, Object>emptyMap());
     }
 
-    private VirtualHost<?> createVirtualHost(final String virtualHostName, Map<String,Object> attributes)
+    private QueueManagingVirtualHost<?> createVirtualHost(final String virtualHostName, Map<String,Object> attributes)
     {
         Map<String, Object> vhAttributes = new HashMap<>();
         vhAttributes.put(VirtualHost.NAME, virtualHostName);
