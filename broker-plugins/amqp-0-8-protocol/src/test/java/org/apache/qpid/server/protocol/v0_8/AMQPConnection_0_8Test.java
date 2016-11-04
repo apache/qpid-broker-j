@@ -51,17 +51,18 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.security.*;
+import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.server.transport.AggregateTicker;
 
 public class AMQPConnection_0_8Test extends QpidTestCase
 {
@@ -73,7 +74,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
     private TaskExecutorImpl _taskExecutor;
     private Broker _broker;
     private VirtualHostNode _virtualHostNode;
-    private VirtualHost _virtualHost;
+    private QueueManagingVirtualHost _virtualHost;
     private AmqpPort _port;
     private ServerNetworkConnection _network;
     private Transport _transport;
@@ -111,7 +112,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         when(_virtualHostNode.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_virtualHostNode.getChildExecutor()).thenReturn(_taskExecutor);
 
-        _virtualHost = mock(VirtualHost.class);
+        _virtualHost = mock(QueueManagingVirtualHost.class);
         VirtualHostPrincipal virtualHostPrincipal = new VirtualHostPrincipal(_virtualHost);
         when(_virtualHost.getParent(VirtualHostNode.class)).thenReturn(_virtualHostNode);
         when(_virtualHost.getModel()).thenReturn(model);

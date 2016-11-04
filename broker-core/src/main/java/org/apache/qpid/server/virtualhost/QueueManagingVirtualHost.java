@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 
+import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Content;
@@ -51,7 +52,8 @@ import org.apache.qpid.server.store.preferences.UserPreferencesCreator;
 public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>> extends VirtualHost<X>,
                                                                                          EventListener,
                                                                                          StatisticsGatherer,
-                                                                                         UserPreferencesCreator
+                                                                                         UserPreferencesCreator,
+                                                                                         EventLoggerProvider
 {
     String HOUSEKEEPING_CHECK_PERIOD            = "housekeepingCheckPeriod";
     String STORE_TRANSACTION_IDLE_TIMEOUT_CLOSE = "storeTransactionIdleTimeoutClose";

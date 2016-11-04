@@ -20,12 +20,11 @@
  */
 package org.apache.qpid.server.model;
 
-import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.store.MessageStore;
 
 @ManagedObject( defaultType = "ProvidedStore", description = VirtualHost.CLASS_DESCRIPTION)
 public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<X>,
-                                                               EventLoggerProvider, NamedAddressSpace
+                                                               NamedAddressSpace
 {
     String CLASS_DESCRIPTION = "<p>A virtualhost is a namespace in which messaging is performed. Virtualhosts are "
                                + "independent; the messaging goes on a within a virtualhost is independent of any "

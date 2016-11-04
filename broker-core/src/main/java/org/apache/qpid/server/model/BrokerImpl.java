@@ -898,15 +898,15 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                 for (VirtualHostNode<?> virtualHostNode : getChildren(VirtualHostNode.class))
                 {
                     VirtualHost<?> virtualHost = virtualHostNode.getVirtualHost();
-                    if (virtualHost instanceof StatisticsGatherer)
+                    if (virtualHost instanceof QueueManagingVirtualHost)
                     {
-                        StatisticsGatherer statGatherer = (StatisticsGatherer) virtualHost;
+                        QueueManagingVirtualHost queueVhost = (QueueManagingVirtualHost) virtualHost;
                         String name = virtualHost.getName();
-                        StatisticsCounter dataDelivered = statGatherer.getDataDeliveryStatistics();
-                        StatisticsCounter messagesDelivered = statGatherer.getMessageDeliveryStatistics();
-                        StatisticsCounter dataReceived = statGatherer.getDataReceiptStatistics();
-                        StatisticsCounter messagesReceived = statGatherer.getMessageReceiptStatistics();
-                        EventLogger logger = virtualHost.getEventLogger();
+                        StatisticsCounter dataDelivered = queueVhost.getDataDeliveryStatistics();
+                        StatisticsCounter messagesDelivered = queueVhost.getMessageDeliveryStatistics();
+                        StatisticsCounter dataReceived = queueVhost.getDataReceiptStatistics();
+                        StatisticsCounter messagesReceived = queueVhost.getMessageReceiptStatistics();
+                        EventLogger logger = queueVhost.getEventLogger();
                         logger.message(VirtualHostMessages.STATS_DATA(name,
                                                                       DELIVERED,
                                                                       dataDelivered.getPeak() / 1024.0,

@@ -26,13 +26,13 @@ import java.util.Set;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostAccessControlProvider;
 import org.apache.qpid.server.security.access.config.ObjectType;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class RuleBasedVirtualHostAccessControlProviderImpl
-        extends AbstractCommonRuleBasedAccessControlProvider<RuleBasedVirtualHostAccessControlProviderImpl, VirtualHost<?>, VirtualHostAccessControlProvider<?>>
+        extends AbstractCommonRuleBasedAccessControlProvider<RuleBasedVirtualHostAccessControlProviderImpl, QueueManagingVirtualHost<?>, VirtualHostAccessControlProvider<?>>
         implements RuleBasedVirtualHostAccessControlProvider<RuleBasedVirtualHostAccessControlProviderImpl>
 {
     private static final EnumSet<ObjectType> ALLOWED_OBJECT_TYPES = EnumSet.of(ObjectType.ALL,
@@ -49,7 +49,7 @@ public class RuleBasedVirtualHostAccessControlProviderImpl
 
 
     @ManagedObjectFactoryConstructor
-    public RuleBasedVirtualHostAccessControlProviderImpl(Map<String, Object> attributes, VirtualHost<?> virtualHost)
+    public RuleBasedVirtualHostAccessControlProviderImpl(Map<String, Object> attributes, QueueManagingVirtualHost<?> virtualHost)
     {
         super(attributes, virtualHost);
     }

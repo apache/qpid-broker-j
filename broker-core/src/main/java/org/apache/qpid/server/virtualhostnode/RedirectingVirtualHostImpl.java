@@ -30,7 +30,6 @@ import java.util.Set;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
@@ -182,12 +181,6 @@ class RedirectingVirtualHostImpl
 
     @Override
     public LinkRegistry getLinkRegistry(final String remoteContainerId)
-    {
-        return null;
-    }
-
-    @Override
-    public EventLogger getEventLogger()
     {
         return null;
     }
