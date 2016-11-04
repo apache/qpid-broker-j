@@ -30,4 +30,6 @@ import java.lang.annotation.Target;
 public @interface ManagedObjectFactoryConstructor
 {
     boolean conditionallyAvailable() default false;
+
+    String condition() default "";
 }
