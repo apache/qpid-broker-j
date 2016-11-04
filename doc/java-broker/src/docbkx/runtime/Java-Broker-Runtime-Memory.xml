@@ -224,8 +224,15 @@
             memory<subscript>direct</subscript> = 2 MB + (200 B + averageSize<subscript>msg</subscript> *2)*  N<subscript>messages</subscript> + 1MB * N<subscript>connections</subscript>
           </mathphrase>
         </informalequation>
+      </para>
+      <para>
         Where <mathphrase>N</mathphrase> denotes the total number of connections/sessions/messages on the broker. Furthermore, for direct memory only the messages that have not been flown to disk are relevant.
       </para>
+      <note>
+        <para>Provided formulas covers the worst case scenario when all persistent messages are loaded into heap memory and TLS connections are used.
+          Transient messages consumes less heap memory than persistent messages and plain connections consumes less direct memory than TLS connections.
+        </para>
+      </note>
     </section>
     <section>
       <title>Things to Consider</title>
