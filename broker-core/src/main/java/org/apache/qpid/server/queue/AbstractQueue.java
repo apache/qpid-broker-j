@@ -2059,11 +2059,28 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         while(iterator.advance())
         {
             final ConsumerNode node = iterator.getNode();
-            QueueConsumer consumer = node.getConsumer();
+            final QueueConsumer consumer = node.getConsumer();
             if(consumer.getPriority() > sub.getPriority())
             {
                 if(getNextAvailableEntry(consumer) != null && consumer.hasCredit())
                 {
+                    final ConsumerTarget target = consumer.getTarget();
+                    // if the higher priority consumer later becomes suspended we should try notifying this
+                    // consumer again
+                    target.addStateListener(new StateChangeListener<ConsumerTarget, ConsumerTarget.State>()
+                    {
+                        @Override
+                        public void stateChanged(final ConsumerTarget object,
+                                                 final ConsumerTarget.State oldState,
+                                                 final ConsumerTarget.State newState)
+                        {
+                            if(newState != ConsumerTarget.State.ACTIVE)
+                            {
+                                sub.notifyWork();
+                                target.removeStateChangeListener(this);
+                            }
+                        }
+                    });
                     return false;
                 }
             }
