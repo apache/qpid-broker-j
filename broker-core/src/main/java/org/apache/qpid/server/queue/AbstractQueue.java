@@ -2068,20 +2068,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     final ConsumerTarget target = consumer.getTarget();
                     // if the higher priority consumer later becomes suspended we should try notifying this
                     // consumer again
-                    target.addStateListener(new StateChangeListener<ConsumerTarget, ConsumerTarget.State>()
-                    {
-                        @Override
-                        public void stateChanged(final ConsumerTarget object,
-                                                 final ConsumerTarget.State oldState,
-                                                 final ConsumerTarget.State newState)
-                        {
-                            if(newState != ConsumerTarget.State.ACTIVE)
-                            {
-                                sub.notifyWork();
-                                target.removeStateChangeListener(this);
-                            }
-                        }
-                    });
+                    target.addStateListener(new BlockedOnHigherPriorityListener(sub, target));
                     return false;
                 }
             }
@@ -2340,6 +2327,52 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         public void performAction(final Deletable object)
         {
             _lifetimeObject.removeDeleteTask(_deleteQueueOwnerTask);
+        }
+    }
+
+    private static class BlockedOnHigherPriorityListener implements StateChangeListener<ConsumerTarget, ConsumerTarget.State>
+    {
+        private final QueueConsumer<?> _sub;
+        private final ConsumerTarget _target;
+
+        public BlockedOnHigherPriorityListener(final QueueConsumer<?> sub, final ConsumerTarget target)
+        {
+            _sub = sub;
+            _target = target;
+        }
+
+        @Override
+        public void stateChanged(final ConsumerTarget object,
+                                 final ConsumerTarget.State oldState,
+                                 final ConsumerTarget.State newState)
+        {
+            if(newState != ConsumerTarget.State.ACTIVE)
+            {
+                _sub.notifyWork();
+                _target.removeStateChangeListener(this);
+            }
+        }
+
+        @Override
+        public boolean equals(final Object o)
+        {
+            if (this == o)
+            {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass())
+            {
+                return false;
+            }
+            final BlockedOnHigherPriorityListener that = (BlockedOnHigherPriorityListener) o;
+            return Objects.equals(_sub, that._sub) &&
+                   Objects.equals(_target, that._target);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(_sub, _target);
         }
     }
 
