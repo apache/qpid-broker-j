@@ -27,6 +27,8 @@ import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -67,6 +69,9 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
     private ServerDisassembler _disassembler;
+
+    private final Set<AMQSessionModel<?>> _sessionsWithWork =
+            Collections.newSetFromMap(new ConcurrentHashMap<AMQSessionModel<?>, Boolean>());
 
 
     public AMQPConnection_0_10(final Broker<?> broker,
@@ -251,7 +256,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     {
         if (isIOThread())
         {
-            return _connection.processPendingIterator();
+            return _connection.processPendingIterator(_sessionsWithWork);
         }
         else
         {
@@ -280,6 +285,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     @Override
     public void notifyWork(final AMQSessionModel<?> sessionModel)
     {
+        _sessionsWithWork.add(sessionModel);
         notifyWork();
     }
 

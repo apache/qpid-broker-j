@@ -27,12 +27,12 @@ import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -42,13 +42,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.model.NamedAddressSpace;
-import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -491,18 +491,18 @@ public class ServerConnection extends Connection
         }
     }
 
-    public Iterator<Runnable> processPendingIterator()
+    public Iterator<Runnable> processPendingIterator(final Set<AMQSessionModel<?>> sessionsWithWork)
     {
-        return new ProcessPendingIterator();
+        return new ProcessPendingIterator(sessionsWithWork);
     }
 
     private class ProcessPendingIterator implements Iterator<Runnable>
     {
-        private final Collection<? extends ServerSession> _sessionsWithPending;
+        private final Collection<AMQSessionModel<?>> _sessionsWithPending;
         private Iterator<? extends AMQSessionModel<?>> _sessionIterator;
-        private ProcessPendingIterator()
+        private ProcessPendingIterator(final Set<AMQSessionModel<?>> sessionsWithWork)
         {
-            _sessionsWithPending = new ArrayList<>(getSessionModels());
+            _sessionsWithPending = sessionsWithWork;
             _sessionIterator = _sessionsWithPending.iterator();
         }
 
@@ -527,9 +527,10 @@ public class ServerConnection extends Connection
                     @Override
                     public void run()
                     {
-                        if(!session.processPending())
+                        _sessionIterator.remove();
+                        if(session.processPending())
                         {
-                            _sessionIterator.remove();
+                            _sessionsWithPending.add(session);
                         }
                     }
                 };

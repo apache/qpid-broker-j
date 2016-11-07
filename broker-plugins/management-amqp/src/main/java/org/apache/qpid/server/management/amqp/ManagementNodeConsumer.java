@@ -61,7 +61,10 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
     @Override
     public void externalStateChange()
     {
-
+        if(!_queue.isEmpty())
+        {
+            _target.notifyWork();
+        }
     }
 
     @Override

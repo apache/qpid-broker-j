@@ -66,10 +66,10 @@ public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
 
         Map<String, Object> headers = new HashMap<>();
 
-        final List<String> globalAddresseDomains = _addressSpace.getGlobalAddressDomains();
-        if (globalAddresseDomains != null && !globalAddresseDomains.isEmpty())
+        final List<String> globalAddressDomains = _addressSpace.getGlobalAddressDomains();
+        if (globalAddressDomains != null && !globalAddressDomains.isEmpty())
         {
-            String primaryDomain = globalAddresseDomains.get(0);
+            String primaryDomain = globalAddressDomains.get(0);
             if(primaryDomain != null)
             {
                 primaryDomain = primaryDomain.trim();
