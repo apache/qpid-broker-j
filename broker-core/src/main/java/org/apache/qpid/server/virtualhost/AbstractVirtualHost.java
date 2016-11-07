@@ -1444,7 +1444,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    protected void onClose()
+    protected ListenableFuture<Void> onClose()
     {
         _dtxRegistry.close();
         shutdownHouseKeeping();
@@ -1455,6 +1455,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _eventLogger.message(VirtualHostMessages.CLOSED(getName()));
 
         stopLogging(_virtualHostLoggersToClose);
+        return Futures.immediateFuture(null);
     }
 
 

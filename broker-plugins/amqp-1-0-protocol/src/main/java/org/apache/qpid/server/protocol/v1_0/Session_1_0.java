@@ -1578,20 +1578,9 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     }
 
     @Override
-    public void ensureConsumersNoticedStateChange()
+    public void notifyWork(final ConsumerTarget target)
     {
-        for(SendingLink_1_0 link : _sendingLinks)
-        {
-            ConsumerTarget_1_0 consumerTarget = link.getConsumerTarget();
-            try
-            {
-                consumerTarget.getSendLock();
-            }
-            finally
-            {
-                consumerTarget.releaseSendLock();
-            }
-        }
+        getAMQPConnection().notifyWork(this);
     }
 
     @Override

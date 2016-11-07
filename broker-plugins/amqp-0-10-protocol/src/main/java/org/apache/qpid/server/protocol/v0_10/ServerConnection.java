@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -133,7 +132,7 @@ public class ServerConnection extends Connection
             getAmqpConnection().getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis() + CLOSE_OK_TIMEOUT, (ServerNetworkConnection) getNetworkConnection()));
 
             // trigger a wakeup to ensure the ticker will be taken into account
-            notifyWork();
+            getAmqpConnection().notifyWork();
         }
     }
 
@@ -468,10 +467,10 @@ public class ServerConnection extends Connection
         super.doHeartBeat();
     }
 
-    private void addAsyncTask(final Action<ServerConnection> action)
+    void addAsyncTask(final Action<? super ServerConnection> action)
     {
         _asyncTaskList.add(action);
-        notifyWork();
+        getAmqpConnection().notifyWork();
     }
 
     public int getMessageCompressionThreshold()
@@ -490,11 +489,6 @@ public class ServerConnection extends Connection
         {
             ssn.transportStateChanged();
         }
-    }
-
-    public void notifyWork()
-    {
-        _amqpConnection.notifyWork();
     }
 
     public Iterator<Runnable> processPendingIterator()

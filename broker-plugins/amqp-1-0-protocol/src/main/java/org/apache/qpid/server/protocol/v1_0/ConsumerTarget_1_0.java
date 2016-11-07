@@ -21,33 +21,12 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Collection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
-import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
-import org.apache.qpid.server.protocol.v1_0.type.Outcome;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
-import org.apache.qpid.server.protocol.v1_0.type.Target;
-import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
-import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Modified;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Released;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
-import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
-import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
@@ -56,6 +35,24 @@ import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
+import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
+import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.protocol.v1_0.type.Target;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Modified;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Released;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
+import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
@@ -303,7 +300,11 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
     public void queueEmpty()
     {
-        _queueEmpty = true;
+        if(_link.drained())
+        {
+            updateState(State.ACTIVE, State.SUSPENDED);
+        }
+
     }
 
     public void flowStateChanged()
@@ -525,38 +526,6 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     {
         // TODO
         return 0;
-    }
-
-    @Override
-    protected void processClosed()
-    {
-
-    }
-
-    @Override
-    protected void processStateChanged()
-    {
-        if(_queueEmpty)
-        {
-            _queueEmpty = false;
-
-            if(_link.drained())
-            {
-                updateState(State.ACTIVE, State.SUSPENDED);
-            }
-        }
-    }
-
-    @Override
-    protected boolean hasStateChanged()
-    {
-        return _queueEmpty;
-    }
-
-    @Override
-    protected boolean hasClosed()
-    {
-        return false;
     }
 
     @Override

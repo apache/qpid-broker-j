@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.security.auth.Subject;
 import javax.security.auth.SubjectDomainCombiner;
 
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
@@ -75,7 +76,7 @@ import org.apache.qpid.server.util.FixedKeyMapCreator;
 import org.apache.qpid.transport.network.NetworkConnection;
 import org.apache.qpid.transport.network.Ticker;
 
-public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>>
+public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,T>, T>
         extends AbstractConfiguredObject<C>
         implements ProtocolEngine, AMQPConnection<C>, EventLoggerProvider
 
@@ -496,6 +497,42 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     {
         return Thread.currentThread() == _ioThread;
     }
+
+    @Override
+    public ListenableFuture<Void> doOnIOThreadAsync(final Runnable task)
+    {
+        if (isIOThread())
+        {
+            task.run();
+            return Futures.immediateFuture(null);
+        }
+        else
+        {
+            final SettableFuture<Void> future = SettableFuture.create();
+
+            addAsyncTask(
+                    new Action<Object>()
+                    {
+                        @Override
+                        public void performAction(final Object object)
+                        {
+                            try
+                            {
+                                task.run();
+                                future.set(null);
+                            }
+                            catch (RuntimeException e)
+                            {
+                                future.setException(e);
+                            }
+                        }
+                    });
+            return future;
+        }
+    }
+
+    protected abstract void addAsyncTask(final Action<? super T> action);
+
 
     protected <T> T runAsSubject(PrivilegedAction<T> action)
     {

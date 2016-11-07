@@ -43,6 +43,7 @@ import javax.net.ssl.X509TrustManager;
 import javax.security.auth.Subject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
@@ -310,7 +311,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     }
 
     @Override
-    protected void onClose()
+    protected ListenableFuture<Void> onClose()
     {
         if (_transport != null)
         {
@@ -322,6 +323,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
 
             _transport.close();
         }
+        return Futures.immediateFuture(null);
     }
 
     @Override

@@ -54,7 +54,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
 
     private final AtomicLong _unacknowledgedCount = new AtomicLong(0);
     private final AtomicLong _unacknowledgedBytes = new AtomicLong(0);
-    private final AtomicBoolean _needToClose = new AtomicBoolean();
     private final String _targetAddress;
 
 
@@ -461,39 +460,11 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
 
     public void queueEmpty()
     {
-        if (isAutoClose())
-        {
-            _needToClose.set(true);
-            getChannel().getConnection().notifyWork();
-        }
-    }
-
-    @Override
-    protected void processClosed()
-    {
-        if (hasClosed())
+        if(isAutoClose() && getState() != State.CLOSED)
         {
             close();
             confirmAutoClose();
         }
-    }
-
-    @Override
-    protected void processStateChanged()
-    {
-
-    }
-
-    @Override
-    protected boolean hasStateChanged()
-    {
-        return false;
-    }
-
-    @Override
-    protected boolean hasClosed()
-    {
-        return (_needToClose.get() && getState() != State.CLOSED);
     }
 
     public void flushBatched()

@@ -34,23 +34,24 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.rolling.RollingFileAppender;
-
 import ch.qos.logback.core.status.Status;
 import ch.qos.logback.core.status.StatusListener;
 import ch.qos.logback.core.status.StatusManager;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.LogFileDetails;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.util.DaemonThreadFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerImpl>
         implements BrokerFileLogger<BrokerFileLoggerImpl>, FileLoggerSettings
@@ -209,14 +210,14 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     }
 
     @Override
-    protected void onClose()
+    protected ListenableFuture<Void> onClose()
     {
-        super.onClose();
-
         if (_statusManager != null)
         {
             _statusManager.remove(_logbackStatusListener);
         }
+        return Futures.immediateFuture(null);
+
     }
 
     static class BrokerFileLoggerStatusListener implements StatusListener

@@ -99,8 +99,6 @@ import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.PublishAuthorisationCache;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
-import org.apache.qpid.server.queue.QueueConsumer;
-import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
@@ -879,12 +877,12 @@ public class AMQChannel
         {
             for(ConsumerImpl sub : subs)
             {
-                sub.close();
                 if (sub instanceof Consumer<?>)
                 {
                     _consumers.remove(sub);
                 }
             }
+            target.close();
             return true;
         }
         else
@@ -1075,19 +1073,12 @@ public class AMQChannel
         if (subscriber != null && subscriber.getSessionModel() == this)
         {
             ConsumerTarget target = subscriber.getTarget();
-            target.getSendLock();
-            try
+            if (target.getState() != ConsumerTarget.State.CLOSED)
             {
-                if (target.getState() != ConsumerTarget.State.CLOSED)
-                {
-                    target.send(subscriber, messageInstance, false);
-                    return true;
-                }
+                target.send(subscriber, messageInstance, false);
+                return true;
             }
-            finally
-            {
-                target.releaseSendLock();
-            }
+
         }
         return false;
     }
@@ -1221,11 +1212,6 @@ public class AMQChannel
                 messageWithSubject(ChannelMessages.FLOW("Started"));
             }
 
-
-            // This section takes two different approaches to perform to perform
-            // the same function. Ensuring that the Subscription has taken note
-            // of the change in Channel State
-
             // Here we have become unsuspended and so we ask each the queue to
             // perform an Async delivery for each of the subscriptions in this
             // Channel. The alternative would be to ensure that the subscription
@@ -1243,20 +1229,6 @@ public class AMQChannel
                     }
                 }
             }
-
-
-            // Here we have become suspended so we need to ensure that each of
-            // the Subscriptions has noticed this change so that we can be sure
-            // they are not still sending messages. Again the code here is a
-            // very simplistic approach to ensure that the change of suspension
-            // has been noticed by each of the Subscriptions. Unlike the above
-            // case we don't actually need to do anything else.
-            if (!wasSuspended)
-            {
-                // may need to deliver queued messages
-                ensureConsumersNoticedStateChange();
-            }
-
 
             // Log Suspension only after we have confirmed all suspensions are
             // stopped.
@@ -1324,9 +1296,6 @@ public class AMQChannel
         boolean requiresSuspend = _suspended.compareAndSet(false,true);  // TODO This is probably superfluous owing to the
         // message assignment suspended logic in NBC.
 
-        // ensure all subscriptions have seen the change to the channel state
-        ensureConsumersNoticedStateChange();
-
         try
         {
             _transaction.rollback();
@@ -1381,7 +1350,7 @@ public class AMQChannel
         return _closing.get();
     }
 
-    public AMQPConnection_0_8 getConnection()
+    public AMQPConnection_0_8<?> getConnection()
     {
         return _connection;
     }
@@ -1441,7 +1410,7 @@ public class AMQChannel
     }
 
     @Override
-    public AMQPConnection_0_8 getAMQPConnection()
+    public AMQPConnection_0_8<?> getAMQPConnection()
     {
         return _connection;
     }
@@ -1731,7 +1700,7 @@ public class AMQChannel
                 messageWithSubject(ChannelMessages.FLOW_ENFORCED("** All Queues **"));
 
 
-                getConnection().notifyWork();
+                getConnection().notifyWork(this);
             }
         }
     }
@@ -1743,7 +1712,7 @@ public class AMQChannel
             if(_blockingEntities.isEmpty() && _blocking.compareAndSet(true,false))
             {
                 messageWithSubject(ChannelMessages.FLOW_REMOVED());
-                getConnection().notifyWork();
+                getConnection().notifyWork(this);
             }
         }
     }
@@ -1757,7 +1726,7 @@ public class AMQChannel
             if(_blocking.compareAndSet(false,true))
             {
                 messageWithSubject(ChannelMessages.FLOW_ENFORCED(queue.getName()));
-                getConnection().notifyWork();
+                getConnection().notifyWork(this);
 
             }
         }
@@ -1770,7 +1739,7 @@ public class AMQChannel
             if(_blockingEntities.isEmpty() && _blocking.compareAndSet(true,false) && !isClosing())
             {
                 messageWithSubject(ChannelMessages.FLOW_REMOVED());
-                getConnection().notifyWork();
+                getConnection().notifyWork(this);
             }
         }
     }
@@ -3815,19 +3784,9 @@ public class AMQChannel
     }
 
     @Override
-    public void ensureConsumersNoticedStateChange()
+    public void notifyWork(final ConsumerTarget target)
     {
-        for (ConsumerTarget_0_8 consumerTarget : getConsumerTargets())
-        {
-            try
-            {
-                consumerTarget.getSendLock();
-            }
-            finally
-            {
-                consumerTarget.releaseSendLock();
-            }
-        }
+        getAMQPConnection().notifyWork(this);
     }
 
     private Collection<ConsumerTarget_0_8> getConsumerTargets()

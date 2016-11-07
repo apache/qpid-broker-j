@@ -55,7 +55,7 @@ import org.apache.qpid.transport.Constant;
 import org.apache.qpid.server.transport.AggregateTicker;
 
 
-public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0_10>
+public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0_10, ServerConnection>
 {
     private static final Logger _logger = LoggerFactory.getLogger(AMQPConnection_0_10.class);
     private final ServerInputHandler _inputHandler;
@@ -277,6 +277,12 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         }
     }
 
+    @Override
+    public void notifyWork(final AMQSessionModel<?> sessionModel)
+    {
+        notifyWork();
+    }
+
     public void clearWork()
     {
         _stateChanged.set(false);
@@ -301,6 +307,12 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
                                   final AMQConstant cause, final String message)
     {
         _connection.closeSessionAsync((ServerSession) session, cause, message);
+    }
+
+    @Override
+    protected void addAsyncTask(final Action<? super ServerConnection> action)
+    {
+        _connection.addAsyncTask(action);
     }
 
     public void block()

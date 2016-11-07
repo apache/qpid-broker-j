@@ -110,7 +110,7 @@ import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.AggregateTicker;
 
-public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_0>
+public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_0, ConnectionHandler>
         implements FrameOutputHandler, DescribedTypeConstructorRegistry.Source,
                    ValueWriter.Registry.Source,
                    ErrorHandler,
@@ -1377,6 +1377,12 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     }
 
     @Override
+    public void notifyWork(final AMQSessionModel<?> sessionModel)
+    {
+        notifyWork();
+    }
+
+    @Override
     public void clearWork()
     {
         _stateChanged.set(false);
@@ -1444,7 +1450,8 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         return _orderlyClose.get();
     }
 
-    private void addAsyncTask(final Action<ConnectionHandler> action)
+    @Override
+    protected void addAsyncTask(final Action<? super ConnectionHandler> action)
     {
         _asyncTaskList.add(action);
         notifyWork();

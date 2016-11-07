@@ -25,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Queue;
@@ -106,5 +107,5 @@ public interface AMQSessionModel<T extends AMQSessionModel<T>> extends Comparabl
     void addTicker(Ticker ticker);
     void removeTicker(Ticker ticker);
 
-    void ensureConsumersNoticedStateChange();
+    void notifyWork(ConsumerTarget target);
 }

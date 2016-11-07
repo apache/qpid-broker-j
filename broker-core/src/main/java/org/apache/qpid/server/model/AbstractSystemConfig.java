@@ -168,7 +168,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     }
 
     @Override
-    protected void onClose()
+    protected ListenableFuture<Void> onClose()
     {
         final TaskExecutor taskExecutor = getTaskExecutor();
         try
@@ -192,7 +192,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
                 taskExecutor.stopImmediately();
             }
         }
-
+        return Futures.immediateFuture(null);
     }
 
     @Override

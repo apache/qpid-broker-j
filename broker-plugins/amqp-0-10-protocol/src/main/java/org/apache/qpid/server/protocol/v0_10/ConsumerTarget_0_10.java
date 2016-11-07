@@ -536,19 +536,10 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
 
     public void stop()
     {
-        try
-        {
-            getSendLock();
-
-            updateState(State.ACTIVE, State.SUSPENDED);
-            _stopped.set(true);
-            FlowCreditManager_0_10 creditManager = getCreditManager();
-            creditManager.clearCredit();
-        }
-        finally
-        {
-            releaseSendLock();
-        }
+        updateState(State.ACTIVE, State.SUSPENDED);
+        _stopped.set(true);
+        FlowCreditManager_0_10 creditManager = getCreditManager();
+        creditManager.clearCredit();
     }
 
     public void addCredit(MessageCreditUnit unit, long value)
@@ -644,30 +635,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     public long getUnacknowledgedMessages()
     {
         return _unacknowledgedCount.longValue();
-    }
-
-    @Override
-    protected void processClosed()
-    {
-
-    }
-
-    @Override
-    protected void processStateChanged()
-    {
-
-    }
-
-    @Override
-    protected boolean hasStateChanged()
-    {
-        return false;
-    }
-
-    @Override
-    protected boolean hasClosed()
-    {
-        return false;
     }
 
     @Override

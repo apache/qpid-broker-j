@@ -31,6 +31,9 @@ import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -153,12 +156,6 @@ public class TestConsumerTarget implements ConsumerTarget
     }
 
     @Override
-    public boolean hasMessagesToSend()
-    {
-        return false;
-    }
-
-    @Override
     public boolean sendNextMessage()
     {
         return false;
@@ -199,9 +196,10 @@ public class TestConsumerTarget implements ConsumerTarget
     }
 
     @Override
-    public void consumerRemoved(final ConsumerImpl sub)
+    public ListenableFuture<Void> consumerRemoved(final ConsumerImpl sub)
     {
        close();
+        return Futures.immediateFuture(null);
     }
 
     @Override
@@ -275,21 +273,6 @@ public class TestConsumerTarget implements ConsumerTarget
         _isActive = isActive;
     }
 
-
-    public final boolean trySendLock()
-    {
-        return _stateChangeLock.tryLock();
-    }
-
-    public final void getSendLock()
-    {
-        _stateChangeLock.lock();
-    }
-
-    public final void releaseSendLock()
-    {
-        _stateChangeLock.unlock();
-    }
 
     @Override
     public boolean isMultiQueue()
@@ -508,9 +491,9 @@ public class TestConsumerTarget implements ConsumerTarget
         }
 
         @Override
-        public void ensureConsumersNoticedStateChange()
+        public void notifyWork(final ConsumerTarget target)
         {
-
+            _connection.notifyWork(this);
         }
 
         @Override

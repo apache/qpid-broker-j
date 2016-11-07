@@ -79,14 +79,14 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
     }
 
     @Override
-    protected void onClose()
+    protected ListenableFuture<Void> onClose()
     {
-        super.onClose();
         if(_checkExpiryTaskFuture != null)
         {
             _checkExpiryTaskFuture.cancel(false);
             _checkExpiryTaskFuture = null;
         }
+        return Futures.immediateFuture(null);
     }
 
     protected void initializeExpiryChecking()

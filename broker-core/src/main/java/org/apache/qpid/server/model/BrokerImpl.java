@@ -671,7 +671,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     }
 
     @Override
-    protected void onClose()
+    protected ListenableFuture<Void> onClose()
     {
         if (_reportingTimer != null)
         {
@@ -700,6 +700,8 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                 task.run();
             }
         }
+        return Futures.immediateFuture(null);
+
     }
 
     @Override

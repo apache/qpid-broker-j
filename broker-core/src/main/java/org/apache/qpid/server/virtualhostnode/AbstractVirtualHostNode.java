@@ -405,10 +405,11 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
     }
 
     @Override
-    protected void onClose()
+    protected ListenableFuture<Void> onClose()
     {
         closeConfigurationStore();
         _virtualHostExecutor.stop();
+        return Futures.immediateFuture(null);
     }
 
     private void closeConfigurationStore()

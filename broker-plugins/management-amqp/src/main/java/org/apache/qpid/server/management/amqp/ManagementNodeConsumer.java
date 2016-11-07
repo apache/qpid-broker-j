@@ -73,23 +73,15 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
     @Override
     public AbstractQueue.MessageContainer pullMessage()
     {
-        _target.getSendLock();
-        try
+        if (!_queue.isEmpty())
         {
-            if (!_queue.isEmpty())
-            {
 
-                final ManagementResponse managementResponse = _queue.get(0);
-                if (!_target.isSuspended() && _target.allocateCredit(managementResponse.getMessage()))
-                {
-                    _queue.remove(0);
-                    return new AbstractQueue.MessageContainer(managementResponse, null);
-                }
+            final ManagementResponse managementResponse = _queue.get(0);
+            if (!_target.isSuspended() && _target.allocateCredit(managementResponse.getMessage()))
+            {
+                _queue.remove(0);
+                return new AbstractQueue.MessageContainer(managementResponse, null);
             }
-        }
-        finally
-        {
-            _target.releaseSendLock();
         }
         return null;
     }
@@ -163,24 +155,6 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
     @Override
     public void close()
     {
-    }
-
-    @Override
-    public boolean trySendLock()
-    {
-        return _target.trySendLock();
-    }
-
-    @Override
-    public void getSendLock()
-    {
-        _target.getSendLock();
-    }
-
-    @Override
-    public void releaseSendLock()
-    {
-        _target.releaseSendLock();
     }
 
 

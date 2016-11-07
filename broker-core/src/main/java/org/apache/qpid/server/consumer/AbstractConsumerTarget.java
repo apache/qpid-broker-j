@@ -32,6 +32,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +41,7 @@ import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.SubscriptionMessages;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.model.Consumer;
+import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.queue.AbstractQueue;
 import org.apache.qpid.server.queue.SuspendedConsumerLoggingTicker;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -90,7 +93,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     public void notifyWork()
     {
         _waitingOnStateChange.set(false);
-        getSessionModel().getAMQPConnection().notifyWork();
+        getSessionModel().notifyWork(this);
     }
 
     @Override
@@ -100,31 +103,24 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
         {
             return false;
         }
-        if(sendNextMessage())
-        {
-            return true;
-        }
-        else
-        {
-            processStateChanged();
-            processClosed();
-            return false;
-        }
+        return sendNextMessage();
     }
 
     @Override
     public boolean hasPendingWork()
     {
-        return hasMessagesToSend() || hasStateChanged() || hasClosed();
+        if (!_waitingOnStateChange.get() && hasCredit())
+        {
+            for (ConsumerImpl consumer : _consumers)
+            {
+                if (consumer.hasAvailableMessages())
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
-
-    protected abstract boolean hasStateChanged();
-
-    protected abstract boolean hasClosed();
-
-    protected abstract void processStateChanged();
-
-    protected abstract void processClosed();
 
     @Override
     public void consumerAdded(final ConsumerImpl sub)
@@ -133,7 +129,33 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     }
 
     @Override
-    public void consumerRemoved(final ConsumerImpl sub)
+    public ListenableFuture<Void> consumerRemoved(final ConsumerImpl sub)
+    {
+        if(_consumers.contains(sub))
+        {
+            return doOnIoThreadAsync(
+                    new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            consumerRemovedInternal(sub);
+                        }
+                    });
+        }
+        else
+        {
+            return Futures.immediateFuture(null);
+        }
+    }
+
+    private ListenableFuture<Void> doOnIoThreadAsync(final Runnable task)
+    {
+        AMQSessionModel<?> sessionModel = getSessionModel();
+        return sessionModel.getAMQPConnection().doOnIOThreadAsync(task);
+    }
+
+    private void consumerRemovedInternal(final ConsumerImpl sub)
     {
         _consumers.remove(sub);
         if(_consumers.isEmpty())
@@ -250,21 +272,6 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
         _stateChangeListeners.remove(listener);
     }
 
-    public final boolean trySendLock()
-    {
-        return _stateChangeLock.tryLock();
-    }
-
-    public final void getSendLock()
-    {
-        _stateChangeLock.lock();
-    }
-
-    public final void releaseSendLock()
-    {
-        _stateChangeLock.unlock();
-    }
-
     @Override
     public final long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
     {
@@ -279,21 +286,6 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
 
     protected abstract void doSend(final ConsumerImpl consumer, MessageInstance entry, boolean batch);
 
-    @Override
-    public boolean hasMessagesToSend()
-    {
-        if (!_waitingOnStateChange.get() && hasCredit())
-        {
-            for (ConsumerImpl consumer : _consumers)
-            {
-                if (consumer.hasAvailableMessages())
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
 
     @Override
     public boolean sendNextMessage()
@@ -351,27 +343,21 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     {
         boolean closed = false;
         State state = getState();
+        List<ConsumerImpl> consumers = new ArrayList<>(_consumers);
+        _consumers.clear();
 
-        getSendLock();
-        try
+        while(!closed && state != State.CLOSED)
         {
-            while(!closed && state != State.CLOSED)
+            closed = updateState(state, State.CLOSED);
+            if(!closed)
             {
-                closed = updateState(state, State.CLOSED);
-                if(!closed)
-                {
-                    state = getState();
-                }
+                state = getState();
             }
-            ConsumerMessageInstancePair instance;
-            doCloseInternal();
-        }
-        finally
-        {
-            releaseSendLock();
         }
 
-        for (ConsumerImpl consumer : _consumers)
+        doCloseInternal();
+
+        for (ConsumerImpl consumer : consumers)
         {
             consumer.close();
         }

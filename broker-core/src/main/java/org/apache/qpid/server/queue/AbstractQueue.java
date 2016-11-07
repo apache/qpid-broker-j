@@ -1851,11 +1851,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    protected void onClose()
+    protected ListenableFuture<Void> onClose()
     {
-        super.onClose();
         _stopped.set(true);
         _closing = false;
+        return Futures.immediateFuture(null);
     }
 
     public void checkCapacity(AMQSessionModel channel)
@@ -1931,7 +1931,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         boolean queueEmpty = false;
         MessageContainer messageContainer = null;
 
-        sub.getSendLock();
         try
         {
             if (!sub.isSuspended())
@@ -1950,7 +1949,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
         finally
         {
-            sub.releaseSendLock();
             if(queueEmpty)
             {
                 sub.queueEmpty();

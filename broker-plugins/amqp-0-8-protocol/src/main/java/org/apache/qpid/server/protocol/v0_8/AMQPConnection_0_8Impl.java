@@ -86,7 +86,7 @@ import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.TransportException;
 
 public class AMQPConnection_0_8Impl
-        extends AbstractAMQPConnection<AMQPConnection_0_8Impl>
+        extends AbstractAMQPConnection<AMQPConnection_0_8Impl, AMQPConnection_0_8Impl>
         implements ServerMethodProcessor<ServerChannelMethodProcessor>, AMQPConnection_0_8<AMQPConnection_0_8Impl>
 {
 
@@ -812,12 +812,14 @@ public class AMQPConnection_0_8Impl
         addAsyncTask(action);
     }
 
-    private void addAsyncTask(final Action<AMQPConnection_0_8Impl> action)
+    @Override
+    protected void addAsyncTask(final Action<? super AMQPConnection_0_8Impl> action)
     {
         _asyncTaskList.add(action);
         notifyWork();
     }
 
+    @Override
     public void block()
     {
         synchronized (_channelAddRemoveLock)
@@ -1388,6 +1390,12 @@ public class AMQPConnection_0_8Impl
 
             listener.performAction(this);
         }
+    }
+
+    @Override
+    public void notifyWork(final AMQSessionModel<?> sessionModel)
+    {
+        notifyWork();
     }
 
     @Override

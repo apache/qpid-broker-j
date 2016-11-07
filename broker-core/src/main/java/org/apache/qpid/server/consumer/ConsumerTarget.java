@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.consumer;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -54,7 +56,7 @@ public interface ConsumerTarget
 
     void consumerAdded(ConsumerImpl sub);
 
-    void consumerRemoved(ConsumerImpl sub);
+    ListenableFuture<Void> consumerRemoved(ConsumerImpl sub);
 
     void notifyCurrentState();
 
@@ -67,8 +69,6 @@ public interface ConsumerTarget
     AMQSessionModel getSessionModel();
 
     long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch);
-
-    boolean hasMessagesToSend();
 
     boolean sendNextMessage();
 
@@ -85,11 +85,4 @@ public interface ConsumerTarget
     boolean isSuspended();
 
     boolean close();
-
-    boolean trySendLock();
-
-    void getSendLock();
-
-    void releaseSendLock();
-
 }

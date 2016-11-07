@@ -44,7 +44,6 @@ import org.apache.qpid.server.queue.AbstractQueue;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
@@ -146,22 +145,14 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         @Override
         public AbstractQueue.MessageContainer pullMessage()
         {
-            _target.getSendLock();
-            try
+            if (!_queue.isEmpty())
             {
-                if (!_queue.isEmpty())
+                final PropertiesMessageInstance propertiesMessageInstance = _queue.get(0);
+                if (!_target.isSuspended() && _target.allocateCredit(propertiesMessageInstance.getMessage()))
                 {
-                    final PropertiesMessageInstance propertiesMessageInstance = _queue.get(0);
-                    if (!_target.isSuspended() && _target.allocateCredit(propertiesMessageInstance.getMessage()))
-                    {
-                        _queue.remove(0);
-                        return new AbstractQueue.MessageContainer(propertiesMessageInstance, null);
-                    }
+                    _queue.remove(0);
+                    return new AbstractQueue.MessageContainer(propertiesMessageInstance, null);
                 }
-            }
-            finally
-            {
-                _target.releaseSendLock();
             }
             return null;
         }
@@ -236,24 +227,6 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         public void close()
         {
             _consumers.remove(this);
-        }
-
-        @Override
-        public boolean trySendLock()
-        {
-            return _target.trySendLock();
-        }
-
-        @Override
-        public void getSendLock()
-        {
-            _target.getSendLock();
-        }
-
-        @Override
-        public void releaseSendLock()
-        {
-            _target.releaseSendLock();
         }
 
         @Override

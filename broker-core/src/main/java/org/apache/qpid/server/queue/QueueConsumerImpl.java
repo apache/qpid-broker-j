@@ -33,6 +33,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -301,28 +303,33 @@ class QueueConsumerImpl
     }
 
     @Override
-    protected void onClose()
+    protected ListenableFuture<Void> onClose()
     {
         if(_closed.compareAndSet(false,true))
         {
-            _target.getSendLock();
-            try
-            {
-                _waitingOnCreditMessageListener.remove();
-                _target.consumerRemoved(this);
-                _target.removeStateChangeListener(_listener);
-                _queue.unregisterConsumer(this);
-                if(_suspendedConsumerLoggingTicker != null)
-                {
-                    getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
-                }
-                deleted();
-            }
-            finally
-            {
-                _target.releaseSendLock();
-            }
+            _waitingOnCreditMessageListener.remove();
 
+            return doAfter(_target.consumerRemoved(this),
+                           new Runnable()
+                           {
+                               @Override
+                               public void run()
+                               {
+                                   _target.removeStateChangeListener(_listener);
+
+                                   _queue.unregisterConsumer(QueueConsumerImpl.this);
+
+                                   if (_suspendedConsumerLoggingTicker != null)
+                                   {
+                                       getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
+                                   }
+                                   deleted();
+                               }
+                           });
+        }
+        else
+        {
+            return Futures.immediateFuture(null);
         }
     }
 
@@ -522,21 +529,6 @@ class QueueConsumerImpl
         }
 
         return filterLogString.toString();
-    }
-
-    public final boolean trySendLock()
-    {
-        return getTarget().trySendLock();
-    }
-
-    public final void getSendLock()
-    {
-        getTarget().getSendLock();
-    }
-
-    public final void releaseSendLock()
-    {
-        getTarget().releaseSendLock();
     }
 
     public final long getCreateTime()

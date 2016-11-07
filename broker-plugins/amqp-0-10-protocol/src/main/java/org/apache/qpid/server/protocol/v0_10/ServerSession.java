@@ -206,7 +206,7 @@ public class ServerSession extends Session
         }
 
         _blockingTimeout = serverConnection.getBroker().getContextValue(Long.class, Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
-        _maxUncommittedInMemorySize = getConnection().getAmqpConnection().getContextProvider().getContextValue(Long.class, org.apache.qpid.server.model.Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
+        _maxUncommittedInMemorySize = getAMQPConnection().getContextProvider().getContextValue(Long.class, org.apache.qpid.server.model.Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
         _publishAuthCahe = new PublishAuthorisationCache(_token,
                                                          amqpConnection.getContextValue(Long.class, org.apache.qpid.server.model.Session.PRODUCER_AUTH_CACHE_TIMEOUT),
                                                          amqpConnection.getContextValue(Integer.class, org.apache.qpid.server.model.Session.PRODUCER_AUTH_CACHE_SIZE));
@@ -226,7 +226,7 @@ public class ServerSession extends Session
 
             if (state == State.OPEN)
             {
-                getConnection().getAmqpConnection().getEventLogger().message(ChannelMessages.CREATE());
+                getAMQPConnection().getEventLogger().message(ChannelMessages.CREATE());
             }
         }
         else
@@ -320,8 +320,8 @@ public class ServerSession extends Session
                 handle.flowToDisk();
                 if(!_uncommittedMessages.isEmpty() || _uncommittedMessageSize == handle.getMetaData().getContentSize())
                 {
-                    getConnection().getAmqpConnection().getEventLogger()
-                            .message(_logSubject, ChannelMessages.LARGE_TRANSACTION_WARN(_uncommittedMessageSize));
+                    getAMQPConnection().getEventLogger()
+                                       .message(_logSubject, ChannelMessages.LARGE_TRANSACTION_WARN(_uncommittedMessageSize));
                 }
 
                 if(!_uncommittedMessages.isEmpty())
@@ -528,7 +528,7 @@ public class ServerSession extends Session
         {
             operationalLoggingMessage = ChannelMessages.CLOSE();
         }
-        getConnection().getAmqpConnection().getEventLogger().message(getLogSubject(), operationalLoggingMessage);
+        getAMQPConnection().getEventLogger().message(getLogSubject(), operationalLoggingMessage);
     }
 
     @Override
@@ -853,10 +853,10 @@ public class ServerSession extends Session
 
                 if(_blocking.compareAndSet(false,true))
                 {
-                    getConnection().getAmqpConnection().getEventLogger().message(_logSubject, ChannelMessages.FLOW_ENFORCED(name));
+                    getAMQPConnection().getEventLogger().message(_logSubject, ChannelMessages.FLOW_ENFORCED(name));
                     if(getState() == State.OPEN)
                     {
-                        getConnection().notifyWork();
+                        getAMQPConnection().notifyWork(this);
                     }
                 }
 
@@ -881,8 +881,8 @@ public class ServerSession extends Session
         {
             if(_blocking.compareAndSet(true,false) && !isClosing())
             {
-                getConnection().getAmqpConnection().getEventLogger().message(_logSubject, ChannelMessages.FLOW_REMOVED());
-                getConnection().notifyWork();
+                getAMQPConnection().getEventLogger().message(_logSubject, ChannelMessages.FLOW_REMOVED());
+                getAMQPConnection().notifyWork(this);
             }
         }
     }
@@ -1239,7 +1239,7 @@ public class ServerSession extends Session
     @Override
     public void addTicker(final Ticker ticker)
     {
-        getConnection().getAmqpConnection().getAggregateTicker().addTicker(ticker);
+        getAMQPConnection().getAggregateTicker().addTicker(ticker);
         // trigger a wakeup to ensure the ticker will be taken into account
         getAMQPConnection().notifyWork();
     }
@@ -1247,24 +1247,13 @@ public class ServerSession extends Session
     @Override
     public void removeTicker(final Ticker ticker)
     {
-        getConnection().getAmqpConnection().getAggregateTicker().removeTicker(ticker);
+        getAMQPConnection().getAggregateTicker().removeTicker(ticker);
     }
 
     @Override
-    public void ensureConsumersNoticedStateChange()
+    public void notifyWork(final ConsumerTarget target)
     {
-        Collection<ConsumerTarget_0_10> consumerTargets = getSubscriptions();
-        for(ConsumerTarget_0_10 consumerTarget: consumerTargets)
-        {
-            try
-            {
-                consumerTarget.getSendLock();
-            }
-            finally
-            {
-                consumerTarget.releaseSendLock();
-            }
-        }
+        getAMQPConnection().notifyWork(this);
     }
 
     @Override

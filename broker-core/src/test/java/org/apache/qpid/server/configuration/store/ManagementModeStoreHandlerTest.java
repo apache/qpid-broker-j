@@ -142,8 +142,9 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
             }
 
             @Override
-            protected void onClose()
+            protected ListenableFuture<Void> onClose()
             {
+                return Futures.immediateFuture(null);
             }
 
             @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)

@@ -72,13 +72,6 @@ public interface ConsumerImpl
 
     void close();
 
-    boolean trySendLock();
-
-
-    void getSendLock();
-
-    void releaseSendLock();
-
     boolean isActive();
 
     String getName();
