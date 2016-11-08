@@ -143,8 +143,11 @@ public class ServerSession extends Session
     private long _blockTime;
     private long _blockingTimeout;
     private boolean _wireBlockingState;
-    private final List<ConsumerTarget> _consumersWithPendingWork = new ArrayList<>();
-    private final PublishAuthorisationCache _publishAuthCahe;
+    private final Set<ConsumerTarget> _consumersWithPendingWork =
+            Collections.newSetFromMap(new ConcurrentHashMap<ConsumerTarget, Boolean>());
+    private Iterator<ConsumerTarget> _processPendingIterator;
+
+    private final PublishAuthorisationCache _publishAuthCache;
 
 
     public static interface MessageDispositionChangeListener
@@ -207,9 +210,9 @@ public class ServerSession extends Session
 
         _blockingTimeout = serverConnection.getBroker().getContextValue(Long.class, Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
         _maxUncommittedInMemorySize = getAMQPConnection().getContextProvider().getContextValue(Long.class, org.apache.qpid.server.model.Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
-        _publishAuthCahe = new PublishAuthorisationCache(_token,
-                                                         amqpConnection.getContextValue(Long.class, org.apache.qpid.server.model.Session.PRODUCER_AUTH_CACHE_TIMEOUT),
-                                                         amqpConnection.getContextValue(Integer.class, org.apache.qpid.server.model.Session.PRODUCER_AUTH_CACHE_SIZE));
+        _publishAuthCache = new PublishAuthorisationCache(_token,
+                                                          amqpConnection.getContextValue(Long.class, org.apache.qpid.server.model.Session.PRODUCER_AUTH_CACHE_TIMEOUT),
+                                                          amqpConnection.getContextValue(Integer.class, org.apache.qpid.server.model.Session.PRODUCER_AUTH_CACHE_SIZE));
 
     }
 
@@ -275,7 +278,7 @@ public class ServerSession extends Session
                           final boolean immediate,
                           final long currentTime)
     {
-        _publishAuthCahe.authorisePublish(destination, routingKey, immediate, currentTime);
+        _publishAuthCache.authorisePublish(destination, routingKey, immediate, currentTime);
     }
 
     @Override
@@ -1206,34 +1209,26 @@ public class ServerSession extends Session
             _blockTime = desiredBlockingState ? System.currentTimeMillis() : 0;
         }
 
-        boolean consumerListNeedsRefreshing;
-        if(_consumersWithPendingWork.isEmpty())
-        {
-            _consumersWithPendingWork.addAll(getSubscriptions());
-            consumerListNeedsRefreshing = false;
-        }
-        else
-        {
-            consumerListNeedsRefreshing = true;
-        }
 
-        // QPID-7447: prevent unnecessary allocation of empty iterator
-        Iterator<ConsumerTarget> iter = _consumersWithPendingWork.isEmpty() ? Collections.<ConsumerTarget>emptyIterator() : _consumersWithPendingWork.iterator();
-
-        boolean consumerHasMoreWork = false;
-        while(iter.hasNext())
+        if(!_consumersWithPendingWork.isEmpty())
         {
-            final ConsumerTarget target = iter.next();
-            iter.remove();
-            if(target.hasPendingWork())
+            if (_processPendingIterator == null || !_processPendingIterator.hasNext())
             {
-                consumerHasMoreWork = true;
-                target.processPending();
-                break;
+                _processPendingIterator = _consumersWithPendingWork.iterator();
+            }
+
+            if(_processPendingIterator.hasNext())
+            {
+                ConsumerTarget target = _processPendingIterator.next();
+                _processPendingIterator.remove();
+                if (target.processPending())
+                {
+                    _consumersWithPendingWork.add(target);
+                }
             }
         }
 
-        return consumerHasMoreWork || consumerListNeedsRefreshing;
+        return !_consumersWithPendingWork.isEmpty();
     }
 
     @Override
@@ -1253,7 +1248,10 @@ public class ServerSession extends Session
     @Override
     public void notifyWork(final ConsumerTarget target)
     {
-        getAMQPConnection().notifyWork(this);
+        if(_consumersWithPendingWork.add(target))
+        {
+            getAMQPConnection().notifyWork(this);
+        }
     }
 
     @Override

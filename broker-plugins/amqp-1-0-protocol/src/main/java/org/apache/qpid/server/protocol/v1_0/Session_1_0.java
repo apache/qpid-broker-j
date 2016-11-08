@@ -35,7 +35,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -125,7 +127,9 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     private final ConfigurationChangeListener _consumerClosedListener = new ConsumerClosedListener();
     private final CopyOnWriteArrayList<ConsumerListener> _consumerListeners = new CopyOnWriteArrayList<ConsumerListener>();
     private Session<?> _modelObject;
-    private final List<ConsumerTarget_1_0> _consumersWithPendingWork = new ArrayList<>();
+    private final Set<ConsumerTarget> _consumersWithPendingWork =
+            Collections.newSetFromMap(new ConcurrentHashMap<ConsumerTarget, Boolean>());
+    private Iterator<ConsumerTarget> _processPendingIterator;
 
     private SessionState _state ;
 
@@ -1531,36 +1535,26 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
             return false;
         }
 
-        boolean consumerListNeedsRefreshing;
-        if(_consumersWithPendingWork.isEmpty())
-        {
-            for(SendingLink_1_0 link : _sendingLinks)
-            {
-                _consumersWithPendingWork.add(link.getConsumerTarget());
-            }
-            consumerListNeedsRefreshing = false;
-        }
-        else
-        {
-            consumerListNeedsRefreshing = true;
-        }
 
-        // QPID-7447: prevent unnecessary allocation of empty iterator
-        Iterator<ConsumerTarget_1_0> iter = _consumersWithPendingWork.isEmpty() ? Collections.<ConsumerTarget_1_0>emptyIterator() : _consumersWithPendingWork.iterator();
-        boolean consumerHasMoreWork = false;
-        while(iter.hasNext())
+        if(!_consumersWithPendingWork.isEmpty())
         {
-            final ConsumerTarget target = iter.next();
-            iter.remove();
-            if(target.hasPendingWork())
+            if (_processPendingIterator == null || !_processPendingIterator.hasNext())
             {
-                consumerHasMoreWork = true;
-                target.processPending();
-                break;
+                _processPendingIterator = _consumersWithPendingWork.iterator();
+            }
+
+            if(_processPendingIterator.hasNext())
+            {
+                ConsumerTarget target = _processPendingIterator.next();
+                _processPendingIterator.remove();
+                if (target.processPending())
+                {
+                    _consumersWithPendingWork.add(target);
+                }
             }
         }
 
-        return consumerHasMoreWork || consumerListNeedsRefreshing;
+        return !_consumersWithPendingWork.isEmpty();
     }
 
     @Override
@@ -1580,7 +1574,10 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     @Override
     public void notifyWork(final ConsumerTarget target)
     {
-        getAMQPConnection().notifyWork(this);
+        if(_consumersWithPendingWork.add(target))
+        {
+            getAMQPConnection().notifyWork(this);
+        }
     }
 
     @Override

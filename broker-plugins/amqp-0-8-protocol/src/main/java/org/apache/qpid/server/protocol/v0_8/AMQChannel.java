@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -163,7 +164,9 @@ public class AMQChannel
     /** Maps from consumer tag to subscription instance. Allows us to unsubscribe from a queue. */
     private final Map<AMQShortString, ConsumerTarget_0_8> _tag2SubscriptionTargetMap = new HashMap<AMQShortString, ConsumerTarget_0_8>();
 
-    private final List<ConsumerTarget_0_8> _consumersWithPendingWork = new ArrayList<>();
+    private final Set<ConsumerTarget> _consumersWithPendingWork =
+            Collections.newSetFromMap(new ConcurrentHashMap<ConsumerTarget, Boolean>());
+    private Iterator<ConsumerTarget> _processPendingIterator;
 
     private final MessageStore _messageStore;
 
@@ -3739,34 +3742,25 @@ public class AMQChannel
             _blockTime = desiredBlockingState ? System.currentTimeMillis() : 0;
         }
 
-        boolean consumerListNeedsRefreshing;
-        if(_consumersWithPendingWork.isEmpty())
+        if(!_consumersWithPendingWork.isEmpty())
         {
-            _consumersWithPendingWork.addAll(getConsumerTargets());
-            consumerListNeedsRefreshing = false;
-        }
-        else
-        {
-            consumerListNeedsRefreshing = true;
-        }
-
-        // QPID-7447: prevent unnecessary allocation of empty iterator
-        Iterator<ConsumerTarget_0_8> iter = _consumersWithPendingWork.isEmpty() ? Collections.<ConsumerTarget_0_8>emptyIterator() : _consumersWithPendingWork.iterator();
-
-        boolean consumerHasMoreWork = false;
-        while(iter.hasNext())
-        {
-            final ConsumerTarget_0_8 target = iter.next();
-            iter.remove();
-            if(target.hasPendingWork())
+            if (_processPendingIterator == null || !_processPendingIterator.hasNext())
             {
-                consumerHasMoreWork = true;
-                target.processPending();
-                break;
+                _processPendingIterator = _consumersWithPendingWork.iterator();
+            }
+
+            if(_processPendingIterator.hasNext())
+            {
+                ConsumerTarget target = _processPendingIterator.next();
+                _processPendingIterator.remove();
+                if (target.processPending())
+                {
+                    _consumersWithPendingWork.add(target);
+                }
             }
         }
 
-        return consumerHasMoreWork || consumerListNeedsRefreshing;
+        return !_consumersWithPendingWork.isEmpty();
     }
 
     @Override
@@ -3786,7 +3780,10 @@ public class AMQChannel
     @Override
     public void notifyWork(final ConsumerTarget target)
     {
-        getAMQPConnection().notifyWork(this);
+        if(_consumersWithPendingWork.add(target))
+        {
+            getAMQPConnection().notifyWork(this);
+        }
     }
 
     private Collection<ConsumerTarget_0_8> getConsumerTargets()
