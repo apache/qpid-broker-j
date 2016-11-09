@@ -31,12 +31,13 @@ define(["dojo/_base/declare",
     return declare("qpid.management.query.WhereExpression", [ContentPane, Evented], {
         whereExpression: "",
         whereFieldsSelector: null,
-        _whereItems: {},
+        _whereItems: null,
         userPreferences: null,
 
         postCreate: function ()
         {
             this.inherited(arguments);
+            this._whereItems = {};
             if (this.whereFieldsSelector)
             {
                 this.whereFieldsSelector.on("change", lang.hitch(this, this._whereExpressionChanged));

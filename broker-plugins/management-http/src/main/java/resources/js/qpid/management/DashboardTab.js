@@ -168,12 +168,12 @@ define(["dojo/parser",
                 message: "<div>Dashbord contains unsaved changes.<br/>Would you like to close it anyway?</div>",
                 confirmationId: "dashboard.confirmation.close.changed"
             })
-                .then(lang.hitch(this, this.destroy));
+                .then(lang.hitch(this, function(){this.destroy(true);}));
 
             return false;
         };
 
-        DashboardTab.prototype.destroy = function ()
+        DashboardTab.prototype.destroy = function (destroyContentPane)
         {
             if (this.destroyed)
             {
@@ -187,6 +187,12 @@ define(["dojo/parser",
             {
                 this.dashboardWidget.destroyRecursive();
                 this.dashboardWidget = null;
+            }
+
+            if (destroyContentPane)
+            {
+                this.contentPane.getParent().removeChild(this.contentPane);
+                this.contentPane.destroyRecursive();
             }
         };
 

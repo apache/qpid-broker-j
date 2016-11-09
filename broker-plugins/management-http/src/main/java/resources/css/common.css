@@ -380,7 +380,8 @@ div .messages {
 .infoPane
 {
     margin-left: 5px;
-    padding: 5px 5px 5px 1.2em;
+    margin-bottom: 5px;
+    padding: 5px 5px 0px 1.2em;
     font-style: italic;
     background:url("../images/notification.svg") no-repeat left center;
     background-size: 1em;
