@@ -116,7 +116,7 @@ define(["dojo/dom",
                     for (var i = 0; i < contentData.length; i++)
                     {
                         var element = contentData[i];
-                        if (!Number.isInteger(element) || element < 0 || element > 255)
+                        if (!Number.isInteger(element) || element < -128 || element > 127)
                         {
                             isByteArray = false;
                             break;
@@ -287,7 +287,7 @@ define(["dojo/dom",
                             showMessage.previewWidget.destroyRecursive();
                         }
                         var widgetDiv = construct.create("div", null, previewContent, "last");
-                        var contentData = jqson.parse(content);
+                        var contentData = json.parse(content);
                         var contentWidget = showMessage.createPreviewWidget(contentData, widgetDiv);
                         showMessage.previewWidget = contentWidget;
                         contentWidget.startup();

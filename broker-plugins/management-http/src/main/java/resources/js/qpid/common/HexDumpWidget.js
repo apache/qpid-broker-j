@@ -30,12 +30,12 @@ define(["dojo/_base/declare",
              * constructor fields
              */
             data: null,
-            width: 8,
+            numberOfColumns: 8,
 
             postCreate: function ()
             {
                 this.inherited(arguments);
-                var rows = Math.floor(this.data.length / this.width) + (this.data.length % this.width == 0 ? 0 : 1);
+                var rows = Math.floor(this.data.length / this.numberOfColumns) + (this.data.length % this.numberOfColumns == 0 ? 0 : 1);
 
                 var hexDumpBox = domConstruct.create("div", {class: "hexDumpBox"}, this.domNode);
                 var hexBox = domConstruct.create("span", {class: "hexBox"}, hexDumpBox);
@@ -51,7 +51,7 @@ define(["dojo/_base/declare",
                 var asciiHeadRowDom = domConstruct.create("div", {class: "hexDumpHeadRow"}, asciiBox);
                 domConstruct.create("span", {class: "hexCountCell"}, hexHeadRowDom);
 
-                for (var column = 0; column < this.width; column++)
+                for (var column = 0; column < this.numberOfColumns; column++)
                 {
                     var hexHeadCellDom = domConstruct.create("span", {class: "hexDumpCell"}, hexHeadRowDom);
                     hexHeadCellDom.innerHTML = this._toHex(column, 2);
@@ -69,11 +69,11 @@ define(["dojo/_base/declare",
                     var asciiRowDom = domConstruct.create("div", {class: "hexDumpRow"}, asciiBox);
 
                     var hexCountCellDom = domConstruct.create("span", {class: "hexCountCell"}, hexRowDom);
-                    hexCountCellDom.innerHTML = this._toHex(row * this.width, 4);
+                    hexCountCellDom.innerHTML = this._toHex(row * this.numberOfColumns, 4);
 
-                    for (var column = 0; column < this.width; column++)
+                    for (var column = 0; column < this.numberOfColumns; column++)
                     {
-                        var dataIndex = (row * this.width) + column;
+                        var dataIndex = (row * this.numberOfColumns) + column;
                         if (dataIndex >= this.data.length)
                         {
                             break;
@@ -110,7 +110,7 @@ define(["dojo/_base/declare",
 
             _toAsciiPrintable: function (c)
             {
-                if (c < 32 || c > 127)
+                if (c <= 32 || c >= 127)
                 {
                     return ".";
                 }
@@ -122,7 +122,7 @@ define(["dojo/_base/declare",
 
             _toHex: function (d, pad)
             {
-                var hex = Number(d).toString(16);
+                var hex = Number(d & 0xFF).toString(16);
 
                 while (hex.length < pad)
                 {
