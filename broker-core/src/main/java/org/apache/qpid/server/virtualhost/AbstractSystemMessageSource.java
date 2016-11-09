@@ -156,12 +156,6 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public boolean hasAvailableMessages()
-        {
-            return !_queue.isEmpty();
-        }
-
-        @Override
         public AbstractQueue.MessageContainer pullMessage()
         {
             if (!_queue.isEmpty())

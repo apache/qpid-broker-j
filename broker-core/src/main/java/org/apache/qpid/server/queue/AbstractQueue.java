@@ -1064,7 +1064,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 updateSubRequeueEntry(sub, entry);
             }
         }
-        notifyAllConsumers();
     }
 
     public void addBinding(final Binding<?> binding)
@@ -1335,6 +1334,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 if(QueueContext._releasedUpdater.compareAndSet(subContext, oldEntry, entry))
                 {
+                    sub.notifyWork();
                     break;
                 }
             }
@@ -1355,8 +1355,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 updateSubRequeueEntry(sub, entry);
             }
         }
-        notifyAllConsumers();
-
     }
 
     @Override
@@ -2070,7 +2068,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return true;
     }
 
-    protected void advanceAllConsumers()
+
+    private void advanceAllConsumers()
     {
         ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
         while (consumerNodeIterator.advance())
@@ -2144,16 +2143,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-
-    boolean hasAvailableMessages(final QueueConsumer queueConsumer)
-    {
-        boolean hasAvailableMessages = getNextAvailableEntry(queueConsumer) != null;
-        if (!hasAvailableMessages)
-        {
-            queueConsumer.queueEmpty();
-        }
-        return hasAvailableMessages;
-    }
 
     public void checkMessageStatus()
     {

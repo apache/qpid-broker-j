@@ -68,12 +68,6 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
     }
 
     @Override
-    public boolean hasAvailableMessages()
-    {
-        return !_queue.isEmpty();
-    }
-
-    @Override
     public AbstractQueue.MessageContainer pullMessage()
     {
         if (!_queue.isEmpty())

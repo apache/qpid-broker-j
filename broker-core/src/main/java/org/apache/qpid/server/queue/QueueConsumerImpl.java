@@ -267,12 +267,6 @@ class QueueConsumerImpl
     }
 
     @Override
-    public boolean hasAvailableMessages()
-    {
-        return !_queue.isEmpty() && _queue.hasAvailableMessages(this);
-    }
-
-    @Override
     public long getUnacknowledgedBytes()
     {
         return _target.getUnacknowledgedBytes();

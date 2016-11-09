@@ -34,8 +34,6 @@ public interface ConsumerImpl
 
     ConsumerTarget getTarget();
 
-    boolean hasAvailableMessages();
-
     AbstractQueue.MessageContainer pullMessage();
 
     enum Option
