@@ -30,6 +30,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -107,6 +108,8 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
 {
     private static final Logger _logger = LoggerFactory.getLogger(Session_1_0.class);
     private static final Symbol LIFETIME_POLICY = Symbol.valueOf("lifetime-policy");
+    private static final EnumSet<SessionState> END_STATES =
+            EnumSet.of(SessionState.END_RECVD, SessionState.END_PIPE, SessionState.END_SENT, SessionState.ENDED);
     private final AccessControlContext _accessControllerContext;
     private final SecurityToken _securityToken;
     private AutoCommitTransaction _transaction;
@@ -1530,7 +1533,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     @Override
     public boolean processPending()
     {
-        if (!getAMQPConnection().isIOThread())
+        if (!getAMQPConnection().isIOThread() || END_STATES.contains(getState()))
         {
             return false;
         }

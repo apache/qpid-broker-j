@@ -24,7 +24,7 @@ package org.apache.qpid.server.flow;
 
 public interface FlowCreditManager
 {
-    public static interface FlowCreditManagerListener
+    interface FlowCreditManagerListener
     {
         void creditStateChanged(boolean hasCredit);
     }
@@ -33,10 +33,10 @@ public interface FlowCreditManager
 
     boolean removeListener(FlowCreditManagerListener listener);
 
-    public void restoreCredit(long messageCredit, long bytesCredit);
+    void restoreCredit(long messageCredit, long bytesCredit);
 
-    public boolean hasCredit();
+    boolean hasCredit();
 
-    public boolean useCreditForMessage(long msgSize);
+    boolean useCreditForMessage(long msgSize);
 
 }

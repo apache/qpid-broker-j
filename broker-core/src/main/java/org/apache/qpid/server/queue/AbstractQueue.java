@@ -2011,7 +2011,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 if (sub.hasInterest(node) && mightAssign(sub, node))
                 {
-                    if (!sub.wouldSuspend(node))
+                    if (sub.allocateCredit(node))
                     {
                         MessageReference messageReference = null;
                         try
@@ -2038,13 +2038,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                             }
                         }
                     }
-                    else // Not enough Credit for message and wouldSuspend
+                    else
                     {
-                        //QPID-1187 - Treat the consumer as suspended for this message
-                        // and wait for the message to be removed to continue delivery.
-                        subActive = false;
                         sub.awaitCredit(node);
-
                     }
                 }
             }

@@ -91,4 +91,6 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
     void resetStatistics();
 
     void notifyWork(AMQSessionModel<?> sessionModel);
+
+    boolean isTransportBlockedForWriting();
 }

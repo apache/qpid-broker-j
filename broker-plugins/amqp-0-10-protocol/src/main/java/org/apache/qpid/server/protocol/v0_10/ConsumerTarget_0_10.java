@@ -68,7 +68,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
 
     private static final Option[] BATCHED = new Option[] { Option.BATCH };
 
-    private final AtomicBoolean _deleted = new AtomicBoolean(false);
     private final String _name;
     private final String _targetAddress;
 
@@ -138,8 +137,19 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     @Override
     public boolean isFlowSuspended()
     {
-        return getState()!=State.ACTIVE || _deleted.get() || _session.isClosing() || _session.getAMQPConnection().isConnectionStopped();
+        return getState()!=State.ACTIVE || _session.isClosing() || _session.getAMQPConnection().isConnectionStopped();
         // TODO check for Session suspension
+    }
+
+    @Override
+    public void updateNotifyWorkDesired()
+    {
+        final AMQPConnection_0_10 amqpConnection = _session.getAMQPConnection();
+
+        boolean state = !amqpConnection.isTransportBlockedForWriting()
+                        && getCreditManager().hasCredit();
+
+        setNotifyWorkDesired(state);
     }
 
     @Override
@@ -173,6 +183,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     public void transportStateChanged()
     {
         _creditManager.restoreCredit(0, 0);
+        updateNotifyWorkDesired();
     }
 
     public static class AddMessageDispositionListenerAction implements Runnable
@@ -401,7 +412,8 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
           || !(_creditManager instanceof WindowCreditManager)
           || ((WindowCreditManager)_creditManager).getMessageCreditLimit() < 400 )
         {
-            _creditManager.restoreCredit(_deferredMessageCredit, _deferredSizeCredit);
+            restoreCredit(_deferredMessageCredit, _deferredSizeCredit);
+
             _deferredMessageCredit = 0;
             _deferredSizeCredit = 0l;
         }
@@ -514,20 +526,33 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         return (maxDeliveryLimit > 0 && entry.getDeliveryCount() >= maxDeliveryLimit);
     }
 
-    public void queueDeleted()
-    {
-        _deleted.set(true);
-    }
-
     public boolean allocateCredit(ServerMessage message)
     {
-        return _creditManager.useCreditForMessage(message.getSize());
+        boolean hasCredit = _creditManager.hasCredit();
+        boolean creditAllocated = _creditManager.useCreditForMessage(message.getSize());
+        if(_creditManager.hasCredit() != hasCredit)
+        {
+            updateNotifyWorkDesired();
+        }
+        return creditAllocated;
     }
 
     public void restoreCredit(ServerMessage message)
     {
-        _creditManager.restoreCredit(1, message.getSize());
+        restoreCredit(1, message.getSize());
     }
+
+    void restoreCredit(int count, long size)
+    {
+        boolean hasCredit = _creditManager.hasCredit();
+        _creditManager.restoreCredit(count, size);
+        if(_creditManager.hasCredit() != hasCredit)
+        {
+            updateNotifyWorkDesired();
+        }
+    }
+
+
 
     public FlowCreditManager_0_10 getCreditManager()
     {
@@ -539,13 +564,18 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         updateState(State.ACTIVE, State.SUSPENDED);
         _stopped.set(true);
         FlowCreditManager_0_10 creditManager = getCreditManager();
+        boolean hasCredit = creditManager.hasCredit();
         creditManager.clearCredit();
+        if(hasCredit)
+        {
+            updateNotifyWorkDesired();
+        }
     }
 
     public void addCredit(MessageCreditUnit unit, long value)
     {
         FlowCreditManager_0_10 creditManager = getCreditManager();
-
+        boolean hasCredit = creditManager.hasCredit();
         switch (unit)
         {
             case MESSAGE:
@@ -559,9 +589,14 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
 
         _stopped.set(false);
 
-        if(creditManager.hasCredit())
+        boolean newHasCredit = creditManager.hasCredit();
+        if(newHasCredit)
         {
             updateState(State.SUSPENDED, State.ACTIVE);
+        }
+        if(hasCredit != newHasCredit)
+        {
+            updateNotifyWorkDesired();
         }
 
     }

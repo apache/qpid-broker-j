@@ -306,6 +306,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
 
     public void sendConnectionCloseAsync(final AMQConstant cause, final String message)
     {
+        stopConnection();
         _connection.sendConnectionCloseAsync(cause, message);
     }
 

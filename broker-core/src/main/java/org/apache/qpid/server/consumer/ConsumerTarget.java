@@ -37,8 +37,6 @@ public interface ConsumerTarget
 
     boolean processPending();
 
-    boolean hasPendingWork();
-
     String getTargetAddress();
 
     boolean hasCredit();
@@ -46,6 +44,8 @@ public interface ConsumerTarget
     boolean isMultiQueue();
 
     void notifyWork();
+
+    void updateNotifyWorkDesired();
 
     enum State
     {
@@ -73,8 +73,6 @@ public interface ConsumerTarget
     boolean sendNextMessage();
 
     void flushBatched();
-
-    void queueDeleted();
 
     void queueEmpty();
 

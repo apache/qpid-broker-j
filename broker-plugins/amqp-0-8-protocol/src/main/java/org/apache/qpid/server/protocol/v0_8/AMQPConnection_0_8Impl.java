@@ -801,6 +801,7 @@ public class AMQPConnection_0_8Impl
     @Override
     public void sendConnectionCloseAsync(final AMQConstant cause, final String message)
     {
+        stopConnection();
         Action<AMQPConnection_0_8Impl> action = new Action<AMQPConnection_0_8Impl>()
         {
             @Override
@@ -1436,7 +1437,7 @@ public class AMQPConnection_0_8Impl
         @Override
         public boolean hasNext()
         {
-            return !(_sessionsWithWork.isEmpty() && _asyncTaskList.isEmpty());
+            return (!_sessionsWithWork.isEmpty() && !isClosing() && !isConnectionStopped()) || !_asyncTaskList.isEmpty();
         }
 
         @Override
@@ -1444,24 +1445,40 @@ public class AMQPConnection_0_8Impl
         {
             if(!_sessionsWithWork.isEmpty())
             {
-                if(!_sessionIterator.hasNext())
+                if(isClosing() || isConnectionStopped())
                 {
-                    _sessionIterator = _sessionsWithWork.iterator();
-                }
-                final AMQSessionModel<?> session = _sessionIterator.next();
-                return new Runnable()
-                {
-                    @Override
-                    public void run()
+                    // in case the connection was marked as closing between a call to hasNext() and
+                    // a subsequent call to next()
+                    return new Runnable()
                     {
-                        _sessionIterator.remove();
-
-                        if(session.processPending())
+                        @Override
+                        public void run()
                         {
-                            _sessionsWithWork.add(session);
+
                         }
+                    };
+                }
+                else
+                {
+                    if (!_sessionIterator.hasNext())
+                    {
+                        _sessionIterator = _sessionsWithWork.iterator();
                     }
-                };
+                    final AMQSessionModel<?> session = _sessionIterator.next();
+                    return new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            _sessionIterator.remove();
+
+                            if (session.processPending())
+                            {
+                                _sessionsWithWork.add(session);
+                            }
+                        }
+                    };
+                }
             }
             else if(!_asyncTaskList.isEmpty())
             {

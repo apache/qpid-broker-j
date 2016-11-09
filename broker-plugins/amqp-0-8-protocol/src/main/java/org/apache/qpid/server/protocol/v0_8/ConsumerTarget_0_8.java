@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.qpid.QpidException;
@@ -291,11 +290,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
 
     private final Boolean _autoClose;
 
-    private final AtomicBoolean _deleted = new AtomicBoolean(false);
-
-
-
-
     public ConsumerTarget_0_8(AMQChannel channel,
                               AMQShortString consumerTag,
                               FieldTable arguments,
@@ -365,16 +359,21 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
     @Override
     public boolean isFlowSuspended()
     {
-        return getState()!=State.ACTIVE || _channel.isSuspended() || _deleted.get() || _channel.getAMQPConnection().isConnectionStopped();
+        // (credit || tcp backpressure) || (channel flow || channel closing || connection closing) || connection being stopped by vh
+        return getState()!=State.ACTIVE || _channel.isSuspended() || _channel.getAMQPConnection().isConnectionStopped();
     }
 
-    /**
-     * Callback indicating that a queue has been deleted.
-     *
-     */
-    public void queueDeleted()
+    @Override
+    public void updateNotifyWorkDesired()
     {
-        _deleted.set(true);
+        final AMQPConnection_0_8<?> amqpConnection = _channel.getAMQPConnection();
+
+        boolean state = _channel.isChannelFlow()
+                        && !amqpConnection.isTransportBlockedForWriting()
+                        // this last condition does not need to exist for browsers and no ack
+                        && getCreditManager().hasCredit();
+
+        setNotifyWorkDesired(state);
     }
 
     public boolean isAutoClose()
@@ -395,7 +394,13 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
 
     public boolean allocateCredit(ServerMessage msg)
     {
-        return _creditManager.useCreditForMessage(msg.getSize());
+        boolean hasCredit = _creditManager.hasCredit();
+        boolean allocated = _creditManager.useCreditForMessage(msg.getSize());
+        if(hasCredit != _creditManager.hasCredit())
+        {
+            _channel.updateAllConsumerNotifyWorkDesired();
+        }
+        return allocated;
     }
 
     public AMQChannel getChannel()
@@ -415,7 +420,12 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
 
     public void restoreCredit(final ServerMessage message)
     {
+        boolean hasCredit = _creditManager.hasCredit();
         _creditManager.restoreCredit(1, message.getSize());
+        if(_creditManager.hasCredit() != hasCredit)
+        {
+            _channel.updateAllConsumerNotifyWorkDesired();
+        }
     }
 
     public void creditStateChanged(boolean hasCredit)
@@ -482,12 +492,10 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
 
     private void removeUnacknowledgedMessage(MessageInstance entry)
     {
-
-        final long _size = entry.getMessage().getSize();
-        _unacknowledgedBytes.addAndGet(-_size);
+        _unacknowledgedBytes.addAndGet(-entry.getMessage().getSize());
         _unacknowledgedCount.decrementAndGet();
 
-        _creditManager.restoreCredit(1, _size);
+        restoreCredit(entry.getMessage());
     }
 
     @Override

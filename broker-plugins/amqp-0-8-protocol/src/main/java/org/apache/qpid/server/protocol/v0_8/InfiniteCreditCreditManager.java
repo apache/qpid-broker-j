@@ -20,54 +20,28 @@
 */
 package org.apache.qpid.server.protocol.v0_8;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.qpid.server.flow.AbstractFlowCreditManager;
 import org.apache.qpid.server.flow.FlowCreditManager;
 
-public class MessageOnlyCreditManager extends AbstractFlowCreditManager implements FlowCreditManager
+public class InfiniteCreditCreditManager extends AbstractFlowCreditManager implements FlowCreditManager
 {
-    private final AtomicLong _messageCredit;
 
-    public MessageOnlyCreditManager(final long initialCredit)
+    public InfiniteCreditCreditManager()
     {
-        _messageCredit = new AtomicLong(initialCredit);
     }
 
     public void restoreCredit(long messageCredit, long bytesCredit)
     {
-        _messageCredit.addAndGet(messageCredit);
-        setSuspended(false);
-
     }
 
     public boolean hasCredit()
     {
-        return _messageCredit.get() > 0L;
+        return true;
     }
 
     public boolean useCreditForMessage(long msgSize)
     {
-        if(hasCredit())
-        {
-            if(_messageCredit.addAndGet(-1L) >= 0)
-            {
-                setSuspended(false);
-                return true;
-            }
-            else
-            {
-                _messageCredit.addAndGet(1L);
-                setSuspended(true);
-                return false;
-            }
-        }
-        else
-        {
-            setSuspended(true);
-            return false;
-        }
-                
+        return true;
     }
 
 }

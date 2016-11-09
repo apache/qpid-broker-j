@@ -233,6 +233,7 @@ public class AMQChannel
     private boolean _logChannelFlowMessages = true;
 
     private final CachedFrame _txCommitOkFrame;
+    private boolean _channelFlow = true;
 
     public AMQChannel(AMQPConnection_0_8 connection, int channelId, final MessageStore messageStore)
     {
@@ -304,10 +305,10 @@ public class AMQChannel
                    MessageSource.ExistingExclusiveConsumer, MessageSource.ConsumerAccessRefused
     {
 
-        final FlowCreditManager singleMessageCredit = new MessageOnlyCreditManager(1L);
+        final FlowCreditManager singleMessageCredit = new InfiniteCreditCreditManager();
 
         final GetDeliveryMethod getDeliveryMethod =
-                new GetDeliveryMethod(singleMessageCredit, queue);
+                new GetDeliveryMethod(queue);
         final RecordDeliveryMethod getRecordMethod = new RecordDeliveryMethod()
         {
 
@@ -1456,6 +1457,11 @@ public class AMQChannel
         return _maxUncommittedInMemorySize;
     }
 
+    public boolean isChannelFlow()
+    {
+        return _channelFlow;
+    }
+
     private class NoLocalFilter implements MessageFilter
     {
 
@@ -1493,15 +1499,11 @@ public class AMQChannel
 
     private class GetDeliveryMethod implements ClientDeliveryMethod
     {
-
-        private final FlowCreditManager _singleMessageCredit;
         private final MessageSource _queue;
         private boolean _deliveredMessage;
 
-        public GetDeliveryMethod(final FlowCreditManager singleMessageCredit,
-                                 final MessageSource queue)
+        public GetDeliveryMethod(final MessageSource queue)
         {
-            _singleMessageCredit = singleMessageCredit;
             _queue = queue;
         }
 
@@ -1509,7 +1511,7 @@ public class AMQChannel
         public long deliverToClient(final ConsumerImpl sub, final ServerMessage message,
                                     final InstanceProperties props, final long deliveryTag)
         {
-            _singleMessageCredit.useCreditForMessage(message.getSize());
+
             int queueSize = _queue instanceof Queue ? ((Queue<?>)_queue).getQueueDepthMessages() : 0;
             long size = _connection.getProtocolOutputConverter().writeGetOk(message,
                                                                             props,
@@ -1750,8 +1752,17 @@ public class AMQChannel
     @Override
     public void transportStateChanged()
     {
+        updateAllConsumerNotifyWorkDesired();
         _creditManager.restoreCredit(0, 0);
         _noAckCreditManager.restoreCredit(0, 0);
+    }
+
+    void updateAllConsumerNotifyWorkDesired()
+    {
+        for(ConsumerTarget_0_8 target : _tag2SubscriptionTargetMap.values())
+        {
+            target.updateNotifyWorkDesired();
+        }
     }
 
     @Override
@@ -1765,7 +1776,7 @@ public class AMQChannel
         return getUnacknowledgedMessageMap().size();
     }
 
-    private void flow(boolean flow)
+    private void sendFlow(boolean flow)
     {
         MethodRegistry methodRegistry = _connection.getMethodRegistry();
         AMQMethodBody responseBody = methodRegistry.createChannelFlowBody(flow);
@@ -2663,6 +2674,13 @@ public class AMQChannel
 
 
         sync();
+        if(_channelFlow != active)
+        {
+            _channelFlow = active;
+            // inform consumer targets
+            updateAllConsumerNotifyWorkDesired();
+        }
+
         setSuspended(!active);
 
         MethodRegistry methodRegistry = _connection.getMethodRegistry();
@@ -3729,7 +3747,7 @@ public class AMQChannel
     @Override
     public boolean processPending()
     {
-        if (!getAMQPConnection().isIOThread())
+        if (!getAMQPConnection().isIOThread() || isClosing())
         {
             return false;
         }
@@ -3738,7 +3756,7 @@ public class AMQChannel
         if (desiredBlockingState != _wireBlockingState)
         {
             _wireBlockingState = desiredBlockingState;
-            flow(!desiredBlockingState);
+            sendFlow(!desiredBlockingState);
             _blockTime = desiredBlockingState ? System.currentTimeMillis() : 0;
         }
 

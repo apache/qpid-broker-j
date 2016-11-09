@@ -26,11 +26,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -55,15 +52,13 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     private final Set<StateChangeListener<ConsumerTarget, State>> _stateChangeListeners = new
             CopyOnWriteArraySet<>();
 
-    private final Lock _stateChangeLock = new ReentrantLock();
     private final AtomicInteger _stateActivates = new AtomicInteger();
     private final boolean _isMultiQueue;
     private final SuspendedConsumerLoggingTicker _suspendedConsumerLoggingTicker;
     private final List<ConsumerImpl> _consumers = new CopyOnWriteArrayList<>();
 
     private Iterator<ConsumerImpl> _pullIterator;
-    private final AtomicBoolean _waitingOnStateChange = new AtomicBoolean();
-
+    private boolean _notifyWorkDesired;
 
     protected AbstractConsumerTarget(final State initialState,
                                      final boolean isMultiQueue,
@@ -92,8 +87,17 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     @Override
     public void notifyWork()
     {
-        _waitingOnStateChange.set(false);
         getSessionModel().notifyWork(this);
+    }
+
+    protected final void setNotifyWorkDesired(final boolean desired)
+    {
+        _notifyWorkDesired = desired;
+    }
+
+    protected final boolean isNotifyWorkDesired()
+    {
+        return _notifyWorkDesired;
     }
 
     @Override
@@ -103,23 +107,8 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
         {
             return false;
         }
+        // TODO - if not closed
         return sendNextMessage();
-    }
-
-    @Override
-    public boolean hasPendingWork()
-    {
-        if (!_waitingOnStateChange.get() && hasCredit())
-        {
-            for (ConsumerImpl consumer : _consumers)
-            {
-                if (consumer.hasAvailableMessages())
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     @Override
@@ -290,8 +279,6 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     @Override
     public boolean sendNextMessage()
     {
-        _waitingOnStateChange.set(true);
-
         AbstractQueue.MessageContainer messageContainer = null;
         ConsumerImpl consumer = null;
         boolean iteratedCompleteList = false;
@@ -316,7 +303,6 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
 
         if (messageContainer != null)
         {
-            _waitingOnStateChange.set(false);
             MessageInstance entry = messageContainer._messageInstance;
             try
             {

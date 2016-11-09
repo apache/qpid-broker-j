@@ -32,7 +32,7 @@ public interface QueueConsumer<X extends QueueConsumer<X>> extends Consumer<X>
 
     boolean hasInterest(QueueEntry node);
 
-    boolean wouldSuspend(QueueEntry entry);
+    boolean allocateCredit(QueueEntry entry);
 
     void restoreCredit(QueueEntry entry);
 

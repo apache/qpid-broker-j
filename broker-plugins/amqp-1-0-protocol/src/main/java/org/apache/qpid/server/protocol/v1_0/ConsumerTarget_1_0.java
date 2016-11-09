@@ -33,7 +33,6 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
@@ -52,6 +51,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Released;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
@@ -88,6 +88,19 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     public boolean isFlowSuspended()
     {
         return _link.getSession().getAMQPConnection().isConnectionStopped() || getState() != State.ACTIVE;
+    }
+
+    @Override
+    public void updateNotifyWorkDesired()
+    {
+        final AMQPConnection<?> amqpConnection =
+                _link.getSession().getAMQPConnection();
+
+        boolean state = !amqpConnection.isTransportBlockedForWriting()
+                        && _link.isAttached()
+                        && getEndpoint().hasCreditToSend();
+
+        setNotifyWorkDesired(state);
 
     }
 
@@ -254,6 +267,10 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
         // TODO
     }
 
+    /*
+        Currently if a queue is deleted the consumer sits there withiout being closed, but
+        obviously not receiving any new messages
+
     public void queueDeleted()
     {
         //TODO
@@ -265,7 +282,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                 .getLinkRegistry(getEndpoint().getSession().getConnection().getRemoteContainerId());
         linkReg.unregisterSendingLink(getEndpoint().getName());
     }
-
+      */
     public boolean allocateCredit(final ServerMessage msg)
     {
         ProtocolEngine protocolEngine = getSession().getConnection();
@@ -309,6 +326,8 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
     public void flowStateChanged()
     {
+        updateNotifyWorkDesired();
+
         ProtocolEngine protocolEngine = getSession().getConnection();
         if (isFlowSuspended() && getEndpoint() != null && !protocolEngine.isTransportBlockedForWriting())
         {

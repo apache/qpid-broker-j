@@ -135,10 +135,6 @@ public class TestConsumerTarget implements ConsumerTarget
         return false;
     }
 
-    public void queueDeleted()
-    {
-    }
-
     public void restoreCredit(ServerMessage message)
     {
     }
@@ -246,12 +242,6 @@ public class TestConsumerTarget implements ConsumerTarget
         return true;
     }
 
-    @Override
-    public boolean hasPendingWork()
-    {
-        return false;
-    }
-
     public ArrayList<MessageInstance> getMessages()
     {
         return _messages;
@@ -282,6 +272,12 @@ public class TestConsumerTarget implements ConsumerTarget
 
     @Override
     public void notifyWork()
+    {
+
+    }
+
+    @Override
+    public void updateNotifyWorkDesired()
     {
 
     }

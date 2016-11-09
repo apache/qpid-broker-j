@@ -352,12 +352,12 @@ class QueueConsumerImpl
 
     public void queueDeleted()
     {
-        _target.queueDeleted();
+        _target.consumerRemoved(this);
     }
 
-    public boolean wouldSuspend(final QueueEntry msg)
+    public boolean allocateCredit(final QueueEntry msg)
     {
-        return !_target.allocateCredit(msg.getMessage());
+        return _target.allocateCredit(msg.getMessage());
     }
 
     public void restoreCredit(final QueueEntry queueEntry)

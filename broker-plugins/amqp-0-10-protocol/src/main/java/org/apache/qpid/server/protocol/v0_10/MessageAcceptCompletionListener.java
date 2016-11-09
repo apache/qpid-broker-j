@@ -56,7 +56,7 @@ public class MessageAcceptCompletionListener implements Method.CompletionListene
     {
         if(_restoreCredit)
         {
-            _sub.getCreditManager().restoreCredit(1l, _messageSize);
+            _sub.restoreCredit(1, _messageSize);
         }
         _session.acknowledge(_consumer, _sub, _entry);
 

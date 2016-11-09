@@ -1188,7 +1188,7 @@ public class ServerSession extends Session
     @Override
     public boolean processPending()
     {
-        if (!getAMQPConnection().isIOThread())
+        if (!getAMQPConnection().isIOThread() || isClosing())
         {
             return false;
         }
@@ -1209,15 +1209,14 @@ public class ServerSession extends Session
             _blockTime = desiredBlockingState ? System.currentTimeMillis() : 0;
         }
 
-
-        if(!_consumersWithPendingWork.isEmpty())
+        if (!_consumersWithPendingWork.isEmpty())
         {
             if (_processPendingIterator == null || !_processPendingIterator.hasNext())
             {
                 _processPendingIterator = _consumersWithPendingWork.iterator();
             }
 
-            if(_processPendingIterator.hasNext())
+            if (_processPendingIterator.hasNext())
             {
                 ConsumerTarget target = _processPendingIterator.next();
                 _processPendingIterator.remove();

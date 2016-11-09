@@ -1405,6 +1405,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     public void sendConnectionCloseAsync(final AMQConstant cause, final String message)
     {
+        stopConnection();
         Action<ConnectionHandler> action = new Action<ConnectionHandler>()
         {
             @Override
@@ -1552,7 +1553,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         @Override
         public boolean hasNext()
         {
-            return !(_sessionsWithWork.isEmpty() && _asyncTaskList.isEmpty());
+            return (!_sessionsWithWork.isEmpty() && !isClosed() && !isConnectionStopped()) || !_asyncTaskList.isEmpty();
         }
 
         @Override
@@ -1560,23 +1561,37 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         {
             if(!_sessionsWithWork.isEmpty())
             {
-                if(!_sessionIterator.hasNext())
+                if(isClosed() || isConnectionStopped())
                 {
-                    _sessionIterator = _sessionsWithWork.iterator();
-                }
-                final AMQSessionModel<?> session = _sessionIterator.next();
-                return new Runnable()
-                {
-                    @Override
-                    public void run()
+                    return new Runnable()
                     {
-                        _sessionIterator.remove();
-                        if(session.processPending())
+                        @Override
+                        public void run()
                         {
-                            _sessionsWithWork.add(session);
+
                         }
+                    };
+                }
+                else
+                {
+                    if (!_sessionIterator.hasNext())
+                    {
+                        _sessionIterator = _sessionsWithWork.iterator();
                     }
-                };
+                    final AMQSessionModel<?> session = _sessionIterator.next();
+                    return new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            _sessionIterator.remove();
+                            if (session.processPending())
+                            {
+                                _sessionsWithWork.add(session);
+                            }
+                        }
+                    };
+                }
             }
             else if(!_asyncTaskList.isEmpty())
             {

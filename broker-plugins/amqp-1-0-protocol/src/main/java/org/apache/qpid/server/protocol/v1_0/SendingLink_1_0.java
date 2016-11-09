@@ -398,11 +398,6 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
 
     }
 
-    public void resume(SendingLinkAttachment linkAttachment)
-    {
-        _linkAttachment = linkAttachment;
-    }
-
     public void remoteDetached(final LinkEndpoint endpoint, final Detach detach)
     {
         //TODO
@@ -410,7 +405,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
         if(Boolean.TRUE.equals(detach.getClosed())
            || !(TerminusDurability.UNSETTLED_STATE.equals(_durability)|| TerminusDurability.CONFIGURATION.equals(_durability)))
         {
-            _consumer.close();
+            _target.close();
 
             Modified state = new Modified();
             state.setDeliveryFailed(true);

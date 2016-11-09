@@ -509,7 +509,8 @@ public class ServerConnection extends Connection
         @Override
         public boolean hasNext()
         {
-            return !(_sessionsWithPending.isEmpty() && _asyncTaskList.isEmpty());
+            return (!_sessionsWithPending.isEmpty() && !isClosing() && !_amqpConnection.isConnectionStopped())
+                   || !_asyncTaskList.isEmpty();
         }
 
         @Override
@@ -517,23 +518,39 @@ public class ServerConnection extends Connection
         {
             if(!_sessionsWithPending.isEmpty())
             {
-                if(!_sessionIterator.hasNext())
+                if(isClosing() || _amqpConnection.isConnectionStopped())
                 {
-                    _sessionIterator = _sessionsWithPending.iterator();
-                }
-                final AMQSessionModel<?> session = _sessionIterator.next();
-                return new Runnable()
-                {
-                    @Override
-                    public void run()
+                    // in case the connection was marked as closing between a call to hasNext() and
+                    // a subsequent call to next()
+                    return new Runnable()
                     {
-                        _sessionIterator.remove();
-                        if(session.processPending())
+                        @Override
+                        public void run()
                         {
-                            _sessionsWithPending.add(session);
+
                         }
+                    };
+                }
+                else
+                {
+                    if (!_sessionIterator.hasNext())
+                    {
+                        _sessionIterator = _sessionsWithPending.iterator();
                     }
-                };
+                    final AMQSessionModel<?> session = _sessionIterator.next();
+                    return new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            _sessionIterator.remove();
+                            if (session.processPending())
+                            {
+                                _sessionsWithPending.add(session);
+                            }
+                        }
+                    };
+                }
             }
             else if(!_asyncTaskList.isEmpty())
             {
@@ -551,6 +568,7 @@ public class ServerConnection extends Connection
             {
                 throw new NoSuchElementException();
             }
+
         }
 
         @Override
