@@ -16,7 +16,10 @@
   -->
 
 <div class="dijitHidden">
-    <div data-dojo-type="dijit.Dialog" style="width:600px;" data-dojo-props="title:'View Message'" id="showMessage">
+    <div data-dojo-type="dijit.Dialog" style="width:600px;"
+         data-dojo-props="title:'View Message',
+                          autofocus: false"
+         id="showMessage">
 
         <div id="confidentialInformationWarning" class="infoMessage">Confidential message information (headers
             and content) is not available on an insecure transport. Switch to a secure management transport (i.e. one
