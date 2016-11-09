@@ -180,12 +180,6 @@ public class TestConsumerTarget implements ConsumerTarget
     }
 
     @Override
-    public boolean hasCredit()
-    {
-        return _state == State.ACTIVE;
-    }
-
-    @Override
     public void consumerAdded(final ConsumerImpl sub)
     {
         _consumer = sub;
@@ -274,6 +268,12 @@ public class TestConsumerTarget implements ConsumerTarget
     public void notifyWork()
     {
 
+    }
+
+    @Override
+    public boolean isNotifyWorkDesired()
+    {
+        return _state == State.ACTIVE;
     }
 
     @Override

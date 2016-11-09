@@ -92,10 +92,22 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
 
     protected final void setNotifyWorkDesired(final boolean desired)
     {
+        // TODO - remove once queue is smarter
+        if(desired && !_notifyWorkDesired)
+        {
+            updateState(State.SUSPENDED, State.ACTIVE);
+
+            notifyWork();
+        }
+        else if(!desired && _notifyWorkDesired)
+        {
+            updateState(State.ACTIVE, State.SUSPENDED);
+        }
+
         _notifyWorkDesired = desired;
     }
 
-    protected final boolean isNotifyWorkDesired()
+    public final boolean isNotifyWorkDesired()
     {
         return _notifyWorkDesired;
     }
@@ -107,6 +119,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
         {
             return false;
         }
+
         // TODO - if not closed
         return sendNextMessage();
     }
@@ -162,16 +175,8 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     @Override
     public final boolean isSuspended()
     {
-        return isFlowSuspended();
+        return !isNotifyWorkDesired();
     }
-
-    @Override
-    public boolean hasCredit()
-    {
-        return !isFlowSuspended();
-    }
-
-    protected abstract boolean isFlowSuspended();
 
     public final State getState()
     {

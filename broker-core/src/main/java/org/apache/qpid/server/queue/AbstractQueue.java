@@ -2057,7 +2057,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             final QueueConsumer consumer = node.getConsumer();
             if(consumer.getPriority() > sub.getPriority())
             {
-                if(getNextAvailableEntry(consumer) != null && consumer.hasCredit())
+                if(getNextAvailableEntry(consumer) != null && consumer.isNotifyWorkDesired())
                 {
                     final ConsumerTarget target = consumer.getTarget();
                     // if the higher priority consumer later becomes suspended we should try notifying this

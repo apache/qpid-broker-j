@@ -357,13 +357,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
     }
 
     @Override
-    public boolean isFlowSuspended()
-    {
-        // (credit || tcp backpressure) || (channel flow || channel closing || connection closing) || connection being stopped by vh
-        return getState()!=State.ACTIVE || _channel.isSuspended() || _channel.getAMQPConnection().isConnectionStopped();
-    }
-
-    @Override
     public void updateNotifyWorkDesired()
     {
         final AMQPConnection_0_8<?> amqpConnection = _channel.getAMQPConnection();

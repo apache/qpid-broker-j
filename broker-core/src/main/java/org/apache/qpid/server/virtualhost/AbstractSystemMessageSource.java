@@ -221,7 +221,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         @Override
         public boolean isSuspended()
         {
-            return false;
+            return !isActive();
         }
 
         @Override
@@ -251,7 +251,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         @Override
         public boolean isActive()
         {
-            return false;
+            return _target.isNotifyWorkDesired();
         }
 
         @Override

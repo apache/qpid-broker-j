@@ -378,6 +378,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
                                                name,
                                                options,
                                                getEndpoint().getPriority());
+                _target.updateNotifyWorkDesired();
             }
             catch (MessageSource.ExistingExclusiveConsumer e)
             {

@@ -361,6 +361,7 @@ public class ServerSessionDelegate extends SessionDelegate
                                                        options,
                                                        priority));
                         }
+                        target.updateNotifyWorkDesired();
                     }
                     catch (Queue.ExistingExclusiveConsumer existing)
                     {

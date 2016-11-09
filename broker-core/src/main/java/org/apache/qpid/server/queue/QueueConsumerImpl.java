@@ -255,9 +255,9 @@ class QueueConsumerImpl
     }
 
     @Override
-    public boolean hasCredit()
+    public boolean isNotifyWorkDesired()
     {
-        return _target.hasCredit();
+        return _target.isNotifyWorkDesired();
     }
 
     @Override

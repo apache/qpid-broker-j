@@ -85,12 +85,6 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     }
 
     @Override
-    public boolean isFlowSuspended()
-    {
-        return _link.getSession().getAMQPConnection().isConnectionStopped() || getState() != State.ACTIVE;
-    }
-
-    @Override
     public void updateNotifyWorkDesired()
     {
         final AMQPConnection<?> amqpConnection =
@@ -329,7 +323,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
         updateNotifyWorkDesired();
 
         ProtocolEngine protocolEngine = getSession().getConnection();
-        if (isFlowSuspended() && getEndpoint() != null && !protocolEngine.isTransportBlockedForWriting())
+        if (isSuspended() && getEndpoint() != null && !protocolEngine.isTransportBlockedForWriting())
         {
             updateState(State.SUSPENDED, State.ACTIVE);
             _transactionId = _link.getTransactionId();

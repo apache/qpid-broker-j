@@ -338,6 +338,7 @@ public class AMQChannel
         }
 
         ConsumerImpl sub = queue.addConsumer(target, null, AMQMessage.class, "", options, null);
+        target.updateNotifyWorkDesired();
         target.sendNextMessage();
         sub.close();
         return getDeliveryMethod.hasDeliveredMessage();
@@ -850,6 +851,7 @@ public class AMQChannel
                     _consumers.add(modelConsumer);
                 }
             }
+            target.updateNotifyWorkDesired();
         }
         catch (AccessControlException
                 | MessageSource.ExistingExclusiveConsumer
@@ -1371,7 +1373,12 @@ public class AMQChannel
         {
             _logChannelFlowMessages = false;
         }
+        boolean hasCredit = _creditManager.hasCredit();
         _creditManager.setCreditLimits(prefetchSize, prefetchCount);
+        if(hasCredit != _creditManager.hasCredit())
+        {
+            updateAllConsumerNotifyWorkDesired();
+        }
     }
 
     public MessageStore getMessageStore()

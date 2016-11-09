@@ -39,13 +39,13 @@ public interface ConsumerTarget
 
     String getTargetAddress();
 
-    boolean hasCredit();
-
     boolean isMultiQueue();
 
     void notifyWork();
 
     void updateNotifyWorkDesired();
+
+    boolean isNotifyWorkDesired();
 
     enum State
     {
