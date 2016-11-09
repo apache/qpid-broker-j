@@ -683,8 +683,7 @@ td.advancedSearchField, col.autoWidth {
 
 .hexDumpHeadRow
 {
-    .hexDumpRow;
-    display: table-header-group;
+    display: table-row;
     font-family: monospace;
     font-weight: bold;
 }
@@ -696,9 +695,10 @@ td.advancedSearchField, col.autoWidth {
 
 .hexCountCell
 {
-    .hexDumpCell;
     padding-right: 25px;
     font-weight: bold;
+    display: table-cell;
+    font-family: monospace;
 }
 
 .hexDumpCell

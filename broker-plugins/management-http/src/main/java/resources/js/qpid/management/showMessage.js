@@ -116,7 +116,7 @@ define(["dojo/dom",
                     for (var i = 0; i < contentData.length; i++)
                     {
                         var element = contentData[i];
-                        if (!Number.isInteger(element) || element < -128 || element > 127)
+                        if (!util.isInteger(element) || element < -128 || element > 127)
                         {
                             isByteArray = false;
                             break;
@@ -237,7 +237,7 @@ define(["dojo/dom",
                 }
             }
 
-            var preview = query('#preview', this.dialogNode)[0];
+            var contentAndPreview = query('#contentAndPreview', this.dialogNode)[0];
             var confidentialInformationWarning = query('#confidentialInformationWarning', this.dialogNode)[0];
             confidentialInformationWarning.style.display = includesConfidential ? "none" : "block";
             var confidentialCells = query('.confidential', this.dialogNode);
@@ -266,19 +266,12 @@ define(["dojo/dom",
                 });
 
                 var limit = 1024;
-                preview.style.display = "block";
-                var previewDetail = query('#preview-detail', preview)[0];
-                previewDetail.innerHTML = (limit < data.size
-                    ? 'showing the first ' + limit + ' of ' + data.size + ' bytes'
-                    : 'showing all ' + data.size + ' bytes');
-                var previewContent = query("#message-content-preview", preview)[0];
                 var previewParameters = lang.mixin({
                     limit: limit,
                     returnJson: true
                 }, parameters);
                 management.load(contentModelObj, previewParameters, {
-                        handleAs: "text",
-                        headers: {"Content-Type": data.mimeType}
+                        handleAs: "json"
                     })
                     .then(function (content)
                     {
@@ -286,13 +279,26 @@ define(["dojo/dom",
                         {
                             showMessage.previewWidget.destroyRecursive();
                         }
-                        var widgetDiv = construct.create("div", null, previewContent, "last");
-                        var contentData = json.parse(content);
-                        var contentWidget = showMessage.createPreviewWidget(contentData, widgetDiv);
-                        showMessage.previewWidget = contentWidget;
-                        contentWidget.startup();
-                        registry.byId("showMessage")
-                            .show();
+
+                        if (content == null || (Array.isArray(content) && content.length == 0))
+                        {
+                            contentAndPreview.style.display = "none";
+                        }
+                        else
+                        {
+                            contentAndPreview.style.display = "block";
+                            var previewDetail = query('#preview-detail', contentAndPreview)[0];
+                            previewDetail.innerHTML = (limit < data.size
+                                ? 'showing the first ' + limit + ' of ' + data.size + ' bytes'
+                                : 'showing all ' + data.size + ' bytes');
+                            var previewContent = query("#message-content-preview", contentAndPreview)[0];
+
+                            var widgetDiv = construct.create("div", null, previewContent, "last");
+                            var contentWidget = showMessage.createPreviewWidget(content, widgetDiv);
+                            showMessage.previewWidget = contentWidget;
+                            contentWidget.startup();
+                        }
+                        registry.byId("showMessage") .show();
                     });
             }
             else
