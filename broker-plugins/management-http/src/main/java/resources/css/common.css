@@ -655,7 +655,8 @@ td.advancedSearchField, col.autoWidth {
     background-size: 1em;
 }
 
-#message-content-preview{
+#message-content-preview
+{
     width: 100%;
 }
 
@@ -669,16 +670,18 @@ td.advancedSearchField, col.autoWidth {
 {
     border: solid;
     border-width: 1px;
-    float: left;
+    white-space: nowrap;
 }
 
 .hexBox
 {
+    display: inline-block;
     padding-right: 25px;
 }
 
 .asciiBox
 {
+    display: inline-block;
 }
 
 .hexDumpHeadRow
