@@ -57,7 +57,7 @@
     <section>
       <title>Direct</title>
       <para>
-        The world ouside of the JVM, in particular the operating system (OS), does not know about Java heap memory and uses other structures like C arrays.
+        The world outside of the JVM, in particular the operating system (OS), does not know about Java heap memory and uses other structures like C arrays.
         In order to interact with these systems Java needs to copy data between its own heap memory and these native structures.
         This can become a bottle neck when there is a lot of exchange between Java and the OS like in I/O (both disk and network) heavy applications.
         Java's solution to this is to allow programmers to request <literal>ByteBuffer</literal>s from so called direct memory.
@@ -158,7 +158,7 @@
   <section xml:id="Java-Broker-Runtime-Memory-Defaults">
     <title>Defaults</title>
     <para>
-      By default Qpid uses these settiongs:
+      By default Qpid uses these settings:
       <itemizedlist>
         <listitem>
           0.5 GB heap memory
@@ -173,7 +173,7 @@
           Start flow-to-disk at 40% direct memory utilisation.
         </listitem>
       </itemizedlist>
-      As an example, this would accomodate a broker with 50 connections, each serving 5 sessions, and each session having 1000 messages of 1 kB on queues in the broker.
+      As an example, this would accommodate a broker with 50 connections, each serving 5 sessions, and each session having 1000 messages of 1 kB on queues in the broker.
       This means a total of 250 concurrent sessions and a total of 250000 messages without flowing messages to disk.
     </para>
   </section>
@@ -214,16 +214,25 @@
       <para>
         <informalequation>
           <mathphrase>
-            memory<subscript>heap</subscript> = 15 MB + 15 kB * N<subscript>sessions</subscript> + 1 kB * N<subscript>messages</subscript> + 17 kB * N<subscript>connections</subscript>
+            memory<subscript>heap</subscript> = 15 MB + 15 kB * N<subscript>sessions</subscript> + 1.5 kB * N<subscript>messages</subscript> + 17 kB * N<subscript>connections</subscript>
           </mathphrase>
         </informalequation>
+      </para>
+      <para>
         <informalequation>
           <mathphrase>
-            memory<subscript>direct</subscript> = 2 MB + (200 B + averageSize<subscript>msg</subscript> *2)*  N<subscript>messages</subscript> + 512 kB * N<subscript>connections</subscript>
+            memory<subscript>direct</subscript> = 2 MB + (200 B + averageSize<subscript>msg</subscript> *2)*  N<subscript>messages</subscript> + 1MB * N<subscript>connections</subscript>
           </mathphrase>
         </informalequation>
+      </para>
+      <para>
         Where <mathphrase>N</mathphrase> denotes the total number of connections/sessions/messages on the broker. Furthermore, for direct memory only the messages that have not been flown to disk are relevant.
       </para>
+      <note>
+        <para>The formulae assume the worst case in terms of memory usage: persistent messages and TLS connections. Transient messages consume less heap memory than peristent and plain connections consume less direct memory than TLS
+          connections.
+        </para>
+      </note>
     </section>
     <section>
       <title>Things to Consider</title>
@@ -234,7 +243,7 @@
           This can have impact on performance in the transient case where otherwise no disk I/O would be involved.
         </para>
         <para>
-          Having to little heap memory will result in poor performance due to frequent garbage collection events. See <xref linkend="Java-Broker-Runtime-Memory-Low-Memory"/> for more details.
+          Having too little heap memory will result in poor performance due to frequent garbage collection events. See <xref linkend="Java-Broker-Runtime-Memory-Low-Memory"/> for more details.
         </para>
       </section>
       <section>
