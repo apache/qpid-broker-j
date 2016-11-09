@@ -3711,10 +3711,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                          final long limit,
                                          final boolean decompressBeforeLimiting)
     {
-        String mimeType = messageReference.getMessage().getMessageHeader().getMimeType();
-        if (returnJson && ("amqp/list".equalsIgnoreCase(mimeType)
-                           || "amqp/map".equalsIgnoreCase(mimeType)
-                           || "jms/map-message".equalsIgnoreCase(mimeType)))
+        if (returnJson)
         {
             ServerMessage message = messageReference.getMessage();
             if (message instanceof InternalMessage)
@@ -3731,9 +3728,17 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                   (InternalMessage) messageConverter.convert(message, getVirtualHost()),
                                                   limit);
                 }
+                else
+                {
+                    throw new IllegalArgumentException(String.format("Unable to convert message %d on queue '%s' to JSON",
+                                                                     message.getMessageNumber(), getName()));
+                }
             }
         }
-        return new MessageContent(messageReference, limit, decompressBeforeLimiting);
+        else
+        {
+            return new MessageContent(messageReference, limit, decompressBeforeLimiting);
+        }
     }
 
     @Override
@@ -3774,6 +3779,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 if (_messageNumber == message.getMessageNumber())
                 {
                     _messageInfo = new MessageInfoImpl(entry, _includeHeaders);
+                    return true;
                 }
             }
             return false;

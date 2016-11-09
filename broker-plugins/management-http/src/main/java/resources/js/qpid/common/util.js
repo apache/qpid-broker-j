@@ -75,6 +75,22 @@ define(["dojo/_base/xhr",
               updater)
     {
         var util = {};
+
+        if (Number.isInteger)
+        {
+            util.isInteger = function(value)
+            {
+                return Number.isInteger(value);
+            };
+        }
+        else
+        {
+            util.isInteger = function(value)
+            {
+                return typeof value === "number" && isFinite(value) && Math.floor(value) === value;
+            };
+        }
+
         if (Array.isArray)
         {
             util.isArray = function (object)

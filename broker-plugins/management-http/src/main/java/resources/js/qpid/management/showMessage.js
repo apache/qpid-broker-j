@@ -30,6 +30,7 @@ define(["dojo/dom",
         "qpid/common/properties",
         "dojox/html/entities",
         "qpid/common/util",
+        "qpid/common/HexDumpWidget",
         "dojo/text!showMessage.html",
         'dojo/_base/declare',
         'dstore/Memory',
@@ -53,6 +54,7 @@ define(["dojo/dom",
               properties,
               entities,
               util,
+              HexDumpWidget,
               template,
               declare,
               Memory,
@@ -94,6 +96,90 @@ define(["dojo/dom",
                 });
 
         };
+
+        showMessage.createPreviewWidget = function(contentData, widgetDiv)
+        {
+            if (typeof contentData !== 'object')
+            {
+                return new dijit.form.SimpleTextarea({
+                    value: contentData,
+                    rows: 4,
+                    readOnly: true
+                }, widgetDiv);
+            }
+            else
+            {
+                if (Array.isArray(contentData))
+                {
+                    var isByteArray = true;
+
+                    for (var i = 0; i < contentData.length; i++)
+                    {
+                        var element = contentData[i];
+                        if (!util.isInteger(element) || element < -128 || element > 127)
+                        {
+                            isByteArray = false;
+                            break;
+                        }
+                    }
+
+                    if (isByteArray)
+                    {
+                        return new HexDumpWidget({data: contentData}, widgetDiv);
+                    }
+                    else
+                    {
+                        var columns = {
+                            value: {
+                                label: 'Item'
+                            }
+                        };
+                        var items = [];
+                        for (var i = 0; i < contentData.length; i++)
+                        {
+                            items.push({
+                                id: i,
+                                value: json.stringify(contentData[i])
+                            });
+                        }
+                        var store = new (declare([Memory, Trackable]))({
+                            data: items
+                        });
+                        return new (declare([OnDemandGrid, DijitRegistry]))({
+                            collection: store,
+                            columns: columns
+                        }, widgetDiv);
+                    }
+
+                }
+                else
+                {
+                    var columns = {
+                        id: {
+                            label: 'Key'
+                        },
+                        value: {
+                            label: 'Value'
+                        }
+                    };
+                    var items = [];
+                    for (var i in contentData)
+                    {
+                        items.push({
+                            id: i,
+                            value: json.stringify(contentData[i])
+                        });
+                    }
+                    var store = new (declare([Memory, Trackable]))({
+                        data: items
+                    });
+                    return new (declare([OnDemandGrid, DijitRegistry]))({
+                        collection: store,
+                        columns: columns
+                    }, widgetDiv);
+                }
+            }
+        }
 
         showMessage.populateShowMessage = function (management, modelObj, data, includesConfidential)
         {
@@ -151,7 +237,7 @@ define(["dojo/dom",
                 }
             }
 
-            var preview = query('#preview', this.dialogNode)[0];
+            var contentAndPreview = query('#contentAndPreview', this.dialogNode)[0];
             var confidentialInformationWarning = query('#confidentialInformationWarning', this.dialogNode)[0];
             confidentialInformationWarning.style.display = includesConfidential ? "none" : "block";
             var confidentialCells = query('.confidential', this.dialogNode);
@@ -173,101 +259,47 @@ define(["dojo/dom",
                     type: modelObj.type
                 };
                 var parameters = {messageId: data.id};
-                var url = management.buildObjectURL(contentModelObj, parameters);
-
-                var href = query('a#message-download', this.dialogNode)[0];
-                href.title = url;
-                connect.connect(href, 'onclick', function ()
+                var download = registry.byId('message-download', this.dialogNode);
+                download.on("click", function ()
                 {
                     management.download(contentModelObj, parameters);
                 });
 
-                if (data.mimeType && (data.mimeType.match(/text\/.*/)
-                                      || data.mimeType === "amqp/list"
-                                      || data.mimeType === "amqp/map"
-                                      || data.mimeType === "jms/map-message"))
-                {
-                    var limit = 1024;
-                    preview.style.display = "block";
-                    var previewDetail = query('#preview-detail', preview)[0];
-                    previewDetail.innerHTML = (limit < data.size
-                        ? 'showing the first ' + limit + ' of ' + data.size + ' bytes'
-                        : 'showing all ' + data.size + ' bytes');
-                    var previewContent = query("#message-content-preview", preview)[0];
-                    var previewParameters = lang.mixin({limit: limit, returnJson: true}, parameters);
-                    management.load(contentModelObj, previewParameters, {
-                            handleAs: "text",
-                            headers: {"Content-Type": data.mimeType}
-                        })
-                        .then(function (content)
+                var limit = 1024;
+                var previewParameters = lang.mixin({
+                    limit: limit,
+                    returnJson: true
+                }, parameters);
+                management.load(contentModelObj, previewParameters, {
+                        handleAs: "json"
+                    })
+                    .then(function (content)
+                    {
+                        if (showMessage.previewWidget)
                         {
-                            if (showMessage.previewWidget)
-                            {
-                                showMessage.previewWidget.destroyRecursive();
-                            }
+                            showMessage.previewWidget.destroyRecursive();
+                        }
+
+                        if (content == null || (Array.isArray(content) && content.length == 0))
+                        {
+                            contentAndPreview.style.display = "none";
+                        }
+                        else
+                        {
+                            contentAndPreview.style.display = "block";
+                            var previewDetail = query('#preview-detail', contentAndPreview)[0];
+                            previewDetail.innerHTML = (limit < data.size
+                                ? 'showing the first ' + limit + ' of ' + data.size + ' bytes'
+                                : 'showing all ' + data.size + ' bytes');
+                            var previewContent = query("#message-content-preview", contentAndPreview)[0];
+
                             var widgetDiv = construct.create("div", null, previewContent, "last");
-                            var contentWidget = null;
-                            if (data.mimeType === "amqp/list"
-                                || data.mimeType === "amqp/map"
-                                || data.mimeType === "jms/map-message")
-                            {
-                                var contentData = json.parse(content);
-                                var columns, items = [];
-                                if (data.mimeType === "amqp/list")
-                                {
-                                    columns = {
-                                        value: {
-                                            label: 'Item'
-                                        }
-                                    };
-                                    for (var i = 0; i < contentData.length; i++)
-                                    {
-                                        items.push({id: i, value: json.stringify(contentData[i])});
-                                    }
-                                }
-                                else
-                                {
-                                    columns = {
-                                        id: {
-                                            label: 'Key'
-                                        },
-                                        value: {
-                                            label: 'Value'
-                                        }
-                                    };
-
-                                    for (var i in contentData)
-                                    {
-                                        items.push({id: i, value: json.stringify(contentData[i])});
-                                    }
-                                }
-                                var store = new (declare([Memory, Trackable]))({
-                                    data: items
-                                });
-                                 contentWidget = new (declare([OnDemandGrid,DijitRegistry]))({
-                                    collection: store,
-                                    columns: columns
-                                }, widgetDiv);
-
-                            }
-                            else
-                            {
-                                contentWidget = new dijit.form.SimpleTextarea({
-                                    value: content,
-                                    rows: 4,
-                                    readOnly: true
-                                }, widgetDiv);
-                            }
+                            var contentWidget = showMessage.createPreviewWidget(content, widgetDiv);
                             showMessage.previewWidget = contentWidget;
                             contentWidget.startup();
-                            registry.byId("showMessage") .show();
-                        });
-                }
-                else
-                {
-                    preview.style.display = "none";
-                    registry.byId("showMessage").show();
-                }
+                        }
+                        registry.byId("showMessage") .show();
+                    });
             }
             else
             {

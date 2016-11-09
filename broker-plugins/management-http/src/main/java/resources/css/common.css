@@ -655,13 +655,68 @@ td.advancedSearchField, col.autoWidth {
     background-size: 1em;
 }
 
-#message-content-preview{
+#message-content-preview
+{
     width: 100%;
-    height: 10.2em;
 }
 
 #message-content-preview .dgrid,
 #message-content-preview textarea
 {
     height: 10em;
+}
+
+.hexDumpBox
+{
+    border: solid;
+    border-width: 1px;
+    white-space: nowrap;
+}
+
+.hexBox
+{
+    display: inline-block;
+    padding-right: 25px;
+}
+
+.asciiBox
+{
+    display: inline-block;
+}
+
+.hexDumpHeadRow
+{
+    display: table-row;
+    font-family: monospace;
+    font-weight: bold;
+}
+
+.hexDumpRow
+{
+    display: table-row;
+}
+
+.hexCountCell
+{
+    padding-right: 25px;
+    font-weight: bold;
+    display: table-cell;
+    font-family: monospace;
+}
+
+.hexDumpCell
+{
+    padding-right: 5px;
+    display: table-cell;
+    font-family: monospace;
+}
+
+.hexDumpCell:last-child
+{
+    padding-right: 0;
+}
+
+.hexDumpCellHighlight
+{
+    background-color: darkgray;
 }
