@@ -1173,8 +1173,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
      */
     public void scheduleHouseKeepingTask(long period, HouseKeepingTask task)
     {
-        _houseKeepingTaskExecutor.scheduleAtFixedRate(task, period / 2, period, TimeUnit.MILLISECONDS);
+        task.setFuture(_houseKeepingTaskExecutor.scheduleAtFixedRate(task, period / 2, period, TimeUnit.MILLISECONDS));
     }
+
 
     public ScheduledFuture<?> scheduleTask(long delay, Runnable task)
     {

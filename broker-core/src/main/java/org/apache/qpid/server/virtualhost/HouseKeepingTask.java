@@ -23,6 +23,7 @@ package org.apache.qpid.server.virtualhost;
 import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.concurrent.ScheduledFuture;
 
 import org.apache.qpid.server.model.VirtualHost;
 
@@ -30,6 +31,7 @@ public abstract class HouseKeepingTask implements Runnable
 {
     private final String _name;
     private final AccessControlContext _accessControlContext;
+    private ScheduledFuture<?> _future;
 
     public HouseKeepingTask(String name, VirtualHost vhost, AccessControlContext context)
     {
@@ -65,4 +67,17 @@ public abstract class HouseKeepingTask implements Runnable
     /** Execute the plugin. */
     public abstract void execute();
 
+    void setFuture(final ScheduledFuture<?> future)
+    {
+        _future = future;
+    }
+
+    public synchronized void cancel()
+    {
+        if(_future != null)
+        {
+            _future.cancel(false);
+            _future = null;
+        }
+    }
 }

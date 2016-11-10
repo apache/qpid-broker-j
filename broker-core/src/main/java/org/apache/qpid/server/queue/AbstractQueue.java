@@ -114,6 +114,7 @@ import org.apache.qpid.server.util.Deletable;
 import org.apache.qpid.server.util.MapValueConverter;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.StateChangeListener;
+import org.apache.qpid.server.virtualhost.HouseKeepingTask;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 
@@ -283,6 +284,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
     private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
     private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
+    private AdvanceConsumersTask _queueHouseKeepingTask;
 
     private interface HoldMethod
     {
@@ -363,7 +365,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         _arguments = Collections.synchronizedMap(arguments);
 
         _logSubject = new QueueLogSubject(this);
-
+        _queueHouseKeepingTask = new AdvanceConsumersTask();
         Subject activeSubject = Subject.getSubject(AccessController.getContext());
         Set<SessionPrincipal> sessionPrincipals = activeSubject == null ? Collections.<SessionPrincipal>emptySet() : activeSubject.getPrincipals(SessionPrincipal.class);
         AMQSessionModel<?> sessionModel;
@@ -1853,6 +1855,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         _stopped.set(true);
         _closing = false;
+        _queueHouseKeepingTask.cancel();
         return Futures.immediateFuture(null);
     }
 
@@ -1956,14 +1959,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         }
 
-        // if there's (potentially) more than one consumer the others will potentially not have been advanced to the
-        // next entry they are interested in yet.  This would lead to holding on to references to expired messages, etc
-        // which would give us memory "leak".
-
-        if (!hasExclusiveConsumer())
-        {
-            advanceAllConsumers();
-        }
         return messageContainer;
     }
 
@@ -2068,24 +2063,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return true;
     }
 
-
-    private void advanceAllConsumers()
-    {
-        ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
-        while (consumerNodeIterator.advance())
-        {
-            ConsumerNode subNode = consumerNodeIterator.getNode();
-            QueueConsumer sub = subNode.getConsumer();
-            if(sub.acquires())
-            {
-                getNextAvailableEntry(sub);
-            }
-            else
-            {
-                // TODO
-            }
-        }
-    }
 
     private QueueEntry getNextAvailableEntry(final QueueConsumer sub)
     {
@@ -2977,6 +2954,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @StateTransition(currentState = {State.UNINITIALIZED,State.ERRORED}, desiredState = State.ACTIVE)
     private ListenableFuture<Void> activate()
     {
+        _virtualHost.scheduleHouseKeepingTask(_virtualHost.getHousekeepingCheckPeriod(), _queueHouseKeepingTask);
         setState(State.ACTIVE);
         return Futures.immediateFuture(null);
     }
@@ -3492,6 +3470,40 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_INACTIVE(estimatedQueueSize / 1024,
                                                                                           targetQueueSize / 1024));
+            }
+        }
+    }
+
+    private class AdvanceConsumersTask extends HouseKeepingTask
+    {
+
+        AdvanceConsumersTask()
+        {
+            super("Queue Housekeeping: " + AbstractQueue.this.getName(),
+                  _virtualHost, getSystemTaskControllerContext("Queue Housekeeping", _virtualHost.getPrincipal()));
+        }
+
+        @Override
+        public void execute()
+        {
+
+            // if there's (potentially) more than one consumer the others will potentially not have been advanced to the
+            // next entry they are interested in yet.  This would lead to holding on to references to expired messages, etc
+            // which would give us memory "leak".
+
+            ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
+            while (consumerNodeIterator.advance() && !isDeleted())
+            {
+                ConsumerNode subNode = consumerNodeIterator.getNode();
+                QueueConsumer sub = subNode.getConsumer();
+                if(sub.acquires())
+                {
+                    getNextAvailableEntry(sub);
+                }
+                else
+                {
+                    // TODO
+                }
             }
         }
     }
