@@ -27,4 +27,6 @@ public interface FlowCreditManager_0_10 extends FlowCreditManager
     void addCredit(long count, long bytes);
 
     void clearCredit();
+
+    boolean hasNeitherCredit();
 }

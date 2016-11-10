@@ -529,8 +529,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget
 
     public void stop()
     {
-        updateState(State.ACTIVE, State.SUSPENDED);
-        _stopped.set(true);
         FlowCreditManager_0_10 creditManager = getCreditManager();
         boolean hasCredit = creditManager.hasCredit();
         creditManager.clearCredit();
@@ -554,8 +552,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget
                 creditManager.addCredit(0l, value);
                 break;
         }
-
-        _stopped.set(false);
 
         boolean newHasCredit = creditManager.hasCredit();
         if(newHasCredit)
@@ -584,12 +580,12 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget
                 throw new ConnectionScopedRuntimeException("Unknown message flow mode: " + flowMode);
         }
         _flowMode = flowMode;
-        updateState(State.ACTIVE, State.SUSPENDED);
+        updateNotifyWorkDesired();
     }
 
-    public boolean isStopped()
+    public boolean isFlowModeChangeAllowed()
     {
-        return _stopped.get();
+        return _creditManager.hasNeitherCredit();
     }
 
     public void flush()

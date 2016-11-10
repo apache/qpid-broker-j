@@ -1681,9 +1681,13 @@ public class ServerSessionDelegate extends SessionDelegate
         {
             exception(session, sfm, ExecutionErrorCode.NOT_FOUND, "not-found: destination '" + destination + "'");
         }
-        else if(sub.isStopped())
+        else if(sub.isFlowModeChangeAllowed())
         {
             sub.setFlowMode(sfm.getFlowMode());
+        }
+        else
+        {
+            exception(session, sfm, ExecutionErrorCode.PRECONDITION_FAILED, "destination '" + destination + "' has credit");
         }
     }
 
