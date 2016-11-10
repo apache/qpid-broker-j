@@ -1,0 +1,271 @@
+<?xml version="1.0"?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  -->
+
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Channel-REST-Query-API">
+    <title>Query API</title>
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-API-Introduction">
+        <title>Introduction</title>
+        <para>The <emphasis>Qpid Broker for Java</emphasis> provides a powerful instrument called
+            <emphasis>Query API</emphasis> allowing to retrieve the existing configured objects attributes
+            satisfying user-provided filtering criteria.</para>
+        <para>Developers and operators can use this instrument to monitor some subsets of configured objects.
+            For example, using <emphasis>Query API</emphasis> one can find all queues with queue depth
+            exceeding some limit or existing connections made from a particular location(s).</para>
+    </section>
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-API-Overview">
+        <title>Query API Overview</title>
+        <para>
+            The <emphasis>Query API</emphasis> allows to specify the category of configured objects to query,
+            the comma-separated list of attributes and expressions to select,
+            results filtering conditions, results sorting order and results offset and limit.
+        </para>
+        <para>The <emphasis>Query API</emphasis> is available in two variations:
+            <variablelist>
+                <varlistentry>
+                    <term>broker wide</term>
+                    <listitem>
+                        <para>allows to query any configured objects on broker</para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>virtual host wide</term>
+                    <listitem>
+                        <para>allows to query any configured objects on a particular virtual host</para>
+                    </listitem>
+                </varlistentry>
+            </variablelist>
+            <table>
+                <title>Query API URLs</title>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Query API URL</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>
+                                <para>/api/latest/querybroker/&lt;configured object category name&gt;</para>
+                                <para>/api/&lt;version&gt;/querybroker/&lt;configured object category name&gt;</para>
+                            </entry>
+                            <entry>
+                                <para>Query API URL to query any configured objects on broker</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>/api/latest/queryvhost/&lt;virtual host node name&gt;/&lt;virtual host name&gt;/&lt;configured object category name&gt;</para>
+                                <para>/api/&lt;version&gt;/queryvhost/&lt;virtual host node name&gt;/&lt;virtual host name&gt;/&lt;configured object category name&gt;</para>
+                            </entry>
+                            <entry>
+                                <para>Query API URL to query configured objects on a particular virtual host</para>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </para>
+        <para>
+            Both query services require specification of a configured object category name as part of URL.
+            Attributes and expressions to select, filtering conditions, result ordering, limit and offset
+            are specified using request parameters.
+            <table>
+                <title>Query API request parameters</title>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Parameter Name</entry>
+                            <entry>Parameter Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>
+                                <para>select</para>
+                            </entry>
+                            <entry>
+                                <para>a comma-separated list of configured objects attribute names or expressions
+                                      to select</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>where</para>
+                            </entry>
+                            <entry>
+                                <para>filtering conditions; the syntax of the expression is based on a subset of
+                                    the SQL92 conditional expression syntax similar to selector expressions in JMS.</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>orderBy</para>
+                            </entry>
+                            <entry>
+                                <para>ordering conditions; the syntax of the expression is based on a subset of
+                                    the SQL92 ordering expression syntax. Similar to ordering expressions in SQL,
+                                    one can specify in ordering expression attributes names, sub-expressions
+                                    or indexes (starting from 1) of attributes or expressions specified in select.</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>limit</para>
+                            </entry>
+                            <entry>
+                                <para>The maximum number of results to provide starting from given offset.</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>offset</para>
+                            </entry>
+                            <entry>
+                                <para>An offset in results (default is 0) to provide results from.</para>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </para>
+        <example>
+            <title>Example of Query API request to retrieve queue names and depths.</title>
+            <screen>GET api/latest/querybroker/queue?select=name,queueDepthBytes,queueDepthMessages&amp;where=queueDepthBytes&gt;0&amp;orderBy=1 desc,2 desc&amp;offset=0&amp;limit=100 HTTP/1.1</screen>
+        </example>
+    </section>
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-API-Results">
+        <title>Query API Results</title>
+        <para>The <emphasis>Query API</emphasis> returns the JSON response with found results as JSON objects containing
+            three fields.
+            <variablelist>
+                <varlistentry>
+                    <term>headers</term>
+                    <listitem>
+                        <para>array containing configured objects attribute names corresponding to the Query select
+                            expression. Please, note that empty string can be returned for a user specified expressions
+                            in select if <emphasis>as</emphasis> given a name to the expression is missed .
+                        </para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>results</term>
+                    <listitem>
+                        <para>two dimensional array containing attributes and/or expression values for the subset
+                            of found results </para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>total</term>
+                    <listitem>
+                        <para>The total number of results matching the where conditions.</para>
+                    </listitem>
+                </varlistentry>
+            </variablelist>
+        </para>
+        <example>
+            <title>Example of Query API results for the query to retrieve queue names and depths.</title>
+            <screen>GET api/latest/querybroker/queue?select=name,queueDepthBytes,queueDepthMessages&amp;where=queueDepthBytes&gt;0&amp;orderBy=1 desc,2 desc&amp;offset=0&amp;limit=100 HTTP/1.1</screen>
+            <programlisting language="javascript">
+{
+    "headers" : [ "name", "queueDepthBytes", "queueDepthMessages" ],
+    "results" : [ [ "foo", 312, 26], [ "bar", 300, 24 ] ],
+    "total" : 2
+}
+            </programlisting>
+        </example>
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-API-Select">
+            <title>Query API expressions and functions</title>
+            <para>Query API <emphasis>select</emphasis>, <emphasis>where</emphasis> and <emphasis>orderBy</emphasis>
+                can include expressions containing pre-defined functions or special variables.</para>
+            <para>The following functions  can be used in the expressions:
+                <table>
+                    <title>Query API functions</title>
+                    <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Function Name</entry>
+                            <entry>Function Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>
+                                <para>concat</para>
+                            </entry>
+                            <entry>
+                                <para>concatenates the parameters into a string</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>now</para>
+                            </entry>
+                            <entry>
+                                <para>returns current date and time</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>to_date</para>
+                            </entry>
+                            <entry>
+                                <para>converts string parameter into date and time</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>date_add</para>
+                            </entry>
+                            <entry>
+                                <para>adds given period specified as the second parameter in ISO-8601 format duration
+                                    to the given date specified as the first parameter</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>to_string</para>
+                            </entry>
+                            <entry>
+                                <para>converts given date (specified as a first parameter) into a string using optional
+                                    format string (second parameter) and time zone name (third parameter)</para>
+                            </entry>
+                        </row>
+                    </tbody>
+                    </tgroup>
+                </table>
+            </para>
+            <para>
+                A special notation <emphasis>$parent.</emphasis> can be used to access attributes of
+                the parent of configured object.
+            </para>
+            <example>
+            <title>Example of expressions</title>
+            <literallayout>
+                to_string(now()) as current_time,
+                concat(name,'_test') as exp,
+                $parent.name as parentName,
+                $parent.type as parentType
+            </literallayout>
+            </example>
+        </section>
+    </section>
+</section>
