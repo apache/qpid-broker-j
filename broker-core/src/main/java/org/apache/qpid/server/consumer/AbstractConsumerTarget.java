@@ -23,10 +23,7 @@ package org.apache.qpid.server.consumer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.util.concurrent.Futures;
@@ -42,17 +39,20 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.queue.AbstractQueue;
 import org.apache.qpid.server.queue.SuspendedConsumerLoggingTicker;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.util.StateChangeListener;
 
-public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubject
+public abstract class AbstractConsumerTarget implements ConsumerTarget
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractConsumerTarget.class);
-    private final AtomicReference<State> _state;
+    private static final LogSubject MULTI_QUEUE_LOG_SUBJECT = new LogSubject()
+    {
+        @Override
+        public String toLogString()
+        {
+            return "[(** Multi-Queue **)] ";
+        }
+    };
+    private final AtomicReference<State> _state = new AtomicReference<>(State.OPEN);
 
-    private final Set<StateChangeListener<ConsumerTarget, State>> _stateChangeListeners = new
-            CopyOnWriteArraySet<>();
-
-    private final AtomicInteger _stateActivates = new AtomicInteger();
     private final boolean _isMultiQueue;
     private final SuspendedConsumerLoggingTicker _suspendedConsumerLoggingTicker;
     private final List<ConsumerImpl> _consumers = new CopyOnWriteArrayList<>();
@@ -60,23 +60,31 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     private Iterator<ConsumerImpl> _pullIterator;
     private boolean _notifyWorkDesired;
 
-    protected AbstractConsumerTarget(final State initialState,
-                                     final boolean isMultiQueue,
+    protected AbstractConsumerTarget(final boolean isMultiQueue,
                                      final AMQPConnection<?> amqpConnection)
     {
-        _state = new AtomicReference<State>(initialState);
         _isMultiQueue = isMultiQueue;
-        _suspendedConsumerLoggingTicker = isMultiQueue
-                ? new SuspendedConsumerLoggingTicker(amqpConnection.getContextValue(Long.class, Consumer.SUSPEND_NOTIFICATION_PERIOD))
-                {
-                    @Override
-                    protected void log(final long period)
-                    {
-                        amqpConnection.getEventLogger().message(AbstractConsumerTarget.this, SubscriptionMessages.STATE(period));
-                    }
-                }
-                : null;
 
+        _suspendedConsumerLoggingTicker = new SuspendedConsumerLoggingTicker(amqpConnection.getContextValue(Long.class, Consumer.SUSPEND_NOTIFICATION_PERIOD))
+        {
+            @Override
+            protected void log(final long period)
+            {
+                amqpConnection.getEventLogger().message(AbstractConsumerTarget.this.getLogSubject(), SubscriptionMessages.STATE(period));
+            }
+        };
+    }
+
+    private LogSubject getLogSubject()
+    {
+        if (_consumers.size() == 1 && _consumers.get(0) instanceof LogSubject)
+        {
+            return (LogSubject) _consumers.get(0);
+        }
+        else
+        {
+            return MULTI_QUEUE_LOG_SUBJECT;
+        }
     }
 
     public boolean isMultiQueue()
@@ -94,16 +102,20 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     {
         if (desired != _notifyWorkDesired)
         {
-            // TODO - remove once queue is smarter
-            if (desired)
+            if(_suspendedConsumerLoggingTicker != null)
             {
-                updateState(State.SUSPENDED, State.ACTIVE);
-            }
-            else
-            {
-                updateState(State.ACTIVE, State.SUSPENDED);
+                if (desired)
+                {
+                    getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
+                }
+                else
+                {
+                    _suspendedConsumerLoggingTicker.setStartTime(System.currentTimeMillis());
+                    getSessionModel().addTicker(_suspendedConsumerLoggingTicker);
+                }
             }
 
+            // TODO - remove once queue is smarter
             for (ConsumerImpl consumer : _consumers)
             {
                 consumer.setNotifyWorkDesired(desired);
@@ -193,58 +205,6 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
         return _state.get();
     }
 
-    protected final boolean updateState(State from, State to)
-    {
-        if(_state.compareAndSet(from, to))
-        {
-            if(!_stateChangeListeners.isEmpty())
-            {
-                for (StateChangeListener<ConsumerTarget, State> listener : _stateChangeListeners)
-                {
-                    listener.stateChanged(this, from, to);
-                }
-            }
-            if(_suspendedConsumerLoggingTicker != null)
-            {
-                if (to == State.SUSPENDED)
-                {
-                    _suspendedConsumerLoggingTicker.setStartTime(System.currentTimeMillis());
-                    getSessionModel().addTicker(_suspendedConsumerLoggingTicker);
-                }
-                else
-                {
-                    getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
-                }
-            }
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    @Override
-    public final void notifyCurrentState()
-    {
-
-        for (StateChangeListener<ConsumerTarget, State> listener : _stateChangeListeners)
-        {
-            State state = getState();
-            listener.stateChanged(this, state, state);
-        }
-    }
-    public final void addStateListener(StateChangeListener<ConsumerTarget, State> listener)
-    {
-        _stateChangeListeners.add(listener);
-    }
-
-    @Override
-    public void removeStateChangeListener(final StateChangeListener<ConsumerTarget, State> listener)
-    {
-        _stateChangeListeners.remove(listener);
-    }
-
     @Override
     public final long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
     {
@@ -311,38 +271,27 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
 
     final public boolean close()
     {
-        boolean closed = false;
-        State state = getState();
-        List<ConsumerImpl> consumers = new ArrayList<>(_consumers);
-        _consumers.clear();
-
-        while(!closed && state != State.CLOSED)
+        if (_state.compareAndSet(State.OPEN, State.CLOSED))
         {
-            closed = updateState(state, State.CLOSED);
-            if(!closed)
+            List<ConsumerImpl> consumers = new ArrayList<>(_consumers);
+            _consumers.clear();
+
+            setNotifyWorkDesired(false);
+
+            for (ConsumerImpl consumer : consumers)
             {
-                state = getState();
+                consumer.close();
             }
-        }
-        setNotifyWorkDesired(false);
+            if (_suspendedConsumerLoggingTicker != null)
+            {
+                getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
+            }
 
-        for (ConsumerImpl consumer : consumers)
+            return true;
+        }
+        else
         {
-            consumer.close();
+            return false;
         }
-        if(_suspendedConsumerLoggingTicker != null)
-        {
-            getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
-        }
-
-        return closed;
-
-    }
-
-    @Override
-    public String toLogString()
-    {
-
-        return "[(** Multi-Queue **)] ";
     }
 }

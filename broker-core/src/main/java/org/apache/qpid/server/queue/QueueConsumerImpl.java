@@ -23,7 +23,6 @@ package org.apache.qpid.server.queue;
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.SUBSCRIPTION_FORMAT;
 
 import java.text.MessageFormat;
-import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -53,11 +52,9 @@ import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.security.access.Operation;
@@ -68,7 +65,6 @@ class QueueConsumerImpl
         implements QueueConsumer<QueueConsumerImpl>, LogSubject
 {
     private final static Logger LOGGER = LoggerFactory.getLogger(QueueConsumerImpl.class);
-    private final AtomicBoolean _targetClosed = new AtomicBoolean(false);
     private final AtomicBoolean _closed = new AtomicBoolean(false);
     private final long _consumerNumber;
     private final long _createTime = System.currentTimeMillis();
@@ -85,28 +81,9 @@ class QueueConsumerImpl
     private final Object _sessionReference;
     private final AbstractQueue _queue;
 
-    private final SuspendedConsumerLoggingTicker _suspendedConsumerLoggingTicker;
-
-    static final EnumMap<ConsumerTarget.State, State> STATE_MAP =
-            new EnumMap<ConsumerTarget.State, State>(ConsumerTarget.State.class);
-
-    static
-    {
-        STATE_MAP.put(ConsumerTarget.State.ACTIVE, State.ACTIVE);
-        STATE_MAP.put(ConsumerTarget.State.SUSPENDED, State.QUIESCED);
-        STATE_MAP.put(ConsumerTarget.State.CLOSED, State.DELETED);
-    }
-
     private final ConsumerTarget _target;
-    private final StateChangeListener<ConsumerTarget, ConsumerTarget.State> _listener;
     private volatile QueueContext _queueContext;
-    private volatile StateChangeListener<? super QueueConsumerImpl, State> _stateListener = new StateChangeListener<QueueConsumerImpl, State>()
-    {
-        public void stateChanged(QueueConsumerImpl sub, State oldState, State newState)
-        {
-            // no-op
-        }
-    };
+
     @ManagedAttributeField
     private boolean _exclusive;
     @ManagedAttributeField
@@ -146,29 +123,6 @@ class QueueConsumerImpl
         open();
 
         setupLogging();
-
-        _listener = new StateChangeListener<ConsumerTarget, ConsumerTarget.State>()
-        {
-            @Override
-            public void stateChanged(final ConsumerTarget object,
-                                     final ConsumerTarget.State oldState,
-                                     final ConsumerTarget.State newState)
-            {
-                targetStateChanged(oldState, newState);
-            }
-        };
-        _target.addStateListener(_listener);
-
-        _suspendedConsumerLoggingTicker = target.isMultiQueue()
-                ? null
-                : new SuspendedConsumerLoggingTicker(queue.getContextValue(Long.class, Consumer.SUSPEND_NOTIFICATION_PERIOD))
-                    {
-                        @Override
-                        protected void log(final long period)
-                        {
-                            getEventLogger().message(getLogSubject(), SubscriptionMessages.STATE(period));
-                        }
-                    };
     }
 
     private static Map<String, Object> createAttributeMap(String name,
@@ -203,43 +157,6 @@ class QueueConsumerImpl
         }
 
         return attributes;
-    }
-
-    private void targetStateChanged(final ConsumerTarget.State oldState, final ConsumerTarget.State newState)
-    {
-        if(oldState != newState)
-        {
-            if(newState == ConsumerTarget.State.CLOSED)
-            {
-                if(_targetClosed.compareAndSet(false,true))
-                {
-                    getEventLogger().message(getLogSubject(), SubscriptionMessages.CLOSE());
-                }
-            }
-
-            if(_suspendedConsumerLoggingTicker != null)
-            {
-                if (newState == ConsumerTarget.State.SUSPENDED)
-                {
-                    _suspendedConsumerLoggingTicker.setStartTime(System.currentTimeMillis());
-                    getSessionModel().addTicker(_suspendedConsumerLoggingTicker);
-                }
-                else
-                {
-                    getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
-                }
-            }
-        }
-
-        if(newState == ConsumerTarget.State.CLOSED && oldState != newState && !_closed.get())
-        {
-            closeAsync();
-        }
-        final StateChangeListener<? super QueueConsumerImpl, State> stateListener = getStateListener();
-        if(stateListener != null)
-        {
-            stateListener.stateChanged(this, STATE_MAP.get(oldState), STATE_MAP.get(newState));
-        }
     }
 
     @Override
@@ -301,6 +218,8 @@ class QueueConsumerImpl
     {
         if(_closed.compareAndSet(false,true))
         {
+            getEventLogger().message(getLogSubject(), SubscriptionMessages.CLOSE());
+
             _waitingOnCreditMessageListener.remove();
 
             return doAfter(_target.consumerRemoved(this),
@@ -309,14 +228,8 @@ class QueueConsumerImpl
                                @Override
                                public void run()
                                {
-                                   _target.removeStateChangeListener(_listener);
-
                                    _queue.unregisterConsumer(QueueConsumerImpl.this);
 
-                                   if (_suspendedConsumerLoggingTicker != null)
-                                   {
-                                       getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
-                                   }
                                    deleted();
                                }
                            });
@@ -365,12 +278,6 @@ class QueueConsumerImpl
     }
 
     @Override
-    public State getState()
-    {
-        return STATE_MAP.get(_target.getState());
-    }
-
-    @Override
     public final Queue<?> getQueue()
     {
         return _queue;
@@ -412,16 +319,6 @@ class QueueConsumerImpl
         return _consumerNumber;
     }
 
-    public final StateChangeListener<? super QueueConsumerImpl, State> getStateListener()
-    {
-        return _stateListener;
-    }
-
-    public final void setStateListener(StateChangeListener<? super QueueConsumerImpl, State> listener)
-    {
-        _stateListener = listener;
-    }
-
     public final QueueContext getQueueContext()
     {
         return _queueContext;
@@ -434,12 +331,12 @@ class QueueConsumerImpl
 
     public final boolean isActive()
     {
-        return getState() == State.ACTIVE;
+        return _target.getState() == ConsumerTarget.State.OPEN;
     }
 
     public final boolean isClosed()
     {
-        return getState() == State.DELETED;
+        return _target.getState() == ConsumerTarget.State.CLOSED;
     }
 
     public final boolean hasInterest(QueueEntry entry)

@@ -25,15 +25,10 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.util.StateChangeListener;
 
 public interface ConsumerTarget
 {
-
-
     void acquisitionRemoved(MessageInstance node);
-
-    void removeStateChangeListener(StateChangeListener<ConsumerTarget, State> listener);
 
     boolean processPending();
 
@@ -49,7 +44,7 @@ public interface ConsumerTarget
 
     enum State
     {
-        ACTIVE, SUSPENDED, CLOSED
+        OPEN, CLOSED
     }
 
     State getState();
@@ -57,10 +52,6 @@ public interface ConsumerTarget
     void consumerAdded(ConsumerImpl sub);
 
     ListenableFuture<Void> consumerRemoved(ConsumerImpl sub);
-
-    void notifyCurrentState();
-
-    void addStateListener(StateChangeListener<ConsumerTarget, State> listener);
 
     long getUnacknowledgedBytes();
 

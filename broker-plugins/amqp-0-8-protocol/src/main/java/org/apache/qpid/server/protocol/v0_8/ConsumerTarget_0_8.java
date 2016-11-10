@@ -298,7 +298,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
                               RecordDeliveryMethod recordMethod,
                               boolean multiQueue)
     {
-        super(State.ACTIVE, multiQueue, channel.getAMQPConnection());
+        super(multiQueue, channel.getAMQPConnection());
 
         _channel = channel;
         _consumerTag = consumerTag;

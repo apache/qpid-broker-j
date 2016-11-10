@@ -26,10 +26,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -51,44 +48,25 @@ import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.queue.AbstractQueue;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.transport.network.Ticker;
 
 public class TestConsumerTarget implements ConsumerTarget
 {
 
-    private final List<String> _messageIds;
     private boolean _closed = false;
     private String tag = "mocktag";
     private Queue<?> queue = null;
-    private StateChangeListener<ConsumerTarget, State> _listener = null;
-    private State _state = State.ACTIVE;
+    private State _state = State.OPEN;
     private ArrayList<MessageInstance> _messages = new ArrayList<MessageInstance>();
-    private final Lock _stateChangeLock = new ReentrantLock();
 
     private boolean _isActive = true;
     private ConsumerImpl _consumer;
-    private boolean _messageSent;
     private MockSessionModel _sessionModel = new MockSessionModel();
     private boolean _notifyDesired;
-
-    public TestConsumerTarget()
-    {
-        _messageIds = null;
-    }
-
-    public TestConsumerTarget(List<String> messageIds)
-    {
-        _messageIds = messageIds;
-    }
 
     public boolean close()
     {
         _closed = true;
-        if (_listener != null)
-        {
-            _listener.stateChanged(this, _state, State.CLOSED);
-        }
         _state = State.CLOSED;
         updateNotifyWorkDesired();
         return true;
@@ -143,7 +121,6 @@ public class TestConsumerTarget implements ConsumerTarget
 
     public long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
     {
-        _messageSent = true;
         long size = entry.getMessage().getSize();
         if (_messages.contains(entry))
         {
@@ -194,36 +171,10 @@ public class TestConsumerTarget implements ConsumerTarget
         return Futures.immediateFuture(null);
     }
 
-    @Override
-    public void notifyCurrentState()
-    {
-
-    }
-
     public void setState(State state)
     {
-        State oldState = _state;
         _state = state;
-        if(_listener != null)
-        {
-            _listener.stateChanged(this, oldState, state);
-        }
         updateNotifyWorkDesired();
-    }
-
-    @Override
-    public void addStateListener(final StateChangeListener<ConsumerTarget, State> listener)
-    {
-        _listener = listener;
-    }
-
-    @Override
-    public void removeStateChangeListener(final StateChangeListener<ConsumerTarget, State> listener)
-    {
-        if(_listener == listener)
-        {
-            _listener = null;
-        }
     }
 
     @Override
@@ -276,7 +227,7 @@ public class TestConsumerTarget implements ConsumerTarget
     @Override
     public boolean isNotifyWorkDesired()
     {
-        return _state == State.ACTIVE;
+        return _state == State.OPEN;
     }
 
     @Override

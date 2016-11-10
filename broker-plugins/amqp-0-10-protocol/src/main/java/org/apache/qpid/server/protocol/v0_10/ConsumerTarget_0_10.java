@@ -114,7 +114,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget
                                Map<String, Object> arguments,
                                boolean multiQueue)
     {
-        super(State.SUSPENDED, multiQueue, session.getAMQPConnection());
+        super(multiQueue, session.getAMQPConnection());
         _session = session;
         _postIdSettingAction = new AddMessageDispositionListenerAction(session);
         _acceptMode = acceptMode;
@@ -496,12 +496,8 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget
 
     public boolean allocateCredit(ServerMessage message)
     {
-        boolean hasCredit = _creditManager.hasCredit();
         boolean creditAllocated = _creditManager.useCreditForMessage(message.getSize());
-        if(_creditManager.hasCredit() != hasCredit)
-        {
-            updateNotifyWorkDesired();
-        }
+        updateNotifyWorkDesired();
         return creditAllocated;
     }
 
@@ -512,12 +508,8 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget
 
     void restoreCredit(int count, long size)
     {
-        boolean hasCredit = _creditManager.hasCredit();
         _creditManager.restoreCredit(count, size);
-        if(_creditManager.hasCredit() != hasCredit)
-        {
-            updateNotifyWorkDesired();
-        }
+        updateNotifyWorkDesired();
     }
 
 
@@ -529,19 +521,13 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget
 
     public void stop()
     {
-        FlowCreditManager_0_10 creditManager = getCreditManager();
-        boolean hasCredit = creditManager.hasCredit();
-        creditManager.clearCredit();
-        if(hasCredit)
-        {
-            updateNotifyWorkDesired();
-        }
+        getCreditManager().clearCredit();
+        updateNotifyWorkDesired();
     }
 
     public void addCredit(MessageCreditUnit unit, long value)
     {
         FlowCreditManager_0_10 creditManager = getCreditManager();
-        boolean hasCredit = creditManager.hasCredit();
         switch (unit)
         {
             case MESSAGE:
@@ -552,17 +538,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget
                 creditManager.addCredit(0l, value);
                 break;
         }
-
-        boolean newHasCredit = creditManager.hasCredit();
-        if(newHasCredit)
-        {
-            updateState(State.SUSPENDED, State.ACTIVE);
-        }
-        if(hasCredit != newHasCredit)
-        {
-            updateNotifyWorkDesired();
-        }
-
+        updateNotifyWorkDesired();
     }
 
     public void setFlowMode(MessageFlowMode flowMode)

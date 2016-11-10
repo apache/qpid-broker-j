@@ -161,6 +161,7 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
     @Override
     public void close()
     {
+        _managementNode.unregisterConsumer(this);
     }
 
 

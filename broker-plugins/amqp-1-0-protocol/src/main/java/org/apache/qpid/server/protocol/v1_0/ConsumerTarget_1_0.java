@@ -72,7 +72,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     public ConsumerTarget_1_0(final SendingLink_1_0 link,
                               boolean acquires)
     {
-        super(State.SUSPENDED, false, link.getSession().getAMQPConnection());
+        super(false, link.getSession().getAMQPConnection());
         _link = link;
         _typeRegistry = link.getEndpoint().getSession().getConnection().getDescribedTypeRegistry();
         _sectionEncoder = new SectionEncoderImpl(_typeRegistry);
@@ -276,10 +276,8 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
         ProtocolEngine protocolEngine = getSession().getConnection();
         final boolean hasCredit =
                 _link.isAttached() && getEndpoint().hasCreditToSend() && !protocolEngine.isTransportBlockedForWriting();
-        if (!hasCredit && getState() == State.ACTIVE)
-        {
-            suspend();
-        }
+
+        updateNotifyWorkDesired();
 
         if (hasCredit)
         {
@@ -291,25 +289,19 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     }
 
 
-    public void suspend()
-    {
-        updateState(State.ACTIVE, State.SUSPENDED);
-    }
-
-
     public void restoreCredit(final ServerMessage message)
     {
         final SendingLinkEndpoint endpoint = _link.getEndpoint();
         endpoint.setLinkCredit(endpoint.getLinkCredit().add(UnsignedInteger.ONE));
+        updateNotifyWorkDesired();
     }
 
     public void queueEmpty()
     {
         if(_link.drained())
         {
-            updateState(State.ACTIVE, State.SUSPENDED);
+            updateNotifyWorkDesired();
         }
-
     }
 
     public void flowStateChanged()
@@ -319,7 +311,6 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
         ProtocolEngine protocolEngine = getSession().getConnection();
         if (isSuspended() && getEndpoint() != null && !protocolEngine.isTransportBlockedForWriting())
         {
-            updateState(State.SUSPENDED, State.ACTIVE);
             _transactionId = _link.getTransactionId();
         }
     }

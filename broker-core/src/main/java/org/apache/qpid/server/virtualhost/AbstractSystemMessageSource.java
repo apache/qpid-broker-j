@@ -122,22 +122,6 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         {
             _name = consumerName;
             _target = target;
-            _target.addStateListener(new StateChangeListener<ConsumerTarget, ConsumerTarget.State>()
-            {
-                @Override
-                public void stateChanged(final ConsumerTarget object,
-                                         final ConsumerTarget.State oldState,
-                                         final ConsumerTarget.State newState)
-                {
-                    if(newState == ConsumerTarget.State.ACTIVE)
-                    {
-                        if(!_queue.isEmpty())
-                        {
-                            _target.notifyWork();
-                        }
-                    }
-                }
-            });
         }
 
         @Override
@@ -262,7 +246,6 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         {
             return _name;
         }
-
 
         public void send(final InternalMessage response)
         {

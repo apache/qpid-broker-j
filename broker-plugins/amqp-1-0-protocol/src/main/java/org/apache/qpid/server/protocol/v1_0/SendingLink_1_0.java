@@ -588,12 +588,6 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
 
     public synchronized void setLinkAttachment(SendingLinkAttachment linkAttachment)
     {
-
-        if(_consumer.isActive())
-        {
-            _target.suspend();
-        }
-
         _linkAttachment = linkAttachment;
 
         SendingLinkEndpoint endpoint = linkAttachment.getEndpoint();

@@ -989,19 +989,6 @@ class ManagementNode implements MessageSource, MessageDestination
         final ManagementNodeConsumer managementNodeConsumer = new ManagementNodeConsumer(consumerName,this, target);
         target.consumerAdded(managementNodeConsumer);
         _consumers.add(managementNodeConsumer);
-        target.addStateListener(new StateChangeListener<ConsumerTarget, ConsumerTarget.State>()
-        {
-            @Override
-            public void stateChanged(final ConsumerTarget object,
-                                     final ConsumerTarget.State oldState,
-                                     final ConsumerTarget.State newState)
-            {
-                if(newState == ConsumerTarget.State.CLOSED)
-                {
-                    _consumers.remove(managementNodeConsumer);
-                }
-            }
-        });
         return managementNodeConsumer;
     }
 
@@ -1047,6 +1034,11 @@ class ManagementNode implements MessageSource, MessageDestination
     public MessageDurability getMessageDurability()
     {
         return MessageDurability.NEVER;
+    }
+
+    void unregisterConsumer(ManagementNodeConsumer managementNodeConsumer)
+    {
+        _consumers.remove(managementNodeConsumer);
     }
 
     private class ConsumedMessageInstance implements MessageInstance
