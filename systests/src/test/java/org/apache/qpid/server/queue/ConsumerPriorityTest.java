@@ -33,7 +33,6 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
@@ -89,9 +88,6 @@ public class ConsumerPriorityTest extends QpidBrokerTestCase
         final MessageConsumer consumer = _consumingSession.createConsumer(queue);
         assertNull("There should be no messages in the queue", consumer.receive(100L));
 
-        // make sure that credit is restored on consumer after message.flush/flow being sent from receive
-        ((AMQSession<?,?>)_consumingSession).sync();
-
         final Connection secondConsumingConnection = getConnection();
         final Session secondConsumingSession = secondConsumingConnection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
         secondConsumingConnection.start();
@@ -99,22 +95,13 @@ public class ConsumerPriorityTest extends QpidBrokerTestCase
         final MessageConsumer standardPriorityConsumer = secondConsumingSession.createConsumer(secondConsumingSession.createQueue("direct://amq.direct/" + getTestQueueName() + "/" + getTestQueueName()));
         assertNull("There should be no messages in the queue", standardPriorityConsumer.receive(100L));
 
-        // make sure that credit is restored on consumer after message.flush/flow being sent from receive
-        ((AMQSession<?,?>)secondConsumingSession).sync();
 
         Destination producerDestination = _producingSession.createQueue("direct://amq.direct/" + getTestQueueName() + "/" + getTestQueueName());
         final MessageProducer producer = _producingSession.createProducer(producerDestination);
         producer.send(_producingSession.createTextMessage(getTestName()));
         assertNull("Message should not go to the low priority consumer", consumer.receive(100L));
-
-        // make sure that credit is restored on consumer after message.flush/flow being sent from receive
-        ((AMQSession<?,?>)_consumingSession).sync();
-
         producer.send(_producingSession.createTextMessage(getTestName() + " 2"));
         assertNull("Message should not go to the low priority consumer", consumer.receive(100L));
-
-        // make sure that credit is restored on consumer after message.flush/flow being sent from receive
-        ((AMQSession<?,?>)_consumingSession).sync();
 
         assertNotNull(standardPriorityConsumer.receive(100L));
 
