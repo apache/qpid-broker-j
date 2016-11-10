@@ -412,6 +412,10 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
         {
             _channel.updateAllConsumerNotifyWorkDesired();
         }
+        else if (hasCredit)
+        {
+            notifyWork();
+        }
     }
 
     protected long sendToClient(final ConsumerImpl consumer, final ServerMessage message,
