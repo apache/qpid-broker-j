@@ -197,42 +197,11 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
     {
         if(_state.compareAndSet(from, to))
         {
-            if (to == State.ACTIVE && _stateChangeListeners.size() > 1)
+            if(!_stateChangeListeners.isEmpty())
             {
-                int offset = _stateActivates.incrementAndGet();
-                if (offset >= _stateChangeListeners.size())
-                {
-                    _stateActivates.set(0);
-                    offset = 0;
-                }
-
-                List<StateChangeListener<ConsumerTarget, State>> holdovers = new ArrayList<>();
-                int pos = 0;
                 for (StateChangeListener<ConsumerTarget, State> listener : _stateChangeListeners)
                 {
-                    if (pos++ < offset)
-                    {
-                        holdovers.add(listener);
-                    }
-                    else
-                    {
-                        listener.stateChanged(this, from, to);
-                    }
-                }
-                for (StateChangeListener<ConsumerTarget, State> listener : holdovers)
-                {
                     listener.stateChanged(this, from, to);
-                }
-
-            }
-            else
-            {
-                if(!_stateChangeListeners.isEmpty())
-                {
-                    for (StateChangeListener<ConsumerTarget, State> listener : _stateChangeListeners)
-                    {
-                        listener.stateChanged(this, from, to);
-                    }
                 }
             }
             if(_suspendedConsumerLoggingTicker != null)
