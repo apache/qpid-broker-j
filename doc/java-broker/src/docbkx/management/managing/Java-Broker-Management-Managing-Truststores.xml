@@ -76,6 +76,11 @@
                     <para><emphasis>Name the truststore</emphasis>. Used to identify the
                         truststore.</para>
                 </listitem>
+                <listitem>
+                    <para><emphasis>Exposed as Message Source</emphasis>. If enabled, the Broker
+                        will distribute certificates contained within the trustore to clients.
+                        Used by the end to end message encryption feature.</para>
+                </listitem>
             </itemizedlist>
         </para>
         <para>The following attributes apply to <emphasis>File Trust Stores</emphasis> only.</para>
@@ -109,11 +114,6 @@
                         the Truststore it will allow authenticate only those clients that present a
                         certificate exactly matching a certificate contained within the Truststore
                         database.</para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>Exposed as Message Source</emphasis>. If enabled, the Broker
-                        will distribute certificates contained within the trustore to clients.
-                        Used by the end to end message encryption feature.</para>
                 </listitem>
             </itemizedlist>
         </para>

@@ -103,6 +103,15 @@
               group) has not been permissioned within the Broker's <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJavaBrokerBook}Java-Broker-Security-ACLs.html">Access Control List
                 (ACL)</link>.</para></entry>
         </row>
+        <row xml:id="JMS-Client-0-8-Appendix-Exceptions-CertificateException">
+          <entry>CertificateException</entry>
+          <entry>Unable to find certificate for recipient '&lt;recipient&gt;'</entry>
+          <entry>
+            <para>When using end to end message encryption, this exception indicates the the message recipent's
+              principal cannot be found in the truststore. See <xref linkend="JMS-Client-Message-Encryption"/>
+            </para>
+          </entry>
+        </row>
       </tbody>
     </tgroup>
   </table>

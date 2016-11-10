@@ -272,7 +272,8 @@ java.naming.factory.initial = org.apache.qpid.jndi.PropertiesFileInitialContextF
 # connection factories. This is where end-to-end encryption is configured on the client.
 # connectionfactory.[jndiname] = [ConnectionURL]
 connectionfactory.producerConnectionFactory = amqp://&lt;username&gt;:&lt;password&gt;@?brokerlist='tcp://localhost:5672?encryption_remote_trust_store='$certificates%255c/clientcerts''
-connectionfactory.consumerConnectionFactory = amqp://&lt;username&gt;:&lt;password&gt;@?brokerlist='tcp://localhost:5672?encryption_key_store='path/to/client_1.jks'&amp;encryption_key_store_password='&lt;keystore_password&gt;''
+connectionfactory.consumer1ConnectionFactory = amqp://&lt;username&gt;:&lt;password&gt;@?brokerlist='tcp://localhost:5672?encryption_key_store='path/to/client_1.jks'&amp;encryption_key_store_password='&lt;keystore_password&gt;''
+connectionfactory.consumer2ConnectionFactory = amqp://&lt;username&gt;:&lt;password&gt;@?brokerlist='tcp://localhost:5672?encryption_key_store='path/to/client_2.jks'&amp;encryption_key_store_password='&lt;keystore_password&gt;''
 
 # Rest of JNDI configuration. For example
 # destination.[jniName] = [Address Format]
@@ -288,7 +289,11 @@ queue.myTestQueue = testQueue
                 <literal>x-qpid-encrypt</literal>
                 and
                 <literal>x-qpid-encrypt-recipients</literal>
-                message properties.
+                message properties. Note that the order of the relative distinguished name (RDN) entries within the
+                recipent's distinguished name (DNs) is significant. If the order does not match that recorded in
+                truststore, a
+                <link linkend="JMS-Client-0-8-Appendix-Exceptions-CertificateException">CertificateException</link>
+                will be encountered.
             </para>
             <para>
                 On the receiving side, there is nothing to do.  The application code does not have to add decryption code as this is handled transparently by the Qpid client library.
@@ -310,7 +315,6 @@ public class EncryptionExample {
     {
         Connection connection = createConnection("producerConnectionFactory");
         try {
-            connection.start();
             Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
             Destination destination = createDesination("myTestQueue");
 
@@ -332,7 +336,7 @@ public class EncryptionExample {
 
     private void runReceiverExample() throws Exception
     {
-        Connection connection = createConnection("consumerConnectionFactory");
+        Connection connection = createConnection("consumer1ConnectionFactory");
         try {
             connection.start();
             Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
