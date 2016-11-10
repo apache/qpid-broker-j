@@ -88,8 +88,16 @@
                 <link linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionRemoteTrustStore">encryption_remote_trust_store</link>
                 option. Such a connection URL might look somthing like:
             </para>
-            <programlisting>amqp://username:password@clientid/test?brokerlist='tcp://localhost:5672?encryption_remote_trust_store='$certificates%5c/certstore''</programlisting>
-
+            <programlisting>amqp://username:password@clientid/test?brokerlist='tcp://localhost:5672?encryption_remote_trust_store='$certificates%255c/certstore''</programlisting>
+            <para>
+                The <literal>$certificates/</literal> prefix is mandatory.
+                However, in order to prevent the client from interpreting this the wrong way several layers of escaping and encoding need to take place.
+                The slash character ('/') needs to be escaped by a backslash ('\') which needs to be doubly URL encoded resulting in <literal>$certificates%255c/</literal>.
+            </para>
+            <para>
+                Note that to use the broker-distributed certificates the broker must be configured to expose the trust store as a message source.
+                See the broker documentation on TrustStores for more details.
+            </para>
         </section>
         <section xml:id="JMS-Client-Message-Encryption-Sending-Enabling-Encryption">
             <title>Enabling Encryption</title>
@@ -107,7 +115,7 @@
             <para>
                 In order to encrypt all messages sent to a given Destination, the option
                 <link linkend="JMS-Client-0-8-Binding-URL-Options-SendEncrypted">sendencrypted</link> can be used.  Note
-                that enabling encryption on the address can be overridden by explicitly seting the property
+                that enabling encryption on the address can be overridden by explicitly setting the property
                 <literal>x-qpid-encrypt</literal> to false on an individual message. An example address would look like:
             </para>
             <programlisting>direct:///queue/queue?sendencrypted='true'</programlisting>
@@ -168,6 +176,218 @@
             <programlisting>amqp://username:password@clientid/test?brokerlist='tcp://localhost:5672?encryption_key_store='/home/qpid/identities.jks'&amp;encryption_key_store_password='password''</programlisting>
 
 
+        </section>
+    </section>
+    <section  xml:id="JMS-Client-Message-Encryption-Example">
+        <title>Message Encryption Example</title>
+        <section xml:id="JMS-Client-Message-Encryption-Example-Introduction">
+            <title>Introduction</title>
+            <para>
+                In this example we will setup the Qpid Broker for Java and two clients who will send each other encrypted messages.
+                The clients will use self signed certificates and the certificates will be distributed by the Broker.
+            </para>
+        </section>
+        <section xml:id="JMS-Client-Message-Encryption-Example-Prerequisites">
+            <title>Prerequisites</title>
+            <para>
+                For this example it is assumed the Broker is already running and that Management is enabled on port
+                8443.
+            </para>
+            <para>
+                The example requires two (one for each client) self-signed X.509 certificates and the corresponding
+                keys. We refer to these as
+                <literal>client_1/2.cert</literal>
+                and
+                <literal>client_1/2.key</literal>
+                throughout the text below.
+            </para>
+            <para>
+                The following
+                <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://www.openssl.org">openssl</link>
+                commands can be used to generate self signed certicates suitable for this test.
+                <programlisting>
+<![CDATA[openssl req -x509 -newkey rsa:4096 -keyout client_1.key -out client_1.cert -days 365 -nodes -subj "/C=US/O=Apache/OU=Qpid/CN=client1"
+openssl req -x509 -newkey rsa:4096 -keyout client_2.key -out client_2.cert -days 365 -nodes -subj "/C=US/O=Apache/OU=Qpid/CN=client2"]]>
+                </programlisting>
+            </para>
+        </section>
+        <section xml:id="JMS-Client-Message-Encryption-Example-Broker-Config">
+            <title>Broker Configuration</title>
+            <para>
+                In this example we want the broker to distribute the client certificates.
+                Essentially, we want the broker to act as a<link xmlns:xlink="http://www.w3.org/1999/xlink"
+                                                                 xlink:href="https://en.wikipedia.org/wiki/Key_server_(cryptographic)">
+                Key Server</link>.
+                Use
+                <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleKeytool}">java's keytool</link>
+                to create a trust store containing the two client certificates.
+                <programlisting>
+<![CDATA[keytool -importcert -file client_1.cert -alias client1 -keystore mytruststore.jks
+keytool -importcert -file client_2.cert -alias client2 -keystore mytruststore.jks]]>
+                </programlisting>
+                Now a FileTrustStore can be created on the broker pointing to the java trust store that was just
+                created.
+                This can be done via the Web Management Console or the REST API:
+                <programlisting>curl -v -u admin https://localhost:8443/api/v6.1/truststore/clientcerts -X PUT -d
+                    '{"type": "FileTrustStore", "stroeUrl": "&lt;path_to_truststore&gt;", "password": "&lt;your_truststore_password&gt;"}'
+                </programlisting>
+                The TrustStore must be configured to expose the certificates as a message source to the clients:
+                <programlisting>curl -v -u admin https://localhost:8443/api/v6.1/truststore/clientcerts -X POST -d
+                    '{"exposedAsMessageSource": true}'
+                </programlisting>
+            </para>
+        </section>
+        <section xml:id="JMS-Client-Message-Encryption-Example-Client-Config">
+            <title>Client Configuration</title>
+            <para>
+                The configuration for the clients happens in the connection URL. In this example this is provided via a
+                JNDI properties file.
+            </para>
+            <para>
+                On the producing side, in order to encrypt a message for a recipient, the Qpid client needs the
+                recipient's public certificate which is distributed by the Broker following our above broker setup. The
+                <literal>encryption_remote_trust_store</literal>
+                element within the connection URL provides the name of the truststore.
+            </para>
+            <para>
+                On the receiving side, in order to decrypt a message it needs a JKS keystore with the private key
+                matching the public certificate.
+                For this example, the keystores can again be created with a two-step process involving
+                <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://www.openssl.org">openssl</link>
+                and <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleKeytool}">java's keytool</link>.
+                <programlisting>
+<![CDATA[openssl pkcs12 -export -in client_1.cert -inkey client_1.key -out client_1.pkcs12 -name "client1"
+openssl pkcs12 -export -in client_2.cert -inkey client_2.key -out client_2.pkcs12 -name "client2"
+
+keytool -importkeystore -destkeystore client_1.jks -srckeystore client_1.pkcs12 -srcstoretype PKCS12
+keytool -importkeystore -destkeystore client_2.jks -srckeystore client_2.pkcs12 -srcstoretype PKCS12]]>
+                </programlisting>
+
+            </para>
+            <para>
+                The final JNDI properties file should look similar to this:
+                <programlisting>
+java.naming.factory.initial = org.apache.qpid.jndi.PropertiesFileInitialContextFactory
+
+# connection factories. This is where end-to-end encryption is configured on the client.
+# connectionfactory.[jndiname] = [ConnectionURL]
+connectionfactory.producerConnectionFactory = amqp://&lt;username&gt;:&lt;password&gt;@?brokerlist='tcp://localhost:5672?encryption_remote_trust_store='$certificates%255c/clientcerts''
+connectionfactory.consumer1ConnectionFactory = amqp://&lt;username&gt;:&lt;password&gt;@?brokerlist='tcp://localhost:5672?encryption_key_store='path/to/client_1.jks'&amp;encryption_key_store_password='&lt;keystore_password&gt;''
+connectionfactory.consumer2ConnectionFactory = amqp://&lt;username&gt;:&lt;password&gt;@?brokerlist='tcp://localhost:5672?encryption_key_store='path/to/client_2.jks'&amp;encryption_key_store_password='&lt;keystore_password&gt;''
+
+# Rest of JNDI configuration. For example
+# destination.[jniName] = [Address Format]
+queue.myTestQueue = testQueue
+                </programlisting>
+            </para>
+        </section>
+        <section xml:id="JMS-Client-Message-Encryption-Example-Application">
+            <title>Application Code</title>
+            <para>
+                On the producing side, the application needs to enable encryption and indicate the intended recipient(s)
+                of each message. This is done via the
+                <literal>x-qpid-encrypt</literal>
+                and
+                <literal>x-qpid-encrypt-recipients</literal>
+                message properties. Note that the order of the relative distinguished name (RDN) entries within the
+                recipent's distinguished name (DNs) is significant. If the order does not match that recorded in
+                truststore, a
+                <link linkend="JMS-Client-0-8-Appendix-Exceptions-CertificateException">CertificateException</link>
+                will be encountered.
+            </para>
+            <para>
+                On the receiving side, there is nothing to do.  The application code does not have to add decryption code as this is handled transparently by the Qpid client library.
+                However, the receiving application should gracefully handle failures in decryption in which case the encrypted message will be delivered as a BytesMessage.
+                <programlisting language="java">
+// imports omitted for brevity
+
+public class EncryptionExample {
+    public EncryptionExample() {
+    }
+
+    public static void main(String[] args) throws Exception {
+        EncryptionExample encryptionExampleApp = new EncryptionExample();
+        encryptionExampleApp.runProducerExample();
+        encryptionExampleApp.runReceiverExample();
+    }
+
+    private void runProducerExample() throws Exception
+    {
+        Connection connection = createConnection("producerConnectionFactory");
+        try {
+            Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+            Destination destination = createDesination("myTestQueue");
+
+            MessageProducer messageProducer = session.createProducer(destination);
+            TextMessage message = session.createTextMessage("Hello world!");
+
+            // ============== Enable encryption for this message ==============
+            message.setBooleanProperty("x-qpid-encrypt", true);
+            // ============== Configure recipients for encryption ==============
+            message.setStringProperty("x-qpid-encrypt-recipients", "CN=client1, OU=Qpid, O=Apache, C=US");
+
+            messageProducer.send(message);
+            session.commit();
+        }
+        finally {
+            connection.close();
+        }
+    }
+
+    private void runReceiverExample() throws Exception
+    {
+        Connection connection = createConnection("consumer1ConnectionFactory");
+        try {
+            connection.start();
+            Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+            Destination destination = createDesination("myTestQueue");
+            MessageConsumer messageConsumer = session.createConsumer(destination);
+            Message message = messageConsumer.receive();
+            if (message instanceof TextMessage) {
+                // application logic
+                System.out.println(((TextMessage) message).getText());
+            } else if (message instanceof BytesMessage) {
+                // handle potential decryption failure
+                System.out.println("Potential decryption problem. Application not in list of intended recipients?");
+            }
+            session.commit();
+        }
+        finally {
+            connection.close();
+        }
+    }
+
+    ///////////////////////////////////////
+    // The following is boilerplate code //
+    ///////////////////////////////////////
+
+    private Connection createConnection(final String connectionFactoryName) throws JMSException, IOException, NamingException
+    {
+        try (InputStream resourceAsStream = this.getClass().getResourceAsStream("example.properties")) {
+            Properties properties = new Properties();
+            properties.load(resourceAsStream);
+            Context context = new InitialContext(properties);
+            ConnectionFactory connectionFactory = (ConnectionFactory) context.lookup(connectionFactoryName);
+            final Connection connection = connectionFactory.createConnection();
+            context.close();
+            return connection;
+        }
+    }
+
+    private Destination createDesination(String desinationJndiName) throws IOException, NamingException
+    {
+        try (InputStream resourceAsStream = this.getClass().getResourceAsStream("example.properties")) {
+            Properties properties = new Properties();
+            properties.load(resourceAsStream);
+            Context context = new InitialContext(properties);
+            Destination destination = (Destination) context.lookup(desinationJndiName);
+            context.close();
+            return destination;
+        }
+    }
+}
+                </programlisting>
+            </para>
         </section>
     </section>
 </chapter>
