@@ -84,6 +84,15 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
     }
 
     @Override
+    public void setNotifyWorkDesired(final boolean desired)
+    {
+        if (desired && !_queue.isEmpty())
+        {
+            _target.notifyWork();
+        }
+    }
+
+    @Override
     public long getBytesOut()
     {
         return 0;

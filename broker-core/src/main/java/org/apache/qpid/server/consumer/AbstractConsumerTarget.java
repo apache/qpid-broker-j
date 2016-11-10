@@ -92,19 +92,29 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
 
     protected final void setNotifyWorkDesired(final boolean desired)
     {
-        // TODO - remove once queue is smarter
-        if(desired && !_notifyWorkDesired)
+        if (desired != _notifyWorkDesired)
         {
-            updateState(State.SUSPENDED, State.ACTIVE);
+            // TODO - remove once queue is smarter
+            if (desired)
+            {
+                updateState(State.SUSPENDED, State.ACTIVE);
+            }
+            else
+            {
+                updateState(State.ACTIVE, State.SUSPENDED);
+            }
 
-            notifyWork();
-        }
-        else if(!desired && _notifyWorkDesired)
-        {
-            updateState(State.ACTIVE, State.SUSPENDED);
-        }
+            for (ConsumerImpl consumer : _consumers)
+            {
+                consumer.setNotifyWorkDesired(desired);
+            }
 
-        _notifyWorkDesired = desired;
+            _notifyWorkDesired = desired;
+            if (desired)
+            {
+                notifyWork();
+            }
+        }
     }
 
     public final boolean isNotifyWorkDesired()
@@ -345,8 +355,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
                 state = getState();
             }
         }
-
-        doCloseInternal();
+        setNotifyWorkDesired(false);
 
         for (ConsumerImpl consumer : consumers)
         {
@@ -367,7 +376,4 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget, LogSubje
 
         return "[(** Multi-Queue **)] ";
     }
-
-
-    protected abstract void doCloseInternal();
 }

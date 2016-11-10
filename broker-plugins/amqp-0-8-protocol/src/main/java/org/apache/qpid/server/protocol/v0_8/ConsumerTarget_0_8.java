@@ -45,7 +45,7 @@ import org.apache.qpid.server.util.StateChangeListener;
  * Ties together the protocol session of a subscriber, the consumer tag
  * that was given out by the broker and the channel id.
  */
-public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implements FlowCreditManager.FlowCreditManagerListener
+public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
 {
 
     private final ClientDeliveryMethod _deliveryMethod;
@@ -304,7 +304,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         _consumerTag = consumerTag;
 
         _creditManager = creditManager;
-        creditManager.addStateListener(this);
 
         _deliveryMethod = deliveryMethod;
         _recordMethod = recordMethod;
@@ -379,12 +378,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         return _creditManager;
     }
 
-    @Override
-    protected void doCloseInternal()
-    {
-        _creditManager.removeListener(this);
-    }
-
     public boolean allocateCredit(ServerMessage msg)
     {
         boolean hasCredit = _creditManager.hasCredit();
@@ -418,23 +411,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         if(_creditManager.hasCredit() != hasCredit)
         {
             _channel.updateAllConsumerNotifyWorkDesired();
-        }
-    }
-
-    public void creditStateChanged(boolean hasCredit)
-    {
-
-        if(hasCredit)
-        {
-            if(!updateState(State.SUSPENDED, State.ACTIVE))
-            {
-                // this is a hack to get round the issue of increasing bytes credit
-                notifyCurrentState();
-            }
-        }
-        else
-        {
-            updateState(State.ACTIVE, State.SUSPENDED);
         }
     }
 

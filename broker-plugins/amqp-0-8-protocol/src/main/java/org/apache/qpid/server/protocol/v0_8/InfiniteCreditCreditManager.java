@@ -20,10 +20,9 @@
 */
 package org.apache.qpid.server.protocol.v0_8;
 
-import org.apache.qpid.server.flow.AbstractFlowCreditManager;
 import org.apache.qpid.server.flow.FlowCreditManager;
 
-public class InfiniteCreditCreditManager extends AbstractFlowCreditManager implements FlowCreditManager
+public class InfiniteCreditCreditManager implements FlowCreditManager
 {
 
     public InfiniteCreditCreditManager()

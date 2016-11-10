@@ -88,7 +88,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
                                 final String consumerName,
                                 final EnumSet<ConsumerImpl.Option> options, final Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
-                   ConsumerAccessRefused
+                   ConsumerAccessRefused, QueueDeleted
     {
         final Consumer consumer = new Consumer(consumerName, target);
         target.consumerAdded(consumer);
@@ -168,6 +168,15 @@ public abstract class AbstractSystemMessageSource implements MessageSource
                 }
             }
             return null;
+        }
+
+        @Override
+        public void setNotifyWorkDesired(final boolean desired)
+        {
+            if (desired && !_queue.isEmpty())
+            {
+                _target.notifyWork();
+            }
         }
 
         @Override

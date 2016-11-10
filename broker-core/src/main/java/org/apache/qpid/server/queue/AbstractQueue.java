@@ -121,7 +121,6 @@ import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 public abstract class AbstractQueue<X extends AbstractQueue<X>>
         extends AbstractConfiguredObject<X>
         implements Queue<X>,
-                   StateChangeListener<QueueConsumer<?>, State>,
                    MessageGroupManager.ConsumerResetHelper
 {
 
@@ -285,6 +284,18 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
     private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
     private AdvanceConsumersTask _queueHouseKeepingTask;
+
+    void setNotifyWorkDesired(final QueueConsumer consumer, final boolean desired)
+    {
+        if (desired)
+        {
+            _activeSubscriberCount.incrementAndGet();
+        }
+        else
+        {
+            _activeSubscriberCount.decrementAndGet();
+        }
+    }
 
     private interface HoldMethod
     {
@@ -720,12 +731,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                          final EnumSet<ConsumerImpl.Option> optionSet,
                                          final Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
-                   ConsumerAccessRefused
+                   ConsumerAccessRefused, QueueDeleted
     {
 
         try
         {
-            return getTaskExecutor().run(new Task<QueueConsumerImpl, Exception>()
+            final QueueConsumerImpl queueConsumer = getTaskExecutor().run(new Task<QueueConsumerImpl, Exception>()
             {
                 @Override
                 public QueueConsumerImpl execute() throws Exception
@@ -751,9 +762,19 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     return "target=" + target + ", consumerName=" + consumerName + ", optionSet=" + optionSet;
                 }
             });
+
+            target.consumerAdded(queueConsumer);
+            if(isEmpty())
+            {
+                target.queueEmpty();
+            }
+            target.updateNotifyWorkDesired();
+            target.notifyWork();
+            return queueConsumer;
         }
-        catch (ExistingExclusiveConsumer | ConsumerAccessRefused |
-            ExistingConsumerPreventsExclusive | RuntimeException e)
+        catch (ExistingExclusiveConsumer | ConsumerAccessRefused
+                | ExistingConsumerPreventsExclusive | QueueDeleted
+                | RuntimeException e)
         {
             throw e;
         }
@@ -773,8 +794,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                   EnumSet<ConsumerImpl.Option> optionSet,
                                                   final Integer priority)
             throws ExistingExclusiveConsumer, ConsumerAccessRefused,
-                   ExistingConsumerPreventsExclusive
+                   ExistingConsumerPreventsExclusive, QueueDeleted
     {
+        if (isDeleted())
+        {
+            throw new QueueDeleted();
+        }
+
         if (hasExclusiveConsumer())
         {
             throw new ExistingExclusiveConsumer();
@@ -910,20 +936,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                            priority);
 
         _exclusiveOwner = exclusiveOwner;
-        target.consumerAdded(consumer);
-
 
         if (exclusive && !isTransient)
         {
             _exclusiveSubscriber = consumer;
         }
 
-        if(consumer.isActive())
-        {
-            _activeSubscriberCount.incrementAndGet();
-        }
-
-        consumer.setStateListener(this);
         QueueContext queueContext;
         if(filters == null || !filters.startAtTail())
         {
@@ -935,27 +953,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
         consumer.setQueueContext(queueContext);
 
-        if (!isDeleted())
-        {
-            _consumerList.add(consumer);
-
-            if (isDeleted())
-            {
-                consumer.queueDeleted();
-            }
-        }
-        else
-        {
-            // TODO
-        }
+        _consumerList.add(consumer);
 
         childAdded(consumer);
         consumer.addChangeListener(_deletedChildListener);
-        if(isEmpty())
-        {
-            consumer.queueEmpty();
-        }
-        consumer.notifyWork();
 
         return consumer;
     }
@@ -1486,24 +1487,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
         return entryList;
 
-    }
-
-    public void stateChanged(QueueConsumer<?> sub, State oldState, State newState)
-    {
-        if (oldState == State.ACTIVE && newState != State.ACTIVE)
-        {
-            _activeSubscriberCount.decrementAndGet();
-
-        }
-        else if (newState == State.ACTIVE)
-        {
-            if (oldState != State.ACTIVE)
-            {
-                _activeSubscriberCount.incrementAndGet();
-            }
-            sub.notifyWork();
-
-        }
     }
 
     public int compareTo(final X o)

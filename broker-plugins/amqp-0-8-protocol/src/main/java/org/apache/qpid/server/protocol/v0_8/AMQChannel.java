@@ -302,7 +302,8 @@ public class AMQChannel
     private boolean performGet(final MessageSource queue,
                                final boolean acks)
             throws MessageSource.ExistingConsumerPreventsExclusive,
-                   MessageSource.ExistingExclusiveConsumer, MessageSource.ConsumerAccessRefused
+                   MessageSource.ExistingExclusiveConsumer, MessageSource.ConsumerAccessRefused,
+                   MessageSource.QueueDeleted
     {
 
         final FlowCreditManager singleMessageCredit = new InfiniteCreditCreditManager();
@@ -719,7 +720,7 @@ public class AMQChannel
             throws MessageSource.ExistingConsumerPreventsExclusive,
                    MessageSource.ExistingExclusiveConsumer,
                    AMQInvalidArgumentException,
-                   MessageSource.ConsumerAccessRefused, ConsumerTagInUseException
+                   MessageSource.ConsumerAccessRefused, ConsumerTagInUseException, MessageSource.QueueDeleted
     {
         if (tag == null)
         {
@@ -856,6 +857,7 @@ public class AMQChannel
         catch (AccessControlException
                 | MessageSource.ExistingExclusiveConsumer
                 | MessageSource.ExistingConsumerPreventsExclusive
+                | MessageSource.QueueDeleted
                 | AMQInvalidArgumentException
                 | MessageSource.ConsumerAccessRefused e)
         {
@@ -2231,7 +2233,13 @@ public class AMQChannel
                                 + "' as it already has an incompatible exclusivity policy", _channelId);
 
             }
-
+            catch (MessageSource.QueueDeleted queueDeleted)
+            {
+                _connection.sendConnectionClose(AMQConstant.NOT_FOUND,
+                                                "Cannot subscribe to queue '"
+                                                + queue1.getName()
+                                                + "' as it has been deleted", _channelId);
+            }
         }
     }
 
@@ -2296,6 +2304,10 @@ public class AMQChannel
             {
                 _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED,
                         "Queue has an incompatible exclusivity policy", _channelId);
+            }
+            catch (MessageSource.QueueDeleted queueDeleted)
+            {
+                _connection.sendConnectionClose(AMQConstant.NOT_FOUND, "Queue has been deleted", _channelId);
             }
         }
     }

@@ -22,9 +22,8 @@ package org.apache.qpid.server.protocol.v0_10;
 
 
 import org.apache.qpid.server.transport.ProtocolEngine;
-import org.apache.qpid.server.flow.AbstractFlowCreditManager;
 
-public class CreditCreditManager extends AbstractFlowCreditManager implements FlowCreditManager_0_10
+public class CreditCreditManager implements FlowCreditManager_0_10
 {
     private final ProtocolEngine _protocolEngine;
     private volatile long _bytesCredit;
@@ -35,13 +34,10 @@ public class CreditCreditManager extends AbstractFlowCreditManager implements Fl
         _protocolEngine = protocolEngine;
         _bytesCredit = bytesCredit;
         _messageCredit = messageCredit;
-        setSuspended(!hasCredit());
-
     }
 
     public synchronized void restoreCredit(final long messageCredit, final long bytesCredit)
     {
-        setSuspended(!hasCredit());
     }
 
 
@@ -52,26 +48,16 @@ public class CreditCreditManager extends AbstractFlowCreditManager implements Fl
             _messageCredit += messageCredit;
         }
 
-        boolean notifyIncrease = false;
-
         if(_bytesCredit >= 0L && bytesCredit > 0L)
         {
-            notifyIncrease = _messageCredit != 0L && bytesCredit>0;
             _bytesCredit += bytesCredit;
         }
-
-        if(!setSuspended(!hasCredit()) && notifyIncrease)
-        {
-            notifyIncreaseBytesCredit();
-        }
-
     }
 
     public synchronized void clearCredit()
     {
         _bytesCredit = 0l;
         _messageCredit = 0l;
-        setSuspended(true);
     }
 
 
@@ -85,7 +71,6 @@ public class CreditCreditManager extends AbstractFlowCreditManager implements Fl
     {
         if (_protocolEngine.isTransportBlockedForWriting())
         {
-            setSuspended(true);
             return false;
         }
         else if(_messageCredit >= 0L)
@@ -112,7 +97,6 @@ public class CreditCreditManager extends AbstractFlowCreditManager implements Fl
             }
             else
             {
-                setSuspended(true);
                 return false;
             }
         }

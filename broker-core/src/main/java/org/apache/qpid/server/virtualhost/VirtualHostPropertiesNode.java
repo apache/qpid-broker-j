@@ -53,7 +53,7 @@ public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
                                 final String consumerName,
                                 final EnumSet<ConsumerImpl.Option> options, final Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
-                   ConsumerAccessRefused
+                   ConsumerAccessRefused, QueueDeleted
     {
         final Consumer consumer = super.addConsumer(target, filters, messageClass, consumerName, options, priority);
         consumer.send(createMessage());

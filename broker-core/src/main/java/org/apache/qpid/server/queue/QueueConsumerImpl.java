@@ -401,6 +401,12 @@ class QueueConsumerImpl
         return messageContainer;
     }
 
+    @Override
+    public void setNotifyWorkDesired(final boolean desired)
+    {
+        _queue.setNotifyWorkDesired(this, desired);
+    }
+
     public final long getConsumerNumber()
     {
         return _consumerNumber;

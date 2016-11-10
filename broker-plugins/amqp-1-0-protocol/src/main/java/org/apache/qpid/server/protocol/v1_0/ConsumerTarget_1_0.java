@@ -98,12 +98,6 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
     }
 
-    @Override
-    protected void doCloseInternal()
-    {
-
-    }
-
     public void doSend(final ConsumerImpl consumer, final MessageInstance entry, boolean batch)
     {
         // TODO

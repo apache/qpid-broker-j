@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
 import org.apache.qpid.server.consumer.ConsumerImpl;
-import org.apache.qpid.server.flow.FlowCreditManager;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.message.MessageInstance;
@@ -62,7 +61,7 @@ import org.apache.qpid.transport.Option;
 import org.apache.qpid.util.ByteBufferUtils;
 import org.apache.qpid.util.GZIPUtils;
 
-public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowCreditManager.FlowCreditManagerListener
+public class ConsumerTarget_0_10 extends AbstractConsumerTarget
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerTarget_0_10.class);
 
@@ -122,7 +121,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         _acquireMode = acquireMode;
         _creditManager = creditManager;
         _flowMode = flowMode;
-        _creditManager.addStateListener(this);
         _name = name;
         if(arguments != null && arguments.containsKey("local-address"))
         {
@@ -143,29 +141,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
                         && getCreditManager().hasCredit();
 
         setNotifyWorkDesired(state);
-    }
-
-    @Override
-    protected void doCloseInternal()
-    {
-        _creditManager.removeListener(this);
-    }
-
-    public void creditStateChanged(boolean hasCredit)
-    {
-
-        if(hasCredit)
-        {
-            if(!updateState(State.SUSPENDED, State.ACTIVE))
-            {
-                // this is a hack to get round the issue of increasing bytes credit
-                notifyCurrentState();
-            }
-        }
-        else
-        {
-            updateState(State.ACTIVE, State.SUSPENDED);
-        }
     }
 
     public String getName()
@@ -596,10 +571,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
 
     public void setFlowMode(MessageFlowMode flowMode)
     {
-
-
-        _creditManager.removeListener(this);
-
         switch(flowMode)
         {
             case CREDIT:
@@ -614,9 +585,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         }
         _flowMode = flowMode;
         updateState(State.ACTIVE, State.SUSPENDED);
-
-        _creditManager.addStateListener(this);
-
     }
 
     public boolean isStopped()

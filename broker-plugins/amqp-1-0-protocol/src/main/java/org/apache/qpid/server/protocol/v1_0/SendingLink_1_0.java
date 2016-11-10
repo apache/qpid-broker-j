@@ -395,6 +395,11 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
                 _logger.info("Cannot add an exclusive consumer to the destination as there is an incompatible exclusivity policy");
                 throw new ConnectionScopedRuntimeException(e);
             }
+            catch (MessageSource.QueueDeleted e)
+            {
+                _logger.info("Cannot add a consumer to the destination as the destination has been deleted");
+                throw new ConnectionScopedRuntimeException(e);
+            }
         }
 
     }

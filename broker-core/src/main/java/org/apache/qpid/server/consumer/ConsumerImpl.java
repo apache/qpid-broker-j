@@ -36,6 +36,8 @@ public interface ConsumerImpl
 
     AbstractQueue.MessageContainer pullMessage();
 
+    void setNotifyWorkDesired(boolean desired);
+
     enum Option
     {
         ACQUIRES,

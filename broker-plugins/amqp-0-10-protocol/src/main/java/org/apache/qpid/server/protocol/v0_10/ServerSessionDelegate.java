@@ -379,6 +379,10 @@ public class ServerSessionDelegate extends SessionDelegate
                     {
                         exception(session, method, ExecutionErrorCode.RESOURCE_LOCKED, "Queue has an incompatible exclusivity policy");
                     }
+                    catch (MessageSource.QueueDeleted queueDeleted)
+                    {
+                        exception(session, method, ExecutionErrorCode.NOT_FOUND, "Queue was deleted");
+                    }
                 }
             }
         }
