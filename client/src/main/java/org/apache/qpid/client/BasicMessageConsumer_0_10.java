@@ -401,7 +401,6 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
            
             _0_10session.getQpidSession().messageFlush
                 (getConsumerTagString(), Option.UNRELIABLE, Option.SYNC);
-            _0_10session.getQpidSession().sync();
             _0_10session.getQpidSession().messageFlow
                 (getConsumerTagString(), MessageCreditUnit.BYTE,
                  0xFFFFFFFF, Option.UNRELIABLE);
@@ -414,6 +413,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
                                                 _capacity,
                                                 Option.UNRELIABLE);
             }
+            _0_10session.getQpidSession().sync();
             _0_10session.syncDispatchQueue(false);
             o = super.getMessageFromQueue(-1);
         }
