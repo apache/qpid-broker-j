@@ -70,6 +70,7 @@ public class TestConsumerTarget implements ConsumerTarget
     private ConsumerImpl _consumer;
     private boolean _messageSent;
     private MockSessionModel _sessionModel = new MockSessionModel();
+    private boolean _notifyDesired;
 
     public TestConsumerTarget()
     {
@@ -89,6 +90,7 @@ public class TestConsumerTarget implements ConsumerTarget
             _listener.stateChanged(this, _state, State.CLOSED);
         }
         _state = State.CLOSED;
+        updateNotifyWorkDesired();
         return true;
     }
 
@@ -206,6 +208,7 @@ public class TestConsumerTarget implements ConsumerTarget
         {
             _listener.stateChanged(this, oldState, state);
         }
+        updateNotifyWorkDesired();
     }
 
     @Override
@@ -226,13 +229,13 @@ public class TestConsumerTarget implements ConsumerTarget
     @Override
     public boolean processPending()
     {
-        AbstractQueue.MessageContainer messageContainter = _consumer.pullMessage();
-        if (messageContainter == null)
+        AbstractQueue.MessageContainer messageContainer = _consumer.pullMessage();
+        if (messageContainer == null)
         {
             return false;
         }
 
-        send(_consumer, messageContainter._messageInstance, false);
+        send(_consumer, messageContainer._messageInstance, false);
         return true;
     }
 
@@ -279,7 +282,11 @@ public class TestConsumerTarget implements ConsumerTarget
     @Override
     public void updateNotifyWorkDesired()
     {
-
+        if (isNotifyWorkDesired() != _notifyDesired && _consumer != null)
+        {
+            _consumer.setNotifyWorkDesired(isNotifyWorkDesired());
+            _notifyDesired = isNotifyWorkDesired();
+        }
     }
 
     private static class MockSessionModel implements AMQSessionModel<MockSessionModel>
