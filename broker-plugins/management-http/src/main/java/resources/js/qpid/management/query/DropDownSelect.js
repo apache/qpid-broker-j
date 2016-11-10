@@ -87,7 +87,7 @@ define(["dojo/_base/declare",
                 this._selectedItems = this._optionsPanel.get("selectedItems");
                 popup.close(this._optionsDialog);
                 this._optionsPanel.resetItems();
-                this.emit("change", this._selectedItems);
+                this.emit("change", lang.clone(this._selectedItems));
             },
             _hideAndResetSearch: function ()
             {

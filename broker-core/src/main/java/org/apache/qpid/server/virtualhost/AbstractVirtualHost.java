@@ -38,6 +38,7 @@ import java.security.AccessControlContext;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -62,7 +63,6 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import javax.security.auth.Subject;
-import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
@@ -111,6 +111,7 @@ import org.apache.qpid.server.security.SubjectFixedResultAccessControl.ResultCal
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.stats.StatisticsCounter;
+import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.Event;
@@ -142,9 +143,10 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.HousekeepingExecutor;
 import org.apache.qpid.server.util.MapValueConverter;
+import org.apache.qpid.util.Strings;
 
 public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> extends AbstractConfiguredObject<X>
-        implements VirtualHost<X>, EventListener
+        implements VirtualHost<X>, EventListener, StatisticsGatherer
 {
     private final Collection<ConnectionValidator> _connectionValidators = new ArrayList<>();
 
@@ -519,7 +521,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
         if (virtualHost.getConnectionThreadPoolSize() <= virtualHost.getNumberOfSelectors())
         {
-            throw new IllegalConfigurationException(String.format("Number of Selectors %d on VirtualHost %s must be greater than the connection pool size %d.", virtualHost.getNumberOfSelectors(), getName(), virtualHost.getConnectionThreadPoolSize()));
+            throw new IllegalConfigurationException(String.format("Number of Selectors %d on VirtualHost %s must be less than the connection pool size %d.", virtualHost.getNumberOfSelectors(), getName(), virtualHost.getConnectionThreadPoolSize()));
         }
     }
 
@@ -647,7 +649,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 attributes.put(Exchange.ID, UUIDGenerator.generateExchangeUUID(name, getName()));
                 final ListenableFuture<Exchange<?>> future = addExchangeAsync(attributes);
                 final SettableFuture<Void> returnVal = SettableFuture.create();
-                Futures.addCallback(future, new FutureCallback<Exchange<?>>()
+                addFutureCallback(future, new FutureCallback<Exchange<?>>()
                 {
                     @Override
                     public void onSuccess(final Exchange<?> result)
@@ -717,25 +719,43 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             if(messageContent instanceof Map || messageContent instanceof List)
             {
+                if(message.getMimeType() != null || message.getEncoding() != null)
+                {
+                    throw new IllegalArgumentException("If the message content is provided as map or list, the mime type and encoding must be left unset");
+                }
                 body = (Serializable)messageContent;
             }
             else if(messageContent instanceof String)
             {
-                if(message.getMimeType() != null || message.getEncoding() != null)
+                String contentTransferEncoding = message.getContentTransferEncoding();
+                if("base64".equalsIgnoreCase(contentTransferEncoding))
                 {
-                    try
+                    body = Strings.decodeBase64((String) messageContent);
+                }
+                else if(contentTransferEncoding == null || contentTransferEncoding.trim().equals("") || contentTransferEncoding.trim().equalsIgnoreCase("identity"))
+                {
+                    String mimeType = message.getMimeType();
+                    if(mimeType != null && !(mimeType = mimeType.trim().toLowerCase()).equals(""))
                     {
-                        body = DatatypeConverter.parseBase64Binary((String)messageContent);
-
+                        if (!(mimeType.startsWith("text/") || Arrays.asList("application/json", "application/xml")
+                                                                    .contains(mimeType)))
+                        {
+                            throw new IllegalArgumentException(message.getMimeType()
+                                                               + " is invalid as a MIME type for this message. "
+                                                               + "Only MIME types of the text type can be used if a string is supplied as the content");
+                        }
+                        else if (mimeType.matches(".*;\\s*charset\\s*=.*"))
+                        {
+                            throw new IllegalArgumentException(message.getMimeType()
+                                                               + " is invalid as a MIME type for this message. "
+                                                               + "If a string is supplied as the content, the MIME type must not include a charset parameter");
+                        }
                     }
-                    catch(IllegalArgumentException e)
-                    {
-                        body = (String) messageContent;
-                    }
+                    body = (String) messageContent;
                 }
                 else
                 {
-                    body = (String) messageContent;
+                    throw new IllegalArgumentException("contentTransferEncoding value '" + contentTransferEncoding + "' is invalid.  The only valid values are base64 and identity");
                 }
             }
             else
@@ -1373,7 +1393,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                    NoFactoryForTypeException
     {
         final SettableFuture<Exchange<?>> returnVal = SettableFuture.create();
-        Futures.addCallback(getObjectFactory().createAsync(Exchange.class, attributes, this),
+        addFutureCallback(getObjectFactory().createAsync(Exchange.class, attributes, this),
                             new FutureCallback<Exchange>()
                             {
                                 @Override
@@ -1395,7 +1415,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                         returnVal.setException(t);
                                     }
                                 }
-                            });
+                            }, getTaskExecutor());
         return returnVal;
 
     }
@@ -1545,6 +1565,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return _dataDelivered;
     }
 
+    @Override
     public void resetStatistics()
     {
         _messagesDelivered.reset();
@@ -2609,7 +2630,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                         final ListenableFuture<Void> childOpenFuture = child.openAsync();
                         childOpenFutures.add(childOpenFuture);
 
-                        Futures.addCallback(childOpenFuture, new FutureCallback<Void>()
+                        addFutureCallback(childOpenFuture, new FutureCallback<Void>()
                         {
                             @Override
                             public void onSuccess(final Void result)
@@ -2623,7 +2644,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                               child.getClass().getSimpleName(), child.getName(), t);
                             }
 
-                        });
+                        }, getTaskExecutor());
                     }
                 });
                 return null;

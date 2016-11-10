@@ -307,10 +307,10 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
         save(data);
     }
 
-    private HashMap<UUID, Map<String, SortedSet<ConfiguredObjectRecord>>> createChildMap()
+    private Map<UUID, Map<String, SortedSet<ConfiguredObjectRecord>>> createChildMap()
     {
         Model model = _parent.getModel();
-        HashMap<UUID, Map<String, SortedSet<ConfiguredObjectRecord>>> map = new HashMap<>();
+        Map<UUID, Map<String, SortedSet<ConfiguredObjectRecord>>> map = new HashMap<>();
 
         for(ConfiguredObjectRecord record : _objectsById.values())
         {
@@ -356,7 +356,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
                                       Map<UUID, Map<String, SortedSet<ConfiguredObjectRecord>>> childMap)
     {
         ConfiguredObjectRecord record = _objectsById.get(id);
-        Map<String,Object> map = new LinkedHashMap<String, Object>();
+        Map<String,Object> map = new LinkedHashMap<>();
 
         Collection<Class<? extends ConfiguredObject>> parentTypes = _parent.getModel().getParentTypes(type);
         if(parentTypes.size() > 1)
@@ -376,8 +376,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
         map.put("id", id);
         map.putAll(record.getAttributes());
 
-        List<Class<? extends ConfiguredObject>> childClasses =
-                new ArrayList<Class<? extends ConfiguredObject>>(_parent.getModel().getChildTypes(type));
+        List<Class<? extends ConfiguredObject>> childClasses = new ArrayList<>(_parent.getModel().getChildTypes(type));
 
         Collections.sort(childClasses, CATEGORY_CLASS_COMPARATOR);
 
@@ -389,7 +388,7 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
                 String singularName = entry.getKey().toLowerCase();
                 String attrName = singularName + (singularName.endsWith("s") ? "es" : "s");
                 final SortedSet<ConfiguredObjectRecord> sortedChildren = entry.getValue();
-                List<Map<String,Object>> entities = new ArrayList<Map<String, Object>>();
+                List<Map<String,Object>> entities = new ArrayList<>();
 
                 for(ConfiguredObjectRecord childRecord : sortedChildren)
                 {

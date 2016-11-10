@@ -87,7 +87,7 @@ import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
 import org.apache.qpid.util.SystemUtils;
 
 @ManagedObject( category = false, type = "Broker" )
-public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<BrokerImpl>, StatisticsGatherer
+public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<BrokerImpl>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BrokerImpl.class);
 
@@ -836,6 +836,7 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         return _dataDelivered;
     }
 
+    @Override
     public void resetStatistics()
     {
         _messagesDelivered.reset();
@@ -846,9 +847,9 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         for (VirtualHostNode<?> virtualHostNode : getChildren(VirtualHostNode.class))
         {
             VirtualHost<?> virtualHost = virtualHostNode.getVirtualHost();
-            if (virtualHost != null)
+            if (virtualHost instanceof StatisticsGatherer)
             {
-                virtualHost.resetStatistics();
+                ((StatisticsGatherer)virtualHost).resetStatistics();
             }
         }
     }
@@ -896,13 +897,14 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
                 for (VirtualHostNode<?> virtualHostNode : getChildren(VirtualHostNode.class))
                 {
                     VirtualHost<?> virtualHost = virtualHostNode.getVirtualHost();
-                    if (virtualHost != null)
+                    if (virtualHost instanceof StatisticsGatherer)
                     {
+                        StatisticsGatherer statGatherer = (StatisticsGatherer) virtualHost;
                         String name = virtualHost.getName();
-                        StatisticsCounter dataDelivered = virtualHost.getDataDeliveryStatistics();
-                        StatisticsCounter messagesDelivered = virtualHost.getMessageDeliveryStatistics();
-                        StatisticsCounter dataReceived = virtualHost.getDataReceiptStatistics();
-                        StatisticsCounter messagesReceived = virtualHost.getMessageReceiptStatistics();
+                        StatisticsCounter dataDelivered = statGatherer.getDataDeliveryStatistics();
+                        StatisticsCounter messagesDelivered = statGatherer.getMessageDeliveryStatistics();
+                        StatisticsCounter dataReceived = statGatherer.getDataReceiptStatistics();
+                        StatisticsCounter messagesReceived = statGatherer.getMessageReceiptStatistics();
                         EventLogger logger = virtualHost.getEventLogger();
                         logger.message(VirtualHostMessages.STATS_DATA(name,
                                                                       DELIVERED,

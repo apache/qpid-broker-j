@@ -33,7 +33,6 @@ import java.util.concurrent.ScheduledFuture;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.queue.QueueEntry;
-import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.preferences.UserPreferencesCreator;
@@ -42,7 +41,7 @@ import org.apache.qpid.server.virtualhost.HouseKeepingTask;
 import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
 
 @ManagedObject( defaultType = "ProvidedStore", description = VirtualHost.CLASS_DESCRIPTION)
-public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<X>, StatisticsGatherer,
+public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<X>,
                                                                EventLoggerProvider, NamedAddressSpace,
                                                                UserPreferencesCreator
 {
@@ -202,7 +201,6 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     Broker<?> getBroker();
 
-    // LQ TODO: I think this is not being processed correctly because it is not annotated on the base. At least is does not show up in the generated overrides
     @Override
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
     Collection<? extends Connection<?>> getConnections();

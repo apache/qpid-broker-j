@@ -50,7 +50,6 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.protocol.LinkRegistry;
-import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -66,7 +65,6 @@ import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 @ManagedObject( category = false, type = "BDB_HA_REPLICA", register = false )
 public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAReplicaVirtualHostImpl> implements BDBHAReplicaVirtualHost<BDBHAReplicaVirtualHostImpl>
 {
-    private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
     private final Broker<?> _broker;
     private final VirtualHostPrincipal _principal;
 
@@ -108,16 +106,12 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     @ManagedAttributeField
     private List<NodeAutoCreationPolicy> _nodeAutoCreationPolicies;
 
-    @ManagedObjectFactoryConstructor
+    @ManagedObjectFactoryConstructor(conditionallyAvailable = true, condition = "org.apache.qpid.server.JECheck#isAvailable()")
     public BDBHAReplicaVirtualHostImpl(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
         super(parentsMap(virtualHostNode), attributes);
 
         _broker = virtualHostNode.getParent(Broker.class);
-        _messagesDelivered = new StatisticsCounter("messages-delivered-" + getName());
-        _dataDelivered = new StatisticsCounter("bytes-delivered-" + getName());
-        _messagesReceived = new StatisticsCounter("messages-received-" + getName());
-        _dataReceived = new StatisticsCounter("bytes-received-" + getName());
         _principal = new VirtualHostPrincipal(this);
         setState(State.UNAVAILABLE);
     }
@@ -406,47 +400,6 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     public EventLogger getEventLogger()
     {
         return null;
-    }
-
-    @Override
-    public void registerMessageReceived(final long messageSize, final long timestamp)
-    {
-        throwUnsupportedForReplica();
-    }
-
-    @Override
-    public void registerMessageDelivered(final long messageSize)
-    {
-        throwUnsupportedForReplica();
-    }
-
-    @Override
-    public StatisticsCounter getMessageDeliveryStatistics()
-    {
-        return _messagesDelivered;
-    }
-
-    @Override
-    public StatisticsCounter getMessageReceiptStatistics()
-    {
-        return _messagesReceived;
-    }
-
-    @Override
-    public StatisticsCounter getDataDeliveryStatistics()
-    {
-        return _dataDelivered;
-    }
-
-    @Override
-    public StatisticsCounter getDataReceiptStatistics()
-    {
-        return _dataReceived;
-    }
-
-    @Override
-    public void resetStatistics()
-    {
     }
 
     @Override

@@ -20,6 +20,7 @@
 package org.apache.qpid.server.virtualhost.jdbc;
 
 import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.ManagedOperation;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory;
 import org.apache.qpid.server.store.jdbc.JDBCSettings;
@@ -39,4 +40,7 @@ public interface JDBCVirtualHost<X extends JDBCVirtualHost<X>> extends VirtualHo
 
     @ManagedAttribute(secure=true)
     String getPassword();
+
+    @ManagedOperation(description = "Resets statistics on this object and all child objects", changesConfiguredObjectState = false, nonModifying = true)
+    void resetStatistics();
 }

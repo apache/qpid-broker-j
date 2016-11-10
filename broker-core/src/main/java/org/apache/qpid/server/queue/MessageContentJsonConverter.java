@@ -30,7 +30,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.StdArraySerializers;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.google.common.primitives.Bytes;
+import com.google.common.primitives.Ints;
 
 class MessageContentJsonConverter
 {
@@ -46,6 +53,9 @@ class MessageContentJsonConverter
     {
         _messageBody = messageBody;
         _objectMapper = new ObjectMapper();
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(new NoneBase64ByteArraySerializer());
+        _objectMapper.registerModule(module);
         _remaining = limit;
     }
 
@@ -180,4 +190,20 @@ class MessageContentJsonConverter
         return copyCollection(copy);
     }
 
+    private static class NoneBase64ByteArraySerializer extends StdSerializer<byte[]>
+    {
+        final StdArraySerializers.IntArraySerializer _underlying = new StdArraySerializers.IntArraySerializer();
+
+        public NoneBase64ByteArraySerializer()
+        {
+            super(byte[].class);
+        }
+
+        @Override
+        public void serialize(final byte[] value, final JsonGenerator jgen, final SerializerProvider provider)
+                throws IOException
+        {
+            _underlying.serialize(Ints.toArray(Bytes.asList(value)), jgen, provider);
+        }
+    }
 }

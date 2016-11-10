@@ -22,6 +22,7 @@ package org.apache.qpid.server.virtualhost.berkeleydb;
 
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
+import org.apache.qpid.server.model.ManagedOperation;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.SizeMonitoringSettings;
 import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
@@ -46,4 +47,7 @@ public interface BDBVirtualHost<X extends BDBVirtualHost<X>> extends VirtualHost
 
     @ManagedAttribute(mandatory = true, defaultValue = "0")
     Long getStoreOverfullSize();
+
+    @ManagedOperation(description = "Resets statistics on this object and all child objects", changesConfiguredObjectState = false, nonModifying = true)
+    void resetStatistics();
 }

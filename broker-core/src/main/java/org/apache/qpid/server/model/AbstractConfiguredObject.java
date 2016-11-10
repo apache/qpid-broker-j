@@ -629,7 +629,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             {
                 try
                 {
-                    Futures.addCallback(task.execute(), new FutureCallback<T>()
+                    addFutureCallback(task.execute(), new FutureCallback<T>()
                     {
                         @Override
                         public void onSuccess(final T result)
@@ -642,7 +642,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                         {
                             returnVal.setException(t);
                         }
-                    });
+                    }, getTaskExecutor());
                 }
                 catch(Throwable t)
                 {
@@ -700,7 +700,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             public void performAction(final ConfiguredObject<?> child)
             {
                 ListenableFuture<Void> childCloseFuture = child.closeAsync();
-                Futures.addCallback(childCloseFuture, new FutureCallback<Void>()
+                addFutureCallback(childCloseFuture, new FutureCallback<Void>()
                 {
                     @Override
                     public void onSuccess(final Void result)
@@ -713,7 +713,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                         LOGGER.error("Exception occurred while closing {} : {}",
                                      child.getClass().getSimpleName(), child.getName(), t);
                     }
-                });
+                }, getTaskExecutor());
                 childCloseFutures.add(childCloseFuture);
             }
         });
@@ -1025,14 +1025,14 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         ListenableFuture<List<Void>> combinedChildStateFuture = Futures.allAsList(childStateFutures);
 
         final SettableFuture<Void> returnVal = SettableFuture.create();
-        Futures.addCallback(combinedChildStateFuture, new FutureCallback<List<Void>>()
+        addFutureCallback(combinedChildStateFuture, new FutureCallback<List<Void>>()
         {
             @Override
             public void onSuccess(final List<Void> result)
             {
                 try
                 {
-                    Futures.addCallback(attainState(),
+                    addFutureCallback(attainState(),
                                         new FutureCallback<Void>()
                                         {
                                             @Override
@@ -1061,16 +1061,16 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                     }
                                                 }
                                             }
-                                        },  getTaskExecutor());
+                                        }, getTaskExecutor());
                 }
-                catch(RuntimeException e)
+                catch (RuntimeException e)
                 {
                     try
                     {
                         exceptionHandler.handleException(e, AbstractConfiguredObject.this);
                         returnVal.set(null);
                     }
-                    catch(Throwable t)
+                    catch (Throwable t)
                     {
                         returnVal.setException(t);
                     }
@@ -1083,7 +1083,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 // One or more children failed to attain state but the error could not be handled by the handler
                 returnVal.setException(t);
             }
-        });
+        }, getTaskExecutor());
 
         return returnVal;
     }
@@ -1480,7 +1480,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 {
                     final SettableFuture<Void> stateTransitionResult = SettableFuture.create();
                     ListenableFuture<Void> stateTransitionFuture = (ListenableFuture<Void>) stateChangingMethod.invoke(this);
-                    Futures.addCallback(stateTransitionFuture, new FutureCallback<Void>()
+                    addFutureCallback(stateTransitionFuture, new FutureCallback<Void>()
                     {
                         @Override
                         public void onSuccess(Void result)
@@ -1511,7 +1511,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                             _attainStateFuture.set(AbstractConfiguredObject.this);
                             stateTransitionResult.setException(t);
                         }
-                    });
+                    }, getTaskExecutor());
                     returnVal = stateTransitionResult;
                 }
                 catch (IllegalAccessException e)
@@ -2372,7 +2372,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     protected static <V> ChainedListenableFuture<Void>  doAfter(Executor executor, ListenableFuture<V> first, final Runnable second)
     {
         final ChainedSettableFuture<Void> returnVal = new ChainedSettableFuture<Void>(executor);
-        Futures.addCallback(first, new FutureCallback<V>()
+        addFutureCallback(first, new FutureCallback<V>()
         {
             @Override
             public void onSuccess(final V result)
@@ -2464,7 +2464,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     protected static <V> ChainedListenableFuture<V> doAfter(final Executor executor, ListenableFuture<V> first, final Callable<ListenableFuture<V>> second)
     {
         final ChainedSettableFuture<V> returnVal = new ChainedSettableFuture<V>(executor);
-        Futures.addCallback(first, new FutureCallback<V>()
+        addFutureCallback(first, new FutureCallback<V>()
         {
             @Override
             public void onSuccess(final V result)
@@ -2472,7 +2472,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 try
                 {
                     final ListenableFuture<V> future = second.call();
-                    Futures.addCallback(future, new FutureCallback<V>()
+                    addFutureCallback(future, new FutureCallback<V>()
                     {
                         @Override
                         public void onSuccess(final V result)
@@ -2508,7 +2508,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     protected static <V,A> ChainedListenableFuture<V> doAfter(final Executor executor, ListenableFuture<A> first, final CallableWithArgument<ListenableFuture<V>,A> second)
     {
         final ChainedSettableFuture<V> returnVal = new ChainedSettableFuture<>(executor);
-        Futures.addCallback(first, new FutureCallback<A>()
+        addFutureCallback(first, new FutureCallback<A>()
         {
             @Override
             public void onSuccess(final A result)
@@ -2516,7 +2516,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 try
                 {
                     final ListenableFuture<V> future = second.call(result);
-                    Futures.addCallback(future, new FutureCallback<V>()
+                    addFutureCallback(future, new FutureCallback<V>()
                     {
                         @Override
                         public void onSuccess(final V result)
@@ -2558,7 +2558,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                                      final Runnable after)
     {
         final ChainedSettableFuture<Void> returnVal = new ChainedSettableFuture<Void>(executor);
-        Futures.addCallback(future, new FutureCallback<V>()
+        addFutureCallback(future, new FutureCallback<V>()
         {
             @Override
             public void onSuccess(final V result)
@@ -2591,6 +2591,42 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return returnVal;
     }
 
+    protected static <V> void addFutureCallback(ListenableFuture<V> future, final FutureCallback<V> callback,
+                                                Executor taskExecutor)
+    {
+        final Subject subject = Subject.getSubject(AccessController.getContext());
+
+        Futures.addCallback(future, new FutureCallback<V>()
+        {
+            @Override
+            public void onSuccess(final V result)
+            {
+                Subject.doAs(subject, new PrivilegedAction<Void>()
+                {
+                    @Override
+                    public Void run()
+                    {
+                        callback.onSuccess(result);
+                        return null;
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(final Throwable t)
+            {
+                Subject.doAs(subject, new PrivilegedAction<Void>()
+                {
+                    @Override
+                    public Void run()
+                    {
+                        callback.onFailure(t);
+                        return null;
+                    }
+                });
+            }
+        }, taskExecutor);
+    }
 
     @Override
     public ListenableFuture<Void> setAttributesAsync(final Map<String, Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException

@@ -75,6 +75,22 @@ define(["dojo/_base/xhr",
               updater)
     {
         var util = {};
+
+        if (Number.isInteger)
+        {
+            util.isInteger = function(value)
+            {
+                return Number.isInteger(value);
+            };
+        }
+        else
+        {
+            util.isInteger = function(value)
+            {
+                return typeof value === "number" && isFinite(value) && Math.floor(value) === value;
+            };
+        }
+
         if (Array.isArray)
         {
             util.isArray = function (object)
@@ -987,6 +1003,17 @@ define(["dojo/_base/xhr",
             }
             return serializedUserName;
         };
+
+        util.stopEventPropagation = function(domNode, eventName)
+        {
+            on(domNode, eventName, function(evt)
+            {
+                if (evt)
+                {
+                    evt.stopPropagation();
+                }
+            });
+        }
 
         return util;
     });

@@ -43,7 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
-import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
@@ -1021,7 +1021,15 @@ public class RestServlet extends AbstractServlet
             {
                 if ("data".equals(part.getName()) && "application/json".equals(part.getContentType()))
                 {
-                    providedObject = (T) mapper.readValue(part.getInputStream(), LinkedHashMap.class);
+                    try
+                    {
+                        providedObject = (T) mapper.readValue(part.getInputStream(), LinkedHashMap.class);
+                    }
+                    catch (JsonProcessingException e)
+                    {
+                        throw new IllegalArgumentException("Cannot parse the operation body as json",e);
+                    }
+
                 }
                 else
                 {
@@ -1039,7 +1047,7 @@ public class RestServlet extends AbstractServlet
             {
                 providedObject = mapper.readValue(request.getInputStream(), expectedClass);
             }
-            catch (JsonParseException e)
+            catch (JsonProcessingException e)
             {
                 throw new IllegalArgumentException("Cannot parse the operation body as json",e);
             }

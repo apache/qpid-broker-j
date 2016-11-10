@@ -141,7 +141,7 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     private ListenableFuture<Void> performDelete()
     {
         final SettableFuture<Void> futureResult = SettableFuture.create();
-        Futures.addCallback(closeAsync(), new FutureCallback<Void>()
+        addFutureCallback(closeAsync(), new FutureCallback<Void>()
         {
             @Override
             public void onSuccess(final Void result)
@@ -176,7 +176,7 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
                 setState(State.DELETED);
                 _eventLogger.message(AuthenticationProviderMessages.DELETE(getName()));
             }
-        });
+        }, getTaskExecutor());
 
         return futureResult;
     }

@@ -1,0 +1,285 @@
+<?xml version="1.0"?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  -->
+
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Channel-REST-Query-API">
+    <title>Query API</title>
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-API-Introduction">
+        <title>Introduction</title>
+        <para>The <emphasis>Qpid Broker for Java</emphasis> provides a powerful feature called
+            the <emphasis>Query API</emphasis>. This allows the retrieval of the existing configured objects attributes
+            satisfying user-provided queries.</para>
+        <para>Developers and operators can use this feature to monitor the Broker.
+            For example, using <emphasis>Query API</emphasis> one can find all queues with queue depth
+            exceeding some limit or existing connections made from a particular location(s).</para>
+    </section>
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-API-Overview">
+        <title>Query API Overview</title>
+        <para>
+            When using the <emphasis>Query API</emphasis> one specifies the category of the object
+            to query, a list of attributes to return in the result set, an optional where clause,
+            expressed as a predicate, that determines the filtering criteria, ordering, and
+            limit/offset. The features should be readily recognisable to anyone who has has familiarity
+            with SQL.
+        </para>
+        <para>Queries associate with either the <emphasis>broker</emphasis> as a whole, or an
+            individual  <emphasis>virtualhost</emphasis>.  Queries associated with the Broker
+            can query any object within the Broker. Queries associated with a virtualhost are limited
+            to the objects of the virtualhost itself.   For instance a queue query associated
+            with a virtualhost queries only the queues belonging to that virtualhost.  On the other
+            hand, a queue query associated with the Broker sees all the queues belonging on the entire
+            Broker.
+        </para>
+        <para>
+            <table>
+                <title>Query API URLs</title>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Query API URL</entry>
+                            <entry>Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>
+                                <para>/api/latest/querybroker/&lt;configured object category name&gt;</para>
+                                <para>/api/&lt;version&gt;/querybroker/&lt;configured object category name&gt;</para>
+                            </entry>
+                            <entry>
+                                <para>Query API URL fragment to query the specified object type across the entire broker</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para>/api/latest/queryvhost/&lt;virtual host node name&gt;/&lt;virtual host name&gt;/&lt;configured object category name&gt;</para>
+                                <para>/api/&lt;version&gt;/queryvhost/&lt;virtual host node name&gt;/&lt;virtual host name&gt;/&lt;configured object category name&gt;</para>
+                            </entry>
+                            <entry>
+                                <para>Query API URL fragment to query the specified object type for a specific virtualhost</para>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </para>
+        <para>
+            The QueryAPI accepts <literal>select</literal>, <literal>where</literal>, <literal>orderBy</literal>,
+            <literal>limit</literal> and <literal>offset</literal> request parameters.
+            <table>
+                <title>Query API request parameters</title>
+                <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Parameter Name</entry>
+                            <entry>Parameter Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>
+                                <para><literal>select</literal></para>
+                            </entry>
+                            <entry>
+                                <para>The <literal>select</literal> defines the columns of the result set.  It is a
+                                    comma-separated list of expressions.  At its most simple, an expression can be
+                                    the name of the attribute (e.g. <literal>queueDepthBytes</literal>), but more complex
+                                    <link linkend="Java-Broker-Management-Channel-REST-Query-API-Expressions">expressions</link> are also supported.</para>
+                                <para>Columns within the result set are named.  For expressions that are simple attribute
+                                    names, the column names will follow the attributes themselves.  By default, other
+                                    expressions will have a no name.</para>
+                                <para>Column names can be overridden with an <literal>AS</literal>
+                                    clause e.g. <literal>now() AS currentDate</literal>
+                                </para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para><literal>where</literal></para>
+                            </entry>
+                            <entry>
+                                <para>The <literal>where</literal> provides a boolean expression defining the result set filtering.</para>
+                                <para>The syntax of the <link linkend="Java-Broker-Management-Channel-REST-Query-API-Expressions">expression</link>
+                                    is based on a subset of the SQL92 conditional expression syntax and is similar to selector expressions in JMS e.g.
+                                    <literal>queueDepthBytes > 16384 AND name like '%flow_queue'</literal>.
+                                </para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para><literal>orderBy</literal></para>
+                            </entry>
+                            <entry>
+                                <para>Ordering conditions; the syntax of the
+                                    <link linkend="Java-Broker-Management-Channel-REST-Query-API-Expressions">
+                                        expression
+                                    </link>
+                                    is based on a subset of
+                                    the SQL92 ordering expression syntax. Similar to ordering expressions in SQL,
+                                    one can specify in ordering expression attributes names, sub-expressions
+                                    or indexes (starting from 1) of attributes or expressions specified in select.
+                                </para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para><literal>limit</literal></para>
+                            </entry>
+                            <entry>
+                                <para>The maximum number of results to provide starting from given offset.</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para><literal>offset</literal></para>
+                            </entry>
+                            <entry>
+                                <para>An offset in results (default is 0) to provide results from.</para>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </para>
+        <example>
+            <title>Example of a Query API request to retrieve queue names and depths.</title>
+            <screen>GET api/latest/querybroker/queue?select=name,queueDepthBytes,queueDepthMessages&amp;where=queueDepthBytes&gt;0&amp;orderBy=1 desc,2 desc&amp;offset=0&amp;limit=100 HTTP/1.1</screen>
+        </example>
+    </section>
+    <section xml:id="Java-Broker-Management-Channel-REST-Query-API-Results">
+        <title>Query API Results</title>
+        <para>The <emphasis>Query API</emphasis> returns a JSON response.  The response contains the following:
+            <variablelist>
+                <varlistentry>
+                    <term><literal>headers</literal></term>
+                    <listitem>
+                        <para>ordered list of result set column names derived from the <literal>select</literal>
+                            clause. Note that anonymous expressions (that is, those expressed without an
+                            <literal>AS</literal>) will have empty column name.</para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><literal>results</literal></term>
+                    <listitem>
+                        <para>two dimensional array containing the result-set</para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><literal>total</literal></term>
+                    <listitem>
+                        <para>The <emphasis>total</emphasis> number of results matching the where criteria.</para>
+                    </listitem>
+                </varlistentry>
+            </variablelist>
+        </para>
+        <example>
+            <title>Example of Query API call for queue names and depths.</title>
+            <screen>GET api/latest/querybroker/queue?select=name,queueDepthBytes,queueDepthMessages&amp;where=queueDepthBytes&gt;0&amp;orderBy=1 desc,2 desc&amp;offset=0&amp;limit=100 HTTP/1.1</screen>
+            <programlisting language="javascript">
+{
+    "headers" : [ "name", "queueDepthBytes", "queueDepthMessages" ],
+    "results" : [ [ "foo", 312, 26], [ "bar", 300, 24 ] ],
+    "total" : 2
+}
+            </programlisting>
+        </example>
+        <section xml:id="Java-Broker-Management-Channel-REST-Query-API-Expressions">
+            <title>Query API expressions</title>
+
+            <para>Expressions within the <literal>select</literal>, <literal>where</literal> and <literal>orderBy</literal>
+                clauses can be comprised in the following manner. Expressions can be nested to arbitary depth. Parentheses
+                allow for precedence to be explicitly denoted.
+            <itemizedlist>
+                <listitem><para>variable name which can be an attribute name e.g <literal>queueDepthBytes</literal> or
+                a reference to a parent attribute <literal>$parent.name</literal></para></listitem>
+                <listitem><para>literal e.g. <literal>3</literal> or <literal>'foo'</literal></para></listitem>
+                <listitem><para>functions - see below e.g. <literal>now()</literal> or <literal>to_string(createdDate, '%tm/%td/%ty', 'EST')</literal></para></listitem>
+                <listitem><para>arithmetic operations e.g. <literal>3 * 4</literal> or <literal>to_string(now()) + name</literal></para></listitem>
+            </itemizedlist></para>
+            <para>The following functions are supported:
+                <table>
+                    <title>Query API functions</title>
+                    <tgroup cols="2">
+                    <thead>
+                        <row>
+                            <entry>Function Name</entry>
+                            <entry>Function Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>
+                                <para><literal>concat(obj[,obj..])</literal></para>
+                            </entry>
+                            <entry>
+                                <para>concatenates the given objects into a string</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para><literal>now()</literal></para>
+                            </entry>
+                            <entry>
+                                <para>returns current date and time</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para><literal>to_date(object)</literal></para>
+                            </entry>
+                            <entry>
+                                <para>converts the first parameter, which must be a string. into a date.  The
+                                string must be in ISO-8601 format e.g. <literal>1970-01-01T10:00:00Z</literal>.</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para><literal>date_add(object, duration)</literal></para>
+                            </entry>
+                            <entry>
+                                <para>adds the given ISO-8601 duration <literal>duration</literal> e.g.
+                                    <literal>P1D</literal> or <literal>-PT10H</literal> to the date provided by the
+                                    first parameter.</para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>
+                                <para><literal>to_string(object[, format[, timezone]])</literal></para>
+                            </entry>
+                            <entry>
+                                <para>Converts given object into a string.</para>
+                                <para>If the format argument is present, it must be a Java
+                                    <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJdkDocUrl}java/util/Formatter.html">Formatter</link>
+                                    compliant string e.g. <literal>%f</literal> or <literal>%tY-%tm-%td</literal>.
+                                </para>
+                                <para>The timezone argument is significant if the object is a Date. If the timezone
+                                    argument is specified it must be a valid Java timezone name. The date is converted
+                                    to the specified timezone before being formatted by the<literal>format</literal>.
+                                    If the timezone is omitted <literal>UTC</literal> is assumed.
+                                </para>
+                            </entry>
+                        </row>
+                    </tbody>
+                    </tgroup>
+                </table>
+            </para>
+        </section>
+    </section>
+</section>

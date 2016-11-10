@@ -92,7 +92,15 @@ define(["dojo/_base/declare",
                     }, this.queryBrowserNode);
                     this._queryBrowser.on("open", lang.hitch(this, this._onOpenQuery));
                 },
-
+                startup: function ()
+                {
+                    this.inherited(arguments);
+                    this._queryBrowser.startup();
+                },
+                resizeQueryBrowser: function ()
+                {
+                    this._queryBrowser.resize();
+                },
                 update: function ()
                 {
                     return this._queryBrowser.update();
@@ -171,7 +179,7 @@ define(["dojo/_base/declare",
                     this._addWidgetDialogContent.on("cancel",
                         lang.hitch(this._addWidgetDialog, this._addWidgetDialog.hide));
                     this._addWidgetDialogContent.on("add", lang.hitch(this, this._onWidgetChosen));
-
+                    this._addWidgetDialog.on("show", lang.hitch(this._addWidgetDialogContent, this._addWidgetDialogContent.resizeQueryBrowser));
                     this._saveDashboardDialogContent = new PreferenceSaveDialogContent({management: this.management});
                     this._saveDashboardDialog =
                         new dijit.Dialog({title: "Save Dashboard", content: this._saveDashboardDialogContent});

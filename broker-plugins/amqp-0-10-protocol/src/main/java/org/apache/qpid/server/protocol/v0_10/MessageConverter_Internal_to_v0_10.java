@@ -61,7 +61,8 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
         final byte[] messageContent = MessageConverter_v0_10.convertToBody(serverMsg.getMessageBody());
         final MessageMetaData_0_10 messageMetaData_0_10 = convertMetaData(serverMsg,
                                                                           MessageConverter_v0_10.getBodyMimeType(
-                                                                                  serverMsg.getMessageBody()),
+                                                                                  serverMsg.getMessageBody(),
+                                                                                  serverMsg.getMessageHeader()),
                                                                           messageContent.length);
 
         return new StoredMessage<MessageMetaData_0_10>()

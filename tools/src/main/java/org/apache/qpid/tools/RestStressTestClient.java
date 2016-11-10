@@ -20,10 +20,6 @@
  */
 package org.apache.qpid.tools;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -41,10 +37,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import javax.xml.bind.DatatypeConverter;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.tools.util.ArgumentsParser;
+import org.apache.qpid.util.Strings;
 
 public class RestStressTestClient
 {
@@ -463,7 +464,7 @@ public class RestStressTestClient
         {
             try
             {
-                byte[] challengeBytes = DatatypeConverter.parseBase64Binary(challenge);
+                byte[] challengeBytes = Strings.decodeBase64(challenge);
 
                 String macAlgorithm = "HmacMD5";
                 Mac mac = Mac.getInstance(macAlgorithm);

@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,18 +17,21 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+package org.apache.qpid.server;
 
-@Retention(RetentionPolicy.CLASS)
-@Target(ElementType.CONSTRUCTOR)
-public @interface ManagedObjectFactoryConstructor
+public class JECheck
 {
-    boolean conditionallyAvailable() default false;
-
-    String condition() default "";
+    public static boolean isAvailable()
+    {
+        try
+        {
+            Class.forName("com.sleepycat.je.Environment");
+            return true;
+        }
+        catch (ClassNotFoundException | NoClassDefFoundError e)
+        {
+            return false;
+        }
+    }
 }

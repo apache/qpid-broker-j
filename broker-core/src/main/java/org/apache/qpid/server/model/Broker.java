@@ -132,16 +132,18 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedAttribute( defaultValue = "256" )
     int getConnection_sessionCountLimit();
 
-    @ManagedAttribute( defaultValue = "0")
+    @ManagedAttribute( defaultValue = "0", description = "The default frequency with which Broker and client will exchange heartbeat messages (in seconds). "
+                                                         + "Clients may negotiate a different heartbeat frequency or disable it altogether. "
+                                                         + "A value of 0 disables heart beating.")
     int getConnection_heartBeatDelay();
 
     @ManagedAttribute( defaultValue = "true" )
     boolean getConnection_closeWhenNoRoute();
 
-    @ManagedAttribute( defaultValue = "0" )
+    @ManagedAttribute( defaultValue = "0", description = "Period (in seconds) of the statistic report.")
     int getStatisticsReportingPeriod();
 
-    @ManagedAttribute( defaultValue = "false")
+    @ManagedAttribute( defaultValue = "false", description = "If enabled, statistics are automatically reset to zero after each statistics report is made.")
     boolean getStatisticsReportingResetEnabled();
 
 
@@ -275,10 +277,13 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
             changesConfiguredObjectState = false)
     Set<Principal> getGroups();
 
-    @ManagedOperation(description = "Removes a user and all associated preferences from the brokers configuration",
+    @ManagedOperation(description = "Removes a user and all associated preferences from the broker's configuration",
             changesConfiguredObjectState = true)
     void purgeUser(@Param(name="origin", description="The AuthenticationProvider the username is associated with")AuthenticationProvider<?> origin,
                    @Param(name="username", description="The unqualified username that should be purged from the broker")String username);
+
+    @ManagedOperation(description = "Resets statistics on this object and all child objects", changesConfiguredObjectState = false, nonModifying = true)
+    void resetStatistics();
 
     //children
     Collection<VirtualHostNode<?>> getVirtualHostNodes();

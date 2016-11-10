@@ -34,6 +34,8 @@ import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 import javax.xml.bind.DatatypeConverter;
 
+import org.apache.qpid.util.Strings;
+
 public class ScramSaslServer implements SaslServer
 {
     public final String _mechanism;
@@ -163,7 +165,7 @@ public class ScramSaslServer implements SaslServer
             {
                 throw new SaslException("Cannot parse client final message");
             }
-            if(!Arrays.equals(_gs2Header,DatatypeConverter.parseBase64Binary(parts[0].substring(2))))
+            if(!Arrays.equals(_gs2Header, Strings.decodeBase64(parts[0].substring(2))))
             {
                 throw new SaslException("Client final message channel bind data invalid");
             }
@@ -181,7 +183,7 @@ public class ScramSaslServer implements SaslServer
             }
 
             String clientFinalMessageWithoutProof = clientFinalMessage.substring(0,clientFinalMessage.length()-(1+parts[parts.length-1].length()));
-            byte[] proofBytes = DatatypeConverter.parseBase64Binary(parts[parts.length-1].substring(2));
+            byte[] proofBytes = Strings.decodeBase64(parts[parts.length-1].substring(2));
 
             String authMessage = _clientFirstMessageBare + "," + _serverFirstMessage + "," + clientFinalMessageWithoutProof;
 

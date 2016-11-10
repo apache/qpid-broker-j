@@ -380,7 +380,8 @@ div .messages {
 .infoPane
 {
     margin-left: 5px;
-    padding: 5px 5px 5px 1.2em;
+    margin-bottom: 5px;
+    padding: 5px 5px 0px 1.2em;
     font-style: italic;
     background:url("../images/notification.svg") no-repeat left center;
     background-size: 1em;
@@ -428,12 +429,13 @@ div .messages {
   width:100%;
 }
 
-.criteriaControl.dijitTextBoxReadOnly,
-.claro .criteriaControl.dijitTextBoxReadOnly,
-.claro .criteriaControl.dijitTextBoxReadOnlyFocused .dijitInputContainer
+.readOnly.dijitTextBoxReadOnly,
+.claro .readOnly.dijitTextBoxReadOnly,
+.claro .readOnly.dijitTextBoxReadOnlyFocused .dijitInputContainer
 {
   background-color: #efefef !important;
   background-image: none !important;
+  border-color: #d3d3d3;
 }
 
 .advancedSearchItem
@@ -654,13 +656,68 @@ td.advancedSearchField, col.autoWidth {
     background-size: 1em;
 }
 
-#message-content-preview{
+#message-content-preview
+{
     width: 100%;
-    height: 10.2em;
 }
 
 #message-content-preview .dgrid,
 #message-content-preview textarea
 {
     height: 10em;
+}
+
+.hexDumpBox
+{
+    border: solid;
+    border-width: 1px;
+    white-space: nowrap;
+}
+
+.hexBox
+{
+    display: inline-block;
+    padding-right: 25px;
+}
+
+.asciiBox
+{
+    display: inline-block;
+}
+
+.hexDumpHeadRow
+{
+    display: table-row;
+    font-family: monospace;
+    font-weight: bold;
+}
+
+.hexDumpRow
+{
+    display: table-row;
+}
+
+.hexCountCell
+{
+    padding-right: 25px;
+    font-weight: bold;
+    display: table-cell;
+    font-family: monospace;
+}
+
+.hexDumpCell
+{
+    padding-right: 5px;
+    display: table-cell;
+    font-family: monospace;
+}
+
+.hexDumpCell:last-child
+{
+    padding-right: 0;
+}
+
+.hexDumpCellHighlight
+{
+    background-color: darkgray;
 }

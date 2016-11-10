@@ -31,7 +31,6 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -46,14 +45,13 @@ import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-
-import org.apache.qpid.server.configuration.updater.Task;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.messages.TrustStoreMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.configuration.updater.Task;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.TrustStoreMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -69,6 +67,7 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.transport.util.Functions;
+import org.apache.qpid.util.Strings;
 
 @ManagedObject( category = false )
 public class SiteSpecificTrustStoreImpl
@@ -281,7 +280,7 @@ public class SiteSpecificTrustStoreImpl
 
     private void decodeCertificate()
     {
-        byte[] certificateEncoded = DatatypeConverter.parseBase64Binary((String) getActualAttributes().get(CERTIFICATE));
+        byte[] certificateEncoded = Strings.decodeBase64((String) getActualAttributes().get(CERTIFICATE));
 
 
         try(ByteArrayInputStream input = new ByteArrayInputStream(certificateEncoded))

@@ -30,6 +30,6 @@ public interface FileBasedGroupProvider<X extends FileBasedGroupProvider<X>> ext
 {
     String PATH="path";
 
-    @ManagedAttribute( mandatory = true, description = "File location" )
+    @ManagedAttribute( mandatory = true, description = "File location", immutable = true)
     String getPath();
 }
