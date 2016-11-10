@@ -342,6 +342,8 @@ curl --user admin -X PUT  -d '{}' http://localhost:8080/api/latest/binding/&lt;v
     </para>
   </section>
 
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Management-Channel-REST-Query-API.xml"/>
+
   <section xml:id="Java-Broker-Management-Channel-REST-API-CORS">
     <title>Cross Origin Resource Sharing (CORS)</title>
     <para> The Broker supports Cross Origin Resource Sharing (CORS)
