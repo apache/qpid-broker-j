@@ -28,7 +28,7 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 
-public abstract class OrderedQueueEntryList implements QueueEntryList
+public abstract class OrderedQueueEntryList extends AbstractQueueEntryList
 {
 
     private final OrderedQueueEntry _head;
@@ -51,8 +51,11 @@ public abstract class OrderedQueueEntryList implements QueueEntryList
     private final AtomicReference<QueueEntry> _unscavengedHWM = new AtomicReference<QueueEntry>();
 
 
-    public OrderedQueueEntryList(Queue<?> queue, HeadCreator headCreator)
+    public OrderedQueueEntryList(Queue<?> queue,
+                                 final QueueStatistics queueStatistics,
+                                 HeadCreator headCreator)
     {
+        super(queue, queueStatistics);
         _queue = queue;
         _head = headCreator.createHead(this);
         _tail = _head;
@@ -81,7 +84,8 @@ public abstract class OrderedQueueEntryList implements QueueEntryList
 
     public QueueEntry add(ServerMessage message, final MessageEnqueueRecord enqueueRecord)
     {
-        OrderedQueueEntry node = createQueueEntry(message, enqueueRecord);
+        final OrderedQueueEntry node = createQueueEntry(message, enqueueRecord);
+        updateStatsOnEnqueue(node);
         for (;;)
         {
             OrderedQueueEntry tail = _tail;

@@ -31,7 +31,7 @@ import org.apache.qpid.server.store.MessageEnqueueRecord;
  * ISBN-13: 978-0262033848
  * see http://en.wikipedia.org/wiki/Red-black_tree
  */
-public class SortedQueueEntryList implements QueueEntryList
+public class SortedQueueEntryList extends AbstractQueueEntryList
 {
     private final SortedQueueEntry _head;
     private SortedQueueEntry _root;
@@ -40,8 +40,9 @@ public class SortedQueueEntryList implements QueueEntryList
     private final SortedQueueImpl _queue;
     private final String _propertyName;
 
-    public SortedQueueEntryList(final SortedQueueImpl queue)
+    public SortedQueueEntryList(final SortedQueueImpl queue, final QueueStatistics queueStatistics)
     {
+        super(queue, queueStatistics);
         _queue = queue;
         _head = new SortedQueueEntry(this);
         _propertyName = queue.getSortKey();
@@ -64,6 +65,8 @@ public class SortedQueueEntryList implements QueueEntryList
             }
 
             final SortedQueueEntry entry = new SortedQueueEntry(this,message, ++_entryId, enqueueRecord);
+            updateStatsOnEnqueue(entry);
+
             entry.setKey(key);
 
             insert(entry);

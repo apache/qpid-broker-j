@@ -159,28 +159,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
 
 
-    private final AtomicInteger _atomicQueueCount = new AtomicInteger(0);
-
-    private final AtomicLong _atomicQueueSize = new AtomicLong(0L);
-
     private final AtomicLong _targetQueueSize = new AtomicLong(INITIAL_TARGET_QUEUE_SIZE);
 
     private final AtomicInteger _activeSubscriberCount = new AtomicInteger();
 
-    private final AtomicLong _totalMessagesReceived = new AtomicLong();
-
-    private final AtomicLong _dequeueCount = new AtomicLong();
-    private final AtomicLong _dequeueSize = new AtomicLong();
-    private final AtomicLong _enqueueCount = new AtomicLong();
-    private final AtomicLong _enqueueSize = new AtomicLong();
-    private final AtomicLong _persistentMessageEnqueueSize = new AtomicLong();
-    private final AtomicLong _persistentMessageDequeueSize = new AtomicLong();
-    private final AtomicLong _persistentMessageEnqueueCount = new AtomicLong();
-    private final AtomicLong _persistentMessageDequeueCount = new AtomicLong();
-    private final AtomicLong _unackedMsgCount = new AtomicLong(0);
-    private final AtomicLong _unackedMsgBytes = new AtomicLong();
-
-    private final AtomicInteger _bindingCountHigh = new AtomicInteger();
+    private final QueueStatistics _queueStatistics = new QueueStatistics();
 
     /** max allowed size(KB) of a single message */
     @ManagedAttributeField( afterSet = "updateAlertChecks" )
@@ -228,7 +211,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private final AtomicLong _stateChangeCount = new AtomicLong(Long.MIN_VALUE);
 
-    private AtomicInteger _deliveredMessages = new AtomicInteger();
     private AtomicBoolean _stopped = new AtomicBoolean(false);
 
     private final Set<AMQSessionModel> _blockedChannels = new ConcurrentSkipListSet<AMQSessionModel>();
@@ -366,7 +348,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         Map<String,Object> attributes = getActualAttributes();
 
-        final LinkedHashMap<String, Object> arguments = new LinkedHashMap<String, Object>(attributes);
+        final LinkedHashMap<String, Object> arguments = new LinkedHashMap<>(attributes);
 
         arguments.put(Queue.EXCLUSIVE, _exclusive);
         arguments.put(Queue.LIFETIME_POLICY, getLifetimePolicy());
@@ -1103,15 +1085,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     public void addBinding(final Binding<?> binding)
     {
         _bindings.add(binding);
-        int bindingCount = _bindings.size();
-        int bindingCountHigh;
-        while(bindingCount > (bindingCountHigh = _bindingCountHigh.get()))
-        {
-            if(_bindingCountHigh.compareAndSet(bindingCountHigh, bindingCount))
-            {
-                break;
-            }
-        }
         childAdded(binding);
     }
 
@@ -1140,10 +1113,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     public final void enqueue(ServerMessage message, Action<? super MessageInstance> action, MessageEnqueueRecord enqueueRecord)
     {
-        incrementQueueCount();
-        incrementQueueSize(message);
-
-        _totalMessagesReceived.incrementAndGet();
 
         if(_recovering.get() != RECOVERED)
         {
@@ -1176,17 +1145,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             doEnqueue(message, action, enqueueRecord);
         }
 
-        long estimatedQueueSize = _atomicQueueSize.get() + _atomicQueueCount.get() * _estimatedAverageMessageHeaderSize;
+        long estimatedQueueSize = _queueStatistics.getQueueSize() + _queueStatistics.getQueueCount() * _estimatedAverageMessageHeaderSize;
         _flowToDiskChecker.flowToDiskAndReportIfNecessary(message.getStoredMessage(), estimatedQueueSize,
                                                           _targetQueueSize.get());
     }
 
     public final void recover(ServerMessage message, final MessageEnqueueRecord enqueueRecord)
     {
-        incrementQueueCount();
-        incrementQueueSize(message);
-
-        _totalMessagesReceived.incrementAndGet();
 
         doEnqueue(message, null, enqueueRecord);
     }
@@ -1275,7 +1240,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 arrivalTime = System.currentTimeMillis();
             }
-            if(expiration != 0l)
+            if(expiration != 0L)
             {
                 long calculatedExpiration = arrivalTime+_minimumMessageTtl;
                 if(calculatedExpiration > expiration)
@@ -1285,14 +1250,14 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 }
             }
         }
-        if(_maximumMessageTtl != 0l)
+        if(_maximumMessageTtl != 0L)
         {
             if(arrivalTime == 0)
             {
                 arrivalTime = System.currentTimeMillis();
             }
             long calculatedExpiration = arrivalTime+_maximumMessageTtl;
-            if(expiration == 0l || expiration > calculatedExpiration)
+            if(expiration == 0L || expiration > calculatedExpiration)
             {
                 entry.setExpiration(calculatedExpiration);
             }
@@ -1443,19 +1408,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         // Simple Queues don't :-)
     }
 
-    private void incrementQueueSize(final ServerMessage message)
-    {
-        long size = message.getSize();
-        getAtomicQueueSize().addAndGet(size);
-        _enqueueCount.incrementAndGet();
-        _enqueueSize.addAndGet(size);
-        if(message.isPersistent() && isDurable())
-        {
-            _persistentMessageEnqueueSize.addAndGet(size);
-            _persistentMessageEnqueueCount.incrementAndGet();
-        }
-    }
-
     @Override
     public void setTargetSize(final long targetSize)
     {
@@ -1467,17 +1419,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     public long getTotalDequeuedMessages()
     {
-        return _dequeueCount.get();
+        return _queueStatistics.getDequeueCount();
     }
 
     public long getTotalEnqueuedMessages()
     {
-        return _enqueueCount.get();
-    }
-
-    private void incrementQueueCount()
-    {
-        getAtomicQueueCount().incrementAndGet();
+        return _queueStatistics.getEnqueueCount();
     }
 
     private void deliverMessage(final QueueConsumer<?> sub,
@@ -1489,8 +1436,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             setLastSeenEntry(sub, entry);
         }
-
-        _deliveredMessages.incrementAndGet();
 
         sub.send(entry, batch);
     }
@@ -1548,39 +1493,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     }
 
-    @Override
-    public void dequeue(QueueEntry entry)
-    {
-        decrementQueueCount();
-        decrementQueueSize(entry);
-        if (entry.acquiredByConsumer())
-        {
-            _deliveredMessages.decrementAndGet();
-        }
-
-        checkCapacity();
-
-    }
-
-    private void decrementQueueSize(final QueueEntry entry)
-    {
-        final ServerMessage message = entry.getMessage();
-        long size = message.getSize();
-        getAtomicQueueSize().addAndGet(-size);
-        _dequeueSize.addAndGet(size);
-        if(message.isPersistent() && isDurable())
-        {
-            _persistentMessageDequeueSize.addAndGet(size);
-            _persistentMessageDequeueCount.incrementAndGet();
-        }
-    }
-
-    void decrementQueueCount()
-    {
-        getAtomicQueueCount().decrementAndGet();
-        _dequeueCount.incrementAndGet();
-    }
-
     public boolean resend(final QueueEntry entry, final QueueConsumer<?> consumer)
     {
         /* TODO : This is wrong as the consumer may be suspended, we should instead change the state of the message
@@ -1630,38 +1542,20 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public int getQueueDepthMessages()
     {
-        return getAtomicQueueCount().get();
+        return _queueStatistics.getQueueCount();
     }
 
     public long getQueueDepthBytes()
     {
-        return getAtomicQueueSize().get();
-    }
-
-    public int getUndeliveredMessageCount()
-    {
-        int count = getQueueDepthMessages() - _deliveredMessages.get();
-        if (count < 0)
-        {
-            return 0;
-        }
-        else
-        {
-            return count;
-        }
-    }
-
-    public long getReceivedMessageCount()
-    {
-        return _totalMessagesReceived.get();
+        return _queueStatistics.getQueueSize();
     }
 
     @Override
     public long getOldestMessageArrivalTime()
     {
-        long oldestMessageArrivalTime = -1l;
+        long oldestMessageArrivalTime = -1L;
 
-        while(oldestMessageArrivalTime == -1l)
+        while(oldestMessageArrivalTime == -1L)
         {
             QueueEntry entry = getEntries().getOldestEntry();
             if (entry != null)
@@ -1756,16 +1650,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return getName().compareTo(o.getName());
     }
 
-    public AtomicInteger getAtomicQueueCount()
-    {
-        return _atomicQueueCount;
-    }
-
-    public AtomicLong getAtomicQueueSize()
-    {
-        return _atomicQueueSize;
-    }
-
     private boolean hasExclusiveConsumer()
     {
         return _exclusiveSubscriber != null;
@@ -1784,6 +1668,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     /** Used to track bindings to exchanges so that on deletion they can easily be cancelled. */
     abstract QueueEntryList getEntries();
 
+    final QueueStatistics getQueueStatistics()
+    {
+        return _queueStatistics;
+    }
+
     protected QueueConsumerList getConsumerList()
     {
         return _consumerList;
@@ -1794,32 +1683,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _virtualHost.getEventLogger();
     }
 
-    public static interface QueueEntryFilter
+    public interface QueueEntryFilter
     {
-        public boolean accept(QueueEntry entry);
+        boolean accept(QueueEntry entry);
 
-        public boolean filterComplete();
+        boolean filterComplete();
     }
 
-
-
-    public List<QueueEntry> getMessagesOnTheQueue(final long fromMessageId, final long toMessageId)
-    {
-        return getMessagesOnTheQueue(new QueueEntryFilter()
-        {
-
-            public boolean accept(QueueEntry entry)
-            {
-                final long messageId = entry.getMessage().getMessageNumber();
-                return messageId >= fromMessageId && messageId <= toMessageId;
-            }
-
-            public boolean filterComplete()
-            {
-                return false;
-            }
-        });
-    }
 
     public QueueEntry getMessageOnTheQueue(final long messageId)
     {
@@ -2108,27 +1978,28 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         _closing = false;
     }
 
-    public void checkCapacity(AMQSessionModel channel)
+    @Override
+    public void checkCapacity(AMQSessionModel<?> channel)
     {
-        if(_queueFlowControlSizeBytes != 0l)
+        if(_queueFlowControlSizeBytes != 0L)
         {
-            if(_atomicQueueSize.get() > _queueFlowControlSizeBytes)
+            if(_queueStatistics.getQueueSize() > _queueFlowControlSizeBytes)
             {
                 _overfull.set(true);
                 //Overfull log message
-                getEventLogger().message(_logSubject, QueueMessages.OVERFULL(_atomicQueueSize.get(),
+                getEventLogger().message(_logSubject, QueueMessages.OVERFULL(_queueStatistics.getQueueSize(),
                                                                              _queueFlowControlSizeBytes));
 
                 _blockedChannels.add(channel);
 
                 channel.block(this);
 
-                if(_atomicQueueSize.get() <= _queueFlowResumeSizeBytes)
+                if(_queueStatistics.getQueueSize() <= _queueFlowResumeSizeBytes)
                 {
 
                     //Underfull log message
                     getEventLogger().message(_logSubject,
-                                             QueueMessages.UNDERFULL(_atomicQueueSize.get(), _queueFlowResumeSizeBytes));
+                                             QueueMessages.UNDERFULL(_queueStatistics.getQueueSize(), _queueFlowResumeSizeBytes));
 
                    channel.unblock(this);
                    _blockedChannels.remove(channel);
@@ -2141,22 +2012,27 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    private void checkCapacity()
+    public void checkCapacity()
     {
-        if(_queueFlowControlSizeBytes != 0L)
+        if(getEntries() != null)
         {
-            if(_overfull.get() && _atomicQueueSize.get() <= _queueFlowResumeSizeBytes)
+            if (_queueFlowControlSizeBytes != 0L)
             {
-                if(_overfull.compareAndSet(true,false))
-                {//Underfull log message
-                    getEventLogger().message(_logSubject,
-                                             QueueMessages.UNDERFULL(_atomicQueueSize.get(), _queueFlowResumeSizeBytes));
-                }
-
-                for(final AMQSessionModel blockedChannel : _blockedChannels)
+                if (_overfull.get() && _queueStatistics.getQueueSize() <= _queueFlowResumeSizeBytes)
                 {
-                    blockedChannel.unblock(this);
-                    _blockedChannels.remove(blockedChannel);
+                    if (_overfull.compareAndSet(true, false))
+                    {
+                        //Underfull log message
+                        getEventLogger().message(_logSubject,
+                                                 QueueMessages.UNDERFULL(_queueStatistics.getQueueSize(),
+                                                                         _queueFlowResumeSizeBytes));
+                    }
+
+                    for (final AMQSessionModel<?> blockedChannel : _blockedChannels)
+                    {
+                        blockedChannel.unblock(this);
+                        _blockedChannels.remove(blockedChannel);
+                    }
                 }
             }
         }
@@ -2588,7 +2464,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         QueueEntryIterator queueListIterator = getEntries().iterator();
 
-        final long estimatedQueueSize = _atomicQueueSize.get() + _atomicQueueCount.get() * _estimatedAverageMessageHeaderSize;
+        final long estimatedQueueSize = _queueStatistics.getQueueSize() + _queueStatistics.getQueueCount() * _estimatedAverageMessageHeaderSize;
         _flowToDiskChecker.reportFlowToDiskStatusIfNecessary(estimatedQueueSize, _targetQueueSize.get());
 
         final Set<NotificationCheck> perMessageChecks = new HashSet<>();
@@ -2904,8 +2780,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
             try
             {
-                 long foo = ByteStreams.copy(inputStream, outputStream);
-                foo = foo +1 -1;
+                ByteStreams.copy(inputStream, outputStream);
             }
             finally
             {
@@ -2952,32 +2827,32 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     public long getTotalEnqueuedBytes()
     {
-        return _enqueueSize.get();
+        return _queueStatistics.getEnqueueSize();
     }
 
     public long getTotalDequeuedBytes()
     {
-        return _dequeueSize.get();
+        return _queueStatistics.getDequeueSize();
     }
 
     public long getPersistentEnqueuedBytes()
     {
-        return _persistentMessageEnqueueSize.get();
+        return _queueStatistics.getPersistentEnqueueSize();
     }
 
     public long getPersistentDequeuedBytes()
     {
-        return _persistentMessageDequeueSize.get();
+        return _queueStatistics.getPersistentDequeueSize();
     }
 
     public long getPersistentEnqueuedMessages()
     {
-        return _persistentMessageEnqueueCount.get();
+        return _queueStatistics.getPersistentEnqueueCount();
     }
 
     public long getPersistentDequeuedMessages()
     {
-        return _persistentMessageDequeueCount.get();
+        return _queueStatistics.getPersistentDequeueCount();
     }
 
     @Override
@@ -3025,26 +2900,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     public long getUnacknowledgedMessages()
     {
-        return _unackedMsgCount.get();
+        return _queueStatistics.getUnackedCount();
     }
 
     public long getUnacknowledgedBytes()
     {
-        return _unackedMsgBytes.get();
-    }
-
-    @Override
-    public void decrementUnackedMsgCount(QueueEntry queueEntry)
-    {
-        _unackedMsgCount.decrementAndGet();
-        _unackedMsgBytes.addAndGet(-queueEntry.getSize());
-    }
-
-    @Override
-    public void incrementUnackedMsgCount(QueueEntry entry)
-    {
-        _unackedMsgCount.incrementAndGet();
-        _unackedMsgBytes.addAndGet(entry.getSize());
+        return _queueStatistics.getUnackedSize();
     }
 
     @Override

@@ -50,7 +50,7 @@ public class SortedQueueImpl extends OutOfOrderQueue<SortedQueueImpl> implements
     protected void onOpen()
     {
         super.onOpen();
-        _entries = new SortedQueueEntryList(this);
+        _entries = new SortedQueueEntryList(this, getQueueStatistics());
     }
 
     @Override

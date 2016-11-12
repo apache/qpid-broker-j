@@ -27,6 +27,7 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
@@ -504,7 +505,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     }
 
     @Override
-    public AMQSessionModel getSessionModel()
+    public Session_1_0 getSessionModel()
     {
         return getSession();
     }

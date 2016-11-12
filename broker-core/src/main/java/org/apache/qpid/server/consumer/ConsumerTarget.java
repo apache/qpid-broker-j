@@ -62,7 +62,7 @@ public interface ConsumerTarget
 
     long getUnacknowledgedMessages();
 
-    AMQSessionModel getSessionModel();
+    AMQSessionModel<?> getSessionModel();
 
     long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch);
 

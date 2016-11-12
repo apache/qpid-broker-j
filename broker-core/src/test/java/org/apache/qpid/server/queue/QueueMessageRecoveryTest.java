@@ -193,6 +193,7 @@ public class QueueMessageRecoveryTest extends QpidTestCase
     {
 
         private final List<ServerMessage<?>> _messageList;
+        private final QueueEntryList _entries = mock(QueueEntryList.class);
 
         protected TestQueue(final Map<String, Object> attributes,
                             final QueueManagingVirtualHost<?> virtualHost,
@@ -205,7 +206,7 @@ public class QueueMessageRecoveryTest extends QpidTestCase
         @Override
         QueueEntryList getEntries()
         {
-            return null;
+            return _entries;
         }
 
         @Override

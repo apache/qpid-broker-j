@@ -148,7 +148,12 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
     public ServerMessage getTestMessageToAdd()
     {
         ServerMessage msg = mock(ServerMessage.class);
+        MessageReference ref = mock(MessageReference.class);
+        when(ref.getMessage()).thenReturn(msg);
         when(msg.getMessageNumber()).thenReturn(1l);
+        when(msg.newReference()).thenReturn(ref);
+        when(msg.newReference(any(TransactionLogResource.class))).thenReturn(ref);
+
         return msg;
     }
 
@@ -160,7 +165,7 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
 
     public void testScavenge() throws Exception
     {
-        OrderedQueueEntryList sqel = new StandardQueueEntryList(mock(StandardQueueImpl.class));
+        OrderedQueueEntryList sqel = new StandardQueueEntryList(mock(StandardQueue.class), new QueueStatistics());
         ConcurrentMap<Integer,QueueEntry> entriesMap = new ConcurrentHashMap<Integer,QueueEntry>();
 
 

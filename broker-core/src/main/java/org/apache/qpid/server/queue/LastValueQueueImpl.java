@@ -44,7 +44,7 @@ public class LastValueQueueImpl extends AbstractQueue<LastValueQueueImpl> implem
     protected void onOpen()
     {
         super.onOpen();
-        _entries = new LastValueQueueList(this);
+        _entries = new LastValueQueueList(this, getQueueStatistics());
     }
 
     @Override

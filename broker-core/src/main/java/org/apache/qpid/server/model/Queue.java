@@ -366,12 +366,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     void requeue(QueueEntry entry);
 
-    void dequeue(QueueEntry entry);
-
-    void decrementUnackedMsgCount(QueueEntry queueEntry);
-
-    void incrementUnackedMsgCount(QueueEntry entry);
-
     boolean resend(QueueEntry entry, QueueConsumer<?> consumer);
 
     List<? extends QueueEntry> getMessagesOnTheQueue();
@@ -413,4 +407,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     long getPotentialMemoryFootprint();
 
     boolean isHeld(QueueEntry queueEntry, final long evaluationTime);
+
+    void checkCapacity();
 }

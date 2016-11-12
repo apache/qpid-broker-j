@@ -259,7 +259,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
     private static class DequeuedQueue extends AbstractQueue
     {
 
-        private QueueEntryList _entries = new DequeuedQueueEntryList(this);
+        private QueueEntryList _entries = new DequeuedQueueEntryList(this, getQueueStatistics());
 
         public DequeuedQueue(QueueManagingVirtualHost<?> virtualHost)
         {
@@ -295,9 +295,9 @@ public class StandardQueueTest extends AbstractQueueTestBase
                     }
                 };
 
-        public DequeuedQueueEntryList(final DequeuedQueue queue)
+        public DequeuedQueueEntryList(final DequeuedQueue queue, final QueueStatistics queueStatistics)
         {
-            super(queue, HEAD_CREATOR);
+            super(queue, queueStatistics, HEAD_CREATOR);
         }
 
         /**

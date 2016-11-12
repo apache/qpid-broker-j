@@ -39,7 +39,7 @@ public class StandardQueueImpl extends AbstractQueue<StandardQueueImpl> implemen
     protected void onOpen()
     {
         super.onOpen();
-        _entries = new StandardQueueEntryList(this);
+        _entries = new StandardQueueEntryList(this, getQueueStatistics());
     }
 
     @Override

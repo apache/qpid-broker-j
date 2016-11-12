@@ -57,9 +57,9 @@ public class LastValueQueueList extends OrderedQueueEntryList
     private final ConflationQueueEntry _deleteInProgress = new ConflationQueueEntry(this);
     private final ConflationQueueEntry _newerEntryAlreadyBeenAndGone = new ConflationQueueEntry(this);
 
-    public LastValueQueueList(LastValueQueueImpl queue)
+    public LastValueQueueList(LastValueQueue<?> queue, QueueStatistics queueStatistics)
     {
-        super(queue, HEAD_CREATOR);
+        super(queue, queueStatistics, HEAD_CREATOR);
         _conflationKey = queue.getLvqKey();
     }
 

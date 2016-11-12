@@ -35,7 +35,7 @@ abstract public class PriorityQueueList extends OrderedQueueEntryList
     public PriorityQueueList(final PriorityQueueImpl queue,
                              final HeadCreator headCreator)
     {
-        super(queue, headCreator);
+        super(queue, queue.getQueueStatistics(), headCreator);
     }
 
     static class PriorityQueueMasterList extends PriorityQueueList
