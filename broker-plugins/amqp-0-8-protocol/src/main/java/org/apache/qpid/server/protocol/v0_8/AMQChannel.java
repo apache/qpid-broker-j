@@ -305,16 +305,6 @@ public class AMQChannel
 
         final GetDeliveryMethod getDeliveryMethod =
                 new GetDeliveryMethod(singleMessageCredit, queue);
-        final RecordDeliveryMethod getRecordMethod = new RecordDeliveryMethod()
-        {
-
-            public void recordMessageDelivery(final ConsumerImpl sub,
-                                              final MessageInstance entry,
-                                              final long deliveryTag)
-            {
-                addUnacknowledgedMessage(entry, deliveryTag, null);
-            }
-        };
 
         ConsumerTarget_0_8 target;
         EnumSet<ConsumerImpl.Option> options = EnumSet.of(ConsumerImpl.Option.TRANSIENT, ConsumerImpl.Option.ACQUIRES,
@@ -324,13 +314,13 @@ public class AMQChannel
 
             target = ConsumerTarget_0_8.createAckTarget(this,
                                                         AMQShortString.EMPTY_STRING, null,
-                                                        singleMessageCredit, getDeliveryMethod, getRecordMethod);
+                                                        singleMessageCredit, getDeliveryMethod);
         }
         else
         {
             target = ConsumerTarget_0_8.createGetNoAckTarget(this,
                                                              AMQShortString.EMPTY_STRING, null,
-                                                             singleMessageCredit, getDeliveryMethod, getRecordMethod);
+                                                             singleMessageCredit, getDeliveryMethod);
         }
 
         ConsumerImpl sub = queue.addConsumer(target, null, AMQMessage.class, "", options, null);
@@ -1151,27 +1141,6 @@ public class AMQChannel
 
 
     /**
-     * Acknowledge one or more messages.
-     *
-     * @param deliveryTag the last delivery tag
-     * @param multiple    if true will acknowledge all messages up to an including the delivery tag. if false only
-     *                    acknowledges the single message specified by the delivery tag
-     *
-     */
-    private void acknowledgeMessage(long deliveryTag, boolean multiple)
-    {
-        Collection<MessageInstance> ackedMessages = getAckedMessages(deliveryTag, multiple);
-        _transaction.dequeue(ackedMessages, new MessageAcknowledgeAction(ackedMessages));
-    }
-
-    private Collection<MessageInstance> getAckedMessages(long deliveryTag, boolean multiple)
-    {
-
-        return _unacknowledgedMessageMap.acknowledge(deliveryTag, multiple);
-
-    }
-
-    /**
      * Used only for testing purposes.
      *
      * @return the map of unacknowledged messages
@@ -1384,20 +1353,6 @@ public class AMQChannel
     public ClientDeliveryMethod getClientDeliveryMethod()
     {
         return _clientDeliveryMethod;
-    }
-
-    private final RecordDeliveryMethod _recordDeliveryMethod = new RecordDeliveryMethod()
-        {
-
-            public void recordMessageDelivery(final ConsumerImpl sub, final MessageInstance entry, final long deliveryTag)
-            {
-                addUnacknowledgedMessage(entry, deliveryTag, sub);
-            }
-        };
-
-    public RecordDeliveryMethod getRecordDeliveryMethod()
-    {
-        return _recordDeliveryMethod;
     }
 
 
@@ -2063,7 +2018,8 @@ public class AMQChannel
             _logger.debug("RECV[" + _channelId + "] BasicAck[" +" deliveryTag: " + deliveryTag + " multiple: " + multiple + " ]");
         }
 
-        acknowledgeMessage(deliveryTag, multiple);
+        Collection<MessageInstance> ackedMessages = _unacknowledgedMessageMap.acknowledge(deliveryTag, multiple);
+        _transaction.dequeue(ackedMessages, new MessageAcknowledgeAction(ackedMessages));
     }
 
     @Override
