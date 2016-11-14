@@ -20,6 +20,7 @@
 */
 package org.apache.qpid.server.queue;
 
+import static org.apache.qpid.server.model.Queue.QUEUE_SCAVANGE_COUNT;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -48,15 +49,11 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
     private StandardQueueImpl _testQueue;
     private StandardQueueEntryList _sqel;
 
-    private static final String SCAVENGE_PROP = "qpid.queue.scavenge_count";
-    private String oldScavengeValue = null;
     private ConfiguredObjectFactoryImpl _factory;
 
     @Override
     protected void setUp()
     {
-        oldScavengeValue = System.setProperty(SCAVENGE_PROP, "9");
-
         Map<String,Object> queueAttributes = new HashMap<String, Object>();
         queueAttributes.put(Queue.ID, UUID.randomUUID());
         queueAttributes.put(Queue.NAME, getName());
@@ -83,19 +80,6 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
 
             final QueueEntry bleh = _sqel.add(message, null);
             assertNotNull("QE should not have been null", bleh);
-        }
-    }
-
-    @Override
-    protected void tearDown()
-    {
-        if(oldScavengeValue != null)
-        {
-            System.setProperty(SCAVENGE_PROP, oldScavengeValue);
-        }
-        else
-        {
-            System.clearProperty(SCAVENGE_PROP);
         }
     }
 
@@ -160,7 +144,9 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
 
     public void testScavenge() throws Exception
     {
-        OrderedQueueEntryList sqel = new StandardQueueEntryList(mock(StandardQueueImpl.class));
+        StandardQueueImpl mockQueue = mock(StandardQueueImpl.class);
+        when(mockQueue.getContextValue(Integer.class, QUEUE_SCAVANGE_COUNT)).thenReturn(9);
+        OrderedQueueEntryList sqel = new StandardQueueEntryList(mockQueue);
         ConcurrentMap<Integer,QueueEntry> entriesMap = new ConcurrentHashMap<Integer,QueueEntry>();
 
 

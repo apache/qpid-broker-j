@@ -25,14 +25,12 @@ import java.util.NoSuchElementException;
 
 public class QueueConsumerNodeIterator implements Iterator<QueueConsumerNode>
 {
-    private final QueueConsumerNodeList _queueConsumerNodeList;
     private QueueConsumerNodeListEntry _previous;
     private QueueConsumerNodeListEntry _next;
 
     QueueConsumerNodeIterator(QueueConsumerNodeList list)
     {
         _previous = list.getHead();
-        _queueConsumerNodeList = list;
     }
 
     @Override
@@ -61,10 +59,7 @@ public class QueueConsumerNodeIterator implements Iterator<QueueConsumerNode>
     @Override
     public void remove()
     {
-        if(_previous.isDeleted())
-        {
-            throw new IllegalStateException();
-        }
-        _queueConsumerNodeList.removeEntry(_previous);
+        // code should use QueueConsumerNodeListEntry#remove instead
+        throw new UnsupportedOperationException();
     }
 }

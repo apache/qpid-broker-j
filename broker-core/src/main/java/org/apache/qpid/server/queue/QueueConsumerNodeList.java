@@ -20,15 +20,28 @@
 */
 package org.apache.qpid.server.queue;
 
+import static org.apache.qpid.server.model.Queue.QUEUE_SCAVANGE_COUNT;
+
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.qpid.server.model.Queue;
+
 class QueueConsumerNodeList
 {
-    private final QueueConsumerNodeListEntry _head = new QueueConsumerNodeListEntry();
+    private final QueueConsumerNodeListEntry _head;
 
-    private final AtomicReference<QueueConsumerNodeListEntry> _tail = new AtomicReference<>(_head);
+    private final AtomicReference<QueueConsumerNodeListEntry> _tail;
     private final AtomicInteger _size = new AtomicInteger();
+    private final AtomicInteger _scavengeCount = new AtomicInteger();
+    private final int _scavengeCountThreshold;
+
+    QueueConsumerNodeList(final Queue<?> queue)
+    {
+        _head = new QueueConsumerNodeListEntry(this);
+        _tail = new AtomicReference<>(_head);
+        _scavengeCountThreshold = queue.getContextValue(Integer.class, QUEUE_SCAVANGE_COUNT);
+    }
 
     private void insert(final QueueConsumerNodeListEntry node, final boolean count)
     {
@@ -58,27 +71,37 @@ class QueueConsumerNodeList
         }
     }
 
-    public void add(final QueueConsumerNode node)
+    public QueueConsumerNodeListEntry add(final QueueConsumerNode node)
     {
-        QueueConsumerNodeListEntry entry = new QueueConsumerNodeListEntry(node);
+        QueueConsumerNodeListEntry entry = new QueueConsumerNodeListEntry(this, node);
         insert(entry, true);
-    }
-
-    public boolean remove(final QueueConsumerNode consumerNode)
-    {
-        return removeEntry(consumerNode.getListEntry());
+        return entry;
     }
 
     boolean removeEntry(final QueueConsumerNodeListEntry entry)
     {
-        if (entry.delete())
+        if (entry.setDeleted())
         {
             _size.decrementAndGet();
+            if (_scavengeCount.incrementAndGet() > _scavengeCountThreshold)
+            {
+                scavenge();
+            }
             return true;
         }
         else
         {
             return false;
+        }
+    }
+
+    private void scavenge()
+    {
+        _scavengeCount.set(0);
+        QueueConsumerNodeListEntry node = _head;
+        while (node != null)
+        {
+            node = node.findNext();
         }
     }
 
@@ -96,7 +119,9 @@ class QueueConsumerNodeList
     {
         return _size.get();
     }
+
+    public boolean isEmpty()
+    {
+        return _size.get() == 0;
+    }
 }
-
-
-

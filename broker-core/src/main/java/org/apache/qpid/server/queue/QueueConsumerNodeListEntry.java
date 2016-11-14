@@ -29,16 +29,17 @@ final class QueueConsumerNodeListEntry
     private final AtomicReference<QueueConsumerNodeListEntry> _next = new AtomicReference<>();
 
     private final QueueConsumerNode _queueConsumerNode;
-    private volatile boolean _removed;
+    private final QueueConsumerNodeList _list;
 
-    QueueConsumerNodeListEntry(final QueueConsumerNode queueConsumerNode)
+    QueueConsumerNodeListEntry(final QueueConsumerNodeList list, final QueueConsumerNode queueConsumerNode)
     {
+        _list = list;
         _queueConsumerNode = queueConsumerNode;
-        queueConsumerNode.setListEntry(this);
     }
 
-    public QueueConsumerNodeListEntry()
+    public QueueConsumerNodeListEntry(QueueConsumerNodeList list)
     {
+        _list = list;
         //used for sentinel head and dummy node construction
         _queueConsumerNode = null;
         _deleted.set(true);
@@ -48,17 +49,6 @@ final class QueueConsumerNodeListEntry
     {
         return _queueConsumerNode;
     }
-
-    public boolean isRemoved()
-    {
-        return _removed;
-    }
-
-    public void setRemoved()
-    {
-        _removed = true;
-    }
-
 
 
     /**
@@ -112,14 +102,19 @@ final class QueueConsumerNodeListEntry
         return _next.compareAndSet(null, node);
     }
 
+    public void remove()
+    {
+        _list.removeEntry(this);
+    }
+
     public boolean isDeleted()
     {
         return _deleted.get();
     }
 
-    public boolean delete()
+    boolean setDeleted()
     {
-        return _deleted.compareAndSet(false,true);
+        return _deleted.compareAndSet(false, true);
     }
 
 }

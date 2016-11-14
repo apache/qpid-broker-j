@@ -90,6 +90,11 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedContextDefault( name = QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD)
     long DEFAULT_ESTIMATED_MESSAGE_MEMORY_OVERHEAD = 1024l;
 
+    String QUEUE_SCAVANGE_COUNT = "qpid.queue.scavenge_count";
+    @ManagedContextDefault( name = QUEUE_SCAVANGE_COUNT)
+    int DEFAULT_QUEUE_SCAVANGE_COUNT = 50;
+
+
     String MIME_TYPE_TO_FILE_EXTENSION = "qpid.mimeTypeToFileExtension";
     @SuppressWarnings("unused")
     @ManagedContextDefault(name = MIME_TYPE_TO_FILE_EXTENSION, description = "A mapping of MIME types to file extensions.")

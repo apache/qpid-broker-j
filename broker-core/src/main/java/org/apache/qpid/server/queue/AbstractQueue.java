@@ -147,7 +147,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final QueueManagingVirtualHost<?> _virtualHost;
     private final DeletedChildListener _deletedChildListener = new DeletedChildListener();
 
-    private final QueueConsumerManagerImpl _queueConsumerManager;
+    private QueueConsumerManagerImpl _queueConsumerManager;
 
     @ManagedAttributeField( beforeSet = "preSetAlternateExchange", afterSet = "postSetAlternateExchange")
     private Exchange _alternateExchange;
@@ -331,7 +331,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         super(parentsMap(virtualHost), attributes);
 
         _virtualHost = virtualHost;
-        _queueConsumerManager = new QueueConsumerManagerImpl(this);
     }
 
     @Override
@@ -397,6 +396,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         _arguments = Collections.synchronizedMap(arguments);
 
+        _queueConsumerManager = new QueueConsumerManagerImpl(this);
         _logSubject = new QueueLogSubject(this);
         _queueHouseKeepingTask = new AdvanceConsumersTask();
         Subject activeSubject = Subject.getSubject(AccessController.getContext());
@@ -1924,7 +1924,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
         }
 
-        // need to take account of priority and potentially and existing notified
+        // TODO need to take account of priority and potentially and existing notified
         // we don't want to notify lower priority consumers if there exists a consumer in the notified set
         // which can take the message (implies iterating such that you look at for each priority look at interested then at notified)
         final Iterator<QueueConsumer<?>> interestedIterator = _queueConsumerManager.getInterestedIterator();
@@ -2031,7 +2031,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         QueueEntry node  = getNextAvailableEntry(sub);
         boolean subActive = sub.isActive() && !sub.isSuspended();
 
-        if (subActive && (sub.getPriority() == Integer.MAX_VALUE || noHigherPriorityWithCredit(sub, node)))
+        if (node != null && subActive && (sub.getPriority() == Integer.MAX_VALUE || noHigherPriorityWithCredit(sub, node)))
         {
 
             if (_virtualHost.getState() != State.ACTIVE)
@@ -2040,7 +2040,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                            "virtualhost state " + _virtualHost.getState());
             }
 
-            if (node != null && node.isAvailable())
+            if (node.isAvailable())
             {
                 if (sub.hasInterest(node) && mightAssign(sub, node))
                 {
@@ -2083,8 +2083,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     boolean noHigherPriorityWithCredit(final QueueConsumer<?> sub, final QueueEntry queueEntry)
     {
-        // TODO - should iterate over list of interested and notified
-        // *** TODO HERE MONDAY *** - can we simply interleave bewteen iterators over the two distinct lists of interested and notified
         Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getAllIterator();
 
         while (consumerIterator.hasNext())
@@ -2096,6 +2094,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 {
                     return false;
                 }
+            }
+            else
+            {
+                break;
             }
         }
         return true;
@@ -3040,7 +3042,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
         else if(clazz == org.apache.qpid.server.model.Consumer.class)
         {
-            return (Collection<C>) Lists.newArrayList(_queueConsumerManager.getAllIterator());
+            return _queueConsumerManager == null
+                    ? Collections.<C>emptySet()
+                    : (Collection<C>) Lists.newArrayList(_queueConsumerManager.getAllIterator());
         }
         else return Collections.emptySet();
     }

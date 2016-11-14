@@ -20,6 +20,8 @@
 */
 package org.apache.qpid.server.queue;
 
+import static org.apache.qpid.server.model.Queue.QUEUE_SCAVANGE_COUNT;
+
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -47,13 +49,14 @@ public abstract class OrderedQueueEntryList implements QueueEntryList
                 _nextUpdater = OrderedQueueEntry._nextUpdater;
 
     private AtomicLong _scavenges = new AtomicLong(0L);
-    private final long _scavengeCount = Integer.getInteger("qpid.queue.scavenge_count", 50);
+    private final long _scavengeCount;
     private final AtomicReference<QueueEntry> _unscavengedHWM = new AtomicReference<QueueEntry>();
 
 
     public OrderedQueueEntryList(Queue<?> queue, HeadCreator headCreator)
     {
         _queue = queue;
+        _scavengeCount = _queue.getContextValue(Integer.class, QUEUE_SCAVANGE_COUNT);
         _head = headCreator.createHead(this);
         _tail = _head;
     }
