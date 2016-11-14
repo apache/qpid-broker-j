@@ -97,6 +97,8 @@ class QueueConsumerImpl
     @ManagedAttributeField
     private int _priority;
 
+    private QueueConsumerNode _queueConsumerNode;
+
     QueueConsumerImpl(final AbstractQueue<?> queue,
                       ConsumerTarget target,
                       final String consumerName,
@@ -255,6 +257,18 @@ class QueueConsumerImpl
     public void notifyWork()
     {
         _target.notifyWork();
+    }
+
+    @Override
+    public void setQueueConsumerNode(final QueueConsumerNode node)
+    {
+        _queueConsumerNode = node;
+    }
+
+    @Override
+    public QueueConsumerNode getQueueConsumerNode()
+    {
+        return _queueConsumerNode;
     }
 
     public void queueDeleted()

@@ -38,6 +38,8 @@ public interface QueueConsumer<X extends QueueConsumer<X>> extends Consumer<X>
 
     void acquisitionRemoved(QueueEntry node);
 
+    QueueConsumerNode getQueueConsumerNode();
+
     void queueDeleted();
 
     Queue<?> getQueue();
@@ -51,4 +53,6 @@ public interface QueueConsumer<X extends QueueConsumer<X>> extends Consumer<X>
     boolean isNotifyWorkDesired();
 
     void notifyWork();
+
+    void setQueueConsumerNode(QueueConsumerNode node);
 }

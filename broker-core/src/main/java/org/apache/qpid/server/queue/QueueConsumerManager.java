@@ -20,24 +20,26 @@
  */
 package org.apache.qpid.server.queue;
 
-public class ConsumerNodeIterator
+import java.util.Iterator;
+
+public interface QueueConsumerManager
 {
-    private ConsumerNode _lastNode;
+    void addConsumer(QueueConsumer<?> consumer);
+    boolean removeConsumer(QueueConsumer<?> consumer);
+    /*public*/ void setInterest(QueueConsumer<?> consumer, boolean interested); // called from Consumer
+    /*private*/ boolean setNotified(QueueConsumer<?> consumer, boolean notified); // called from Queue
 
-    ConsumerNodeIterator(ConsumerNode startNode)
-    {
-        _lastNode = startNode;
-    }
+    // should be priority and then insertion order
+    Iterator<QueueConsumer<?>> getInterestedIterator();
 
-    public ConsumerNode getNode()
-    {
-        return _lastNode;
-    }
+    Iterator<QueueConsumer<?>> getAllIterator();
+    Iterator<QueueConsumer<?>> getNonAcquiringIterator();
 
-    public boolean advance()
-    {
-        _lastNode = _lastNode.findNext();
+    Iterator<QueueConsumer<?>> getPrioritySortedNotifiedOrInterestedIterator();
 
-        return _lastNode != null;
-    }
+    int getAllSize();
+    //        int getInterestedSize();
+    int getNotifiedAcquiringSize();
+
+
 }

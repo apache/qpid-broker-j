@@ -1391,7 +1391,6 @@ public class AMQPConnection_0_8Impl
         final Action<ProtocolEngine> listener = _workListener.get();
         if(listener != null)
         {
-
             listener.performAction(this);
         }
     }
