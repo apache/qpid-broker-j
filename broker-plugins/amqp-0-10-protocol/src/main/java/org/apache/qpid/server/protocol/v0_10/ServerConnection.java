@@ -38,9 +38,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
@@ -65,8 +62,6 @@ import org.apache.qpid.transport.Session;
 
 public class ServerConnection extends Connection
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnection.class);
-    public static final long CLOSE_OK_TIMEOUT = 10000l;
     private final Broker<?> _broker;
 
     private final long _connectionId;
@@ -129,7 +124,9 @@ public class ServerConnection extends Connection
 
         if(state == State.CLOSING)
         {
-            getAmqpConnection().getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis() + CLOSE_OK_TIMEOUT, (ServerNetworkConnection) getNetworkConnection()));
+            long timeoutTime = System.currentTimeMillis() + getAmqpConnection().getContextValue(Long.class, org.apache.qpid.server.model.Connection.CLOSE_RESPONSE_TIMEOUT);
+
+            getAmqpConnection().getAggregateTicker().addTicker(new ConnectionClosingTicker(timeoutTime, (ServerNetworkConnection) getNetworkConnection()));
 
             // trigger a wakeup to ensure the ticker will be taken into account
             getAmqpConnection().notifyWork();

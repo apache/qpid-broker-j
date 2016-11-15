@@ -50,6 +50,11 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     @ManagedContextDefault(name = MAX_UNCOMMITTED_IN_MEMORY_SIZE)
     long DEFAULT_MAX_UNCOMMITTED_IN_MEMORY_SIZE = 10l * 1024l * 1024l;
 
+
+    String CLOSE_RESPONSE_TIMEOUT = "connection.closeResponseTimeout";
+    @ManagedContextDefault(name = CLOSE_RESPONSE_TIMEOUT)
+    long DEFAULT_CLOSE_RESPONSE_TIMEOUT = 2000L;
+
     String MAX_MESSAGE_SIZE = "qpid.max_message_size";
     @ManagedContextDefault(name = MAX_MESSAGE_SIZE)
     int DEFAULT_MAX_MESSAGE_SIZE = 100 * 1024 * 1024;

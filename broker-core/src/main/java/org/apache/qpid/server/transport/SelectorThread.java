@@ -54,7 +54,7 @@ import org.apache.qpid.configuration.CommonProperties;
 class SelectorThread extends Thread
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectorThread.class);
-    private static final long ACCEPT_CANCELATION_TIMEOUT =
+    private static final long ACCEPT_CANCELLATION_TIMEOUT =
             Integer.getInteger(CommonProperties.IO_NETWORK_TRANSPORT_TIMEOUT_PROP_NAME,
                                CommonProperties.IO_NETWORK_TRANSPORT_TIMEOUT_DEFAULT);
 
@@ -448,7 +448,7 @@ class SelectorThread extends Thread
         Future<Void> result = cancelAcceptingSocketAsync(socketChannel);
         try
         {
-            result.get(ACCEPT_CANCELATION_TIMEOUT, TimeUnit.MILLISECONDS);
+            result.get(ACCEPT_CANCELLATION_TIMEOUT, TimeUnit.MILLISECONDS);
         }
         catch (InterruptedException e)
         {

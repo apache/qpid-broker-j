@@ -64,6 +64,7 @@ import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
@@ -103,8 +104,6 @@ public class AMQPConnection_0_8Impl
 
     private static final String BROKER_DEBUG_BINARY_DATA_LENGTH = "broker.debug.binaryDataLength";
     private static final int DEFAULT_DEBUG_BINARY_DATA_LENGTH = 80;
-
-    private static final long CLOSE_OK_TIMEOUT = 10000l;
 
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
@@ -568,9 +567,10 @@ public class AMQPConnection_0_8Impl
                 }
                 finally
                 {
-                    final long timeoutTime = System.currentTimeMillis() + CLOSE_OK_TIMEOUT;
-                    getAggregateTicker().addTicker(new ConnectionClosingTicker(timeoutTime, getNetwork()));
+                    final long timeoutTime = System.currentTimeMillis()
+                                             + getContextValue(Long.class, Connection.CLOSE_RESPONSE_TIMEOUT);
 
+                    getAggregateTicker().addTicker(new ConnectionClosingTicker(timeoutTime, getNetwork()));
                     // trigger a wakeup to ensure the ticker will be taken into account
                     notifyWork();
                 }

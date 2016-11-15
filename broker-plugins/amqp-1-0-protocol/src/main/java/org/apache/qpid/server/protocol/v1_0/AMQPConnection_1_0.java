@@ -49,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.FrameWriter;
@@ -122,8 +123,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     private static Logger LOGGER = LoggerFactory.getLogger(AMQPConnection_1_0.class);
     private static final Logger FRAME_LOGGER = LoggerFactory.getLogger("FRM");
-
-    private static final long CLOSE_RESPONSE_TIMEOUT = 10000L;
 
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
@@ -1325,8 +1324,9 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     public void close()
     {
-        getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis() + CLOSE_RESPONSE_TIMEOUT,
-                                                                   getNetwork()));
+        long timeoutTime = System.currentTimeMillis() + getContextValue(Long.class, Connection.CLOSE_RESPONSE_TIMEOUT);
+
+        getAggregateTicker().addTicker(new ConnectionClosingTicker(timeoutTime, getNetwork()));
 
         // trigger a wakeup to ensure the ticker will be taken into account
         notifyWork();
