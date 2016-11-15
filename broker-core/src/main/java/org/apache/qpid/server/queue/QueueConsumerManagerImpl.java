@@ -263,7 +263,8 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
         @Override
         public QueueConsumer<?> next()
         {
-            return _underlying.next().getQueueConsumer();
+            QueueConsumerNode next = _underlying.next();
+            return next == null ? null : next.getQueueConsumer();
         }
 
         @Override
