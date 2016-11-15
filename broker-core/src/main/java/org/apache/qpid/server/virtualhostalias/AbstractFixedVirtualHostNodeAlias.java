@@ -22,6 +22,7 @@ package org.apache.qpid.server.virtualhostalias;
 
 import java.util.Map;
 
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.FixedVirtualHostNodeAlias;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -42,17 +43,29 @@ abstract class AbstractFixedVirtualHostNodeAlias<X extends AbstractFixedVirtualH
 
 
     @Override
-    public VirtualHostNode<?> getVirtualHostNode()
+    public final VirtualHostNode<?> getVirtualHostNode()
     {
         return _virtualHostNode;
     }
 
     @Override
-    public NamedAddressSpace getAddressSpace(final String name)
+    public final NamedAddressSpace getAddressSpace(final String name)
     {
-        VirtualHostNode<?> node = matches(name) ? getVirtualHostNode() : null;
+        VirtualHostNode<?> node = null;
+        if (matches(name))
+        {
+            node = getVirtualHostNode();
+            if (node == null)
+            {
+                Broker<?> broker = getPort().getParent(Broker.class);
+                node = broker.findDefautVirtualHostNode();
+            }
+
+        }
         return node == null ? null : node.getVirtualHost();
+
     }
+
 
     protected abstract boolean matches(final String name);
 }
