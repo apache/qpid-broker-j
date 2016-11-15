@@ -58,7 +58,6 @@ import java.util.zip.GZIPOutputStream;
 
 import javax.security.auth.Subject;
 
-import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -285,7 +284,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 while (consumerIterator.hasNext())
                 {
                     QueueConsumer<?> queueConsumer = consumerIterator.next();
-                    if (queueConsumer.getPriority() < highestNotifiedPriority || notifyConsumer(queueConsumer))
+                    if (queueConsumer != null && queueConsumer.getPriority() < highestNotifiedPriority || notifyConsumer(queueConsumer))
                     {
                         break;
                     }
@@ -1043,7 +1042,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public Collection<QueueConsumer<?>> getConsumers()
     {
-        return Lists.newArrayList(_queueConsumerManager.getAllIterator());
+        return getQueueConsumersAsList();
     }
 
 
@@ -1324,7 +1323,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             QueueConsumer<?> sub = consumerIterator.next();
 
             // we don't make browsers send the same stuff twice
-            if (sub.seesRequeues())
+            if (sub != null && sub.seesRequeues())
             {
                 updateSubRequeueEntry(sub, entry);
             }
@@ -1830,7 +1829,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         while (nonAcquiringIterator.hasNext())
         {
             QueueConsumer<?> consumer = nonAcquiringIterator.next();
-            if(consumer.hasInterest(entry))
+            if(consumer != null && consumer.hasInterest(entry))
             {
                 notifyConsumer(consumer);
             }
@@ -1840,7 +1839,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         while (entry.isAvailable() && interestedIterator.hasNext())
         {
             QueueConsumer<?> consumer = interestedIterator.next();
-            if(consumer.hasInterest(entry))
+            if(consumer != null && consumer.hasInterest(entry))
             {
                 if(notifyConsumer(consumer))
                 {
@@ -1862,12 +1861,14 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         while (hasAvailableMessages() && interestedIterator.hasNext())
         {
             QueueConsumer<?> consumer = interestedIterator.next();
-
-            if (excludedConsumer != consumer)
+            if(consumer != null)
             {
-                if (notifyConsumer(consumer))
+                if (excludedConsumer != consumer)
                 {
-                    break;
+                    if (notifyConsumer(consumer))
+                    {
+                        break;
+                    }
                 }
             }
         }
@@ -2014,7 +2015,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         while (consumerIterator.hasNext())
         {
             QueueConsumer<?> consumer = consumerIterator.next();
-            if(consumer.getPriority() > sub.getPriority())
+            if(consumer != null && consumer.getPriority() > sub.getPriority())
             {
                 if(consumer.isNotifyWorkDesired()
                    && consumer.acquires()
@@ -2958,9 +2959,24 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             return _queueConsumerManager == null
                     ? Collections.<C>emptySet()
-                    : (Collection<C>) Lists.newArrayList(_queueConsumerManager.getAllIterator());
+                    : (Collection<C>) getQueueConsumersAsList();
         }
         else return Collections.emptySet();
+    }
+
+    private List<QueueConsumer<?>> getQueueConsumersAsList()
+    {
+        List<QueueConsumer<?>> consumers = new ArrayList<>(_queueConsumerManager.getAllSize());
+        final Iterator<QueueConsumer<?>> iter = _queueConsumerManager.getAllIterator();
+        while(iter.hasNext())
+        {
+            final QueueConsumer<?> consumer = iter.next();
+            if(consumer != null)
+            {
+                consumers.add(consumer);
+            }
+        }
+        return consumers;
     }
 
     @Override
@@ -3425,7 +3441,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             while (consumerIterator.hasNext() && !isDeleted())
             {
                 QueueConsumer<?> sub = consumerIterator.next();
-                if(sub.acquires())
+                if(sub != null && sub.acquires())
                 {
                     getNextAvailableEntry(sub);
                 }

@@ -23,7 +23,6 @@ package org.apache.qpid.server.queue;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class QueueConsumerManagerImpl implements QueueConsumerManager
@@ -379,7 +378,9 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
             }
             else
             {
-                throw new NoSuchElementException();
+                // throwing exceptions is expensive, and due to concurrency a caller might get here even though they
+                // had previously checked with hasNext()
+                return null;
             }
         }
 
