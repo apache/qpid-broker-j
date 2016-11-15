@@ -138,7 +138,9 @@ class SelectorThread extends Thread
             {
                 NonBlockingConnection connection = iterator.next();
 
-                int period = connection.getTicker().getTimeToNextTick(currentTime);
+                final AggregateTicker ticker = connection.getTicker();
+                int period = ticker.getTimeToNextTick(currentTime);
+                ticker.resetModified();
 
                 if (period <= 0 || connection.isStateChanged())
                 {
@@ -616,13 +618,14 @@ class SelectorThread extends Thread
 
     public void returnConnectionToSelector(final NonBlockingConnection connection)
     {
-        if(selectionInterestRequiresUpdate(connection))
+        SelectionTask selectionTask = connection.getSelectionTask();
+        if(selectionTask == null)
         {
-            SelectionTask selectionTask = connection.getSelectionTask();
-            if(selectionTask == null)
-            {
-                throw new IllegalStateException("returnConnectionToSelector should only be called with connections that are currently assigned a selector task");
-            }
+            throw new IllegalStateException("returnConnectionToSelector should only be called with connections that are currently assigned a selector task");
+        }
+
+        if (selectionInterestRequiresUpdate(connection) || connection.getTicker().getModified())
+        {
             selectionTask.getUnregisteredConnections().add(connection);
             selectionTask.wakeup();
         }
@@ -697,11 +700,6 @@ class SelectorThread extends Thread
          if(connection.setScheduled())
          {
              _workQueue.add(new ConnectionProcessor(_scheduler, connection));
-         }
-         SelectionTask selectionTask = connection.getSelectionTask();
-         if (selectionTask != null)
-         {
-             selectionTask.wakeup();
          }
      }
 }

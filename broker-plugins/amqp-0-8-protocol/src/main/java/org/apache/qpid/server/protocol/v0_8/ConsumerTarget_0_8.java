@@ -34,7 +34,6 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstance.EntryState;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.StateChangeListener;
@@ -49,7 +48,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
 {
 
     private final ClientDeliveryMethod _deliveryMethod;
-    private final RecordDeliveryMethod _recordMethod;
 
     private final AtomicLong _unacknowledgedCount = new AtomicLong(0);
     private final AtomicLong _unacknowledgedBytes = new AtomicLong(0);
@@ -60,7 +58,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
                                                          AMQShortString consumerTag, FieldTable filters,
                                                          FlowCreditManager creditManager, final boolean multiQueue)
     {
-        return new BrowserConsumer(channel, consumerTag, filters, creditManager, channel.getClientDeliveryMethod(), channel.getRecordDeliveryMethod(),
+        return new BrowserConsumer(channel, consumerTag, filters, creditManager, channel.getClientDeliveryMethod(),
                                    multiQueue);
     }
 
@@ -68,10 +66,9 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
                                                           final AMQShortString consumerTag,
                                                           final FieldTable filters,
                                                           final FlowCreditManager creditManager,
-                                                          final ClientDeliveryMethod deliveryMethod,
-                                                          final RecordDeliveryMethod recordMethod)
+                                                          final ClientDeliveryMethod deliveryMethod)
     {
-        return new GetNoAckConsumer(channel, consumerTag, filters, creditManager, deliveryMethod, recordMethod);
+        return new GetNoAckConsumer(channel, consumerTag, filters, creditManager, deliveryMethod);
     }
 
     static final class BrowserConsumer extends ConsumerTarget_0_8
@@ -81,11 +78,10 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
                                FieldTable filters,
                                FlowCreditManager creditManager,
                                ClientDeliveryMethod deliveryMethod,
-                               RecordDeliveryMethod recordMethod,
                                boolean multiQueue)
         {
             super(channel, consumerTag,
-                  filters, creditManager, deliveryMethod, recordMethod, multiQueue);
+                  filters, creditManager, deliveryMethod, multiQueue);
         }
 
         /**
@@ -120,7 +116,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
                                                        FlowCreditManager creditManager,
                                                        boolean multiQueue)
     {
-        return new NoAckConsumer(channel, consumerTag, filters, creditManager, channel.getClientDeliveryMethod(), channel.getRecordDeliveryMethod(),
+        return new NoAckConsumer(channel, consumerTag, filters, creditManager, channel.getClientDeliveryMethod(),
                                  multiQueue);
     }
 
@@ -133,10 +129,9 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
                              FieldTable filters,
                              FlowCreditManager creditManager,
                              ClientDeliveryMethod deliveryMethod,
-                             RecordDeliveryMethod recordMethod,
                              boolean multiQueue)
         {
-            super(channel, consumerTag, filters, creditManager, deliveryMethod, recordMethod, multiQueue);
+            super(channel, consumerTag, filters, creditManager, deliveryMethod, multiQueue);
 
             _txn = new AutoCommitTransaction(channel.getAddressSpace().getMessageStore());
         }
@@ -203,10 +198,9 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
         public GetNoAckConsumer(AMQChannel channel,
                                 AMQShortString consumerTag, FieldTable filters,
                                 FlowCreditManager creditManager,
-                                ClientDeliveryMethod deliveryMethod,
-                                RecordDeliveryMethod recordMethod)
+                                ClientDeliveryMethod deliveryMethod)
         {
-            super(channel, consumerTag, filters, creditManager, deliveryMethod, recordMethod, false);
+            super(channel, consumerTag, filters, creditManager, deliveryMethod, false);
         }
 
     }
@@ -222,18 +216,16 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
                                consumerTag,
                                filters, creditManager,
                                channel.getClientDeliveryMethod(),
-                               channel.getRecordDeliveryMethod(),
                                multiQueue);
     }
 
 
     public static ConsumerTarget_0_8 createAckTarget(AMQChannel channel,
-                                                         AMQShortString consumerTag, FieldTable filters,
-                                                         FlowCreditManager creditManager,
-                                                         ClientDeliveryMethod deliveryMethod,
-                                                         RecordDeliveryMethod recordMethod)
+                                                     AMQShortString consumerTag, FieldTable filters,
+                                                     FlowCreditManager creditManager,
+                                                     ClientDeliveryMethod deliveryMethod)
     {
-        return new AckConsumer(channel, consumerTag, filters, creditManager, deliveryMethod, recordMethod, false);
+        return new AckConsumer(channel, consumerTag, filters, creditManager, deliveryMethod, false);
     }
 
     static final class AckConsumer extends ConsumerTarget_0_8
@@ -242,10 +234,9 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
                            AMQShortString consumerTag, FieldTable filters,
                            FlowCreditManager creditManager,
                            ClientDeliveryMethod deliveryMethod,
-                           RecordDeliveryMethod recordMethod,
                            boolean multiQueue)
         {
-            super(channel, consumerTag, filters, creditManager, deliveryMethod, recordMethod, multiQueue);
+            super(channel, consumerTag, filters, creditManager, deliveryMethod, multiQueue);
         }
 
         /**
@@ -268,7 +259,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
                 long deliveryTag = getChannel().getNextDeliveryTag();
 
                 addUnacknowledgedMessage(entry);
-                recordMessageDelivery(consumer, entry, deliveryTag);
+                getChannel().addUnacknowledgedMessage(entry, deliveryTag, consumer);
                 long size = sendToClient(consumer, entry.getMessage(), entry.getInstanceProperties(), deliveryTag);
                 entry.incrementDeliveryCount();
             }
@@ -295,7 +286,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
                               FieldTable arguments,
                               FlowCreditManager creditManager,
                               ClientDeliveryMethod deliveryMethod,
-                              RecordDeliveryMethod recordMethod,
                               boolean multiQueue)
     {
         super(multiQueue, channel.getAMQPConnection());
@@ -306,7 +296,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
         _creditManager = creditManager;
 
         _deliveryMethod = deliveryMethod;
-        _recordMethod = recordMethod;
 
         if (arguments != null)
         {
@@ -424,14 +413,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
     {
         return _deliveryMethod.deliverToClient(consumer, message, props, deliveryTag);
 
-    }
-
-
-    protected void recordMessageDelivery(final ConsumerImpl consumer,
-                                         final MessageInstance entry,
-                                         final long deliveryTag)
-    {
-        _recordMethod.recordMessageDelivery(consumer, entry, deliveryTag);
     }
 
 

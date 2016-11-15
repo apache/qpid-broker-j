@@ -1159,15 +1159,23 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
         }
         catch(SessionException e)
         {
-            if (e.getException().getErrorCode() == ExecutionErrorCode.RESOURCE_DELETED
-                    || e.getException().getErrorCode() == ExecutionErrorCode.NOT_FOUND)
+            final ExecutionException underlying = e.getException();
+            if (underlying == null)
             {
-                match = false;
+                throw new QpidException("Error querying queue", e);
             }
             else
             {
-                throw new AMQException(AMQConstant.getConstant(e.getException().getErrorCode().getValue()),
-                        "Error querying queue",e);
+                if (underlying.getErrorCode() == ExecutionErrorCode.RESOURCE_DELETED
+                    || underlying.getErrorCode() == ExecutionErrorCode.NOT_FOUND)
+                {
+                    match = false;
+                }
+                else
+                {
+                    throw new AMQException(AMQConstant.getConstant(underlying.getErrorCode().getValue()),
+                                           "Error querying queue", e);
+                }
             }
         }
         return match;

@@ -29,7 +29,7 @@ import org.apache.qpid.server.message.MessageInstance;
 
 public interface UnacknowledgedMessageMap
 {
-    public interface Visitor
+    interface Visitor
     {
         /**
          * @param deliveryTag

@@ -128,7 +128,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         return _partialRead;
     }
 
-    Ticker getTicker()
+    AggregateTicker getTicker()
     {
         return _protocolEngine.getAggregateTicker();
     }
