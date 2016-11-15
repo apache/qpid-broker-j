@@ -132,7 +132,12 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
     public ServerMessage getTestMessageToAdd()
     {
         ServerMessage msg = mock(ServerMessage.class);
+        MessageReference ref = mock(MessageReference.class);
+        when(ref.getMessage()).thenReturn(msg);
         when(msg.getMessageNumber()).thenReturn(1l);
+        when(msg.newReference()).thenReturn(ref);
+        when(msg.newReference(any(TransactionLogResource.class))).thenReturn(ref);
+
         return msg;
     }
 
@@ -146,7 +151,7 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
     {
         StandardQueueImpl mockQueue = mock(StandardQueueImpl.class);
         when(mockQueue.getContextValue(Integer.class, QUEUE_SCAVANGE_COUNT)).thenReturn(9);
-        OrderedQueueEntryList sqel = new StandardQueueEntryList(mockQueue);
+        OrderedQueueEntryList sqel = new StandardQueueEntryList(mockQueue, new QueueStatistics());
         ConcurrentMap<Integer,QueueEntry> entriesMap = new ConcurrentHashMap<Integer,QueueEntry>();
 
 

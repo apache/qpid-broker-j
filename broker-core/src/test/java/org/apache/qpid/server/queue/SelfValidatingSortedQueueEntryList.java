@@ -33,7 +33,7 @@ public class SelfValidatingSortedQueueEntryList extends SortedQueueEntryList
 {
     public SelfValidatingSortedQueueEntryList(SortedQueueImpl queue)
     {
-        super(queue);
+        super(queue, queue.getQueueStatistics());
     }
 
     @Override

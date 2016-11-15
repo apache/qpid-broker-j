@@ -481,7 +481,6 @@ class QueueConsumerImpl
     public void acquisitionRemoved(final QueueEntry node)
     {
         _target.acquisitionRemoved(node);
-        _queue.decrementUnackedMsgCount(node);
     }
 
     @Override

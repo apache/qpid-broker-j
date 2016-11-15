@@ -296,7 +296,7 @@ public abstract class QueueEntryImpl implements QueueEntry
             }
         }
 
-        if(acquired && _stateChangeListeners != null)
+        if(acquired)
         {
             notifyStateChange(AVAILABLE_STATE, state);
         }
@@ -310,7 +310,6 @@ public abstract class QueueEntryImpl implements QueueEntry
         if(acquired)
         {
             _deliveryCountUpdater.compareAndSet(this,-1,0);
-            getQueue().incrementUnackedMsgCount(this);
         }
         return acquired;
     }
@@ -404,7 +403,7 @@ public abstract class QueueEntryImpl implements QueueEntry
     {
         EntryState state = _state;
 
-        if((state.getState() == State.ACQUIRED) &&_stateUpdater.compareAndSet(this, state, AVAILABLE_STATE))
+        if((state.getState() == State.ACQUIRED) && _stateUpdater.compareAndSet(this, state, AVAILABLE_STATE))
         {
             postRelease(state);
         }
@@ -422,15 +421,11 @@ public abstract class QueueEntryImpl implements QueueEntry
 
     private void postRelease(final EntryState previousState)
     {
-        if (previousState instanceof ConsumerAcquiredState)
-        {
-            getQueue().decrementUnackedMsgCount(this);
-        }
 
         if(!getQueue().isDeleted())
         {
             getQueue().requeue(this);
-            if (_stateChangeListeners != null && previousState.getState() == State.ACQUIRED)
+            if (previousState.getState() == State.ACQUIRED)
             {
                 notifyStateChange(previousState, AVAILABLE_STATE);
             }
@@ -523,16 +518,7 @@ public abstract class QueueEntryImpl implements QueueEntry
 
         if(state.getState() == State.ACQUIRED)
         {
-            if (state instanceof ConsumerAcquiredState)
-            {
-                getQueue().decrementUnackedMsgCount(this);
-            }
-
-            getQueue().dequeue(this);
-            if(_stateChangeListeners != null)
-            {
-                notifyStateChange(state, DEQUEUED_STATE);
-            }
+            notifyStateChange(state, DEQUEUED_STATE);
             return true;
         }
         else
@@ -544,6 +530,7 @@ public abstract class QueueEntryImpl implements QueueEntry
 
     private void notifyStateChange(final EntryState oldState, final EntryState newState)
     {
+        _queueEntryList.updateStatsOnStateChange(this, oldState, newState);
         StateChangeListenerEntry<? super QueueEntry, EntryState> entry = _listenersUpdater.get(this);
         while(entry != null)
         {
@@ -562,6 +549,7 @@ public abstract class QueueEntryImpl implements QueueEntry
 
         if(state != DELETED_STATE && _stateUpdater.compareAndSet(this,state,DELETED_STATE))
         {
+            notifyStateChange(state, DELETED_STATE);
             _queueEntryList.entryDeleted(this);
             onDelete();
             _message.release();

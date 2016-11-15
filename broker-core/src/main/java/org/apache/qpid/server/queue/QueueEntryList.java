@@ -24,7 +24,7 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 
-public interface QueueEntryList
+interface QueueEntryList
 {
     Queue<?> getQueue();
 
@@ -43,5 +43,7 @@ public interface QueueEntryList
     void entryDeleted(QueueEntry queueEntry);
     
     int getPriorities();
+
+    void updateStatsOnStateChange(QueueEntry entry, QueueEntry.EntryState fromState, QueueEntry.EntryState toState);
 
 }

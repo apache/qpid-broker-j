@@ -35,9 +35,9 @@ public class StandardQueueEntryList extends OrderedQueueEntryList
         }
     };
 
-    public StandardQueueEntryList(final StandardQueueImpl queue)
+    public StandardQueueEntryList(final StandardQueue<?> queue, QueueStatistics queueStatistics)
     {
-        super(queue, HEAD_CREATOR);
+        super(queue, queueStatistics, HEAD_CREATOR);
     }
 
 
