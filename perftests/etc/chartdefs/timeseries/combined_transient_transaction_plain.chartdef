@@ -21,8 +21,8 @@ chartType=TIMELINE
 chartTitle=Transient Transacted AMQP ${qpid.charting.protocolVersion} plain
 chartDescription=10P 10C, transient, transacted, 1kB message, plain, ${qpid.charting.brokerVersionA} / ${qpid.charting.brokerVersionB} / ${qpid.charting.brokerVersionC} / ${qpid.charting.brokerVersionD}
 
-yAxisLowerBound=0
-yAxisUpperBound=40000
+yAxisLowerBound=5000
+yAxisUpperBound=30000
 
 xAxisTitle=Date
 yAxisTitle=Messages Per Second
