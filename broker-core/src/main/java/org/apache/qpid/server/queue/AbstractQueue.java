@@ -281,11 +281,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
                 // iterate over interested and notify one as long as its priority is higher than any notified
                 final Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getInterestedIterator();
+                final int highestNotifiedPriority = _queueConsumerManager.getHighestNotifiedPriority();
                 while (consumerIterator.hasNext())
                 {
                     QueueConsumer<?> queueConsumer = consumerIterator.next();
-                    //TODO - break here if the consumer has lower priority than the highest notified (presuming iterator is priority ordered)
-                    if (notifyConsumer(queueConsumer))
+                    if (queueConsumer.getPriority() < highestNotifiedPriority || notifyConsumer(queueConsumer))
                     {
                         break;
                     }
@@ -1836,16 +1836,22 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
         }
 
-        // TODO need to take account of priority and potentially and existing notified
-        // we don't want to notify lower priority consumers if there exists a consumer in the notified set
-        // which can take the message (implies iterating such that you look at for each priority look at interested then at notified)
         final Iterator<QueueConsumer<?>> interestedIterator = _queueConsumerManager.getInterestedIterator();
         while (entry.isAvailable() && interestedIterator.hasNext())
         {
             QueueConsumer<?> consumer = interestedIterator.next();
-            if(consumer.hasInterest(entry) && notifyConsumer(consumer))
+            if(consumer.hasInterest(entry))
             {
-                break;
+                if(notifyConsumer(consumer))
+                {
+                    break;
+                }
+                else if(!noHigherPriorityWithCredit(consumer, entry))
+                {
+                    // there exists a higher priority consumer that would take this message, therefore no point in
+                    // continuing to loop
+                    break;
+                }
             }
         }
     }
@@ -1853,7 +1859,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     void notifyOtherConsumers(final QueueConsumer<?> excludedConsumer)
     {
         final Iterator<QueueConsumer<?>> interestedIterator = _queueConsumerManager.getInterestedIterator();
-        while (interestedIterator.hasNext())
+        while (hasAvailableMessages() && interestedIterator.hasNext())
         {
             QueueConsumer<?> consumer = interestedIterator.next();
 
@@ -1892,8 +1898,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
                 if(messageContainer == null && consumer.acquires())
                 {
-                    // TODO - Should be only checking for available messages
-                    if(!isEmpty())
+                    if(hasAvailableMessages())
                     {
                         notifyOtherConsumers(consumer);
                     }
@@ -1916,6 +1921,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
         return messageContainer;
+    }
+
+    private boolean hasAvailableMessages()
+    {
+        return _queueStatistics.getAvailableCount() != 0;
     }
 
     public static class MessageContainer
@@ -2006,7 +2016,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             QueueConsumer<?> consumer = consumerIterator.next();
             if(consumer.getPriority() > sub.getPriority())
             {
-                if(consumer.isNotifyWorkDesired() && consumer.hasInterest(queueEntry) && getNextAvailableEntry(consumer) != null)
+                if(consumer.isNotifyWorkDesired()
+                   && consumer.acquires()
+                   && consumer.hasInterest(queueEntry)
+                   && getNextAvailableEntry(consumer) != null)
                 {
                     return false;
                 }

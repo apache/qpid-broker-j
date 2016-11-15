@@ -35,11 +35,10 @@ public interface QueueConsumerManager
     Iterator<QueueConsumer<?>> getAllIterator();
     Iterator<QueueConsumer<?>> getNonAcquiringIterator();
 
-    Iterator<QueueConsumer<?>> getPrioritySortedNotifiedOrInterestedIterator();
-
     int getAllSize();
     //        int getInterestedSize();
     int getNotifiedAcquiringSize();
 
 
+    int getHighestNotifiedPriority();
 }

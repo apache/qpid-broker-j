@@ -179,12 +179,6 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
     }
 
     @Override
-    public Iterator<QueueConsumer<?>> getPrioritySortedNotifiedOrInterestedIterator()
-    {
-        return null;
-    }
-
-    @Override
     public int getAllSize()
     {
         return _count;
@@ -194,6 +188,22 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
     public int getNotifiedAcquiringSize()
     {
         return _notified.size();
+    }
+
+    @Override
+    public int getHighestNotifiedPriority()
+    {
+        final Iterator<QueueConsumerNode> notifiedIterator =
+                new PrioritisedQueueConsumerNodeIterator(_notified);
+        if(notifiedIterator.hasNext())
+        {
+            final QueueConsumerNode queueConsumerNode = notifiedIterator.next();
+            return queueConsumerNode.getQueueConsumer().getPriority();
+        }
+        else
+        {
+            return Integer.MIN_VALUE;
+        }
     }
 
     QueueConsumerNodeListEntry addNodeToInterestList(final QueueConsumerNode queueConsumerNode)
