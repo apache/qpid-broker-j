@@ -21,13 +21,18 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Collection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.model.Session;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.consumer.AbstractConsumerTarget;
+import org.apache.qpid.server.consumer.ConsumerImpl;
+import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.plugin.MessageConverter;
+import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
@@ -35,7 +40,6 @@ import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.Target;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
@@ -43,20 +47,11 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Modified;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Released;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
-import org.apache.qpid.server.consumer.AbstractConsumerTarget;
-import org.apache.qpid.server.consumer.ConsumerImpl;
-import org.apache.qpid.server.message.MessageInstance;
-import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.plugin.MessageConverter;
-import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.protocol.LinkRegistry;
-import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
@@ -76,17 +71,11 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     public ConsumerTarget_1_0(final SendingLink_1_0 link,
                               boolean acquires)
     {
-        super(State.SUSPENDED, isPullOnly(link), false, link.getSession().getAMQPConnection());
+        super(false, link.getSession().getAMQPConnection());
         _link = link;
         _typeRegistry = link.getEndpoint().getSession().getConnection().getDescribedTypeRegistry();
         _sectionEncoder = new SectionEncoderImpl(_typeRegistry);
         _acquires = acquires;
-    }
-
-    private static boolean isPullOnly(SendingLink_1_0 link)
-    {
-        Source source = (Source) link.getEndpoint().getSource();
-        return source.getCapabilities() != null && Arrays.asList(source.getCapabilities()).contains(Symbol.getSymbol("QPID:PULL-ONLY"));
     }
 
     private SendingLinkEndpoint getEndpoint()
@@ -95,15 +84,16 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     }
 
     @Override
-    public boolean isFlowSuspended()
+    public void updateNotifyWorkDesired()
     {
-        return _link.getSession().getAMQPConnection().isConnectionStopped() || getState() != State.ACTIVE;
+        final AMQPConnection<?> amqpConnection =
+                _link.getSession().getAMQPConnection();
 
-    }
+        boolean state = !amqpConnection.isTransportBlockedForWriting()
+                        && _link.isAttached()
+                        && getEndpoint().hasCreditToSend();
 
-    @Override
-    protected void doCloseInternal()
-    {
+        setNotifyWorkDesired(state);
 
     }
 
@@ -264,6 +254,10 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
         // TODO
     }
 
+    /*
+        Currently if a queue is deleted the consumer sits there withiout being closed, but
+        obviously not receiving any new messages
+
     public void queueDeleted()
     {
         //TODO
@@ -275,16 +269,14 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                 .getLinkRegistry(getEndpoint().getSession().getConnection().getRemoteContainerId());
         linkReg.unregisterSendingLink(getEndpoint().getName());
     }
-
+      */
     public boolean allocateCredit(final ServerMessage msg)
     {
         ProtocolEngine protocolEngine = getSession().getConnection();
         final boolean hasCredit =
                 _link.isAttached() && getEndpoint().hasCreditToSend() && !protocolEngine.isTransportBlockedForWriting();
-        if (!hasCredit && getState() == State.ACTIVE)
-        {
-            suspend();
-        }
+
+        updateNotifyWorkDesired();
 
         if (hasCredit)
         {
@@ -296,29 +288,28 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     }
 
 
-    public void suspend()
-    {
-        updateState(State.ACTIVE, State.SUSPENDED);
-    }
-
-
     public void restoreCredit(final ServerMessage message)
     {
         final SendingLinkEndpoint endpoint = _link.getEndpoint();
         endpoint.setLinkCredit(endpoint.getLinkCredit().add(UnsignedInteger.ONE));
+        updateNotifyWorkDesired();
     }
 
     public void queueEmpty()
     {
-        _queueEmpty = true;
+        if(_link.drained())
+        {
+            updateNotifyWorkDesired();
+        }
     }
 
     public void flowStateChanged()
     {
+        updateNotifyWorkDesired();
+
         ProtocolEngine protocolEngine = getSession().getConnection();
-        if (isFlowSuspended() && getEndpoint() != null && !protocolEngine.isTransportBlockedForWriting())
+        if (isSuspended() && getEndpoint() != null && !protocolEngine.isTransportBlockedForWriting())
         {
-            updateState(State.SUSPENDED, State.ACTIVE);
             _transactionId = _link.getTransactionId();
         }
     }
@@ -330,10 +321,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
     public void flush()
     {
-        for(ConsumerImpl consumer : getConsumers())
-        {
-            consumer.flush();
-        }
+        while(sendNextMessage());
     }
 
     private class DispositionAction implements UnsettledAction
@@ -535,38 +523,6 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     {
         // TODO
         return 0;
-    }
-
-    @Override
-    protected void processClosed()
-    {
-
-    }
-
-    @Override
-    protected void processStateChanged()
-    {
-        if(_queueEmpty)
-        {
-            _queueEmpty = false;
-
-            if(_link.drained())
-            {
-                updateState(State.ACTIVE, State.SUSPENDED);
-            }
-        }
-    }
-
-    @Override
-    protected boolean hasStateChanged()
-    {
-        return _queueEmpty;
-    }
-
-    @Override
-    protected boolean hasClosed()
-    {
-        return false;
     }
 
     @Override

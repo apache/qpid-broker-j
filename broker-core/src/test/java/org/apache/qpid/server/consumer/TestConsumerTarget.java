@@ -26,10 +26,10 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -45,43 +45,30 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
+import org.apache.qpid.server.queue.AbstractQueue;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.transport.network.Ticker;
 
-public class MockConsumer implements ConsumerTarget
+public class TestConsumerTarget implements ConsumerTarget
 {
 
-    private final List<String> _messageIds;
     private boolean _closed = false;
     private String tag = "mocktag";
     private Queue<?> queue = null;
-    private StateChangeListener<ConsumerTarget, State> _listener = null;
-    private State _state = State.ACTIVE;
-    private ArrayList<MessageInstance> messages = new ArrayList<MessageInstance>();
-    private final Lock _stateChangeLock = new ReentrantLock();
+    private State _state = State.OPEN;
+    private ArrayList<MessageInstance> _messages = new ArrayList<MessageInstance>();
 
     private boolean _isActive = true;
-
-    public MockConsumer()
-    {
-        _messageIds = null;
-    }
-
-    public MockConsumer(List<String> messageIds)
-    {
-        _messageIds = messageIds;
-    }
+    private ConsumerImpl _consumer;
+    private MockSessionModel _sessionModel = new MockSessionModel();
+    private boolean _notifyDesired;
 
     public boolean close()
     {
         _closed = true;
-        if (_listener != null)
-        {
-            _listener.stateChanged(this, _state, State.CLOSED);
-        }
         _state = State.CLOSED;
+        updateNotifyWorkDesired();
         return true;
     }
 
@@ -107,7 +94,7 @@ public class MockConsumer implements ConsumerTarget
 
     public AMQSessionModel getSessionModel()
     {
-        return new MockSessionModel();
+        return _sessionModel;
     }
 
     public boolean isActive()
@@ -128,10 +115,6 @@ public class MockConsumer implements ConsumerTarget
         return false;
     }
 
-    public void queueDeleted()
-    {
-    }
-
     public void restoreCredit(ServerMessage message)
     {
     }
@@ -139,18 +122,12 @@ public class MockConsumer implements ConsumerTarget
     public long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
     {
         long size = entry.getMessage().getSize();
-        if (messages.contains(entry))
+        if (_messages.contains(entry))
         {
             entry.setRedelivered();
         }
-        messages.add(entry);
+        _messages.add(entry);
         return size;
-    }
-
-    @Override
-    public boolean hasMessagesToSend()
-    {
-        return false;
     }
 
     @Override
@@ -182,68 +159,40 @@ public class MockConsumer implements ConsumerTarget
     }
 
     @Override
-    public boolean hasCredit()
-    {
-        return _state == State.ACTIVE;
-    }
-
-    @Override
     public void consumerAdded(final ConsumerImpl sub)
     {
+        _consumer = sub;
     }
 
     @Override
-    public void consumerRemoved(final ConsumerImpl sub)
+    public ListenableFuture<Void> consumerRemoved(final ConsumerImpl sub)
     {
        close();
-    }
-
-    @Override
-    public void notifyCurrentState()
-    {
-
+        return Futures.immediateFuture(null);
     }
 
     public void setState(State state)
     {
-        State oldState = _state;
         _state = state;
-        if(_listener != null)
-        {
-            _listener.stateChanged(this, oldState, state);
-        }
-    }
-
-    @Override
-    public void addStateListener(final StateChangeListener<ConsumerTarget, State> listener)
-    {
-        _listener = listener;
-    }
-
-    @Override
-    public void removeStateChangeListener(final StateChangeListener<ConsumerTarget, State> listener)
-    {
-        if(_listener == listener)
-        {
-            _listener = null;
-        }
+        updateNotifyWorkDesired();
     }
 
     @Override
     public boolean processPending()
     {
-        return false;
-    }
+        AbstractQueue.MessageContainer messageContainer = _consumer.pullMessage();
+        if (messageContainer == null)
+        {
+            return false;
+        }
 
-    @Override
-    public boolean hasPendingWork()
-    {
-        return false;
+        send(_consumer, messageContainer._messageInstance, false);
+        return true;
     }
 
     public ArrayList<MessageInstance> getMessages()
     {
-        return messages;
+        return _messages;
     }
 
 
@@ -263,37 +212,39 @@ public class MockConsumer implements ConsumerTarget
     }
 
 
-    public final boolean trySendLock()
-    {
-        return _stateChangeLock.tryLock();
-    }
-
-    public final void getSendLock()
-    {
-        _stateChangeLock.lock();
-    }
-
-    public final void releaseSendLock()
-    {
-        _stateChangeLock.unlock();
-    }
-
-    @Override
-    public boolean isPullOnly()
-    {
-        return false;
-    }
-
     @Override
     public boolean isMultiQueue()
     {
         return false;
     }
 
+    @Override
+    public void notifyWork()
+    {
+
+    }
+
+    @Override
+    public boolean isNotifyWorkDesired()
+    {
+        return _state == State.OPEN;
+    }
+
+    @Override
+    public void updateNotifyWorkDesired()
+    {
+        if (isNotifyWorkDesired() != _notifyDesired && _consumer != null)
+        {
+            _consumer.setNotifyWorkDesired(isNotifyWorkDesired());
+            _notifyDesired = isNotifyWorkDesired();
+        }
+    }
+
     private static class MockSessionModel implements AMQSessionModel<MockSessionModel>
     {
         private final UUID _id = UUID.randomUUID();
         private Session _modelObject;
+        private AMQPConnection<?> _connection = mock(AMQPConnection.class);
 
         private MockSessionModel()
         {
@@ -316,7 +267,7 @@ public class MockConsumer implements ConsumerTarget
         @Override
         public AMQPConnection<?> getAMQPConnection()
         {
-            return null;
+            return _connection;
         }
 
         @Override
@@ -494,15 +445,9 @@ public class MockConsumer implements ConsumerTarget
         }
 
         @Override
-        public void notifyConsumerTargetCurrentStates()
+        public void notifyWork(final ConsumerTarget target)
         {
-
-        }
-
-        @Override
-        public void ensureConsumersNoticedStateChange()
-        {
-
+            _connection.notifyWork(this);
         }
 
         @Override

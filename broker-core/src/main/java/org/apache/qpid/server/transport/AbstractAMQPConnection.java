@@ -35,11 +35,11 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
 import javax.security.auth.SubjectDomainCombiner;
 
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
@@ -76,7 +76,7 @@ import org.apache.qpid.server.util.FixedKeyMapCreator;
 import org.apache.qpid.transport.network.NetworkConnection;
 import org.apache.qpid.transport.network.Ticker;
 
-public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>>
+public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,T>, T>
         extends AbstractConfiguredObject<C>
         implements ProtocolEngine, AMQPConnection<C>, EventLoggerProvider
 
@@ -96,8 +96,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
             new CopyOnWriteArrayList<>();
 
     private final LogSubject _logSubject;
-    private final AtomicReference<Thread> _messageAssignmentAllowedThread = new AtomicReference<>();
-    private final AtomicBoolean _messageAssignmentSuspended = new AtomicBoolean();
     private volatile ContextProvider _contextProvider;
     private volatile EventLoggerProvider _eventLoggerProvider;
     private String _clientProduct;
@@ -489,50 +487,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     }
 
     @Override
-    public boolean isMessageAssignmentSuspended()
-    {
-        Thread currentThread = Thread.currentThread();
-        if (_messageAssignmentAllowedThread.get() == currentThread && currentThread == _ioThread)
-        {
-            return false;
-        }
-        return _messageAssignmentSuspended.get();
-    }
-
-    @Override
-    public void setMessageAssignmentSuspended(final boolean messageAssignmentSuspended, final boolean notifyConsumers)
-    {
-        _messageAssignmentSuspended.set(messageAssignmentSuspended);
-        if(notifyConsumers)
-        {
-            for (AMQSessionModel<?> session : getSessionModels())
-            {
-                if (messageAssignmentSuspended)
-                {
-                    session.ensureConsumersNoticedStateChange();
-                }
-                else
-                {
-                    session.notifyConsumerTargetCurrentStates();
-                }
-            }
-        }
-    }
-
-    @Override
-    public void alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(boolean allowed)
-    {
-        if (allowed)
-        {
-            _messageAssignmentAllowedThread.set(Thread.currentThread());
-        }
-        else
-        {
-            _messageAssignmentAllowedThread.set(null);
-        }
-    }
-
-    @Override
     public void setIOThread(final Thread ioThread)
     {
         _ioThread = ioThread;
@@ -543,6 +497,42 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     {
         return Thread.currentThread() == _ioThread;
     }
+
+    @Override
+    public ListenableFuture<Void> doOnIOThreadAsync(final Runnable task)
+    {
+        if (isIOThread())
+        {
+            task.run();
+            return Futures.immediateFuture(null);
+        }
+        else
+        {
+            final SettableFuture<Void> future = SettableFuture.create();
+
+            addAsyncTask(
+                    new Action<Object>()
+                    {
+                        @Override
+                        public void performAction(final Object object)
+                        {
+                            try
+                            {
+                                task.run();
+                                future.set(null);
+                            }
+                            catch (RuntimeException e)
+                            {
+                                future.setException(e);
+                            }
+                        }
+                    });
+            return future;
+        }
+    }
+
+    protected abstract void addAsyncTask(final Action<? super T> action);
+
 
     protected <T> T runAsSubject(PrivilegedAction<T> action)
     {
@@ -763,12 +753,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     public int getSessionCount()
     {
         return getSessionModels().size();
-    }
-
-    @Override
-    public void reserveOutboundMessageSpace(final long size)
-    {
-        _network.reserveOutboundMessageSpace(size);
     }
 
     protected void markTransportClosed()

@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.consumer.ConsumerImpl;
-import org.apache.qpid.server.consumer.MockConsumer;
+import org.apache.qpid.server.consumer.TestConsumerTarget;
 import org.apache.qpid.server.exchange.DirectExchange;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
@@ -61,6 +61,7 @@ import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.AbstractQueue.QueueEntryFilter;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
@@ -71,14 +72,13 @@ import org.apache.qpid.test.utils.QpidTestCase;
 abstract class AbstractQueueTestBase extends QpidTestCase
 {
     private static final Logger _logger = LoggerFactory.getLogger(AbstractQueueTestBase.class);
-    private long _queueRunnerWaitTime;
     private Queue<?> _queue;
     private QueueManagingVirtualHost<?> _virtualHost;
     private String _qname = "qname";
     private String _owner = "owner";
     private String _routingKey = "routing key";
     private DirectExchange _exchange;
-    private MockConsumer _consumerTarget = new MockConsumer();
+    private TestConsumerTarget _consumerTarget = new TestConsumerTarget();
     private QueueConsumer<?> _consumer;
     private Map<String,Object> _arguments = Collections.emptyMap();
 
@@ -97,8 +97,6 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue = _virtualHost.createChild(Queue.class, attributes);
 
         _exchange = (DirectExchange) _virtualHost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
-        _queueRunnerWaitTime = Long.getLong("AbstractQueueTestBase.queueRunnerWaitTime", 150L);
-        _logger.debug("Using AbstractQueueTestBase.queueRunnerWaitTime {}", _queueRunnerWaitTime);
     }
 
     @Override
@@ -182,7 +180,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         // Check sending a message ends up with the subscriber
         _queue.enqueue(messageA, null, null);
-        Thread.sleep(_queueRunnerWaitTime);
+        while(_consumerTarget.processPending());
 
         assertEquals(messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage());
         assertNull(_consumer.getQueueContext().getReleasedEntry());
@@ -207,7 +205,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                                   ConsumerImpl.Option.SEES_REQUEUES), 0);
-        Thread.sleep(_queueRunnerWaitTime);
+        while(_consumerTarget.processPending());
         assertEquals(messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage());
         assertNull("There should be no releasedEntry after an enqueue",
                    _consumer.getQueueContext().getReleasedEntry());
@@ -225,7 +223,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                                   ConsumerImpl.Option.SEES_REQUEUES), 0);
-        Thread.sleep(_queueRunnerWaitTime);
+        while(_consumerTarget.processPending());
         assertEquals(messageB, _consumer.getQueueContext().getLastSeenEntry().getMessage());
         assertNull("There should be no releasedEntry after enqueues",
                    _consumer.getQueueContext().getReleasedEntry());
@@ -248,12 +246,12 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                                                      ConsumerImpl.Option.SEES_REQUEUES), 0);
-        Thread.sleep(_queueRunnerWaitTime);
+        while(_consumerTarget.processPending());
 
         assertEquals("Message which was not yet valid was received", 0, _consumerTarget.getMessages().size());
         when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()-100L);
         _queue.checkMessageStatus();
-        Thread.sleep(_queueRunnerWaitTime);
+        while(_consumerTarget.processPending());
         assertEquals("Message which was valid was not received", 1, _consumerTarget.getMessages().size());
     }
 
@@ -274,7 +272,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                                                      ConsumerImpl.Option.SEES_REQUEUES), 0);
-        Thread.sleep(_queueRunnerWaitTime);
+        while(_consumerTarget.processPending());
 
         assertEquals("Message was held despite queue not having holding enabled", 1, _consumerTarget.getMessages().size());
 
@@ -300,14 +298,14 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, messageA.getClass(), "test",
                                                           EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                                                      ConsumerImpl.Option.SEES_REQUEUES), 0);
-        Thread.sleep(_queueRunnerWaitTime);
+        while(_consumerTarget.processPending());
 
         assertEquals("Expect one message (message B)", 1, _consumerTarget.getMessages().size());
         assertEquals("Wrong message received", messageB.getMessageHeader().getMessageId(), _consumerTarget.getMessages().get(0).getMessage().getMessageHeader().getMessageId());
 
         when(messageHeader.getNotValidBefore()).thenReturn(System.currentTimeMillis()-100L);
         _queue.checkMessageStatus();
-        Thread.sleep(_queueRunnerWaitTime);
+        while(_consumerTarget.processPending());
         assertEquals("Message which was valid was not received", 2, _consumerTarget.getMessages().size());
         assertEquals("Wrong message received", messageA.getMessageHeader().getMessageId(), _consumerTarget.getMessages().get(1).getMessage().getMessageHeader().getMessageId());
 
@@ -338,7 +336,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue.enqueue(messageB, postEnqueueAction, null);
         _queue.enqueue(messageC, postEnqueueAction, null);
 
-        Thread.sleep(_queueRunnerWaitTime);  // Work done by QueueRunner Thread
+        while(_consumerTarget.processPending());
 
         assertEquals("Unexpected total number of messages sent to consumer",
                      3,
@@ -351,7 +349,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         queueEntries.get(0).release();
 
-        Thread.sleep(_queueRunnerWaitTime); // Work done by QueueRunner Thread
+        while(_consumerTarget.processPending());
 
         assertEquals("Unexpected total number of messages sent to consumer",
                      4,
@@ -372,8 +370,15 @@ abstract class AbstractQueueTestBase extends QpidTestCase
     {
         ServerMessage messageA = createMessage(new Long(24));
         final CountDownLatch sendIndicator = new CountDownLatch(1);
-        _consumerTarget = new MockConsumer()
+        _consumerTarget = new TestConsumerTarget()
         {
+
+            @Override
+            public void notifyWork()
+            {
+                while(processPending());
+            }
+
             @Override
             public long send(ConsumerImpl consumer, MessageInstance entry, boolean batch)
             {
@@ -397,7 +402,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         /* Enqueue one message with expiration set for a short time in the future */
 
-        final long expiration = System.currentTimeMillis() + _queueRunnerWaitTime;
+        final long expiration = System.currentTimeMillis() + 100L;
         when(messageA.getExpiration()).thenReturn(expiration);
 
         _queue.enqueue(messageA, postEnqueueAction, null);
@@ -472,7 +477,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue.enqueue(messageB, postEnqueueAction, null);
         _queue.enqueue(messageC, postEnqueueAction, null);
 
-        Thread.sleep(_queueRunnerWaitTime);  // Work done by QueueRunner Thread
+        while(_consumerTarget.processPending());
 
         assertEquals("Unexpected total number of messages sent to consumer",
                      3,
@@ -486,7 +491,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         queueEntries.get(2).release();
         queueEntries.get(0).release();
 
-        Thread.sleep(_queueRunnerWaitTime); // Work done by QueueRunner Thread
+        while(_consumerTarget.processPending());
 
         assertEquals("Unexpected total number of messages sent to consumer",
                      5,
@@ -508,8 +513,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         ServerMessage messageA = createMessage(new Long(24));
         ServerMessage messageB = createMessage(new Long(25));
 
-        MockConsumer target1 = new MockConsumer();
-        MockConsumer target2 = new MockConsumer();
+        TestConsumerTarget target1 = new TestConsumerTarget();
+        TestConsumerTarget target2 = new TestConsumerTarget();
 
 
         QueueConsumer consumer1 = (QueueConsumer) _queue.addConsumer(target1, null, messageA.getClass(), "test",
@@ -529,7 +534,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue.enqueue(messageA, postEnqueueAction, null);
         _queue.enqueue(messageB, postEnqueueAction, null);
 
-        Thread.sleep(_queueRunnerWaitTime);  // Work done by QueueRunner Thread
+        while(target1.processPending());
+        while(target2.processPending());
 
         assertEquals("Unexpected total number of messages sent to both after enqueue",
                      2,
@@ -538,7 +544,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         /* Now release the first message only, causing it to be requeued */
         queueEntries.get(0).release();
 
-        Thread.sleep(_queueRunnerWaitTime); // Work done by QueueRunner Thread
+        while(target1.processPending());
+        while(target2.processPending());
 
         assertEquals("Unexpected total number of messages sent to both consumers after release",
                      3,
@@ -566,20 +573,13 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         // Check sending a message ends up with the subscriber
         _queue.enqueue(messageA, null, null);
 
-        final long timeout = System.currentTimeMillis() + _queueRunnerWaitTime;
+        while(_consumerTarget.processPending());
 
-        QueueEntry lastSeen = null;
-        while (timeout > System.currentTimeMillis() &&
-               ((lastSeen = _consumer.getQueueContext().getLastSeenEntry()) == null || lastSeen.getMessage() == null))
-        {
-            Thread.sleep(10);
-        }
-
-        assertEquals("Queue context did not see expected message within timeout",
+        assertEquals("Queue context did not see expected message",
                      messageA, _consumer.getQueueContext().getLastSeenEntry().getMessage());
 
         // Check we cannot add a second subscriber to the queue
-        MockConsumer subB = new MockConsumer();
+        TestConsumerTarget subB = new TestConsumerTarget();
         Exception ex = null;
         try
         {
@@ -614,32 +614,6 @@ abstract class AbstractQueueTestBase extends QpidTestCase
            ex = e;
         }
         assertNotNull(ex);
-    }
-
-
-    public void testResend() throws Exception
-    {
-        Long id = new Long(26);
-        ServerMessage message = createMessage(id);
-
-        _consumer = (QueueConsumer<?>) _queue.addConsumer(_consumerTarget, null, message.getClass(), "test",
-                                                          EnumSet.of(ConsumerImpl.Option.ACQUIRES, ConsumerImpl.Option.SEES_REQUEUES),
-                                                          0);
-
-        _queue.enqueue(message, new Action<MessageInstance>()
-        {
-            @Override
-            public void performAction(final MessageInstance object)
-            {
-                QueueEntryImpl entry = (QueueEntryImpl) object;
-                entry.setRedelivered();
-                _consumer.resend(entry);
-
-            }
-        }, null);
-
-
-
     }
 
     public void testGetFirstMessageId() throws Exception
@@ -1062,14 +1036,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
             queue.enqueue(message,null, null);
 
         }
-        try
-        {
-            Thread.sleep(2000L);
-        }
-        catch (InterruptedException e)
-        {
-            _logger.error("Thread interrupted", e);
-        }
+
     }
 
     /**
@@ -1113,7 +1080,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue = queue;
     }
 
-    public MockConsumer getConsumer()
+    public TestConsumerTarget getConsumer()
     {
         return _consumerTarget;
     }
@@ -1230,14 +1197,9 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         return _exchange;
     }
 
-    public MockConsumer getConsumerTarget()
+    public TestConsumerTarget getConsumerTarget()
     {
         return _consumerTarget;
-    }
-
-    public long getQueueRunnerWaitTime()
-    {
-        return _queueRunnerWaitTime;
     }
 
 }

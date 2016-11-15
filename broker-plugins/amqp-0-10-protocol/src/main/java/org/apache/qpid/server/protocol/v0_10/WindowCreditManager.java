@@ -25,9 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.transport.ProtocolEngine;
-import org.apache.qpid.server.flow.AbstractFlowCreditManager;
 
-public class WindowCreditManager extends AbstractFlowCreditManager implements FlowCreditManager_0_10
+public class WindowCreditManager implements FlowCreditManager_0_10
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(WindowCreditManager.class);
     private final ProtocolEngine _protocolEngine;
@@ -45,8 +44,6 @@ public class WindowCreditManager extends AbstractFlowCreditManager implements Fl
         _protocolEngine = protocolEngine;
         _bytesCreditLimit = bytesCreditLimit;
         _messageCreditLimit = messageCreditLimit;
-        setSuspended(!hasCredit());
-
     }
 
     public synchronized long getMessageCreditLimit()
@@ -77,29 +74,13 @@ public class WindowCreditManager extends AbstractFlowCreditManager implements Fl
             _messageUsed = 0;
         }
 
-        boolean notifyIncrease = true;
-
-        if (_messageCreditLimit > 0L)
-        {
-            notifyIncrease = (_messageUsed != _messageCreditLimit);
-        }
-
         _bytesUsed -= bytesCredit;
         if (_bytesUsed < 0L)
         {
             LOGGER.error("Bytes credit used value was negative: " + _bytesUsed);
             _bytesUsed = 0;
         }
-
-        notifyIncrease = notifyIncrease && bytesCredit > 0 && _bytesCreditLimit > 0L ;
-
-        if (!setSuspended(!hasCredit()) && notifyIncrease)
-        {
-            notifyIncreaseBytesCredit();
-        }
     }
-
-
 
     public synchronized boolean hasCredit()
     {
@@ -108,11 +89,16 @@ public class WindowCreditManager extends AbstractFlowCreditManager implements Fl
                 && !_protocolEngine.isTransportBlockedForWriting();
     }
 
+    @Override
+    public boolean hasNeitherCredit()
+    {
+        return _bytesCreditLimit == 0L && _messageCreditLimit == 0L;
+    }
+
     public synchronized boolean useCreditForMessage(final long msgSize)
     {
         if (_protocolEngine.isTransportBlockedForWriting())
         {
-            setSuspended(true);
             return false;
         }
         else if(_messageCreditLimit >= 0L)
@@ -139,7 +125,6 @@ public class WindowCreditManager extends AbstractFlowCreditManager implements Fl
             }
             else
             {
-                setSuspended(true);
                 return false;
             }
         }
@@ -191,6 +176,5 @@ public class WindowCreditManager extends AbstractFlowCreditManager implements Fl
     {
         _bytesCreditLimit = 0l;
         _messageCreditLimit = 0l;
-        setSuspended(true);
     }
 }

@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.queue.AbstractQueue;
 
 public interface ConsumerImpl
 {
@@ -33,9 +34,9 @@ public interface ConsumerImpl
 
     ConsumerTarget getTarget();
 
-    boolean hasAvailableMessages();
+    AbstractQueue.MessageContainer pullMessage();
 
-    void pullMessage();
+    void setNotifyWorkDesired(boolean desired);
 
     enum Option
     {
@@ -71,16 +72,7 @@ public interface ConsumerImpl
 
     void close();
 
-    boolean trySendLock();
-
-
-    void getSendLock();
-
-    void releaseSendLock();
-
     boolean isActive();
 
     String getName();
-
-    void flush();
 }

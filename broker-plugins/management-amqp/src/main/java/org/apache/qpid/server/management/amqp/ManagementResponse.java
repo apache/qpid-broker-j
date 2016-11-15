@@ -219,12 +219,6 @@ class ManagementResponse implements MessageInstance
     }
 
     @Override
-    public boolean resend()
-    {
-        return false;
-    }
-
-    @Override
     public void delete()
     {
         _isDeleted = true;

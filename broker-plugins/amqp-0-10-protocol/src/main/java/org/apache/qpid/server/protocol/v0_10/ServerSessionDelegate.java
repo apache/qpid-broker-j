@@ -361,6 +361,7 @@ public class ServerSessionDelegate extends SessionDelegate
                                                        options,
                                                        priority));
                         }
+                        target.updateNotifyWorkDesired();
                     }
                     catch (Queue.ExistingExclusiveConsumer existing)
                     {
@@ -377,6 +378,10 @@ public class ServerSessionDelegate extends SessionDelegate
                     catch (MessageSource.ConsumerAccessRefused consumerAccessRefused)
                     {
                         exception(session, method, ExecutionErrorCode.RESOURCE_LOCKED, "Queue has an incompatible exclusivity policy");
+                    }
+                    catch (MessageSource.QueueDeleted queueDeleted)
+                    {
+                        exception(session, method, ExecutionErrorCode.NOT_FOUND, "Queue was deleted");
                     }
                 }
             }
@@ -1676,9 +1681,13 @@ public class ServerSessionDelegate extends SessionDelegate
         {
             exception(session, sfm, ExecutionErrorCode.NOT_FOUND, "not-found: destination '" + destination + "'");
         }
-        else if(sub.isStopped())
+        else if(sub.isFlowModeChangeAllowed())
         {
             sub.setFlowMode(sfm.getFlowMode());
+        }
+        else
+        {
+            exception(session, sfm, ExecutionErrorCode.PRECONDITION_FAILED, "destination '" + destination + "' has credit");
         }
     }
 

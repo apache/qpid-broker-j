@@ -32,19 +32,17 @@ public interface QueueConsumer<X extends QueueConsumer<X>> extends Consumer<X>
 
     boolean hasInterest(QueueEntry node);
 
-    boolean wouldSuspend(QueueEntry entry);
+    boolean allocateCredit(QueueEntry entry);
 
     void restoreCredit(QueueEntry entry);
 
-    void send(QueueEntry entry, boolean batch);
-
     void acquisitionRemoved(QueueEntry node);
+
+    QueueConsumerNode getQueueConsumerNode();
 
     void queueDeleted();
 
     Queue<?> getQueue();
-
-    boolean resend(QueueEntry e);
 
     MessageInstance.StealableConsumerAcquiredState<X> getOwningState();
 
@@ -52,7 +50,9 @@ public interface QueueConsumer<X extends QueueConsumer<X>> extends Consumer<X>
 
     void awaitCredit(QueueEntry entry);
 
-    boolean hasCredit();
+    boolean isNotifyWorkDesired();
 
-    boolean isPullOnly();
+    void notifyWork();
+
+    void setQueueConsumerNode(QueueConsumerNode node);
 }

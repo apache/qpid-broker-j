@@ -378,6 +378,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
                                                name,
                                                options,
                                                getEndpoint().getPriority());
+                _target.updateNotifyWorkDesired();
             }
             catch (MessageSource.ExistingExclusiveConsumer e)
             {
@@ -394,13 +395,13 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
                 _logger.info("Cannot add an exclusive consumer to the destination as there is an incompatible exclusivity policy");
                 throw new ConnectionScopedRuntimeException(e);
             }
+            catch (MessageSource.QueueDeleted e)
+            {
+                _logger.info("Cannot add a consumer to the destination as the destination has been deleted");
+                throw new ConnectionScopedRuntimeException(e);
+            }
         }
 
-    }
-
-    public void resume(SendingLinkAttachment linkAttachment)
-    {
-        _linkAttachment = linkAttachment;
     }
 
     public void remoteDetached(final LinkEndpoint endpoint, final Detach detach)
@@ -410,7 +411,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
         if(Boolean.TRUE.equals(detach.getClosed())
            || !(TerminusDurability.UNSETTLED_STATE.equals(_durability)|| TerminusDurability.CONFIGURATION.equals(_durability)))
         {
-            _consumer.close();
+            _target.close();
 
             Modified state = new Modified();
             state.setDeliveryFailed(true);
@@ -587,12 +588,6 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
 
     public synchronized void setLinkAttachment(SendingLinkAttachment linkAttachment)
     {
-
-        if(_consumer.isActive())
-        {
-            _target.suspend();
-        }
-
         _linkAttachment = linkAttachment;
 
         SendingLinkEndpoint endpoint = linkAttachment.getEndpoint();

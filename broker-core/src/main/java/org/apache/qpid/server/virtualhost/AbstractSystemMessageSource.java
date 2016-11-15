@@ -40,10 +40,10 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.queue.AbstractQueue;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
@@ -88,7 +88,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
                                 final String consumerName,
                                 final EnumSet<ConsumerImpl.Option> options, final Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
-                   ConsumerAccessRefused
+                   ConsumerAccessRefused, QueueDeleted
     {
         final Consumer consumer = new Consumer(consumerName, target);
         target.consumerAdded(consumer);
@@ -116,21 +116,21 @@ public abstract class AbstractSystemMessageSource implements MessageSource
                 Collections.synchronizedList(new ArrayList<PropertiesMessageInstance>());
         private final ConsumerTarget _target;
         private final String _name;
-        private final StateChangeListener<ConsumerTarget, ConsumerTarget.State> _targetChangeListener =
-                new Consumer.TargetChangeListener();
 
 
         public Consumer(final String consumerName, ConsumerTarget target)
         {
             _name = consumerName;
             _target = target;
-            target.addStateListener(_targetChangeListener);
         }
 
         @Override
         public void externalStateChange()
         {
-
+            if(!_queue.isEmpty())
+            {
+                _target.notifyWork();
+            }
         }
 
         @Override
@@ -140,43 +140,27 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public boolean hasAvailableMessages()
+        public AbstractQueue.MessageContainer pullMessage()
         {
-            return !_queue.isEmpty();
+            if (!_queue.isEmpty())
+            {
+                final PropertiesMessageInstance propertiesMessageInstance = _queue.get(0);
+                if (!_target.isSuspended() && _target.allocateCredit(propertiesMessageInstance.getMessage()))
+                {
+                    _queue.remove(0);
+                    return new AbstractQueue.MessageContainer(propertiesMessageInstance, null);
+                }
+            }
+            return null;
         }
 
         @Override
-        public void pullMessage()
+        public void setNotifyWorkDesired(final boolean desired)
         {
-            AMQPConnection<?> connection = _target.getSessionModel().getAMQPConnection();
-            _target.getSendLock();
-            try
+            if (desired && !_queue.isEmpty())
             {
-                connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(true);
-
-                try
-                {
-                    if (!_queue.isEmpty())
-                    {
-                        final PropertiesMessageInstance propertiesMessageInstance = _queue.get(0);
-                        if (!_target.isSuspended() && _target.allocateCredit(propertiesMessageInstance.getMessage()))
-                        {
-                            _queue.remove(0);
-                            _target.send(this, propertiesMessageInstance, false);
-                        }
-                    }
-                }
-                finally
-                {
-                    connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(false);
-                }
+                _target.notifyWork();
             }
-            finally
-            {
-                _target.releaseSendLock();
-            }
-
-
         }
 
         @Override
@@ -224,7 +208,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         @Override
         public boolean isSuspended()
         {
-            return false;
+            return !isActive();
         }
 
         @Override
@@ -252,27 +236,9 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public boolean trySendLock()
-        {
-            return _target.trySendLock();
-        }
-
-        @Override
-        public void getSendLock()
-        {
-            _target.getSendLock();
-        }
-
-        @Override
-        public void releaseSendLock()
-        {
-            _target.releaseSendLock();
-        }
-
-        @Override
         public boolean isActive()
         {
-            return false;
+            return _target.isNotifyWorkDesired();
         }
 
         @Override
@@ -281,85 +247,11 @@ public abstract class AbstractSystemMessageSource implements MessageSource
             return _name;
         }
 
-        @Override
-        public void flush()
-        {
-            AMQPConnection<?> connection = getSessionModel().getAMQPConnection();
-            try
-            {
-                connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(true);
-                deliverMessages();
-                _target.processPending();
-            }
-            finally
-            {
-                connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(false);
-            }
-        }
-
-
         public void send(final InternalMessage response)
         {
-            _target.getSendLock();
-            try
-            {
-                final PropertiesMessageInstance
-                        responseEntry = new PropertiesMessageInstance(this, response);
-                if (_queue.isEmpty() && _target.allocateCredit(response))
-                {
-                    _target.send(this, responseEntry, false);
-                }
-                else
-                {
-                    _queue.add(responseEntry);
-                }
-            }
-            finally
-            {
-                _target.releaseSendLock();
-            }
+            _queue.add(new PropertiesMessageInstance(this, response));
+            _target.notifyWork();
         }
-
-        private class TargetChangeListener implements StateChangeListener<ConsumerTarget, ConsumerTarget.State>
-        {
-            @Override
-            public void stateChanged(final ConsumerTarget object,
-                                     final ConsumerTarget.State oldState,
-                                     final ConsumerTarget.State newState)
-            {
-                if (newState == ConsumerTarget.State.ACTIVE)
-                {
-                    deliverMessages();
-                }
-            }
-        }
-
-        private void deliverMessages()
-        {
-            _target.getSendLock();
-            try
-            {
-                while (!_queue.isEmpty())
-                {
-
-                    final PropertiesMessageInstance propertiesMessageInstance = _queue.get(0);
-                    if (!_target.isSuspended() && _target.allocateCredit(propertiesMessageInstance.getMessage()))
-                    {
-                        _queue.remove(0);
-                        _target.send(this, propertiesMessageInstance, false);
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-            }
-            finally
-            {
-                _target.releaseSendLock();
-            }
-        }
-
     }
 
     class PropertiesMessageInstance implements MessageInstance
@@ -546,12 +438,6 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         public void release(ConsumerImpl consumer)
         {
             release();
-        }
-
-        @Override
-        public boolean resend()
-        {
-            return false;
         }
 
         @Override

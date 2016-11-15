@@ -60,9 +60,9 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
     // Attributes
     private final AMQSessionModel _session;
     private final Action _deleteModelTask;
-    private final AbstractAMQPConnection<?> _amqpConnection;
+    private final AbstractAMQPConnection<?,?> _amqpConnection;
 
-    public SessionAdapter(final AbstractAMQPConnection<?> amqpConnection,
+    public SessionAdapter(final AbstractAMQPConnection<?,?> amqpConnection,
                           final AMQSessionModel session)
     {
         super(parentsMap(amqpConnection), createAttributes(session));
@@ -206,7 +206,7 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
         return Futures.immediateFuture(null);
     }
 
-    private void registerTransactionTimeoutTickers(AbstractAMQPConnection<?> amqpConnection,
+    private void registerTransactionTimeoutTickers(AbstractAMQPConnection<?,?> amqpConnection,
                                                    final AMQSessionModel session)
     {
         NamedAddressSpace addressSpace = amqpConnection.getAddressSpace();

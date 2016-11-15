@@ -30,12 +30,15 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -105,6 +108,8 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
 {
     private static final Logger _logger = LoggerFactory.getLogger(Session_1_0.class);
     private static final Symbol LIFETIME_POLICY = Symbol.valueOf("lifetime-policy");
+    private static final EnumSet<SessionState> END_STATES =
+            EnumSet.of(SessionState.END_RECVD, SessionState.END_PIPE, SessionState.END_SENT, SessionState.ENDED);
     private final AccessControlContext _accessControllerContext;
     private final SecurityToken _securityToken;
     private AutoCommitTransaction _transaction;
@@ -125,7 +130,9 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     private final ConfigurationChangeListener _consumerClosedListener = new ConsumerClosedListener();
     private final CopyOnWriteArrayList<ConsumerListener> _consumerListeners = new CopyOnWriteArrayList<ConsumerListener>();
     private Session<?> _modelObject;
-    private final List<ConsumerTarget_1_0> _consumersWithPendingWork = new ArrayList<>();
+    private final Set<ConsumerTarget> _consumersWithPendingWork =
+            Collections.newSetFromMap(new ConcurrentHashMap<ConsumerTarget, Boolean>());
+    private Iterator<ConsumerTarget> _processPendingIterator;
 
     private SessionState _state ;
 
@@ -1526,41 +1533,31 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     @Override
     public boolean processPending()
     {
-        if (!getAMQPConnection().isIOThread())
+        if (!getAMQPConnection().isIOThread() || END_STATES.contains(getState()))
         {
             return false;
         }
 
-        boolean consumerListNeedsRefreshing;
-        if(_consumersWithPendingWork.isEmpty())
-        {
-            for(SendingLink_1_0 link : _sendingLinks)
-            {
-                _consumersWithPendingWork.add(link.getConsumerTarget());
-            }
-            consumerListNeedsRefreshing = false;
-        }
-        else
-        {
-            consumerListNeedsRefreshing = true;
-        }
 
-        // QPID-7447: prevent unnecessary allocation of empty iterator
-        Iterator<ConsumerTarget_1_0> iter = _consumersWithPendingWork.isEmpty() ? Collections.<ConsumerTarget_1_0>emptyIterator() : _consumersWithPendingWork.iterator();
-        boolean consumerHasMoreWork = false;
-        while(iter.hasNext())
+        if(!_consumersWithPendingWork.isEmpty())
         {
-            final ConsumerTarget target = iter.next();
-            iter.remove();
-            if(target.hasPendingWork())
+            if (_processPendingIterator == null || !_processPendingIterator.hasNext())
             {
-                consumerHasMoreWork = true;
-                target.processPending();
-                break;
+                _processPendingIterator = _consumersWithPendingWork.iterator();
+            }
+
+            if(_processPendingIterator.hasNext())
+            {
+                ConsumerTarget target = _processPendingIterator.next();
+                _processPendingIterator.remove();
+                if (target.processPending())
+                {
+                    _consumersWithPendingWork.add(target);
+                }
             }
         }
 
-        return consumerHasMoreWork || consumerListNeedsRefreshing;
+        return !_consumersWithPendingWork.isEmpty();
     }
 
     @Override
@@ -1578,32 +1575,11 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     }
 
     @Override
-    public void notifyConsumerTargetCurrentStates()
+    public void notifyWork(final ConsumerTarget target)
     {
-        for(SendingLink_1_0 link : _sendingLinks)
+        if(_consumersWithPendingWork.add(target))
         {
-            ConsumerTarget_1_0 consumerTarget = link.getConsumerTarget();
-            if(!consumerTarget.isPullOnly())
-            {
-                consumerTarget.notifyCurrentState();
-            }
-        }
-    }
-
-    @Override
-    public void ensureConsumersNoticedStateChange()
-    {
-        for(SendingLink_1_0 link : _sendingLinks)
-        {
-            ConsumerTarget_1_0 consumerTarget = link.getConsumerTarget();
-            try
-            {
-                consumerTarget.getSendLock();
-            }
-            finally
-            {
-                consumerTarget.releaseSendLock();
-            }
+            getAMQPConnection().notifyWork(this);
         }
     }
 

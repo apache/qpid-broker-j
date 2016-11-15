@@ -19,10 +19,10 @@
 
 package org.apache.qpid.server.protocol.v0_8;
 
+import org.apache.qpid.server.flow.FlowCreditManager;
 import org.apache.qpid.server.transport.ProtocolEngine;
-import org.apache.qpid.server.flow.AbstractFlowCreditManager;
 
-public class NoAckCreditManager extends AbstractFlowCreditManager
+public class NoAckCreditManager implements FlowCreditManager
 {
     private final ProtocolEngine _protocolEngine;
 
@@ -34,7 +34,6 @@ public class NoAckCreditManager extends AbstractFlowCreditManager
     @Override
     public void restoreCredit(final long messageCredit, final long bytesCredit)
     {
-        setSuspended(!hasCredit());
     }
 
     @Override
@@ -46,11 +45,6 @@ public class NoAckCreditManager extends AbstractFlowCreditManager
     @Override
     public boolean useCreditForMessage(final long msgSize)
     {
-        if (!hasCredit())
-        {
-            setSuspended(true);
-            return false;
-        }
-        return true;
+        return hasCredit();
     }
 }

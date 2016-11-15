@@ -53,7 +53,7 @@ public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
                                 final String consumerName,
                                 final EnumSet<ConsumerImpl.Option> options, final Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
-                   ConsumerAccessRefused
+                   ConsumerAccessRefused, QueueDeleted
     {
         final Consumer consumer = super.addConsumer(target, filters, messageClass, consumerName, options, priority);
         consumer.send(createMessage());
@@ -66,10 +66,10 @@ public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
 
         Map<String, Object> headers = new HashMap<>();
 
-        final List<String> globalAddresseDomains = _addressSpace.getGlobalAddressDomains();
-        if (globalAddresseDomains != null && !globalAddresseDomains.isEmpty())
+        final List<String> globalAddressDomains = _addressSpace.getGlobalAddressDomains();
+        if (globalAddressDomains != null && !globalAddressDomains.isEmpty())
         {
-            String primaryDomain = globalAddresseDomains.get(0);
+            String primaryDomain = globalAddressDomains.get(0);
             if(primaryDomain != null)
             {
                 primaryDomain = primaryDomain.trim();

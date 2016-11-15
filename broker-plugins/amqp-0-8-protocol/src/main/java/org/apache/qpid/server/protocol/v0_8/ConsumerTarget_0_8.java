@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.qpid.QpidException;
@@ -45,14 +44,13 @@ import org.apache.qpid.server.util.StateChangeListener;
  * Ties together the protocol session of a subscriber, the consumer tag
  * that was given out by the broker and the channel id.
  */
-public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implements FlowCreditManager.FlowCreditManagerListener
+public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
 {
 
     private final ClientDeliveryMethod _deliveryMethod;
 
     private final AtomicLong _unacknowledgedCount = new AtomicLong(0);
     private final AtomicLong _unacknowledgedBytes = new AtomicLong(0);
-    private final AtomicBoolean _needToClose = new AtomicBoolean();
     private final String _targetAddress;
 
 
@@ -283,11 +281,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
 
     private final Boolean _autoClose;
 
-    private final AtomicBoolean _deleted = new AtomicBoolean(false);
-
-
-
-
     public ConsumerTarget_0_8(AMQChannel channel,
                               AMQShortString consumerTag,
                               FieldTable arguments,
@@ -295,13 +288,12 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
                               ClientDeliveryMethod deliveryMethod,
                               boolean multiQueue)
     {
-        super(State.ACTIVE, isPullOnly(arguments), multiQueue, channel.getAMQPConnection());
+        super(multiQueue, channel.getAMQPConnection());
 
         _channel = channel;
         _consumerTag = consumerTag;
 
         _creditManager = creditManager;
-        creditManager.addStateListener(this);
 
         _deliveryMethod = deliveryMethod;
 
@@ -333,15 +325,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         }
     }
 
-    private static boolean isPullOnly(FieldTable arguments)
-    {
-        return arguments != null
-               && arguments.containsKey(PULL_ONLY_CONSUMER)
-               && Boolean.valueOf(String.valueOf(arguments.get(PULL_ONLY_CONSUMER)));
-    }
-
-
-
     @Override
     public String getTargetAddress()
     {
@@ -362,18 +345,16 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
     }
 
     @Override
-    public boolean isFlowSuspended()
+    public void updateNotifyWorkDesired()
     {
-        return getState()!=State.ACTIVE || _channel.isSuspended() || _deleted.get() || _channel.getAMQPConnection().isConnectionStopped();
-    }
+        final AMQPConnection_0_8<?> amqpConnection = _channel.getAMQPConnection();
 
-    /**
-     * Callback indicating that a queue has been deleted.
-     *
-     */
-    public void queueDeleted()
-    {
-        _deleted.set(true);
+        boolean state = _channel.isChannelFlow()
+                        && !amqpConnection.isTransportBlockedForWriting()
+                        // this last condition does not need to exist for browsers and no ack
+                        && getCreditManager().hasCredit();
+
+        setNotifyWorkDesired(state);
     }
 
     public boolean isAutoClose()
@@ -386,15 +367,15 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         return _creditManager;
     }
 
-    @Override
-    protected void doCloseInternal()
-    {
-        _creditManager.removeListener(this);
-    }
-
     public boolean allocateCredit(ServerMessage msg)
     {
-        return _creditManager.useCreditForMessage(msg.getSize());
+        boolean hasCredit = _creditManager.hasCredit();
+        boolean allocated = _creditManager.useCreditForMessage(msg.getSize());
+        if(hasCredit != _creditManager.hasCredit())
+        {
+            _channel.updateAllConsumerNotifyWorkDesired();
+        }
+        return allocated;
     }
 
     public AMQChannel getChannel()
@@ -414,23 +395,15 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
 
     public void restoreCredit(final ServerMessage message)
     {
+        boolean hasCredit = _creditManager.hasCredit();
         _creditManager.restoreCredit(1, message.getSize());
-    }
-
-    public void creditStateChanged(boolean hasCredit)
-    {
-
-        if(hasCredit)
+        if(_creditManager.hasCredit() != hasCredit)
         {
-            if(!updateState(State.SUSPENDED, State.ACTIVE))
-            {
-                // this is a hack to get round the issue of increasing bytes credit
-                notifyCurrentState();
-            }
+            _channel.updateAllConsumerNotifyWorkDesired();
         }
-        else
+        else if (hasCredit)
         {
-            updateState(State.ACTIVE, State.SUSPENDED);
+            notifyWork();
         }
     }
 
@@ -451,39 +424,11 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
 
     public void queueEmpty()
     {
-        if (isAutoClose())
-        {
-            _needToClose.set(true);
-            getChannel().getConnection().notifyWork();
-        }
-    }
-
-    @Override
-    protected void processClosed()
-    {
-        if (hasClosed())
+        if(isAutoClose() && getState() != State.CLOSED)
         {
             close();
             confirmAutoClose();
         }
-    }
-
-    @Override
-    protected void processStateChanged()
-    {
-
-    }
-
-    @Override
-    protected boolean hasStateChanged()
-    {
-        return false;
-    }
-
-    @Override
-    protected boolean hasClosed()
-    {
-        return (_needToClose.get() && getState() != State.CLOSED);
     }
 
     public void flushBatched()
@@ -501,12 +446,10 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
 
     private void removeUnacknowledgedMessage(MessageInstance entry)
     {
-
-        final long _size = entry.getMessage().getSize();
-        _unacknowledgedBytes.addAndGet(-_size);
+        _unacknowledgedBytes.addAndGet(-entry.getMessage().getSize());
         _unacknowledgedCount.decrementAndGet();
 
-        _creditManager.restoreCredit(1, _size);
+        restoreCredit(entry.getMessage());
     }
 
     @Override

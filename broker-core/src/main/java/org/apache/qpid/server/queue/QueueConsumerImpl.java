@@ -23,7 +23,6 @@ package org.apache.qpid.server.queue;
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.SUBSCRIPTION_FORMAT;
 
 import java.text.MessageFormat;
-import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -33,6 +32,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,15 +52,12 @@ import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.security.access.Operation;
-import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.StateChangeListener;
 
 class QueueConsumerImpl
@@ -67,7 +65,6 @@ class QueueConsumerImpl
         implements QueueConsumer<QueueConsumerImpl>, LogSubject
 {
     private final static Logger LOGGER = LoggerFactory.getLogger(QueueConsumerImpl.class);
-    private final AtomicBoolean _targetClosed = new AtomicBoolean(false);
     private final AtomicBoolean _closed = new AtomicBoolean(false);
     private final long _consumerNumber;
     private final long _createTime = System.currentTimeMillis();
@@ -84,28 +81,9 @@ class QueueConsumerImpl
     private final Object _sessionReference;
     private final AbstractQueue _queue;
 
-    private final SuspendedConsumerLoggingTicker _suspendedConsumerLoggingTicker;
-
-    static final EnumMap<ConsumerTarget.State, State> STATE_MAP =
-            new EnumMap<ConsumerTarget.State, State>(ConsumerTarget.State.class);
-
-    static
-    {
-        STATE_MAP.put(ConsumerTarget.State.ACTIVE, State.ACTIVE);
-        STATE_MAP.put(ConsumerTarget.State.SUSPENDED, State.QUIESCED);
-        STATE_MAP.put(ConsumerTarget.State.CLOSED, State.DELETED);
-    }
-
     private final ConsumerTarget _target;
-    private final StateChangeListener<ConsumerTarget, ConsumerTarget.State> _listener;
     private volatile QueueContext _queueContext;
-    private volatile StateChangeListener<? super QueueConsumerImpl, State> _stateListener = new StateChangeListener<QueueConsumerImpl, State>()
-    {
-        public void stateChanged(QueueConsumerImpl sub, State oldState, State newState)
-        {
-            // no-op
-        }
-    };
+
     @ManagedAttributeField
     private boolean _exclusive;
     @ManagedAttributeField
@@ -118,6 +96,8 @@ class QueueConsumerImpl
     private String _selector;
     @ManagedAttributeField
     private int _priority;
+
+    private QueueConsumerNode _queueConsumerNode;
 
     QueueConsumerImpl(final AbstractQueue<?> queue,
                       ConsumerTarget target,
@@ -145,29 +125,6 @@ class QueueConsumerImpl
         open();
 
         setupLogging();
-
-        _listener = new StateChangeListener<ConsumerTarget, ConsumerTarget.State>()
-        {
-            @Override
-            public void stateChanged(final ConsumerTarget object,
-                                     final ConsumerTarget.State oldState,
-                                     final ConsumerTarget.State newState)
-            {
-                targetStateChanged(oldState, newState);
-            }
-        };
-        _target.addStateListener(_listener);
-
-        _suspendedConsumerLoggingTicker = target.isMultiQueue()
-                ? null
-                : new SuspendedConsumerLoggingTicker(queue.getContextValue(Long.class, Consumer.SUSPEND_NOTIFICATION_PERIOD))
-                    {
-                        @Override
-                        protected void log(final long period)
-                        {
-                            getEventLogger().message(getLogSubject(), SubscriptionMessages.STATE(period));
-                        }
-                    };
     }
 
     private static Map<String, Object> createAttributeMap(String name,
@@ -204,43 +161,6 @@ class QueueConsumerImpl
         return attributes;
     }
 
-    private void targetStateChanged(final ConsumerTarget.State oldState, final ConsumerTarget.State newState)
-    {
-        if(oldState != newState)
-        {
-            if(newState == ConsumerTarget.State.CLOSED)
-            {
-                if(_targetClosed.compareAndSet(false,true))
-                {
-                    getEventLogger().message(getLogSubject(), SubscriptionMessages.CLOSE());
-                }
-            }
-
-            if(_suspendedConsumerLoggingTicker != null)
-            {
-                if (newState == ConsumerTarget.State.SUSPENDED)
-                {
-                    _suspendedConsumerLoggingTicker.setStartTime(System.currentTimeMillis());
-                    getSessionModel().addTicker(_suspendedConsumerLoggingTicker);
-                }
-                else
-                {
-                    getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
-                }
-            }
-        }
-
-        if(newState == ConsumerTarget.State.CLOSED && oldState != newState && !_closed.get())
-        {
-            closeAsync();
-        }
-        final StateChangeListener<? super QueueConsumerImpl, State> stateListener = getStateListener();
-        if(stateListener != null)
-        {
-            stateListener.stateChanged(this, STATE_MAP.get(oldState), STATE_MAP.get(newState));
-        }
-    }
-
     @Override
     public ConsumerTarget getTarget()
     {
@@ -254,28 +174,15 @@ class QueueConsumerImpl
     }
 
     @Override
-    public boolean hasCredit()
+    public boolean isNotifyWorkDesired()
     {
-        return _target.hasCredit();
+        return _target.isNotifyWorkDesired();
     }
 
     @Override
     public void externalStateChange()
     {
-        if(isPullOnly())
-        {
-            getSessionModel().getAMQPConnection().notifyWork();
-        }
-        else
-        {
-            _queue.deliverAsync();
-        }
-    }
-
-    @Override
-    public boolean hasAvailableMessages()
-    {
-        return !_queue.isEmpty() && _queue.hasAvailableMessages(this);
+        _target.notifyWork();
     }
 
     @Override
@@ -309,28 +216,29 @@ class QueueConsumerImpl
     }
 
     @Override
-    protected void onClose()
+    protected ListenableFuture<Void> onClose()
     {
         if(_closed.compareAndSet(false,true))
         {
-            _target.getSendLock();
-            try
-            {
-                _waitingOnCreditMessageListener.remove();
-                _target.consumerRemoved(this);
-                _target.removeStateChangeListener(_listener);
-                _queue.unregisterConsumer(this);
-                if(_suspendedConsumerLoggingTicker != null)
-                {
-                    getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
-                }
-                deleted();
-            }
-            finally
-            {
-                _target.releaseSendLock();
-            }
+            getEventLogger().message(getLogSubject(), SubscriptionMessages.CLOSE());
 
+            _waitingOnCreditMessageListener.remove();
+
+            return doAfter(_target.consumerRemoved(this),
+                           new Runnable()
+                           {
+                               @Override
+                               public void run()
+                               {
+                                   _queue.unregisterConsumer(QueueConsumerImpl.this);
+
+                                   deleted();
+                               }
+                           });
+        }
+        else
+        {
+            return Futures.immediateFuture(null);
         }
     }
 
@@ -346,19 +254,31 @@ class QueueConsumerImpl
     }
 
     @Override
-    public boolean isPullOnly()
+    public void notifyWork()
     {
-        return _target.isPullOnly();
+        _target.notifyWork();
+    }
+
+    @Override
+    public void setQueueConsumerNode(final QueueConsumerNode node)
+    {
+        _queueConsumerNode = node;
+    }
+
+    @Override
+    public QueueConsumerNode getQueueConsumerNode()
+    {
+        return _queueConsumerNode;
     }
 
     public void queueDeleted()
     {
-        _target.queueDeleted();
+        _target.consumerRemoved(this);
     }
 
-    public boolean wouldSuspend(final QueueEntry msg)
+    public boolean allocateCredit(final QueueEntry msg)
     {
-        return !_target.allocateCredit(msg.getMessage());
+        return _target.allocateCredit(msg.getMessage());
     }
 
     public void restoreCredit(final QueueEntry queueEntry)
@@ -369,12 +289,6 @@ class QueueConsumerImpl
     public void queueEmpty()
     {
         _target.queueEmpty();
-    }
-
-    @Override
-    public State getState()
-    {
-        return STATE_MAP.get(_target.getState());
     }
 
     @Override
@@ -397,61 +311,26 @@ class QueueConsumerImpl
     }
 
     @Override
-    public final void flush()
+    public AbstractQueue.MessageContainer pullMessage()
     {
-        AMQPConnection<?> connection = _target.getSessionModel().getAMQPConnection();
-        try
+        AbstractQueue.MessageContainer messageContainer = _queue.deliverSingleMessage(this);
+        if (messageContainer != null)
         {
-            connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(true);
-            _queue.flushConsumer(this);
-            _target.processPending();
+            _deliveredCount.incrementAndGet();
+            _deliveredBytes.addAndGet(messageContainer._messageInstance.getMessage().getSize());
         }
-        finally
-        {
-            connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(false);
-        }
-
+        return messageContainer;
     }
 
     @Override
-    public void pullMessage()
+    public void setNotifyWorkDesired(final boolean desired)
     {
-        AMQPConnection<?> connection = _target.getSessionModel().getAMQPConnection();
-        try
-        {
-            connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(true);
-            _queue.flushConsumer(this, 1);
-        }
-        finally
-        {
-            connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(false);
-        }
-
-    }
-
-    public boolean resend(final QueueEntry entry)
-    {
-        boolean messageWasResent = getQueue().resend(entry, this);
-        if (messageWasResent)
-        {
-            _target.processPending();
-        }
-        return messageWasResent;
+        _queue.setNotifyWorkDesired(this, desired);
     }
 
     public final long getConsumerNumber()
     {
         return _consumerNumber;
-    }
-
-    public final StateChangeListener<? super QueueConsumerImpl, State> getStateListener()
-    {
-        return _stateListener;
-    }
-
-    public final void setStateListener(StateChangeListener<? super QueueConsumerImpl, State> listener)
-    {
-        _stateListener = listener;
     }
 
     public final QueueContext getQueueContext()
@@ -466,12 +345,12 @@ class QueueConsumerImpl
 
     public final boolean isActive()
     {
-        return getState() == State.ACTIVE;
+        return _target.getState() == ConsumerTarget.State.OPEN;
     }
 
     public final boolean isClosed()
     {
-        return getState() == State.DELETED;
+        return _target.getState() == ConsumerTarget.State.CLOSED;
     }
 
     public final boolean hasInterest(QueueEntry entry)
@@ -563,21 +442,6 @@ class QueueConsumerImpl
         return filterLogString.toString();
     }
 
-    public final boolean trySendLock()
-    {
-        return getTarget().trySendLock();
-    }
-
-    public final void getSendLock()
-    {
-        getTarget().getSendLock();
-    }
-
-    public final void releaseSendLock()
-    {
-        getTarget().releaseSendLock();
-    }
-
     public final long getCreateTime()
     {
         return _createTime;
@@ -611,13 +475,6 @@ class QueueConsumerImpl
     public final long getMessagesOut()
     {
         return _deliveredCount.longValue();
-    }
-
-    public final void send(final QueueEntry entry, final boolean batch)
-    {
-        _deliveredCount.incrementAndGet();
-        long size = _target.send(this, entry, batch);
-        _deliveredBytes.addAndGet(size);
     }
 
     @Override
@@ -704,14 +561,7 @@ class QueueConsumerImpl
             entry.addStateChangeListener(this);
             if(!entry.isAvailable())
             {
-                if(isPullOnly())
-                {
-                    getSessionModel().getAMQPConnection().notifyWork();
-                }
-                else
-                {
-                    _queue.deliverAsync();
-                }
+                _target.notifyWork();
                 remove();
             }
         }
@@ -731,14 +581,7 @@ class QueueConsumerImpl
         {
             entry.removeStateChangeListener(this);
             _entry.compareAndSet(entry, null);
-            if(isPullOnly())
-            {
-                getSessionModel().getAMQPConnection().notifyWork();
-            }
-            else
-            {
-                _queue.deliverAsync();
-            }
+            _target.notifyWork();
         }
 
     }

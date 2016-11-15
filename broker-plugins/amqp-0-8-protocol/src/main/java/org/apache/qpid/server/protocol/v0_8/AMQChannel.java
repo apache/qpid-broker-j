@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -163,7 +164,9 @@ public class AMQChannel
     /** Maps from consumer tag to subscription instance. Allows us to unsubscribe from a queue. */
     private final Map<AMQShortString, ConsumerTarget_0_8> _tag2SubscriptionTargetMap = new HashMap<AMQShortString, ConsumerTarget_0_8>();
 
-    private final List<ConsumerTarget_0_8> _consumersWithPendingWork = new ArrayList<>();
+    private final Set<ConsumerTarget> _consumersWithPendingWork =
+            Collections.newSetFromMap(new ConcurrentHashMap<ConsumerTarget, Boolean>());
+    private Iterator<ConsumerTarget> _processPendingIterator;
 
     private final MessageStore _messageStore;
 
@@ -230,6 +233,7 @@ public class AMQChannel
     private boolean _logChannelFlowMessages = true;
 
     private final CachedFrame _txCommitOkFrame;
+    private boolean _channelFlow = true;
 
     public AMQChannel(AMQPConnection_0_8 connection, int channelId, final MessageStore messageStore)
     {
@@ -298,13 +302,14 @@ public class AMQChannel
     private boolean performGet(final MessageSource queue,
                                final boolean acks)
             throws MessageSource.ExistingConsumerPreventsExclusive,
-                   MessageSource.ExistingExclusiveConsumer, MessageSource.ConsumerAccessRefused
+                   MessageSource.ExistingExclusiveConsumer, MessageSource.ConsumerAccessRefused,
+                   MessageSource.QueueDeleted
     {
 
-        final FlowCreditManager singleMessageCredit = new MessageOnlyCreditManager(1L);
+        final FlowCreditManager singleMessageCredit = new InfiniteCreditCreditManager();
 
         final GetDeliveryMethod getDeliveryMethod =
-                new GetDeliveryMethod(singleMessageCredit, queue);
+                new GetDeliveryMethod(queue);
 
         ConsumerTarget_0_8 target;
         EnumSet<ConsumerImpl.Option> options = EnumSet.of(ConsumerImpl.Option.TRANSIENT, ConsumerImpl.Option.ACQUIRES,
@@ -324,7 +329,8 @@ public class AMQChannel
         }
 
         ConsumerImpl sub = queue.addConsumer(target, null, AMQMessage.class, "", options, null);
-        sub.flush();
+        target.updateNotifyWorkDesired();
+        target.sendNextMessage();
         sub.close();
         return getDeliveryMethod.hasDeliveredMessage();
 
@@ -704,7 +710,7 @@ public class AMQChannel
             throws MessageSource.ExistingConsumerPreventsExclusive,
                    MessageSource.ExistingExclusiveConsumer,
                    AMQInvalidArgumentException,
-                   MessageSource.ConsumerAccessRefused, ConsumerTagInUseException
+                   MessageSource.ConsumerAccessRefused, ConsumerTagInUseException, MessageSource.QueueDeleted
     {
         if (tag == null)
         {
@@ -836,10 +842,12 @@ public class AMQChannel
                     _consumers.add(modelConsumer);
                 }
             }
+            target.updateNotifyWorkDesired();
         }
         catch (AccessControlException
                 | MessageSource.ExistingExclusiveConsumer
                 | MessageSource.ExistingConsumerPreventsExclusive
+                | MessageSource.QueueDeleted
                 | AMQInvalidArgumentException
                 | MessageSource.ConsumerAccessRefused e)
         {
@@ -867,12 +875,12 @@ public class AMQChannel
         {
             for(ConsumerImpl sub : subs)
             {
-                sub.close();
                 if (sub instanceof Consumer<?>)
                 {
                     _consumers.remove(sub);
                 }
             }
+            target.close();
             return true;
         }
         else
@@ -1057,6 +1065,22 @@ public class AMQChannel
         return false;
     }
 
+    private boolean resendInternal(MessageInstance messageInstance)
+    {
+        ConsumerImpl subscriber = messageInstance.getDeliveredConsumer();
+        if (subscriber != null && subscriber.getSessionModel() == this)
+        {
+            ConsumerTarget target = subscriber.getTarget();
+            if (target.getState() != ConsumerTarget.State.CLOSED)
+            {
+                target.send(subscriber, messageInstance, false);
+                return true;
+            }
+
+        }
+        return false;
+    }
+
     /**
      * Called to resend all outstanding unacknowledged messages to this same channel.
      *
@@ -1107,7 +1131,7 @@ public class AMQChannel
             // all messages in the unacked map as redelivered.
             message.setRedelivered();
 
-            if (!message.resend())
+            if (!resendInternal(message))
             {
                 msgToRequeue.put(deliveryTag, message);
             }
@@ -1165,11 +1189,6 @@ public class AMQChannel
                 messageWithSubject(ChannelMessages.FLOW("Started"));
             }
 
-
-            // This section takes two different approaches to perform to perform
-            // the same function. Ensuring that the Subscription has taken note
-            // of the change in Channel State
-
             // Here we have become unsuspended and so we ask each the queue to
             // perform an Async delivery for each of the subscriptions in this
             // Channel. The alternative would be to ensure that the subscription
@@ -1187,20 +1206,6 @@ public class AMQChannel
                     }
                 }
             }
-
-
-            // Here we have become suspended so we need to ensure that each of
-            // the Subscriptions has noticed this change so that we can be sure
-            // they are not still sending messages. Again the code here is a
-            // very simplistic approach to ensure that the change of suspension
-            // has been noticed by each of the Subscriptions. Unlike the above
-            // case we don't actually need to do anything else.
-            if (!wasSuspended)
-            {
-                // may need to deliver queued messages
-                ensureConsumersNoticedStateChange();
-            }
-
 
             // Log Suspension only after we have confirmed all suspensions are
             // stopped.
@@ -1268,9 +1273,6 @@ public class AMQChannel
         boolean requiresSuspend = _suspended.compareAndSet(false,true);  // TODO This is probably superfluous owing to the
         // message assignment suspended logic in NBC.
 
-        // ensure all subscriptions have seen the change to the channel state
-        ensureConsumersNoticedStateChange();
-
         try
         {
             _transaction.rollback();
@@ -1296,7 +1298,7 @@ public class AMQChannel
             }
             else
             {
-                entry.resend();
+                resendInternal(entry);
             }
         }
         _resendList.clear();
@@ -1325,7 +1327,7 @@ public class AMQChannel
         return _closing.get();
     }
 
-    public AMQPConnection_0_8 getConnection()
+    public AMQPConnection_0_8<?> getConnection()
     {
         return _connection;
     }
@@ -1342,7 +1344,12 @@ public class AMQChannel
         {
             _logChannelFlowMessages = false;
         }
+        boolean hasCredit = _creditManager.hasCredit();
         _creditManager.setCreditLimits(prefetchSize, prefetchCount);
+        if(hasCredit != _creditManager.hasCredit())
+        {
+            updateAllConsumerNotifyWorkDesired();
+        }
     }
 
     public MessageStore getMessageStore()
@@ -1371,7 +1378,7 @@ public class AMQChannel
     }
 
     @Override
-    public AMQPConnection_0_8 getAMQPConnection()
+    public AMQPConnection_0_8<?> getAMQPConnection()
     {
         return _connection;
     }
@@ -1414,6 +1421,11 @@ public class AMQChannel
         return _maxUncommittedInMemorySize;
     }
 
+    public boolean isChannelFlow()
+    {
+        return _channelFlow;
+    }
+
     private class NoLocalFilter implements MessageFilter
     {
 
@@ -1451,15 +1463,11 @@ public class AMQChannel
 
     private class GetDeliveryMethod implements ClientDeliveryMethod
     {
-
-        private final FlowCreditManager _singleMessageCredit;
         private final MessageSource _queue;
         private boolean _deliveredMessage;
 
-        public GetDeliveryMethod(final FlowCreditManager singleMessageCredit,
-                                 final MessageSource queue)
+        public GetDeliveryMethod(final MessageSource queue)
         {
-            _singleMessageCredit = singleMessageCredit;
             _queue = queue;
         }
 
@@ -1467,7 +1475,7 @@ public class AMQChannel
         public long deliverToClient(final ConsumerImpl sub, final ServerMessage message,
                                     final InstanceProperties props, final long deliveryTag)
         {
-            _singleMessageCredit.useCreditForMessage(message.getSize());
+
             int queueSize = _queue instanceof Queue ? ((Queue<?>)_queue).getQueueDepthMessages() : 0;
             long size = _connection.getProtocolOutputConverter().writeGetOk(message,
                                                                             props,
@@ -1661,7 +1669,7 @@ public class AMQChannel
                 messageWithSubject(ChannelMessages.FLOW_ENFORCED("** All Queues **"));
 
 
-                getConnection().notifyWork();
+                getConnection().notifyWork(this);
             }
         }
     }
@@ -1673,7 +1681,7 @@ public class AMQChannel
             if(_blockingEntities.isEmpty() && _blocking.compareAndSet(true,false))
             {
                 messageWithSubject(ChannelMessages.FLOW_REMOVED());
-                getConnection().notifyWork();
+                getConnection().notifyWork(this);
             }
         }
     }
@@ -1687,7 +1695,7 @@ public class AMQChannel
             if(_blocking.compareAndSet(false,true))
             {
                 messageWithSubject(ChannelMessages.FLOW_ENFORCED(queue.getName()));
-                getConnection().notifyWork();
+                getConnection().notifyWork(this);
 
             }
         }
@@ -1700,7 +1708,7 @@ public class AMQChannel
             if(_blockingEntities.isEmpty() && _blocking.compareAndSet(true,false) && !isClosing())
             {
                 messageWithSubject(ChannelMessages.FLOW_REMOVED());
-                getConnection().notifyWork();
+                getConnection().notifyWork(this);
             }
         }
     }
@@ -1708,8 +1716,17 @@ public class AMQChannel
     @Override
     public void transportStateChanged()
     {
+        updateAllConsumerNotifyWorkDesired();
         _creditManager.restoreCredit(0, 0);
         _noAckCreditManager.restoreCredit(0, 0);
+    }
+
+    void updateAllConsumerNotifyWorkDesired()
+    {
+        for(ConsumerTarget_0_8 target : _tag2SubscriptionTargetMap.values())
+        {
+            target.updateNotifyWorkDesired();
+        }
     }
 
     @Override
@@ -1723,7 +1740,7 @@ public class AMQChannel
         return getUnacknowledgedMessageMap().size();
     }
 
-    private void flow(boolean flow)
+    private void sendFlow(boolean flow)
     {
         MethodRegistry methodRegistry = _connection.getMethodRegistry();
         AMQMethodBody responseBody = methodRegistry.createChannelFlowBody(flow);
@@ -2172,7 +2189,13 @@ public class AMQChannel
                                 + "' as it already has an incompatible exclusivity policy", _channelId);
 
             }
-
+            catch (MessageSource.QueueDeleted queueDeleted)
+            {
+                _connection.sendConnectionClose(AMQConstant.NOT_FOUND,
+                                                "Cannot subscribe to queue '"
+                                                + queue1.getName()
+                                                + "' as it has been deleted", _channelId);
+            }
         }
     }
 
@@ -2237,6 +2260,10 @@ public class AMQChannel
             {
                 _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED,
                         "Queue has an incompatible exclusivity policy", _channelId);
+            }
+            catch (MessageSource.QueueDeleted queueDeleted)
+            {
+                _connection.sendConnectionClose(AMQConstant.NOT_FOUND, "Queue has been deleted", _channelId);
             }
         }
     }
@@ -2341,7 +2368,14 @@ public class AMQChannel
             _logger.debug("RECV[" + _channelId + "] BasicRecover[" + " requeue: " + requeue + " sync: " + sync + " ]");
         }
 
-        resend();
+        if (requeue)
+        {
+            requeue();
+        }
+        else
+        {
+            resend();
+        }
 
         if (sync)
         {
@@ -2615,6 +2649,13 @@ public class AMQChannel
 
 
         sync();
+        if(_channelFlow != active)
+        {
+            _channelFlow = active;
+            // inform consumer targets
+            updateAllConsumerNotifyWorkDesired();
+        }
+
         setSuspended(!active);
 
         MethodRegistry methodRegistry = _connection.getMethodRegistry();
@@ -3613,9 +3654,7 @@ public class AMQChannel
 
         rollback(task);
 
-        //Now resend all the unacknowledged messages back to the original subscribers.
-        //(Must be done after the TxnRollback-ok response).
-        // Why, are we not allowed to send messages back to client before the ok method?
+        // TODO: This is not spec compliant but we currently seem to rely on this behaviour
         resend();
     }
 
@@ -3683,7 +3722,7 @@ public class AMQChannel
     @Override
     public boolean processPending()
     {
-        if (!getAMQPConnection().isIOThread())
+        if (!getAMQPConnection().isIOThread() || isClosing())
         {
             return false;
         }
@@ -3692,38 +3731,29 @@ public class AMQChannel
         if (desiredBlockingState != _wireBlockingState)
         {
             _wireBlockingState = desiredBlockingState;
-            flow(!desiredBlockingState);
+            sendFlow(!desiredBlockingState);
             _blockTime = desiredBlockingState ? System.currentTimeMillis() : 0;
         }
 
-        boolean consumerListNeedsRefreshing;
-        if(_consumersWithPendingWork.isEmpty())
+        if(!_consumersWithPendingWork.isEmpty())
         {
-            _consumersWithPendingWork.addAll(getConsumerTargets());
-            consumerListNeedsRefreshing = false;
-        }
-        else
-        {
-            consumerListNeedsRefreshing = true;
-        }
-
-        // QPID-7447: prevent unnecessary allocation of empty iterator
-        Iterator<ConsumerTarget_0_8> iter = _consumersWithPendingWork.isEmpty() ? Collections.<ConsumerTarget_0_8>emptyIterator() : _consumersWithPendingWork.iterator();
-
-        boolean consumerHasMoreWork = false;
-        while(iter.hasNext())
-        {
-            final ConsumerTarget_0_8 target = iter.next();
-            iter.remove();
-            if(target.hasPendingWork())
+            if (_processPendingIterator == null || !_processPendingIterator.hasNext())
             {
-                consumerHasMoreWork = true;
-                target.processPending();
-                break;
+                _processPendingIterator = _consumersWithPendingWork.iterator();
+            }
+
+            if(_processPendingIterator.hasNext())
+            {
+                ConsumerTarget target = _processPendingIterator.next();
+                _processPendingIterator.remove();
+                if (target.processPending())
+                {
+                    _consumersWithPendingWork.add(target);
+                }
             }
         }
 
-        return consumerHasMoreWork || consumerListNeedsRefreshing;
+        return !_consumersWithPendingWork.isEmpty();
     }
 
     @Override
@@ -3741,30 +3771,11 @@ public class AMQChannel
     }
 
     @Override
-    public void notifyConsumerTargetCurrentStates()
+    public void notifyWork(final ConsumerTarget target)
     {
-        for(ConsumerTarget_0_8 consumerTarget : getConsumerTargets())
+        if(_consumersWithPendingWork.add(target))
         {
-            if(!consumerTarget.isPullOnly())
-            {
-                consumerTarget.notifyCurrentState();
-            }
-        }
-    }
-
-    @Override
-    public void ensureConsumersNoticedStateChange()
-    {
-        for (ConsumerTarget_0_8 consumerTarget : getConsumerTargets())
-        {
-            try
-            {
-                consumerTarget.getSendLock();
-            }
-            finally
-            {
-                consumerTarget.releaseSendLock();
-            }
+            getAMQPConnection().notifyWork(this);
         }
     }
 

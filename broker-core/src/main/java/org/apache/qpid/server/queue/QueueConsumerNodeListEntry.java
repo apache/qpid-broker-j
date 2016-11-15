@@ -23,24 +23,33 @@ package org.apache.qpid.server.queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-public final class ConsumerNode
+final class QueueConsumerNodeListEntry
 {
     private final AtomicBoolean _deleted = new AtomicBoolean();
-    private final AtomicReference<ConsumerNode> _next = new AtomicReference<ConsumerNode>();
-    private final QueueConsumer<?> _sub;
+    private final AtomicReference<QueueConsumerNodeListEntry> _next = new AtomicReference<>();
 
-    public ConsumerNode()
+    private final QueueConsumerNode _queueConsumerNode;
+    private final QueueConsumerNodeList _list;
+
+    QueueConsumerNodeListEntry(final QueueConsumerNodeList list, final QueueConsumerNode queueConsumerNode)
     {
+        _list = list;
+        _queueConsumerNode = queueConsumerNode;
+    }
+
+    public QueueConsumerNodeListEntry(QueueConsumerNodeList list)
+    {
+        _list = list;
         //used for sentinel head and dummy node construction
-        _sub = null;
+        _queueConsumerNode = null;
         _deleted.set(true);
     }
 
-    public ConsumerNode(final QueueConsumer<?> sub)
+    public QueueConsumerNode getQueueConsumerNode()
     {
-        //used for regular node construction
-        _sub = sub;
+        return _queueConsumerNode;
     }
+
 
     /**
      * Retrieves the first non-deleted node following the current node.
@@ -48,12 +57,12 @@ public final class ConsumerNode
      *
      * @return the next non-deleted node, or null if none was found.
      */
-    public ConsumerNode findNext()
+    public QueueConsumerNodeListEntry findNext()
     {
-        ConsumerNode next = nextNode();
+        QueueConsumerNodeListEntry next = nextNode();
         while(next != null && next.isDeleted())
         {
-            final ConsumerNode newNext = next.nextNode();
+            final QueueConsumerNodeListEntry newNext = next.nextNode();
             if(newNext != null)
             {
                 //try to move our _next reference forward to the 'newNext'
@@ -77,7 +86,7 @@ public final class ConsumerNode
      *
      * @return the immediately next node in the structure, or null if at the tail.
      */
-    protected ConsumerNode nextNode()
+    protected QueueConsumerNodeListEntry nextNode()
     {
         return _next.get();
     }
@@ -88,9 +97,14 @@ public final class ConsumerNode
      * @param node the ConsumerNode to set as 'next'
      * @return whether the operation succeeded
      */
-    boolean setNext(final ConsumerNode node)
+    boolean setNext(final QueueConsumerNodeListEntry node)
     {
         return _next.compareAndSet(null, node);
+    }
+
+    public void remove()
+    {
+        _list.removeEntry(this);
     }
 
     public boolean isDeleted()
@@ -98,13 +112,9 @@ public final class ConsumerNode
         return _deleted.get();
     }
 
-    public boolean delete()
+    boolean setDeleted()
     {
-        return _deleted.compareAndSet(false,true);
+        return _deleted.compareAndSet(false, true);
     }
 
-    public QueueConsumer<?> getConsumer()
-    {
-        return _sub;
-    }
 }

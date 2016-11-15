@@ -37,6 +37,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,7 @@ import java.util.zip.GZIPOutputStream;
 
 import javax.security.auth.Subject;
 
+import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -113,15 +115,13 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.Deletable;
 import org.apache.qpid.server.util.MapValueConverter;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.util.StateChangeListener;
+import org.apache.qpid.server.virtualhost.HouseKeepingTask;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
-import org.apache.qpid.transport.TransportException;
 
 public abstract class AbstractQueue<X extends AbstractQueue<X>>
         extends AbstractConfiguredObject<X>
         implements Queue<X>,
-                   StateChangeListener<QueueConsumer<?>, State>,
                    MessageGroupManager.ConsumerResetHelper
 {
 
@@ -147,17 +147,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final QueueManagingVirtualHost<?> _virtualHost;
     private final DeletedChildListener _deletedChildListener = new DeletedChildListener();
 
-    private final AccessControlContext _immediateDeliveryContext;
+    private QueueConsumerManagerImpl _queueConsumerManager;
 
     @ManagedAttributeField( beforeSet = "preSetAlternateExchange", afterSet = "postSetAlternateExchange")
     private Exchange _alternateExchange;
 
-
-    private final QueueConsumerList _consumerList = new QueueConsumerList();
-
     private volatile QueueConsumer<?> _exclusiveSubscriber;
-
-
 
     private final AtomicLong _targetQueueSize = new AtomicLong(INITIAL_TARGET_QUEUE_SIZE);
 
@@ -206,10 +201,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             Collections.synchronizedSet(EnumSet.noneOf(NotificationCheck.class));
 
 
-    private volatile int _maxAsyncDeliveries;
     private volatile long _estimatedAverageMessageHeaderSize;
-
-    private final AtomicLong _stateChangeCount = new AtomicLong(Long.MIN_VALUE);
 
     private AtomicBoolean _stopped = new AtomicBoolean(false);
 
@@ -268,12 +260,52 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private final ConcurrentLinkedQueue<EnqueueRequest> _postRecoveryQueue = new ConcurrentLinkedQueue<>();
 
-    private final QueueRunner _queueRunner;
     private boolean _closing;
     private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
     private final List<HoldMethod> _holdMethods = new CopyOnWriteArrayList<>();
     private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
-    private volatile boolean _hasPullOnlyConsumers;
+    private AdvanceConsumersTask _queueHouseKeepingTask;
+
+    void setNotifyWorkDesired(final QueueConsumer consumer, final boolean desired)
+    {
+        if (_queueConsumerManager.setInterest(consumer, desired))
+        {
+            if (desired)
+            {
+                _activeSubscriberCount.incrementAndGet();
+                notifyConsumer(consumer);
+            }
+            else
+            {
+                _activeSubscriberCount.decrementAndGet();
+
+                // iterate over interested and notify one as long as its priority is higher than any notified
+                final Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getInterestedIterator();
+                final int highestNotifiedPriority = _queueConsumerManager.getHighestNotifiedPriority();
+                while (consumerIterator.hasNext())
+                {
+                    QueueConsumer<?> queueConsumer = consumerIterator.next();
+                    if (queueConsumer.getPriority() < highestNotifiedPriority || notifyConsumer(queueConsumer))
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean notifyConsumer(final QueueConsumer<?> consumer)
+    {
+        if(_queueConsumerManager.setNotified(consumer, true))
+        {
+            consumer.notifyWork();
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 
     private interface HoldMethod
     {
@@ -284,12 +316,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         super(parentsMap(virtualHost), attributes);
 
-
         _virtualHost = virtualHost;
-        _immediateDeliveryContext = getSystemTaskControllerContext("Immediate Delivery", virtualHost.getPrincipal());
-
-        _queueRunner = new QueueRunner(this, getSystemTaskControllerContext("Queue Delivery",
-                                                                            virtualHost.getPrincipal()));
     }
 
     @Override
@@ -355,8 +382,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         _arguments = Collections.synchronizedMap(arguments);
 
+        _queueConsumerManager = new QueueConsumerManagerImpl(this);
         _logSubject = new QueueLogSubject(this);
-
+        _queueHouseKeepingTask = new AdvanceConsumersTask();
         Subject activeSubject = Subject.getSubject(AccessController.getContext());
         Set<SessionPrincipal> sessionPrincipals = activeSubject == null ? Collections.<SessionPrincipal>emptySet() : activeSubject.getPrincipals(SessionPrincipal.class);
         AMQSessionModel<?> sessionModel;
@@ -478,7 +506,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
 
         _estimatedAverageMessageHeaderSize = getContextValue(Long.class, QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD);
-        _maxAsyncDeliveries = getContextValue(Integer.class, Queue.MAX_ASYNCHRONOUS_DELIVERIES);
         _mimeTypeToFileExtension = getContextValue(Map.class, MAP_OF_STRING_STRING, MIME_TYPE_TO_FILE_EXTENSION);
 
         if(_defaultFilters != null)
@@ -712,12 +739,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                          final EnumSet<ConsumerImpl.Option> optionSet,
                                          final Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
-                   ConsumerAccessRefused
+                   ConsumerAccessRefused, QueueDeleted
     {
 
         try
         {
-            return getTaskExecutor().run(new Task<QueueConsumerImpl, Exception>()
+            final QueueConsumerImpl queueConsumer = getTaskExecutor().run(new Task<QueueConsumerImpl, Exception>()
             {
                 @Override
                 public QueueConsumerImpl execute() throws Exception
@@ -743,9 +770,19 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     return "target=" + target + ", consumerName=" + consumerName + ", optionSet=" + optionSet;
                 }
             });
+
+            target.consumerAdded(queueConsumer);
+            if(isEmpty())
+            {
+                target.queueEmpty();
+            }
+            target.updateNotifyWorkDesired();
+            target.notifyWork();
+            return queueConsumer;
         }
-        catch (ExistingExclusiveConsumer | ConsumerAccessRefused |
-            ExistingConsumerPreventsExclusive | RuntimeException e)
+        catch (ExistingExclusiveConsumer | ConsumerAccessRefused
+                | ExistingConsumerPreventsExclusive | QueueDeleted
+                | RuntimeException e)
         {
             throw e;
         }
@@ -765,8 +802,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                   EnumSet<ConsumerImpl.Option> optionSet,
                                                   final Integer priority)
             throws ExistingExclusiveConsumer, ConsumerAccessRefused,
-                   ExistingConsumerPreventsExclusive
+                   ExistingConsumerPreventsExclusive, QueueDeleted
     {
+        if (isDeleted())
+        {
+            throw new QueueDeleted();
+        }
+
         if (hasExclusiveConsumer())
         {
             throw new ExistingExclusiveConsumer();
@@ -902,20 +944,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                            priority);
 
         _exclusiveOwner = exclusiveOwner;
-        target.consumerAdded(consumer);
-
 
         if (exclusive && !isTransient)
         {
             _exclusiveSubscriber = consumer;
         }
 
-        if(consumer.isActive())
-        {
-            _activeSubscriberCount.incrementAndGet();
-        }
-
-        consumer.setStateListener(this);
         QueueContext queueContext;
         if(filters == null || !filters.startAtTail())
         {
@@ -927,35 +961,14 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
         consumer.setQueueContext(queueContext);
 
-        if (!isDeleted())
+        _queueConsumerManager.addConsumer(consumer);
+        if (consumer.isNotifyWorkDesired())
         {
-            if(consumer.isPullOnly())
-            {
-                _hasPullOnlyConsumers = true;
-            }
-            _consumerList.add(consumer);
-
-            if (isDeleted())
-            {
-                consumer.queueDeleted();
-            }
-        }
-        else
-        {
-            // TODO
+            _activeSubscriberCount.incrementAndGet();
         }
 
         childAdded(consumer);
         consumer.addChangeListener(_deletedChildListener);
-
-        if(consumer.isPullOnly())
-        {
-            consumer.getSessionModel().getAMQPConnection().notifyWork();
-        }
-        else
-        {
-            deliverAsync();
-        }
 
         return consumer;
     }
@@ -976,7 +989,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             throw new NullPointerException("consumer argument is null");
         }
 
-        boolean removed = _consumerList.remove(consumer);
+        boolean removed = _queueConsumerManager.removeConsumer(consumer);
 
         if (removed)
         {
@@ -994,18 +1007,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             if(_messageGroupManager != null)
             {
                 resetSubPointersForGroups(consumer);
-            }
-
-            if(consumer.isPullOnly())
-            {
-                boolean hasOnlyPushConsumers = true;
-                ConsumerNode consumerNode = _consumerList.getHead().findNext();
-                while (consumerNode != null && hasOnlyPushConsumers)
-                {
-                    hasOnlyPushConsumers = !consumerNode.getConsumer().isPullOnly();
-                    consumerNode = consumerNode.findNext();
-                }
-                _hasPullOnlyConsumers = !hasOnlyPushConsumers;
             }
 
             // auto-delete queues must be deleted if there are no remaining subscribers
@@ -1042,15 +1043,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public Collection<QueueConsumer<?>> getConsumers()
     {
-        List<QueueConsumer<?>> consumers = new ArrayList<QueueConsumer<?>>();
-        ConsumerNodeIterator iter = _consumerList.iterator();
-        while(iter.advance())
-        {
-            consumers.add(iter.getNode().getConsumer());
-        }
-        return consumers;
-
+        return Lists.newArrayList(_queueConsumerManager.getAllIterator());
     }
+
 
     public void resetSubPointersForGroups(QueueConsumer<?> consumer)
     {
@@ -1063,24 +1058,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    @Override
-    public void resetSubPointersForGroups(final QueueEntry entry)
-    {
-        ConsumerNodeIterator subscriberIter = _consumerList.iterator();
-        // iterate over all the subscribers, and if they are in advance of this queue entry then move them backwards
-        while (subscriberIter.advance())
-        {
-            QueueConsumer<?> sub = subscriberIter.getNode().getConsumer();
-
-            // we don't make browsers send the same stuff twice
-            if (sub.seesRequeues())
-            {
-                updateSubRequeueEntry(sub, entry);
-            }
-        }
-        notifyPullOnlyConsumers();
-        deliverAsync();
-    }
 
     public void addBinding(final Binding<?> binding)
     {
@@ -1152,7 +1129,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     public final void recover(ServerMessage message, final MessageEnqueueRecord enqueueRecord)
     {
-
         doEnqueue(message, null, enqueueRecord);
     }
 
@@ -1197,25 +1173,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         try
         {
-            if (action != null || (exclusiveSub == null  && _queueRunner.isIdle()))
-            {
-                AccessController.doPrivileged(
-                        new PrivilegedAction<Void>()
-                        {
-                            @Override
-                            public Void run()
-                            {
-                                tryDeliverStraightThrough(entry);
-                                return null;
-                            }
-                        }, _immediateDeliveryContext);
-            }
-
             if (entry.isAvailable())
             {
                 checkConsumersNotAheadOfDelivery(entry);
-                notifyPullOnlyConsumers();
-                deliverAsync();
+                notifyConsumers(entry);
             }
 
             checkForNotificationOnNewMessage(entry.getMessage());
@@ -1264,125 +1225,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    /**
-     * iterate over consumers and if any is at the end of the queue and can deliver this message,
-     * then deliver the message
-     */
-    private void tryDeliverStraightThrough(final QueueEntry entry)
-    {
-        try
-        {
-            ConsumerNode node = _consumerList.getMarkedNode();
-            ConsumerNode nextNode = node.findNext();
-            if (nextNode == null)
-            {
-                nextNode = _consumerList.getHead().findNext();
-            }
-            while (nextNode != null)
-            {
-                if (_consumerList.updateMarkedNode(node, nextNode))
-                {
-                    break;
-                }
-                else
-                {
-                    node = _consumerList.getMarkedNode();
-                    nextNode = node.findNext();
-                    if (nextNode == null)
-                    {
-                        nextNode = _consumerList.getHead().findNext();
-                    }
-                }
-            }
-            // always do one extra loop after we believe we've finished
-            // this catches the case where we *just* miss an update
-            int loops = 2;
-
-            while (entry.isAvailable() && loops != 0)
-            {
-                if (nextNode == null)
-                {
-                    loops--;
-                    nextNode = _consumerList.getHead();
-                }
-                else
-                {
-                    // if consumer at end, and active, offer
-                    final QueueConsumer<?> sub = nextNode.getConsumer();
-
-                    if(sub.getPriority() == Integer.MAX_VALUE)
-                    {
-                        deliverToConsumer(sub, entry);
-                    }
-
-                }
-                nextNode = nextNode.findNext();
-
-            }
-        }
-        catch (ConnectionScopedRuntimeException | TransportException e)
-        {
-            String errorMessage = "Suppressing " + e.getClass().getSimpleName() +
-                              " during straight through delivery, as this" +
-                              " can only indicate an issue with a consumer.";
-            if(_logger.isDebugEnabled())
-            {
-                _logger.debug(errorMessage, e);
-            }
-            else
-            {
-                _logger.info(errorMessage + ' ' + e.getMessage());
-            }
-        }
-    }
-
-    private void deliverToConsumer(final QueueConsumer<?> sub, final QueueEntry entry)
-    {
-
-        if(sub.trySendLock())
-        {
-            try
-            {
-                // get available queue entry first in order to avoid referring old deleted queue entry in sub._queueContext._lastSeen
-                if ((getNextAvailableEntry(sub) == entry)
-                    && !sub.isSuspended()
-                    && sub.hasInterest(entry)
-                    && mightAssign(sub, entry)
-                    && !sub.wouldSuspend(entry))
-                {
-
-                    MessageReference messageReference = null;
-                    try
-                    {
-
-                        if ((sub.acquires() && !assign(sub, entry))
-                            || (!sub.acquires() && (messageReference = entry.newMessageReference()) == null))
-                        {
-                            // restore credit here that would have been taken away by wouldSuspend since we didn't manage
-                            // to acquire the entry for this consumer
-                            sub.restoreCredit(entry);
-                        }
-                        else
-                        {
-                            deliverMessage(sub, entry, false, true);
-                        }
-                    }
-                    finally
-                    {
-                        if (messageReference != null)
-                        {
-                            messageReference.release();
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                sub.releaseSendLock();
-            }
-        }
-    }
-
     private boolean assign(final QueueConsumer<?> sub, final QueueEntry entry)
     {
         if(_messageGroupManager == null)
@@ -1427,20 +1269,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _queueStatistics.getEnqueueCount();
     }
 
-    private void deliverMessage(final QueueConsumer<?> sub,
-                                final QueueEntry entry,
-                                boolean batch,
-                                final boolean updateLastSeen)
-    {
-        if(updateLastSeen)
-        {
-            setLastSeenEntry(sub, entry);
-        }
-
-        sub.send(entry, batch);
-    }
-
-
     private void setLastSeenEntry(final QueueConsumer<?> sub, final QueueEntry entry)
     {
         QueueContext subContext = sub.getQueueContext();
@@ -1458,7 +1286,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private void updateSubRequeueEntry(final QueueConsumer<?> sub, final QueueEntry entry)
     {
-
         QueueContext subContext = sub.getQueueContext();
         if(subContext != null)
         {
@@ -1468,19 +1295,33 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 if(QueueContext._releasedUpdater.compareAndSet(subContext, oldEntry, entry))
                 {
+                    notifyConsumer(sub);
                     break;
                 }
             }
         }
     }
 
+
+    @Override
+    public void resetSubPointersForGroups(final QueueEntry entry)
+    {
+        resetSubPointers(entry, true);
+    }
+
+    @Override
     public void requeue(QueueEntry entry)
     {
-        ConsumerNodeIterator subscriberIter = _consumerList.iterator();
+        resetSubPointers(entry, false);
+    }
+
+    private void resetSubPointers(final QueueEntry entry, final boolean ignoreAvailable)
+    {
+        Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getAllIterator();
         // iterate over all the subscribers, and if they are in advance of this queue entry then move them backwards
-        while (subscriberIter.advance() && entry.isAvailable())
+        while (consumerIterator.hasNext() && (ignoreAvailable || entry.isAvailable()))
         {
-            QueueConsumer<?> sub = subscriberIter.getNode().getConsumer();
+            QueueConsumer<?> sub = consumerIterator.next();
 
             // we don't make browsers send the same stuff twice
             if (sub.seesRequeues())
@@ -1488,40 +1329,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 updateSubRequeueEntry(sub, entry);
             }
         }
-        notifyPullOnlyConsumers();
-        deliverAsync();
-
     }
-
-    public boolean resend(final QueueEntry entry, final QueueConsumer<?> consumer)
-    {
-        /* TODO : This is wrong as the consumer may be suspended, we should instead change the state of the message
-                  entry to resend and move back the consumer pointer. */
-
-        consumer.getSendLock();
-        try
-        {
-            if (!consumer.isClosed())
-            {
-                deliverMessage(consumer, entry, false, false);
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        finally
-        {
-            consumer.releaseSendLock();
-        }
-    }
-
-
 
     public int getConsumerCount()
     {
-        return _consumerList.size();
+        return _queueConsumerManager.getAllSize();
     }
 
     public int getConsumerCountWithCredit()
@@ -1620,31 +1432,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     }
 
-    public void stateChanged(QueueConsumer<?> sub, State oldState, State newState)
-    {
-        if (oldState == State.ACTIVE && newState != State.ACTIVE)
-        {
-            _activeSubscriberCount.decrementAndGet();
-
-        }
-        else if (newState == State.ACTIVE)
-        {
-            if (oldState != State.ACTIVE)
-            {
-                _activeSubscriberCount.incrementAndGet();
-                if(sub.isPullOnly())
-                {
-                    sub.getSessionModel().getAMQPConnection().notifyWork();
-                }
-
-            }
-            if(!sub.isPullOnly())
-            {
-                deliverAsync();
-            }
-        }
-    }
-
     public int compareTo(final X o)
     {
         return getName().compareTo(o.getName());
@@ -1660,11 +1447,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         _exclusiveSubscriber = exclusiveSubscriber;
     }
 
-    long getStateChangeCount()
-    {
-        return _stateChangeCount.get();
-    }
-
     /** Used to track bindings to exchanges so that on deletion they can easily be cancelled. */
     abstract QueueEntryList getEntries();
 
@@ -1673,9 +1455,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _queueStatistics;
     }
 
-    protected QueueConsumerList getConsumerList()
+    protected final QueueConsumerManagerImpl getQueueConsumerManager()
     {
-        return _consumerList;
+        return _queueConsumerManager;
     }
 
     public EventLogger getEventLogger()
@@ -1898,14 +1680,16 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 {
                     try
                     {
-                        final ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
 
-                        while (consumerNodeIterator.advance())
+                        Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getAllIterator();
+
+                        while (consumerIterator.hasNext())
                         {
-                            final QueueConsumer s = consumerNodeIterator.getNode().getConsumer();
-                            if (s != null)
+                            QueueConsumer<?> consumer = consumerIterator.next();
+
+                            if (consumer != null)
                             {
-                                s.queueDeleted();
+                                consumer.queueDeleted();
                             }
                         }
 
@@ -1971,11 +1755,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    protected void onClose()
+    protected ListenableFuture<Void> onClose()
     {
-        super.onClose();
         _stopped.set(true);
         _closing = false;
+        _queueHouseKeepingTask.cancel();
+        return Futures.immediateFuture(null);
     }
 
     @Override
@@ -2038,110 +1823,122 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    public void deliverAsync()
+    void notifyConsumers(QueueEntry entry)
     {
-        _stateChangeCount.incrementAndGet();
 
-        _queueRunner.execute();
-
-    }
-
-    void notifyPullOnlyConsumers()
-    {
-        if(_hasPullOnlyConsumers)
+        Iterator<QueueConsumer<?>> nonAcquiringIterator = _queueConsumerManager.getNonAcquiringIterator();
+        while (nonAcquiringIterator.hasNext())
         {
-            ConsumerNode consumerNode = _consumerList.getHead().findNext();
-            while (consumerNode != null)
+            QueueConsumer<?> consumer = nonAcquiringIterator.next();
+            if(consumer.hasInterest(entry))
             {
-                QueueConsumer<?> consumer = consumerNode.getConsumer();
-                if (consumer.isActive() && consumer.isPullOnly() && getNextAvailableEntry(consumer) != null)
+                notifyConsumer(consumer);
+            }
+        }
+
+        final Iterator<QueueConsumer<?>> interestedIterator = _queueConsumerManager.getInterestedIterator();
+        while (entry.isAvailable() && interestedIterator.hasNext())
+        {
+            QueueConsumer<?> consumer = interestedIterator.next();
+            if(consumer.hasInterest(entry))
+            {
+                if(notifyConsumer(consumer))
                 {
-                    consumer.getSessionModel().getAMQPConnection().notifyWork();
+                    break;
                 }
-                consumerNode = consumerNode.findNext();
+                else if(!noHigherPriorityWithCredit(consumer, entry))
+                {
+                    // there exists a higher priority consumer that would take this message, therefore no point in
+                    // continuing to loop
+                    break;
+                }
             }
         }
     }
 
-    void flushConsumer(QueueConsumer<?> sub)
+    void notifyOtherConsumers(final QueueConsumer<?> excludedConsumer)
     {
+        final Iterator<QueueConsumer<?>> interestedIterator = _queueConsumerManager.getInterestedIterator();
+        while (hasAvailableMessages() && interestedIterator.hasNext())
+        {
+            QueueConsumer<?> consumer = interestedIterator.next();
 
-        flushConsumer(sub, Long.MAX_VALUE);
+            if (excludedConsumer != consumer)
+            {
+                if (notifyConsumer(consumer))
+                {
+                    break;
+                }
+            }
+        }
     }
 
-    boolean flushConsumer(QueueConsumer<?> sub, long iterations)
+
+    MessageContainer deliverSingleMessage(QueueConsumer<?> consumer)
     {
-        boolean atTail = false;
-        final boolean keepSendLockHeld = iterations <=  getMaxAsyncDeliveries();
         boolean queueEmpty = false;
-        boolean deliveryAttempted = false;
+        MessageContainer messageContainer = null;
+
+        _queueConsumerManager.setNotified(consumer, false);
 
         try
         {
-            if(keepSendLockHeld)
+            if (!consumer.isSuspended())
             {
-                sub.getSendLock();
-            }
-            while (!sub.isSuspended() && !atTail && iterations != 0)
-            {
-                try
+                messageContainer = attemptDelivery(consumer);
+                if(messageContainer != null)
                 {
-                    if(!keepSendLockHeld)
-                    {
-                        sub.getSendLock();
-                    }
-
-                    atTail = attemptDelivery(sub, true);
-                    deliveryAttempted = true;
-                    if (atTail && getNextAvailableEntry(sub) == null)
-                    {
-                        queueEmpty = true;
-                    }
-                    else if (!atTail)
-                    {
-                        iterations--;
-                    }
+                    _queueConsumerManager.setNotified(consumer, true);
                 }
-                finally
+
+                if (messageContainer == null && getNextAvailableEntry(consumer) == null)
                 {
-                    if(!keepSendLockHeld)
+                    queueEmpty = true;
+                }
+
+                if(messageContainer == null && consumer.acquires())
+                {
+                    if(hasAvailableMessages())
                     {
-                        sub.releaseSendLock();
+                        notifyOtherConsumers(consumer);
                     }
                 }
             }
-
-            if (!deliveryAttempted )
+            else
             {
                 // avoid referring old deleted queue entry in sub._queueContext._lastSeen
-                getNextAvailableEntry(sub);
+                getNextAvailableEntry(consumer);
             }
         }
         finally
         {
-            if(keepSendLockHeld)
-            {
-                sub.releaseSendLock();
-            }
             if(queueEmpty)
             {
-                sub.queueEmpty();
+                consumer.queueEmpty();
             }
 
-            sub.flushBatched();
-
+            consumer.flushBatched();
         }
 
+        return messageContainer;
+    }
 
-        // if there's (potentially) more than one consumer the others will potentially not have been advanced to the
-        // next entry they are interested in yet.  This would lead to holding on to references to expired messages, etc
-        // which would give us memory "leak".
+    private boolean hasAvailableMessages()
+    {
+        return _queueStatistics.getAvailableCount() != 0;
+    }
 
-        if (!hasExclusiveConsumer())
+    public static class MessageContainer
+    {
+        public final MessageInstance _messageInstance;
+        public final MessageReference<?> _messageReference;
+
+        public MessageContainer(final MessageInstance messageInstance,
+                                final MessageReference<?> messageReference)
         {
-            advanceAllConsumers();
+            _messageInstance = messageInstance;
+            _messageReference = messageReference;
         }
-        return atTail;
     }
 
     /**
@@ -2151,18 +1948,16 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
      *
      *
      * @param sub the consumer
-     * @param batch true if processing can be batched
      * @return true if we have completed all possible deliveries for this sub.
      */
-    private boolean attemptDelivery(QueueConsumer<?> sub, boolean batch)
+    private MessageContainer attemptDelivery(QueueConsumer<?> sub)
     {
-        boolean atTail = false;
-
+        MessageContainer messageContainer = null;
         // avoid referring old deleted queue entry in sub._queueContext._lastSeen
         QueueEntry node  = getNextAvailableEntry(sub);
         boolean subActive = sub.isActive() && !sub.isSuspended();
 
-        if (subActive && (sub.getPriority() == Integer.MAX_VALUE || noHigherPriorityWithCredit(sub)))
+        if (node != null && subActive && (sub.getPriority() == Integer.MAX_VALUE || noHigherPriorityWithCredit(sub, node)))
         {
 
             if (_virtualHost.getState() != State.ACTIVE)
@@ -2171,11 +1966,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                            "virtualhost state " + _virtualHost.getState());
             }
 
-            if (node != null && node.isAvailable())
+            if (node.isAvailable())
             {
                 if (sub.hasInterest(node) && mightAssign(sub, node))
                 {
-                    if (!sub.wouldSuspend(node))
+                    if (sub.allocateCredit(node))
                     {
                         MessageReference messageReference = null;
                         try
@@ -2190,7 +1985,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                             }
                             else
                             {
-                                deliverMessage(sub, node, batch, true);
+                                setLastSeenEntry(sub, node);
+                                messageContainer = new MessageContainer(node, messageReference);
                             }
                         }
                         finally
@@ -2201,59 +1997,43 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                             }
                         }
                     }
-                    else // Not enough Credit for message and wouldSuspend
+                    else
                     {
-                        //QPID-1187 - Treat the consumer as suspended for this message
-                        // and wait for the message to be removed to continue delivery.
-                        subActive = false;
                         sub.awaitCredit(node);
-
                     }
                 }
-
             }
-            atTail = (node == null) || (getNextAvailableEntry(sub) == null);
         }
-        return atTail || !subActive;
+        return messageContainer;
     }
 
-    private boolean noHigherPriorityWithCredit(final QueueConsumer<?> sub)
+    boolean noHigherPriorityWithCredit(final QueueConsumer<?> sub, final QueueEntry queueEntry)
     {
-        ConsumerNodeIterator iterator = _consumerList.iterator();
-        while(iterator.advance())
+        Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getAllIterator();
+
+        while (consumerIterator.hasNext())
         {
-            final ConsumerNode node = iterator.getNode();
-            QueueConsumer consumer = node.getConsumer();
+            QueueConsumer<?> consumer = consumerIterator.next();
             if(consumer.getPriority() > sub.getPriority())
             {
-                if(getNextAvailableEntry(consumer) != null && consumer.hasCredit())
+                if(consumer.isNotifyWorkDesired()
+                   && consumer.acquires()
+                   && consumer.hasInterest(queueEntry)
+                   && getNextAvailableEntry(consumer) != null)
                 {
                     return false;
                 }
+            }
+            else
+            {
+                break;
             }
         }
         return true;
     }
 
-    protected void advanceAllConsumers()
-    {
-        ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
-        while (consumerNodeIterator.advance())
-        {
-            ConsumerNode subNode = consumerNodeIterator.getNode();
-            QueueConsumer sub = subNode.getConsumer();
-            if(sub.acquires())
-            {
-                getNextAvailableEntry(sub);
-            }
-            else
-            {
-                // TODO
-            }
-        }
-    }
 
-    private QueueEntry getNextAvailableEntry(final QueueConsumer sub)
+    QueueEntry getNextAvailableEntry(final QueueConsumer sub)
     {
         QueueContext context = sub.getQueueContext();
         if(context != null)
@@ -2309,156 +2089,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-
-    boolean hasAvailableMessages(final QueueConsumer queueConsumer)
-    {
-        return getNextAvailableEntry(queueConsumer) != null;
-    }
-
-    /**
-     * Used by queue Runners to asynchronously deliver messages to consumers.
-     *
-     * A queue Runner is started whenever a state change occurs, e.g when a new
-     * message arrives on the queue and cannot be immediately delivered to a
-     * consumer (i.e. asynchronous delivery is required).
-     *
-     * processQueue should be running while there are messages on the queue AND
-     * there are consumers that can deliver them. If there are no
-     * consumers capable of delivering the remaining messages on the queue
-     * then processQueue should stop to prevent spinning.
-     *
-     * Since processQueue is runs in a fixed size Executor, it should not run
-     * indefinitely to prevent starving other tasks of CPU (e.g jobs to process
-     * incoming messages may not be able to be scheduled in the thread pool
-     * because all threads are working on clearing down large queues). To solve
-     * this problem, after an arbitrary number of message deliveries the
-     * processQueue job stops iterating, resubmits itself to the executor, and
-     * ends the current instance
-     *
-     * @param runner the Runner to schedule
-     */
-    public long processQueue(QueueRunner runner)
-    {
-        long stateChangeCount;
-        long previousStateChangeCount = Long.MIN_VALUE;
-        long rVal = Long.MIN_VALUE;
-        boolean deliveryIncomplete = true;
-
-        boolean lastLoop = false;
-        int iterations = getMaxAsyncDeliveries();
-
-        final int numSubs = _consumerList.size();
-
-        final int perSub = Math.max(iterations / Math.max(numSubs,1), 1);
-
-        // For every message enqueue/requeue the we fire deliveryAsync() which
-        // increases _stateChangeCount. If _sCC changes whilst we are in our loop
-        // (detected by setting previousStateChangeCount to stateChangeCount in the loop body)
-        // then we will continue to run for a maximum of iterations.
-        // So whilst delivery/rejection is going on a processQueue thread will be running
-        while (iterations != 0 && ((previousStateChangeCount != (stateChangeCount = _stateChangeCount.get())) || deliveryIncomplete))
-        {
-            // we want to have one extra loop after every consumer has reached the point where it cannot move
-            // further, just in case the advance of one consumer in the last loop allows a different consumer to
-            // move forward in the next iteration
-
-            if (previousStateChangeCount != stateChangeCount)
-            {
-                //further asynchronous delivery is required since the
-                //previous loop. keep going if iteration slicing allows.
-                lastLoop = false;
-                rVal = stateChangeCount;
-            }
-
-            previousStateChangeCount = stateChangeCount;
-            boolean allConsumersDone = true;
-            boolean consumerDone;
-
-            ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
-            //iterate over the subscribers and try to advance their pointer
-            while (consumerNodeIterator.advance())
-            {
-
-                QueueConsumer<?> sub = consumerNodeIterator.getNode().getConsumer();
-
-                if(!sub.isPullOnly())
-                {
-                    sub.getSendLock();
-
-                    try
-                    {
-                        for (int i = 0; i < perSub; i++)
-                        {
-                            //attempt delivery. returns true if no further delivery currently possible to this sub
-                            consumerDone = attemptDelivery(sub, true);
-                            if (consumerDone)
-                            {
-                                sub.flushBatched();
-                                boolean noMore = getNextAvailableEntry(sub) == null;
-                                if (lastLoop && noMore)
-                                {
-                                    sub.queueEmpty();
-                                }
-                                break;
-                            }
-                            else
-                            {
-                                //this consumer can accept additional deliveries, so we must
-                                //keep going after this (if iteration slicing allows it)
-                                allConsumersDone = false;
-                                lastLoop = false;
-                                if (--iterations == 0)
-                                {
-                                    sub.flushBatched();
-                                    break;
-                                }
-                            }
-                        }
-
-                        sub.flushBatched();
-                    }
-                    finally
-                    {
-                        sub.releaseSendLock();
-                    }
-                }
-            }
-
-            if(allConsumersDone && lastLoop)
-            {
-                //We have done an extra loop already and there are again
-                //again no further delivery attempts possible, only
-                //keep going if state change demands it.
-                deliveryIncomplete = false;
-            }
-            else if(allConsumersDone)
-            {
-                //All consumers reported being done, but we have to do
-                //an extra loop if the iterations are not exhausted and
-                //there is still any work to be done
-                deliveryIncomplete = _consumerList.size() != 0;
-                lastLoop = true;
-            }
-            else
-            {
-                //some consumers can still accept more messages,
-                //keep going if iteration count allows.
-                lastLoop = false;
-                deliveryIncomplete = true;
-            }
-
-        }
-
-        // If iterations == 0 then the limiting factor was the time-slicing rather than available messages or credit
-        // therefore we should schedule this runner again (unless someone beats us to it :-) ).
-        if (iterations == 0)
-        {
-            _logger.debug("Rescheduling runner: {}", runner);
-            return 0L;
-        }
-        return rVal;
-
-    }
 
     public void checkMessageStatus()
     {
@@ -3067,7 +2697,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         switch (getConsumerCount())
         {
             case 1:
-                _exclusiveSubscriber = getConsumerList().getHead().getConsumer();
+                Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getAllIterator();
+
+                if (consumerIterator.hasNext())
+                {
+                    _exclusiveSubscriber = consumerIterator.next();
+                }
                 // deliberate fall through
             case 0:
                 _exclusiveOwner = null;
@@ -3088,8 +2723,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case CONTAINER:
             case CONNECTION:
                 AMQSessionModel session = null;
-                for(ConsumerImpl c : getConsumers())
+                Iterator<QueueConsumer<?>> queueConsumerIterator = _queueConsumerManager.getAllIterator();
+                while(queueConsumerIterator.hasNext())
                 {
+                    QueueConsumer<?> c = queueConsumerIterator.next();
+
                     if(session == null)
                     {
                         session = c.getSessionModel();
@@ -3114,8 +2752,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case CONTAINER:
             case PRINCIPAL:
                 AMQPConnection con = null;
-                for(ConsumerImpl c : getConsumers())
+                Iterator<QueueConsumer<?>> queueConsumerIterator = _queueConsumerManager.getAllIterator();
+                while(queueConsumerIterator.hasNext())
                 {
+                    QueueConsumer<?> c = queueConsumerIterator.next();
                     if(con == null)
                     {
                         con = c.getSessionModel().getAMQPConnection();
@@ -3142,8 +2782,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case NONE:
             case PRINCIPAL:
                 String containerID = null;
-                for(ConsumerImpl c : getConsumers())
+                Iterator<QueueConsumer<?>> queueConsumerIterator = _queueConsumerManager.getAllIterator();
+                while(queueConsumerIterator.hasNext())
                 {
+                    QueueConsumer<?> c = queueConsumerIterator.next();
                     if(containerID == null)
                     {
                         containerID = c.getSessionModel().getAMQPConnection().getRemoteContainerName();
@@ -3173,8 +2815,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case NONE:
             case CONTAINER:
                 Principal principal = null;
-                for(ConsumerImpl c : getConsumers())
+                Iterator<QueueConsumer<?>> queueConsumerIterator = _queueConsumerManager.getAllIterator();
+                while(queueConsumerIterator.hasNext())
                 {
+                    QueueConsumer<?> c = queueConsumerIterator.next();
                     if(principal == null)
                     {
                         principal = c.getSessionModel().getAMQPConnection().getAuthorizedPrincipal();
@@ -3232,6 +2876,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @StateTransition(currentState = {State.UNINITIALIZED,State.ERRORED}, desiredState = State.ACTIVE)
     private ListenableFuture<Void> activate()
     {
+        _virtualHost.scheduleHouseKeepingTask(_virtualHost.getHousekeepingCheckPeriod(), _queueHouseKeepingTask);
         setState(State.ACTIVE);
         return Futures.immediateFuture(null);
     }
@@ -3311,7 +2956,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
         else if(clazz == org.apache.qpid.server.model.Consumer.class)
         {
-            return (Collection<C>) getConsumers();
+            return _queueConsumerManager == null
+                    ? Collections.<C>emptySet()
+                    : (Collection<C>) Lists.newArrayList(_queueConsumerManager.getAllIterator());
         }
         else return Collections.emptySet();
     }
@@ -3367,13 +3014,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return super.changeAttribute(name, desired);
 
     }
-
-    int getMaxAsyncDeliveries()
-    {
-        return _maxAsyncDeliveries;
-    }
-
-
 
     private static final String[] NON_NEGATIVE_NUMBERS = {
         ALERT_REPEAT_GAP,
@@ -3760,6 +3400,35 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_INACTIVE(estimatedQueueSize / 1024,
                                                                                           targetQueueSize / 1024));
+            }
+        }
+    }
+
+    private class AdvanceConsumersTask extends HouseKeepingTask
+    {
+
+        AdvanceConsumersTask()
+        {
+            super("Queue Housekeeping: " + AbstractQueue.this.getName(),
+                  _virtualHost, getSystemTaskControllerContext("Queue Housekeeping", _virtualHost.getPrincipal()));
+        }
+
+        @Override
+        public void execute()
+        {
+            // if there's (potentially) more than one consumer the others will potentially not have been advanced to the
+            // next entry they are interested in yet.  This would lead to holding on to references to expired messages, etc
+            // which would give us memory "leak".
+
+            Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getAllIterator();
+
+            while (consumerIterator.hasNext() && !isDeleted())
+            {
+                QueueConsumer<?> sub = consumerIterator.next();
+                if(sub.acquires())
+                {
+                    getNextAvailableEntry(sub);
+                }
             }
         }
     }

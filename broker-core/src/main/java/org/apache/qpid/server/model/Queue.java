@@ -90,9 +90,10 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedContextDefault( name = QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD)
     long DEFAULT_ESTIMATED_MESSAGE_MEMORY_OVERHEAD = 1024l;
 
-    String MAX_ASYNCHRONOUS_DELIVERIES = "queue.maxAsynchronousDeliveries";
-    @ManagedContextDefault(name = MAX_ASYNCHRONOUS_DELIVERIES )
-    int DEFAULT_MAX_ASYNCHRONOUS_DELIVERIES = 80;
+    String QUEUE_SCAVANGE_COUNT = "qpid.queue.scavenge_count";
+    @ManagedContextDefault( name = QUEUE_SCAVANGE_COUNT)
+    int DEFAULT_QUEUE_SCAVANGE_COUNT = 50;
+
 
     String MIME_TYPE_TO_FILE_EXTENSION = "qpid.mimeTypeToFileExtension";
     @SuppressWarnings("unused")
@@ -366,8 +367,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     void requeue(QueueEntry entry);
 
-    boolean resend(QueueEntry entry, QueueConsumer<?> consumer);
-
     List<? extends QueueEntry> getMessagesOnTheQueue();
 
     List<Long> getMessagesOnTheQueue(int num);
@@ -393,8 +392,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     void checkMessageStatus();
 
     Set<NotificationCheck> getNotificationChecks();
-
-    void deliverAsync();
 
     Collection<String> getAvailableAttributes();
 

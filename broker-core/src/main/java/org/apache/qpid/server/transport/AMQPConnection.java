@@ -27,6 +27,8 @@ import java.util.Collection;
 
 import javax.security.auth.Subject;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.Connection;
@@ -35,9 +37,6 @@ import org.apache.qpid.server.util.Deletable;
 
 public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<C>, Deletable<C>, EventLoggerProvider
 {
-    boolean isMessageAssignmentSuspended();
-
-    void alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(boolean override);
 
     AccessControlContext getAccessControlContextFromSubject(Subject subject);
 
@@ -75,9 +74,8 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
 
     void sendConnectionCloseAsync(AMQConstant connectionForced, String reason);
 
-    void reserveOutboundMessageSpace(long size);
-
     boolean isIOThread();
+    ListenableFuture<Void> doOnIOThreadAsync(final Runnable task);
 
     void checkAuthorizedMessagePrincipal(String messageUserId);
 
@@ -91,4 +89,8 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
     Collection<? extends AMQSessionModel<?>> getSessionModels();
 
     void resetStatistics();
+
+    void notifyWork(AMQSessionModel<?> sessionModel);
+
+    boolean isTransportBlockedForWriting();
 }

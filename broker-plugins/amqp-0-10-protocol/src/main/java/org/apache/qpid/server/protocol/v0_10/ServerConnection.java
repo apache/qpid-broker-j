@@ -27,13 +27,12 @@ import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -43,13 +42,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.model.NamedAddressSpace;
-import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -133,7 +132,7 @@ public class ServerConnection extends Connection
             getAmqpConnection().getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis() + CLOSE_OK_TIMEOUT, (ServerNetworkConnection) getNetworkConnection()));
 
             // trigger a wakeup to ensure the ticker will be taken into account
-            notifyWork();
+            getAmqpConnection().notifyWork();
         }
     }
 
@@ -468,10 +467,10 @@ public class ServerConnection extends Connection
         super.doHeartBeat();
     }
 
-    private void addAsyncTask(final Action<ServerConnection> action)
+    void addAsyncTask(final Action<? super ServerConnection> action)
     {
         _asyncTaskList.add(action);
-        notifyWork();
+        getAmqpConnection().notifyWork();
     }
 
     public int getMessageCompressionThreshold()
@@ -492,30 +491,26 @@ public class ServerConnection extends Connection
         }
     }
 
-    public void notifyWork()
+    public Iterator<Runnable> processPendingIterator(final Set<AMQSessionModel<?>> sessionsWithWork)
     {
-        _amqpConnection.notifyWork();
-    }
-
-    public Iterator<Runnable> processPendingIterator()
-    {
-        return new ProcessPendingIterator();
+        return new ProcessPendingIterator(sessionsWithWork);
     }
 
     private class ProcessPendingIterator implements Iterator<Runnable>
     {
-        private final Collection<? extends ServerSession> _sessionsWithPending;
+        private final Collection<AMQSessionModel<?>> _sessionsWithPending;
         private Iterator<? extends AMQSessionModel<?>> _sessionIterator;
-        private ProcessPendingIterator()
+        private ProcessPendingIterator(final Set<AMQSessionModel<?>> sessionsWithWork)
         {
-            _sessionsWithPending = new ArrayList<>(getSessionModels());
+            _sessionsWithPending = sessionsWithWork;
             _sessionIterator = _sessionsWithPending.iterator();
         }
 
         @Override
         public boolean hasNext()
         {
-            return !(_sessionsWithPending.isEmpty() && _asyncTaskList.isEmpty());
+            return (!_sessionsWithPending.isEmpty() && !isClosing() && !_amqpConnection.isConnectionStopped())
+                   || !_asyncTaskList.isEmpty();
         }
 
         @Override
@@ -523,22 +518,39 @@ public class ServerConnection extends Connection
         {
             if(!_sessionsWithPending.isEmpty())
             {
-                if(!_sessionIterator.hasNext())
+                if(isClosing() || _amqpConnection.isConnectionStopped())
                 {
-                    _sessionIterator = _sessionsWithPending.iterator();
-                }
-                final AMQSessionModel<?> session = _sessionIterator.next();
-                return new Runnable()
-                {
-                    @Override
-                    public void run()
+                    // in case the connection was marked as closing between a call to hasNext() and
+                    // a subsequent call to next()
+                    return new Runnable()
                     {
-                        if(!session.processPending())
+                        @Override
+                        public void run()
+                        {
+
+                        }
+                    };
+                }
+                else
+                {
+                    if (!_sessionIterator.hasNext())
+                    {
+                        _sessionIterator = _sessionsWithPending.iterator();
+                    }
+                    final AMQSessionModel<?> session = _sessionIterator.next();
+                    return new Runnable()
+                    {
+                        @Override
+                        public void run()
                         {
                             _sessionIterator.remove();
+                            if (session.processPending())
+                            {
+                                _sessionsWithPending.add(session);
+                            }
                         }
-                    }
-                };
+                    };
+                }
             }
             else if(!_asyncTaskList.isEmpty())
             {
@@ -556,6 +568,7 @@ public class ServerConnection extends Connection
             {
                 throw new NoSuchElementException();
             }
+
         }
 
         @Override

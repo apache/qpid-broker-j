@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.queue;
 
-import java.security.AccessController;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -31,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
-import org.apache.qpid.server.consumer.MockConsumer;
+import org.apache.qpid.server.consumer.TestConsumerTarget;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.LifetimePolicy;
@@ -66,74 +65,6 @@ public class StandardQueueTest extends AbstractQueueTestBase
                    getQueue().isDeleted());
     }
 
-    public void testActiveConsumerCount() throws Exception
-    {
-
-        Map<String,Object> queueAttributes = new HashMap<>();
-        queueAttributes.put(Queue.NAME, "testActiveConsumerCount");
-        queueAttributes.put(Queue.OWNER, "testOwner");
-        final StandardQueueImpl queue = new StandardQueueImpl(queueAttributes, getVirtualHost());
-        queue.open();
-        //verify adding an active consumer increases the count
-        final MockConsumer consumer1 = new MockConsumer();
-        consumer1.setActive(true);
-        consumer1.setState(ConsumerTarget.State.ACTIVE);
-        assertEquals("Unexpected active consumer count", 0, queue.getConsumerCountWithCredit());
-        queue.addConsumer(consumer1,
-                          null,
-                          createMessage(-1l).getClass(),
-                          "test",
-                          EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                     ConsumerImpl.Option.SEES_REQUEUES), 0);
-        assertEquals("Unexpected active consumer count", 1, queue.getConsumerCountWithCredit());
-
-        //verify adding an inactive consumer doesn't increase the count
-        final MockConsumer consumer2 = new MockConsumer();
-        consumer2.setActive(false);
-        consumer2.setState(ConsumerTarget.State.SUSPENDED);
-        assertEquals("Unexpected active consumer count", 1, queue.getConsumerCountWithCredit());
-        queue.addConsumer(consumer2,
-                          null,
-                          createMessage(-1l).getClass(),
-                          "test",
-                          EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                     ConsumerImpl.Option.SEES_REQUEUES), 0);
-        assertEquals("Unexpected active consumer count", 1, queue.getConsumerCountWithCredit());
-
-        //verify behaviour in face of expected state changes:
-
-        //verify a consumer going suspended->active increases the count
-        consumer2.setState(ConsumerTarget.State.ACTIVE);
-        assertEquals("Unexpected active consumer count", 2, queue.getConsumerCountWithCredit());
-
-        //verify a consumer going active->suspended decreases the count
-        consumer2.setState(ConsumerTarget.State.SUSPENDED);
-        assertEquals("Unexpected active consumer count", 1, queue.getConsumerCountWithCredit());
-
-        //verify a consumer going suspended->closed doesn't change the count
-        consumer2.setState(ConsumerTarget.State.CLOSED);
-        assertEquals("Unexpected active consumer count", 1, queue.getConsumerCountWithCredit());
-
-        //verify a consumer going active->active doesn't change the count
-        consumer1.setState(ConsumerTarget.State.ACTIVE);
-        assertEquals("Unexpected active consumer count", 1, queue.getConsumerCountWithCredit());
-
-        consumer1.setState(ConsumerTarget.State.SUSPENDED);
-        assertEquals("Unexpected active consumer count", 0, queue.getConsumerCountWithCredit());
-
-        //verify a consumer going suspended->suspended doesn't change the count
-        consumer1.setState(ConsumerTarget.State.SUSPENDED);
-        assertEquals("Unexpected active consumer count", 0, queue.getConsumerCountWithCredit());
-
-        consumer1.setState(ConsumerTarget.State.ACTIVE);
-        assertEquals("Unexpected active consumer count", 1, queue.getConsumerCountWithCredit());
-
-        //verify a consumer going active->closed  decreases the count
-        consumer1.setState(ConsumerTarget.State.CLOSED);
-        assertEquals("Unexpected active consumer count", 0, queue.getConsumerCountWithCredit());
-
-    }
-
 
     /**
      * Tests that entry in dequeued state are not enqueued and not delivered to consumer
@@ -144,7 +75,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
         AbstractQueue queue = new DequeuedQueue(getVirtualHost());
         queue.create();
         // create a consumer
-        MockConsumer consumer = new MockConsumer();
+        TestConsumerTarget consumer = new TestConsumerTarget();
 
         // register consumer
         queue.addConsumer(consumer,
@@ -156,6 +87,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
 
         // put test messages into a queue
         putGivenNumberOfMessages(queue, 4);
+        while(consumer.processPending());
 
         // assert received messages
         List<MessageInstance> messages = consumer.getMessages();
@@ -167,8 +99,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
     }
 
     /**
-     * Tests whether dequeued entry is sent to subscriber in result of
-     * invocation of {@link AbstractQueue#processQueue(QueueRunner)}
+     * Tests whether dequeued entry is sent to subscriber
      */
     public void testProcessQueueWithDequeuedEntry() throws Exception
     {
@@ -193,8 +124,15 @@ public class StandardQueueTest extends AbstractQueueTestBase
         final CountDownLatch latch = new CountDownLatch(messageNumber -1);
 
         // create a consumer
-        MockConsumer consumer = new MockConsumer()
+        TestConsumerTarget consumer = new TestConsumerTarget()
         {
+
+            @Override
+            public void notifyWork()
+            {
+                while(processPending());
+            }
+
             /**
              * Send a message and decrement latch
              * @param consumer
@@ -217,14 +155,6 @@ public class StandardQueueTest extends AbstractQueueTestBase
                               EnumSet.of(ConsumerImpl.Option.ACQUIRES,
                                          ConsumerImpl.Option.SEES_REQUEUES), 0);
 
-        // process queue
-        testQueue.processQueue(new QueueRunner(testQueue, AccessController.getContext())
-        {
-            public void run()
-            {
-                // do nothing
-            }
-        });
 
         // wait up to 1 minute for message receipt
         try

@@ -774,16 +774,25 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                         {
                             return closeChildren();
                         }
+                    }).then(new Callable<ListenableFuture<Void>>()
+                    {
+                        @Override
+                        public ListenableFuture<Void> call() throws Exception
+                        {
+                            return onClose();
+                        }
                     }).then(new Runnable()
-                            {
-                                @Override
-                                public void run()
-                                {
-                                    onClose();
-                                    unregister(false);
-                                    LOGGER.debug("Closed " + AbstractConfiguredObject.this.getClass().getSimpleName() + " : " + getName());
-                                }
-                            });
+                    {
+                        @Override
+                        public void run()
+                        {
+                            unregister(false);
+                            LOGGER.debug("Closed "
+                                         + AbstractConfiguredObject.this.getClass().getSimpleName()
+                                         + " : "
+                                         + getName());
+                        }
+                    });
                 }
                 else
                 {
@@ -819,8 +828,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return Futures.immediateFuture(null);
     }
 
-    protected void onClose()
+    protected ListenableFuture<Void> onClose()
     {
+        return Futures.immediateFuture(null);
     }
 
     public final void create()

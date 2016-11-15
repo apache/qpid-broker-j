@@ -61,8 +61,6 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private final AtomicBoolean _closed = new AtomicBoolean(false);
     private final ProtocolEngine _protocolEngine;
     private final Runnable _onTransportEncryptionAction;
-    private final AtomicLong _usedOutboundMessageSpace = new AtomicLong();
-    private final long _outboundMessageBufferLimit;
 
     private volatile boolean _fullyWritten = true;
 
@@ -96,9 +94,6 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         _remoteSocketAddress = _socketChannel.socket().getRemoteSocketAddress().toString();
         _port = port;
         _threadName = SelectorThread.IO_THREAD_NAME_PREFIX + _remoteSocketAddress.toString();
-
-        _outboundMessageBufferLimit = (long) _port.getContextValue(Long.class,
-                                                                   AmqpPort.PORT_AMQP_OUTBOUND_MESSAGE_BUFFER_SIZE);
 
         protocolEngine.setWorkListener(new Action<ProtocolEngine>()
         {
@@ -214,15 +209,6 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     }
 
     @Override
-    public void reserveOutboundMessageSpace(long size)
-    {
-        if (_usedOutboundMessageSpace.addAndGet(size) > _outboundMessageBufferLimit)
-        {
-            _protocolEngine.setMessageAssignmentSuspended(true, false);
-        }
-    }
-
-    @Override
     public String getTransportInfo()
     {
         return _delegate.getTransportInfo();
@@ -274,7 +260,6 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                 }
 
                 _protocolEngine.setIOThread(Thread.currentThread());
-                _protocolEngine.setMessageAssignmentSuspended(true, true);
 
                 boolean processPendingComplete = processPending();
 
@@ -290,10 +275,6 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                         _protocolEngine.notifyWork();
                     }
 
-                    if (_fullyWritten)
-                    {
-                        _protocolEngine.setMessageAssignmentSuspended(false, true);
-                    }
                 }
                 else
                 {
@@ -545,12 +526,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
             _buffers.poll();
             buf.dispose();
         }
-        if (_fullyWritten)
-        {
-            _usedOutboundMessageSpace.set(0);
-        }
         return _fullyWritten;
-
     }
 
     protected int readFromNetwork() throws IOException

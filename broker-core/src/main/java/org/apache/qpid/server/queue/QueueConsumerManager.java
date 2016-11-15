@@ -18,11 +18,27 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.message;
+package org.apache.qpid.server.queue;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
-import org.apache.qpid.server.model.Consumer;
+import java.util.Iterator;
 
-public interface MessageSourceConsumer<X extends MessageSourceConsumer<X>> extends ConsumerImpl, Consumer<MessageSourceConsumer<X>>
+public interface QueueConsumerManager
 {
+    void addConsumer(QueueConsumer<?> consumer);
+    boolean removeConsumer(QueueConsumer<?> consumer);
+    /*public*/ boolean setInterest(QueueConsumer<?> consumer, boolean interested); // called from Consumer
+    /*private*/ boolean setNotified(QueueConsumer<?> consumer, boolean notified); // called from Queue
+
+    // should be priority and then insertion order
+    Iterator<QueueConsumer<?>> getInterestedIterator();
+
+    Iterator<QueueConsumer<?>> getAllIterator();
+    Iterator<QueueConsumer<?>> getNonAcquiringIterator();
+
+    int getAllSize();
+    //        int getInterestedSize();
+    int getNotifiedAcquiringSize();
+
+
+    int getHighestNotifiedPriority();
 }

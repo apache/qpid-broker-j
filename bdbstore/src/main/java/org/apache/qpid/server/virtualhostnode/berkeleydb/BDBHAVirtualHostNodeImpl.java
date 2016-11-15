@@ -510,16 +510,18 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     }
 
     @Override
-    protected void onClose()
+    protected ListenableFuture<Void> onClose()
     {
-        try
-        {
-            super.onClose();
-        }
-        finally
-        {
-            closeEnvironment();
-        }
+        return doAfterAlways(super.onClose(),
+                             new Runnable()
+                             {
+                                 @Override
+                                 public void run()
+                                 {
+                                     closeEnvironment();
+                                 }
+                             });
+
     }
 
     @Override

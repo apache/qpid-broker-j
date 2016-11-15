@@ -37,7 +37,7 @@ public interface MessageSource extends TransactionLogResource, MessageNode
                               EnumSet<ConsumerImpl.Option> options,
                               Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
-                   ConsumerAccessRefused;
+                   ConsumerAccessRefused, QueueDeleted;
 
     Collection<? extends ConsumerImpl> getConsumers();
 
@@ -53,6 +53,19 @@ public interface MessageSource extends TransactionLogResource, MessageNode
     {
 
         public ExistingExclusiveConsumer()
+        {
+        }
+    }
+
+    /**
+     * QueueDeleted signals a failure to create a consumer, because the queue has been deleted.
+     * <p>
+     * TODO Move to top level, used outside this class.
+     */
+    final class QueueDeleted extends Exception
+    {
+
+        public QueueDeleted()
         {
         }
     }

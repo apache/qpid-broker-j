@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
 import org.apache.qpid.server.consumer.ConsumerImpl;
-import org.apache.qpid.server.flow.FlowCreditManager;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.message.MessageInstance;
@@ -62,13 +61,12 @@ import org.apache.qpid.transport.Option;
 import org.apache.qpid.util.ByteBufferUtils;
 import org.apache.qpid.util.GZIPUtils;
 
-public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowCreditManager.FlowCreditManagerListener
+public class ConsumerTarget_0_10 extends AbstractConsumerTarget
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerTarget_0_10.class);
 
     private static final Option[] BATCHED = new Option[] { Option.BATCH };
 
-    private final AtomicBoolean _deleted = new AtomicBoolean(false);
     private final String _name;
     private final String _targetAddress;
 
@@ -116,14 +114,13 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
                                Map<String, Object> arguments,
                                boolean multiQueue)
     {
-        super(State.SUSPENDED, isPullOnly(arguments), multiQueue, session.getAMQPConnection());
+        super(multiQueue, session.getAMQPConnection());
         _session = session;
         _postIdSettingAction = new AddMessageDispositionListenerAction(session);
         _acceptMode = acceptMode;
         _acquireMode = acquireMode;
         _creditManager = creditManager;
         _flowMode = flowMode;
-        _creditManager.addStateListener(this);
         _name = name;
         if(arguments != null && arguments.containsKey("local-address"))
         {
@@ -135,41 +132,15 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         }
     }
 
-    private static boolean isPullOnly(Map<String, Object> arguments)
-    {
-        return arguments != null
-               && arguments.containsKey(PULL_ONLY_CONSUMER)
-               && Boolean.valueOf(String.valueOf(arguments.get(PULL_ONLY_CONSUMER)));
-    }
-
     @Override
-    public boolean isFlowSuspended()
+    public void updateNotifyWorkDesired()
     {
-        return getState()!=State.ACTIVE || _deleted.get() || _session.isClosing() || _session.getAMQPConnection().isConnectionStopped();
-        // TODO check for Session suspension
-    }
+        final AMQPConnection_0_10 amqpConnection = _session.getAMQPConnection();
 
-    @Override
-    protected void doCloseInternal()
-    {
-        _creditManager.removeListener(this);
-    }
+        boolean state = !amqpConnection.isTransportBlockedForWriting()
+                        && getCreditManager().hasCredit();
 
-    public void creditStateChanged(boolean hasCredit)
-    {
-
-        if(hasCredit)
-        {
-            if(!updateState(State.SUSPENDED, State.ACTIVE))
-            {
-                // this is a hack to get round the issue of increasing bytes credit
-                notifyCurrentState();
-            }
-        }
-        else
-        {
-            updateState(State.ACTIVE, State.SUSPENDED);
-        }
+        setNotifyWorkDesired(state);
     }
 
     public String getName()
@@ -180,6 +151,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     public void transportStateChanged()
     {
         _creditManager.restoreCredit(0, 0);
+        updateNotifyWorkDesired();
     }
 
     public static class AddMessageDispositionListenerAction implements Runnable
@@ -404,11 +376,12 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
 
     public void flushCreditState(boolean strict)
     {
-        if(strict || !isFlowSuspended() || _deferredMessageCredit >= 200
-          || !(_creditManager instanceof WindowCreditManager)
-          || ((WindowCreditManager)_creditManager).getMessageCreditLimit() < 400 )
+        if(strict || !isSuspended() || _deferredMessageCredit >= 200
+           || !(_creditManager instanceof WindowCreditManager)
+           || ((WindowCreditManager)_creditManager).getMessageCreditLimit() < 400 )
         {
-            _creditManager.restoreCredit(_deferredMessageCredit, _deferredSizeCredit);
+            restoreCredit(_deferredMessageCredit, _deferredSizeCredit);
+
             _deferredMessageCredit = 0;
             _deferredSizeCredit = 0l;
         }
@@ -521,20 +494,25 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         return (maxDeliveryLimit > 0 && entry.getDeliveryCount() >= maxDeliveryLimit);
     }
 
-    public void queueDeleted()
-    {
-        _deleted.set(true);
-    }
-
     public boolean allocateCredit(ServerMessage message)
     {
-        return _creditManager.useCreditForMessage(message.getSize());
+        boolean creditAllocated = _creditManager.useCreditForMessage(message.getSize());
+        updateNotifyWorkDesired();
+        return creditAllocated;
     }
 
     public void restoreCredit(ServerMessage message)
     {
-        _creditManager.restoreCredit(1, message.getSize());
+        restoreCredit(1, message.getSize());
     }
+
+    void restoreCredit(int count, long size)
+    {
+        _creditManager.restoreCredit(count, size);
+        updateNotifyWorkDesired();
+    }
+
+
 
     public FlowCreditManager_0_10 getCreditManager()
     {
@@ -543,25 +521,13 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
 
     public void stop()
     {
-        try
-        {
-            getSendLock();
-
-            updateState(State.ACTIVE, State.SUSPENDED);
-            _stopped.set(true);
-            FlowCreditManager_0_10 creditManager = getCreditManager();
-            creditManager.clearCredit();
-        }
-        finally
-        {
-            releaseSendLock();
-        }
+        getCreditManager().clearCredit();
+        updateNotifyWorkDesired();
     }
 
     public void addCredit(MessageCreditUnit unit, long value)
     {
         FlowCreditManager_0_10 creditManager = getCreditManager();
-
         switch (unit)
         {
             case MESSAGE:
@@ -572,22 +538,11 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
                 creditManager.addCredit(0l, value);
                 break;
         }
-
-        _stopped.set(false);
-
-        if(creditManager.hasCredit())
-        {
-            updateState(State.SUSPENDED, State.ACTIVE);
-        }
-
+        updateNotifyWorkDesired();
     }
 
     public void setFlowMode(MessageFlowMode flowMode)
     {
-
-
-        _creditManager.removeListener(this);
-
         switch(flowMode)
         {
             case CREDIT:
@@ -601,24 +556,18 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
                 throw new ConnectionScopedRuntimeException("Unknown message flow mode: " + flowMode);
         }
         _flowMode = flowMode;
-        updateState(State.ACTIVE, State.SUSPENDED);
-
-        _creditManager.addStateListener(this);
-
+        updateNotifyWorkDesired();
     }
 
-    public boolean isStopped()
+    public boolean isFlowModeChangeAllowed()
     {
-        return _stopped.get();
+        return _creditManager.hasNeitherCredit();
     }
 
     public void flush()
     {
         flushCreditState(true);
-        for(ConsumerImpl consumer : getConsumers())
-        {
-            consumer.flush();
-        }
+        while(sendNextMessage());
         stop();
     }
 
@@ -654,30 +603,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     public long getUnacknowledgedMessages()
     {
         return _unacknowledgedCount.longValue();
-    }
-
-    @Override
-    protected void processClosed()
-    {
-
-    }
-
-    @Override
-    protected void processStateChanged()
-    {
-
-    }
-
-    @Override
-    protected boolean hasStateChanged()
-    {
-        return false;
-    }
-
-    @Override
-    protected boolean hasClosed()
-    {
-        return false;
     }
 
     @Override

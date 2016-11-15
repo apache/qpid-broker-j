@@ -27,6 +27,8 @@ import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -55,7 +57,7 @@ import org.apache.qpid.transport.Constant;
 import org.apache.qpid.server.transport.AggregateTicker;
 
 
-public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0_10>
+public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0_10, ServerConnection>
 {
     private static final Logger _logger = LoggerFactory.getLogger(AMQPConnection_0_10.class);
     private final ServerInputHandler _inputHandler;
@@ -67,6 +69,9 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
     private ServerDisassembler _disassembler;
+
+    private final Set<AMQSessionModel<?>> _sessionsWithWork =
+            Collections.newSetFromMap(new ConcurrentHashMap<AMQSessionModel<?>, Boolean>());
 
 
     public AMQPConnection_0_10(final Broker<?> broker,
@@ -251,7 +256,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     {
         if (isIOThread())
         {
-            return _connection.processPendingIterator();
+            return _connection.processPendingIterator(_sessionsWithWork);
         }
         else
         {
@@ -277,6 +282,13 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         }
     }
 
+    @Override
+    public void notifyWork(final AMQSessionModel<?> sessionModel)
+    {
+        _sessionsWithWork.add(sessionModel);
+        notifyWork();
+    }
+
     public void clearWork()
     {
         _stateChanged.set(false);
@@ -294,6 +306,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
 
     public void sendConnectionCloseAsync(final AMQConstant cause, final String message)
     {
+        stopConnection();
         _connection.sendConnectionCloseAsync(cause, message);
     }
 
@@ -301,6 +314,12 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
                                   final AMQConstant cause, final String message)
     {
         _connection.closeSessionAsync((ServerSession) session, cause, message);
+    }
+
+    @Override
+    protected void addAsyncTask(final Action<? super ServerConnection> action)
+    {
+        _connection.addAsyncTask(action);
     }
 
     public void block()

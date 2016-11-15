@@ -21,11 +21,10 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 
-import org.apache.qpid.server.flow.AbstractFlowCreditManager;
 import org.apache.qpid.server.flow.FlowCreditManager;
 import org.apache.qpid.server.transport.ProtocolEngine;
 
-public class Pre0_10CreditManager extends AbstractFlowCreditManager implements FlowCreditManager
+public class Pre0_10CreditManager implements FlowCreditManager
 {
 
     private final ProtocolEngine _protocolEngine;
@@ -64,14 +63,10 @@ public class Pre0_10CreditManager extends AbstractFlowCreditManager implements F
 
         _bytesCreditLimit = bytesCreditLimit;
         _messageCreditLimit = messageCreditLimit;
-
-        setSuspended(!hasCredit());
     }
 
     public synchronized void restoreCredit(final long messageCredit, final long bytesCredit)
     {
-        final boolean hadCredit = hasCredit();
-
         _messageCredit += messageCredit;
         if (_messageCredit > _messageCreditLimit)
         {
@@ -89,15 +84,6 @@ public class Pre0_10CreditManager extends AbstractFlowCreditManager implements F
                     _bytesCredit,
                     _bytesCreditLimit));
         }
-
-        boolean suspended = !hasCredit();
-        if(!setSuspended(suspended))
-        {
-            if (!suspended && _bytesCreditLimit != 0 && _bytesCredit > 0 && bytesCredit > 0 && hadCredit)
-            {
-                notifyIncreaseBytesCredit();
-            }
-        }
     }
 
     public synchronized boolean hasCredit()
@@ -111,7 +97,6 @@ public class Pre0_10CreditManager extends AbstractFlowCreditManager implements F
     {
         if (_protocolEngine.isTransportBlockedForWriting())
         {
-            setSuspended(true);
             return false;
         }
 
@@ -119,7 +104,6 @@ public class Pre0_10CreditManager extends AbstractFlowCreditManager implements F
         {
             if (_messageCredit <= 0)
             {
-                setSuspended(true);
                 return false;
             }
         }
@@ -127,7 +111,6 @@ public class Pre0_10CreditManager extends AbstractFlowCreditManager implements F
         {
             if ((_bytesCredit < msgSize) && (_bytesCredit != _bytesCreditLimit))
             {
-                setSuspended(!hasCredit());
                 return false;
             }
         }

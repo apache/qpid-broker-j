@@ -1173,8 +1173,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
      */
     public void scheduleHouseKeepingTask(long period, HouseKeepingTask task)
     {
-        _houseKeepingTaskExecutor.scheduleAtFixedRate(task, period / 2, period, TimeUnit.MILLISECONDS);
+        task.setFuture(_houseKeepingTaskExecutor.scheduleAtFixedRate(task, period / 2, period, TimeUnit.MILLISECONDS));
     }
+
 
     public ScheduledFuture<?> scheduleTask(long delay, Runnable task)
     {
@@ -1444,7 +1445,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    protected void onClose()
+    protected ListenableFuture<Void> onClose()
     {
         _dtxRegistry.close();
         shutdownHouseKeeping();
@@ -1455,6 +1456,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _eventLogger.message(VirtualHostMessages.CLOSED(getName()));
 
         stopLogging(_virtualHostLoggersToClose);
+        return Futures.immediateFuture(null);
     }
 
 

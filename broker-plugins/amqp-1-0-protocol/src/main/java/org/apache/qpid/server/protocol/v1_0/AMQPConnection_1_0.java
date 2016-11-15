@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -110,7 +112,7 @@ import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.server.transport.AggregateTicker;
 
-public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_0>
+public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_0, ConnectionHandler>
         implements FrameOutputHandler, DescribedTypeConstructorRegistry.Source,
                    ValueWriter.Registry.Source,
                    ErrorHandler,
@@ -233,7 +235,8 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     private boolean _closedOnOpen;
 
-
+    private final Set<AMQSessionModel<?>> _sessionsWithWork =
+            Collections.newSetFromMap(new ConcurrentHashMap<AMQSessionModel<?>, Boolean>());
 
     AMQPConnection_1_0(final Broker<?> broker,
                        final ServerNetworkConnection network,
@@ -1377,6 +1380,13 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     }
 
     @Override
+    public void notifyWork(final AMQSessionModel<?> sessionModel)
+    {
+        _sessionsWithWork.add(sessionModel);
+        notifyWork();
+    }
+
+    @Override
     public void clearWork()
     {
         _stateChanged.set(false);
@@ -1395,6 +1405,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     public void sendConnectionCloseAsync(final AMQConstant cause, final String message)
     {
+        stopConnection();
         Action<ConnectionHandler> action = new Action<ConnectionHandler>()
         {
             @Override
@@ -1444,7 +1455,8 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         return _orderlyClose.get();
     }
 
-    private void addAsyncTask(final Action<ConnectionHandler> action)
+    @Override
+    protected void addAsyncTask(final Action<? super ConnectionHandler> action)
     {
         _asyncTaskList.add(action);
         notifyWork();
@@ -1532,41 +1544,54 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     private class ProcessPendingIterator implements Iterator<Runnable>
     {
-        private final Collection<? extends AMQSessionModel<?>> _sessionsWithPending;
         private Iterator<? extends AMQSessionModel<?>> _sessionIterator;
         private ProcessPendingIterator()
         {
-            _sessionsWithPending = new ArrayList<>(getSessionModels());
-            _sessionIterator = _sessionsWithPending.iterator();
+            _sessionIterator = _sessionsWithWork.iterator();
         }
 
         @Override
         public boolean hasNext()
         {
-            return !(_sessionsWithPending.isEmpty() && _asyncTaskList.isEmpty());
+            return (!_sessionsWithWork.isEmpty() && !isClosed() && !isConnectionStopped()) || !_asyncTaskList.isEmpty();
         }
 
         @Override
         public Runnable next()
         {
-            if(!_sessionsWithPending.isEmpty())
+            if(!_sessionsWithWork.isEmpty())
             {
-                if(!_sessionIterator.hasNext())
+                if(isClosed() || isConnectionStopped())
                 {
-                    _sessionIterator = _sessionsWithPending.iterator();
-                }
-                final AMQSessionModel<?> session = _sessionIterator.next();
-                return new Runnable()
-                {
-                    @Override
-                    public void run()
+                    return new Runnable()
                     {
-                        if(!session.processPending())
+                        @Override
+                        public void run()
+                        {
+
+                        }
+                    };
+                }
+                else
+                {
+                    if (!_sessionIterator.hasNext())
+                    {
+                        _sessionIterator = _sessionsWithWork.iterator();
+                    }
+                    final AMQSessionModel<?> session = _sessionIterator.next();
+                    return new Runnable()
+                    {
+                        @Override
+                        public void run()
                         {
                             _sessionIterator.remove();
+                            if (session.processPending())
+                            {
+                                _sessionsWithWork.add(session);
+                            }
                         }
-                    }
-                };
+                    };
+                }
             }
             else if(!_asyncTaskList.isEmpty())
             {

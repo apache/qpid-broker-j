@@ -20,43 +20,38 @@
  */
 package org.apache.qpid.server.consumer;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.util.StateChangeListener;
 
 public interface ConsumerTarget
 {
-
-
     void acquisitionRemoved(MessageInstance node);
-
-    void removeStateChangeListener(StateChangeListener<ConsumerTarget, State> listener);
 
     boolean processPending();
 
-    boolean hasPendingWork();
-
     String getTargetAddress();
-
-    boolean hasCredit();
 
     boolean isMultiQueue();
 
+    void notifyWork();
+
+    void updateNotifyWorkDesired();
+
+    boolean isNotifyWorkDesired();
+
     enum State
     {
-        ACTIVE, SUSPENDED, CLOSED
+        OPEN, CLOSED
     }
 
     State getState();
 
     void consumerAdded(ConsumerImpl sub);
 
-    void consumerRemoved(ConsumerImpl sub);
-
-    void notifyCurrentState();
-
-    void addStateListener(StateChangeListener<ConsumerTarget, State> listener);
+    ListenableFuture<Void> consumerRemoved(ConsumerImpl sub);
 
     long getUnacknowledgedBytes();
 
@@ -66,13 +61,9 @@ public interface ConsumerTarget
 
     long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch);
 
-    boolean hasMessagesToSend();
-
     boolean sendNextMessage();
 
     void flushBatched();
-
-    void queueDeleted();
 
     void queueEmpty();
 
@@ -83,13 +74,4 @@ public interface ConsumerTarget
     boolean isSuspended();
 
     boolean close();
-
-    boolean trySendLock();
-
-    void getSendLock();
-
-    void releaseSendLock();
-
-    boolean isPullOnly();
-
 }

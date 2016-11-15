@@ -709,17 +709,6 @@ public abstract class QueueEntryImpl implements QueueEntry
     }
 
     @Override
-    public boolean resend()
-    {
-        QueueConsumer sub = getDeliveredConsumer();
-        if(sub != null)
-        {
-            return sub.resend(this);
-        }
-        return false;
-    }
-
-    @Override
     public TransactionLogResource getOwningResource()
     {
         return getQueue();

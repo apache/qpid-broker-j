@@ -226,7 +226,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     }
 
     @Override
-    protected void onClose()
+    protected ListenableFuture<Void> onClose()
     {
         if (_server != null)
         {
@@ -242,6 +242,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         }
 
         getBroker().getEventLogger().message(ManagementConsoleMessages.STOPPED(OPERATIONAL_LOGGING_NAME));
+        return Futures.immediateFuture(null);
     }
 
     public int getSessionTimeout()
