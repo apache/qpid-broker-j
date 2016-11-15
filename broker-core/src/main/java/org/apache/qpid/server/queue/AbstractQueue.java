@@ -283,28 +283,29 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     void setNotifyWorkDesired(final QueueConsumer consumer, final boolean desired)
     {
-        _queueConsumerManager.setInterest(consumer, desired);
-
-        if (desired)
+        if (_queueConsumerManager.setInterest(consumer, desired))
         {
-            _activeSubscriberCount.incrementAndGet();
-        }
-        else
-        {
-            _activeSubscriberCount.decrementAndGet();
-
-            // iterate over interested and notify one as long as its priority is higher than any notified
-            final Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getInterestedIterator();
-            while(consumerIterator.hasNext())
+            if (desired)
             {
-                QueueConsumer<?> queueConsumer = consumerIterator.next();
-                //TODO - break here if the consumer has lower priority than the highest notified (presuming iterator is priority ordered)
-                if(notifyConsumer(queueConsumer))
+                _activeSubscriberCount.incrementAndGet();
+                notifyConsumer(consumer);
+            }
+            else
+            {
+                _activeSubscriberCount.decrementAndGet();
+
+                // iterate over interested and notify one as long as its priority is higher than any notified
+                final Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getInterestedIterator();
+                while (consumerIterator.hasNext())
                 {
-                    break;
+                    QueueConsumer<?> queueConsumer = consumerIterator.next();
+                    //TODO - break here if the consumer has lower priority than the highest notified (presuming iterator is priority ordered)
+                    if (notifyConsumer(queueConsumer))
+                    {
+                        break;
+                    }
                 }
             }
-
         }
     }
 
@@ -976,6 +977,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         consumer.setQueueContext(queueContext);
 
         _queueConsumerManager.addConsumer(consumer);
+        if (consumer.isNotifyWorkDesired())
+        {
+            _activeSubscriberCount.incrementAndGet();
+        }
 
         childAdded(consumer);
         consumer.addChangeListener(_deletedChildListener);
@@ -1938,16 +1943,19 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    void notifyConsumers()
+    void notifyOtherConsumers(final QueueConsumer<?> excludedConsumer)
     {
         final Iterator<QueueConsumer<?>> interestedIterator = _queueConsumerManager.getInterestedIterator();
         while (interestedIterator.hasNext())
         {
             QueueConsumer<?> consumer = interestedIterator.next();
 
-            if(notifyConsumer(consumer))
+            if (excludedConsumer != consumer)
             {
-                break;
+                if (notifyConsumer(consumer))
+                {
+                    break;
+                }
             }
         }
     }
@@ -1974,6 +1982,15 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 {
                     queueEmpty = true;
                 }
+
+                if(messageContainer == null && consumer.acquires())
+                {
+                    // TODO - Should be only checking for available messages
+                    if(!isEmpty())
+                    {
+                        notifyOtherConsumers(consumer);
+                    }
+                }
             }
             else
             {
@@ -1989,16 +2006,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             }
 
             consumer.flushBatched();
+        }
 
-        }
-        if(messageContainer == null && consumer.acquires())
-        {
-            // TODO - Should be only checking for available messages
-            if(!isEmpty())
-            {
-                notifyConsumers();
-            }
-        }
         return messageContainer;
     }
 

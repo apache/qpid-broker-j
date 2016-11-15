@@ -26,7 +26,7 @@ public interface QueueConsumerManager
 {
     void addConsumer(QueueConsumer<?> consumer);
     boolean removeConsumer(QueueConsumer<?> consumer);
-    /*public*/ void setInterest(QueueConsumer<?> consumer, boolean interested); // called from Consumer
+    /*public*/ boolean setInterest(QueueConsumer<?> consumer, boolean interested); // called from Consumer
     /*private*/ boolean setNotified(QueueConsumer<?> consumer, boolean notified); // called from Queue
 
     // should be priority and then insertion order

@@ -115,17 +115,12 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
                 }
             }
 
-            // TODO - remove once queue is smarter
             for (ConsumerImpl consumer : _consumers)
             {
                 consumer.setNotifyWorkDesired(desired);
             }
 
             _notifyWorkDesired = desired;
-            if (desired)
-            {
-                notifyWork();
-            }
         }
     }
 

@@ -101,29 +101,29 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
 
     // Set by the consumer always in the IO thread
     @Override
-    public void setInterest(final QueueConsumer consumer, final boolean interested)
+    public boolean setInterest(final QueueConsumer consumer, final boolean interested)
     {
         QueueConsumerNode node = consumer.getQueueConsumerNode();
         if (interested)
         {
             if (consumer.acquires())
             {
-                node.moveFromTo(NodeState.NOT_INTERESTED, NodeState.INTERESTED);
+                return node.moveFromTo(NodeState.NOT_INTERESTED, NodeState.INTERESTED);
             }
             else
             {
-                node.moveFromTo(NodeState.NOT_INTERESTED, NodeState.NON_ACQUIRING);
+                return node.moveFromTo(NodeState.NOT_INTERESTED, NodeState.NON_ACQUIRING);
             }
         }
         else
         {
             if (consumer.acquires())
             {
-                node.moveFromTo(EnumSet.of(NodeState.INTERESTED, NodeState.NOTIFIED), NodeState.NOT_INTERESTED);
+                return node.moveFromTo(EnumSet.of(NodeState.INTERESTED, NodeState.NOTIFIED), NodeState.NOT_INTERESTED);
             }
             else
             {
-                node.moveFromTo(EnumSet.of(NodeState.NON_ACQUIRING), NodeState.NOT_INTERESTED);
+                return node.moveFromTo(EnumSet.of(NodeState.NON_ACQUIRING), NodeState.NOT_INTERESTED);
             }
         }
     }
