@@ -101,11 +101,8 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
             // We don't decrement the reference here as we don't want to consume the message
             // but we do want to send it to the client.
 
-            synchronized (getChannel())
-            {
-                long deliveryTag = getChannel().getNextDeliveryTag();
-                sendToClient(consumer, entry.getMessage(), entry.getInstanceProperties(), deliveryTag);
-            }
+            long deliveryTag = getChannel().getNextDeliveryTag();
+            sendToClient(consumer, entry.getMessage(), entry.getInstanceProperties(), deliveryTag);
 
         }
 
@@ -162,15 +159,11 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
             MessageReference ref = message.newReference();
             InstanceProperties props = entry.getInstanceProperties();
             entry.delete();
-            long size;
-            synchronized (getChannel())
-            {
-                getChannel().getConnection().setDeferFlush(batch);
-                long deliveryTag = getChannel().getNextDeliveryTag();
+            getChannel().getConnection().setDeferFlush(batch);
+            long deliveryTag = getChannel().getNextDeliveryTag();
 
-                size = sendToClient(consumer, message, props, deliveryTag);
+            sendToClient(consumer, message, props, deliveryTag);
 
-            }
             ref.release();
 
         }

@@ -54,13 +54,6 @@ public interface UnacknowledgedMessageMap
 
     MessageInstance get(long deliveryTag);
 
-    /**
-     * Get the set of delivery tags that are outstanding.
-     *
-     * @return a set of delivery tags
-     */
-    Set<Long> getDeliveryTags();
-
     Collection<MessageInstance> acknowledge(long deliveryTag, boolean multiple);
     void collect(long key, boolean multiple, Map<Long, MessageInstance> msgs);
 }
