@@ -27,7 +27,7 @@ import org.apache.qpid.transport.RangeSetFactory;
 import org.apache.qpid.transport.Struct;
 import org.apache.qpid.transport.Type;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -120,23 +120,6 @@ public abstract class AbstractDecoder implements Decoder
         return readUint64();
     }
 
-    private static final String decode(byte[] bytes, int offset, int length, String charset)
-    {
-        try
-        {
-            return new String(bytes, offset, length, charset);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static final String decode(byte[] bytes, String charset)
-    {
-        return decode(bytes, 0, bytes.length, charset);
-    }
-
     public String readStr8()
     {
         short size = readUint8();
@@ -145,7 +128,7 @@ public abstract class AbstractDecoder implements Decoder
 
         if (str == null)
         {
-            str = decode(bin.array(), bin.offset(), bin.size(), "UTF-8");
+            str = new String(bin.array(), bin.offset(), bin.size(), StandardCharsets.UTF_8);
             if(bin.hasExcessCapacity())
             {
                 str8cache.put(bin.copy(), str);
@@ -163,7 +146,7 @@ public abstract class AbstractDecoder implements Decoder
         int size = readUint16();
         byte[] bytes = new byte[size];
         get(bytes);
-        return decode(bytes, "UTF-8");
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
     public byte[] readVbin8()
@@ -221,11 +204,6 @@ public abstract class AbstractDecoder implements Decoder
         return new UUID(msb, lsb);
     }
 
-    public String readContent()
-    {
-        throw new Error("Deprecated");
-    }
-
     public Struct readStruct(int type)
     {
         Struct st = Struct.create(type);
@@ -276,10 +254,10 @@ public abstract class AbstractDecoder implements Decoder
 
         if (count == 0)
         {
-            return Collections.EMPTY_MAP;
+            return Collections.emptyMap();
         }
 
-        Map<String,Object> result = new LinkedHashMap();
+        Map<String,Object> result = new LinkedHashMap<>();
         for (int i = 0; i < count; i++)
         {
             String key = readStr8();
@@ -305,10 +283,10 @@ public abstract class AbstractDecoder implements Decoder
 
         if (count == 0)
         {
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
 
-        List<Object> result = new ArrayList();
+        List<Object> result = new ArrayList<>();
         for (int i = 0; i < count; i++)
         {
             byte code = get();
@@ -334,10 +312,10 @@ public abstract class AbstractDecoder implements Decoder
 
         if (count == 0)
         {
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
 
-        List<Object> result = new ArrayList<Object>();
+        List<Object> result = new ArrayList<>();
         for (int i = 0; i < count; i++)
         {
             Object value = read(t);

@@ -22,10 +22,31 @@
 
 <section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Managing-Truststores">
     <title>Truststores</title>
-    <para> A <link linkend="Java-Broker-Concepts-Truststores">Truststore</link> is required by a
-        Port in order to SSL client authentication. Some authentication provides also use a
-        truststore when connecting to authentication systems that are protected by a private issuer
-        SSL certificate.</para>
+    <para>
+        <link linkend="Java-Broker-Concepts-Truststores">Truststores</link>
+        have a number of roles within
+        the Broker.
+        <itemizedlist>
+            <listitem>
+                <para>A truststore is required by a Port in order to support SSL client authentication.</para>
+            </listitem>
+            <listitem>
+                <para>Truststores have a optional role in end to end message encryption. The Broker acts as a
+                    <link xmlns:xlink="http://www.w3.org/1999/xlink"
+                          xlink:href="https://en.wikipedia.org/wiki/Key_server_(cryptographic)">
+                        Key Server
+                    </link>
+                    so that publishing applications have convenient access to recipient's public keys.
+                </para>
+            </listitem>
+            <listitem>
+                <para>Some authentication providers also use a truststore when connecting to authentication systems that
+                    are protected by a private issuer
+                    SSL certificate.
+                </para>
+            </listitem>
+        </itemizedlist>
+    </para>
     <section xml:id="Java-Broker-Management-Managing-Truststores-Types">
         <title>Types</title>
         <para>The following truststore types are supported. <itemizedlist>
@@ -54,6 +75,11 @@
                 <listitem>
                     <para><emphasis>Name the truststore</emphasis>. Used to identify the
                         truststore.</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Exposed as Message Source</emphasis>. If enabled, the Broker
+                        will distribute certificates contained within the trustore to clients.
+                        Used by the end to end message encryption feature.</para>
                 </listitem>
             </itemizedlist>
         </para>

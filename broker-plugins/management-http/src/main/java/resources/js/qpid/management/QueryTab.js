@@ -164,12 +164,12 @@ define(["dojo/parser",
                 message: "<div>Query contains unsaved changes.<br/>Would you like to close it anyway?</div>",
                 confirmationId: "query.confirmation.close.changed"
             })
-                .then(lang.hitch(this, this.destroy));
+                .then(lang.hitch(this, function(){this.destroy(true);}));
 
             return false;
         };
 
-        QueryTab.prototype.destroy = function ()
+        QueryTab.prototype.destroy = function (destroyContentPane)
         {
             if (this.destroyed)
             {
@@ -183,6 +183,12 @@ define(["dojo/parser",
             {
                 this.queryWidget.destroyRecursive();
                 this.queryWidget = null;
+            }
+
+            if (destroyContentPane)
+            {
+                this.contentPane.getParent().removeChild(this.contentPane);
+                this.contentPane.destroyRecursive();
             }
         };
 
