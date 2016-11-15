@@ -42,11 +42,6 @@ final class QueueConsumerNode
         return _queueConsumer;
     }
 
-    public QueueConsumerNodeListEntry getListEntry()
-    {
-        return _listEntry;
-    }
-
     public boolean moveFromTo(QueueConsumerManagerImpl.NodeState fromState, QueueConsumerManagerImpl.NodeState toState)
     {
         return moveFromTo(EnumSet.of(fromState), toState);

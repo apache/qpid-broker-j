@@ -1933,7 +1933,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         // we don't want to notify lower priority consumers if there exists a consumer in the notified set
         // which can take the message (implies iterating such that you look at for each priority look at interested then at notified)
         final Iterator<QueueConsumer<?>> interestedIterator = _queueConsumerManager.getInterestedIterator();
-        while (interestedIterator.hasNext())
+        while (entry.isAvailable() && interestedIterator.hasNext())
         {
             QueueConsumer<?> consumer = interestedIterator.next();
             if(consumer.hasInterest(entry) && notifyConsumer(consumer))
