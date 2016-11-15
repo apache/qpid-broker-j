@@ -301,13 +301,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     protected ListenableFuture<Void> beforeClose()
     {
         _closing.set(true);
-
-        if (_connectionCount.get() == 0)
-        {
-            _noConnectionsRemain.set(null);
-        }
-
-        return _noConnectionsRemain;
+        return Futures.immediateFuture(null);
     }
 
     @Override
@@ -319,7 +313,6 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
             {
                 _container.getEventLogger().message(BrokerMessages.SHUTTING_DOWN(String.valueOf(transport), _transport.getAcceptingPort()));
             }
-
 
             _transport.close();
         }
@@ -610,10 +603,6 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
            _connectionCountWarningGiven.compareAndSet(true,false);
         }
 
-        if (_closing.get() && _connectionCount.get() == 0)
-        {
-            _noConnectionsRemain.set(null);
-        }
 
         return openConnections;
     }

@@ -67,6 +67,7 @@ import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,7 +117,38 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     private UserPreferences _userPreferences;
 
     private enum DynamicState { UNINIT, OPENED, CLOSED };
-    private final AtomicReference<DynamicState> _dynamicState = new AtomicReference<>(DynamicState.UNINIT);
+
+    private static class DynamicStateWithFuture
+    {
+        private final DynamicState _dynamicState;
+        private final ListenableFuture<Void> _future;
+
+        private DynamicStateWithFuture(final DynamicState dynamicState, final ListenableFuture<Void> future)
+        {
+            _dynamicState = dynamicState;
+            _future = future;
+        }
+
+        public DynamicState getDynamicState()
+        {
+            return _dynamicState;
+        }
+
+        public ListenableFuture<Void> getFuture()
+        {
+            return _future;
+        }
+    }
+
+    private static final DynamicStateWithFuture UNINIT = new DynamicStateWithFuture(
+            DynamicState.UNINIT,
+            Futures.<Void>immediateFuture(null));
+    private static final DynamicStateWithFuture OPENED = new DynamicStateWithFuture(
+            DynamicState.OPENED,
+            Futures.<Void>immediateFuture(null));
+
+
+    private final AtomicReference<DynamicStateWithFuture> _dynamicState = new AtomicReference<>(UNINIT);
 
 
 
@@ -572,7 +604,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                     @Override
                                     public ListenableFuture<Void> execute()
                                     {
-                                        if (_dynamicState.compareAndSet(DynamicState.UNINIT, DynamicState.OPENED))
+                                        if (_dynamicState.compareAndSet(UNINIT, OPENED))
                                         {
                                             _openFailed = false;
                                             OpenExceptionHandler exceptionHandler = new OpenExceptionHandler();
@@ -763,43 +795,62 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             public ListenableFuture<Void> execute()
             {
                 LOGGER.debug("Closing " + AbstractConfiguredObject.this.getClass().getSimpleName() + " : " + getName());
-
-                if(_dynamicState.compareAndSet(DynamicState.OPENED, DynamicState.CLOSED))
+                final SettableFuture<Void> returnFuture = SettableFuture.create();
+                DynamicStateWithFuture desiredStateWithFuture = new DynamicStateWithFuture(DynamicState.CLOSED, returnFuture);
+                DynamicStateWithFuture currentStateWithFuture;
+                while((currentStateWithFuture = _dynamicState.get()) == OPENED)
                 {
+                    if(_dynamicState.compareAndSet(OPENED, desiredStateWithFuture))
+                    {
+                        final ChainedListenableFuture<Void> future =
+                                doAfter(beforeClose(), new Callable<ListenableFuture<Void>>()
+                                {
+                                    @Override
+                                    public ListenableFuture<Void> call() throws Exception
+                                    {
+                                        return closeChildren();
+                                    }
+                                }).then(new Callable<ListenableFuture<Void>>()
+                                {
+                                    @Override
+                                    public ListenableFuture<Void> call() throws Exception
+                                    {
+                                        return onClose();
+                                    }
+                                }).then(new Callable<ListenableFuture<Void>>()
+                                {
+                                    @Override
+                                    public ListenableFuture<Void> call() throws Exception
+                                    {
+                                        unregister(false);
+                                        LOGGER.debug("Closed "
+                                                     + AbstractConfiguredObject.this.getClass().getSimpleName()
+                                                     + " : "
+                                                     + getName());
+                                        return Futures.immediateFuture(null);
+                                    }
+                                });
+                        addFutureCallback(future, new FutureCallback<Void>()
+                        {
+                            @Override
+                            public void onSuccess(final Void result)
+                            {
+                                returnFuture.set(null);
+                            }
 
-                    return doAfter(beforeClose(), new Callable<ListenableFuture<Void>>()
-                    {
-                        @Override
-                        public ListenableFuture<Void> call() throws Exception
-                        {
-                            return closeChildren();
-                        }
-                    }).then(new Callable<ListenableFuture<Void>>()
-                    {
-                        @Override
-                        public ListenableFuture<Void> call() throws Exception
-                        {
-                            return onClose();
-                        }
-                    }).then(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            unregister(false);
-                            LOGGER.debug("Closed "
-                                         + AbstractConfiguredObject.this.getClass().getSimpleName()
-                                         + " : "
-                                         + getName());
-                        }
-                    });
-                }
-                else
-                {
-                    LOGGER.debug("Closed " + AbstractConfiguredObject.this.getClass().getSimpleName() + " : " + getName());
+                            @Override
+                            public void onFailure(final Throwable t)
+                            {
+                                returnFuture.setException(t);
+                            }
+                        }, MoreExecutors.directExecutor());
 
-                    return Futures.immediateFuture(null);
+                        return returnFuture;
+                    }
                 }
+
+                return currentStateWithFuture.getFuture();
+
             }
 
             @Override
@@ -845,7 +896,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             @Override
             public ListenableFuture<Void> execute()
             {
-                if (_dynamicState.compareAndSet(DynamicState.UNINIT, DynamicState.OPENED))
+                if (_dynamicState.compareAndSet(UNINIT, OPENED))
                 {
                     initializeAttributes();
 
@@ -991,7 +1042,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         if (!_openComplete)
         {
             _openFailed = true;
-            _dynamicState.compareAndSet(DynamicState.OPENED, DynamicState.UNINIT);
+            _dynamicState.compareAndSet(OPENED, UNINIT);
         }
 
         //TODO: children of ERRORED CO will continue to remain in ACTIVE state
@@ -1017,11 +1068,14 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             @Override
             public void performAction(final ConfiguredObject<?> child)
             {
-                if (child instanceof AbstractConfiguredObject
-                    && ((AbstractConfiguredObject)child)._dynamicState.get() == DynamicState.OPENED)
+                if (child instanceof AbstractConfiguredObject)
                 {
-                    final AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
-                    childStateFutures.add(configuredObject.doAttainState(exceptionHandler));
+                    AbstractConfiguredObject<?> abstractConfiguredChild = (AbstractConfiguredObject<?>) child;
+                    if(abstractConfiguredChild._dynamicState.get().getDynamicState() == DynamicState.OPENED)
+                    {
+                        final AbstractConfiguredObject configuredObject = abstractConfiguredChild;
+                        childStateFutures.add(configuredObject.doAttainState(exceptionHandler));
+                    }
                 }
                 else if(child instanceof AbstractConfiguredObjectProxy
                     && ((AbstractConfiguredObjectProxy)child).getDynamicState() == DynamicState.OPENED)
@@ -1098,9 +1152,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return returnVal;
     }
 
-    protected void doOpening(boolean skipCheck, final AbstractConfiguredObjectExceptionHandler exceptionHandler)
+    protected final void doOpening(boolean skipCheck, final AbstractConfiguredObjectExceptionHandler exceptionHandler)
     {
-        if(skipCheck || _dynamicState.compareAndSet(DynamicState.UNINIT,DynamicState.OPENED))
+        if(skipCheck || _dynamicState.compareAndSet(UNINIT, OPENED))
         {
             onOpen();
             notifyStateChanged(State.UNINITIALIZED, getState());
@@ -1139,7 +1193,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected final void doValidation(final boolean skipCheck, final AbstractConfiguredObjectExceptionHandler exceptionHandler)
     {
-        if(skipCheck || _dynamicState.get() != DynamicState.OPENED)
+        if(skipCheck || _dynamicState.get().getDynamicState() != DynamicState.OPENED)
         {
             applyToChildren(new Action<ConfiguredObject<?>>()
             {
@@ -1174,7 +1228,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected final void doResolution(boolean skipCheck, final AbstractConfiguredObjectExceptionHandler exceptionHandler)
     {
-        if(skipCheck || _dynamicState.get() != DynamicState.OPENED)
+        if(skipCheck || _dynamicState.get().getDynamicState() != DynamicState.OPENED)
         {
             onResolve();
             postResolve();
@@ -1236,7 +1290,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected final void doCreation(final boolean skipCheck, final AbstractConfiguredObjectExceptionHandler exceptionHandler)
     {
-        if(skipCheck || _dynamicState.get() != DynamicState.OPENED)
+        if(skipCheck || _dynamicState.get().getDynamicState() != DynamicState.OPENED)
         {
             onCreate();
             applyToChildren(new Action<ConfiguredObject<?>>()
