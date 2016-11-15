@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.util.concurrent.Futures;
@@ -59,6 +60,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
 
     private Iterator<ConsumerImpl> _pullIterator;
     private boolean _notifyWorkDesired;
+    private final AtomicBoolean _scheduled = new AtomicBoolean();
 
     protected AbstractConsumerTarget(final boolean isMultiQueue,
                                      final AMQPConnection<?> amqpConnection)
@@ -288,5 +290,15 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
         {
             return false;
         }
+    }
+
+    final boolean setScheduled()
+    {
+        return _scheduled.compareAndSet(false, true);
+    }
+
+    final void clearScheduled()
+    {
+        _scheduled.set(false);
     }
 }

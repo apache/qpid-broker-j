@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -60,6 +59,7 @@ import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.consumer.ScheduledConsumerTargetSet;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.filter.ArrivalTimeFilter;
 import org.apache.qpid.server.filter.FilterManager;
@@ -164,9 +164,9 @@ public class AMQChannel
     /** Maps from consumer tag to subscription instance. Allows us to unsubscribe from a queue. */
     private final Map<AMQShortString, ConsumerTarget_0_8> _tag2SubscriptionTargetMap = new HashMap<AMQShortString, ConsumerTarget_0_8>();
 
-    private final Set<ConsumerTarget> _consumersWithPendingWork =
-            Collections.newSetFromMap(new ConcurrentHashMap<ConsumerTarget, Boolean>());
-    private Iterator<ConsumerTarget> _processPendingIterator;
+    private final Set<ConsumerTarget_0_8> _consumersWithPendingWork = new ScheduledConsumerTargetSet<>();
+
+    private Iterator<ConsumerTarget_0_8> _processPendingIterator;
 
     private final MessageStore _messageStore;
 
@@ -3744,7 +3744,7 @@ public class AMQChannel
 
             if(_processPendingIterator.hasNext())
             {
-                ConsumerTarget target = _processPendingIterator.next();
+                ConsumerTarget_0_8 target = _processPendingIterator.next();
                 _processPendingIterator.remove();
                 if (target.processPending())
                 {
@@ -3773,7 +3773,7 @@ public class AMQChannel
     @Override
     public void notifyWork(final ConsumerTarget target)
     {
-        if(_consumersWithPendingWork.add(target))
+        if(_consumersWithPendingWork.add((ConsumerTarget_0_8) target))
         {
             getAMQPConnection().notifyWork(this);
         }

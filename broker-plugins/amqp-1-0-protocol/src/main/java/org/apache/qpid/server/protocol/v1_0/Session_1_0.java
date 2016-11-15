@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -52,6 +51,7 @@ import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.consumer.ScheduledConsumerTargetSet;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
@@ -130,9 +130,8 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     private final ConfigurationChangeListener _consumerClosedListener = new ConsumerClosedListener();
     private final CopyOnWriteArrayList<ConsumerListener> _consumerListeners = new CopyOnWriteArrayList<ConsumerListener>();
     private Session<?> _modelObject;
-    private final Set<ConsumerTarget> _consumersWithPendingWork =
-            Collections.newSetFromMap(new ConcurrentHashMap<ConsumerTarget, Boolean>());
-    private Iterator<ConsumerTarget> _processPendingIterator;
+    private final Set<ConsumerTarget_1_0> _consumersWithPendingWork = new ScheduledConsumerTargetSet<>();
+    private Iterator<ConsumerTarget_1_0> _processPendingIterator;
 
     private SessionState _state ;
 
@@ -1548,7 +1547,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
 
             if(_processPendingIterator.hasNext())
             {
-                ConsumerTarget target = _processPendingIterator.next();
+                ConsumerTarget_1_0 target = _processPendingIterator.next();
                 _processPendingIterator.remove();
                 if (target.processPending())
                 {
@@ -1577,7 +1576,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     @Override
     public void notifyWork(final ConsumerTarget target)
     {
-        if(_consumersWithPendingWork.add(target))
+        if(_consumersWithPendingWork.add((ConsumerTarget_1_0) target))
         {
             getAMQPConnection().notifyWork(this);
         }

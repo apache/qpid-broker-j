@@ -138,17 +138,7 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
         {
             if (notified)
             {
-                // TODO - Fix responsibility
-                QueueEntry queueEntry;
-                if ((queueEntry = _queue.getNextAvailableEntry(consumer)) != null
-                    && _queue.noHigherPriorityWithCredit(consumer, queueEntry))
-                {
-                    return node.moveFromTo(NodeState.INTERESTED, NodeState.NOTIFIED);
-                }
-                else
-                {
-                    return false;
-                }
+                return node.moveFromTo(NodeState.INTERESTED, NodeState.NOTIFIED);
             }
             else
             {

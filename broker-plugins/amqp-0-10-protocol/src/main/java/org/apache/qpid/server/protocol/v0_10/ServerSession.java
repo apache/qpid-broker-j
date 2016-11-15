@@ -58,6 +58,7 @@ import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.consumer.ScheduledConsumerTargetSet;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
@@ -143,9 +144,8 @@ public class ServerSession extends Session
     private long _blockTime;
     private long _blockingTimeout;
     private boolean _wireBlockingState;
-    private final Set<ConsumerTarget> _consumersWithPendingWork =
-            Collections.newSetFromMap(new ConcurrentHashMap<ConsumerTarget, Boolean>());
-    private Iterator<ConsumerTarget> _processPendingIterator;
+    private final Set<ConsumerTarget_0_10> _consumersWithPendingWork = new ScheduledConsumerTargetSet<>();
+    private Iterator<ConsumerTarget_0_10> _processPendingIterator;
 
     private final PublishAuthorisationCache _publishAuthCache;
 
@@ -1218,7 +1218,7 @@ public class ServerSession extends Session
 
             if (_processPendingIterator.hasNext())
             {
-                ConsumerTarget target = _processPendingIterator.next();
+                ConsumerTarget_0_10 target = _processPendingIterator.next();
                 _processPendingIterator.remove();
                 if (target.processPending())
                 {
@@ -1247,7 +1247,7 @@ public class ServerSession extends Session
     @Override
     public void notifyWork(final ConsumerTarget target)
     {
-        if(_consumersWithPendingWork.add(target))
+        if(_consumersWithPendingWork.add((ConsumerTarget_0_10) target))
         {
             getAMQPConnection().notifyWork(this);
         }

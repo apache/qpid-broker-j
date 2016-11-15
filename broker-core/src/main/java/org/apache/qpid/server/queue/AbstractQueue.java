@@ -266,47 +266,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private Map<String, String> _mimeTypeToFileExtension = Collections.emptyMap();
     private AdvanceConsumersTask _queueHouseKeepingTask;
 
-    void setNotifyWorkDesired(final QueueConsumer consumer, final boolean desired)
-    {
-        if (_queueConsumerManager.setInterest(consumer, desired))
-        {
-            if (desired)
-            {
-                _activeSubscriberCount.incrementAndGet();
-                notifyConsumer(consumer);
-            }
-            else
-            {
-                _activeSubscriberCount.decrementAndGet();
-
-                // iterate over interested and notify one as long as its priority is higher than any notified
-                final Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getInterestedIterator();
-                final int highestNotifiedPriority = _queueConsumerManager.getHighestNotifiedPriority();
-                while (consumerIterator.hasNext())
-                {
-                    QueueConsumer<?> queueConsumer = consumerIterator.next();
-                    if (queueConsumer.getPriority() < highestNotifiedPriority || notifyConsumer(queueConsumer))
-                    {
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    private boolean notifyConsumer(final QueueConsumer<?> consumer)
-    {
-        if(_queueConsumerManager.setNotified(consumer, true))
-        {
-            consumer.notifyWork();
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
     private interface HoldMethod
     {
         boolean isHeld(MessageReference<?> message, long evalutaionTime);
@@ -1167,7 +1126,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     protected void doEnqueue(final ServerMessage message, final Action<? super MessageInstance> action, MessageEnqueueRecord enqueueRecord)
     {
-        final QueueConsumer<?> exclusiveSub = _exclusiveSubscriber;
         final QueueEntry entry = getEntries().add(message, enqueueRecord);
         updateExpiration(entry);
 
@@ -1888,7 +1846,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 messageContainer = attemptDelivery(consumer);
                 if(messageContainer != null)
                 {
-                    _queueConsumerManager.setNotified(consumer, true);
+                    if(consumerHasAvailableMessages(consumer))
+                    {
+                        _queueConsumerManager.setNotified(consumer, true);
+                    }
                 }
 
                 if (messageContainer == null && getNextAvailableEntry(consumer) == null)
@@ -2170,6 +2131,54 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             checkForNotification(null, listener, currentTime, thresholdTime, check);
         }
 
+    }
+
+    private boolean consumerHasAvailableMessages(final QueueConsumer consumer)
+    {
+        final QueueEntry queueEntry;
+        return !consumer.acquires() || ((queueEntry = getNextAvailableEntry(consumer)) != null
+                                        && noHigherPriorityWithCredit(consumer, queueEntry));
+    }
+
+    void setNotifyWorkDesired(final QueueConsumer consumer, final boolean desired)
+    {
+        if (_queueConsumerManager.setInterest(consumer, desired))
+        {
+            if (desired)
+            {
+                _activeSubscriberCount.incrementAndGet();
+                notifyConsumer(consumer);
+            }
+            else
+            {
+                _activeSubscriberCount.decrementAndGet();
+
+                // iterate over interested and notify one as long as its priority is higher than any notified
+                final Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getInterestedIterator();
+                final int highestNotifiedPriority = _queueConsumerManager.getHighestNotifiedPriority();
+                while (consumerIterator.hasNext())
+                {
+                    QueueConsumer<?> queueConsumer = consumerIterator.next();
+                    if (queueConsumer.getPriority() < highestNotifiedPriority || notifyConsumer(queueConsumer))
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean notifyConsumer(final QueueConsumer<?> consumer)
+    {
+        if(consumerHasAvailableMessages(consumer) && _queueConsumerManager.setNotified(consumer, true))
+        {
+            consumer.notifyWork();
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     @Override
