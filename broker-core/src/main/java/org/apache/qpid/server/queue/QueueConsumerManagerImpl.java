@@ -20,9 +20,11 @@
  */
 package org.apache.qpid.server.queue;
 
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class QueueConsumerManagerImpl implements QueueConsumerManager
@@ -263,8 +265,7 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
         @Override
         public QueueConsumer<?> next()
         {
-            QueueConsumerNode next = _underlying.next();
-            return next == null ? null : next.getQueueConsumer();
+            return _underlying.next().getQueueConsumer();
         }
 
         @Override
@@ -347,6 +348,7 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
         private PrioritisedQueueConsumerNodeIterator(List<PriorityConsumerListPair> list)
         {
             _outerIterator = list.iterator();
+            _innerIterator = Collections.emptyIterator();
         }
 
         @Override
@@ -354,7 +356,7 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
         {
             while (true)
             {
-                if (_innerIterator != null && _innerIterator.hasNext())
+                if (_innerIterator.hasNext())
                 {
                     return true;
                 }
@@ -373,15 +375,14 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
         @Override
         public QueueConsumerNode next()
         {
-            if (hasNext())
+            try
             {
                 return _innerIterator.next();
             }
-            else
+            catch (NoSuchElementException e)
             {
-                // throwing exceptions is expensive, and due to concurrency a caller might get here even though they
-                // had previously checked with hasNext()
-                return null;
+                hasNext();
+                return _innerIterator.next();
             }
         }
 
