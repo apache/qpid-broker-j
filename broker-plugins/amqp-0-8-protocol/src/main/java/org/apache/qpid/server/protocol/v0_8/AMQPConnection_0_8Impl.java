@@ -1446,16 +1446,31 @@ public class AMQPConnection_0_8Impl
             {
                 if(isClosing() || isConnectionStopped())
                 {
-                    // in case the connection was marked as closing between a call to hasNext() and
-                    // a subsequent call to next()
-                    return new Runnable()
+                    final Action<? super AMQPConnection_0_8Impl> asyncAction = _asyncTaskList.poll();
+                    if(asyncAction != null)
                     {
-                        @Override
-                        public void run()
+                        return new Runnable()
                         {
+                            @Override
+                            public void run()
+                            {
+                                asyncAction.performAction(AMQPConnection_0_8Impl.this);
+                            }
+                        };
+                    }
+                    else
+                    {
+                        // in case the connection was marked as closing between a call to hasNext() and
+                        // a subsequent call to next()
+                        return new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
 
-                        }
-                    };
+                            }
+                        };
+                    }
                 }
                 else
                 {

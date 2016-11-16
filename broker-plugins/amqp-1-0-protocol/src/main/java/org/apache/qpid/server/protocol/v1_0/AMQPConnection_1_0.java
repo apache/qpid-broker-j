@@ -1563,14 +1563,30 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
             {
                 if(isClosed() || isConnectionStopped())
                 {
-                    return new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
 
-                        }
-                    };
+                    final Action<? super ConnectionHandler> asyncAction = _asyncTaskList.poll();
+                    if(asyncAction != null)
+                    {
+                        return new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+                                asyncAction.performAction(AMQPConnection_1_0.this);
+                            }
+                        };
+                    }
+                    else
+                    {
+                        return new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+
+                            }
+                        };
+                    }
                 }
                 else
                 {
