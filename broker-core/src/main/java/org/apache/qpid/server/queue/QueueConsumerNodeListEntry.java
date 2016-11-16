@@ -20,13 +20,20 @@
  */
 package org.apache.qpid.server.queue;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 final class QueueConsumerNodeListEntry
 {
-    private final AtomicBoolean _deleted = new AtomicBoolean();
-    private final AtomicReference<QueueConsumerNodeListEntry> _next = new AtomicReference<>();
+    private static final AtomicIntegerFieldUpdater<QueueConsumerNodeListEntry> DELETED_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(QueueConsumerNodeListEntry.class, "_deleted");
+    @SuppressWarnings("unused")
+    private volatile int _deleted;
+
+    private static final AtomicReferenceFieldUpdater<QueueConsumerNodeListEntry, QueueConsumerNodeListEntry> NEXT_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(QueueConsumerNodeListEntry.class, QueueConsumerNodeListEntry.class, "_next");
+    @SuppressWarnings("unused")
+    private volatile QueueConsumerNodeListEntry _next;
 
     private final QueueConsumerNode _queueConsumerNode;
     private final QueueConsumerNodeList _list;
@@ -42,7 +49,7 @@ final class QueueConsumerNodeListEntry
         _list = list;
         //used for sentinel head and dummy node construction
         _queueConsumerNode = null;
-        _deleted.set(true);
+        DELETED_UPDATER.set(this, 1);
     }
 
     public QueueConsumerNode getQueueConsumerNode()
@@ -67,7 +74,7 @@ final class QueueConsumerNodeListEntry
             {
                 //try to move our _next reference forward to the 'newNext'
                 //node to unlink the deleted node
-                _next.compareAndSet(next, newNext);
+                NEXT_UPDATER.compareAndSet(this, next, newNext);
                 next = nextNode();
             }
             else
@@ -88,7 +95,7 @@ final class QueueConsumerNodeListEntry
      */
     protected QueueConsumerNodeListEntry nextNode()
     {
-        return _next.get();
+        return _next;
     }
 
     /**
@@ -99,7 +106,7 @@ final class QueueConsumerNodeListEntry
      */
     boolean setNext(final QueueConsumerNodeListEntry node)
     {
-        return _next.compareAndSet(null, node);
+        return NEXT_UPDATER.compareAndSet(this, null, node);
     }
 
     public void remove()
@@ -109,12 +116,12 @@ final class QueueConsumerNodeListEntry
 
     public boolean isDeleted()
     {
-        return _deleted.get();
+        return _deleted == 1;
     }
 
     boolean setDeleted()
     {
-        return _deleted.compareAndSet(false, true);
+        return DELETED_UPDATER.compareAndSet(this, 0, 1);
     }
 
 }
