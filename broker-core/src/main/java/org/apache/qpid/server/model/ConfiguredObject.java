@@ -173,7 +173,7 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
     LifetimePolicy getLifetimePolicy();
 
     @ManagedOperation(description = "Return the (selected) statistic values", nonModifying = true, changesConfiguredObjectState = false)
-    Map<String, Object> getStatistics(@Param(name = "statistics", defaultValue = "{}",
+    Map<String, Object> getStatistics(@Param(name = "statistics", defaultValue = "[]",
             description = "Option list of statistic values to retrieve") List<String> statistics);
 
     /**
