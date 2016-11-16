@@ -81,16 +81,16 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
         {
             if (consumer.acquires())
             {
-                node.moveFromTo(REMOVED, NodeState.INTERESTED);
+                node.moveFromTo(REMOVED, NodeState.INTERESTED, false);
             }
             else
             {
-                node.moveFromTo(REMOVED, NodeState.NON_ACQUIRING);
+                node.moveFromTo(REMOVED, NodeState.NON_ACQUIRING, false);
             }
         }
         else
         {
-            node.moveFromTo(REMOVED, NodeState.NOT_INTERESTED);
+            node.moveFromTo(REMOVED, NodeState.NOT_INTERESTED, false);
         }
         _count++;
     }
@@ -102,7 +102,7 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
         removeFromAll(consumer);
         QueueConsumerNode node = consumer.getQueueConsumerNode();
 
-        if (node.moveFromTo(STATES_OTHER_THAN_REMOVED, NodeState.REMOVED))
+        if (node.moveFromTo(STATES_OTHER_THAN_REMOVED, NodeState.REMOVED, false))
         {
             _count--;
             return true;
@@ -119,40 +119,46 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
         {
             if (consumer.acquires())
             {
-                return node.moveFromTo(NOT_INTERESTED, NodeState.INTERESTED);
+                return node.moveFromTo(NOT_INTERESTED, NodeState.INTERESTED, false);
             }
             else
             {
-                return node.moveFromTo(NOT_INTERESTED, NodeState.NON_ACQUIRING);
+                return node.moveFromTo(NOT_INTERESTED, NodeState.NON_ACQUIRING, false);
             }
         }
         else
         {
             if (consumer.acquires())
             {
-                return node.moveFromTo(EITHER_INTERESTED_OR_NOTIFIED, NodeState.NOT_INTERESTED);
+                return node.moveFromTo(EITHER_INTERESTED_OR_NOTIFIED, NodeState.NOT_INTERESTED, false);
             }
             else
             {
-                return node.moveFromTo(NON_ACQUIRING, NodeState.NOT_INTERESTED);
+                return node.moveFromTo(NON_ACQUIRING, NodeState.NOT_INTERESTED, false);
             }
         }
     }
 
+    public void clearStateAffirmationFlag(final QueueConsumer consumer)
+    {
+        QueueConsumerNode node = consumer.getQueueConsumerNode();
+        node.clearAffirmaion();
+    }
+
     // Set by the Queue any IO thread
     @Override
-    public boolean setNotified(final QueueConsumer consumer, final boolean notified)
+    public boolean setNotified(final QueueConsumer consumer, final boolean notified, final boolean conditional)
     {
         QueueConsumerNode node = consumer.getQueueConsumerNode();
         if (consumer.acquires())
         {
             if (notified)
             {
-                return node.moveFromTo(INTERESTED, NodeState.NOTIFIED);
+                return node.moveFromTo(INTERESTED, NodeState.NOTIFIED, conditional);
             }
             else
             {
-                return node.moveFromTo(NOTIFIED, NodeState.INTERESTED);
+                return node.moveFromTo(NOTIFIED, NodeState.INTERESTED, conditional);
             }
         }
         else

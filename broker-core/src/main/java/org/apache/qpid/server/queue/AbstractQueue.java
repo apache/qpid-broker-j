@@ -1880,19 +1880,20 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         boolean queueEmpty = false;
         MessageContainer messageContainer = null;
 
-        _queueConsumerManager.setNotified(consumer, false);
+        _queueConsumerManager.clearStateAffirmationFlag(consumer);
 
         try
         {
+
             if (!consumer.isSuspended())
             {
                 messageContainer = attemptDelivery(consumer);
-                if(messageContainer.getMessageInstance() != null)
+
+
+                if(messageContainer.getMessageInstance() == null)
                 {
-                    _queueConsumerManager.setNotified(consumer, true);
-                }
-                else
-                {
+                    _queueConsumerManager.setNotified(consumer, false, true);
+
                     if (messageContainer.hasNoAvailableMessages())
                     {
                         queueEmpty = true;
@@ -2243,7 +2244,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private boolean notifyConsumer(final QueueConsumer<?> consumer)
     {
-        if(consumerHasAvailableMessages(consumer) && _queueConsumerManager.setNotified(consumer, true))
+        if(consumerHasAvailableMessages(consumer) && _queueConsumerManager.setNotified(consumer, true, false))
         {
             consumer.notifyWork();
             return true;
