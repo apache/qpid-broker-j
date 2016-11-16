@@ -53,7 +53,6 @@ import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 @ManagedObject( category = false, type = "BDB_HA_REPLICA", register = false )
 public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAReplicaVirtualHostImpl> implements BDBHAReplicaVirtualHost<BDBHAReplicaVirtualHostImpl>
 {
-    private final Broker<?> _broker;
     private final VirtualHostPrincipal _principal;
 
     @ManagedObjectFactoryConstructor(conditionallyAvailable = true, condition = "org.apache.qpid.server.JECheck#isAvailable()")
@@ -61,7 +60,6 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     {
         super(parentsMap(virtualHostNode), attributes);
 
-        _broker = virtualHostNode.getParent(Broker.class);
         _principal = new VirtualHostPrincipal(this);
         setState(State.UNAVAILABLE);
     }
@@ -84,12 +82,6 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     public String getModelVersion()
     {
         return BrokerModel.MODEL_VERSION;
-    }
-
-    @Override
-    public Broker<?> getBroker()
-    {
-        return _broker;
     }
 
     @Override
