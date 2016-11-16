@@ -186,7 +186,7 @@ public class TestConsumerTarget implements ConsumerTarget
             return false;
         }
 
-        send(_consumer, messageContainer._messageInstance, false);
+        send(_consumer, messageContainer.getMessageInstance(), false);
         return true;
     }
 

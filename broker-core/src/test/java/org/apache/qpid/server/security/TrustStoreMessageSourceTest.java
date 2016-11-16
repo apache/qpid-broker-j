@@ -21,7 +21,6 @@ package org.apache.qpid.server.security;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,21 +35,16 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 
-import org.mockito.ArgumentCaptor;
-
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
-import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.AbstractQueue;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TestMemoryMessageStore;
-import org.apache.qpid.server.virtualhost.AbstractSystemMessageSource;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 
@@ -85,7 +79,7 @@ public class TrustStoreMessageSourceTest extends QpidTestCase
         ConsumerImpl consumer = _trustStoreMessageSource.addConsumer(target, null, ServerMessage.class, getTestName(), options, 0);
         final AbstractQueue.MessageContainer messageContainer = consumer.pullMessage();
         assertNotNull("Could not pull message of TrustStore", messageContainer);
-        final ServerMessage message = messageContainer._messageInstance.getMessage();
+        final ServerMessage message = messageContainer.getMessageInstance().getMessage();
         assertCertificates(getCertificatesFromMessage(message));
     }
 

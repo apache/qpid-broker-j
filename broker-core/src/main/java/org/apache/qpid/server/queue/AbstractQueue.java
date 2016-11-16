@@ -1887,25 +1887,25 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             if (!consumer.isSuspended())
             {
                 messageContainer = attemptDelivery(consumer);
-                if(messageContainer != null)
+                if(messageContainer.getMessageInstance() != null)
                 {
-                    if(consumerHasAvailableMessages(consumer))
-                    {
-                        _queueConsumerManager.setNotified(consumer, true);
-                    }
+                    _queueConsumerManager.setNotified(consumer, true);
                 }
-
-                if (messageContainer == null && getNextAvailableEntry(consumer) == null)
+                else
                 {
-                    queueEmpty = true;
-                }
-
-                if(messageContainer == null && consumer.acquires())
-                {
-                    if(hasAvailableMessages())
+                    if (messageContainer.hasNoAvailableMessages())
                     {
-                        notifyOtherConsumers(consumer);
+                        queueEmpty = true;
                     }
+
+                    if (consumer.acquires())
+                    {
+                        if (hasAvailableMessages())
+                        {
+                            notifyOtherConsumers(consumer);
+                        }
+                    }
+                    messageContainer = null;
                 }
             }
             else
@@ -1932,18 +1932,43 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _queueStatistics.getAvailableCount() != 0;
     }
 
-    public static class MessageContainer
+    public static final class MessageContainer
     {
-        public final MessageInstance _messageInstance;
-        public final MessageReference<?> _messageReference;
+        private final MessageInstance _messageInstance;
+        private final MessageReference<?> _messageReference;
+        private final boolean _hasNoAvailableMessages;
+
+        public MessageContainer(final boolean hasNoAvailableMessages)
+        {
+            this(null, null, hasNoAvailableMessages);
+        }
 
         public MessageContainer(final MessageInstance messageInstance,
-                                final MessageReference<?> messageReference)
+                                final MessageReference<?> messageReference, final boolean hasNoAvailableMessages)
         {
             _messageInstance = messageInstance;
             _messageReference = messageReference;
+            _hasNoAvailableMessages = hasNoAvailableMessages;
+        }
+
+        public MessageInstance getMessageInstance()
+        {
+            return _messageInstance;
+        }
+
+        public MessageReference<?> getMessageReference()
+        {
+            return _messageReference;
+        }
+
+        public boolean hasNoAvailableMessages()
+        {
+            return _hasNoAvailableMessages;
         }
     }
+
+    private static final MessageContainer NO_MESSAGES = new MessageContainer(true);
+    private static final MessageContainer HAS_MESSAGES = new MessageContainer(false);
 
     /**
      * Attempt delivery for the given consumer.
@@ -1956,7 +1981,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
      */
     private MessageContainer attemptDelivery(QueueConsumer<?> sub)
     {
-        MessageContainer messageContainer = null;
+        MessageContainer messageContainer;
         // avoid referring old deleted queue entry in sub._queueContext._lastSeen
         QueueEntry node  = getNextAvailableEntry(sub);
         boolean subActive = sub.isActive() && !sub.isSuspended();
@@ -1969,6 +1994,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 throw new ConnectionScopedRuntimeException("Delivery halted owing to " +
                                                            "virtualhost state " + _virtualHost.getState());
             }
+            messageContainer = HAS_MESSAGES;
 
             if (node.isAvailable())
             {
@@ -1990,7 +2016,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                             else
                             {
                                 setLastSeenEntry(sub, node);
-                                messageContainer = new MessageContainer(node, messageReference);
+                                messageContainer = new MessageContainer(node, messageReference, false);
                             }
                         }
                         finally
@@ -2008,10 +2034,14 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 }
             }
         }
+        else
+        {
+            messageContainer = node == null ? NO_MESSAGES : HAS_MESSAGES;
+        }
         return messageContainer;
     }
 
-    boolean noHigherPriorityWithCredit(final QueueConsumer<?> sub, final QueueEntry queueEntry)
+    private boolean noHigherPriorityWithCredit(final QueueConsumer<?> sub, final QueueEntry queueEntry)
     {
         Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getAllIterator();
 

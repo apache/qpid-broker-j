@@ -148,7 +148,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
                 if (!_target.isSuspended() && _target.allocateCredit(propertiesMessageInstance.getMessage()))
                 {
                     _queue.remove(0);
-                    return new AbstractQueue.MessageContainer(propertiesMessageInstance, null);
+                    return new AbstractQueue.MessageContainer(propertiesMessageInstance, null, false);
                 }
             }
             return null;

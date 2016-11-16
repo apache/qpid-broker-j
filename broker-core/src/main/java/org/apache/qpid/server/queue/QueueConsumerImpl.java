@@ -317,7 +317,7 @@ class QueueConsumerImpl
         if (messageContainer != null)
         {
             _deliveredCount.incrementAndGet();
-            _deliveredBytes.addAndGet(messageContainer._messageInstance.getMessage().getSize());
+            _deliveredBytes.addAndGet(messageContainer.getMessageInstance().getMessage().getSize());
         }
         return messageContainer;
     }

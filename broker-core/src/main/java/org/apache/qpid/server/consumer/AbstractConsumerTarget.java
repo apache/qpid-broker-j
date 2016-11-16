@@ -244,16 +244,16 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
 
         if (messageContainer != null)
         {
-            MessageInstance entry = messageContainer._messageInstance;
+            MessageInstance entry = messageContainer.getMessageInstance();
             try
             {
                 send(consumer, entry, false);
             }
             finally
             {
-                if (messageContainer._messageReference != null)
+                if (messageContainer.getMessageReference() != null)
                 {
-                    messageContainer._messageReference.release();
+                    messageContainer.getMessageReference().release();
                 }
             }
             return true;
