@@ -34,7 +34,7 @@ public class PortHelper
 
     public static final int START_PORT_NUMBER = 10000;
 
-    private static final int DEFAULT_TIMEOUT_MILLIS = 5000000;
+    private static final int DEFAULT_TIMEOUT_MILLIS = 5000;
 
     public static final int MIN_PORT_NUMBER = 1;
     public static final int MAX_PORT_NUMBER = 49151;
