@@ -94,7 +94,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     String QUEUE_SCAVANGE_COUNT = "qpid.queue.scavenge_count";
     @SuppressWarnings("unused")
     @ManagedContextDefault( name = QUEUE_SCAVANGE_COUNT)
-    int DEFAULT_QUEUE_SCAVANGE_COUNT = 50;
+    int DEFAULT_QUEUE_SCAVANGE_COUNT = 100;
 
 
     String MIME_TYPE_TO_FILE_EXTENSION = "qpid.mimeTypeToFileExtension";
