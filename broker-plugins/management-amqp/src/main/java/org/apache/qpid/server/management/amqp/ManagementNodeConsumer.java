@@ -77,7 +77,7 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
             if (!_target.isSuspended() && _target.allocateCredit(managementResponse.getMessage()))
             {
                 _queue.remove(0);
-                return new AbstractQueue.MessageContainer(managementResponse, null);
+                return new AbstractQueue.MessageContainer(managementResponse, null, false);
             }
         }
         return null;
