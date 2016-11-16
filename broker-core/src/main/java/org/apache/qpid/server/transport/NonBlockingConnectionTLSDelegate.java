@@ -19,19 +19,6 @@
 
 package org.apache.qpid.server.transport;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.transport.network.security.ssl.SSLUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLEngineResult;
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLPeerUnverifiedException;
-import javax.net.ssl.SSLSession;
-
 import java.io.IOException;
 import java.security.Principal;
 import java.security.cert.Certificate;
@@ -40,6 +27,20 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDelegate
 {
@@ -129,11 +130,11 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     }
 
     @Override
-    public boolean doWrite(Collection<QpidByteBuffer> bufferArray) throws IOException
+    public WriteResult doWrite(Collection<QpidByteBuffer> bufferArray) throws IOException
     {
         final int bufCount = bufferArray.size();
 
-        wrapBufferArray(bufferArray);
+        int totalConsumed = wrapBufferArray(bufferArray);
 
         boolean bufsSent = true;
         final Iterator<QpidByteBuffer> itr = bufferArray.iterator();
@@ -163,7 +164,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                 }
             }
         }
-        return bufsSent && _encryptedOutput.isEmpty();
+        return new WriteResult(bufsSent && _encryptedOutput.isEmpty(), totalConsumed);
     }
 
     protected void restoreApplicationBufferForWrite()
@@ -200,8 +201,9 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
 
     }
 
-    private void wrapBufferArray(Collection<QpidByteBuffer> bufferArray) throws SSLException
+    private int wrapBufferArray(Collection<QpidByteBuffer> bufferArray) throws SSLException
     {
+        int totalConsumed = 0;
         boolean encrypted;
         do
         {
@@ -223,6 +225,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
 
                 _status = QpidByteBuffer.encryptSSL(_sslEngine, bufferArray, _netOutputBuffer);
                 encrypted = _status.bytesProduced() > 0;
+                totalConsumed += _status.bytesConsumed();
                 runSSLEngineTasks(_status);
                 if(encrypted && _netOutputBuffer.remaining() < _sslEngine.getSession().getPacketBufferSize())
                 {
@@ -250,7 +253,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
             _encryptedOutput.add(outputBuffer);
 
         }
-
+        return totalConsumed;
     }
 
     private boolean runSSLEngineTasks(final SSLEngineResult status)

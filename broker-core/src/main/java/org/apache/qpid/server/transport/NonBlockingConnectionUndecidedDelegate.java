@@ -19,13 +19,13 @@
 
 package org.apache.qpid.server.transport;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.transport.network.TransportEncryption;
-
 import java.io.IOException;
 import java.security.Principal;
 import java.security.cert.Certificate;
 import java.util.Collection;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.transport.network.TransportEncryption;
 
 public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnectionDelegate
 {
@@ -73,9 +73,9 @@ public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnec
     }
 
     @Override
-    public boolean doWrite(Collection<QpidByteBuffer> buffers) throws IOException
+    public WriteResult doWrite(Collection<QpidByteBuffer> buffers) throws IOException
     {
-        return true;
+        return new WriteResult(true, 0L);
     }
 
     @Override

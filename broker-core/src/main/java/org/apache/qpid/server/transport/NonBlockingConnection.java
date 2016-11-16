@@ -44,7 +44,6 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.transport.network.Ticker;
 import org.apache.qpid.transport.network.TransportEncryption;
 import org.apache.qpid.util.SystemUtils;
 
@@ -77,6 +76,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private final AtomicLong _maxReadIdleMillis = new AtomicLong();
     private final List<SchedulingDelayNotificationListener> _schedulingDelayNotificationListeners = new CopyOnWriteArrayList<>();
     private final AtomicBoolean _hasShutdown = new AtomicBoolean();
+    private long _bufferedSize;
 
     public NonBlockingConnection(SocketChannel socketChannel,
                                  ProtocolEngine protocolEngine,
@@ -368,17 +368,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
     private long getBufferedSize()
     {
-        // Avoids iterator garbage if empty
-        if (_buffers.isEmpty())
-        {
-            return 0L;
-        }
-        long totalSize = 0L;
-        for(QpidByteBuffer buf : _buffers)
-        {
-            totalSize += buf.remaining();
-        }
-        return totalSize;
+        return _bufferedSize;
     }
 
     private void shutdown()
@@ -515,7 +505,9 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
     private boolean doWrite() throws IOException
     {
-        _fullyWritten = _delegate.doWrite(_buffers);
+        final NonBlockingConnectionDelegate.WriteResult result = _delegate.doWrite(_buffers);
+        _bufferedSize -= result.getBytesConsumed();
+        _fullyWritten = result.isComplete();
         while(!_buffers.isEmpty())
         {
             QpidByteBuffer buf = _buffers.peek();
@@ -565,6 +557,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         else if (msg.remaining() > 0)
         {
             _buffers.add(msg.duplicate());
+            _bufferedSize += msg.remaining();
         }
         msg.position(msg.limit());
     }

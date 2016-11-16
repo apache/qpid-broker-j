@@ -28,7 +28,28 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 interface NonBlockingConnectionDelegate
 {
-    boolean doWrite(Collection<QpidByteBuffer> bufferArray) throws IOException;
+    class WriteResult
+    {
+        final boolean _complete;
+        final long _bytesConsumed;
+
+        public WriteResult(final boolean complete, final long bytesConsumed)
+        {
+            _complete = complete;
+            _bytesConsumed = bytesConsumed;
+        }
+
+        public boolean isComplete()
+        {
+            return _complete;
+        }
+
+        public long getBytesConsumed()
+        {
+            return _bytesConsumed;
+        }
+    }
+    WriteResult doWrite(Collection<QpidByteBuffer> bufferArray) throws IOException;
 
     boolean readyForRead();
 

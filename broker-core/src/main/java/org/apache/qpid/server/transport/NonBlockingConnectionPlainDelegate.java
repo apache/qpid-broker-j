@@ -24,11 +24,11 @@ import java.security.Principal;
 import java.security.cert.Certificate;
 import java.util.Collection;
 
-import org.apache.qpid.server.model.port.AmqpPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.model.port.AmqpPort;
 
 public class NonBlockingConnectionPlainDelegate implements NonBlockingConnectionDelegate
 {
@@ -99,9 +99,9 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
 
 
     @Override
-    public boolean doWrite(Collection<QpidByteBuffer> bufferArray) throws IOException
+    public WriteResult doWrite(Collection<QpidByteBuffer> bufferArray) throws IOException
     {
-        long bytesToWrite = 0l;
+        long bytesToWrite = 0L;
         if(!bufferArray.isEmpty())
         {
             for (QpidByteBuffer buf : bufferArray)
@@ -109,7 +109,16 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
                 bytesToWrite += buf.remaining();
             }
         }
-        return bytesToWrite == 0l || _parent.writeToTransport(bufferArray) >= bytesToWrite;
+        if(bytesToWrite == 0L)
+        {
+            return new WriteResult(true, 0);
+        }
+        else
+        {
+
+            long bytesWritten = _parent.writeToTransport(bufferArray);
+            return new WriteResult(bytesWritten >= bytesToWrite, bytesWritten);
+        }
 
     }
 
