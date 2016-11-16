@@ -61,7 +61,6 @@ import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.AbstractQueue.QueueEntryFilter;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
@@ -94,7 +93,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         attributes.put(Queue.NAME, _qname);
         attributes.put(Queue.OWNER, _owner);
 
-        _queue = _virtualHost.createChild(Queue.class, attributes);
+        _queue = (AbstractQueue<?>) _virtualHost.createChild(Queue.class, attributes);
 
         _exchange = (DirectExchange) _virtualHost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
     }
@@ -614,126 +613,6 @@ abstract class AbstractQueueTestBase extends QpidTestCase
            ex = e;
         }
         assertNotNull(ex);
-    }
-
-    public void testGetFirstMessageId() throws Exception
-    {
-        // Create message
-        Long messageId = new Long(23);
-        ServerMessage message = createMessage(messageId);
-
-        // Put message on queue
-        _queue.enqueue(message, null, null);
-        // Get message id
-        Long testmsgid = _queue.getMessagesOnTheQueue(1).get(0);
-
-        // Check message id
-        assertEquals("Message ID was wrong", messageId, testmsgid);
-    }
-
-    public void testGetFirstFiveMessageIds() throws Exception
-    {
-        for (int i = 0 ; i < 5; i++)
-        {
-            // Create message
-            Long messageId = new Long(i);
-            ServerMessage message = createMessage(messageId);
-            // Put message on queue
-            _queue.enqueue(message, null, null);
-        }
-        // Get message ids
-        List<Long> msgids = _queue.getMessagesOnTheQueue(5);
-
-        // Check message id
-        for (int i = 0; i < 5; i++)
-        {
-            Long messageId = new Long(i);
-            assertEquals("Message ID was wrong", messageId, msgids.get(i));
-        }
-    }
-
-    public void testGetLastFiveMessageIds() throws Exception
-    {
-        for (int i = 0 ; i < 10; i++)
-        {
-            // Create message
-            Long messageId = new Long(i);
-            ServerMessage message = createMessage(messageId);
-            // Put message on queue
-            _queue.enqueue(message, null, null);
-        }
-        // Get message ids
-        List<Long> msgids = _queue.getMessagesOnTheQueue(5, 5);
-
-        // Check message id
-        for (int i = 0; i < 5; i++)
-        {
-            Long messageId = new Long(i+5);
-            assertEquals("Message ID was wrong", messageId, msgids.get(i));
-        }
-    }
-
-    public void testGetMessagesRangeOnTheQueue() throws Exception
-    {
-        for (int i = 1 ; i <= 10; i++)
-        {
-            // Create message
-            Long messageId = new Long(i);
-            ServerMessage message = createMessage(messageId);
-            // Put message on queue
-            _queue.enqueue(message, null, null);
-        }
-
-        // Get non-existent 0th QueueEntry & check returned list was empty
-        // (the position parameters in this method are indexed from 1)
-        List<? extends QueueEntry> entries = _queue.getMessagesRangeOnTheQueue(0, 0);
-        assertTrue(entries.size() == 0);
-
-        // Check that when 'from' is 0 it is ignored and the range continues from 1
-        entries = _queue.getMessagesRangeOnTheQueue(0, 2);
-        assertTrue(entries.size() == 2);
-        long msgID = entries.get(0).getMessage().getMessageNumber();
-        assertEquals("Message ID was wrong", msgID, 1L);
-        msgID = entries.get(1).getMessage().getMessageNumber();
-        assertEquals("Message ID was wrong", msgID, 2L);
-
-        // Check that when 'from' is greater than 'to' the returned list is empty
-        entries = _queue.getMessagesRangeOnTheQueue(5, 4);
-        assertTrue(entries.size() == 0);
-
-        // Get first QueueEntry & check id
-        entries = _queue.getMessagesRangeOnTheQueue(1, 1);
-        assertTrue(entries.size() == 1);
-        msgID = entries.get(0).getMessage().getMessageNumber();
-        assertEquals("Message ID was wrong", msgID, 1L);
-
-        // Get 5th,6th,7th entries and check id's
-        entries = _queue.getMessagesRangeOnTheQueue(5, 7);
-        assertTrue(entries.size() == 3);
-        msgID = entries.get(0).getMessage().getMessageNumber();
-        assertEquals("Message ID was wrong", msgID, 5L);
-        msgID = entries.get(1).getMessage().getMessageNumber();
-        assertEquals("Message ID was wrong", msgID, 6L);
-        msgID = entries.get(2).getMessage().getMessageNumber();
-        assertEquals("Message ID was wrong", msgID, 7L);
-
-        // Get 10th QueueEntry & check id
-        entries = _queue.getMessagesRangeOnTheQueue(10, 10);
-        assertTrue(entries.size() == 1);
-        msgID = entries.get(0).getMessage().getMessageNumber();
-        assertEquals("Message ID was wrong", msgID, 10L);
-
-        // Get non-existent 11th QueueEntry & check returned set was empty
-        entries = _queue.getMessagesRangeOnTheQueue(11, 11);
-        assertTrue(entries.size() == 0);
-
-        // Get 9th,10th, and non-existent 11th entries & check result is of size 2 with correct IDs
-        entries = _queue.getMessagesRangeOnTheQueue(9, 11);
-        assertTrue(entries.size() == 2);
-        msgID = entries.get(0).getMessage().getMessageNumber();
-        assertEquals("Message ID was wrong", msgID, 9L);
-        msgID = entries.get(1).getMessage().getMessageNumber();
-        assertEquals("Message ID was wrong", msgID, 10L);
     }
 
     /**

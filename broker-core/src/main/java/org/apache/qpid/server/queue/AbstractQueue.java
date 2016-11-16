@@ -1494,7 +1494,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return entries.isEmpty() ? null : entries.get(0);
     }
 
-    public List<QueueEntry> getMessagesOnTheQueue(QueueEntryFilter filter)
+    List<QueueEntry> getMessagesOnTheQueue(QueueEntryFilter filter)
     {
         ArrayList<QueueEntry> entryList = new ArrayList<QueueEntry>();
         QueueEntryIterator queueListIterator = getEntries().iterator();
@@ -1547,35 +1547,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 }
             }
         }
-    }
-
-    /**
-     * Returns a list of QueueEntries from a given range of queue positions, eg messages 5 to 10 on the queue.
-     *
-     * The 'queue position' index starts from 1. Using 0 in 'from' will be ignored and continue from 1.
-     * Using 0 in the 'to' field will return an empty list regardless of the 'from' value.
-     * @param fromPosition first message position
-     * @param toPosition last message position
-     * @return list of messages
-     */
-    public List<QueueEntry> getMessagesRangeOnTheQueue(final long fromPosition, final long toPosition)
-    {
-        return getMessagesOnTheQueue(new QueueEntryFilter()
-                                        {
-                                            private long position = 0;
-
-                                            public boolean accept(QueueEntry entry)
-                                            {
-                                                position++;
-                                                return (position >= fromPosition) && (position <= toPosition);
-                                            }
-
-                                            public boolean filterComplete()
-                                            {
-                                                return position >= toPosition;
-                                            }
-                                        });
-
     }
 
     // ------ Management functions
@@ -2514,28 +2485,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             return false;
         }
-    }
-
-    public List<Long> getMessagesOnTheQueue(int num)
-    {
-        return getMessagesOnTheQueue(num, 0);
-    }
-
-    public List<Long> getMessagesOnTheQueue(int num, int offset)
-    {
-        ArrayList<Long> ids = new ArrayList<Long>(num);
-        QueueEntryIterator it = getEntries().iterator();
-        for (int i = 0; i < offset; i++)
-        {
-            it.advance();
-        }
-
-        for (int i = 0; i < num && !it.atTail(); i++)
-        {
-            it.advance();
-            ids.add(it.getNode().getMessage().getMessageNumber());
-        }
-        return ids;
     }
 
     public long getTotalEnqueuedBytes()

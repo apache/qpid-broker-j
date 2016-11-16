@@ -82,14 +82,17 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
 
     String QUEUE_MINIMUM_ESTIMATED_MEMORY_FOOTPRINT = "queue.minimumEstimatedMemoryFootprint";
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = QUEUE_MINIMUM_ESTIMATED_MEMORY_FOOTPRINT)
-    long DEFAULT_MINIMUM_ESTIMATED_MEMORY_FOOTPRINT = 102400l;
+    long DEFAULT_MINIMUM_ESTIMATED_MEMORY_FOOTPRINT = 102400L;
 
     String QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD = "queue.estimatedMessageMemoryOverhead";
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD)
-    long DEFAULT_ESTIMATED_MESSAGE_MEMORY_OVERHEAD = 1024l;
+    long DEFAULT_ESTIMATED_MESSAGE_MEMORY_OVERHEAD = 1024L;
 
     String QUEUE_SCAVANGE_COUNT = "qpid.queue.scavenge_count";
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = QUEUE_SCAVANGE_COUNT)
     int DEFAULT_QUEUE_SCAVANGE_COUNT = 50;
 
@@ -104,6 +107,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                                                  + "\"image/tiff\":\".tiff\","
                                                  + "\"text/plain\":\".txt\"}";
 
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = "queue.defaultExclusivityPolicy",
             description = "the ExclusivityPolicy to apply to queues where none is explicitly set")
     String DEFAULT_EXCLUSIVITY = "NONE";
@@ -114,18 +118,21 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedAttribute( defaultValue = "${queue.defaultExclusivityPolicy}")
     ExclusivityPolicy getExclusive();
 
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = "queue.defaultEnsureNonDestructiveConsumers",
             description = "the value to use for the ensureNondestructiveCnsumers attribute of a queue where "
                           + "none is explicitly set")
     String DEFAULT_ENSURE_NON_DESTRUCTIVE_CONSUMERS = "false";
 
 
+    @SuppressWarnings("unused")
     @ManagedAttribute( defaultValue = "${queue.defaultEnsureNonDestructiveConsumers}" )
     boolean isEnsureNondestructiveConsumers();
 
     @DerivedAttribute( persist = true )
     String getOwner();
 
+    @SuppressWarnings("unused")
     @ManagedAttribute
     boolean isNoLocal();
 
@@ -133,12 +140,14 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedAttribute
     String getMessageGroupKey();
 
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = "qpid.broker_default-shared-message-group")
     String DEFAULT_SHARED_MESSAGE_GROUP = "qpid.no-group";
 
     @ManagedAttribute( defaultValue = "${qpid.broker_default-shared-message-group}")
     String getMessageGroupDefaultGroup();
 
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = "queue.maximumDistinctGroups")
     int DEFAULT_MAXIMUM_DISTINCT_GROUPS = 255;
 
@@ -148,60 +157,69 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedAttribute
     boolean isMessageGroupSharedGroups();
 
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = "queue.maximumDeliveryAttempts")
     int DEFAULT_MAXIMUM_DELIVERY_ATTEMPTS = 0;
 
     @ManagedAttribute( defaultValue = "${queue.maximumDeliveryAttempts}")
     int getMaximumDeliveryAttempts();
 
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = "queue.queueFlowControlSizeBytes")
-    long DEFAULT_FLOW_CONTROL_SIZE_BYTES = 0l;
+    long DEFAULT_FLOW_CONTROL_SIZE_BYTES = 0L;
 
     @ManagedAttribute( defaultValue = "${queue.queueFlowControlSizeBytes}")
     long getQueueFlowControlSizeBytes();
 
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = "queue.queueFlowResumeSizeBytes")
-    long DEFAULT_FLOW_CONTROL_RESUME_SIZE_BYTES = 0l;
+    long DEFAULT_FLOW_CONTROL_RESUME_SIZE_BYTES = 0L;
 
     @ManagedAttribute( defaultValue = "${queue.queueFlowResumeSizeBytes}")
     long getQueueFlowResumeSizeBytes();
 
 
-    // TODO - this is not an attribute
+    @SuppressWarnings("unused")
     @DerivedAttribute
     boolean isQueueFlowStopped();
 
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = "queue.alertThresholdMessageAge")
-    long DEFAULT_ALERT_THRESHOLD_MESSAGE_AGE = 0l;
+    long DEFAULT_ALERT_THRESHOLD_MESSAGE_AGE = 0L;
 
     @ManagedAttribute( defaultValue = "${queue.alertThresholdMessageAge}")
     long getAlertThresholdMessageAge();
 
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = "queue.alertThresholdMessageSize")
-    long DEFAULT_ALERT_THRESHOLD_MESSAGE_SIZE = 0l;
+    long DEFAULT_ALERT_THRESHOLD_MESSAGE_SIZE = 0L;
 
     @ManagedAttribute( defaultValue = "${queue.alertThresholdMessageSize}")
     long getAlertThresholdMessageSize();
 
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = "queue.alertThresholdQueueDepthBytes")
-    long DEFAULT_ALERT_THRESHOLD_QUEUE_DEPTH = 0l;
+    long DEFAULT_ALERT_THRESHOLD_QUEUE_DEPTH = 0L;
 
     @ManagedAttribute( defaultValue = "${queue.alertThresholdQueueDepthBytes}")
     long getAlertThresholdQueueDepthBytes();
 
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = "queue.alertThresholdQueueDepthMessages")
-    long DEFAULT_ALERT_THRESHOLD_MESSAGE_COUNT = 0l;
+    long DEFAULT_ALERT_THRESHOLD_MESSAGE_COUNT = 0L;
 
     @ManagedAttribute( defaultValue = "${queue.alertThresholdQueueDepthMessages}")
     long getAlertThresholdQueueDepthMessages();
 
 
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = "queue.alertRepeatGap")
-    long DEFAULT_ALERT_REPEAT_GAP = 30000l;
+    long DEFAULT_ALERT_REPEAT_GAP = 30000L;
 
     @ManagedAttribute( defaultValue = "${queue.alertRepeatGap}")
     long getAlertRepeatGap();
 
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = "queue.defaultMessageDurability",
             description = "the value to use for the messageDurability attribute of a queue where "
                           + "none is explicitly set")
@@ -212,16 +230,20 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     @ManagedAttribute( defaultValue = "${queue.defaultMessageDurability}" )
     MessageDurability getMessageDurability();
 
+    @SuppressWarnings("unused")
     @ManagedAttribute
     long getMinimumMessageTtl();
 
+    @SuppressWarnings("unused")
     @ManagedAttribute
     long getMaximumMessageTtl();
 
+    @SuppressWarnings("unused")
     @ManagedAttribute
     Map<String, Map<String,List<String>>> getDefaultFilters();
 
 
+    @SuppressWarnings("unused")
     @ManagedContextDefault( name = "queue.holdOnPublishEnabled")
     boolean DEFAULT_HOLD_ON_PUBLISH_ENABLED = false;
 
@@ -250,69 +272,90 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     void setNotificationListener(QueueNotificationListener listener);
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Bindings")
     int getBindingCount();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Consumers")
     int getConsumerCount();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Consumers with credit")
     int getConsumerCountWithCredit();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Delivered (Persistent)")
     long getPersistentDequeuedBytes();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Delivered (Persistent)")
     long getPersistentDequeuedMessages();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Enqueued (Persistent)")
     long getPersistentEnqueuedBytes();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Enqueued (Persistent)")
     long getPersistentEnqueuedMessages();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Queue Depth")
     long getQueueDepthBytes();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Queue Depth")
     int getQueueDepthMessages();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Delivered")
     long getTotalDequeuedBytes();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Delivered")
     long getTotalDequeuedMessages();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Enqueued")
     long getTotalEnqueuedBytes();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Enqueued")
     long getTotalEnqueuedMessages();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Prefetched")
     long getUnacknowledgedBytes();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Prefetched")
     long getUnacknowledgedMessages();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Available")
     long getAvailableBytes();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Available")
     int getAvailableMessages();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Available HWM")
     long getAvailableBytesHighWatermark();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Available HWM")
     int getAvailableMessagesHighWatermark();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Queue Depth HWM")
     long getQueueDepthBytesHighWatermark();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Queue Depth HWM")
     int getQueueDepthMessagesHighWatermark();
 
+    @SuppressWarnings("unused")
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Oldest Message")
     long getOldestMessageAge();
 
@@ -389,22 +432,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     List<? extends QueueEntry> getMessagesOnTheQueue();
 
-    List<Long> getMessagesOnTheQueue(int num);
-
-    List<Long> getMessagesOnTheQueue(int num, int offset);
-
     QueueEntry getMessageOnTheQueue(long messageId);
-
-    /**
-     * Returns a list of QueEntries from a given range of queue positions, eg messages 5 to 10 on the queue.
-     *
-     * The 'queue position' index starts from 1. Using 0 in 'from' will be ignored and continue from 1.
-     * Using 0 in the 'to' field will return an empty list regardless of the 'from' value.
-     * @param fromPosition
-     * @param toPosition
-     * @return
-     */
-    List<? extends QueueEntry> getMessagesRangeOnTheQueue(long fromPosition, long toPosition);
 
     /**
      * Checks the status of messages on the queue, purging expired ones, firing age related alerts etc.
