@@ -29,6 +29,16 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class QueueConsumerManagerImpl implements QueueConsumerManager
 {
+    private static final EnumSet<NodeState> REMOVED = EnumSet.of(NodeState.REMOVED);
+    private static final EnumSet<NodeState> STATES_OTHER_THAN_REMOVED =
+            EnumSet.complementOf(REMOVED);
+    private static final EnumSet<NodeState> NOT_INTERESTED = EnumSet.of(NodeState.NOT_INTERESTED);
+    private static final EnumSet<NodeState>
+            EITHER_INTERESTED_OR_NOTIFIED = EnumSet.of(NodeState.INTERESTED, NodeState.NOTIFIED);
+    private static final EnumSet<NodeState> NON_ACQUIRING = EnumSet.of(NodeState.NON_ACQUIRING);
+    private static final EnumSet<NodeState> INTERESTED = EnumSet.of(NodeState.INTERESTED);
+    private static final EnumSet<NodeState> NOTIFIED = EnumSet.of(NodeState.NOTIFIED);
+
     private final AbstractQueue<?> _queue;
 
     private final List<PriorityConsumerListPair> _interested;
@@ -71,16 +81,16 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
         {
             if (consumer.acquires())
             {
-                node.moveFromTo(NodeState.REMOVED, NodeState.INTERESTED);
+                node.moveFromTo(REMOVED, NodeState.INTERESTED);
             }
             else
             {
-                node.moveFromTo(NodeState.REMOVED, NodeState.NON_ACQUIRING);
+                node.moveFromTo(REMOVED, NodeState.NON_ACQUIRING);
             }
         }
         else
         {
-            node.moveFromTo(NodeState.REMOVED, NodeState.NOT_INTERESTED);
+            node.moveFromTo(REMOVED, NodeState.NOT_INTERESTED);
         }
         _count++;
     }
@@ -92,7 +102,7 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
         removeFromAll(consumer);
         QueueConsumerNode node = consumer.getQueueConsumerNode();
 
-        if (node.moveFromTo(EnumSet.complementOf(EnumSet.of(NodeState.REMOVED)), NodeState.REMOVED))
+        if (node.moveFromTo(STATES_OTHER_THAN_REMOVED, NodeState.REMOVED))
         {
             _count--;
             return true;
@@ -109,22 +119,22 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
         {
             if (consumer.acquires())
             {
-                return node.moveFromTo(NodeState.NOT_INTERESTED, NodeState.INTERESTED);
+                return node.moveFromTo(NOT_INTERESTED, NodeState.INTERESTED);
             }
             else
             {
-                return node.moveFromTo(NodeState.NOT_INTERESTED, NodeState.NON_ACQUIRING);
+                return node.moveFromTo(NOT_INTERESTED, NodeState.NON_ACQUIRING);
             }
         }
         else
         {
             if (consumer.acquires())
             {
-                return node.moveFromTo(EnumSet.of(NodeState.INTERESTED, NodeState.NOTIFIED), NodeState.NOT_INTERESTED);
+                return node.moveFromTo(EITHER_INTERESTED_OR_NOTIFIED, NodeState.NOT_INTERESTED);
             }
             else
             {
-                return node.moveFromTo(EnumSet.of(NodeState.NON_ACQUIRING), NodeState.NOT_INTERESTED);
+                return node.moveFromTo(NON_ACQUIRING, NodeState.NOT_INTERESTED);
             }
         }
     }
@@ -138,11 +148,11 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
         {
             if (notified)
             {
-                return node.moveFromTo(NodeState.INTERESTED, NodeState.NOTIFIED);
+                return node.moveFromTo(INTERESTED, NodeState.NOTIFIED);
             }
             else
             {
-                return node.moveFromTo(NodeState.NOTIFIED, NodeState.INTERESTED);
+                return node.moveFromTo(NOTIFIED, NodeState.INTERESTED);
             }
         }
         else

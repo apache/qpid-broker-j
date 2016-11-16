@@ -21,7 +21,6 @@
 package org.apache.qpid.server.queue;
 
 import java.util.Collection;
-import java.util.EnumSet;
 
 final class QueueConsumerNode
 {
@@ -40,11 +39,6 @@ final class QueueConsumerNode
     public QueueConsumer<?> getQueueConsumer()
     {
         return _queueConsumer;
-    }
-
-    public boolean moveFromTo(QueueConsumerManagerImpl.NodeState fromState, QueueConsumerManagerImpl.NodeState toState)
-    {
-        return moveFromTo(EnumSet.of(fromState), toState);
     }
 
     public QueueConsumerManagerImpl.NodeState getState()
