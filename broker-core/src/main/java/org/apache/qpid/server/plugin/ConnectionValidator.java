@@ -20,10 +20,10 @@
  */
 package org.apache.qpid.server.plugin;
 
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public interface ConnectionValidator extends Pluggable
 {
-    boolean validateConnectionCreation(AMQPConnection<?> connection, final VirtualHost<?> virtualHost);
+    boolean validateConnectionCreation(AMQPConnection<?> connection, final QueueManagingVirtualHost<?> virtualHost);
 }

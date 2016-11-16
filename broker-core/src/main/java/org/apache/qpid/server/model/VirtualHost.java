@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.model;
 
-import org.apache.qpid.server.store.MessageStore;
-
 @ManagedObject( defaultType = "ProvidedStore", description = VirtualHost.CLASS_DESCRIPTION)
 public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<X>,
                                                                NamedAddressSpace
@@ -43,11 +41,5 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     @DerivedAttribute( persist = true )
     String getModelVersion();
-
-
-
-    Broker<?> getBroker();
-
-    MessageStore getMessageStore();
 
 }

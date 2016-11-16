@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Content;
@@ -234,6 +235,8 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
 
     @ManagedOperation(description = "Resets statistics on this object and all child objects", changesConfiguredObjectState = false, nonModifying = true)
     void resetStatistics();
+
+    Broker<?> getBroker();
 
     DurableConfigurationStore getDurableConfigurationStore();
 

@@ -38,6 +38,7 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.ConnectionValidator;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 
 @PluggableService
@@ -71,7 +72,7 @@ public class ConnectionVersionValidator implements ConnectionValidator
 
     @Override
     public boolean validateConnectionCreation(final AMQPConnection<?> connection,
-                                              final VirtualHost<?> virtualHost)
+                                              final QueueManagingVirtualHost<?> virtualHost)
     {
         String connectionVersion = connection.getClientVersion();
         if (connectionVersion == null)

@@ -33,7 +33,6 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
@@ -56,7 +55,6 @@ class RedirectingVirtualHostImpl
 {
     public static final String VIRTUAL_HOST_TYPE = "REDIRECTOR";
 
-    private final Broker<?> _broker;
     private final VirtualHostPrincipal _principal;
 
     @ManagedObjectFactoryConstructor
@@ -64,7 +62,6 @@ class RedirectingVirtualHostImpl
     {
         super(parentsMap(virtualHostNode), attributes);
 
-        _broker = virtualHostNode.getParent(Broker.class);
         _principal = new VirtualHostPrincipal(this);
         setState(State.UNAVAILABLE);
     }
@@ -106,12 +103,6 @@ class RedirectingVirtualHostImpl
     {
         throwUnsupportedForRedirector();
         return null;
-    }
-
-    @Override
-    public Broker<?> getBroker()
-    {
-        return _broker;
     }
 
     @Override

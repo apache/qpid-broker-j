@@ -1576,6 +1576,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             connection.resetStatistics();
         }
+        for(Queue<?> queue : getChildren(Queue.class))
+        {
+            queue.resetStatistics();
+        }
     }
 
     public synchronized LinkRegistry getLinkRegistry(String remoteContainerId)
