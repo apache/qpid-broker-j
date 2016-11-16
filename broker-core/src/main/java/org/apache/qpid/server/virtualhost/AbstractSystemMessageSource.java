@@ -148,6 +148,34 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         @Override
         public void pullMessage()
         {
+            AMQPConnection<?> connection = _target.getSessionModel().getAMQPConnection();
+            _target.getSendLock();
+            try
+            {
+                connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(true);
+
+                try
+                {
+                    if (!_queue.isEmpty())
+                    {
+                        final PropertiesMessageInstance propertiesMessageInstance = _queue.get(0);
+                        if (!_target.isSuspended() && _target.allocateCredit(propertiesMessageInstance.getMessage()))
+                        {
+                            _queue.remove(0);
+                            _target.send(this, propertiesMessageInstance, false);
+                        }
+                    }
+                }
+                finally
+                {
+                    connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(false);
+                }
+            }
+            finally
+            {
+                _target.releaseSendLock();
+            }
+
 
         }
 
