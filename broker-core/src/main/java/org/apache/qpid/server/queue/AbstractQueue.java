@@ -1315,9 +1315,52 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _queueStatistics.getQueueCount();
     }
 
+    @Override
     public long getQueueDepthBytes()
     {
         return _queueStatistics.getQueueSize();
+    }
+
+    @Override
+    public long getAvailableBytes()
+    {
+        return _queueStatistics.getAvailableSize();
+    }
+
+    @Override
+    public int getAvailableMessages()
+    {
+        return _queueStatistics.getAvailableCount();
+    }
+
+    @Override
+    public long getAvailableBytesHighWatermark()
+    {
+        return _queueStatistics.getAvailableSizeHwm();
+    }
+
+    @Override
+    public int getAvailableMessagesHighWatermark()
+    {
+        return _queueStatistics.getAvailableCountHwm();
+    }
+
+    @Override
+    public long getQueueDepthBytesHighWatermark()
+    {
+        return _queueStatistics.getQueueSizeHwm();
+    }
+
+    @Override
+    public int getQueueDepthMessagesHighWatermark()
+    {
+        return _queueStatistics.getQueueCountHwm();
+    }
+
+    @Override
+    public void resetStatistics()
+    {
+        _queueStatistics.reset();
     }
 
     @Override

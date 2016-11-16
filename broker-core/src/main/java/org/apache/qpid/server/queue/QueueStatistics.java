@@ -46,6 +46,12 @@ final class QueueStatistics
     private final AtomicLong _persistentDequeueCount = new AtomicLong();
     private final AtomicLong _persistentDequeueSize = new AtomicLong();
 
+    private final AtomicInteger _queueCountHwm = new AtomicInteger();
+    private final AtomicLong _queueSizeHwm = new AtomicLong();
+
+    private final AtomicInteger _availableCountHwm = new AtomicInteger();
+    private final AtomicLong _availableSizeHwm = new AtomicLong();
+
     public final int getQueueCount()
     {
         return _queueCount.get();
@@ -116,12 +122,40 @@ final class QueueStatistics
         return _persistentDequeueSize.get();
     }
 
+    public final int getQueueCountHwm()
+    {
+        return _queueCountHwm.get();
+    }
 
+    public final long getQueueSizeHwm()
+    {
+        return _queueSizeHwm.get();
+    }
+
+    public final int getAvailableCountHwm()
+    {
+        return _availableCountHwm.get();
+    }
+
+    public final long getAvailableSizeHwm()
+    {
+        return _availableSizeHwm.get();
+    }
 
     void addToQueue(long size)
     {
-        _queueCount.incrementAndGet();
-        _queueSize.addAndGet(size);
+        int count = _queueCount.incrementAndGet();
+        long queueSize = _queueSize.addAndGet(size);
+        int hwm;
+        while((hwm = _queueCountHwm.get()) < count)
+        {
+            _queueCountHwm.compareAndSet(hwm, count);
+        }
+        long sizeHwm;
+        while((sizeHwm = _queueSizeHwm.get()) < queueSize)
+        {
+            _queueSizeHwm.compareAndSet(sizeHwm, queueSize);
+        }
     }
 
     void removeFromQueue(long size)
@@ -132,8 +166,18 @@ final class QueueStatistics
 
     void addToAvailable(long size)
     {
-        _availableCount.incrementAndGet();
-        _availableSize.addAndGet(size);
+        int count = _availableCount.incrementAndGet();
+        long availableSize = _availableSize.addAndGet(size);
+        int hwm;
+        while((hwm = _availableCountHwm.get()) < count)
+        {
+            _availableCountHwm.compareAndSet(hwm, count);
+        }
+        long sizeHwm;
+        while((sizeHwm = _availableSizeHwm.get()) < availableSize)
+        {
+            _availableSizeHwm.compareAndSet(sizeHwm, availableSize);
+        }
     }
 
     void removeFromAvailable(long size)
@@ -176,6 +220,22 @@ final class QueueStatistics
     {
         _persistentDequeueCount.incrementAndGet();
         _persistentDequeueSize.addAndGet(size);
+    }
+
+    void reset()
+    {
+        _availableCountHwm.set(0);
+        _availableSizeHwm.set(0L);
+        _queueCountHwm.set(0);
+        _queueSizeHwm.set(0L);
+        _enqueueCount.set(0L);
+        _enqueueSize.set(0L);
+        _dequeueCount.set(0L);
+        _dequeueSize.set(0L);
+        _persistentEnqueueCount.set(0L);
+        _persistentEnqueueSize.set(0L);
+        _persistentDequeueCount.set(0L);
+        _persistentDequeueSize.set(0L);
     }
 
 }

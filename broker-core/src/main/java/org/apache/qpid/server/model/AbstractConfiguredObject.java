@@ -3191,11 +3191,21 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     @Override
     public Map<String, Object> getStatistics()
     {
+        return getStatistics(Collections.<String>emptyList());
+    }
+
+    @Override
+    public Map<String, Object> getStatistics(List<String> statistics)
+    {
         Collection<ConfiguredObjectStatistic> stats = getTypeRegistry().getStatistics(getClass());
         Map<String,Object> map = new HashMap<>();
+        boolean allStats = statistics == null || statistics.isEmpty();
         for(ConfiguredObjectStatistic stat : stats)
         {
-            map.put(stat.getName(), stat.getValue(this));
+            if(allStats || statistics.contains(stat.getName()))
+            {
+                map.put(stat.getName(), stat.getValue(this));
+            }
         }
         return map;
     }

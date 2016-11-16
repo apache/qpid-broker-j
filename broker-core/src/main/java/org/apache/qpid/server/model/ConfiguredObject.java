@@ -23,6 +23,7 @@ package org.apache.qpid.server.model;
 import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -170,6 +171,10 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
      */
     @ManagedAttribute( defaultValue = "PERMANENT" )
     LifetimePolicy getLifetimePolicy();
+
+    @ManagedOperation(description = "Return the (selected) statistic values", nonModifying = true, changesConfiguredObjectState = false)
+    Map<String, Object> getStatistics(@Param(name = "statistics", defaultValue = "{}",
+            description = "Option list of statistic values to retrieve") List<String> statistics);
 
     /**
      * Get the names of attributes that are set on this object
