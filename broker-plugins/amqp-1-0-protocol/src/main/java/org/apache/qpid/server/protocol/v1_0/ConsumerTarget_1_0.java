@@ -86,13 +86,16 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     @Override
     public void updateNotifyWorkDesired()
     {
-        final AMQPConnection<?> amqpConnection =
-                _link.getSession().getAMQPConnection();
+        boolean state = false;
+        Session_1_0 session = _link.getSession();
+        if (session != null)
+        {
+            final AMQPConnection<?> amqpConnection = session.getAMQPConnection();
 
-        boolean state = !amqpConnection.isTransportBlockedForWriting()
-                        && _link.isAttached()
-                        && getEndpoint().hasCreditToSend();
-
+            state = !amqpConnection.isTransportBlockedForWriting()
+                    && _link.isAttached()
+                    && getEndpoint().hasCreditToSend();
+        }
         setNotifyWorkDesired(state);
 
     }

@@ -455,6 +455,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
         else
         {
             endpoint.detach();
+            _target.updateNotifyWorkDesired();
         }
     }
 
@@ -567,7 +568,8 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
 
     ServerTransaction getTransaction(Binary transactionId)
     {
-        return _linkAttachment.getSession().getTransaction(transactionId);
+        Session_1_0 session = _linkAttachment.getSession();
+        return session == null ? null : session.getTransaction(transactionId);
     }
 
     public Binary getTransactionId()
@@ -590,40 +592,62 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
     {
         _linkAttachment = linkAttachment;
 
-        SendingLinkEndpoint endpoint = linkAttachment.getEndpoint();
-        endpoint.setDeliveryStateHandler(this);
-        Map initialUnsettledMap = endpoint.getInitialUnsettledMap();
-        Map<Binary, MessageInstance> unsettledCopy = new HashMap<Binary, MessageInstance>(_unsettledMap);
-        _resumeAcceptedTransfers.clear();
-        _resumeFullTransfers.clear();
-
-        for(Map.Entry<Binary, MessageInstance> entry : unsettledCopy.entrySet())
+        if (linkAttachment.getSession() != null)
         {
-            Binary deliveryTag = entry.getKey();
-            final MessageInstance queueEntry = entry.getValue();
-            if(initialUnsettledMap == null || !initialUnsettledMap.containsKey(deliveryTag))
-            {
-                queueEntry.setRedelivered();
-                queueEntry.release(_consumer);
-                _unsettledMap.remove(deliveryTag);
-            }
-            else if(initialUnsettledMap.get(deliveryTag) instanceof Outcome)
-            {
-                Outcome outcome = (Outcome) initialUnsettledMap.get(deliveryTag);
+            SendingLinkEndpoint endpoint = linkAttachment.getEndpoint();
+            endpoint.setDeliveryStateHandler(this);
+            Map initialUnsettledMap = endpoint.getInitialUnsettledMap();
+            Map<Binary, MessageInstance> unsettledCopy = new HashMap<Binary, MessageInstance>(_unsettledMap);
+            _resumeAcceptedTransfers.clear();
+            _resumeFullTransfers.clear();
 
-                if(outcome instanceof Accepted)
+            for (Map.Entry<Binary, MessageInstance> entry : unsettledCopy.entrySet())
+            {
+                Binary deliveryTag = entry.getKey();
+                final MessageInstance queueEntry = entry.getValue();
+                if (initialUnsettledMap == null || !initialUnsettledMap.containsKey(deliveryTag))
                 {
-                    AutoCommitTransaction txn = new AutoCommitTransaction(_addressSpace.getMessageStore());
-                    if(_consumer.acquires())
+                    queueEntry.setRedelivered();
+                    queueEntry.release(_consumer);
+                    _unsettledMap.remove(deliveryTag);
+                }
+                else if (initialUnsettledMap.get(deliveryTag) instanceof Outcome)
+                {
+                    Outcome outcome = (Outcome) initialUnsettledMap.get(deliveryTag);
+
+                    if (outcome instanceof Accepted)
                     {
-                        if(queueEntry.acquire() || queueEntry.isAcquired())
+                        AutoCommitTransaction txn = new AutoCommitTransaction(_addressSpace.getMessageStore());
+                        if (_consumer.acquires())
+                        {
+                            if (queueEntry.acquire() || queueEntry.isAcquired())
+                            {
+                                txn.dequeue(Collections.singleton(queueEntry),
+                                            new ServerTransaction.Action()
+                                            {
+                                                public void postCommit()
+                                                {
+                                                    queueEntry.delete();
+                                                }
+
+                                                public void onRollback()
+                                                {
+                                                }
+                                            });
+                            }
+                        }
+                    }
+                    else if (outcome instanceof Released)
+                    {
+                        AutoCommitTransaction txn = new AutoCommitTransaction(_addressSpace.getMessageStore());
+                        if (_consumer.acquires())
                         {
                             txn.dequeue(Collections.singleton(queueEntry),
                                         new ServerTransaction.Action()
                                         {
                                             public void postCommit()
                                             {
-                                                queueEntry.delete();
+                                                queueEntry.release(_consumer);
                                             }
 
                                             public void onRollback()
@@ -632,39 +656,20 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
                                         });
                         }
                     }
+                    //_unsettledMap.remove(deliveryTag);
+                    initialUnsettledMap.remove(deliveryTag);
+                    _resumeAcceptedTransfers.add(deliveryTag);
                 }
-                else if(outcome instanceof Released)
+                else
                 {
-                    AutoCommitTransaction txn = new AutoCommitTransaction(_addressSpace.getMessageStore());
-                    if(_consumer.acquires())
-                    {
-                        txn.dequeue(Collections.singleton(queueEntry),
-                                new ServerTransaction.Action()
-                                {
-                                    public void postCommit()
-                                    {
-                                        queueEntry.release(_consumer);
-                                    }
-
-                                    public void onRollback()
-                                    {
-                                    }
-                                });
-                    }
+                    _resumeFullTransfers.add(queueEntry);
+                    // exists in receivers map, but not yet got an outcome ... should resend with resume = true
                 }
-                //_unsettledMap.remove(deliveryTag);
-                initialUnsettledMap.remove(deliveryTag);
-                _resumeAcceptedTransfers.add(deliveryTag);
+                // TODO - else
             }
-            else
-            {
-                _resumeFullTransfers.add(queueEntry);
-                // exists in receivers map, but not yet got an outcome ... should resend with resume = true
-            }
-            // TODO - else
         }
 
-
+        _target.updateNotifyWorkDesired();
     }
 
     public Map getUnsettledOutcomeMap()

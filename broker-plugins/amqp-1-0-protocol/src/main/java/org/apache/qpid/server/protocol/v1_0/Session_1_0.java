@@ -240,8 +240,11 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                     // TODO : fix below - distinguish between local and remote owned
                     endpoint.setSource(attach.getSource());
                     endpoint.setTarget(attach.getTarget());
-
-
+                    _linkMap.put(attach.getName(), endpoint);
+                }
+                else
+                {
+                    endpoint.receiveAttach(attach);
                 }
 
                 if(attach.getRole() == Role.SENDER)
@@ -1633,7 +1636,10 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
 
             _localLinkEndpoints.remove(endpoint);
 
-
+            if (Boolean.TRUE.equals(detach.getClosed()))
+            {
+                _linkMap.remove(endpoint.getName());
+            }
         }
         else
         {
@@ -1651,6 +1657,27 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
             detach.setHandle(handle);
             detach.setError(_sessionEndedLinkError);
             detach(handle, detach);
+        }
+
+        final LinkRegistry linkRegistry = getAddressSpace().getLinkRegistry(getConnection().getRemoteContainerId());
+
+        for(LinkEndpoint<?> linkEndpoint : _linkMap.values())
+        {
+            if (linkEndpoint.getRole() == Role.SENDER)
+            {
+                final SendingLink_1_0 link = (SendingLink_1_0) linkRegistry.getDurableSendingLink(linkEndpoint.getName());
+
+                if (link != null)
+                {
+                    synchronized (link)
+                    {
+                        if (link.getEndpoint() == linkEndpoint)
+                        {
+                            link.setLinkAttachment(new SendingLinkAttachment(null, (SendingLinkEndpoint) linkEndpoint));
+                        }
+                    }
+                }
+            }
         }
     }
 

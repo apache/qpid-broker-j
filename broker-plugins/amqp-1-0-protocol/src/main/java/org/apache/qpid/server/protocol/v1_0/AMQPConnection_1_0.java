@@ -1520,18 +1520,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         closeSender();
     }
 
-    @Override
-    public String toString()
-    {
-        NamedAddressSpace virtualHost = getAddressSpace();
-        return "Connection_1_0["
-               + _connectionId
-               + " "
-               + getAddress()
-               + (virtualHost == null ? "" : (" vh : " + virtualHost.getName()))
-               + ']';
-    }
-
 
     private void assertState(final FrameReceivingState state)
     {

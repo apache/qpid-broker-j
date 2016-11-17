@@ -249,7 +249,8 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
 
             case DETACHED:
             {
-                _state = State.ATTACHED;
+                _state = State.ATTACH_RECVD;
+                break;
             }
 
 
