@@ -116,7 +116,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
 
     private final Container<?> _container;
     private final AtomicBoolean _closing = new AtomicBoolean();
-    private final SettableFuture _noConnectionsRemain = SettableFuture.create();
+
     private AcceptingTransport _transport;
     private SSLContext _sslContext;
     private volatile int _connectionWarnCount;
