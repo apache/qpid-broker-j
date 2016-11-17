@@ -331,10 +331,8 @@ public class AMQChannel
         ConsumerImpl sub = queue.addConsumer(target, null, AMQMessage.class, "", options, null);
         target.updateNotifyWorkDesired();
         target.sendNextMessage();
-        sub.close();
+        target.close();
         return getDeliveryMethod.hasDeliveredMessage();
-
-
     }
 
     /** Sets this channel to be part of a local transaction */
