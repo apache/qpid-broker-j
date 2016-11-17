@@ -20,6 +20,7 @@
 package org.apache.qpid.server.transport;
 
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.qpid.transport.network.Ticker;
 
@@ -27,6 +28,7 @@ public class AggregateTicker implements Ticker, SchedulingDelayNotificationListe
 {
 
     private final CopyOnWriteArrayList<Ticker> _tickers = new CopyOnWriteArrayList<>();
+    private final AtomicBoolean _modified = new AtomicBoolean();
 
     @Override
     public int getTimeToNextTick(final long currentTime)
@@ -58,19 +60,26 @@ public class AggregateTicker implements Ticker, SchedulingDelayNotificationListe
         return nextTick;
     }
 
-    public CopyOnWriteArrayList<Ticker> getTickers()
-    {
-        return _tickers;
-    }
-
     public void addTicker(Ticker ticker)
     {
         _tickers.add(ticker);
+        _modified.set(true);
     }
 
     public void removeTicker(Ticker ticker)
     {
         _tickers.remove(ticker);
+        _modified.set(true);
+    }
+
+    public boolean getModified()
+    {
+        return _modified.get();
+    }
+
+    public void resetModified()
+    {
+        _modified.set(false);
     }
 
     @Override
