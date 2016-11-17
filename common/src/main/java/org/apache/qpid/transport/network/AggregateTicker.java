@@ -21,11 +21,13 @@
 package org.apache.qpid.transport.network;
 
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AggregateTicker implements Ticker
 {
 
     private final CopyOnWriteArrayList<Ticker> _tickers = new CopyOnWriteArrayList<>();
+    private final AtomicBoolean _modified = new AtomicBoolean();
 
     @Override
     public int getTimeToNextTick(final long currentTime)
@@ -57,10 +59,22 @@ public class AggregateTicker implements Ticker
     public void addTicker(Ticker ticker)
     {
         _tickers.add(ticker);
+        _modified.set(true);
     }
 
     public void removeTicker(Ticker ticker)
     {
         _tickers.remove(ticker);
+        _modified.set(true);
+    }
+
+    public boolean getModified()
+    {
+        return _modified.get();
+    }
+
+    public void resetModified()
+    {
+        _modified.set(false);
     }
 }

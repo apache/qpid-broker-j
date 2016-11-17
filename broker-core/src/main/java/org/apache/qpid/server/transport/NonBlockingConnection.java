@@ -44,6 +44,7 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.transport.ByteBufferSender;
+import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.Ticker;
 import org.apache.qpid.transport.network.TransportEncryption;
 import org.apache.qpid.util.SystemUtils;
@@ -130,7 +131,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         return _partialRead;
     }
 
-    Ticker getTicker()
+    AggregateTicker getTicker()
     {
         return _protocolEngine.getAggregateTicker();
     }
