@@ -258,7 +258,10 @@ public class UpgradeFrom7To8 extends AbstractStoreUpgrade
         }
         finally
         {
-            cursor.close();
+            if (cursor != null)
+            {
+                cursor.close();
+            }
         }
     }
 
