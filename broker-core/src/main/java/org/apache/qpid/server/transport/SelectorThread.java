@@ -643,10 +643,5 @@ class SelectorThread extends Thread
          {
              _workQueue.add(new ConnectionProcessor(_scheduler, connection));
          }
-         SelectionTask selectionTask = connection.getSelectionTask();
-         if (selectionTask != null)
-         {
-             selectionTask.wakeup();
-         }
      }
 }
