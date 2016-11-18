@@ -354,16 +354,7 @@ public class SSLUtil
     public static PrivateKey readPrivateKey(InputStream input)
             throws IOException, GeneralSecurityException
     {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-
-        byte[] tmp = new byte[1024];
-        int read;
-        while ((read = input.read(tmp)) != -1)
-        {
-            buffer.write(tmp, 0, read);
-        }
-
-        byte[] content = buffer.toByteArray();
+        byte[] content = toByteArray(input);
         String contentAsString = new String(content, StandardCharsets.US_ASCII);
         if(contentAsString.contains("-----BEGIN ") && contentAsString.contains(" PRIVATE KEY-----"))
         {
@@ -392,6 +383,23 @@ public class SSLUtil
             }
         }
         return readPrivateKey(content, "RSA");
+    }
+
+    private static byte[] toByteArray(final InputStream input) throws IOException
+    {
+        try(ByteArrayOutputStream buffer = new ByteArrayOutputStream())
+        {
+
+            byte[] tmp = new byte[1024];
+            int read;
+            while((read=input.read(tmp))!=-1)
+
+            {
+                buffer.write(tmp, 0, read);
+            }
+
+            return buffer.toByteArray();
+        }
     }
 
     public static PrivateKey readPrivateKey(final byte[] content, final String algorithm)
