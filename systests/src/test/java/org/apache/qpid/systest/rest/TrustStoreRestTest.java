@@ -38,17 +38,8 @@ import org.apache.qpid.util.FileUtils;
 public class TrustStoreRestTest extends QpidRestTestCase
 {
 
-    @Override
-    public void setUp() throws Exception
-    {
-        // not calling super.setUp() to avoid broker start-up until
-        // after any necessary configuration
-    }
-
     public void testGet() throws Exception
     {
-        super.setUp();
-
         //verify existence of the default trust store used by the systests
         List<Map<String, Object>> trustStores = assertNumberOfTrustStores(1);
 
@@ -65,8 +56,6 @@ public class TrustStoreRestTest extends QpidRestTestCase
 
     public void testCreate() throws Exception
     {
-        super.setUp();
-
         String name = getTestName();
 
         assertNumberOfTrustStores(1);
@@ -86,8 +75,6 @@ public class TrustStoreRestTest extends QpidRestTestCase
 
     public void testCreateUsingDataUrl() throws Exception
     {
-        super.setUp();
-
         String name = getTestName();
         byte[] trustStoreAsBytes = FileUtils.readFileAsBytes(TestSSLConstants.TRUSTSTORE);
         String dataUrlForTruststore = DataUrlUtils.getDataUrlForBytes(trustStoreAsBytes);
@@ -111,8 +98,6 @@ public class TrustStoreRestTest extends QpidRestTestCase
 
     public void testDelete() throws Exception
     {
-        super.setUp();
-
         String name = getTestName();
 
         assertNumberOfTrustStores(1);
@@ -135,8 +120,6 @@ public class TrustStoreRestTest extends QpidRestTestCase
 
     public void testUpdate() throws Exception
     {
-        super.setUp();
-
         String name = getTestName();
 
         assertNumberOfTrustStores(1);

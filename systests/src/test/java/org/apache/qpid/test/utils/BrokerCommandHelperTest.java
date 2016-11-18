@@ -33,8 +33,9 @@ public class BrokerCommandHelperTest extends QpidTestCase
     private BrokerCommandHelper _brokerCommandHelper;
 
     @Override
-    public void setUp()
+    public void setUp() throws Exception
     {
+        super.setUp();
         _brokerCommandHelper = new BrokerCommandHelper("\"" + PATH_TO_QPID_EXECUTABLE + "\" " + ARGUMENT_PORT + "     "
                 + ARGUMENT_PORT_VALUE + " " + ARGUMENT_STORE_PATH + " " + ARGUMENT_STORE_PATH_VALUE + " " + ARGUMENT_STORE_TYPE
                 + " " + ARGUMENT_STORE_TYPE_VALUE + "     '" + ARGUMENT_WITH_SPACES

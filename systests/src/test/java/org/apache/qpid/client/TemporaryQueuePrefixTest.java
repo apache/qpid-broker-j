@@ -29,14 +29,14 @@ import javax.jms.TemporaryQueue;
 public class TemporaryQueuePrefixTest extends QpidBrokerTestCase
 {
     @Override
-    public void setUp() throws Exception
+    public void startDefaultBroker() throws Exception
     {
-        // deliberately don't call setup
+        // deliberately don't start broker
     }
 
     public void testNoPrefixSet() throws Exception
     {
-        super.setUp();
+        super.startDefaultBroker();
         Connection connection = getConnection();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         TemporaryQueue queue = session.createTemporaryQueue();
@@ -49,7 +49,7 @@ public class TemporaryQueuePrefixTest extends QpidBrokerTestCase
     {
         String prefix = "[]";
         setTestSystemProperty("qpid.globalAddressDomains", prefix);
-        super.setUp();
+        super.startDefaultBroker();
         Connection connection = getConnection();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         TemporaryQueue queue = session.createTemporaryQueue();
@@ -63,7 +63,7 @@ public class TemporaryQueuePrefixTest extends QpidBrokerTestCase
         final String primaryPrefix = "/testPrefix";
         String prefix = "[ \\\"" + primaryPrefix + "\\\", \\\"/foo\\\" ]";
         setTestSystemProperty("qpid.globalAddressDomains", prefix);
-        super.setUp();
+        super.startDefaultBroker();
         Connection connection = getConnection();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         TemporaryQueue queue = session.createTemporaryQueue();
@@ -77,7 +77,7 @@ public class TemporaryQueuePrefixTest extends QpidBrokerTestCase
     {
         String prefix = "/testPrefix";
         setTestSystemProperty("qpid.globalAddressDomains", prefix);
-        super.setUp();
+        super.startDefaultBroker();
         Connection connection = getConnection();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         TemporaryQueue queue = session.createTemporaryQueue();

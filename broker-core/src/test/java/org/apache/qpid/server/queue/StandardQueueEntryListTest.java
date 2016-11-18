@@ -52,8 +52,9 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
     private ConfiguredObjectFactoryImpl _factory;
 
     @Override
-    protected void setUp()
+    protected void setUp() throws Exception
     {
+        super.setUp();
         Map<String,Object> queueAttributes = new HashMap<String, Object>();
         queueAttributes.put(Queue.ID, UUID.randomUUID());
         queueAttributes.put(Queue.NAME, getName());

@@ -40,8 +40,9 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
         _testProperties = new BasicContentHeaderProperties();
     }
 
-    public void setUp()
+    public void setUp() throws Exception
     {
+        super.setUp();
         _testTable = new FieldTable();
         _testTable.setString("TestString", _testString);
         _testTable.setInteger("Testint", _testint);

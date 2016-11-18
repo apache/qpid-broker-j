@@ -35,6 +35,7 @@ public class AclRulePredicatesTest extends QpidTestCase
     @Override
     protected void setUp() throws Exception
     {
+        super.setUp();
         _aclRulePredicates.setFirewallRuleFactory(_firewallRuleFactory);
 
         when(_firewallRuleFactory.createForHostname((String[]) any())).thenReturn(mock(FirewallRule.class));

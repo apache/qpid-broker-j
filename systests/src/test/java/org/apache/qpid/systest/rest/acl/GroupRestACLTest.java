@@ -49,12 +49,9 @@ public class GroupRestACLTest extends QpidRestTestCase
     private File _groupFile;
 
     @Override
-    public void setUp() throws Exception
+    public void startDefaultBroker() throws Exception
     {
-        _groupFile = createTemporaryGroupFile();
-        getDefaultBrokerConfiguration().addGroupFileConfiguration(_groupFile.getAbsolutePath());
-
-        //DONT call super.setUp(), the tests will start the broker after configuring it
+        // tests will start the broker after configuring it
     }
 
     @Override
@@ -62,6 +59,8 @@ public class GroupRestACLTest extends QpidRestTestCase
     {
         super.customizeConfiguration();
         getDefaultBrokerConfiguration().setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
+        _groupFile = createTemporaryGroupFile();
+        getDefaultBrokerConfiguration().addGroupFileConfiguration(_groupFile.getAbsolutePath());
     }
 
     @Override
@@ -103,7 +102,7 @@ public class GroupRestACLTest extends QpidRestTestCase
                 "ACL DENY-LOG " + DENIED_GROUP + " CREATE GROUP");
 
         //Start the broker with the custom config
-        super.setUp();
+        super.startDefaultBroker();
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
         Map<String, Object> data = getRestTestHelper().getJsonAsSingletonList("groupprovider/" + FILE_GROUP_MANAGER);
@@ -129,7 +128,7 @@ public class GroupRestACLTest extends QpidRestTestCase
                 "ACL DENY-LOG " + DENIED_GROUP + " DELETE GROUP");
 
         //Start the broker with the custom config
-        super.setUp();
+        super.startDefaultBroker();
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
 
         Map<String, Object> data = getRestTestHelper().getJsonAsSingletonList("groupprovider/" + FILE_GROUP_MANAGER);
@@ -155,7 +154,7 @@ public class GroupRestACLTest extends QpidRestTestCase
                 "ACL DENY-LOG " + DENIED_GROUP + " UPDATE GROUP");
 
         //Start the broker with the custom config
-        super.setUp();
+        super.startDefaultBroker();
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
 
         assertNumberOfGroupMembers(OTHER_GROUP, 1);
@@ -175,7 +174,7 @@ public class GroupRestACLTest extends QpidRestTestCase
                 "ACL DENY-LOG " + DENIED_GROUP + " UPDATE GROUP");
 
         //Start the broker with the custom config
-        super.setUp();
+        super.startDefaultBroker();
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
 
         assertNumberOfGroupMembers(OTHER_GROUP, 1);

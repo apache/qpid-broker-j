@@ -50,16 +50,16 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
     public static final String INCLUDED_VIRTUAL_HOST_NODE_NAME = "includedVirtualHostNode";
 
     @Override
-    public void setUp() throws Exception
+    public void startDefaultBroker() throws Exception
     {
-
+        // tests start broker
     }
 
     public void testEncryptionUsingMessageHeader() throws Exception
     {
         if(isStrongEncryptionEnabled() && !isCppBroker())
         {
-            super.setUp();
+            super.startDefaultBroker();
             Map<String, String> prodConnOptions = new HashMap<>();
             prodConnOptions.put("encryption_trust_store", BROKER_PEERSTORE);
             prodConnOptions.put("encryption_trust_store_password", BROKER_PEERSTORE_PASSWORD);
@@ -100,7 +100,7 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
     {
         if(isStrongEncryptionEnabled() && !isCppBroker())
         {
-            super.setUp();
+            super.startDefaultBroker();
             Map<String, String> prodConnOptions = new HashMap<>();
             prodConnOptions.put("encryption_trust_store", BROKER_PEERSTORE);
             prodConnOptions.put("encryption_trust_store_password", BROKER_PEERSTORE_PASSWORD);
@@ -138,7 +138,7 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
     {
         if(isStrongEncryptionEnabled() && !isCppBroker())
         {
-            super.setUp();
+            super.startDefaultBroker();
             Map<String, String> prodConnOptions = new HashMap<>();
             prodConnOptions.put("encryption_trust_store", BROKER_PEERSTORE);
             prodConnOptions.put("encryption_trust_store_password", BROKER_PEERSTORE_PASSWORD);
@@ -182,7 +182,7 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
         if(isStrongEncryptionEnabled() && !isCppBroker())
         {
             addPeerStoreToBroker();
-            super.setUp();
+            super.startDefaultBroker();
             Map<String, String> prodConnOptions = new HashMap<>();
             prodConnOptions.put("encryption_remote_trust_store","$certificates%5c/peerstore");
             Connection producerConnection = getConnectionWithOptions(prodConnOptions);
@@ -225,7 +225,7 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
             createTestVirtualHostNode(EXCLUDED_VIRTUAL_HOST_NODE_NAME);
             addPeerStoreToBroker(Collections.<String, Object>singletonMap("excludedVirtualHostNodeMessageSources",
                                                                           EXCLUDED_VIRTUAL_HOST_NODE_NAME));
-            super.setUp();
+            super.startDefaultBroker();
 
             String connectionUrlString = "amqp://guest:guest@clientId/" + EXCLUDED_VIRTUAL_HOST_NODE_NAME
                                          + "?brokerlist='tcp://localhost:" + getDefaultAmqpPort() + "'"
@@ -264,7 +264,7 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
             // this is deliberate to test that the include list takes precedence
             additionalPeerStoreAttributes.put("excludedVirtualHostNodeMessageSources", INCLUDED_VIRTUAL_HOST_NODE_NAME);
             addPeerStoreToBroker(additionalPeerStoreAttributes);
-            super.setUp();
+            super.startDefaultBroker();
 
             String connectionUrlString;
 
@@ -308,7 +308,7 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
         if(isStrongEncryptionEnabled() && !isCppBroker())
         {
             addPeerStoreToBroker();
-            super.setUp();
+            super.startDefaultBroker();
             Map<String, String> prodConnOptions = new HashMap<>();
             prodConnOptions.put("encryption_remote_trust_store","$certificates%5c/peerstore");
             Connection producerConnection = getConnectionWithOptions(prodConnOptions);
@@ -351,7 +351,7 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
     {
         if(isStrongEncryptionEnabled() && !isCppBroker())
         {
-            super.setUp();
+            super.startDefaultBroker();
             Map<String, String> prodConnOptions = new HashMap<>();
             prodConnOptions.put("encryption_trust_store", BROKER_PEERSTORE);
             prodConnOptions.put("encryption_trust_store_password", BROKER_PEERSTORE_PASSWORD);

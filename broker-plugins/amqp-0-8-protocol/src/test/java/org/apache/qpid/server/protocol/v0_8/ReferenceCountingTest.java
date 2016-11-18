@@ -46,6 +46,7 @@ public class ReferenceCountingTest extends QpidTestCase
 
     protected void setUp() throws Exception
     {
+        super.setUp();
         _store = new TestMemoryMessageStore();
     }
 

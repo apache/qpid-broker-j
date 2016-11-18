@@ -48,6 +48,7 @@ public class AMQSession_0_8Test extends QpidTestCase
 
     public void setUp() throws Exception
     {
+        super.setUp();
         _connection = new MockAMQConnection("amqp://guest:guest@/test?brokerlist='tcp://localhost:5672'");
         NetworkConnection network = new TestNetworkConnection();
         _connection.getProtocolHandler().setNetworkConnection(network);

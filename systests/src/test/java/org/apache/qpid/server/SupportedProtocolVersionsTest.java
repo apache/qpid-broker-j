@@ -45,9 +45,9 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
  */
 public class SupportedProtocolVersionsTest extends QpidBrokerTestCase
 {
-    public void setUp() throws Exception
+    public void startDefaultBroker() throws Exception
     {
-        // No-op, we call super.setUp() from test methods after appropriate config overrides
+        // No-op, we call super.startDefaultBroker() from test methods after appropriate config overrides
     }
 
     private void clearProtocolSupportManipulations() throws Exception
@@ -96,7 +96,7 @@ public class SupportedProtocolVersionsTest extends QpidBrokerTestCase
     {
         clearProtocolSupportManipulations();
 
-        super.setUp();
+        super.startDefaultBroker();
 
         //Verify requesting a 0-10 connection works
         setTestClientSystemProperty(ClientProperties.AMQP_VERSION, "0-10");
@@ -127,7 +127,7 @@ public class SupportedProtocolVersionsTest extends QpidBrokerTestCase
     {
         setSystemProperty(QpidBrokerTestCase.TEST_AMQP_PORT_PROTOCOLS_PROPERTY, getProtocolsWithExclusions(Protocol.AMQP_1_0, Protocol.AMQP_0_10));
 
-        super.setUp();
+        super.startDefaultBroker();
 
         //Verify initially requesting a 0-10 connection now negotiates a 0-91
         //connection as the broker should reply with its highest supported protocol
@@ -146,7 +146,7 @@ public class SupportedProtocolVersionsTest extends QpidBrokerTestCase
 
         setSystemProperty(AmqpPort.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY, "v0_9");
 
-        super.setUp();
+        super.startDefaultBroker();
 
         //Verify initially requesting a 0-10 connection now negotiates a 0-9 connection as the
         //broker should reply with its 'default unsupported protocol initiation reply' as opposed
@@ -165,7 +165,7 @@ public class SupportedProtocolVersionsTest extends QpidBrokerTestCase
 
     public void testProtocolIsExpectedBasedOnTestProfile() throws Exception
     {
-        super.setUp();
+        super.startDefaultBroker();
         final AMQConnection connection = (AMQConnection) getConnection();
         final Protocol expectedBrokerProtocol = getBrokerProtocol();
         final AMQPProtocolVersionWrapper amqpProtocolVersionWrapper = new AMQPProtocolVersionWrapper(expectedBrokerProtocol);

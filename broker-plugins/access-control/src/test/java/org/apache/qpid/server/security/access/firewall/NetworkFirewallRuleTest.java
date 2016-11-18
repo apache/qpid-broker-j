@@ -37,6 +37,7 @@ public class NetworkFirewallRuleTest extends QpidTestCase
     @Override
     protected void setUp() throws Exception
     {
+        super.setUp();
         _addressNotInRule = InetAddress.getByName(LOCALHOST_IP);
     }
 

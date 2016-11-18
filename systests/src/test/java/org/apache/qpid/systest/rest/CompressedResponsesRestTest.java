@@ -36,22 +36,16 @@ import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 public class CompressedResponsesRestTest extends QpidRestTestCase
 {
-
-    private boolean _compress;
-
     @Override
-    public void setUp() throws Exception
+    public void startDefaultBroker() throws Exception
     {
+        // noop
     }
 
     @Override
     protected void customizeConfiguration() throws Exception
     {
-        super.customizeConfiguration();
-        getDefaultBrokerConfiguration().setObjectAttribute(Plugin.class,
-                                                           TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT,
-                                                           "compressResponses",
-                                                           _compress);
+        // noop
     }
 
     public void testCompressionOffAcceptOff() throws Exception
@@ -79,8 +73,12 @@ public class CompressedResponsesRestTest extends QpidRestTestCase
                                    final boolean acceptCompressed) throws Exception
     {
         final boolean expectCompression = allowCompression && acceptCompressed;
-        _compress = allowCompression;
-        super.setUp();
+        super.customizeConfiguration();
+        getDefaultBrokerConfiguration().setObjectAttribute(Plugin.class,
+                                                           TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT,
+                                                           "compressResponses",
+                                                           expectCompression);
+        super.startDefaultBroker();
 
         HttpURLConnection conn = getRestTestHelper().openManagementConnection("/service/metadata", "GET");
         if(acceptCompressed)

@@ -53,8 +53,9 @@ public class AMQDecoderTest extends QpidTestCase
     private FrameCreatingMethodProcessor _methodProcessor;
 
 
-    public void setUp()
+    public void setUp() throws Exception
     {
+        super.setUp();
         _methodProcessor = new FrameCreatingMethodProcessor(ProtocolVersion.v0_91);
         _decoder = new ClientDecoder(_methodProcessor);
     }

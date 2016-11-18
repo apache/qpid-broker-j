@@ -45,8 +45,9 @@ public class ChartWriterTest extends QpidTestCase
     private ChartWriter _writer;
 
     @Override
-    public void setUp()
+    public void setUp() throws Exception
     {
+        super.setUp();
         DefaultPieDataset dataset = new DefaultPieDataset();
         dataset.setValue("a", 1);
         dataset.setValue("b", 2);

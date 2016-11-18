@@ -69,10 +69,9 @@ public class MaxFrameSizeTest extends QpidBrokerTestCase
 {
 
     @Override
-    public void setUp() throws Exception
+    public void startDefaultBroker() throws Exception
     {
-        // don't call super.setup() as we want a change to set stuff up before the broker starts
-        // super.setUp();
+        // broker started by the tests
     }
 
     public void testTooSmallFrameSize() throws Exception
@@ -82,7 +81,7 @@ public class MaxFrameSizeTest extends QpidBrokerTestCase
                                                            TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER,
                                                            "secureOnlyMechanisms",
                                                            "[]");
-        super.setUp();
+        super.startDefaultBroker();
 
         if(isBroker010())
         {
@@ -154,7 +153,7 @@ public class MaxFrameSizeTest extends QpidBrokerTestCase
                                                            "secureOnlyMechanisms",
                                                            "[]");
 
-        super.setUp();
+        super.startDefaultBroker();
         if(isBroker010())
         {
             Connection conn = new Connection();

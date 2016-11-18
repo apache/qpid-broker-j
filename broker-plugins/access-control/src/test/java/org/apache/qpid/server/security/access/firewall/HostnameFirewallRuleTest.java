@@ -36,6 +36,7 @@ public class HostnameFirewallRuleTest extends QpidTestCase
     @Override
     protected void setUp() throws Exception
     {
+        super.setUp();
         _addressNotInRule = InetAddress.getByName("127.0.0.1");
     }
 

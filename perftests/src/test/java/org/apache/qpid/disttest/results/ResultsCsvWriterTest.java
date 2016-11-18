@@ -42,8 +42,9 @@ public class ResultsCsvWriterTest extends QpidTestCase
     private ResultsCsvWriter _resultsFileWriter = new ResultsCsvWriter(_outputDir);
 
     @Override
-    public void setUp()
+    public void setUp() throws Exception
     {
+        super.setUp();
         _resultsFileWriter.setCsvFormater(_csvFormater);
     }
 

@@ -78,6 +78,7 @@ public class PortFactoryTest extends QpidTestCase
     @Override
     protected void setUp() throws Exception
     {
+        super.setUp();
         SystemConfig systemConfig = mock(SystemConfig.class);
         _portNumber = findFreePort();
         TaskExecutor executor = CurrentThreadTaskExecutor.newStartedInstance();

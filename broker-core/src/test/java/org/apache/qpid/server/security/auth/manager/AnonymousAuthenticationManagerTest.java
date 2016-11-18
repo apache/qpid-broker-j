@@ -56,6 +56,7 @@ public class AnonymousAuthenticationManagerTest extends QpidTestCase
         {
             _manager = null;
         }
+        super.tearDown();
     }
 
     public void testGetMechanisms() throws Exception

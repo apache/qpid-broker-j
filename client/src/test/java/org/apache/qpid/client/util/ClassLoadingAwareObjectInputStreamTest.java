@@ -60,6 +60,7 @@ public class ClassLoadingAwareObjectInputStreamTest extends QpidTestCase
 
     protected void setUp() throws Exception
     {
+        super.setUp();
         //Create a viable input stream for instantiating the CLA OIS
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
@@ -89,7 +90,7 @@ public class ClassLoadingAwareObjectInputStreamTest extends QpidTestCase
         Class<?> clazz = _claOIS.resolveProxyClass(new String[]{"java.lang.CharSequence"});
 
         //verify the proxy supports the expected interface (only)
-        List<Class<?>> interfaces = Arrays.asList(clazz.getInterfaces());
+        List<Class<?>> interfaces = Arrays.<Class<?>>asList(clazz.getInterfaces());
         assertTrue("Unexpected interfaces supported by proxy", interfaces.contains(CharSequence.class));
         assertEquals("Unexpected interfaces supported by proxy", 1, interfaces.size());
     }

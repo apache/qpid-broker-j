@@ -38,17 +38,9 @@ import org.apache.qpid.util.FileUtils;
 
 public class KeyStoreRestTest extends QpidRestTestCase
 {
-    @Override
-    public void setUp() throws Exception
-    {
-        // not calling super.setUp() to avoid broker start-up until
-        // after any necessary configuration
-    }
 
     public void testGet() throws Exception
     {
-        super.setUp();
-
         //verify existence of the default keystore used by the systests
         List<Map<String, Object>> keyStores = assertNumberOfKeyStores(1);
 
@@ -63,8 +55,6 @@ public class KeyStoreRestTest extends QpidRestTestCase
 
     public void testCreate() throws Exception
     {
-        super.setUp();
-
         String name = getTestName();
         String certAlias = "app2";
 
@@ -84,8 +74,6 @@ public class KeyStoreRestTest extends QpidRestTestCase
 
     public void testCreateWithDataUrl() throws Exception
     {
-        super.setUp();
-
         String name = getTestName();
         byte[] keystoreAsBytes = FileUtils.readFileAsBytes(TestSSLConstants.KEYSTORE);
         String dataUrlForKeyStore = DataUrlUtils.getDataUrlForBytes(keystoreAsBytes);
@@ -106,8 +94,6 @@ public class KeyStoreRestTest extends QpidRestTestCase
 
     public void testDelete() throws Exception
     {
-        super.setUp();
-
         String name = getTestName();
         String certAlias = "app2";
 
@@ -129,8 +115,6 @@ public class KeyStoreRestTest extends QpidRestTestCase
 
     public void testUpdate() throws Exception
     {
-        super.setUp();
-
         String name = getTestName();
 
         assertNumberOfKeyStores(1);

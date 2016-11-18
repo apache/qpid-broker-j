@@ -54,8 +54,9 @@ public class PriorityQueueListTest extends QpidTestCase
     private QueueEntry _priority5message1;
     private QueueEntry _priority5message2;
 
-    protected void setUp()
+    protected void setUp() throws Exception
     {
+        super.setUp();
         BrokerTestHelper.setUp();
         QueueEntry[] entries = new QueueEntry[PRIORITIES.length];
         Map<String,Object> queueAttributes = new HashMap<String, Object>();

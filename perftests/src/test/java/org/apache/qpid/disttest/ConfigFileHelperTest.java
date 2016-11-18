@@ -36,6 +36,7 @@ public class ConfigFileHelperTest extends QpidTestCase
     @Override
     protected void setUp() throws Exception
     {
+        super.setUp();
         _testDir = TestFileUtils.createTestDirectory();
     }
 

@@ -33,6 +33,7 @@ public class ByteBufferInputStreamTest extends QpidTestCase
 
     public void setUp() throws Exception
     {
+        super.setUp();
         _inputStream = new ByteBufferInputStream(ByteBuffer.wrap(_data));
     }
 
