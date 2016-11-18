@@ -107,7 +107,7 @@ public class PyPrint
 
         if (result.length() > 0)
         {
-            return String.format("%s\n%s\n%s", start, result, end);
+            return String.format("%s%n%s%n%s", start, result, end);
         }
         else
         {

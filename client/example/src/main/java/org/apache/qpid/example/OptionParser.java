@@ -108,9 +108,9 @@ public class OptionParser
     
     public void printHelp()
     {
-        System.out.println(String.format("%s\n",usage));
-        System.out.println(String.format("%s\n",desc));
-        System.out.println(String.format("%s\n","Options:"));
+        System.out.println(String.format("%s%n",usage));
+        System.out.println(String.format("%s%n",desc));
+        System.out.println(String.format("%s%n","Options:"));
         
         for (Option op : optDefs)
         {  

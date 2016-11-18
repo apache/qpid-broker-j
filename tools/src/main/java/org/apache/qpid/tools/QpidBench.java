@@ -83,7 +83,7 @@ public class QpidBench
             {
                 defval = String.format(" (%s)", def);
             }
-            usage.append(String.format("\n  %-15s%-14s %s", name, defval, description));
+            usage.append(String.format("%n  %-15s%-14s %s", name, defval, description));
         }
 
         public String broker = "localhost";
