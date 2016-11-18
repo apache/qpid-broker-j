@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -126,7 +127,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     private final Subject _subject = new Subject();
 
     private final CopyOnWriteArrayList<Consumer<?>> _consumers = new CopyOnWriteArrayList<Consumer<?>>();
-    private final CopyOnWriteArrayList<SendingLink_1_0> _sendingLinks = new CopyOnWriteArrayList<>();
+
     private final ConfigurationChangeListener _consumerClosedListener = new ConsumerClosedListener();
     private final CopyOnWriteArrayList<ConsumerListener> _consumerListeners = new CopyOnWriteArrayList<ConsumerListener>();
     private Session<?> _modelObject;
@@ -135,7 +136,8 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
 
     private SessionState _state ;
 
-    private final Map<String, LinkEndpoint> _linkMap = new HashMap<>();
+    private final Map<String, SendingLinkEndpoint> _sendingLinkMap = new HashMap<>();
+    private final Map<String, ReceivingLinkEndpoint> _receivingLinkMap = new HashMap<>();
     private final Map<LinkEndpoint, UnsignedInteger> _localLinkEndpoints = new HashMap<>();
     private final Map<UnsignedInteger, LinkEndpoint> _remoteLinkEndpoints = new HashMap<>();
     private long _lastAttachedTime;
@@ -167,6 +169,8 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     private final Error _sessionEndedLinkError =
             new Error(LinkError.DETACH_FORCED,
                       "Force detach the link because the session is remotely ended.");
+
+    private final Set<Object> _blockingEntities = Collections.newSetFromMap(new ConcurrentHashMap<Object,Boolean>());
 
 
     public Session_1_0(final AMQPConnection_1_0 connection)
@@ -230,17 +234,24 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
             }
             else
             {
-                LinkEndpoint endpoint = _linkMap.get(attach.getName());
+                Map<String, ? extends LinkEndpoint> linkMap =
+                        attach.getRole() == Role.RECEIVER ? _sendingLinkMap : _receivingLinkMap;
+                LinkEndpoint endpoint = linkMap.get(attach.getName());
                 if(endpoint == null)
                 {
                     endpoint = attach.getRole() == Role.RECEIVER
                                ? new SendingLinkEndpoint(this, attach)
                                : new ReceivingLinkEndpoint(this, attach);
 
+                    if(_blockingEntities.contains(this) && attach.getRole() == Role.SENDER)
+                    {
+                        endpoint.setStopped(true);
+                    }
+
                     // TODO : fix below - distinguish between local and remote owned
                     endpoint.setSource(attach.getSource());
                     endpoint.setTarget(attach.getTarget());
-                    _linkMap.put(attach.getName(), endpoint);
+                    ((Map<String,LinkEndpoint>)linkMap).put(attach.getName(), endpoint);
                 }
                 else
                 {
@@ -265,7 +276,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                 }
                 else
                 {
-                    endpoint.receiveAttach(attach);
+                    // TODO - error already attached
                 }
             }
         }
@@ -942,6 +953,11 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                                                                        target.getCapabilities());
                             target.setCapabilities(destination.getCapabilities());
 
+                            if(_blockingEntities.contains(messageDestination))
+                            {
+                                endpoint.setStopped(true);
+                            }
+
                         }
                         else if (!addr.startsWith("/") && addr.contains("/"))
                         {
@@ -1011,7 +1027,6 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
 
                         receivingLinkEndpoint.setLinkEventListener(new SubjectSpecificReceivingLinkListener(
                                 receivingLink));
-
                         link = receivingLink;
                         if (TerminusDurability.UNSETTLED_STATE.equals(target.getDurable())
                             || TerminusDurability.CONFIGURATION.equals(target.getDurable()))
@@ -1045,6 +1060,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         }
         else
         {
+            endpoint.setLink(link);
             link.start();
         }
     }
@@ -1057,7 +1073,6 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         {
             Consumer<?> modelConsumer = (Consumer<?>) consumer;
             _consumers.add(modelConsumer);
-            _sendingLinks.add(link);
             modelConsumer.addChangeListener(_consumerClosedListener);
             consumerAdded(modelConsumer);
         }
@@ -1253,15 +1268,18 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     @Override
     public void transportStateChanged()
     {
-        for(SendingLink_1_0 link : _sendingLinks)
+        for(SendingLinkEndpoint endpoint : _sendingLinkMap.values())
         {
-            ConsumerTarget_1_0 target = link.getConsumerTarget();
+            Link_1_0 link = endpoint.getLink();
+            ConsumerTarget_1_0 target = ((SendingLink_1_0)link).getConsumerTarget();
             target.flowStateChanged();
         }
+
         if (!_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting())
         {
             getAMQPConnection().notifyWork(this);
         }
+
     }
 
     @Override
@@ -1271,34 +1289,124 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     }
 
     @Override
-    public void block(Queue<?> queue)
+    public void block(final Queue<?> queue)
     {
-        // TODO - required for AMQSessionModel / producer side flow control
+        getAMQPConnection().doOnIOThreadAsync(
+                new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        doBlock(queue);
+                    }
+                });
+    }
+
+    private void doBlock(final Queue<?> queue)
+    {
+        if(_blockingEntities.add(queue))
+        {
+            for (ReceivingLinkEndpoint endpoint : _receivingLinkMap.values())
+            {
+                ReceivingLink_1_0 link = (ReceivingLink_1_0) endpoint.getLink();
+                if (queue == link.getDestination())
+                {
+                    endpoint.setStopped(true);
+                }
+            }
+
+        }
     }
 
     @Override
-    public void unblock(Queue<?> queue)
+    public void unblock(final Queue<?> queue)
     {
-        // TODO - required for AMQSessionModel / producer side flow control
+        getAMQPConnection().doOnIOThreadAsync(
+                new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        doUnblock(queue);
+                    }
+                });
+    }
+
+    private void doUnblock(final Queue<?> queue)
+    {
+        if(_blockingEntities.remove(queue) && !_blockingEntities.contains(this))
+        {
+            for (ReceivingLinkEndpoint endpoint : _receivingLinkMap.values())
+            {
+                ReceivingLink_1_0 link = (ReceivingLink_1_0) endpoint.getLink();
+                if (queue == link.getDestination())
+                {
+                    endpoint.setStopped(false);
+                }
+            }
+        }
     }
 
     @Override
     public void block()
     {
-        // TODO - required for AMQSessionModel / producer side flow control
+        getAMQPConnection().doOnIOThreadAsync(
+                new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        doBlock();
+                    }
+                });
     }
+
+    private void doBlock()
+    {
+        if(_blockingEntities.add(this))
+        {
+            for(LinkEndpoint endpoint : _receivingLinkMap.values())
+            {
+                endpoint.setStopped(true);
+            }
+        }
+    }
+
+
 
     @Override
     public void unblock()
     {
-        // TODO - required for AMQSessionModel / producer side flow control
+        getAMQPConnection().doOnIOThreadAsync(
+                new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        doUnblock();
+                    }
+                });
+    }
+
+    private void doUnblock()
+    {
+        if(_blockingEntities.remove(this))
+        {
+            for(ReceivingLinkEndpoint endpoint : _receivingLinkMap.values())
+            {
+                ReceivingLink_1_0 link = (ReceivingLink_1_0) endpoint.getLink();
+                if(!_blockingEntities.contains(link.getDestination()))
+                {
+                    endpoint.setStopped(false);
+                }
+            }
+        }
     }
 
     @Override
     public boolean getBlocking()
     {
-        // TODO
-        return false;
+        return !_blockingEntities.isEmpty();
     }
 
     @Override
@@ -1638,7 +1746,8 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
 
             if (Boolean.TRUE.equals(detach.getClosed()))
             {
-                _linkMap.remove(endpoint.getName());
+                Map<String, ? extends LinkEndpoint> linkMap = endpoint.getRole() == Role.SENDER ? _sendingLinkMap : _receivingLinkMap;
+                linkMap.remove(endpoint.getName());
             }
         }
         else
@@ -1661,20 +1770,33 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
 
         final LinkRegistry linkRegistry = getAddressSpace().getLinkRegistry(getConnection().getRemoteContainerId());
 
-        for(LinkEndpoint<?> linkEndpoint : _linkMap.values())
+        for(LinkEndpoint<?> linkEndpoint : _sendingLinkMap.values())
         {
-            if (linkEndpoint.getRole() == Role.SENDER)
-            {
-                final SendingLink_1_0 link = (SendingLink_1_0) linkRegistry.getDurableSendingLink(linkEndpoint.getName());
+            final SendingLink_1_0 link = (SendingLink_1_0) linkRegistry.getDurableSendingLink(linkEndpoint.getName());
 
-                if (link != null)
+            if (link != null)
+            {
+                synchronized (link)
                 {
-                    synchronized (link)
+                    if (link.getEndpoint() == linkEndpoint)
                     {
-                        if (link.getEndpoint() == linkEndpoint)
-                        {
-                            link.setLinkAttachment(new SendingLinkAttachment(null, (SendingLinkEndpoint) linkEndpoint));
-                        }
+                        link.setLinkAttachment(new SendingLinkAttachment(null, (SendingLinkEndpoint) linkEndpoint));
+                    }
+                }
+            }
+        }
+
+        for(LinkEndpoint<?> linkEndpoint : _receivingLinkMap.values())
+        {
+            final ReceivingLink_1_0 link = (ReceivingLink_1_0) linkRegistry.getDurableReceivingLink(linkEndpoint.getName());
+
+            if (link != null)
+            {
+                synchronized (link)
+                {
+                    if (link.getEndpoint() == linkEndpoint)
+                    {
+                        link.setLinkAttachment(new ReceivingLinkAttachment(null, (ReceivingLinkEndpoint) linkEndpoint));
                     }
                 }
             }

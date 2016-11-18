@@ -93,18 +93,6 @@ public class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLinkListener>
     private UnsignedInteger _drainLimit;
 
 
-    public ReceivingLinkEndpoint(final Session_1_0 session, String name)
-    {
-        this(session,name,null);
-    }
-
-    public ReceivingLinkEndpoint(final Session_1_0 session, String name, Map<Binary, Outcome> unsettledMap)
-    {
-        super(session, name, unsettledMap);
-        setDeliveryCount(UnsignedInteger.valueOf(0));
-        setLinkEventListener(ReceivingLinkListener.DEFAULT);
-    }
-
     public ReceivingLinkEndpoint(final Session_1_0 session, final Attach attach)
     {
         super(session, attach);
@@ -370,7 +358,7 @@ public class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLinkListener>
             {
                 if (settled(deliveryTag) && _creditWindow)
                 {
-                    setLinkCredit(getLinkCredit().add(UnsignedInteger.valueOf(1)));
+                    setLinkCredit(getLinkCredit().add(UnsignedInteger.ONE));
                 }
             }
             sendFlowConditional();

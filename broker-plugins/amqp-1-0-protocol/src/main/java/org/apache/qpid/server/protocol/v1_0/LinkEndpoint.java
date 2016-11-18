@@ -52,6 +52,10 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
     private Map _initialUnsettledMap;
     private Map _localUnsettled;
     private UnsignedInteger _lastSentCreditLimit;
+    private volatile boolean _stopped;
+    private volatile boolean _stoppedUpdated;
+
+    private Link_1_0 _link;
 
 
     private enum State
@@ -106,6 +110,20 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
         _initialUnsettledMap = attach.getUnsettled();
         _properties = initProperties(attach);
         _state = State.ATTACH_RECVD;
+    }
+
+    public boolean isStopped()
+    {
+        return _stopped;
+    }
+
+    public void setStopped(final boolean stopped)
+    {
+        if(_stopped != stopped)
+        {
+            _stopped = stopped;
+            _stoppedUpdated = true;
+        }
     }
 
     protected abstract Map<Symbol,Object> initProperties(final Attach attach);
@@ -386,15 +404,25 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
     {
         if(_lastSentCreditLimit != null)
         {
-            UnsignedInteger clientsCredit = _lastSentCreditLimit.subtract(_deliveryCount);
-            int i = _linkCredit.subtract(clientsCredit).compareTo(clientsCredit);
-            if(i >=0)
+            if(_stoppedUpdated)
             {
                 sendFlow(_flowTransactionId != null);
+                _stoppedUpdated = false;
             }
             else
             {
-                getSession().sendFlowConditional();
+                UnsignedInteger clientsCredit = _lastSentCreditLimit.subtract(_deliveryCount);
+
+                // client has used up over half their credit allowance ?
+                boolean sendFlow = _linkCredit.subtract(clientsCredit).compareTo(clientsCredit) >= 0;
+                if (sendFlow)
+                {
+                    sendFlow(_flowTransactionId != null);
+                }
+                else
+                {
+                    getSession().sendFlowConditional();
+                }
             }
         }
         else
@@ -425,10 +453,18 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
         if(_state == State.ATTACHED || _state == State.ATTACH_SENT)
         {
             Flow flow = new Flow();
-            flow.setLinkCredit(_linkCredit);
             flow.setDeliveryCount(_deliveryCount);
             flow.setEcho(echo);
-            _lastSentCreditLimit = _linkCredit.add(_deliveryCount);
+            if(_stopped)
+            {
+                flow.setLinkCredit(_linkCredit);
+                _lastSentCreditLimit = _linkCredit.add(_deliveryCount);
+            }
+            else
+            {
+                flow.setLinkCredit(UnsignedInteger.ZERO);
+                _lastSentCreditLimit = _deliveryCount;
+            }
             flow.setAvailable(_available);
             flow.setDrain(_drain);
             if(setTransactionId)
@@ -486,6 +522,16 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
     public void setLocalUnsettled(Map unsettled)
     {
         _localUnsettled = unsettled;
+    }
+
+    public Link_1_0 getLink()
+    {
+        return _link;
+    }
+
+    public void setLink(final Link_1_0 link)
+    {
+        _link = link;
     }
 
     @Override public String toString()

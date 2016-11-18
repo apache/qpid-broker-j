@@ -336,4 +336,9 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
     {
         return _unsettledMap;
     }
+
+    public ReceivingDestination getDestination()
+    {
+        return _destination;
+    }
 }
