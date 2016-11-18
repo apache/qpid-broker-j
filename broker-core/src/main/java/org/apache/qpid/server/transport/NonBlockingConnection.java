@@ -52,7 +52,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingConnection.class);
 
     private final SocketChannel _socketChannel;
-    private NonBlockingConnectionDelegate _delegate;
+    private volatile NonBlockingConnectionDelegate _delegate;
     private final Deque<NetworkConnectionScheduler> _schedulerDeque = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedQueue<QpidByteBuffer> _buffers = new ConcurrentLinkedQueue<>();
 
@@ -63,7 +63,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
     private volatile boolean _fullyWritten = true;
 
-    private boolean _partialRead = false;
+    private volatile boolean _partialRead = false;
 
     private final AmqpPort _port;
     private final AtomicBoolean _scheduled = new AtomicBoolean();
@@ -71,12 +71,12 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private volatile boolean _unexpectedByteBufferSizeReported;
     private final String _threadName;
     private volatile SelectorThread.SelectionTask _selectionTask;
-    private Iterator<Runnable> _pendingIterator;
+    private volatile Iterator<Runnable> _pendingIterator;
     private final AtomicLong _maxWriteIdleMillis = new AtomicLong();
     private final AtomicLong _maxReadIdleMillis = new AtomicLong();
     private final List<SchedulingDelayNotificationListener> _schedulingDelayNotificationListeners = new CopyOnWriteArrayList<>();
     private final AtomicBoolean _hasShutdown = new AtomicBoolean();
-    private long _bufferedSize;
+    private volatile long _bufferedSize;
 
     public NonBlockingConnection(SocketChannel socketChannel,
                                  ProtocolEngine protocolEngine,
