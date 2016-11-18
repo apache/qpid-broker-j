@@ -20,9 +20,10 @@
  */
 package org.apache.qpid.server.security.auth.database;
 
+import java.io.Serializable;
 import java.security.Principal;
 
-interface PasswordPrincipal extends Principal
+interface PasswordPrincipal extends Principal, Serializable
 {
     char[] getPassword();
     byte[] getEncodedPassword();

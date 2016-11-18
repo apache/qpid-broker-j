@@ -25,6 +25,8 @@ import java.math.BigInteger;
 
 public final class UnsignedLong extends Number implements Comparable<UnsignedLong>
 {
+    private static final long serialVersionUID = 1L;
+
     private static final BigInteger TWO_TO_THE_SIXTY_FOUR = new BigInteger( new byte[] { (byte) 1, (byte) 0, (byte) 0, (byte) 0, (byte) 0, (byte) 0, (byte) 0, (byte) 0, (byte) 0 });
     private static final BigInteger LONG_MAX_VALUE = BigInteger.valueOf(Long.MAX_VALUE);
 

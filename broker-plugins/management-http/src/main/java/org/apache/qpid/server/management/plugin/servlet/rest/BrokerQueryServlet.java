@@ -35,6 +35,8 @@ import org.apache.qpid.server.model.Model;
 
 public class BrokerQueryServlet extends QueryServlet<Broker<?>>
 {
+    private static final long serialVersionUID = 1L;
+
     protected Broker<?> getParent(final HttpServletRequest request)
     {
         return HttpManagementUtil.getBroker(request.getServletContext());

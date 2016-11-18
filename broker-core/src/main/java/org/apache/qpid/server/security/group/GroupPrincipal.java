@@ -34,6 +34,8 @@ import org.apache.qpid.server.security.QpidPrincipal;
  */
 public class GroupPrincipal implements QpidPrincipal
 {
+    private static final long serialVersionUID = 1L;
+
     /** Name of the group */
     private final String _groupName;
     private final ConfiguredObject<?> _origin;

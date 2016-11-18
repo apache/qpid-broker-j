@@ -34,6 +34,8 @@ import org.apache.qpid.server.model.VirtualHost;
 
 public class QueueReportServlet extends AbstractServlet
 {
+    private static final long serialVersionUID = 1L;
+
     @Override
     protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws
                                                                                                       IOException,

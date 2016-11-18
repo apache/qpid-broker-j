@@ -52,6 +52,7 @@ import org.apache.qpid.server.model.OperationParameter;
 
 public class MetaDataServlet extends AbstractServlet
 {
+    private static final long serialVersionUID = 1L;
 
     private Model _instance;
 

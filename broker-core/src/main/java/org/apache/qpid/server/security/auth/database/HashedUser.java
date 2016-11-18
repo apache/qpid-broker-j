@@ -34,6 +34,8 @@ import org.apache.qpid.util.Strings;
 
 public class HashedUser implements PasswordPrincipal
 {
+    private static final long serialVersionUID = 1L;
+
     private final AuthenticationProvider<?> _authenticationProvider;
     private String _name;
     private char[] _password;

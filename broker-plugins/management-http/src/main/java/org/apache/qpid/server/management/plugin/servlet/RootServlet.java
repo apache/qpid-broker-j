@@ -30,6 +30,7 @@ import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 
 public class RootServlet extends HttpServlet
 {
+    private static final long serialVersionUID = 1L;
 
     private final String _expectedPath;
     private final String _apiDocsPath;

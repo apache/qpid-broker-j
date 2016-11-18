@@ -173,6 +173,8 @@ public class PlainSaslServer implements SaslServer
 
     public static class AuthenticationResultPreservingAuthorizeCallback extends AuthorizeCallback
     {
+        private static final long serialVersionUID = 1L;
+
         private volatile AuthenticationResult _authenticationResult;
 
         public AuthenticationResultPreservingAuthorizeCallback(String authnID, String authzID) {

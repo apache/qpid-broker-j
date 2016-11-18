@@ -69,6 +69,8 @@ import org.apache.qpid.util.DataUrlUtils;
 
 public class RestServlet extends AbstractServlet
 {
+    private static final long serialVersionUID = 1L;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(RestServlet.class);
     /**
      * An initialization parameter to specify hierarchy

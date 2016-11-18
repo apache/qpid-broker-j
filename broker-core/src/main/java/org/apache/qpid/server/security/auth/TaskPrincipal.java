@@ -20,10 +20,12 @@
  */
 package org.apache.qpid.server.security.auth;
 
+import java.io.Serializable;
 import java.security.Principal;
 
-public class TaskPrincipal implements Principal
+public class TaskPrincipal implements Principal, Serializable
 {
+    private static final long serialVersionUID = 1L;
 
     private final String _name;
 

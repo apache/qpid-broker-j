@@ -20,12 +20,15 @@
  */
 package org.apache.qpid.server.virtualhost;
 
+import java.io.Serializable;
 import java.security.Principal;
 
 import org.apache.qpid.server.model.VirtualHost;
 
-public class VirtualHostPrincipal implements Principal
+public class VirtualHostPrincipal implements Principal, Serializable
 {
+    private static final long serialVersionUID = 1L;
+
     private final VirtualHost<?> _virtualHost;
     private final String _name;
 

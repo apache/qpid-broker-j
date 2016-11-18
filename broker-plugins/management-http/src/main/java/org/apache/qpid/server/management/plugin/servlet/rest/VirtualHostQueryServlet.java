@@ -38,6 +38,8 @@ import org.apache.qpid.server.model.VirtualHostNode;
 
 public class VirtualHostQueryServlet extends QueryServlet<VirtualHost<?>>
 {
+    private static final long serialVersionUID = 1L;
+
     @Override
     protected VirtualHost<?> getParent(final HttpServletRequest request)
     {

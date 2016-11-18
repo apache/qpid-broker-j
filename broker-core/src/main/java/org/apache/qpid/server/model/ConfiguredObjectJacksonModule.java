@@ -46,6 +46,8 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class ConfiguredObjectJacksonModule extends SimpleModule
 {
+    private static final long serialVersionUID = 1L;
+
     private static final ConfiguredObjectJacksonModule INSTANCE = new ConfiguredObjectJacksonModule();
 
     private static final Set<String> OBJECT_METHOD_NAMES = Collections.synchronizedSet(new HashSet<String>());

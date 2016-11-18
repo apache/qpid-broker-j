@@ -19,12 +19,13 @@
 
 package org.apache.qpid.server.security;
 
+import java.io.Serializable;
 import java.security.Principal;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 
 
-public interface QpidPrincipal extends Principal
+public interface QpidPrincipal extends Principal, Serializable
 {
     ConfiguredObject<?> getOrigin();
 }

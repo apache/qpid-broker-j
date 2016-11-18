@@ -20,12 +20,15 @@
  */
 package org.apache.qpid.server.management.amqp;
 
+import java.io.Serializable;
 import java.security.Principal;
 
 import org.apache.qpid.server.model.NamedAddressSpace;
 
-class ManagementAddressSpacePrincipal implements Principal
+class ManagementAddressSpacePrincipal implements Principal, Serializable
 {
+    private static final long serialVersionUID = 1L;
+
     private final NamedAddressSpace _addressSpace;
     private final String _name;
 

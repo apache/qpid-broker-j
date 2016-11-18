@@ -31,6 +31,7 @@ import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 
 public class DefinedFileServlet extends HttpServlet
 {
+    private static final long serialVersionUID = 1L;
 
     private static final String FILENAME_INIT_PARAMETER = "filename";
     private final String _expectedPath;

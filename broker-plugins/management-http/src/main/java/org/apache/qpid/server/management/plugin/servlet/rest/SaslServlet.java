@@ -51,6 +51,7 @@ import org.apache.qpid.util.Strings;
 
 public class SaslServlet extends AbstractServlet
 {
+    private static final long serialVersionUID = 1L;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SaslServlet.class);
 

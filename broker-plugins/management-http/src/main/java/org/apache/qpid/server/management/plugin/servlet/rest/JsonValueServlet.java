@@ -27,6 +27,8 @@ import javax.servlet.http.HttpServletResponse;
 
 public class JsonValueServlet extends AbstractServlet
 {
+    private static final long serialVersionUID = 1L;
+
     private final Object _value;
 
     public JsonValueServlet(Object value)

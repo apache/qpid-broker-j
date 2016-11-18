@@ -32,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 
 public class TimeZoneServlet extends AbstractServlet
 {
+    private static final long serialVersionUID = 1L;
 
     private static final String[] TIMEZONE_REGIONS = { "Africa", "America", "Antarctica", "Arctic", "Asia", "Atlantic", "Australia",
             "Europe", "Indian", "Pacific" };

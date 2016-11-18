@@ -32,6 +32,8 @@ import org.apache.qpid.server.model.ConfiguredObject;
 
 public class StructureServlet extends AbstractServlet
 {
+    private static final long serialVersionUID = 1L;
+
     public StructureServlet()
     {
         super();

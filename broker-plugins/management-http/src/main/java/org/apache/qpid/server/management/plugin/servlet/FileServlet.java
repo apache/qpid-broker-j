@@ -37,6 +37,8 @@ import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 
 public class FileServlet extends HttpServlet
 {
+    private static final long serialVersionUID = 1L;
+
     private static final String RESOURCES_PREFIX = "/resources";
     private static final Map<String, String> CONTENT_TYPES;
     

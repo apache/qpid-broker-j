@@ -27,6 +27,8 @@ import org.apache.qpid.server.transport.AMQPConnection;
 
 public class ConnectionPrincipal implements SocketConnectionPrincipal
 {
+    private static final long serialVersionUID = 1L;
+
     private final AMQPConnection<?> _connection;
 
     public ConnectionPrincipal(final AMQPConnection<?> connection)

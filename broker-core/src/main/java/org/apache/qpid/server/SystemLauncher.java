@@ -25,6 +25,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -310,8 +311,10 @@ public class SystemLauncher
         }
     }
 
-    private static final class SystemPrincipal implements Principal
+    private static final class SystemPrincipal implements Principal, Serializable
     {
+        private static final long serialVersionUID = 1L;
+
         private SystemPrincipal()
         {
         }

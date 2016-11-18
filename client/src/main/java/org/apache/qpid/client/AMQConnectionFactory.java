@@ -58,6 +58,8 @@ public class AMQConnectionFactory implements ConnectionFactory, QueueConnectionF
                                              javax.naming.spi.ObjectFactory, Referenceable, XATopicConnectionFactory,
                                              XAQueueConnectionFactory, XAConnectionFactory, Serializable
 {
+    private static final long serialVersionUID = 1L;
+
     static
     {
         ClientProperties.ensureIsLoaded();

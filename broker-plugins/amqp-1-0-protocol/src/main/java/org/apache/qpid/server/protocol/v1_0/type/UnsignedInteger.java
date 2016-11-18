@@ -23,6 +23,8 @@ package org.apache.qpid.server.protocol.v1_0.type;
 
 public final class UnsignedInteger extends Number implements Comparable<UnsignedInteger>
 {
+    private static final long serialVersionUID = 1L;
+
     private final int _underlying;
     private static final UnsignedInteger[] cachedValues = new UnsignedInteger[256];
 

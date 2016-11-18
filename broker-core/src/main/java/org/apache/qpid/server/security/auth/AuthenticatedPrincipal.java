@@ -34,6 +34,8 @@ import org.apache.qpid.server.security.QpidPrincipal;
  */
 public final class AuthenticatedPrincipal implements QpidPrincipal
 {
+    private static final long serialVersionUID = 1L;
+
     private final Principal _wrappedPrincipal;
 
     public AuthenticatedPrincipal(Principal wrappedPrincipal)

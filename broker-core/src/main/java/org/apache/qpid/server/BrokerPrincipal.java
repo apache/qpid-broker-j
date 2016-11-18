@@ -20,12 +20,15 @@
  */
 package org.apache.qpid.server;
 
+import java.io.Serializable;
 import java.security.Principal;
 
 import org.apache.qpid.server.model.Broker;
 
-public class BrokerPrincipal implements Principal
+public class BrokerPrincipal implements Principal, Serializable
 {
+    private static final long serialVersionUID = 1L;
+
     private final Broker<?> _broker;
     private final String _name;
 

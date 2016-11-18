@@ -28,6 +28,8 @@ import java.net.SocketAddress;
 
 public class ServletConnectionPrincipal implements ManagementConnectionPrincipal
 {
+    private static final long serialVersionUID = 1L;
+
     private final InetSocketAddress _address;
 
     public ServletConnectionPrincipal(ServletRequest request)

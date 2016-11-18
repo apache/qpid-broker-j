@@ -43,6 +43,8 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 @SuppressWarnings("serial")
 public class LogoutServlet extends HttpServlet
 {
+    private static final long serialVersionUID = 1L;
+
     private static final Collection<HttpRequestInteractiveAuthenticator> AUTHENTICATORS;
     static
     {

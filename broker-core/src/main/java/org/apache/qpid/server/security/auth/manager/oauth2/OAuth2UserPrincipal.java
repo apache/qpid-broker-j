@@ -27,6 +27,8 @@ import org.apache.qpid.server.security.QpidPrincipal;
 
 public class OAuth2UserPrincipal implements QpidPrincipal
 {
+    private static final long serialVersionUID = 1L;
+
     private final String _accessToken;
     private final String _name;
     private final AuthenticationProvider<?> _authenticationProvider;

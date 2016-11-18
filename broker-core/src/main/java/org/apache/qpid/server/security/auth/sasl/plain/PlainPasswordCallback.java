@@ -35,6 +35,8 @@ import java.util.Arrays;
  */
 public class PlainPasswordCallback extends PasswordCallback
 {
+    private static final long serialVersionUID = 1L;
+
     private char[] _plainPassword;
     private boolean _authenticated = false;
 

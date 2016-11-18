@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.model.preferences;
 
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -31,8 +32,10 @@ import java.util.regex.Pattern;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.security.QpidPrincipal;
 
-public class GenericPrincipal implements Principal
+public class GenericPrincipal implements Principal, Serializable
 {
+    private static final long serialVersionUID = 1L;
+
     private static final Pattern PATTERN = Pattern.compile("([a-zA-Z_0-9.%~-]+)@([^('@]*)\\('([a-zA-Z_0-9.%~-]*)'\\)");
     public static final String UTF8 = StandardCharsets.UTF_8.name();
 

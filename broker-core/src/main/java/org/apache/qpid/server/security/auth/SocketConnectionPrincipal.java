@@ -20,10 +20,11 @@
  */
 package org.apache.qpid.server.security.auth;
 
+import java.io.Serializable;
 import java.net.SocketAddress;
 import java.security.Principal;
 
-public interface SocketConnectionPrincipal extends Principal
+public interface SocketConnectionPrincipal extends Principal, Serializable
 {
     SocketAddress getRemoteAddress();
 }

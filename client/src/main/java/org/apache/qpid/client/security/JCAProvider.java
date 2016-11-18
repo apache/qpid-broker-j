@@ -39,6 +39,8 @@ import java.util.Map;
  */
 public class JCAProvider extends Provider
 {
+    private static final long serialVersionUID = 1L;
+
     static final String QPID_CLIENT_SASL_PROVIDER_NAME = "AMQSASLProvider-Client";
     static final String QPID_CLIENT_SASL_PROVIDER_INFO = "A JCA provider that registers all "
                                                        + "AMQ SASL providers that want to be registered";

@@ -659,6 +659,8 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
 
     private class RedirectConnectionException extends ConnectionException
     {
+        private static final long serialVersionUID = 1L;
+
         private final String _host;
         private final List<Object> _knownHosts;
 
