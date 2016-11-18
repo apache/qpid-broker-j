@@ -457,13 +457,13 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
             flow.setEcho(echo);
             if(_stopped)
             {
-                flow.setLinkCredit(_linkCredit);
-                _lastSentCreditLimit = _linkCredit.add(_deliveryCount);
+                flow.setLinkCredit(UnsignedInteger.ZERO);
+                _lastSentCreditLimit = _deliveryCount;
             }
             else
             {
-                flow.setLinkCredit(UnsignedInteger.ZERO);
-                _lastSentCreditLimit = _deliveryCount;
+                flow.setLinkCredit(_linkCredit);
+                _lastSentCreditLimit = _linkCredit.add(_deliveryCount);
             }
             flow.setAvailable(_available);
             flow.setDrain(_drain);
