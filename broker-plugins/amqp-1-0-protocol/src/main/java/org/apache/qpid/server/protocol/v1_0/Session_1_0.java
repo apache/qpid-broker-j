@@ -53,7 +53,11 @@ import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.consumer.ScheduledConsumerTargetSet;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
+import org.apache.qpid.server.logging.messages.ChannelMessages;
+import org.apache.qpid.server.logging.subjects.ChannelLogSubject;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
@@ -113,6 +117,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
             EnumSet.of(SessionState.END_RECVD, SessionState.END_PIPE, SessionState.END_SENT, SessionState.ENDED);
     private final AccessControlContext _accessControllerContext;
     private final SecurityToken _securityToken;
+    private final ChannelLogSubject _logSubject;
     private AutoCommitTransaction _transaction;
 
     private final LinkedHashMap<Integer, ServerTransaction> _openTransactions =
@@ -196,6 +201,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         _securityToken = connection.getAddressSpace() instanceof ConfiguredObject
                 ? ((ConfiguredObject)connection.getAddressSpace()).newToken(_subject)
                 : connection.getBroker().newToken(_subject);
+        _logSubject = new ChannelLogSubject(this);
     }
 
     public void setReceivingChannel(final short receivingChannel)
@@ -1306,6 +1312,8 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     {
         if(_blockingEntities.add(queue))
         {
+            messageWithSubject(ChannelMessages.FLOW_ENFORCED(queue.getName()));
+
             for (ReceivingLinkEndpoint endpoint : _receivingLinkMap.values())
             {
                 ReceivingLink_1_0 link = (ReceivingLink_1_0) endpoint.getLink();
@@ -1336,6 +1344,10 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     {
         if(_blockingEntities.remove(queue) && !_blockingEntities.contains(this))
         {
+            if(_blockingEntities.isEmpty())
+            {
+                messageWithSubject(ChannelMessages.FLOW_REMOVED());
+            }
             for (ReceivingLinkEndpoint endpoint : _receivingLinkMap.values())
             {
                 ReceivingLink_1_0 link = (ReceivingLink_1_0) endpoint.getLink();
@@ -1365,6 +1377,8 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     {
         if(_blockingEntities.add(this))
         {
+            messageWithSubject(ChannelMessages.FLOW_ENFORCED("** All Queues **"));
+
             for(LinkEndpoint endpoint : _receivingLinkMap.values())
             {
                 endpoint.setStopped(true);
@@ -1392,6 +1406,10 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     {
         if(_blockingEntities.remove(this))
         {
+            if(_blockingEntities.isEmpty())
+            {
+                messageWithSubject(ChannelMessages.FLOW_REMOVED());
+            }
             for(ReceivingLinkEndpoint endpoint : _receivingLinkMap.values())
             {
                 ReceivingLink_1_0 link = (ReceivingLink_1_0) endpoint.getLink();
@@ -1407,6 +1425,16 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     public boolean getBlocking()
     {
         return !_blockingEntities.isEmpty();
+    }
+
+    private void messageWithSubject(final LogMessage operationalLogMessage)
+    {
+        getEventLogger().message(_logSubject, operationalLogMessage);
+    }
+
+    public EventLogger getEventLogger()
+    {
+        return getConnection().getEventLogger();
     }
 
     @Override
