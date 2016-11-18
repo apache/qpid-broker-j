@@ -34,7 +34,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
-public class SendingLinkEndpoint extends LinkEndpoint<SendingLinkListener>
+public class SendingLinkEndpoint extends LinkEndpoint<SendingLink_1_0>
 {
 
     public static final Symbol PRIORITY = Symbol.valueOf("priority");
@@ -96,7 +96,6 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLinkListener>
     {
         setDeliveryCount(UnsignedInteger.valueOf(0));
         setAvailable(UnsignedInteger.valueOf(0));
-        setLinkEventListener(SendingLinkListener.DEFAULT);
     }
 
     @Override public Role getRole()
@@ -186,7 +185,7 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLinkListener>
     @Override
     public void flowStateChanged()
     {
-        getLinkEventListener().flowStateChanged();
+        getLink().flowStateChanged();
     }
 
     public boolean hasCreditToSend()

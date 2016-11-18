@@ -48,9 +48,9 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 
-public class TxnCoordinatorLink_1_0 implements ReceivingLinkListener, Link_1_0
+public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
 {
-    private static final Logger _logger = LoggerFactory.getLogger(TxnCoordinatorLink_1_0.class);
+    private static final Logger _logger = LoggerFactory.getLogger(TxnCoordinatorReceivingLink_1_0.class);
     private NamedAddressSpace _namedAddressSpace;
     private ReceivingLinkEndpoint _endpoint;
 
@@ -60,9 +60,9 @@ public class TxnCoordinatorLink_1_0 implements ReceivingLinkListener, Link_1_0
     private Session_1_0 _session;
 
 
-    public TxnCoordinatorLink_1_0(NamedAddressSpace namedAddressSpace,
-                                  Session_1_0 session_1_0, ReceivingLinkEndpoint endpoint,
-                                  LinkedHashMap<Integer, ServerTransaction> openTransactions)
+    public TxnCoordinatorReceivingLink_1_0(NamedAddressSpace namedAddressSpace,
+                                           Session_1_0 session_1_0, ReceivingLinkEndpoint endpoint,
+                                           LinkedHashMap<Integer, ServerTransaction> openTransactions)
     {
         _namedAddressSpace = namedAddressSpace;
         _session = session_1_0;

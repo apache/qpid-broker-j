@@ -41,10 +41,10 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
 
-public abstract class LinkEndpoint<T extends LinkEventListener>
+public abstract class LinkEndpoint<T extends Link_1_0>
 {
 
-    private T _linkEventListener;
+    private T _link;
     private DeliveryStateHandler _deliveryStateHandler;
     private Object _flowTransactionId;
     private SenderSettleMode _sendingSettlementMode;
@@ -54,9 +54,6 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
     private UnsignedInteger _lastSentCreditLimit;
     private volatile boolean _stopped;
     private volatile boolean _stoppedUpdated;
-
-    private Link_1_0 _link;
-
 
     private enum State
     {
@@ -86,11 +83,6 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
     private Map<Symbol, Object> _properties;
 
     private Map<Binary,Delivery> _unsettledTransfers = new HashMap<Binary,Delivery>();
-
-    LinkEndpoint(final Session_1_0 sessionEndpoint, String name, Map<Binary, Outcome> unsettled)
-    {
-        this(sessionEndpoint, name, unsettled, null);
-    }
 
     LinkEndpoint(final Session_1_0 sessionEndpoint, String name, Map<Binary, Outcome> unsettled, DeliveryStateHandler deliveryStateHandler)
     {
@@ -204,7 +196,7 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
                 break;
             case ATTACHED:
                 _state = State.DETACH_RECVD;
-                _linkEventListener.remoteDetached(LinkEndpoint.this, detach);
+                _link.remoteDetached(LinkEndpoint.this, detach);
                 break;
         }
     }
@@ -476,14 +468,14 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
         }
     }
 
-    public T getLinkEventListener()
+    public T getLink()
     {
-        return _linkEventListener;
+        return _link;
     }
 
-    public void setLinkEventListener(final T linkEventListener)
+    public void setLink(final T link)
     {
-        _linkEventListener = linkEventListener;
+        _link = link;
     }
 
     public void setDeliveryStateHandler(final DeliveryStateHandler deliveryStateHandler)
@@ -522,16 +514,6 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
     public void setLocalUnsettled(Map unsettled)
     {
         _localUnsettled = unsettled;
-    }
-
-    public Link_1_0 getLink()
-    {
-        return _link;
-    }
-
-    public void setLink(final Link_1_0 link)
-    {
-        _link = link;
     }
 
     @Override public String toString()

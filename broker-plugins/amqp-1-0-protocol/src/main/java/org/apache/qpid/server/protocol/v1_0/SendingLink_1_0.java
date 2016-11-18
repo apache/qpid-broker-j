@@ -77,7 +77,7 @@ import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 
-public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryStateHandler
+public class SendingLink_1_0 implements Link_1_0, DeliveryStateHandler
 {
     private static final Logger _logger = LoggerFactory.getLogger(SendingLink_1_0.class);
 

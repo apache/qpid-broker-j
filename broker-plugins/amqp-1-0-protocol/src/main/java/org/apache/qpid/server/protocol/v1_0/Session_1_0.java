@@ -24,8 +24,6 @@ import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CHANNEL_F
 
 import java.security.AccessControlContext;
 import java.security.AccessControlException;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -839,8 +837,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                                                     (SendingDestination) destination
                                 );
 
-                        sendingLinkEndpoint.setLinkEventListener(new SubjectSpecificSendingLinkListener(
-                                sendingLink));
+                        sendingLinkEndpoint.setLink(sendingLink);
                         registerConsumer(sendingLink);
 
                         link = sendingLink;
@@ -876,7 +873,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                 endpoint.setSource(oldSource);
                 SendingLinkEndpoint sendingLinkEndpoint = (SendingLinkEndpoint) endpoint;
                 previousLink.setLinkAttachment(new SendingLinkAttachment(this, sendingLinkEndpoint));
-                sendingLinkEndpoint.setLinkEventListener(new SubjectSpecificSendingLinkListener(previousLink));
+                sendingLinkEndpoint.setLink(previousLink);
                 link = previousLink;
                 endpoint.setLocalUnsettled(previousLink.getUnsettledOutcomeMap());
                 registerConsumer(previousLink);
@@ -919,13 +916,12 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                 }*/
 
                 final ReceivingLinkEndpoint receivingLinkEndpoint = (ReceivingLinkEndpoint) endpoint;
-                final TxnCoordinatorLink_1_0 coordinatorLink =
-                        new TxnCoordinatorLink_1_0(getAddressSpace(),
-                                                   this,
-                                                   receivingLinkEndpoint,
-                                                   _openTransactions);
-                receivingLinkEndpoint.setLinkEventListener(new SubjectSpecificReceivingLinkListener(
-                        coordinatorLink));
+                final TxnCoordinatorReceivingLink_1_0 coordinatorLink =
+                        new TxnCoordinatorReceivingLink_1_0(getAddressSpace(),
+                                                            this,
+                                                            receivingLinkEndpoint,
+                                                            _openTransactions);
+                receivingLinkEndpoint.setLink(coordinatorLink);
                 link = coordinatorLink;
 
 
@@ -933,8 +929,8 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
             else
             {
 
-                ReceivingLink_1_0 previousLink =
-                        (ReceivingLink_1_0) linkRegistry.getDurableReceivingLink(endpoint.getName());
+                StandardReceivingLink_1_0 previousLink =
+                        (StandardReceivingLink_1_0) linkRegistry.getDurableReceivingLink(endpoint.getName());
 
                 if (previousLink == null)
                 {
@@ -1026,13 +1022,12 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                     if (destination != null)
                     {
                         final ReceivingLinkEndpoint receivingLinkEndpoint = (ReceivingLinkEndpoint) endpoint;
-                        final ReceivingLink_1_0 receivingLink =
-                                new ReceivingLink_1_0(new ReceivingLinkAttachment(this, receivingLinkEndpoint),
-                                                      getAddressSpace(),
-                                                      (ReceivingDestination) destination);
+                        final StandardReceivingLink_1_0 receivingLink =
+                                new StandardReceivingLink_1_0(new ReceivingLinkAttachment(this, receivingLinkEndpoint),
+                                                              getAddressSpace(),
+                                                              (ReceivingDestination) destination);
 
-                        receivingLinkEndpoint.setLinkEventListener(new SubjectSpecificReceivingLinkListener(
-                                receivingLink));
+                        receivingLinkEndpoint.setLink(receivingLink);
                         link = receivingLink;
                         if (TerminusDurability.UNSETTLED_STATE.equals(target.getDurable())
                             || TerminusDurability.CONFIGURATION.equals(target.getDurable()))
@@ -1045,7 +1040,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                 {
                     ReceivingLinkEndpoint receivingLinkEndpoint = (ReceivingLinkEndpoint) endpoint;
                     previousLink.setLinkAttachment(new ReceivingLinkAttachment(this, receivingLinkEndpoint));
-                    receivingLinkEndpoint.setLinkEventListener(previousLink);
+                    receivingLinkEndpoint.setLink(previousLink);
                     link = previousLink;
                     endpoint.setLocalUnsettled(previousLink.getUnsettledOutcomeMap());
 
@@ -1066,7 +1061,6 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         }
         else
         {
-            endpoint.setLink(link);
             link.start();
         }
     }
@@ -1316,7 +1310,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
 
             for (ReceivingLinkEndpoint endpoint : _receivingLinkMap.values())
             {
-                ReceivingLink_1_0 link = (ReceivingLink_1_0) endpoint.getLink();
+                StandardReceivingLink_1_0 link = (StandardReceivingLink_1_0) endpoint.getLink();
                 if (queue == link.getDestination())
                 {
                     endpoint.setStopped(true);
@@ -1350,7 +1344,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
             }
             for (ReceivingLinkEndpoint endpoint : _receivingLinkMap.values())
             {
-                ReceivingLink_1_0 link = (ReceivingLink_1_0) endpoint.getLink();
+                StandardReceivingLink_1_0 link = (StandardReceivingLink_1_0) endpoint.getLink();
                 if (queue == link.getDestination())
                 {
                     endpoint.setStopped(false);
@@ -1412,7 +1406,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
             }
             for(ReceivingLinkEndpoint endpoint : _receivingLinkMap.values())
             {
-                ReceivingLink_1_0 link = (ReceivingLink_1_0) endpoint.getLink();
+                StandardReceivingLink_1_0 link = (StandardReceivingLink_1_0) endpoint.getLink();
                 if(!_blockingEntities.contains(link.getDestination()))
                 {
                     endpoint.setStopped(false);
@@ -1547,84 +1541,6 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     {
         return _securityToken;
     }
-
-
-    private class SubjectSpecificReceivingLinkListener implements ReceivingLinkListener
-    {
-        private final ReceivingLinkListener _linkListener;
-
-        public SubjectSpecificReceivingLinkListener(final ReceivingLinkListener linkListener)
-        {
-            _linkListener = linkListener;
-        }
-
-        @Override
-        public void messageTransfer(final Transfer xfr)
-        {
-            AccessController.doPrivileged(new PrivilegedAction<Object>()
-            {
-                @Override
-                public Object run()
-                {
-                    _linkListener.messageTransfer(xfr);
-                    return null;
-                }
-            }, _accessControllerContext);
-        }
-
-        @Override
-        public void remoteDetached(final LinkEndpoint endpoint, final Detach detach)
-        {
-            AccessController.doPrivileged(new PrivilegedAction<Object>()
-            {
-                @Override
-                public Object run()
-                {
-                    _linkListener.remoteDetached(endpoint, detach);
-                    return null;
-                }
-            }, _accessControllerContext);
-        }
-    }
-
-    private class SubjectSpecificSendingLinkListener implements SendingLinkListener
-    {
-        private final SendingLink_1_0 _previousLink;
-
-        public SubjectSpecificSendingLinkListener(final SendingLink_1_0 previousLink)
-        {
-            _previousLink = previousLink;
-        }
-
-        @Override
-        public void flowStateChanged()
-        {
-            AccessController.doPrivileged(new PrivilegedAction<Object>()
-            {
-                @Override
-                public Object run()
-                {
-                    _previousLink.flowStateChanged();
-                    return null;
-                }
-            }, _accessControllerContext);
-        }
-
-        @Override
-        public void remoteDetached(final LinkEndpoint endpoint, final Detach detach)
-        {
-            AccessController.doPrivileged(new PrivilegedAction<Object>()
-            {
-                @Override
-                public Object run()
-                {
-                    _previousLink.remoteDetached(endpoint, detach);
-                    return null;
-                }
-            }, _accessControllerContext);
-        }
-    }
-
 
     @Override
     public Collection<Consumer<?>> getConsumers()
@@ -1816,7 +1732,8 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
 
         for(LinkEndpoint<?> linkEndpoint : _receivingLinkMap.values())
         {
-            final ReceivingLink_1_0 link = (ReceivingLink_1_0) linkRegistry.getDurableReceivingLink(linkEndpoint.getName());
+            final StandardReceivingLink_1_0
+                    link = (StandardReceivingLink_1_0) linkRegistry.getDurableReceivingLink(linkEndpoint.getName());
 
             if (link != null)
             {

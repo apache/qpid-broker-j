@@ -41,7 +41,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
-public class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLinkListener>
+public class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLink_1_0>
 {
 
 
@@ -97,7 +97,6 @@ public class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLinkListener>
     {
         super(session, attach);
         setDeliveryCount(attach.getInitialDeliveryCount());
-        setLinkEventListener(ReceivingLinkListener.DEFAULT);
         setSendingSettlementMode(attach.getSndSettleMode());
         setReceivingSettlementMode(attach.getRcvSettleMode());
     }
@@ -149,7 +148,7 @@ public class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLinkListener>
         {
             _unsettledMap.remove(deliveryTag);
         }
-        getLinkEventListener().messageTransfer(transfer);
+        getLink().messageTransfer(transfer);
 
     }
 
