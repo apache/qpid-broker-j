@@ -462,7 +462,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
         public long getSize()
         {
-            return OVERHEAD + _methodBody.getSize() + _headerBody.getSize() + _contentBody.getSize();
+            return OVERHEAD + (long)_methodBody.getSize() + (long)_headerBody.getSize() + (long)_contentBody.getSize();
         }
 
         @Override
@@ -510,7 +510,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
         public long getSize()
         {
-            return OVERHEAD + _methodBody.getSize() + _headerBody.getSize() ;
+            return OVERHEAD + (long)_methodBody.getSize() + (long)_headerBody.getSize() ;
         }
 
         @Override
