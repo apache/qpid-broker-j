@@ -21,13 +21,11 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 
-import org.apache.qpid.server.flow.FlowCreditManager;
-import org.apache.qpid.server.transport.ProtocolEngine;
-
-public class Pre0_10CreditManager implements FlowCreditManager
+public class Pre0_10CreditManager implements FlowCreditManager_0_8
 {
 
-    private final ProtocolEngine _protocolEngine;
+    private static final long HIGH_PREFETCH_LIMIT = 100L;
+    private static final long BATCH_LIMIT = 10L;
     private volatile long _bytesCreditLimit;
     private volatile long _messageCreditLimit;
 
@@ -35,10 +33,8 @@ public class Pre0_10CreditManager implements FlowCreditManager
     private volatile long _messageCredit;
 
     public Pre0_10CreditManager(long bytesCreditLimit,
-                                long messageCreditLimit,
-                                ProtocolEngine protocolEngine)
+                                long messageCreditLimit)
     {
-        _protocolEngine = protocolEngine;
         _bytesCreditLimit = bytesCreditLimit;
         _messageCreditLimit = messageCreditLimit;
         _bytesCredit = bytesCreditLimit;
@@ -89,17 +85,11 @@ public class Pre0_10CreditManager implements FlowCreditManager
     public synchronized boolean hasCredit()
     {
         return (_bytesCreditLimit == 0L || _bytesCredit > 0)
-               && (_messageCreditLimit == 0L || _messageCredit > 0)
-               && !_protocolEngine.isTransportBlockedForWriting();
+               && (_messageCreditLimit == 0L || _messageCredit > 0);
     }
 
     public synchronized boolean useCreditForMessage(final long msgSize)
     {
-        if (_protocolEngine.isTransportBlockedForWriting())
-        {
-            return false;
-        }
-
         if (_messageCreditLimit != 0)
         {
             if (_messageCredit <= 0)
@@ -118,5 +108,17 @@ public class Pre0_10CreditManager implements FlowCreditManager
         _messageCredit--;
         _bytesCredit -= msgSize;
         return true;
+    }
+
+    @Override
+    public boolean isNotBytesLimitedAndHighPrefetch()
+    {
+        return _bytesCreditLimit == 0L && _messageCreditLimit > HIGH_PREFETCH_LIMIT;
+    }
+
+    @Override
+    public boolean isCreditOverBatchLimit()
+    {
+        return _messageCredit > BATCH_LIMIT;
     }
 }

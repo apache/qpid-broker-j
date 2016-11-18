@@ -1257,11 +1257,11 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         {
             ConsumerTarget_1_0 target = link.getConsumerTarget();
             target.flowStateChanged();
-
-
         }
-
-
+        if (!_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting())
+        {
+            getAMQPConnection().notifyWork(this);
+        }
     }
 
     @Override
@@ -1541,7 +1541,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         }
 
 
-        if(!_consumersWithPendingWork.isEmpty())
+        if(!_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting())
         {
             if (_processPendingIterator == null || !_processPendingIterator.hasNext())
             {
@@ -1559,7 +1559,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
             }
         }
 
-        return !_consumersWithPendingWork.isEmpty();
+        return !_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting();
     }
 
     @Override

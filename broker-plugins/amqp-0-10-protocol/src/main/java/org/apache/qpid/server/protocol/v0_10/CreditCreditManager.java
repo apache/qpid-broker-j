@@ -21,17 +21,13 @@
 package org.apache.qpid.server.protocol.v0_10;
 
 
-import org.apache.qpid.server.transport.ProtocolEngine;
-
 public class CreditCreditManager implements FlowCreditManager_0_10
 {
-    private final ProtocolEngine _protocolEngine;
     private volatile long _bytesCredit;
     private volatile long _messageCredit;
 
-    public CreditCreditManager(long bytesCredit, long messageCredit, final ProtocolEngine protocolEngine)
+    public CreditCreditManager(long bytesCredit, long messageCredit)
     {
-        _protocolEngine = protocolEngine;
         _bytesCredit = bytesCredit;
         _messageCredit = messageCredit;
     }
@@ -64,7 +60,7 @@ public class CreditCreditManager implements FlowCreditManager_0_10
     public synchronized boolean hasCredit()
     {
         // Note !=, if credit is < 0 that indicates infinite credit
-        return (_bytesCredit != 0L  && _messageCredit != 0L && !_protocolEngine.isTransportBlockedForWriting());
+        return (_bytesCredit != 0L  && _messageCredit != 0L);
     }
 
     @Override
@@ -75,11 +71,7 @@ public class CreditCreditManager implements FlowCreditManager_0_10
 
     public synchronized boolean useCreditForMessage(long msgSize)
     {
-        if (_protocolEngine.isTransportBlockedForWriting())
-        {
-            return false;
-        }
-        else if(_messageCredit >= 0L)
+        if(_messageCredit >= 0L)
         {
             if(_messageCredit > 0)
             {

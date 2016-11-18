@@ -276,8 +276,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     public boolean allocateCredit(final ServerMessage msg)
     {
         ProtocolEngine protocolEngine = getSession().getConnection();
-        final boolean hasCredit =
-                _link.isAttached() && getEndpoint().hasCreditToSend() && !protocolEngine.isTransportBlockedForWriting();
+        final boolean hasCredit = _link.isAttached() && getEndpoint().hasCreditToSend();
 
         updateNotifyWorkDesired();
 
@@ -310,8 +309,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     {
         updateNotifyWorkDesired();
 
-        ProtocolEngine protocolEngine = getSession().getConnection();
-        if (isSuspended() && getEndpoint() != null && !protocolEngine.isTransportBlockedForWriting())
+        if (isSuspended() && getEndpoint() != null)
         {
             _transactionId = _link.getTransactionId();
         }

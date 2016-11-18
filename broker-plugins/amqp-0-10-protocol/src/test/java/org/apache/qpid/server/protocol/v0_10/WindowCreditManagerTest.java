@@ -38,7 +38,7 @@ public class WindowCreditManagerTest extends QpidTestCase
         _protocolEngine = mock(ProtocolEngine.class);
         when(_protocolEngine.isTransportBlockedForWriting()).thenReturn(false);
 
-        _creditManager = new WindowCreditManager(0l, 0l, _protocolEngine);
+        _creditManager = new WindowCreditManager(0l, 0l);
     }
 
     /**

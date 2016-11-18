@@ -142,7 +142,7 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
     public void clearStateAffirmationFlag(final QueueConsumer consumer)
     {
         QueueConsumerNode node = consumer.getQueueConsumerNode();
-        node.clearAffirmaion();
+        node.clearAffirmation();
     }
 
     // Set by the Queue any IO thread

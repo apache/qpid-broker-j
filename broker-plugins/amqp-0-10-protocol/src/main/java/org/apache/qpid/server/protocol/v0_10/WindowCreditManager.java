@@ -24,12 +24,9 @@ package org.apache.qpid.server.protocol.v0_10;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.transport.ProtocolEngine;
-
 public class WindowCreditManager implements FlowCreditManager_0_10
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(WindowCreditManager.class);
-    private final ProtocolEngine _protocolEngine;
 
     private volatile long _bytesCreditLimit;
     private volatile long _messageCreditLimit;
@@ -38,10 +35,8 @@ public class WindowCreditManager implements FlowCreditManager_0_10
     private volatile long _messageUsed;
 
     public WindowCreditManager(long bytesCreditLimit,
-                               long messageCreditLimit,
-                               ProtocolEngine protocolEngine)
+                               long messageCreditLimit)
     {
-        _protocolEngine = protocolEngine;
         _bytesCreditLimit = bytesCreditLimit;
         _messageCreditLimit = messageCreditLimit;
     }
@@ -85,8 +80,7 @@ public class WindowCreditManager implements FlowCreditManager_0_10
     public synchronized boolean hasCredit()
     {
         return (_bytesCreditLimit < 0L || _bytesCreditLimit > _bytesUsed)
-                && (_messageCreditLimit < 0L || _messageCreditLimit > _messageUsed)
-                && !_protocolEngine.isTransportBlockedForWriting();
+                && (_messageCreditLimit < 0L || _messageCreditLimit > _messageUsed);
     }
 
     @Override
@@ -97,11 +91,7 @@ public class WindowCreditManager implements FlowCreditManager_0_10
 
     public synchronized boolean useCreditForMessage(final long msgSize)
     {
-        if (_protocolEngine.isTransportBlockedForWriting())
-        {
-            return false;
-        }
-        else if(_messageCreditLimit >= 0L)
+        if(_messageCreditLimit >= 0L)
         {
             if(_messageUsed < _messageCreditLimit)
             {

@@ -546,10 +546,10 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget
         switch(flowMode)
         {
             case CREDIT:
-                _creditManager = new CreditCreditManager(0l, 0l, _session.getConnection().getAmqpConnection());
+                _creditManager = new CreditCreditManager(0l, 0l);
                 break;
             case WINDOW:
-                _creditManager = new WindowCreditManager(0l, 0l, _session.getConnection().getAmqpConnection());
+                _creditManager = new WindowCreditManager(0l, 0l);
                 break;
             default:
                 // this should never happen, as 0-10 is finalised and so the enum should never change

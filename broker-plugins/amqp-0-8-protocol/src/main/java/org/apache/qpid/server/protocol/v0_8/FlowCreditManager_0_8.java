@@ -20,31 +20,11 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 import org.apache.qpid.server.flow.FlowCreditManager;
-import org.apache.qpid.server.transport.ProtocolEngine;
 
-public class NoAckCreditManager implements FlowCreditManager
+public interface FlowCreditManager_0_8 extends FlowCreditManager
 {
-    private final ProtocolEngine _protocolEngine;
 
-    public NoAckCreditManager(ProtocolEngine protocolEngine)
-    {
-        _protocolEngine = protocolEngine;
-    }
+    boolean isNotBytesLimitedAndHighPrefetch();
 
-    @Override
-    public void restoreCredit(final long messageCredit, final long bytesCredit)
-    {
-    }
-
-    @Override
-    public boolean hasCredit()
-    {
-        return !_protocolEngine.isTransportBlockedForWriting();
-    }
-
-    @Override
-    public boolean useCreditForMessage(final long msgSize)
-    {
-        return hasCredit();
-    }
+    boolean isCreditOverBatchLimit();
 }

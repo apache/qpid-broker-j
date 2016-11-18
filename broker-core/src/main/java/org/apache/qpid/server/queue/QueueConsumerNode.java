@@ -47,7 +47,7 @@ final class QueueConsumerNode
         return _state;
     }
 
-    public synchronized void clearAffirmaion()
+    public synchronized void clearAffirmation()
     {
         _affirmed = false;
     }

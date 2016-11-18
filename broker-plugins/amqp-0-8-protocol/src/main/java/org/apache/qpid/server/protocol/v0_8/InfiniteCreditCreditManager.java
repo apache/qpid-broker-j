@@ -20,9 +20,8 @@
 */
 package org.apache.qpid.server.protocol.v0_8;
 
-import org.apache.qpid.server.flow.FlowCreditManager;
 
-public class InfiniteCreditCreditManager implements FlowCreditManager
+public class InfiniteCreditCreditManager implements FlowCreditManager_0_8
 {
 
     public InfiniteCreditCreditManager()
@@ -43,4 +42,15 @@ public class InfiniteCreditCreditManager implements FlowCreditManager
         return true;
     }
 
+    @Override
+    public boolean isNotBytesLimitedAndHighPrefetch()
+    {
+        return true;
+    }
+
+    @Override
+    public boolean isCreditOverBatchLimit()
+    {
+        return false;
+    }
 }

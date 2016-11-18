@@ -56,7 +56,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
 
     public static ConsumerTarget_0_8 createBrowserTarget(AMQChannel channel,
                                                          AMQShortString consumerTag, FieldTable filters,
-                                                         FlowCreditManager creditManager, final boolean multiQueue)
+                                                         FlowCreditManager_0_8 creditManager, final boolean multiQueue)
     {
         return new BrowserConsumer(channel, consumerTag, filters, creditManager, channel.getClientDeliveryMethod(),
                                    multiQueue);
@@ -65,7 +65,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
     public static ConsumerTarget_0_8 createGetNoAckTarget(final AMQChannel channel,
                                                           final AMQShortString consumerTag,
                                                           final FieldTable filters,
-                                                          final FlowCreditManager creditManager,
+                                                          final FlowCreditManager_0_8 creditManager,
                                                           final ClientDeliveryMethod deliveryMethod)
     {
         return new GetNoAckConsumer(channel, consumerTag, filters, creditManager, deliveryMethod);
@@ -76,7 +76,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
         public BrowserConsumer(AMQChannel channel,
                                AMQShortString consumerTag,
                                FieldTable filters,
-                               FlowCreditManager creditManager,
+                               FlowCreditManager_0_8 creditManager,
                                ClientDeliveryMethod deliveryMethod,
                                boolean multiQueue)
         {
@@ -110,7 +110,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
 
     public static ConsumerTarget_0_8 createNoAckTarget(AMQChannel channel,
                                                        AMQShortString consumerTag, FieldTable filters,
-                                                       FlowCreditManager creditManager,
+                                                       FlowCreditManager_0_8 creditManager,
                                                        boolean multiQueue)
     {
         return new NoAckConsumer(channel, consumerTag, filters, creditManager, channel.getClientDeliveryMethod(),
@@ -124,7 +124,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
         public NoAckConsumer(AMQChannel channel,
                              AMQShortString consumerTag,
                              FieldTable filters,
-                             FlowCreditManager creditManager,
+                             FlowCreditManager_0_8 creditManager,
                              ClientDeliveryMethod deliveryMethod,
                              boolean multiQueue)
         {
@@ -190,7 +190,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
     {
         public GetNoAckConsumer(AMQChannel channel,
                                 AMQShortString consumerTag, FieldTable filters,
-                                FlowCreditManager creditManager,
+                                FlowCreditManager_0_8 creditManager,
                                 ClientDeliveryMethod deliveryMethod)
         {
             super(channel, consumerTag, filters, creditManager, deliveryMethod, false);
@@ -202,7 +202,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
     public static ConsumerTarget_0_8 createAckTarget(AMQChannel channel,
                                                      AMQShortString consumerTag,
                                                      FieldTable filters,
-                                                     FlowCreditManager creditManager,
+                                                     FlowCreditManager_0_8 creditManager,
                                                      boolean multiQueue)
     {
         return new AckConsumer(channel,
@@ -215,7 +215,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
 
     public static ConsumerTarget_0_8 createAckTarget(AMQChannel channel,
                                                      AMQShortString consumerTag, FieldTable filters,
-                                                     FlowCreditManager creditManager,
+                                                     FlowCreditManager_0_8 creditManager,
                                                      ClientDeliveryMethod deliveryMethod)
     {
         return new AckConsumer(channel, consumerTag, filters, creditManager, deliveryMethod, false);
@@ -225,7 +225,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
     {
         public AckConsumer(AMQChannel channel,
                            AMQShortString consumerTag, FieldTable filters,
-                           FlowCreditManager creditManager,
+                           FlowCreditManager_0_8 creditManager,
                            ClientDeliveryMethod deliveryMethod,
                            boolean multiQueue)
         {
@@ -270,14 +270,14 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
 
     private final AMQShortString _consumerTag;
 
-    private final FlowCreditManager _creditManager;
+    private final FlowCreditManager_0_8 _creditManager;
 
     private final Boolean _autoClose;
 
     public ConsumerTarget_0_8(AMQChannel channel,
                               AMQShortString consumerTag,
                               FieldTable arguments,
-                              FlowCreditManager creditManager,
+                              FlowCreditManager_0_8 creditManager,
                               ClientDeliveryMethod deliveryMethod,
                               boolean multiQueue)
     {
@@ -392,11 +392,24 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
         _creditManager.restoreCredit(1, message.getSize());
         if(_creditManager.hasCredit() != hasCredit)
         {
-            _channel.updateAllConsumerNotifyWorkDesired();
+            if (hasCredit || !_creditManager.isNotBytesLimitedAndHighPrefetch())
+            {
+                _channel.updateAllConsumerNotifyWorkDesired();
+            }
         }
         else if (hasCredit)
         {
-            notifyWork();
+            if (_creditManager.isNotBytesLimitedAndHighPrefetch())
+            {
+                if (_creditManager.isCreditOverBatchLimit())
+                {
+                    _channel.updateAllConsumerNotifyWorkDesired();
+                }
+            }
+            else
+            {
+                notifyWork();
+            }
         }
     }
 

@@ -19,12 +19,9 @@
 
 package org.apache.qpid.server.protocol.v0_8;
 
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import org.apache.qpid.server.flow.FlowCreditManager;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -42,7 +39,7 @@ public class Pre0_10CreditManagerTest extends QpidTestCase
 
     public void testBasicMessageCredit() throws Exception
     {
-        _creditManager = new Pre0_10CreditManager(0, 0, _protocolEngine);
+        _creditManager = new Pre0_10CreditManager(0, 0);
         _creditManager.setCreditLimits(0, 2);
         assertTrue("Creditmanager should have credit", _creditManager.hasCredit());
         assertTrue("Creditmanager should be able to useCredit", _creditManager.useCreditForMessage(37));
@@ -57,7 +54,7 @@ public class Pre0_10CreditManagerTest extends QpidTestCase
 
     public void testBytesLimitDoesNotPreventLargeMessage() throws Exception
     {
-        _creditManager = new Pre0_10CreditManager(0, 0, _protocolEngine);
+        _creditManager = new Pre0_10CreditManager(0, 0);
         _creditManager.setCreditLimits(10, 0);
         assertTrue("Creditmanager should be able to useCredit", _creditManager.useCreditForMessage(3));
         assertFalse("Creditmanager should not be able to useCredit", _creditManager.useCreditForMessage(30));
@@ -67,7 +64,7 @@ public class Pre0_10CreditManagerTest extends QpidTestCase
 
     public void testUseCreditWithNegativeMessageCredit() throws Exception
     {
-        _creditManager = new Pre0_10CreditManager(0, 0, _protocolEngine);
+        _creditManager = new Pre0_10CreditManager(0, 0);
         _creditManager.setCreditLimits(0, 3);
         assertTrue("Creditmanager should be able to useCredit", _creditManager.useCreditForMessage(37));
         assertTrue("Creditmanager should be able to useCredit", _creditManager.useCreditForMessage(37));
@@ -85,7 +82,7 @@ public class Pre0_10CreditManagerTest extends QpidTestCase
 
     public void testUseCreditWithNegativeBytesCredit() throws Exception
     {
-        _creditManager = new Pre0_10CreditManager(0, 0, _protocolEngine);
+        _creditManager = new Pre0_10CreditManager(0, 0);
         _creditManager.setCreditLimits(3, 0);
         assertTrue("Creditmanager should be able to useCredit", _creditManager.useCreditForMessage(1));
         assertTrue("Creditmanager should be able to useCredit", _creditManager.useCreditForMessage(1));
@@ -103,7 +100,7 @@ public class Pre0_10CreditManagerTest extends QpidTestCase
 
     public void testCreditAccountingWhileMessageLimitNotSet() throws Exception
     {
-        _creditManager = new Pre0_10CreditManager(0, 0, _protocolEngine);
+        _creditManager = new Pre0_10CreditManager(0, 0);
         assertTrue("Creditmanager should be able to useCredit", _creditManager.useCreditForMessage(37));
         assertTrue("Creditmanager should be able to useCredit", _creditManager.useCreditForMessage(37));
         assertTrue("Creditmanager should be able to useCredit", _creditManager.useCreditForMessage(37));

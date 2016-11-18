@@ -905,6 +905,10 @@ public class ServerSession extends Session
         {
             consumerTarget.transportStateChanged();
         }
+        if (!_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting())
+        {
+            getAMQPConnection().notifyWork(this);
+        }
     }
 
     @Override
@@ -1209,7 +1213,7 @@ public class ServerSession extends Session
             _blockTime = desiredBlockingState ? System.currentTimeMillis() : 0;
         }
 
-        if (!_consumersWithPendingWork.isEmpty())
+        if (!_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting())
         {
             if (_processPendingIterator == null || !_processPendingIterator.hasNext())
             {
@@ -1227,7 +1231,7 @@ public class ServerSession extends Session
             }
         }
 
-        return !_consumersWithPendingWork.isEmpty();
+        return !_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting();
     }
 
     @Override

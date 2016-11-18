@@ -66,7 +66,6 @@ import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.FilterManagerFactory;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.filter.MessageFilter;
-import org.apache.qpid.server.flow.FlowCreditManager;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogMessage;
@@ -127,6 +126,7 @@ public class AMQChannel
     public static final int DEFAULT_PREFETCH = 4096;
 
     private static final Logger _logger = LoggerFactory.getLogger(AMQChannel.class);
+    public static final InfiniteCreditCreditManager INFINITE_CREDIT_CREDIT_MANAGER = new InfiniteCreditCreditManager();
     private final DefaultQueueAssociationClearingTask
             _defaultQueueAssociationClearingTask = new DefaultQueueAssociationClearingTask();
 
@@ -134,7 +134,6 @@ public class AMQChannel
 
 
     private final Pre0_10CreditManager _creditManager;
-    private final FlowCreditManager _noAckCreditManager;
     private final AccessControlContext _accessControllerContext;
     private final SecurityToken _token;
 
@@ -237,8 +236,7 @@ public class AMQChannel
 
     public AMQChannel(AMQPConnection_0_8 connection, int channelId, final MessageStore messageStore)
     {
-        _creditManager = new Pre0_10CreditManager(0l,0l, connection);
-        _noAckCreditManager = new NoAckCreditManager(connection);
+        _creditManager = new Pre0_10CreditManager(0l,0l);
 
         _connection = connection;
         _channelId = channelId;
@@ -305,9 +303,6 @@ public class AMQChannel
                    MessageSource.ExistingExclusiveConsumer, MessageSource.ConsumerAccessRefused,
                    MessageSource.QueueDeleted
     {
-
-        final FlowCreditManager singleMessageCredit = new InfiniteCreditCreditManager();
-
         final GetDeliveryMethod getDeliveryMethod =
                 new GetDeliveryMethod(queue);
 
@@ -319,13 +314,13 @@ public class AMQChannel
 
             target = ConsumerTarget_0_8.createAckTarget(this,
                                                         AMQShortString.EMPTY_STRING, null,
-                                                        singleMessageCredit, getDeliveryMethod);
+                                                        INFINITE_CREDIT_CREDIT_MANAGER, getDeliveryMethod);
         }
         else
         {
             target = ConsumerTarget_0_8.createGetNoAckTarget(this,
                                                              AMQShortString.EMPTY_STRING, null,
-                                                             singleMessageCredit, getDeliveryMethod);
+                                                             INFINITE_CREDIT_CREDIT_MANAGER, getDeliveryMethod);
         }
 
         ConsumerImpl sub = queue.addConsumer(target, null, AMQMessage.class, "", options, null);
@@ -725,7 +720,8 @@ public class AMQChannel
         final boolean multiQueue = sources.size()>1;
         if(arguments != null && Boolean.TRUE.equals(arguments.get(AMQPFilterTypes.NO_CONSUME.getValue())))
         {
-            target = ConsumerTarget_0_8.createBrowserTarget(this, tag, arguments, _noAckCreditManager, multiQueue);
+            target = ConsumerTarget_0_8.createBrowserTarget(this, tag, arguments,
+                                                            INFINITE_CREDIT_CREDIT_MANAGER, multiQueue);
         }
         else if(acks)
         {
@@ -735,7 +731,8 @@ public class AMQChannel
         }
         else
         {
-            target = ConsumerTarget_0_8.createNoAckTarget(this, tag, arguments, _noAckCreditManager, multiQueue);
+            target = ConsumerTarget_0_8.createNoAckTarget(this, tag, arguments,
+                                                          INFINITE_CREDIT_CREDIT_MANAGER, multiQueue);
             options.add(ConsumerImpl.Option.ACQUIRES);
             options.add(ConsumerImpl.Option.SEES_REQUEUES);
         }
@@ -1716,7 +1713,11 @@ public class AMQChannel
     {
         updateAllConsumerNotifyWorkDesired();
         _creditManager.restoreCredit(0, 0);
-        _noAckCreditManager.restoreCredit(0, 0);
+        INFINITE_CREDIT_CREDIT_MANAGER.restoreCredit(0, 0);
+        if (!_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting())
+        {
+            getAMQPConnection().notifyWork(this);
+        }
     }
 
     void updateAllConsumerNotifyWorkDesired()
@@ -3733,7 +3734,7 @@ public class AMQChannel
             _blockTime = desiredBlockingState ? System.currentTimeMillis() : 0;
         }
 
-        if(!_consumersWithPendingWork.isEmpty())
+        if(!_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting())
         {
             if (_processPendingIterator == null || !_processPendingIterator.hasNext())
             {
@@ -3751,7 +3752,7 @@ public class AMQChannel
             }
         }
 
-        return !_consumersWithPendingWork.isEmpty();
+        return !_consumersWithPendingWork.isEmpty() && !getAMQPConnection().isTransportBlockedForWriting();
     }
 
     @Override

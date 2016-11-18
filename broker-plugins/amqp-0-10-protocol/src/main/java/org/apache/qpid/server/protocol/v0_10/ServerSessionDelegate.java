@@ -256,7 +256,7 @@ public class ServerSessionDelegate extends SessionDelegate
                 else
                 {
                     ProtocolEngine protocolEngine = getServerConnection(session).getAmqpConnection();
-                    FlowCreditManager_0_10 creditManager = new WindowCreditManager(0L,0L, protocolEngine);
+                    FlowCreditManager_0_10 creditManager = new WindowCreditManager(0L,0L);
 
                     FilterManager filterManager = null;
                     try
