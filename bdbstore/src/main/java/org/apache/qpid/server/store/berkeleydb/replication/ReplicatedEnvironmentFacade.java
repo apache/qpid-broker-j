@@ -573,7 +573,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                 }
             }, _environmentJobExecutor);
         }
-        else if (_state.equals(State.RESTARTING))
+        else if (_state.get() == State.RESTARTING)
         {
             LOGGER.debug("Environment restart already in progress, ignoring restart request.");
         }
