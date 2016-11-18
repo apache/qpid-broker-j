@@ -426,8 +426,8 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
 
     private void initialiseStatisticsReporting()
     {
-        long report = ((Number)getAttribute(Broker.STATISTICS_REPORTING_PERIOD)).intValue() * 1000; // convert to ms
-        final boolean reset = (Boolean)getAttribute(Broker.STATISTICS_REPORTING_RESET_ENABLED);
+        long report = getStatisticsReportingPeriod() * 1000L; // convert to ms
+        final boolean reset = getStatisticsReportingResetEnabled();
 
         /* add a timer task to report statistics if generation is enabled for broker or virtualhosts */
         if (report > 0L)
