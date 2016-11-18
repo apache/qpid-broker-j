@@ -21,28 +21,32 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 
-public class Pre0_10CreditManager implements FlowCreditManager_0_8
+class Pre0_10CreditManager implements FlowCreditManager_0_8
 {
 
-    private static final long HIGH_PREFETCH_LIMIT = 100L;
-    private static final long BATCH_LIMIT = 10L;
+    private final long _highPrefetchLimit;
+    private final long _batchLimit;
     private volatile long _bytesCreditLimit;
     private volatile long _messageCreditLimit;
 
     private volatile long _bytesCredit;
     private volatile long _messageCredit;
 
-    public Pre0_10CreditManager(long bytesCreditLimit,
-                                long messageCreditLimit)
+    Pre0_10CreditManager(long bytesCreditLimit,
+                         long messageCreditLimit,
+                         long highPrefetchLimit,
+                         long batchLimit)
     {
         _bytesCreditLimit = bytesCreditLimit;
         _messageCreditLimit = messageCreditLimit;
         _bytesCredit = bytesCreditLimit;
         _messageCredit = messageCreditLimit;
+        _highPrefetchLimit = highPrefetchLimit;
+        _batchLimit = batchLimit;
     }
 
 
-    public synchronized void setCreditLimits(final long bytesCreditLimit, final long messageCreditLimit)
+    void setCreditLimits(final long bytesCreditLimit, final long messageCreditLimit)
     {
         long bytesCreditChange = bytesCreditLimit - _bytesCreditLimit;
         long messageCreditChange = messageCreditLimit - _messageCreditLimit;
@@ -61,7 +65,7 @@ public class Pre0_10CreditManager implements FlowCreditManager_0_8
         _messageCreditLimit = messageCreditLimit;
     }
 
-    public synchronized void restoreCredit(final long messageCredit, final long bytesCredit)
+    public void restoreCredit(final long messageCredit, final long bytesCredit)
     {
         _messageCredit += messageCredit;
         if (_messageCredit > _messageCreditLimit)
@@ -82,13 +86,13 @@ public class Pre0_10CreditManager implements FlowCreditManager_0_8
         }
     }
 
-    public synchronized boolean hasCredit()
+    public boolean hasCredit()
     {
         return (_bytesCreditLimit == 0L || _bytesCredit > 0)
                && (_messageCreditLimit == 0L || _messageCredit > 0);
     }
 
-    public synchronized boolean useCreditForMessage(final long msgSize)
+    public boolean useCreditForMessage(final long msgSize)
     {
         if (_messageCreditLimit != 0)
         {
@@ -113,12 +117,12 @@ public class Pre0_10CreditManager implements FlowCreditManager_0_8
     @Override
     public boolean isNotBytesLimitedAndHighPrefetch()
     {
-        return _bytesCreditLimit == 0L && _messageCreditLimit > HIGH_PREFETCH_LIMIT;
+        return _bytesCreditLimit == 0L && _messageCreditLimit > _highPrefetchLimit;
     }
 
     @Override
     public boolean isCreditOverBatchLimit()
     {
-        return _messageCredit > BATCH_LIMIT;
+        return _messageCredit > _batchLimit;
     }
 }

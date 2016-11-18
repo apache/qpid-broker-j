@@ -45,7 +45,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -370,7 +369,7 @@ public class ConfiguredObjectTypeRegistry
 
             return factory != null && factory.getType().equals(type);
         }
-        catch (NoFactoryForTypeException e)
+        catch (NoFactoryForTypeException | NoFactoryForCategoryException e)
         {
             return false;
         }

@@ -236,7 +236,9 @@ public class AMQChannel
 
     public AMQChannel(AMQPConnection_0_8 connection, int channelId, final MessageStore messageStore)
     {
-        _creditManager = new Pre0_10CreditManager(0l,0l);
+        _creditManager = new Pre0_10CreditManager(0L, 0L,
+                                                  connection.getContextValue(Long.class, AMQPConnection_0_8.HIGH_PREFETCH_LIMIT),
+                                                  connection.getContextValue(Long.class, AMQPConnection_0_8.BATCH_LIMIT));
 
         _connection = connection;
         _channelId = channelId;

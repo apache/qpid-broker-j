@@ -27,14 +27,30 @@ import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ContextProvider;
+import org.apache.qpid.server.model.ManagedContextDefault;
+import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 
-interface AMQPConnection_0_8<C extends AMQPConnection_0_8<C>> extends AMQPConnection<C>, ProtocolEngine, EventLoggerProvider
+@ManagedObject(category = false, creatable = false, type="AMQP_0_8")
+public interface AMQPConnection_0_8<C extends AMQPConnection_0_8<C>> extends AMQPConnection<C>, ProtocolEngine, EventLoggerProvider
 {
-    int  DEFAULT_HEARTBEAT_TIMEOUT_FACTOR = 2;
+
     String PROPERTY_HEARTBEAT_TIMEOUT_FACTOR = "qpid.broker_heartbeat_timeout_factor";
-    int HEARTBEAT_TIMEOUT_FACTOR = Integer.getInteger(PROPERTY_HEARTBEAT_TIMEOUT_FACTOR, DEFAULT_HEARTBEAT_TIMEOUT_FACTOR);
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = PROPERTY_HEARTBEAT_TIMEOUT_FACTOR)
+    int  DEFAULT_HEARTBEAT_TIMEOUT_FACTOR = 2;
+
+
+    String HIGH_PREFETCH_LIMIT = "connection.high_prefetch_limit";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name= HIGH_PREFETCH_LIMIT)
+    long DEFAULT_HIGH_PREFETCH_LIMIT = 100L;
+
+    String BATCH_LIMIT = "connection.batch_limit";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name= BATCH_LIMIT)
+    long DEFAULT_BATCH_LIMIT = 10L;
 
     Broker<?> getBroker();
 

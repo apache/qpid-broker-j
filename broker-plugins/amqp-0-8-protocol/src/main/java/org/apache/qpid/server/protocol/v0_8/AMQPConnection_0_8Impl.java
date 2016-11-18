@@ -1219,7 +1219,7 @@ public class AMQPConnection_0_8Impl
         if (heartbeat > 0)
         {
             long writerDelay = 1000L * heartbeat;
-            long readerDelay = 1000L * AMQPConnection_0_8.HEARTBEAT_TIMEOUT_FACTOR * heartbeat;
+            long readerDelay = 1000L * getContextValue(Integer.class, AMQPConnection_0_8.PROPERTY_HEARTBEAT_TIMEOUT_FACTOR) * heartbeat;
             initialiseHeartbeating(writerDelay, readerDelay);
         }
 

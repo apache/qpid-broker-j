@@ -119,6 +119,10 @@ public class AMQChannelTest extends QpidTestCase
         when(_amqConnection.getContextProvider()).thenReturn(_virtualHost);
         when(_amqConnection.getContextValue(Long.class, Session.PRODUCER_AUTH_CACHE_TIMEOUT)).thenReturn(Session.PRODUCER_AUTH_CACHE_TIMEOUT_DEFAULT);
         when(_amqConnection.getContextValue(Integer.class, Session.PRODUCER_AUTH_CACHE_SIZE)).thenReturn(Session.PRODUCER_AUTH_CACHE_SIZE_DEFAULT);
+
+        when(_amqConnection.getContextValue(Long.class, AMQPConnection_0_8.BATCH_LIMIT)).thenReturn(AMQPConnection_0_8.DEFAULT_BATCH_LIMIT);
+        when(_amqConnection.getContextValue(Long.class, AMQPConnection_0_8.HIGH_PREFETCH_LIMIT)).thenReturn(AMQPConnection_0_8.DEFAULT_BATCH_LIMIT);
+
         when(_amqConnection.getEventLogger()).thenReturn(mock(EventLogger.class));
         _messageDestination = mock(MessageDestination.class);
     }
@@ -157,7 +161,6 @@ public class AMQChannelTest extends QpidTestCase
 
         long maximumMessageSize = 1024l;
         when(_amqConnection.getMaxMessageSize()).thenReturn(maximumMessageSize);
-
         AMQChannel channel = new AMQChannel(_amqConnection, 1, _virtualHost.getMessageStore());
 
         BasicContentHeaderProperties properties = new BasicContentHeaderProperties();
