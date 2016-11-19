@@ -49,7 +49,6 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.store.StoreConfigurationChangeListener;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -580,7 +579,7 @@ public class VirtualHostTest extends QpidTestCase
                 }
                 return null;
             }
-        }).when(connection).sendConnectionCloseAsync(any(AMQConstant.class), anyString());
+        }).when(connection).sendConnectionCloseAsync(any(AMQPConnection.ConnectionCloseReason.class), anyString());
         when(connection.getRemoteAddressString()).thenReturn("peer:1234");
         return connection;
     }

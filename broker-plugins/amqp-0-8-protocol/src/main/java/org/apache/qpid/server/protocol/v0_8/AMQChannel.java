@@ -104,6 +104,7 @@ import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.LocalTransaction.ActivityTimeAccessor;
@@ -286,7 +287,7 @@ public class AMQChannel
     @Override
     public void doTimeoutAction(String reason)
     {
-        _connection.sendConnectionCloseAsync(AMQConstant.RESOURCE_ERROR, reason);
+        _connection.sendConnectionCloseAsync(AMQPConnection.ConnectionCloseReason.TRANSACTION_TIMEOUT, reason);
     }
 
     private void message(final LogMessage message)

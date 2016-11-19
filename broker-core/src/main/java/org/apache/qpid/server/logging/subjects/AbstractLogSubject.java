@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
-import org.apache.qpid.server.logging.LogSubject;
-
 import java.text.MessageFormat;
+
+import org.apache.qpid.server.logging.LogSubject;
 
 /**
  * The LogSubjects all have a similar requirement to format their output and
@@ -68,5 +68,11 @@ public abstract class AbstractLogSubject implements LogSubject
     public void setLogString(String logString)
     {
         _logString = logString;
+    }
+
+    @Override
+    public String toString()
+    {
+        return toLogString();
     }
 }

@@ -33,6 +33,7 @@ import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
@@ -177,6 +178,12 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
     {
         //TODO
         endpoint.detach();
+    }
+
+    @Override
+    public void handle(final Binary deliveryTag, final DeliveryState state, final Boolean settled)
+    {
+
     }
 
     private Error discharge(Integer transactionId, boolean fail)

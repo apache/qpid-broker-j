@@ -20,17 +20,14 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
-
 import java.nio.ByteBuffer;
+
+import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
 
 public interface FrameOutputHandler<T>
 {
-    boolean canSend();
 
     void send(AMQFrame<T> frame);
     void send(AMQFrame<T> frame, ByteBuffer payload);
-
-    void close();
 
 }

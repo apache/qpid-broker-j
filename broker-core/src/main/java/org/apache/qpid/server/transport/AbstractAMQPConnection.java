@@ -45,7 +45,6 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
@@ -630,7 +629,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     {
         if (_modelClosing.compareAndSet(false, true))
         {
-            sendConnectionCloseAsync(AMQConstant.CONNECTION_FORCED, "Connection closed by external action");
+            sendConnectionCloseAsync(ConnectionCloseReason.MANAGEMENT, "Connection closed by external action");
         }
         return _modelClosedFuture;
     }

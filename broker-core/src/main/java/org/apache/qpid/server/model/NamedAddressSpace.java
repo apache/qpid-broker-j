@@ -24,6 +24,7 @@ import java.security.Principal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
@@ -35,6 +36,8 @@ import org.apache.qpid.server.txn.DtxRegistry;
 
 public interface NamedAddressSpace extends Named
 {
+
+    UUID getId();
 
     MessageSource getAttainedMessageSource(String name);
 

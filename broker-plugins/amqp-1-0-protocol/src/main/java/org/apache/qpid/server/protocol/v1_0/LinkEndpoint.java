@@ -27,7 +27,6 @@ import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
-import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Source;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.Target;
@@ -45,7 +44,6 @@ public abstract class LinkEndpoint<T extends Link_1_0>
 {
 
     private T _link;
-    private DeliveryStateHandler _deliveryStateHandler;
     private Object _flowTransactionId;
     private SenderSettleMode _sendingSettlementMode;
     private ReceiverSettleMode _receivingSettlementMode;
@@ -83,16 +81,6 @@ public abstract class LinkEndpoint<T extends Link_1_0>
     private Map<Symbol, Object> _properties;
 
     private Map<Binary,Delivery> _unsettledTransfers = new HashMap<Binary,Delivery>();
-
-    LinkEndpoint(final Session_1_0 sessionEndpoint, String name, Map<Binary, Outcome> unsettled, DeliveryStateHandler deliveryStateHandler)
-    {
-        _name = name;
-        _session = sessionEndpoint;
-        _linkCredit = UnsignedInteger.valueOf(0);
-        _drain = Boolean.FALSE;
-        _localUnsettled = unsettled;
-        _deliveryStateHandler = deliveryStateHandler;
-    }
 
     LinkEndpoint(final Session_1_0 sessionEndpoint,final Attach attach)
     {
@@ -215,9 +203,9 @@ public abstract class LinkEndpoint<T extends Link_1_0>
                                      final Boolean settled)
     {
         // TODO
-        if (_deliveryStateHandler != null)
+        if (_link != null)
         {
-            _deliveryStateHandler.handle(unsettled.getDeliveryTag(), state, settled);
+            _link.handle(unsettled.getDeliveryTag(), state, settled);
         }
 
         if (settled)
@@ -476,11 +464,6 @@ public abstract class LinkEndpoint<T extends Link_1_0>
     public void setLink(final T link)
     {
         _link = link;
-    }
-
-    public void setDeliveryStateHandler(final DeliveryStateHandler deliveryStateHandler)
-    {
-        _deliveryStateHandler = deliveryStateHandler;
     }
 
     public void setSendingSettlementMode(SenderSettleMode sendingSettlementMode)

@@ -20,10 +20,9 @@
  */
 package org.apache.qpid.server.logging.actors;
 
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.model.BrokerTestHelper;
 
 public abstract class BaseConnectionActorTestCase extends BaseActorTestCase
 {
@@ -55,7 +54,7 @@ public abstract class BaseConnectionActorTestCase extends BaseActorTestCase
             }
             if (_connection != null)
             {
-                _connection.sendConnectionCloseAsync(AMQConstant.CONNECTION_FORCED, "");
+                _connection.sendConnectionCloseAsync(AMQPConnection.ConnectionCloseReason.MANAGEMENT, "");
             }
         }
         finally

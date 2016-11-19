@@ -48,7 +48,7 @@ import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 
-public class StandardReceivingLink_1_0 implements ReceivingLink_1_0, DeliveryStateHandler
+public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
 {
     private NamedAddressSpace _addressSpace;
 
@@ -73,9 +73,6 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0, DeliverySta
         _destination = destination;
         _attachment = receivingLinkAttachment;
         _receivingSettlementMode = receivingLinkAttachment.getEndpoint().getReceivingSettlementMode();
-
-        receivingLinkAttachment.setDeliveryStateHandler(this);
-
         _durability = ((Target)receivingLinkAttachment.getTarget()).getDurable();
 
         _sectionDecoder = new SectionDecoderImpl(receivingLinkAttachment.getEndpoint().getSession().getConnection().getDescribedTypeRegistry());

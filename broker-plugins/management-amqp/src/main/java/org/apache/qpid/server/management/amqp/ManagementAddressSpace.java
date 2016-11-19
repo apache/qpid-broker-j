@@ -20,12 +20,14 @@
  */
 package org.apache.qpid.server.management.amqp;
 
+import java.nio.charset.StandardCharsets;
 import java.security.AccessControlException;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
@@ -70,6 +72,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
     private final LinkRegistry _linkRegistry = new NonDurableLinkRegistry();
     private final Broker<?> _broker;
     private final Principal _principal;
+    private final UUID _id;
 
     public ManagementAddressSpace(final SystemAddressSpaceCreator.AddressSpaceRegistry addressSpaceRegistry)
     {
@@ -86,8 +89,15 @@ public class ManagementAddressSpace implements NamedAddressSpace
         _propertiesNode = new VirtualHostPropertiesNode(this);
         _messageStore = new MemoryMessageStore();
         _principal = new ManagementAddressSpacePrincipal(this);
+        _id = UUID.nameUUIDFromBytes((_broker.getId().toString()+"/"+name).getBytes(StandardCharsets.UTF_8));
     }
 
+
+    @Override
+    public UUID getId()
+    {
+        return _id;
+    }
 
     @Override
     public MessageSource getAttainedMessageSource(final String name)

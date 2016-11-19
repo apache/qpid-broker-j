@@ -251,7 +251,7 @@ public class ServerConnection extends Connection
         }
     }
 
-    public void sendConnectionCloseAsync(final AMQConstant cause, final String message)
+    void sendConnectionCloseAsync(final ConnectionCloseCode replyCode, final String message)
     {
         addAsyncTask(new Action<ServerConnection>()
         {
@@ -263,15 +263,6 @@ public class ServerConnection extends Connection
                     markAllSessionsClosed();
 
                     setState(CLOSING);
-                    ConnectionCloseCode replyCode = ConnectionCloseCode.NORMAL;
-                    try
-                    {
-                        replyCode = ConnectionCloseCode.get(cause.getCode());
-                    }
-                    catch (IllegalArgumentException iae)
-                    {
-                        // Ignore
-                    }
                     sendConnectionClose(replyCode, message);
                 }
             }

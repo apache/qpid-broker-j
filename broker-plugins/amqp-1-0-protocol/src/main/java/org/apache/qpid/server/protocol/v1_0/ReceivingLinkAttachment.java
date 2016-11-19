@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Source;
 import org.apache.qpid.server.protocol.v1_0.type.Target;
 
@@ -49,16 +47,6 @@ public class ReceivingLinkAttachment
     public Source getSource()
     {
         return getEndpoint().getSource();
-    }
-
-    public void setDeliveryStateHandler(final DeliveryStateHandler handler)
-    {
-        getEndpoint().setDeliveryStateHandler(handler);
-    }
-
-    public void updateDisposition(final Binary deliveryTag, final DeliveryState state, final boolean settled)
-    {
-        getEndpoint().updateDisposition(deliveryTag, state, settled);
     }
 
     public Target getTarget()

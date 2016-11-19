@@ -50,11 +50,6 @@ public class SendingLinkAttachment
         return getEndpoint().getSource();
     }
 
-    public void setDeliveryStateHandler(final DeliveryStateHandler handler)
-    {
-        getEndpoint().setDeliveryStateHandler(handler);
-    }
-
     public void updateDisposition(final Binary deliveryTag, final DeliveryState state, final boolean settled)
     {
         getEndpoint().updateDisposition(deliveryTag, state, settled);

@@ -77,7 +77,7 @@ import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 
-public class SendingLink_1_0 implements Link_1_0, DeliveryStateHandler
+public class SendingLink_1_0 implements Link_1_0
 {
     private static final Logger _logger = LoggerFactory.getLogger(SendingLink_1_0.class);
 
@@ -111,7 +111,6 @@ public class SendingLink_1_0 implements Link_1_0, DeliveryStateHandler
         _linkAttachment = linkAttachment;
         final Source source = (Source) linkAttachment.getSource();
         _durability = source.getDurable();
-        linkAttachment.setDeliveryStateHandler(this);
         QueueDestination qd = null;
 
         EnumSet<ConsumerImpl.Option> options = EnumSet.noneOf(ConsumerImpl.Option.class);
@@ -595,7 +594,6 @@ public class SendingLink_1_0 implements Link_1_0, DeliveryStateHandler
         if (linkAttachment.getSession() != null)
         {
             SendingLinkEndpoint endpoint = linkAttachment.getEndpoint();
-            endpoint.setDeliveryStateHandler(this);
             Map initialUnsettledMap = endpoint.getInitialUnsettledMap();
             Map<Binary, MessageInstance> unsettledCopy = new HashMap<Binary, MessageInstance>(_unsettledMap);
             _resumeAcceptedTransfers.clear();

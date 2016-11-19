@@ -545,7 +545,7 @@ public class AMQPConnection_0_8Impl
     }
 
     public void sendConnectionClose(AMQConstant errorCode,
-                             String message, int channelId)
+                                    String message, int channelId)
     {
         sendConnectionClose(channelId, new AMQFrame(0, new ConnectionCloseBody(getProtocolVersion(), errorCode.getCode(), AMQShortString.validValueOf(message), _currentClassId, _currentMethodId)));
     }
@@ -799,17 +799,29 @@ public class AMQPConnection_0_8Impl
     }
 
     @Override
-    public void sendConnectionCloseAsync(final AMQConstant cause, final String message)
+    public void sendConnectionCloseAsync(final ConnectionCloseReason reason, final String description)
     {
         stopConnection();
+        final AMQConstant cause;
+        switch(reason)
+        {
+            case MANAGEMENT:
+                cause = AMQConstant.CONNECTION_FORCED;
+                break;
+            case TRANSACTION_TIMEOUT:
+                cause = AMQConstant.RESOURCE_ERROR;
+                break;
+            default:
+                cause = AMQConstant.INTERNAL_ERROR;
+        }
         Action<AMQPConnection_0_8Impl> action = new Action<AMQPConnection_0_8Impl>()
         {
             @Override
             public void performAction(final AMQPConnection_0_8Impl object)
             {
-                AMQConnectionException e = new AMQConnectionException(cause, message, 0, 0,
-                        getMethodRegistry(),
-                        null);
+                AMQConnectionException e = new AMQConnectionException(cause, description, 0, 0,
+                                                                      getMethodRegistry(),
+                                                                      null);
                 sendConnectionClose(0, e.getCloseFrame());
             }
         };

@@ -72,7 +72,13 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
 
     boolean hasSessionWithName(byte[] name);
 
-    void sendConnectionCloseAsync(AMQConstant connectionForced, String reason);
+    enum ConnectionCloseReason
+    {
+        MANAGEMENT,
+        TRANSACTION_TIMEOUT
+    }
+
+    void sendConnectionCloseAsync(ConnectionCloseReason reason, String description);
 
     boolean isIOThread();
     ListenableFuture<Void> doOnIOThreadAsync(final Runnable task);

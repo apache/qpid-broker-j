@@ -37,24 +37,25 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
+import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.transport.ProtocolEngine;
-import org.apache.qpid.server.logging.messages.ConnectionMessages;
-import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.transport.ByteBufferSender;
+import org.apache.qpid.transport.ConnectionCloseCode;
 import org.apache.qpid.transport.ConnectionDelegate;
 import org.apache.qpid.transport.Constant;
-import org.apache.qpid.server.transport.AggregateTicker;
 
 
 public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0_10, ServerConnection>
@@ -304,10 +305,13 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         return _connection.hasSessionWithName(name);
     }
 
-    public void sendConnectionCloseAsync(final AMQConstant cause, final String message)
+    @Override
+    public void sendConnectionCloseAsync(final ConnectionCloseReason reason, final String description)
     {
         stopConnection();
-        _connection.sendConnectionCloseAsync(cause, message);
+        // Best mapping for all reasons is "forced"
+        _connection.sendConnectionCloseAsync(ConnectionCloseCode.CONNECTION_FORCED, description);
+
     }
 
     public void closeSessionAsync(final AMQSessionModel<?> session,
