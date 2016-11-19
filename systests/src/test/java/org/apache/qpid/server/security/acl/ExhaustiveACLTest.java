@@ -27,7 +27,7 @@ import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.configuration.ClientProperties;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 
 /**
  * ACL version 2/3 file testing to verify that ACL entries control queue creation with specific properties.
@@ -75,7 +75,7 @@ public class ExhaustiveACLTest extends AbstractACLTestCase
 
 	/**
 	 * Calls {@link #createQueue(String, String, String, boolean, boolean)} with the provided parameters and checks that
-	 * the exception thrown was an {@link AMQConstant#ACCESS_REFUSED} or 403 error code.
+	 * the exception thrown was an {@link ErrorCodes#ACCESS_REFUSED} or 403 error code.
 	 */
 	private void createQueueFailure(String vhost, String user, String name, boolean autoDelete, boolean durable) throws Exception
 	{
@@ -87,7 +87,7 @@ public class ExhaustiveACLTest extends AbstractACLTestCase
 		}
 		catch (AMQException e)
 		{
-			assertEquals("Should be an ACCESS_REFUSED error", 403, e.getErrorCode().getCode());
+			assertEquals("Should be an ACCESS_REFUSED error", 403, e.getErrorCode());
 		}
 	}
 

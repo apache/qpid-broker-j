@@ -46,7 +46,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
@@ -73,6 +72,7 @@ import org.apache.qpid.server.protocol.v1_0.framing.OversizeFrameException;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
+import org.apache.qpid.server.protocol.v1_0.type.ErrorCondition;
 import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
 import org.apache.qpid.server.protocol.v1_0.type.LifetimePolicy;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -1253,14 +1253,13 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     }
 
 
-    @Override
-    public void close(AMQConstant cause, String message)
+    public void close(ErrorCondition condition, String message)
     {
         performCloseTasks();
         final End end = new End();
         final Error theError = new Error();
         theError.setDescription(message);
-        theError.setCondition(ConnectionError.CONNECTION_FORCED);
+        theError.setCondition(condition);
         end.setError(theError);
         end(end);
     }
@@ -1445,31 +1444,24 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     }
 
     @Override
-    public Long getTxnCount()
+    public long getTxnStart()
     {
         // TODO
         return 0l;
     }
 
     @Override
-    public Long getTxnStart()
+    public long getTxnCommits()
     {
         // TODO
         return 0l;
     }
 
     @Override
-    public Long getTxnCommits()
+    public long getTxnRejects()
     {
         // TODO
-        return 0l;
-    }
-
-    @Override
-    public Long getTxnRejects()
-    {
-        // TODO
-        return 0l;
+        return 0L;
     }
 
     @Override
@@ -1640,7 +1632,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     @Override
     public void doTimeoutAction(final String reason)
     {
-        getAMQPConnection().closeSessionAsync(this, AMQConstant.RESOURCE_ERROR, reason);
+        getAMQPConnection().closeSessionAsync(this, AMQPConnection.CloseReason.TRANSACTION_TIMEOUT, reason);
     }
 
     private void consumerAdded(Consumer<?> consumer)

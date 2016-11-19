@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQNoConsumersException;
 import org.apache.qpid.client.AMQNoRouteException;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 
 /**
  * Provides utility methods for checking exceptions that are thrown on the client side when a message is
@@ -120,7 +120,7 @@ public class UnroutableMessageTestExceptionListener implements ExceptionListener
         AMQException noRouteException = (AMQException) exception.getLinkedException();
         assertNotNull("AMQException should be linked to JMSException", noRouteException);
 
-        assertEquals(AMQConstant.NO_ROUTE, noRouteException.getErrorCode());
+        assertEquals(ErrorCodes.NO_ROUTE, noRouteException.getErrorCode());
         assertTrue(
                 "Linked exception " + noRouteException + " message should contain intended queue name",
                 noRouteException.getMessage().contains(intendedQueueName));

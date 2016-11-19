@@ -52,7 +52,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.configuration.CommonProperties;
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -405,18 +404,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     public AMQPDescribedTypeRegistry getDescribedTypeRegistry()
     {
         return _describedTypeRegistry;
-    }
-
-    private void closeSessionAsync(final Session_1_0 session, final AMQConstant cause, final String message)
-    {
-        addAsyncTask(new Action<ConnectionHandler>()
-        {
-            @Override
-            public void performAction(final ConnectionHandler object)
-            {
-                session.close(cause, message);
-            }
-        });
     }
 
 
@@ -1388,7 +1375,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     }
 
     @Override
-    public void sendConnectionCloseAsync(final ConnectionCloseReason reason, final String description)
+    public void sendConnectionCloseAsync(final CloseReason reason, final String description)
     {
 
         stopConnection();
@@ -1417,9 +1404,29 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     }
 
     public void closeSessionAsync(final AMQSessionModel<?> session,
-                                  final AMQConstant cause, final String message)
+                                  final CloseReason reason, final String message)
     {
-        closeSessionAsync((Session_1_0) session, cause, message);
+        final ErrorCondition cause;
+        switch(reason)
+        {
+            case MANAGEMENT:
+                cause = ConnectionError.CONNECTION_FORCED;
+                break;
+            case TRANSACTION_TIMEOUT:
+                cause = AmqpError.RESOURCE_LIMIT_EXCEEDED;
+                break;
+            default:
+                cause = AmqpError.INTERNAL_ERROR;
+        }
+        addAsyncTask(new Action<ConnectionHandler>()
+        {
+            @Override
+            public void performAction(final ConnectionHandler object)
+            {
+                ((Session_1_0)session).close(cause, message);
+            }
+        });
+
     }
 
     public void block()

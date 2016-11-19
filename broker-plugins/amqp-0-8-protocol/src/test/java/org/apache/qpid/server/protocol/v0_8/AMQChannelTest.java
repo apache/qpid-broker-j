@@ -41,7 +41,7 @@ import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.MethodRegistry;
 import org.apache.qpid.framing.ProtocolVersion;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.InstanceProperties;
@@ -139,7 +139,7 @@ public class AMQChannelTest extends QpidTestCase
         channel.receiveExchangeDelete(AMQShortString.valueOf(testExchangeName), true, false);
 
         verify(_amqConnection).closeChannelAndWriteFrame(eq(channel),
-                                                         eq(AMQConstant.IN_USE),
+                                                         eq(ErrorCodes.IN_USE),
                                                          eq("Exchange has bindings"));
     }
 
@@ -168,7 +168,7 @@ public class AMQChannelTest extends QpidTestCase
         channel.receiveMessageHeader(properties, maximumMessageSize + 1);
 
         verify(_amqConnection).closeChannelAndWriteFrame(eq(channel),
-                                                         eq(AMQConstant.MESSAGE_TOO_LARGE),
+                                                         eq(ErrorCodes.MESSAGE_TOO_LARGE),
                                                          eq("Message size of 1025 greater than allowed maximum of 1024"));
 
     }
@@ -197,7 +197,7 @@ public class AMQChannelTest extends QpidTestCase
         channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, AMQShortString.EMPTY_STRING, false, false);
         channel.receiveMessageHeader(properties, 0);
 
-        verify(_amqConnection).sendConnectionClose(eq(AMQConstant.ACCESS_REFUSED), anyString(), eq(channelId));
+        verify(_amqConnection).sendConnectionClose(eq(ErrorCodes.ACCESS_REFUSED), anyString(), eq(channelId));
         verifyZeroInteractions(_messageDestination);
     }
 

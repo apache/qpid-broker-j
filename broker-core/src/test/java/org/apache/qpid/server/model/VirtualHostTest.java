@@ -579,7 +579,7 @@ public class VirtualHostTest extends QpidTestCase
                 }
                 return null;
             }
-        }).when(connection).sendConnectionCloseAsync(any(AMQPConnection.ConnectionCloseReason.class), anyString());
+        }).when(connection).sendConnectionCloseAsync(any(AMQPConnection.CloseReason.class), anyString());
         when(connection.getRemoteAddressString()).thenReturn("peer:1234");
         return connection;
     }

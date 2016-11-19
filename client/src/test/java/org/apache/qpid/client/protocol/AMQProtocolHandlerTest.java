@@ -27,14 +27,13 @@ import java.net.UnknownHostException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.qpid.AMQException;
-import org.apache.qpid.client.AMQProtocolHandler;
-import org.apache.qpid.test.utils.QpidTestCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.AMQException;
 import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQAuthenticationException;
+import org.apache.qpid.client.AMQProtocolHandler;
 import org.apache.qpid.client.MockAMQConnection;
 import org.apache.qpid.client.state.AMQState;
 import org.apache.qpid.client.transport.TestNetworkConnection;
@@ -43,7 +42,8 @@ import org.apache.qpid.framing.AMQFrame;
 import org.apache.qpid.framing.AMQMethodBody;
 import org.apache.qpid.framing.BasicRecoverSyncOkBody;
 import org.apache.qpid.framing.ProtocolVersion;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
  * This is a test address QPID-1431 where frame listeners would fail to be notified of an incomming exception.
@@ -102,8 +102,8 @@ public class AMQProtocolHandlerTest extends QpidTestCase
      */
     public void testFrameListenerUpdateWithAMQException() throws InterruptedException
     {
-        AMQAuthenticationException trigger = new AMQAuthenticationException(AMQConstant.ACCESS_REFUSED,
-                                                              "AMQPHTest", new RuntimeException());
+        AMQAuthenticationException trigger = new AMQAuthenticationException(
+                "AMQPHTest", new RuntimeException());
 
         performWithException(trigger);
 
@@ -132,7 +132,7 @@ public class AMQProtocolHandlerTest extends QpidTestCase
         performWithException(trigger);
 
         assertEquals("The _Listener did not receive the correct error code",
-                     AMQConstant.INTERNAL_ERROR,  ((AMQException)_listener.getReceivedException()).getErrorCode());
+                     ErrorCodes.INTERNAL_ERROR, ((AMQException)_listener.getReceivedException()).getErrorCode());
     }
 
 

@@ -22,7 +22,7 @@ package org.apache.qpid;
 
 import org.apache.qpid.framing.AMQFrameDecodingException;
 import org.apache.qpid.framing.AMQShortString;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
@@ -54,8 +54,8 @@ public class QpidExceptionTest extends QpidTestCase
      */
     public void testRethrowAMQESubclass()
     {
-        AMQFrameDecodingException test = new AMQFrameDecodingException(AMQConstant.INTERNAL_ERROR,
-                                                                       "Error",
+        AMQFrameDecodingException test = new AMQFrameDecodingException(
+                "Error",
                                                                        new Exception());
         QpidException e = reThrowException(test);
 
@@ -101,7 +101,7 @@ public class QpidExceptionTest extends QpidTestCase
         {
             sb.append("message [" + i + "]");
         }
-        AMQException e = new AMQException(AMQConstant.INTERNAL_ERROR, sb.toString(), null);
+        AMQException e = new AMQException(ErrorCodes.INTERNAL_ERROR, sb.toString(), null);
         AMQShortString message = AMQShortString.validValueOf(e.getMessage());
         assertEquals(sb.substring(0, AMQShortString.MAX_LENGTH - 3) + "...", message.toString());
     }

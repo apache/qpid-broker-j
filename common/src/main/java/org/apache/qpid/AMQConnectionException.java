@@ -22,10 +22,8 @@
 package org.apache.qpid;
 
 import org.apache.qpid.framing.AMQFrame;
-import org.apache.qpid.framing.AMQMethodBody;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.MethodRegistry;
-import org.apache.qpid.protocol.AMQConstant;
 
 /**
  * AMQConnectionException indicates that an error that requires the channel to be closed has occurred.
@@ -37,12 +35,7 @@ public class AMQConnectionException extends AMQException
 
     private final MethodRegistry _methodRegistry;
 
-    public AMQConnectionException(AMQConstant errorCode, String msg, AMQMethodBody body, MethodRegistry methodRegistry)
-    {
-        this(errorCode, msg, body.getClazz(), body.getMethod(), methodRegistry, null);
-    }
-
-    public AMQConnectionException(AMQConstant errorCode, String msg, int classId, int methodId, MethodRegistry methodRegistry,
+    public AMQConnectionException(int errorCode, String msg, int classId, int methodId, MethodRegistry methodRegistry,
                                   Throwable cause)
     {
         super(errorCode, msg, cause);
@@ -52,14 +45,20 @@ public class AMQConnectionException extends AMQException
 
     }
 
+
     public AMQFrame getCloseFrame()
     {
         return new AMQFrame(0,
-                            _methodRegistry.createConnectionCloseBody(getErrorCode().getCode(),
+                            _methodRegistry.createConnectionCloseBody(getErrorCode(),
                                                                       AMQShortString.validValueOf(getMessage()),
                                                                       _classId,
                                                                       _methodId));
 
     }
 
+    @Override
+    public AMQException cloneForCurrentThread()
+    {
+        return new AMQConnectionException(getErrorCode(), getMessage(), _classId, _methodId, _methodRegistry, getCause());
+    }
 }

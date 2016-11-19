@@ -36,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
@@ -306,7 +305,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     }
 
     @Override
-    public void sendConnectionCloseAsync(final ConnectionCloseReason reason, final String description)
+    public void sendConnectionCloseAsync(final CloseReason reason, final String description)
     {
         stopConnection();
         // Best mapping for all reasons is "forced"
@@ -314,11 +313,13 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
 
     }
 
+    @Override
     public void closeSessionAsync(final AMQSessionModel<?> session,
-                                  final AMQConstant cause, final String message)
+                                  final CloseReason reason, final String message)
     {
-        _connection.closeSessionAsync((ServerSession) session, cause, message);
+        _connection.closeSessionAsync((ServerSession) session, reason, message);
     }
+
 
     @Override
     protected void addAsyncTask(final Action<? super ServerConnection> action)

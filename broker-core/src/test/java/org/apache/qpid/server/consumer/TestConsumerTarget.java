@@ -31,7 +31,6 @@ import java.util.UUID;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.LogSubject;
@@ -325,27 +324,21 @@ public class TestConsumerTarget implements ConsumerTarget
         }
 
         @Override
-        public Long getTxnCount()
+        public long getTxnStart()
         {
-            return null;
+            return 0L;
         }
 
         @Override
-        public Long getTxnStart()
+        public long getTxnCommits()
         {
-            return null;
+            return 0L;
         }
 
         @Override
-        public Long getTxnCommits()
+        public long getTxnRejects()
         {
-            return null;
-        }
-
-        @Override
-        public Long getTxnRejects()
-        {
-            return null;
+            return 0L;
         }
 
         @Override
@@ -400,11 +393,6 @@ public class TestConsumerTarget implements ConsumerTarget
         public void removeConsumerListener(final ConsumerListener listener)
         {
 
-        }
-
-        @Override
-        public void close(AMQConstant cause, String message)
-        {
         }
 
         @Override

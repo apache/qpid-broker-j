@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -46,6 +46,7 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -164,8 +165,20 @@ public class ServerConnection extends Connection
         return _transport;
     }
 
-    public void closeSessionAsync(final ServerSession session, final AMQConstant cause, final String message)
+    public void closeSessionAsync(final ServerSession session, final AMQPConnection.CloseReason reason, final String message)
     {
+        final int cause;
+        switch (reason)
+        {
+            case MANAGEMENT:
+                cause = ErrorCodes.CONNECTION_FORCED;
+                break;
+            case TRANSACTION_TIMEOUT:
+                cause = ErrorCodes.RESOURCE_ERROR;
+                break;
+            default:
+                cause = ErrorCodes.INTERNAL_ERROR;
+        }
         addAsyncTask(new Action<ServerConnection>()
         {
 
@@ -178,7 +191,7 @@ public class ServerConnection extends Connection
                     ExecutionErrorCode code = ExecutionErrorCode.INTERNAL_ERROR;
                     try
                     {
-                        code = ExecutionErrorCode.get(cause.getCode());
+                        code = ExecutionErrorCode.get(cause);
                     }
                     catch (IllegalArgumentException iae)
                     {

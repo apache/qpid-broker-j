@@ -36,7 +36,7 @@ import javax.jms.Session;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.configuration.ClientProperties;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.systest.rest.RestTestHelper;
@@ -92,7 +92,7 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
         }
         catch (JMSException e)
         {
-            checkExceptionErrorCode(e, AMQConstant.NOT_FOUND);
+            checkExceptionErrorCode(e, ErrorCodes.NOT_FOUND);
         }
     }
 
@@ -114,7 +114,7 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
         }
         catch (JMSException e)
         {
-            checkExceptionErrorCode(e, AMQConstant.NOT_FOUND);
+            checkExceptionErrorCode(e, ErrorCodes.NOT_FOUND);
         }
 
         assertFalse("Exchange exists", exchangeExists(exchangeName));
@@ -219,12 +219,12 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
                     exchangeExists);
     }
 
-    private void checkExceptionErrorCode(JMSException original, AMQConstant code)
+    private void checkExceptionErrorCode(JMSException original, int code)
     {
         Exception linked = original.getLinkedException();
         assertNotNull("Linked exception should have been set", linked);
         assertTrue("Linked exception should be an AMQProtocolException", linked instanceof AMQException);
-        assertEquals("Error code should be " + code.getCode(), code, ((AMQException) linked).getErrorCode());
+        assertEquals("Error code should be " + code, code, ((AMQException) linked).getErrorCode());
     }
 
     public void testAutoDeleteExchangeDeclarationByProducer() throws Exception

@@ -53,12 +53,13 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.AMQConnectionException;
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.codec.AMQDecoder;
 import org.apache.qpid.codec.ServerDecoder;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.framing.*;
 import org.apache.qpid.properties.ConnectionStartProperties;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.message.InstanceProperties;
@@ -446,20 +447,20 @@ public class AMQPConnection_0_8Impl
 
     public void closeChannel(AMQChannel channel)
     {
-        closeChannel(channel, null, null, false);
+        closeChannel(channel, 0, null, false);
     }
 
-    public void closeChannelAndWriteFrame(AMQChannel channel, AMQConstant cause, String message)
+    public void closeChannelAndWriteFrame(AMQChannel channel, int cause, String message)
     {
         writeFrame(new AMQFrame(channel.getChannelId(),
-                                getMethodRegistry().createChannelCloseBody(cause.getCode(),
+                                getMethodRegistry().createChannelCloseBody(cause,
                                                                            AMQShortString.validValueOf(message),
                                                                            _currentClassId,
                                                                            _currentMethodId)));
         closeChannel(channel, cause, message, true);
     }
 
-    public void closeChannel(int channelId, AMQConstant cause, String message)
+    public void closeChannel(int channelId, int cause, String message)
     {
         final AMQChannel channel = getChannel(channelId);
         if (channel == null)
@@ -469,7 +470,7 @@ public class AMQPConnection_0_8Impl
         closeChannel(channel, cause, message, true);
     }
 
-    void closeChannel(AMQChannel channel, AMQConstant cause, String message, boolean mark)
+    void closeChannel(AMQChannel channel, int cause, String message, boolean mark)
     {
         int channelId = channel.getChannelId();
         try
@@ -544,10 +545,10 @@ public class AMQPConnection_0_8Impl
         }
     }
 
-    public void sendConnectionClose(AMQConstant errorCode,
+    public void sendConnectionClose(int errorCode,
                                     String message, int channelId)
     {
-        sendConnectionClose(channelId, new AMQFrame(0, new ConnectionCloseBody(getProtocolVersion(), errorCode.getCode(), AMQShortString.validValueOf(message), _currentClassId, _currentMethodId)));
+        sendConnectionClose(channelId, new AMQFrame(0, new ConnectionCloseBody(getProtocolVersion(), errorCode, AMQShortString.validValueOf(message), _currentClassId, _currentMethodId)));
     }
 
     private void sendConnectionClose(int channelId, AMQFrame frame)
@@ -774,8 +775,20 @@ public class AMQPConnection_0_8Impl
         return String.valueOf(getNetwork().getRemoteAddress());
     }
 
-    public void closeSessionAsync(final AMQSessionModel<?> session, final AMQConstant cause, final String message)
+    public void closeSessionAsync(final AMQSessionModel<?> session, final CloseReason reason, final String message)
     {
+        final int cause;
+        switch (reason)
+        {
+            case MANAGEMENT:
+                cause = ErrorCodes.CONNECTION_FORCED;
+                break;
+            case TRANSACTION_TIMEOUT:
+                cause = ErrorCodes.RESOURCE_ERROR;
+                break;
+            default:
+                cause = ErrorCodes.INTERNAL_ERROR;
+        }
         addAsyncTask(new Action<AMQPConnection_0_8Impl>()
         {
 
@@ -788,7 +801,7 @@ public class AMQPConnection_0_8Impl
                 MethodRegistry methodRegistry = getMethodRegistry();
                 ChannelCloseBody responseBody =
                         methodRegistry.createChannelCloseBody(
-                                cause.getCode(),
+                                cause,
                                 AMQShortString.validValueOf(message),
                                 0, 0);
 
@@ -799,20 +812,20 @@ public class AMQPConnection_0_8Impl
     }
 
     @Override
-    public void sendConnectionCloseAsync(final ConnectionCloseReason reason, final String description)
+    public void sendConnectionCloseAsync(final CloseReason reason, final String description)
     {
         stopConnection();
-        final AMQConstant cause;
+        final int cause;
         switch(reason)
         {
             case MANAGEMENT:
-                cause = AMQConstant.CONNECTION_FORCED;
+                cause = ErrorCodes.CONNECTION_FORCED;
                 break;
             case TRANSACTION_TIMEOUT:
-                cause = AMQConstant.RESOURCE_ERROR;
+                cause = ErrorCodes.RESOURCE_ERROR;
                 break;
             default:
-                cause = AMQConstant.INTERNAL_ERROR;
+                cause = ErrorCodes.INTERNAL_ERROR;
         }
         Action<AMQPConnection_0_8Impl> action = new Action<AMQPConnection_0_8Impl>()
         {
@@ -903,19 +916,19 @@ public class AMQPConnection_0_8Impl
         final NamedAddressSpace virtualHost = getAddressSpace();
         if (virtualHost == null)
         {
-            sendConnectionClose(AMQConstant.COMMAND_INVALID,
-                    "Virtualhost has not yet been set. ConnectionOpen has not been called.", channelId);
+            sendConnectionClose(ErrorCodes.COMMAND_INVALID,
+                                "Virtualhost has not yet been set. ConnectionOpen has not been called.", channelId);
         }
         else if(getChannel(channelId) != null || channelAwaitingClosure(channelId))
         {
-            sendConnectionClose(AMQConstant.CHANNEL_ERROR, "Channel " + channelId + " already exists", channelId);
+            sendConnectionClose(ErrorCodes.CHANNEL_ERROR, "Channel " + channelId + " already exists", channelId);
         }
         else if(channelId > getMaximumNumberOfChannels())
         {
-            sendConnectionClose(AMQConstant.CHANNEL_ERROR,
+            sendConnectionClose(ErrorCodes.CHANNEL_ERROR,
                     "Channel " + channelId + " cannot be created as the max allowed channel id is "
                             + getMaximumNumberOfChannels(),
-                    channelId);
+                                channelId);
         }
         else
         {
@@ -940,7 +953,7 @@ public class AMQPConnection_0_8Impl
         if(_state != requiredState)
         {
             String replyText = "Command Invalid, expected " + requiredState + " but was " + _state;
-            sendConnectionClose(AMQConstant.COMMAND_INVALID, replyText, 0);
+            sendConnectionClose(ErrorCodes.COMMAND_INVALID, replyText, 0);
             throw new ConnectionScopedRuntimeException(replyText);
         }
     }
@@ -967,7 +980,7 @@ public class AMQPConnection_0_8Impl
 
         if (addressSpace == null)
         {
-            sendConnectionClose(AMQConstant.NOT_FOUND,
+            sendConnectionClose(ErrorCodes.NOT_FOUND,
                     "Unknown virtual host: '" + virtualHostName + "'", 0);
 
         }
@@ -983,7 +996,7 @@ public class AMQPConnection_0_8Impl
                 }
                 else
                 {
-                    sendConnectionClose(AMQConstant.CONNECTION_FORCED,
+                    sendConnectionClose(ErrorCodes.CONNECTION_FORCED,
                             "Virtual host '" + addressSpace.getName() + "' is not active", 0);
                 }
 
@@ -1004,12 +1017,12 @@ public class AMQPConnection_0_8Impl
                     }
                     else
                     {
-                        sendConnectionClose(AMQConstant.ACCESS_REFUSED, "Connection refused", 0);
+                        sendConnectionClose(ErrorCodes.ACCESS_REFUSED, "Connection refused", 0);
                     }
                 }
                 catch (AccessControlException | VirtualHostUnavailableException e)
                 {
-                    sendConnectionClose(AMQConstant.ACCESS_REFUSED, e.getMessage(), 0);
+                    sendConnectionClose(ErrorCodes.ACCESS_REFUSED, e.getMessage(), 0);
                 }
             }
         }
@@ -1073,7 +1086,7 @@ public class AMQPConnection_0_8Impl
         SaslServer ss = getSaslServer();
         if (ss == null)
         {
-            sendConnectionClose(AMQConstant.INTERNAL_ERROR, "No SASL context set up in connection", 0);
+            sendConnectionClose(ErrorCodes.INTERNAL_ERROR, "No SASL context set up in connection", 0);
         }
 
         processSaslResponse(response, subjectCreator, ss);
@@ -1130,7 +1143,7 @@ public class AMQPConnection_0_8Impl
 
             if (ss == null)
             {
-                sendConnectionClose(AMQConstant.RESOURCE_ERROR, "Unable to create SASL Server:" + mechanism, 0);
+                sendConnectionClose(ErrorCodes.RESOURCE_ERROR, "Unable to create SASL Server:" + mechanism, 0);
 
             }
             else
@@ -1146,7 +1159,7 @@ public class AMQPConnection_0_8Impl
         catch (SaslException e)
         {
             disposeSaslServer();
-            sendConnectionClose(AMQConstant.INTERNAL_ERROR, "SASL error: " + e, 0);
+            sendConnectionClose(ErrorCodes.INTERNAL_ERROR, "SASL error: " + e, 0);
         }
     }
 
@@ -1170,7 +1183,7 @@ public class AMQPConnection_0_8Impl
 
                 _logger.debug("Authentication failed: {}", (cause == null ? "" : cause.getMessage()));
 
-                sendConnectionClose(AMQConstant.NOT_ALLOWED, "Authentication failed", 0);
+                sendConnectionClose(ErrorCodes.NOT_ALLOWED, "Authentication failed", 0);
 
                 disposeSaslServer();
                 break;
@@ -1243,17 +1256,17 @@ public class AMQPConnection_0_8Impl
 
         if (frameMax > (long) brokerFrameMax)
         {
-            sendConnectionClose(AMQConstant.SYNTAX_ERROR,
+            sendConnectionClose(ErrorCodes.SYNTAX_ERROR,
                     "Attempt to set max frame size to " + frameMax
                             + " greater than the broker will allow: "
                             + brokerFrameMax, 0);
         }
-        else if (frameMax > 0 && frameMax < AMQConstant.FRAME_MIN_SIZE.getCode())
+        else if (frameMax > 0 && frameMax < AMQDecoder.FRAME_MIN_SIZE)
         {
-            sendConnectionClose(AMQConstant.SYNTAX_ERROR,
-                    "Attempt to set max frame size to " + frameMax
-                            + " which is smaller than the specification defined minimum: "
-                            + AMQConstant.FRAME_MIN_SIZE.getCode(), 0);
+            sendConnectionClose(ErrorCodes.SYNTAX_ERROR,
+                                "Attempt to set max frame size to " + frameMax
+                                + " which is smaller than the specification defined minimum: "
+                                + AMQDecoder.FRAME_MIN_SIZE, 0);
         }
         else
         {
@@ -1337,9 +1350,9 @@ public class AMQPConnection_0_8Impl
                         {
                             if(method.getName().startsWith("receive"))
                             {
-                                sendConnectionClose(AMQConstant.CHANNEL_ERROR,
+                                sendConnectionClose(ErrorCodes.CHANNEL_ERROR,
                                         "Unknown channel id: " + channelId,
-                                        channelId);
+                                                    channelId);
                                 return null;
                             }
                             else if(method.getName().equals("ignoreAllButCloseOk"))

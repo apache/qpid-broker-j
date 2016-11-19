@@ -629,7 +629,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     {
         if (_modelClosing.compareAndSet(false, true))
         {
-            sendConnectionCloseAsync(ConnectionCloseReason.MANAGEMENT, "Connection closed by external action");
+            sendConnectionCloseAsync(CloseReason.MANAGEMENT, "Connection closed by external action");
         }
         return _modelClosedFuture;
     }

@@ -23,7 +23,6 @@ package org.apache.qpid.server.protocol.v0_8;
 import org.apache.qpid.framing.AMQDataBlock;
 import org.apache.qpid.framing.MethodRegistry;
 import org.apache.qpid.framing.ProtocolVersion;
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ContextProvider;
@@ -58,8 +57,9 @@ public interface AMQPConnection_0_8<C extends AMQPConnection_0_8<C>> extends AMQ
 
     void writeFrame(AMQDataBlock frame);
 
-    void sendConnectionClose(AMQConstant errorCode,
+    void sendConnectionClose(int errorCode,
                              String message, int channelId);
+
 
     boolean isCloseWhenNoRoute();
 
@@ -83,7 +83,7 @@ public interface AMQPConnection_0_8<C extends AMQPConnection_0_8<C>> extends AMQ
 
     boolean isSendQueueDeleteOkRegardless();
 
-    void closeChannelAndWriteFrame(AMQChannel amqChannel, AMQConstant cause, String message);
+    void closeChannelAndWriteFrame(AMQChannel amqChannel, int code, String message);
 
     ProtocolOutputConverter getProtocolOutputConverter();
 

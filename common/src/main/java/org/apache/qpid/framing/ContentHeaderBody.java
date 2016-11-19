@@ -22,7 +22,6 @@ package org.apache.qpid.framing;
 
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.transport.ByteBufferSender;
 
@@ -175,7 +174,7 @@ public class ContentHeaderBody implements AMQBody
 
         if (classId != CLASS_ID)
         {
-            throw new AMQFrameDecodingException(AMQConstant.FRAME_ERROR, "Unsupported content header class id: " + classId, null);
+            throw new AMQFrameDecodingException("Unsupported content header class id: " + classId, null);
         }
         properties = new BasicContentHeaderProperties();
         properties.populatePropertiesFromBuffer(buffer, propertyFlags, (int)(size-14));

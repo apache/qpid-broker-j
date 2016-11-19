@@ -20,6 +20,10 @@
  */
 package org.apache.qpid.test.unit.client;
 
+import javax.jms.JMSException;
+import javax.jms.QueueReceiver;
+import javax.jms.TopicSubscriber;
+
 import org.apache.qpid.AMQChannelClosedException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQDestination;
@@ -27,12 +31,8 @@ import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.client.AMQTopic;
 import org.apache.qpid.configuration.ClientProperties;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
-import javax.jms.JMSException;
-import javax.jms.QueueReceiver;
-import javax.jms.TopicSubscriber;
 
 
 public class AMQSessionTest extends QpidBrokerTestCase
@@ -130,7 +130,7 @@ public class AMQSessionTest extends QpidBrokerTestCase
         }
         catch(AMQChannelClosedException cce)
         {
-            assertEquals(AMQConstant.NOT_FOUND, cce.getErrorCode());
+            assertEquals(ErrorCodes.NOT_FOUND, cce.getErrorCode());
         }
     }
 

@@ -51,30 +51,42 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.jms.*;
+import javax.jms.ConnectionConsumer;
+import javax.jms.ConnectionMetaData;
+import javax.jms.Destination;
+import javax.jms.ExceptionListener;
 import javax.jms.IllegalStateException;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageEOFException;
+import javax.jms.Queue;
+import javax.jms.QueueSession;
+import javax.jms.ServerSessionPool;
+import javax.jms.StreamMessage;
+import javax.jms.Topic;
+import javax.jms.TopicSession;
 import javax.naming.NamingException;
 import javax.naming.Reference;
 import javax.naming.Referenceable;
 import javax.naming.StringRefAddr;
 
-import org.apache.qpid.client.state.AMQState;
-import org.apache.qpid.client.util.ClassLoadingAwareObjectInputStream;
-import org.apache.qpid.jndi.ObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQConnectionFailureException;
 import org.apache.qpid.AMQDisconnectedException;
-import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.AMQProtocolException;
 import org.apache.qpid.AMQUnresolvedAddressException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.failover.ConnectionRedirectException;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.failover.FailoverProtectedOperation;
 import org.apache.qpid.client.security.CallbackHandlerRegistry;
+import org.apache.qpid.client.state.AMQState;
 import org.apache.qpid.client.state.AMQStateManager;
+import org.apache.qpid.client.util.ClassLoadingAwareObjectInputStream;
 import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.configuration.CommonProperties;
@@ -84,7 +96,8 @@ import org.apache.qpid.jms.ConnectionListener;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.jms.FailoverPolicy;
 import org.apache.qpid.jms.Session;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.jndi.ObjectFactory;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.transport.ConnectionSettings;
 import org.apache.qpid.url.URLSyntaxException;
 
@@ -695,12 +708,11 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         }
         catch (ClassNotFoundException e)
         {
-            throw new AMQProtocolException
-                (AMQConstant.UNSUPPORTED_CLIENT_PROTOCOL_ERROR,
-                 String.format("Protocol: %s.%s is required by the broker but is not " +
-                               "currently supported by this client library implementation",
-                               pe.getMajorVersion(), pe.getMinorVersion()),
-                 e);
+            String errorMessage = String.format("Protocol: %s.%s is required by the broker but is not " +
+                                                "currently supported by this client library implementation",
+                                                pe.getMajorVersion(), pe.getMinorVersion());
+
+            throw new AMQProtocolException(errorMessage, e);
         }
         catch (NoSuchMethodException e)
         {
@@ -1518,19 +1530,19 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         }
         else
         {
-            AMQConstant code = null;
+            int errorCode = 0;
 
             if (cause instanceof AMQException)
             {
-                code = ((AMQException) cause).getErrorCode();
+                errorCode = ((AMQException) cause).getErrorCode();
             }
 
-            if (code != null)
+            if (errorCode != 0)
             {
                 je = JMSExceptionHelper.chainJMSException(new JMSException("Exception thrown against "
                                                                            + toString()
                                                                            + ": "
-                                                                           + cause, Integer.toString(code.getCode())),
+                                                                           + cause, Integer.toString(errorCode)),
                                                           cause);
             }
             else
@@ -1860,7 +1872,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
             {
                 if (!_delegate.verifyClientID())
                 {
-                    throw new AMQException(AMQConstant.ALREADY_EXISTS,"ClientID must be unique");
+                    throw new AMQException(ErrorCodes.ALREADY_EXISTS, "ClientID must be unique");
                 }
             }
             catch(JMSException e)

@@ -30,18 +30,18 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.qpid.client.protocol.AMQProtocolSession;
-import org.apache.qpid.client.protocol.BlockingMethodFrameListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQConnectionClosedException;
 import org.apache.qpid.AMQDisconnectedException;
-import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.AMQTimeoutException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.failover.FailoverState;
+import org.apache.qpid.client.protocol.AMQProtocolSession;
+import org.apache.qpid.client.protocol.BlockingMethodFrameListener;
 import org.apache.qpid.client.state.AMQState;
 import org.apache.qpid.client.state.AMQStateManager;
 import org.apache.qpid.client.state.StateWaiter;
@@ -60,7 +60,7 @@ import org.apache.qpid.framing.HeartbeatBody;
 import org.apache.qpid.framing.MethodRegistry;
 import org.apache.qpid.framing.ProtocolInitiation;
 import org.apache.qpid.framing.ProtocolVersion;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.protocol.AMQMethodEvent;
 import org.apache.qpid.protocol.AMQMethodListener;
 import org.apache.qpid.thread.Threading;
@@ -631,7 +631,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
                         }
                         else
                         {
-                            throw new AMQException(AMQConstant.INTERNAL_ERROR, e.getMessage(), e);
+                            throw new AMQException(ErrorCodes.INTERNAL_ERROR, e.getMessage(), e);
                         }
                     }
                 }
@@ -691,7 +691,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
             try
             {
                 final ConnectionCloseBody body = _protocolSession.getMethodRegistry().createConnectionCloseBody(
-                        AMQConstant.REPLY_SUCCESS.getCode(),
+                        ErrorCodes.REPLY_SUCCESS,
                         // replyCode
                         new AMQShortString("JMS client is closing the connection."),
                         0,

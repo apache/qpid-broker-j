@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.framing.*;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 
 /**
  * AMQDecoder delegates the decoding of AMQP either to a data block decoder, or in the case of new connections, to a
@@ -54,7 +54,8 @@ public abstract class AMQDecoder<T extends MethodProcessor>
 
     private boolean _firstRead = true;
 
-    private int _maxFrameSize = AMQConstant.FRAME_MIN_SIZE.getCode();
+    public static final int FRAME_MIN_SIZE = 4096;
+    private int _maxFrameSize = FRAME_MIN_SIZE;
 
     /**
      * Creates a new AMQP decoder.
@@ -147,8 +148,8 @@ public abstract class AMQDecoder<T extends MethodProcessor>
         final long bodySize = ((long)in.getInt(in.position()+3)) & 0xffffffffL;
         if (bodySize > _maxFrameSize)
         {
-            throw new AMQFrameDecodingException(AMQConstant.FRAME_ERROR,
-                                                "Incoming frame size of "
+            throw new AMQFrameDecodingException(
+                    "Incoming frame size of "
                                                 + bodySize
                                                 + " is larger than negotiated maximum of  "
                                                 + _maxFrameSize);
@@ -170,8 +171,8 @@ public abstract class AMQDecoder<T extends MethodProcessor>
         // bodySize can be zero
         if ((channel < 0) || (bodySize < 0))
         {
-            throw new AMQFrameDecodingException(AMQConstant.FRAME_ERROR,
-                                                "Undecodable frame: type = " + type + " channel = " + channel
+            throw new AMQFrameDecodingException(
+                    "Undecodable frame: type = " + type + " channel = " + channel
                                                 + " bodySize = " + bodySize);
         }
 
@@ -180,8 +181,8 @@ public abstract class AMQDecoder<T extends MethodProcessor>
         byte marker = in.get();
         if ((marker & 0xFF) != 0xCE)
         {
-            throw new AMQFrameDecodingException(AMQConstant.FRAME_ERROR,
-                                                "End of frame marker not found. Read " + marker + " length=" + bodySize
+            throw new AMQFrameDecodingException(
+                    "End of frame marker not found. Read " + marker + " length=" + bodySize
                                                 + " type=" + type);
         }
 
@@ -205,7 +206,7 @@ public abstract class AMQDecoder<T extends MethodProcessor>
                 HeartbeatBody.process(channel, in, _methodProcessor, bodySize);
                 break;
             default:
-                throw new AMQFrameDecodingException(AMQConstant.FRAME_ERROR, "Unsupported frame type: " + type);
+                throw new AMQFrameDecodingException("Unsupported frame type: " + type);
         }
     }
 
@@ -218,7 +219,7 @@ public abstract class AMQDecoder<T extends MethodProcessor>
                                                         final int methodId,
                                                         ProtocolVersion protocolVersion)
     {
-        return new AMQFrameDecodingException(AMQConstant.COMMAND_INVALID,
+        return new AMQFrameDecodingException(ErrorCodes.COMMAND_INVALID,
                                              "Method "
                                              + methodId
                                              + " unknown in AMQP version "
@@ -227,7 +228,7 @@ public abstract class AMQDecoder<T extends MethodProcessor>
                                              + classId
                                              + " method "
                                              + methodId
-                                             + ".");
+                                             + ".", null);
     }
 
 }

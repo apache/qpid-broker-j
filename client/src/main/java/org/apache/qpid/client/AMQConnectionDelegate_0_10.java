@@ -49,7 +49,7 @@ import org.apache.qpid.jms.ChannelLimitReachedException;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.jms.Session;
 import org.apache.qpid.properties.ConnectionStartProperties;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.transport.Connection;
 import org.apache.qpid.transport.ConnectionClose;
 import org.apache.qpid.transport.ConnectionCloseCode;
@@ -261,10 +261,10 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
         }
         catch (ConnectionException ce)
         {
-            AMQConstant code = AMQConstant.REPLY_SUCCESS;
+            int code = ErrorCodes.REPLY_SUCCESS;
             if (ce.getClose() != null && ce.getClose().getReplyCode() != null)
             {
-                code = AMQConstant.getConstant(ce.getClose().getReplyCode().getValue());
+                code = ce.getClose().getReplyCode().getValue();
             }
             String msg = "Cannot connect to broker ("+brokerDetail+"): " + ce.getMessage();
             throw new AMQException(code, msg, ce);
@@ -620,7 +620,7 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
             }
             else
             {
-                throw new AMQException(AMQConstant.INTERNAL_ERROR, "Unexpected SessionException thrown while awaiting session opening", se);
+                throw new AMQException(ErrorCodes.INTERNAL_ERROR, "Unexpected SessionException thrown while awaiting session opening", se);
             }
         }
         return true;

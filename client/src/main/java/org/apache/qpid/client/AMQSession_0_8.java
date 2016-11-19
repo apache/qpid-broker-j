@@ -63,7 +63,7 @@ import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.framing.*;
 import org.apache.qpid.jms.Session;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.protocol.AMQMethodEvent;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.util.Strings;
@@ -242,7 +242,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
             getProtocolHandler().closeSession(this);
             getProtocolHandler().syncWrite(getProtocolHandler().getMethodRegistry()
-                                                   .createChannelCloseBody(AMQConstant.REPLY_SUCCESS.getCode(),
+                                                   .createChannelCloseBody(ErrorCodes.REPLY_SUCCESS,
                                                                            new AMQShortString(
                                                                                    "JMS client closing channel"), 0, 0)
                                                    .generateFrame(getChannelId()),
@@ -772,25 +772,25 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
                                                               _queueDestinationCache,
                                                               _topicDestinationCache,
                                                               AMQDestination.UNKNOWN_TYPE);
-            AMQConstant errorCode = AMQConstant.getConstant(msg.getReplyCode());
+            int replyCode = msg.getReplyCode();
             AMQShortString reason = msg.getReplyText();
-            _logger.debug("Message returned with error code " + errorCode + " (" + reason + ")");
+            _logger.debug("Message returned with error code " + replyCode + " (" + reason + ")");
 
             // @TODO should this be moved to an exception handler of sorts. Somewhere errors are converted to correct execeptions.
-            if (errorCode == AMQConstant.NO_CONSUMERS)
+            if (replyCode == ErrorCodes.NO_CONSUMERS)
             {
                 getAMQConnection().exceptionReceived(new AMQNoConsumersException("Error: " + reason,
                                                                                  bouncedMessage,
                                                                                  null));
             }
-            else if (errorCode == AMQConstant.NO_ROUTE)
+            else if (replyCode == ErrorCodes.NO_ROUTE)
             {
                 getAMQConnection().exceptionReceived(new AMQNoRouteException("Error: " + reason, bouncedMessage, null));
             }
             else
             {
                 getAMQConnection().exceptionReceived(
-                        new AMQUndeliveredException(errorCode, "Error: " + reason, bouncedMessage, null));
+                        new AMQUndeliveredException(replyCode, "Error: " + reason, bouncedMessage, null));
             }
 
         }
@@ -1150,7 +1150,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
                             final String queue,
                             final String exchange) throws QpidException
     {
-        new FailoverNoopSupport<Object, QpidException>(new FailoverProtectedOperation<Object, QpidException>()
+        new FailoverNoopSupport<>(new FailoverProtectedOperation<Object, QpidException>()
         {
             public Object execute() throws QpidException, FailoverException
             {
@@ -1160,7 +1160,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
                     if(ProtocolVersion.v0_8.equals(getProtocolVersion()))
                     {
-                        throw new AMQException(AMQConstant.NOT_IMPLEMENTED, "Cannot unbind a queue in AMQP 0-8");
+                        throw new AMQException(ErrorCodes.NOT_IMPLEMENTED, "Cannot unbind a queue in AMQP 0-8");
                     }
 
                     MethodRegistry methodRegistry = getProtocolHandler().getMethodRegistry();
@@ -1427,8 +1427,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
             }
             else
             {
-                return new AMQException(AMQConstant.getConstant(AMQConstant.INTERNAL_ERROR.getCode()),
-                                                e.getMessage(), e.getCause());
+                return new AMQException(ErrorCodes.INTERNAL_ERROR, e.getMessage(), e.getCause());
 
             }
         }

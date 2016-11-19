@@ -20,7 +20,7 @@
  */
 package org.apache.qpid;
 
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 
 /**
  * AMQTimeoutException indicates that an expected response from a broker took too long.
@@ -29,6 +29,12 @@ public class AMQTimeoutException extends AMQException
 {
     public AMQTimeoutException(String message, Throwable cause)
     {
-        super(AMQConstant.REQUEST_TIMEOUT, message, cause);
+        super(ErrorCodes.REQUEST_TIMEOUT, message, cause);
+    }
+
+    @Override
+    public AMQTimeoutException cloneForCurrentThread()
+    {
+        return new AMQTimeoutException(getMessage(), getCause());
     }
 }

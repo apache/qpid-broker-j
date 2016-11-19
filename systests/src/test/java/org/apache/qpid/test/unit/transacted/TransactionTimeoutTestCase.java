@@ -20,14 +20,10 @@
  */
 package org.apache.qpid.test.unit.transacted;
 
-import junit.framework.TestCase;
-
-import org.apache.qpid.AMQException;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.configuration.ClientProperties;
-import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.util.LogMonitor;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
@@ -39,10 +35,15 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import junit.framework.TestCase;
+
+import org.apache.qpid.AMQException;
+import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.configuration.ClientProperties;
+import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.util.LogMonitor;
 
 /**
  * The {@link TestCase} for transaction timeout testing.
@@ -66,7 +67,7 @@ public abstract class TransactionTimeoutTestCase extends QpidBrokerTestCase impl
 
     private final CountDownLatch _exceptionListenerLatch = new CountDownLatch(1);
     private final AtomicInteger _exceptionCount = new AtomicInteger(0);
-    private volatile AMQConstant _linkedExceptionCode;
+    private volatile int _linkedExceptionCode;
     private volatile String _linkedExceptionMessage;
 
     /**
@@ -215,8 +216,8 @@ public abstract class TransactionTimeoutTestCase extends QpidBrokerTestCase impl
         assertNotNull("Linked exception message should not be null", _linkedExceptionMessage);
         assertTrue("Linked exception message '" + _linkedExceptionMessage + "' should contain '" + reason + "'",
                    _linkedExceptionMessage.contains(reason + " transaction timed out"));
-        assertNotNull("Linked exception should have an error code", _linkedExceptionCode);
-        assertEquals("Linked exception error code should be 506", AMQConstant.RESOURCE_ERROR, _linkedExceptionCode);
+        assertTrue("Linked exception should have an error code", _linkedExceptionCode != 0);
+        assertEquals("Linked exception error code should be 506", ErrorCodes.RESOURCE_ERROR, _linkedExceptionCode);
     }
 
     /** @see javax.jms.ExceptionListener#onException(javax.jms.JMSException) */

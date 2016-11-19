@@ -27,7 +27,7 @@ import javax.jms.Session;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class ExchangeDeleteTest extends QpidBrokerTestCase
@@ -70,7 +70,7 @@ public class ExchangeDeleteTest extends QpidBrokerTestCase
         {
             // PASS
             assertEquals("Expecting exchange not found",
-                         String.valueOf(AMQConstant.NOT_FOUND.getCode()),
+                         String.valueOf(ErrorCodes.NOT_FOUND),
                          e.getErrorCode());
         }
 

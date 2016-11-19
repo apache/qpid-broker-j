@@ -54,7 +54,7 @@ import org.apache.qpid.client.messaging.address.Link;
 import org.apache.qpid.client.messaging.address.Link.SubscriptionQueue;
 import org.apache.qpid.client.messaging.address.Node;
 import org.apache.qpid.common.AMQPFilterTypes;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.transport.*;
 import org.apache.qpid.util.Serial;
 import org.apache.qpid.util.Strings;
@@ -851,7 +851,7 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
                 }
                 catch (Exception e)
                 {
-                    throw new AMQException(AMQConstant.INTERNAL_ERROR, "Error while trying to get the listener", e);
+                    throw new AMQException(ErrorCodes.INTERNAL_ERROR, "Error while trying to get the listener", e);
                 }
             }
         }
@@ -1053,12 +1053,12 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
         synchronized (_currentExceptionLock)
         {
             ExecutionException ee = se.getException();
-            int code = AMQConstant.INTERNAL_ERROR.getCode();
+            int code = ErrorCodes.INTERNAL_ERROR;
             if (ee != null)
             {
                 code = ee.getErrorCode().getValue();
             }
-            QpidException amqe = new AMQException(AMQConstant.getConstant(code), _isHardError, se.getMessage(), se.getCause());
+            QpidException amqe = new AMQException(code, _isHardError, se.getMessage(), se.getCause());
             _currentException = amqe;
         }
         if (!_isHardError)
@@ -1173,7 +1173,7 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
                 }
                 else
                 {
-                    throw new AMQException(AMQConstant.getConstant(underlying.getErrorCode().getValue()),
+                    throw new AMQException(underlying.getErrorCode().getValue(),
                                            "Error querying queue", e);
                 }
             }

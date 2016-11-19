@@ -20,7 +20,7 @@
  */
 package org.apache.qpid;
 
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 
 /**
  * AMQInvalidArgumentException indicates that an invalid argument has been passed to an AMQP method.
@@ -29,7 +29,13 @@ public class AMQInvalidArgumentException extends AMQException
 {
     public AMQInvalidArgumentException(String message, Throwable cause)
     {
-        super(AMQConstant.ARGUMENT_INVALID, message, cause);
+        super(ErrorCodes.ARGUMENT_INVALID, message, cause);
+    }
+
+    @Override
+    public AMQInvalidArgumentException cloneForCurrentThread()
+    {
+        return new AMQInvalidArgumentException(getMessage(), getCause());
     }
 
     public boolean isHardError()

@@ -54,7 +54,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
@@ -82,6 +81,7 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AlreadyKnownDtxException;
 import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
 import org.apache.qpid.server.txn.DistributedTransaction;
@@ -741,12 +741,12 @@ public class ServerSession extends Session
         }
     }
 
-    public Long getTxnCommits()
+    public long getTxnCommits()
     {
         return _txnCommits.get();
     }
 
-    public Long getTxnRejects()
+    public long getTxnRejects()
     {
         return _txnRejects.get();
     }
@@ -756,12 +756,7 @@ public class ServerSession extends Session
         return getChannel();
     }
 
-    public Long getTxnCount()
-    {
-        return _txnCount.get();
-    }
-
-    public Long getTxnStart()
+    public long getTxnStart()
     {
         return _txnStarts.get();
     }
@@ -935,20 +930,7 @@ public class ServerSession extends Session
             + "] ";
     }
 
-    @Override
-    public void close(AMQConstant cause, String message)
-    {
-        if (cause == null)
-        {
-            close();
-        }
-        else
-        {
-            close(cause.getCode(), message);
-        }
-    }
-
-    void close(int cause, String message)
+    public void close(int cause, String message)
     {
         _forcedCloseLogMessage.compareAndSet(null, ChannelMessages.CLOSE_FORCED(cause, message));
         close();
@@ -1260,7 +1242,8 @@ public class ServerSession extends Session
     @Override
     public void doTimeoutAction(final String reason)
     {
-        getAMQPConnection().closeSessionAsync(ServerSession.this, AMQConstant.RESOURCE_ERROR, reason);
+        getAMQPConnection().closeSessionAsync(ServerSession.this,
+                                              AMQPConnection.CloseReason.TRANSACTION_TIMEOUT, reason);
     }
 
     public final long getMaxUncommittedInMemorySize()

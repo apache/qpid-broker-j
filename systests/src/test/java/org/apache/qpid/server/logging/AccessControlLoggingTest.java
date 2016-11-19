@@ -18,15 +18,16 @@
  */
 package org.apache.qpid.server.logging;
 
-import org.apache.qpid.AMQException;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.security.acl.AbstractACLTestCase;
+import java.util.List;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Session;
-import java.util.List;
+
+import org.apache.qpid.AMQException;
+import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.server.security.acl.AbstractACLTestCase;
 
 /**
  * ACL version 2/3 file testing to verify that ACL actor logging works correctly.
@@ -131,7 +132,7 @@ public class AccessControlLoggingTest extends AbstractTestLogging
         catch (AMQException amqe)
         {
             // Denied, so exception thrown
-            assertEquals("Expected ACCESS_REFUSED error code", AMQConstant.ACCESS_REFUSED, amqe.getErrorCode());
+            assertEquals("Expected ACCESS_REFUSED error code", ErrorCodes.ACCESS_REFUSED, amqe.getErrorCode());
         }
 
         List<String> matches = findMatches(ACL_LOG_PREFIX + 1002);
@@ -168,7 +169,7 @@ public class AccessControlLoggingTest extends AbstractTestLogging
         catch (AMQException amqe)
         {
             // Denied, so exception thrown
-            assertEquals("Expected ACCESS_REFUSED error code", AMQConstant.ACCESS_REFUSED, amqe.getErrorCode());
+            assertEquals("Expected ACCESS_REFUSED error code", ErrorCodes.ACCESS_REFUSED, amqe.getErrorCode());
         }
 
         List<String> matches = findMatches(ACL_LOG_PREFIX + 1002);

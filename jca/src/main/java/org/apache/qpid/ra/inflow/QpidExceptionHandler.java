@@ -38,13 +38,14 @@ import javax.naming.InitialContext;
 import javax.resource.ResourceException;
 import javax.resource.spi.endpoint.MessageEndpointFactory;
 
-import org.apache.qpid.AMQException;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.ra.QpidResourceAdapter;
-import org.apache.qpid.ra.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.AMQException;
+import org.apache.qpid.client.AMQDestination;
+import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.ra.QpidResourceAdapter;
+import org.apache.qpid.ra.Util;
 
 public abstract class QpidExceptionHandler implements ExceptionListener
 {
@@ -197,7 +198,7 @@ public abstract class QpidExceptionHandler implements ExceptionListener
      */
     protected boolean doesNotExist(final Throwable failure)
     {
-       return (failure instanceof AMQException) && (((AMQException)failure).getErrorCode() == AMQConstant.NOT_FOUND) ;
+       return (failure instanceof AMQException) && (((AMQException)failure).getErrorCode() == ErrorCodes.NOT_FOUND) ;
     }
 
     protected boolean isXA()

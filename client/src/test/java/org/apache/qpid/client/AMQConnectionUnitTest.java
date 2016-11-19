@@ -95,7 +95,7 @@ public class AMQConnectionUnitTest extends QpidTestCase
         }
         JMSException exception = receivedException.get();
         assertNotNull("Expected JMSException but got null", exception);
-        assertEquals("JMSException error code is incorrect", Integer.toString(expectedException.getErrorCode().getCode()), exception.getErrorCode());
+        assertEquals("JMSException error code is incorrect", Integer.toString(expectedException.getErrorCode()), exception.getErrorCode());
         assertNotNull("Expected not null message for JMSException", exception.getMessage());
         assertTrue("JMSException error message is incorrect", exception.getMessage().contains(expectedException.getMessage()));
         assertEquals("JMSException linked exception is incorrect", expectedException, exception.getLinkedException());

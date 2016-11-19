@@ -21,7 +21,7 @@
 package org.apache.qpid.client;
 
 import org.apache.qpid.AMQUndeliveredException;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 
 /**
  * AMQNoConsumersException indicates failure to pass an immediate message to a consumer.
@@ -30,6 +30,12 @@ public class AMQNoConsumersException extends AMQUndeliveredException
 {
     public AMQNoConsumersException(String msg, Object bounced, Throwable cause)
     {
-        super(AMQConstant.NO_CONSUMERS, msg, bounced, cause);
+        super(ErrorCodes.NO_CONSUMERS, msg, bounced, cause);
+    }
+
+    @Override
+    public AMQNoConsumersException cloneForCurrentThread()
+    {
+        return new AMQNoConsumersException(getMessage(), getUndeliveredMessage(), getCause());
     }
 }

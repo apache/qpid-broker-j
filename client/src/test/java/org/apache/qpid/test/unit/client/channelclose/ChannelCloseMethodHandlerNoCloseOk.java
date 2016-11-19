@@ -33,7 +33,7 @@ import org.apache.qpid.client.protocol.AMQProtocolSession;
 import org.apache.qpid.client.state.StateAwareMethodListener;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.ChannelCloseBody;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 
 public class ChannelCloseMethodHandlerNoCloseOk implements StateAwareMethodListener<ChannelCloseBody>
 {
@@ -51,35 +51,35 @@ public class ChannelCloseMethodHandlerNoCloseOk implements StateAwareMethodListe
     {
         _logger.debug("ChannelClose method received");
 
-        AMQConstant errorCode = AMQConstant.getConstant(method.getReplyCode());
+        int replyCode = method.getReplyCode();
         AMQShortString reason = method.getReplyText();
         if (_logger.isDebugEnabled())
         {
-            _logger.debug("Channel close reply code: " + errorCode + ", reason: " + reason);
+            _logger.debug("Channel close reply code: " + replyCode + ", reason: " + reason);
         }
 
         // For this test Method Handler .. don't send Close-OK
         // // TODO: Be aware of possible changes to parameter order as versions change.
         // AMQFrame frame = ChannelCloseOkBody.createAMQFrame(evt.getChannelId(), method.getMajor(), method.getMinor());
         // protocolSession.writeFrame(frame);
-        if (errorCode != AMQConstant.REPLY_SUCCESS)
+        if (replyCode != ErrorCodes.REPLY_SUCCESS)
         {
-            _logger.error("Channel close received with errorCode " + errorCode + ", and reason " + reason);
-            if (errorCode == AMQConstant.NO_CONSUMERS)
+            _logger.error("Channel close received with errorCode " + replyCode + ", and reason " + reason);
+            if (replyCode == ErrorCodes.NO_CONSUMERS)
             {
                 throw new AMQNoConsumersException("Error: " + reason, null, null);
             }
-            else if (errorCode == AMQConstant.NO_ROUTE)
+            else if (replyCode == ErrorCodes.NO_ROUTE)
             {
                 throw new AMQNoRouteException("Error: " + reason, null, null);
             }
-            else if (errorCode == AMQConstant.ARGUMENT_INVALID)
+            else if (replyCode == ErrorCodes.ARGUMENT_INVALID)
             {
                 _logger.debug("Broker responded with Invalid Argument.");
 
                 throw new AMQInvalidArgumentException(String.valueOf(reason), null);
             }
-            else if (errorCode == AMQConstant.INVALID_ROUTING_KEY)
+            else if (replyCode == ErrorCodes.INVALID_ROUTING_KEY)
             {
                 _logger.debug("Broker responded with Invalid Routing Key.");
 
@@ -87,11 +87,11 @@ public class ChannelCloseMethodHandlerNoCloseOk implements StateAwareMethodListe
             }
             else
             {
-                throw new AMQChannelClosedException(errorCode, "Error: " + reason, null);
+                throw new AMQChannelClosedException(replyCode, "Error: " + reason, null);
             }
 
         }
 
-        session.channelClosed(channelId, errorCode, String.valueOf(reason));
+        session.channelClosed(channelId, replyCode, String.valueOf(reason));
     }
 }

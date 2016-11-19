@@ -20,8 +20,6 @@
  */
 package org.apache.qpid;
 
-import org.apache.qpid.protocol.AMQConstant;
-
 /**
  * AMQConnectionClosedException indicates that a connection has been closed.
  *
@@ -30,7 +28,7 @@ import org.apache.qpid.protocol.AMQConstant;
  */
 public class AMQConnectionClosedException extends AMQException
 {
-    public AMQConnectionClosedException(AMQConstant errorCode, String msg, Throwable cause)
+    public AMQConnectionClosedException(int errorCode, String msg, Throwable cause)
     {
         super(errorCode, msg, cause);
     }

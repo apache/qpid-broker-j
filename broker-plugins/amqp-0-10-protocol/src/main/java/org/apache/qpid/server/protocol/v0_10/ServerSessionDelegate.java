@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.filter.ArrivalTimeFilter;
@@ -421,8 +421,8 @@ public class ServerSessionDelegate extends SessionDelegate
             {
                 getEventLogger(ssn).message(ChannelMessages.FLOW_CONTROL_IGNORED());
 
-                serverSession.close(AMQConstant.MESSAGE_TOO_LARGE,
-                           "Session flow control was requested, but not enforced by sender");
+                serverSession.close(ErrorCodes.MESSAGE_TOO_LARGE,
+                                    "Session flow control was requested, but not enforced by sender");
             }
             else if(xfr.getBodySize() > serverSession.getConnection().getMaxMessageSize())
             {

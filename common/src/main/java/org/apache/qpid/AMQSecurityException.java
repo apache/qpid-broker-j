@@ -20,10 +20,10 @@
  */
 package org.apache.qpid;
 
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 
 /**
- * SecurityException encapsulates error code 403, or {@link AMQConstant#ACCESS_REFUSED} exceptions relating to the
+ * SecurityException encapsulates error code 403, or {@link ErrorCodes#ACCESS_REFUSED} exceptions relating to the
  * AMQ protocol. It is used to report authorisation failures and security errors.
  */
 public class AMQSecurityException extends AMQException
@@ -39,7 +39,12 @@ public class AMQSecurityException extends AMQException
      */
     public AMQSecurityException(String msg, Throwable cause)
     {
-        super(AMQConstant.ACCESS_REFUSED, ((msg == null) ? "Permission denied" : msg), cause);
+        super(ErrorCodes.ACCESS_REFUSED, ((msg == null) ? "Permission denied" : msg), cause);
     }
 
+    @Override
+    public AMQSecurityException cloneForCurrentThread()
+    {
+        return new AMQSecurityException(getMessage(), getCause());
+    }
 }

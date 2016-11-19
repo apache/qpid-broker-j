@@ -21,7 +21,6 @@
 package org.apache.qpid.framing;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.protocol.AMQConstant;
 
 public class ContentHeaderPropertiesFactory
 {
@@ -50,7 +49,7 @@ public class ContentHeaderPropertiesFactory
         }
         else
         {
-        	throw new AMQFrameDecodingException(AMQConstant.FRAME_ERROR, "Unsupport content header class id: " + classId, null);
+        	throw new AMQFrameDecodingException("Unsupport content header class id: " + classId, null);
         }
         properties.populatePropertiesFromBuffer(buffer, propertyFlags, size);
         return properties;

@@ -20,26 +20,28 @@
  */
 package org.apache.qpid.client;
 
-import javax.jms.InvalidDestinationException;
-import javax.jms.InvalidSelectorException;
-import org.apache.qpid.QpidException;
-import org.apache.qpid.AMQInternalException;
-import org.apache.qpid.AMQException;
-import org.apache.qpid.client.filter.JMSSelectorFilter;
-import org.apache.qpid.client.util.JMSExceptionHelper;
-import org.apache.qpid.protocol.AMQConstant;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.jms.IllegalStateException;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.Queue;
-import javax.jms.QueueBrowser;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.jms.IllegalStateException;
+import javax.jms.InvalidDestinationException;
+import javax.jms.InvalidSelectorException;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.Queue;
+import javax.jms.QueueBrowser;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.AMQException;
+import org.apache.qpid.AMQInternalException;
+import org.apache.qpid.QpidException;
+import org.apache.qpid.client.filter.JMSSelectorFilter;
+import org.apache.qpid.client.util.JMSExceptionHelper;
+import org.apache.qpid.protocol.ErrorCodes;
 
 public class AMQQueueBrowser implements QueueBrowser
 {
@@ -89,15 +91,15 @@ public class AMQQueueBrowser implements QueueBrowser
         }
         catch (QpidException e)
         {
-            AMQConstant errorCode = (e instanceof AMQException) ? ((AMQException)e).getErrorCode() : null;
-            if(errorCode == AMQConstant.NOT_FOUND)
+            int errorCode = (e instanceof AMQException) ? ((AMQException)e).getErrorCode() : 0;
+            if(errorCode == ErrorCodes.NOT_FOUND)
             {
                 throw new InvalidDestinationException(e.getMessage());
             }
             else
             {
                 throw JMSExceptionHelper.chainJMSException(new JMSException(e.getMessage(),
-                                                                            String.valueOf(errorCode.getCode())),
+                                                                            String.valueOf(errorCode)),
                                                            e);
             }
         }

@@ -20,8 +20,6 @@
  */
 package org.apache.qpid;
 
-import org.apache.qpid.protocol.AMQConstant;
-
 /**
  * AMQUndeliveredException indicates that a message, marked immediate or mandatory, could not be delivered.
  */
@@ -29,7 +27,7 @@ public class AMQUndeliveredException extends AMQException
 {
     private Object _bounced;
 
-    public AMQUndeliveredException(AMQConstant errorCode, String msg, Object bounced, Throwable cause)
+    public AMQUndeliveredException(int errorCode, String msg, Object bounced, Throwable cause)
     {
         super(errorCode, msg, cause);
 
@@ -45,5 +43,10 @@ public class AMQUndeliveredException extends AMQException
     {
         return false;
     }
-    
+
+    @Override
+    public AMQUndeliveredException cloneForCurrentThread()
+    {
+        return new AMQUndeliveredException(getErrorCode(), getMessage(), getUndeliveredMessage(), getCause());
+    }
 }

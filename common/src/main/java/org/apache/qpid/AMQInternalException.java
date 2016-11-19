@@ -20,10 +20,10 @@
  */
 package org.apache.qpid;
 
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 
 /**
- * InternalException encapsulates error code 541, or {@link AMQConstant#INTERNAL_ERROR} exceptions relating to the
+ * InternalException encapsulates error code 541, or {@link ErrorCodes#INTERNAL_ERROR} exceptions relating to the
  * AMQ protocol. It is used to report internal failures and errors that occur within the broker.
  */
 public class AMQInternalException extends AMQException
@@ -39,11 +39,12 @@ public class AMQInternalException extends AMQException
      */
     public AMQInternalException(String msg, Throwable cause)
     {
-        super(AMQConstant.INTERNAL_ERROR, ((msg == null) ? "Internal error" : msg), cause);
+        super(ErrorCodes.INTERNAL_ERROR, ((msg == null) ? "Internal error" : msg), cause);
     }
-    
-    public AMQInternalException(String msg) 
+
+    @Override
+    public AMQInternalException cloneForCurrentThread()
     {
-        this(msg, null);
+        return new AMQInternalException(getMessage(), getCause());
     }
 }

@@ -20,14 +20,12 @@
  */
 package org.apache.qpid;
 
-import org.apache.qpid.protocol.AMQConstant;
-
 /**
  * AMQChannelClosedException indicates that an operation cannot be performed becauase a channel has been closed.
  */
 public class AMQChannelClosedException extends AMQException
 {
-    public AMQChannelClosedException(AMQConstant errorCode, String msg, Throwable cause)
+    public AMQChannelClosedException(int errorCode, String msg, Throwable cause)
     {
         super(errorCode, msg, cause);
     }

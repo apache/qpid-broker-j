@@ -21,17 +21,19 @@
 package org.apache.qpid.client;
 
 import org.apache.qpid.AMQException;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 
 /**
  * AMQAuthenticationException represents all failures to authenticate access to a broker.
- * <p>
- * TODO Will this alwyas have the same status code, NOT_ALLOWED 530? Might set this up to always use that code.
  */
 public class AMQAuthenticationException extends AMQException
 {
-    public AMQAuthenticationException(AMQConstant error, String msg, Throwable cause)
+    public AMQAuthenticationException(int code, String msg, Throwable cause)
     {
-        super(error, msg, cause);
+        super(code, msg, cause);
+    }
+    public AMQAuthenticationException(String msg, Throwable cause)
+    {
+        super(ErrorCodes.NOT_ALLOWED, msg, cause);
     }
 }

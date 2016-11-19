@@ -20,7 +20,7 @@
  */
 package org.apache.qpid;
 
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 
 public class AMQProtocolException extends AMQException
 {
@@ -28,13 +28,17 @@ public class AMQProtocolException extends AMQException
      * Constructor for a Protocol Exception
      * <p> This is the only provided constructor and the parameters have to be
      * set to null when they are unknown.
-     *
-     * @param msg       A description of the reason of this exception .
-     * @param errorCode A string specifyin the error code of this exception.
+     *  @param msg       A description of the reason of this exception .
      * @param cause     The linked Execption.
      */
-    public AMQProtocolException(AMQConstant errorCode, String msg, Throwable cause)
+    public AMQProtocolException(String msg, Throwable cause)
     {
-        super(errorCode, msg, cause);
+        super(ErrorCodes.UNSUPPORTED_CLIENT_PROTOCOL_ERROR, msg, cause);
+    }
+
+    @Override
+    public AMQProtocolException cloneForCurrentThread()
+    {
+        return new AMQProtocolException(getMessage(), getCause());
     }
 }

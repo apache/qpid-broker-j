@@ -20,7 +20,7 @@
  */
 package org.apache.qpid;
 
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 
 /**
  * AMQInvalidRoutingKeyException indicates an error with a routing key having an invalid format.
@@ -29,6 +29,12 @@ public class AMQInvalidRoutingKeyException extends AMQException
 {
     public AMQInvalidRoutingKeyException(String message, Throwable cause)
     {
-        super(AMQConstant.INVALID_ROUTING_KEY, message, cause);
+        super(ErrorCodes.INVALID_ROUTING_KEY, message, cause);
+    }
+
+    @Override
+    public AMQInvalidRoutingKeyException cloneForCurrentThread()
+    {
+        return new AMQInvalidRoutingKeyException(getMessage(), getCause());
     }
 }

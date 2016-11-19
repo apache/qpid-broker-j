@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.model.Consumer;
@@ -47,8 +46,6 @@ public interface AMQSessionModel<T extends AMQSessionModel<T>> extends Comparabl
 
     void close();
 
-    void close(AMQConstant cause, String message);
-
     LogSubject getLogSubject();
 
     void doTimeoutAction(String reason);
@@ -67,10 +64,9 @@ public interface AMQSessionModel<T extends AMQSessionModel<T>> extends Comparabl
 
     int getUnacknowledgedMessageCount();
 
-    Long getTxnCount();
-    Long getTxnStart();
-    Long getTxnCommits();
-    Long getTxnRejects();
+    long getTxnStart();
+    long getTxnCommits();
+    long getTxnRejects();
 
     int getChannelId();
 

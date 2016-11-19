@@ -27,7 +27,7 @@ import org.apache.qpid.QpidException;
 import org.apache.qpid.client.protocol.AMQProtocolSession;
 import org.apache.qpid.client.state.StateAwareMethodListener;
 import org.apache.qpid.framing.ChannelCloseOkBody;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 
 public class ChannelCloseOkMethodHandler implements StateAwareMethodListener<ChannelCloseOkBody>
 {
@@ -45,6 +45,6 @@ public class ChannelCloseOkMethodHandler implements StateAwareMethodListener<Cha
     {
         _logger.info("Received channel-close-ok for channel-id " + channelId);
 
-        session.channelClosed(channelId, AMQConstant.REPLY_SUCCESS, "Channel closed successfully");
+        session.channelClosed(channelId, ErrorCodes.REPLY_SUCCESS, "Channel closed successfully");
     }
 }

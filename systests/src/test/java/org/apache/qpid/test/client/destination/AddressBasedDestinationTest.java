@@ -56,7 +56,7 @@ import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.client.message.QpidMessageProperties;
 import org.apache.qpid.jndi.PropertiesFileInitialContextFactory;
 import org.apache.qpid.messaging.Address;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.test.utils.BrokerHolder;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.transport.ExecutionErrorCode;
@@ -399,12 +399,12 @@ public class AddressBasedDestinationTest extends QpidBrokerTestCase
                 //for. We can't do the rest of the test as a result of the exception, just stop.
                 return;
             }
-            else if(useNonsenseExchangeType && (e.getErrorCode().equals(String.valueOf(AMQConstant.NOT_FOUND.getCode()))))
+            else if(useNonsenseExchangeType && (e.getErrorCode().equals(String.valueOf(ErrorCodes.NOT_FOUND))))
             {
                 return;
             }
             else if((useNonsenseExchangeType || useNonsenseArguments) && !isBroker010()
-                    && String.valueOf(AMQConstant.COMMAND_INVALID.getCode()).equals(e.getErrorCode()))
+                    && String.valueOf(ErrorCodes.COMMAND_INVALID).equals(e.getErrorCode()))
             {
                 return;
             }

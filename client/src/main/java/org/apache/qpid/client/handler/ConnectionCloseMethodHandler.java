@@ -32,7 +32,7 @@ import org.apache.qpid.client.state.StateAwareMethodListener;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.ConnectionCloseBody;
 import org.apache.qpid.framing.ConnectionCloseOkBody;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.TransportException;
 
@@ -56,7 +56,7 @@ public class ConnectionCloseMethodHandler implements StateAwareMethodListener<Co
     {
         _logger.info("ConnectionClose frame received");
 
-        AMQConstant errorCode = AMQConstant.getConstant(method.getReplyCode());
+        int replyCode = method.getReplyCode();
         AMQShortString reason = method.getReplyText();
 
         QpidException error = null;
@@ -69,25 +69,25 @@ public class ConnectionCloseMethodHandler implements StateAwareMethodListener<Co
             // Be aware of possible changes to parameter order as versions change.
             session.writeFrame(closeOkBody.generateFrame(0));
 
-            if (errorCode != AMQConstant.REPLY_SUCCESS)
+            if (replyCode != ErrorCodes.REPLY_SUCCESS)
             {
-                if (errorCode == AMQConstant.NOT_ALLOWED)
+                if (replyCode == ErrorCodes.NOT_ALLOWED)
                 {
-                    _logger.info("Error :" + errorCode + ":" + Thread.currentThread().getName());
+                    _logger.info("Error :" + replyCode + ":" + Thread.currentThread().getName());
 
-                    error = new AMQAuthenticationException(errorCode, reason == null ? null : reason.toString(), null);
+                    error = new AMQAuthenticationException(reason == null ? null : reason.toString(), null);
                 }
-                else if (errorCode == AMQConstant.ACCESS_REFUSED)
+                else if (replyCode == ErrorCodes.ACCESS_REFUSED)
                 {
-                    _logger.info("Error :" + errorCode + ":" + Thread.currentThread().getName());
+                    _logger.info("Error :" + replyCode + ":" + Thread.currentThread().getName());
 
                     error = new AMQSecurityException(reason == null ? null : reason.toString(), null);
                 }
                 else
                 {
-                    _logger.info("Connection close received with error code " + errorCode);
+                    _logger.info("Connection close received with error code " + replyCode);
 
-                    error = new AMQConnectionClosedException(errorCode, "Error: " + reason, null);
+                    error = new AMQConnectionClosedException(replyCode, "Error: " + reason, null);
                 }
             }
         }

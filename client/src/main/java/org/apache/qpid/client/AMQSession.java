@@ -78,7 +78,7 @@ import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.jms.ListMessage;
 import org.apache.qpid.jms.Session;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.thread.Threading;
 import org.apache.qpid.transport.SessionException;
 import org.apache.qpid.transport.TransportException;
@@ -478,7 +478,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
             QpidException ex = getLastException();
             if (ex != null)
             {
-                AMQConstant code = null;
+                int code = 0;
 
                 if (ex instanceof AMQException)
                 {
@@ -486,7 +486,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                 }
 
                 throw JMSExceptionHelper.chainJMSException(new IllegalStateException("Session has been closed",
-                                                                                     code == null ? null : code.toString()), ex);
+                                                                                     code == 0 ? null : Integer.toString(code)), ex);
             }
             else
             {
@@ -2844,7 +2844,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                 }
                 catch (TransportException e)
                 {
-                    throw new AMQException(AMQConstant.getConstant(getErrorCode(e)), e.getMessage(), e);
+                    throw new AMQException(getErrorCode(e), e.getMessage(), e);
                 }
             }
         }, _connection).execute();
@@ -3249,7 +3249,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
             }
             catch (TransportException e)
             {
-                throw new AMQException(AMQConstant.getConstant(getErrorCode(e)), e.getMessage(), e);
+                throw new AMQException(getErrorCode(e), e.getMessage(), e);
             }
         }
     }
@@ -3741,7 +3741,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 
     private int getErrorCode(TransportException e)
     {
-        int code = AMQConstant.INTERNAL_ERROR.getCode();
+        int code = ErrorCodes.INTERNAL_ERROR;
         if (e instanceof SessionException)
         {
             SessionException se = (SessionException) e;
@@ -3756,22 +3756,21 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     JMSException toJMSException(String message, QpidException e)
     {
         JMSException ex;
-        AMQConstant errorCode = null;
+        int errorCode = 0;
 
         if (e instanceof AMQException)
         {
             errorCode = ((AMQException) e).getErrorCode();
         }
 
-        if (errorCode == AMQConstant.ACCESS_REFUSED)
+        if (errorCode == ErrorCodes.ACCESS_REFUSED)
         {
             ex = JMSExceptionHelper.chainJMSException(new JMSSecurityException(message,
-                                                                               String.valueOf(errorCode.getCode())), e);
+                                                                               Integer.toString(errorCode)), e);
         }
         else
         {
-            String errorCode1 = errorCode == null ? null : String.valueOf(errorCode.getCode());
-            ex = JMSExceptionHelper.chainJMSException(new JMSException(message, errorCode1), e);
+            ex = JMSExceptionHelper.chainJMSException(new JMSException(message, errorCode == 0 ? null : Integer.toString(errorCode)), e);
         }
         return ex;
     }

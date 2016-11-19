@@ -29,7 +29,6 @@ import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -58,7 +57,7 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
 
     void registerMessageDelivered(long size);
 
-    void closeSessionAsync(AMQSessionModel<?> session, AMQConstant cause, String message);
+    void closeSessionAsync(AMQSessionModel<?> session, CloseReason reason, String message);
 
     SocketAddress getRemoteSocketAddress();
 
@@ -72,13 +71,13 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
 
     boolean hasSessionWithName(byte[] name);
 
-    enum ConnectionCloseReason
+    enum CloseReason
     {
         MANAGEMENT,
         TRANSACTION_TIMEOUT
     }
 
-    void sendConnectionCloseAsync(ConnectionCloseReason reason, String description);
+    void sendConnectionCloseAsync(CloseReason reason, String description);
 
     boolean isIOThread();
     ListenableFuture<Void> doOnIOThreadAsync(final Runnable task);

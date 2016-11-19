@@ -26,13 +26,13 @@ import java.util.concurrent.ConcurrentMap;
 import javax.jms.JMSException;
 import javax.security.sasl.SaslClient;
 
-import org.apache.qpid.client.AMQProtocolHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQConnection;
+import org.apache.qpid.client.AMQProtocolHandler;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.client.ConnectionTuneParameters;
 import org.apache.qpid.client.handler.ClientMethodDispatcherImpl;
@@ -51,7 +51,6 @@ import org.apache.qpid.framing.MethodDispatcher;
 import org.apache.qpid.framing.MethodRegistry;
 import org.apache.qpid.framing.ProtocolInitiation;
 import org.apache.qpid.framing.ProtocolVersion;
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.ConnectionSettings;
@@ -348,7 +347,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
      * @return true if the client must respond to the server, i.e. if the server initiated the channel close, false if
      *         the channel close is just the server responding to the client's earlier request to close the channel.
      */
-    public boolean channelClosed(int channelId, AMQConstant code, String text) throws QpidException
+    public boolean channelClosed(int channelId, int code, String text) throws QpidException
     {
 
         // if this is not a response to an earlier request to close the channel
@@ -371,6 +370,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
             return false;
         }
     }
+
 
     public AMQConnection getAMQConnection()
     {

@@ -36,7 +36,7 @@ import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.jms.ConnectionListener;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.url.URLSyntaxException;
 
@@ -176,13 +176,13 @@ public abstract class AbstractACLTestCase extends QpidBrokerTestCase implements 
     }
 
     /**
-     * Convenience method to validate a JMS exception with a linked {@link AMQConstant#ACCESS_REFUSED} 403 error code exception.
+     * Convenience method to validate a JMS exception with a linked {@link ErrorCodes#ACCESS_REFUSED} 403 error code exception.
      */
     public void check403Exception(Throwable t) throws Exception
     {
         assertNotNull("There was no linked exception", t);
         assertTrue("Wrong linked exception type : " + t.getClass(), t instanceof AMQException);
-        assertEquals("Incorrect error code received", 403, ((AMQException) t).getErrorCode().getCode());
+        assertEquals("Incorrect error code received", 403, ((AMQException) t).getErrorCode());
 
         //use the latch to ensure the control thread waits long enough for the exception thread
         //to have done enough to mark the connection closed before teardown commences

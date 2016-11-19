@@ -46,7 +46,7 @@ public class QpidException extends Exception
      * Rethrown this exception as a new exception.
      *
      * Attempt to create a new exception of the same class if they have the default constructor of:
-     * {AMQConstant.class, String.class, Throwable.class}.
+     * {String, Throwable}.
      *
      * @return cloned exception
      */

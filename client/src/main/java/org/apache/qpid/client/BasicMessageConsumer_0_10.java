@@ -39,7 +39,7 @@ import org.apache.qpid.client.message.UnprocessedMessage_0_10;
 import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.jms.Session;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.transport.Acquired;
 import org.apache.qpid.transport.MessageCreditUnit;
 import org.apache.qpid.transport.Option;
@@ -231,7 +231,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
         }
         catch (Exception e)
         {
-            throw new AMQException(AMQConstant.INTERNAL_ERROR, "Error when evaluating message selector", e);
+            throw new AMQException(ErrorCodes.INTERNAL_ERROR, "Error when evaluating message selector", e);
         }
 
         if (_logger.isDebugEnabled())

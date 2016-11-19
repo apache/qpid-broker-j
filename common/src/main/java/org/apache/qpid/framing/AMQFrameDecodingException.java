@@ -21,7 +21,7 @@
 package org.apache.qpid.framing;
 
 import org.apache.qpid.AMQException;
-import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.protocol.ErrorCodes;
 
 /**
  * AMQFrameDecodingException indicates that an AMQP frame cannot be decoded because it does not have the correct
@@ -29,14 +29,20 @@ import org.apache.qpid.protocol.AMQConstant;
  */
 public class AMQFrameDecodingException extends AMQException
 {
-    public AMQFrameDecodingException(AMQConstant errorCode, String message, Throwable cause)
+    public AMQFrameDecodingException(String message, Throwable cause)
     {
-        super(errorCode, message, cause);
+        super(ErrorCodes.FRAME_ERROR, message, cause);
     }
 
-    public AMQFrameDecodingException(AMQConstant errorCode, String message)
+    public AMQFrameDecodingException(String message)
     {
-        super(errorCode, message, null);
+        super(ErrorCodes.FRAME_ERROR, message, null);
+    }
+
+
+    public AMQFrameDecodingException(int errorCode, String message, final Throwable cause)
+    {
+        super(errorCode, message, cause);
     }
 
 }
