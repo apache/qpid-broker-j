@@ -399,7 +399,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
     {
         final AMQSession session = getSession(channelId);
 
-        session.confirmConsumerCancelled(consumerTag.toIntValue());
+        session.confirmConsumerCancelled(consumerTag.toString());
     }
 
     public void setProtocolVersion(final ProtocolVersion pv)

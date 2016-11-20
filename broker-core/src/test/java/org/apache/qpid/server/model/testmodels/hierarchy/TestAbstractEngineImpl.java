@@ -92,6 +92,12 @@ public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends
         return _beforeCloseFuture;
     }
 
+    @Override
+    protected void logOperation(final String operation)
+    {
+
+    }
+
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
     private ListenableFuture<Void> onActivate()
     {

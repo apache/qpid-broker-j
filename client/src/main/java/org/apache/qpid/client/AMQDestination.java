@@ -33,7 +33,6 @@ import javax.naming.Reference;
 import javax.naming.Referenceable;
 import javax.naming.StringRefAddr;
 
-import org.apache.qpid.jndi.ObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +42,7 @@ import org.apache.qpid.client.messaging.address.Node;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.framing.AMQShortString;
+import org.apache.qpid.jndi.ObjectFactory;
 import org.apache.qpid.messaging.Address;
 import org.apache.qpid.url.AMQBindingURL;
 import org.apache.qpid.url.BindingURL;
@@ -429,15 +429,22 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
 
     public AMQShortString getEncodedName()
     {
-        if(_urlAsShortString == null)
+        if(getDestSyntax() == DestSyntax.BURL)
         {
-            if (_url == null)
+            if (_urlAsShortString == null)
             {
-                toURL();
+                if (_url == null)
+                {
+                    toURL();
+                }
+                _urlAsShortString = new AMQShortString(_url);
             }
-            _urlAsShortString = new AMQShortString(_url);
+            return _urlAsShortString;
         }
-        return _urlAsShortString;
+        else
+        {
+            return AMQShortString.valueOf(getName());
+        }
     }
 
     public boolean isDurable()

@@ -74,8 +74,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
      * Specify whether this consumer is performing a sync receive
      */
     private final AtomicBoolean _syncReceive = new AtomicBoolean(false);
-    private String _consumerTagString;
-    
+
     private final long _capacity;
 
     /** Flag indicating if the server supports message selectors */
@@ -108,17 +107,6 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
                 getDestination().setQueueName(null);
             }
         }
-    }
-
-    @Override public void setConsumerTag(int consumerTag)
-    {
-        super.setConsumerTag(consumerTag);
-        _consumerTagString = String.valueOf(consumerTag);
-    }
-
-    public String getConsumerTagString()
-    {
-        return _consumerTagString;
     }
 
     /**
@@ -165,7 +153,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
      */
     @Override void sendCancel() throws QpidException
     {
-        _0_10session.getQpidSession().messageCancel(getConsumerTagString());
+        _0_10session.getQpidSession().messageCancel(getConsumerTag());
         postSubscription();
         try
         {
@@ -337,7 +325,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
 
     private void messageFlow()
     {
-        _0_10session.getQpidSession().messageFlow(getConsumerTagString(),
+        _0_10session.getQpidSession().messageFlow(getConsumerTag(),
                                                   MessageCreditUnit.MESSAGE, 1,
                                                   Option.UNRELIABLE);
     }
@@ -398,17 +386,17 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
         Object o = super.getMessageFromQueue(l);
         if (o == null && _0_10session.isStarted())
         {
-           
+
             _0_10session.getQpidSession().messageFlush
-                (getConsumerTagString(), Option.UNRELIABLE, Option.SYNC);
+                    (getConsumerTag(), Option.UNRELIABLE, Option.SYNC);
             _0_10session.getQpidSession().messageFlow
-                (getConsumerTagString(), MessageCreditUnit.BYTE,
+                (getConsumerTag(), MessageCreditUnit.BYTE,
                  0xFFFFFFFF, Option.UNRELIABLE);
             
             if (_capacity > 0)
             {
                 _0_10session.getQpidSession().messageFlow
-                                               (getConsumerTagString(),
+                                               (getConsumerTag(),
                                                 MessageCreditUnit.MESSAGE,
                                                 _capacity,
                                                 Option.UNRELIABLE);
@@ -559,7 +547,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
 
             if (capacity == 0 && getMessageListener() == null)
             {
-                session.getQpidSession().messageFlow(getConsumerTagString(),
+                session.getQpidSession().messageFlow(getConsumerTag(),
                                                      MessageCreditUnit.MESSAGE, 1,
                                                      Option.UNRELIABLE);
 
@@ -571,7 +559,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
 
             if (message == null && capacity == 0 && getMessageListener() == null)
             {
-                session.getQpidSession().messageFlow(getConsumerTagString(),
+                session.getQpidSession().messageFlow(getConsumerTag(),
                                                      MessageCreditUnit.MESSAGE, 0,
                                                      Option.UNRELIABLE);
                 session.sync();
@@ -596,7 +584,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
 
             if (capacity == 0 && getMessageListener() == null)
             {
-                session.getQpidSession().messageFlow(getConsumerTagString(),
+                session.getQpidSession().messageFlow(getConsumerTag(),
                                                      MessageCreditUnit.MESSAGE, 1,
                                                      Option.UNRELIABLE);
 
@@ -605,7 +593,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
             Message message = super.receiveNoWait();
             if (message == null && capacity == 0 && getMessageListener() == null)
             {
-                session.getQpidSession().messageFlow(getConsumerTagString(),
+                session.getQpidSession().messageFlow(getConsumerTag(),
                                                      MessageCreditUnit.MESSAGE, 0,
                                                      Option.UNRELIABLE);
                 session.sync();

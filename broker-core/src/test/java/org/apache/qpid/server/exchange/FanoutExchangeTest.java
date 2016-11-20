@@ -53,7 +53,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class FanoutExchangeTest extends QpidTestCase
 {
-    private FanoutExchange _exchange;
+    private FanoutExchangeImpl _exchange;
     private QueueManagingVirtualHost _virtualHost;
     private TaskExecutor _taskExecutor;
 
@@ -83,7 +83,7 @@ public class FanoutExchangeTest extends QpidTestCase
         when(_virtualHost.getModel()).thenReturn(BrokerModel.getInstance());
         when(_virtualHost.getParent(VirtualHostNode.class)).thenReturn(virtualHostNode);
         when(_virtualHost.getCategoryClass()).thenReturn(VirtualHost.class);
-        _exchange = new FanoutExchange(attributes, _virtualHost);
+        _exchange = new FanoutExchangeImpl(attributes, _virtualHost);
         _exchange.open();
     }
 

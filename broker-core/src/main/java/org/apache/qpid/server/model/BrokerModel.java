@@ -113,10 +113,8 @@ public final class BrokerModel extends Model
         addRelationship(Queue.class, Consumer.class);
 
         addRelationship(Exchange.class, Binding.class);
-        addRelationship(Exchange.class, Publisher.class);
 
         addRelationship(Session.class, Consumer.class);
-        addRelationship(Session.class, Publisher.class);
 
         _objectFactory = new ConfiguredObjectFactoryImpl(this);
         _typeRegistry = new ConfiguredObjectTypeRegistry((new QpidServiceLoader()).instancesOf(ConfiguredObjectRegistration.class),

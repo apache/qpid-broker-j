@@ -401,4 +401,9 @@ public class SiteSpecificTrustStoreImpl
     }
 
 
+    @Override
+    protected void logOperation(final String operation)
+    {
+        _broker.getEventLogger().message(TrustStoreMessages.OPERATION(operation));
+    }
 }

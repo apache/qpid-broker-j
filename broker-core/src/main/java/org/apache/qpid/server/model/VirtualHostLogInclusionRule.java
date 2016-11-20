@@ -22,7 +22,7 @@ package org.apache.qpid.server.model;
 
 import org.apache.qpid.server.logging.LogInclusionRule;
 
-@ManagedObject
+@ManagedObject( amqpName = "org.apache.qpid.VirtualHostLogInclusionRule")
 public interface VirtualHostLogInclusionRule<X extends VirtualHostLogInclusionRule<X>> extends ConfiguredObject<X>, LogInclusionRule
 {
 }

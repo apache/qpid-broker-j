@@ -24,7 +24,7 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 
-public interface ConfiguredObjectOperation<C extends ConfiguredObject>
+public interface ConfiguredObjectOperation<C extends ConfiguredObject<?>>
 {
     String getName();
 
@@ -43,4 +43,6 @@ public interface ConfiguredObjectOperation<C extends ConfiguredObject>
     Type getGenericReturnType();
 
     boolean isSecure(final C subject, final Map<String, Object> arguments);
+
+    boolean isAssociateAsIfChildren();
 }

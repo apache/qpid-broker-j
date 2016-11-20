@@ -39,4 +39,5 @@ public @interface ManagedObject
     boolean register() default true;
     String description() default "";
     boolean deprecated() default false;
+    String amqpName() default "";
 }

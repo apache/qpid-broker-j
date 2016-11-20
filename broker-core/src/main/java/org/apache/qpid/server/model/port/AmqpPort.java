@@ -38,7 +38,7 @@ import org.apache.qpid.server.model.StatisticUnit;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
 
-@ManagedObject( category = false, type = "AMQP")
+@ManagedObject( category = false, type = "AMQP", amqpName = "org.apache.qpid.AmqpPort")
 public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X>
 {
     String DEFAULT_AMQP_TCP_NO_DELAY = "true";

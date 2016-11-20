@@ -23,7 +23,7 @@ package org.apache.qpid.server.model;
 import java.util.Collection;
 import java.util.Date;
 
-@ManagedObject
+@ManagedObject( creatable = false, amqpName = "org.apache.qpid.Session")
 public interface Session<X extends Session<X>> extends ConfiguredObject<X>
 {
     String CHANNEL_ID = "channelId";
@@ -57,7 +57,6 @@ public interface Session<X extends Session<X>> extends ConfiguredObject<X>
 
 
     Collection<Consumer> getConsumers();
-    Collection<Publisher> getPublishers();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Consumers")
     long getConsumerCount();

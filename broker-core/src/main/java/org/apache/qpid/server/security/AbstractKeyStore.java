@@ -89,6 +89,12 @@ public abstract class AbstractKeyStore<X extends AbstractKeyStore<X>>
         return Futures.immediateFuture(null);
     }
 
+    @Override
+    protected void logOperation(final String operation)
+    {
+        _broker.getEventLogger().message(KeyStoreMessages.OPERATION(operation));
+    }
+
     protected void initializeExpiryChecking()
     {
         int checkFrequency;

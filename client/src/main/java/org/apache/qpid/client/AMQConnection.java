@@ -2041,4 +2041,9 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         }
         return false;
     }
+
+    boolean isVirtualHostPropertiesSupported()
+    {
+        return getDelegate().isVirtualHostPropertiesSupported();
+    }
 }

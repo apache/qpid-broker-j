@@ -59,6 +59,12 @@ public class AllowAllAccessControlProviderImpl extends AbstractConfiguredObject<
         return AccessControl.ALWAYS_ALLOWED;
     }
 
+    @Override
+    protected void logOperation(final String operation)
+    {
+        _broker.getEventLogger().message(AccessControlMessages.OPERATION(operation));
+    }
+
     @StateTransition(currentState = {State.UNINITIALIZED, State.QUIESCED, State.ERRORED}, desiredState = State.ACTIVE)
     @SuppressWarnings("unused")
     private ListenableFuture<Void> activate()

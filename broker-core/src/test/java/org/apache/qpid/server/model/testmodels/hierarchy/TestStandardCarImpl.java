@@ -83,6 +83,12 @@ public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCa
         return getObjectFactory().createAsync(childClass, attributes, this);
     }
 
+    @Override
+    protected void logOperation(final String operation)
+    {
+
+    }
+
     @SuppressWarnings("unused")
     public static Map<String, Collection<String>> getSupportedChildTypes()
     {

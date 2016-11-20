@@ -373,7 +373,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
     private void shutdown()
     {
-        if (_hasShutdown.getAndSet(true))
+        if (!_hasShutdown.compareAndSet(false, true))
         {
             return;
         }

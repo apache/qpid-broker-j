@@ -50,6 +50,7 @@ import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.TestConsumerTarget;
 import org.apache.qpid.server.exchange.DirectExchange;
+import org.apache.qpid.server.exchange.DirectExchangeImpl;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageInstance;
@@ -76,7 +77,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
     private String _qname = "qname";
     private String _owner = "owner";
     private String _routingKey = "routing key";
-    private DirectExchange _exchange;
+    private DirectExchangeImpl _exchange;
     private TestConsumerTarget _consumerTarget = new TestConsumerTarget();
     private QueueConsumer<?> _consumer;
     private Map<String,Object> _arguments = Collections.emptyMap();
@@ -95,7 +96,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         _queue = (AbstractQueue<?>) _virtualHost.createChild(Queue.class, attributes);
 
-        _exchange = (DirectExchange) _virtualHost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
+        _exchange = (DirectExchangeImpl) _virtualHost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
     }
 
     @Override

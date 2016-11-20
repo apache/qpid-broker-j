@@ -57,7 +57,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class HeadersExchangeTest extends QpidTestCase
 {
-    private HeadersExchange _exchange;
+    private HeadersExchangeImpl _exchange;
     private QueueManagingVirtualHost _virtualHost;
     private TaskExecutor _taskExecutor;
     private ConfiguredObjectFactoryImpl _factory;
@@ -94,7 +94,7 @@ public class HeadersExchangeTest extends QpidTestCase
         attributes.put(Exchange.NAME, "test");
         attributes.put(Exchange.DURABLE, false);
 
-        _exchange = new HeadersExchange(attributes, _virtualHost);
+        _exchange = new HeadersExchangeImpl(attributes, _virtualHost);
 
     }
 

@@ -29,6 +29,7 @@ import java.util.Set;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.server.logging.OperationLogMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
@@ -46,11 +47,13 @@ public class GroupProviderImpl extends AbstractConfiguredObject<GroupProviderImp
 {
 
     public static final String CONFIG_TYPE = "ManagedGroupProvider";
+    private final Container<?> _container;
 
     @ManagedObjectFactoryConstructor
     public GroupProviderImpl(Map<String, Object> attributes, Container<?> container)
     {
         super(parentsMap(container), attributes);
+        _container = container;
     }
 
 
@@ -104,4 +107,9 @@ public class GroupProviderImpl extends AbstractConfiguredObject<GroupProviderImp
         return Futures.immediateFuture(null);
     }
 
+    @Override
+    protected void logOperation(final String operation)
+    {
+        _container.getEventLogger().message(new OperationLogMessage(this, operation));
+    }
 }

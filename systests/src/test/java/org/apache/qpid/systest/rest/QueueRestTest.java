@@ -217,11 +217,10 @@ public class QueueRestTest extends QpidRestTestCase
                 ConfiguredObject.CONTEXT,
                 ConfiguredObject.DESIRED_STATE);
 
-        assertEquals("Unexpected binding attribute " + Consumer.NAME, "1", consumer.get(Consumer.NAME));
-        assertEquals("Unexpected binding attribute " + Consumer.DURABLE, Boolean.FALSE, consumer.get(Consumer.DURABLE));
-        assertEquals("Unexpected binding attribute " + Consumer.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_SESSION_END.name(),
+        assertEquals("Unexpected consumer attribute " + Consumer.DURABLE, Boolean.FALSE, consumer.get(Consumer.DURABLE));
+        assertEquals("Unexpected consumer attribute " + Consumer.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_SESSION_END.name(),
                 consumer.get(Consumer.LIFETIME_POLICY));
-        assertEquals("Unexpected binding attribute " + Consumer.DISTRIBUTION_MODE, "MOVE",
+        assertEquals("Unexpected consumer attribute " + Consumer.DISTRIBUTION_MODE, "MOVE",
                 consumer.get(Consumer.DISTRIBUTION_MODE));
 
         @SuppressWarnings("unchecked")

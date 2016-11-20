@@ -60,7 +60,6 @@ import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.framing.*;
 import org.apache.qpid.properties.ConnectionStartProperties;
 import org.apache.qpid.protocol.ErrorCodes;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.ServerMessage;
@@ -1299,14 +1298,14 @@ public class AMQPConnection_0_8Impl
         }
 
         @Override
-        public long deliverToClient(final ConsumerImpl sub, final ServerMessage message,
+        public long deliverToClient(final ConsumerTarget_0_8 target, final ServerMessage message,
                                     final InstanceProperties props, final long deliveryTag)
         {
             long size = _protocolOutputConverter.writeDeliver(message,
                                                   props,
                                                   _channelId,
                                                   deliveryTag,
-                                                  new AMQShortString(sub.getName()));
+                                                  target.getConsumerTag());
             registerMessageDelivered(size);
             return size;
         }

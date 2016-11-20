@@ -76,15 +76,14 @@ public abstract class Model
         return descendants;
     }
 
-    public <C> C getAncestor(final Class<C> ancestorClass,
-                                                             final ConfiguredObject<?> object)
+    public <C> C getAncestor(final Class<C> ancestorClass, final ConfiguredObject<?> object)
     {
         return getAncestor(ancestorClass, object.getCategoryClass(), object);
     }
 
     public  <C> C getAncestor(final Class<C> ancestorClass,
-                                               final Class<? extends ConfiguredObject> category,
-                                               final ConfiguredObject<?> object)
+                              final Class<? extends ConfiguredObject> category,
+                              final ConfiguredObject<?> object)
     {
         if(ancestorClass.isInstance(object))
         {

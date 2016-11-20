@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.logging.OperationLogMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
@@ -75,6 +76,7 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
     private static final String UTF8 = StandardCharsets.UTF_8.name();
 
     private final ObjectMapper _objectMapper = new ObjectMapper();
+    private final Container<?> _container;
 
     @ManagedAttributeField
     private URI _cloudFoundryEndpointURI;
@@ -96,6 +98,7 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
     public CloudFoundryDashboardManagementGroupProviderImpl(Map<String, Object> attributes, Container<?> container)
     {
         super(parentsMap(container), attributes);
+        _container = container;
     }
 
     @Override
@@ -304,5 +307,11 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
     public List<String> getTlsCipherSuiteBlackList()
     {
         return _tlsCipherSuiteBlackList;
+    }
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        _container.getEventLogger().message(new OperationLogMessage(this, operation));
     }
 }

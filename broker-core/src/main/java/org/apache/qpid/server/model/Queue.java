@@ -36,13 +36,16 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.queue.NotificationCheck;
+import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.queue.QueueEntryVisitor;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.util.Deletable;
 
-@ManagedObject( defaultType = "standard", description = Queue.CLASS_DESCRIPTION )
+@ManagedObject( defaultType = "standard",
+        amqpName = "org.apache.qpid.Queue",
+        description = Queue.CLASS_DESCRIPTION )
 public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                                                    Comparable<X>, ExchangeReferrer,
                                                    BaseQueue,
@@ -256,10 +259,12 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
     boolean isHoldOnPublishEnabled();
 
     //children
-    Collection<? extends Binding<?>> getBindings();
+    @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
+    Collection<Binding<?>> getBindings();
 
 
-    Collection<? extends Consumer<?>> getConsumers();
+    @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
+    Collection<QueueConsumer<?>> getConsumers();
 
     //operations
 

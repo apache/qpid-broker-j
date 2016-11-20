@@ -34,7 +34,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class DirectExchangeTest extends QpidTestCase
 {
-    private DirectExchange _exchange;
+    private DirectExchangeImpl _exchange;
     private VirtualHost<?> _vhost;
 
     @Override
@@ -49,7 +49,7 @@ public class DirectExchangeTest extends QpidTestCase
         attributes.put(Exchange.DURABLE, false);
         attributes.put(Exchange.TYPE, ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
 
-        _exchange = (DirectExchange) _vhost.createChild(Exchange.class, attributes, _vhost);
+        _exchange = (DirectExchangeImpl) _vhost.createChild(Exchange.class, attributes, _vhost);
         _exchange.open();
     }
 
@@ -79,7 +79,7 @@ public class DirectExchangeTest extends QpidTestCase
 
         try
         {
-            _exchange = (DirectExchange) _vhost.createChild(Exchange.class, attributes, _vhost);
+            _exchange = (DirectExchangeImpl) _vhost.createChild(Exchange.class, attributes, _vhost);
             _exchange.open();
             fail("Exception not thrown");
         }
@@ -91,7 +91,7 @@ public class DirectExchangeTest extends QpidTestCase
 
     public void testAmqpDirectRecreationRejected() throws Exception
     {
-        DirectExchange ampqDirect = (DirectExchange) _vhost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
+        DirectExchangeImpl ampqDirect = (DirectExchangeImpl) _vhost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
         assertNotNull(ampqDirect);
 
         assertSame(ampqDirect, _vhost.getChildById(Exchange.class, ampqDirect.getId()));
@@ -104,7 +104,7 @@ public class DirectExchangeTest extends QpidTestCase
 
         try
         {
-            _exchange = (DirectExchange) _vhost.createChild(Exchange.class, attributes, _vhost);
+            _exchange = (DirectExchangeImpl) _vhost.createChild(Exchange.class, attributes, _vhost);
             _exchange.open();
             fail("Exception not thrown");
         }

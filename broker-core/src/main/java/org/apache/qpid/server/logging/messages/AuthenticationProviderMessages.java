@@ -22,8 +22,8 @@ package org.apache.qpid.server.logging.messages;
 
 import static org.apache.qpid.server.logging.AbstractMessageLogger.DEFAULT_LOG_HIERARCHY_PREFIX;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.apache.qpid.server.logging.LogMessage;
 
 import java.text.MessageFormat;
@@ -63,32 +63,92 @@ public class AuthenticationProviderMessages
     }
 
     public static final String AUTHENTICATIONPROVIDER_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider";
-    public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.open";
-    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.create";
     public static final String DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.delete";
     public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.close";
+    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.create";
+    public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.operation";
+    public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.open";
 
     static
     {
         LoggerFactory.getLogger(AUTHENTICATIONPROVIDER_LOG_HIERARCHY);
-        LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
-        LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
         LoggerFactory.getLogger(DELETE_LOG_HIERARCHY);
         LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.AuthenticationProvider_logmessages", _currentLocale);
     }
 
     /**
      * Log a AuthenticationProvider message of the Format:
-     * <pre>ATH-1002 : Open</pre>
+     * <pre>ATH-1004 : Delete "{0}"</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPEN()
+    public static LogMessage DELETE(String param1)
     {
-        String rawMessage = _messages.getString("OPEN");
+        String rawMessage = _messages.getString("DELETE");
+
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return DELETE_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a AuthenticationProvider message of the Format:
+     * <pre>ATH-1003 : Close</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage CLOSE()
+    {
+        String rawMessage = _messages.getString("CLOSE");
 
         final String message = rawMessage;
 
@@ -101,7 +161,7 @@ public class AuthenticationProviderMessages
 
             public String getLogHierarchy()
             {
-                return OPEN_LOG_HIERARCHY;
+                return CLOSE_LOG_HIERARCHY;
             }
 
             @Override
@@ -192,14 +252,14 @@ public class AuthenticationProviderMessages
 
     /**
      * Log a AuthenticationProvider message of the Format:
-     * <pre>ATH-1004 : Delete "{0}"</pre>
+     * <pre>ATH-1005 : Operation : {0}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage DELETE(String param1)
+    public static LogMessage OPERATION(String param1)
     {
-        String rawMessage = _messages.getString("DELETE");
+        String rawMessage = _messages.getString("OPERATION");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
@@ -217,7 +277,7 @@ public class AuthenticationProviderMessages
 
             public String getLogHierarchy()
             {
-                return DELETE_LOG_HIERARCHY;
+                return OPERATION_LOG_HIERARCHY;
             }
 
             @Override
@@ -250,14 +310,14 @@ public class AuthenticationProviderMessages
 
     /**
      * Log a AuthenticationProvider message of the Format:
-     * <pre>ATH-1003 : Close</pre>
+     * <pre>ATH-1002 : Open</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLOSE()
+    public static LogMessage OPEN()
     {
-        String rawMessage = _messages.getString("CLOSE");
+        String rawMessage = _messages.getString("OPEN");
 
         final String message = rawMessage;
 
@@ -270,7 +330,7 @@ public class AuthenticationProviderMessages
 
             public String getLogHierarchy()
             {
-                return CLOSE_LOG_HIERARCHY;
+                return OPEN_LOG_HIERARCHY;
             }
 
             @Override

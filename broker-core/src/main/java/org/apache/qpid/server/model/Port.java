@@ -29,7 +29,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.configuration.CommonProperties;
 
 @ManagedContextDependency({CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST})
-@ManagedObject( description = Port.CLASS_DESCRIPTION )
+@ManagedObject( description = Port.CLASS_DESCRIPTION, amqpName = "org.apache.qpid.Port")
 public interface Port<X extends Port<X>> extends ConfiguredObject<X>
 {
     String CLASS_DESCRIPTION = "<p>The Broker supports configuration of Ports to specify the particular AMQP messaging "

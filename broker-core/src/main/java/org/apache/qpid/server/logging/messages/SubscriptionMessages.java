@@ -22,8 +22,8 @@ package org.apache.qpid.server.logging.messages;
 
 import static org.apache.qpid.server.logging.AbstractMessageLogger.DEFAULT_LOG_HIERARCHY_PREFIX;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.apache.qpid.server.logging.LogMessage;
 
 import java.text.MessageFormat;
@@ -64,15 +64,17 @@ public class SubscriptionMessages
 
     public static final String SUBSCRIPTION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "subscription";
     public static final String STATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "subscription.state";
-    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "subscription.create";
     public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "subscription.close";
+    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "subscription.create";
+    public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "subscription.operation";
 
     static
     {
         LoggerFactory.getLogger(SUBSCRIPTION_LOG_HIERARCHY);
         LoggerFactory.getLogger(STATE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
         LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Subscription_logmessages", _currentLocale);
     }
@@ -105,6 +107,59 @@ public class SubscriptionMessages
             public String getLogHierarchy()
             {
                 return STATE_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Subscription message of the Format:
+     * <pre>SUB-1002 : Close</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage CLOSE()
+    {
+        String rawMessage = _messages.getString("CLOSE");
+
+        final String message = rawMessage;
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return CLOSE_LOG_HIERARCHY;
             }
 
             @Override
@@ -228,16 +283,21 @@ public class SubscriptionMessages
 
     /**
      * Log a Subscription message of the Format:
-     * <pre>SUB-1002 : Close</pre>
+     * <pre>SUB-1004 : Operation : {0}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLOSE()
+    public static LogMessage OPERATION(String param1)
     {
-        String rawMessage = _messages.getString("CLOSE");
+        String rawMessage = _messages.getString("OPERATION");
 
-        final String message = rawMessage;
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {
@@ -248,7 +308,7 @@ public class SubscriptionMessages
 
             public String getLogHierarchy()
             {
-                return CLOSE_LOG_HIERARCHY;
+                return OPERATION_LOG_HIERARCHY;
             }
 
             @Override

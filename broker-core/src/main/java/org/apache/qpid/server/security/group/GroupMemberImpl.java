@@ -20,20 +20,20 @@
  */
 package org.apache.qpid.server.security.group;
 
-import java.security.Principal;
 import java.util.Map;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.server.logging.OperationLogMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.Group;
 import org.apache.qpid.server.model.GroupMember;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.security.auth.UsernamePrincipal;
 
 @ManagedObject(category = false, type = GroupMemberImpl.CONFIG_TYPE)
 public class GroupMemberImpl extends AbstractConfiguredObject<GroupMemberImpl> implements GroupMember<GroupMemberImpl>
@@ -59,5 +59,11 @@ public class GroupMemberImpl extends AbstractConfiguredObject<GroupMemberImpl> i
     {
         deleted();
         return Futures.immediateFuture(null);
+    }
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        getAncestor(Container.class).getEventLogger().message(new OperationLogMessage(this, operation));
     }
 }

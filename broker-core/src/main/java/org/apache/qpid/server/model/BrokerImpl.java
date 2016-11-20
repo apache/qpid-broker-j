@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -807,6 +808,12 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
         _eventLogger.message(BrokerMessages.FATAL_ERROR(e.getMessage()));
     }
 
+    @Override
+    protected void logOperation(final String operation)
+    {
+        getEventLogger().message(BrokerMessages.OPERATION(operation));
+    }
+
     public void registerMessageDelivered(long messageSize)
     {
         _messagesDelivered.registerEvent(1L);
@@ -961,6 +968,33 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     public String getDocumentationUrl()
     {
         return _documentationUrl;
+    }
+
+    @Override
+    public void restart()
+    {
+        Subject.doAs(getSystemTaskSubject("Broker"), new PrivilegedAction<Void>()
+        {
+            @Override
+            public Void run()
+            {
+                final SystemConfig<?> systemConfig = getParent(SystemConfig.class);
+                // This is deliberately asynchronous as the HTTP thread will be interrupted by restarting
+                doAfter(systemConfig.setAttributesAsync(Collections.<String,Object>singletonMap(ConfiguredObject.DESIRED_STATE,
+                                                                                                State.STOPPED)),
+                        new Callable<ListenableFuture<Void>>()
+                        {
+                            @Override
+                            public ListenableFuture<Void> call() throws Exception
+                            {
+                                return systemConfig.setAttributesAsync(Collections.<String,Object>singletonMap(ConfiguredObject.DESIRED_STATE, State.ACTIVE));
+                            }
+                        });
+
+                return null;
+            }
+        });
+
     }
 
     @Override

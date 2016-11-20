@@ -34,4 +34,6 @@ public @interface ManagedOperation
     boolean secure() default false;
     String paramRequiringSecure() default "";
     boolean changesConfiguredObjectState();
+    boolean associateAsIfChildren() default false;
+    boolean log() default false;
 }

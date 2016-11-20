@@ -25,7 +25,8 @@ import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.VirtualHostLogger;
 
 @ManagedObject( category = false, type = VirtualHostSyslogLogger.TYPE,
-                validChildTypes = "org.apache.qpid.server.logging.logback.AbstractLogger#getSupportedVirtualHostLoggerChildTypes()")
+                validChildTypes = "org.apache.qpid.server.logging.logback.AbstractLogger#getSupportedVirtualHostLoggerChildTypes()",
+                amqpName = "org.apache.qpid.VirtualHostLogbackSyslogLogger")
 public interface VirtualHostSyslogLogger<X extends VirtualHostSyslogLogger<X>> extends VirtualHostLogger<X>
 {
     String TYPE = "Syslog";

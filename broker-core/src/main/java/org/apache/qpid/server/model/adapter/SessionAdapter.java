@@ -40,7 +40,6 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.NamedAddressSpace;
-import org.apache.qpid.server.model.Publisher;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
@@ -132,21 +131,12 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
         return (Collection<Consumer>) _session.getConsumers();
     }
 
-    public Collection<Publisher> getPublishers()
-    {
-        return Collections.emptySet();  //TODO
-    }
-
     @Override
     public <C extends ConfiguredObject> Collection<C> getChildren(Class<C> clazz)
     {
         if (clazz == org.apache.qpid.server.model.Consumer.class)
         {
             return (Collection<C>) getConsumers();
-        }
-        else if (clazz == Publisher.class)
-        {
-            return (Collection<C>) getPublishers();
         }
         else
         {
@@ -316,5 +306,12 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
             };
             session.addDeleteTask(deleteTickerTask);
         }
+    }
+
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        _amqpConnection.getEventLogger().message(ChannelMessages.OPERATION(operation));
     }
 }

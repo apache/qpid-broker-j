@@ -116,7 +116,7 @@ public class AMQSession_0_8Test extends QpidTestCase
         UnprocessedMessage[] messages = new UnprocessedMessage[4];
         for (int i =0; i< messages.length;i++ )
         {
-            int consumerTag = i % 2 == 0 ? consumer1.getConsumerTag() : consumer2.getConsumerTag();
+            String consumerTag = i % 2 == 0 ? consumer1.getConsumerTag() : consumer2.getConsumerTag();
             int deliveryTag = i + 1;
             messages[i]= createMockMessage(deliveryTag, consumerTag);
             session.messageReceived(messages[i]);
@@ -153,7 +153,7 @@ public class AMQSession_0_8Test extends QpidTestCase
         assertEquals("Unexpected consumers", new HashSet<>(Arrays.asList(consumer1, consumer2)), new HashSet<>(session.getConsumers()));
     }
 
-    private UnprocessedMessage createMockMessage(long deliveryTag, int consumerTag)
+    private UnprocessedMessage createMockMessage(long deliveryTag, String consumerTag)
     {
         UnprocessedMessage message = mock(UnprocessedMessage.class);
         when(message.getConsumerTag()).thenReturn(consumerTag);

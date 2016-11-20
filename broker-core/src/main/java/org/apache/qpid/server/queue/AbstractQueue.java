@@ -1002,6 +1002,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public Collection<QueueConsumer<?>> getConsumers()
     {
+        return getConsumersImpl();
+    }
+
+    private Collection<QueueConsumer<?>> getConsumersImpl()
+    {
         return Lists.newArrayList(_queueConsumerManager.getAllIterator());
     }
 
@@ -1031,6 +1036,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     public Collection<Binding<?>> getBindings()
+    {
+        return getBindingsImpl();
+    }
+
+    private Collection<Binding<?>> getBindingsImpl()
     {
         return Collections.unmodifiableList(_bindings);
     }
@@ -2984,7 +2994,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         if(clazz == Binding.class)
         {
-            return (Collection<C>) getBindings();
+            return (Collection<C>) getBindingsImpl();
         }
         else if(clazz == org.apache.qpid.server.model.Consumer.class)
         {
@@ -3097,6 +3107,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             throws AccessControlException
     {
         authorise(token, PUBLISH_ACTION, arguments);
+    }
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        getEventLogger().message(QueueMessages.OPERATION(operation));
     }
 
     private class DeletedChildListener extends AbstractConfigurationChangeListener

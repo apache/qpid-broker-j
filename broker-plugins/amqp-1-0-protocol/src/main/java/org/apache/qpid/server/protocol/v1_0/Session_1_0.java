@@ -58,6 +58,7 @@ import org.apache.qpid.server.logging.subjects.ChannelLogSubject;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
+import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Consumer;
@@ -104,7 +105,6 @@ import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.transport.network.Ticker;
 
 public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
@@ -1132,7 +1132,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
 
             _connection.close(error);
         }
-        catch (QueueExistsException e)
+        catch (AbstractConfiguredObject.DuplicateNameException e)
         {
             _logger.error("A temporary queue was created with a name which collided with an existing queue name");
             throw new ConnectionScopedRuntimeException(e);

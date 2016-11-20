@@ -28,9 +28,11 @@ import java.util.Map;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.server.logging.messages.VirtualHostMessages;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
@@ -179,5 +181,11 @@ public abstract class AbstractNonConnectionAcceptingVirtualHost<X extends Abstra
     public MessageDestination getAttainedMessageDestination(final String name)
     {
         return null;
+    }
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        getAncestor(Broker.class).getEventLogger().message(VirtualHostMessages.OPERATION(operation));
     }
 }

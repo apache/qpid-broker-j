@@ -22,7 +22,7 @@ package org.apache.qpid.server.model;
 
 import org.apache.qpid.server.consumer.ConsumerImpl;
 
-@ManagedObject
+@ManagedObject(creatable = false, amqpName = "org.apache.qpid.Consumer")
 public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>, ConsumerImpl
 {
     String DISTRIBUTION_MODE = "distributionMode";
@@ -38,19 +38,22 @@ public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>, Co
     @ManagedContextDefault( name = SUSPEND_NOTIFICATION_PERIOD)
     long SUSPEND_NOTIFICATION_PERIOD_DEFAULT = 10000;
 
-    @ManagedAttribute
+    @DerivedAttribute
+    String getLinkName();
+
+    @ManagedAttribute(immutable = true)
     String getDistributionMode();
 
-    @ManagedAttribute
+    @ManagedAttribute(immutable = true)
     String getSettlementMode();
 
-    @ManagedAttribute
+    @ManagedAttribute(immutable = true)
     boolean isExclusive();
 
-    @ManagedAttribute
+    @ManagedAttribute(immutable = true)
     boolean isNoLocal();
 
-    @ManagedAttribute
+    @ManagedAttribute(immutable = true)
     String getSelector();
 
     @ManagedAttribute(defaultValue = "2147483647",

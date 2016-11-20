@@ -89,7 +89,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
     {
         if(_content == null)
         {
-            return null;
+            return Collections.emptyList();
         }
         return Collections.singleton(_content.view(offset, length));
     }

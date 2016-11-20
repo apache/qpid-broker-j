@@ -79,21 +79,7 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
-import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ConfigurationChangeListener;
-import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.Connection;
-import org.apache.qpid.server.model.Consumer;
-import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.model.ExclusivityPolicy;
-import org.apache.qpid.server.model.LifetimePolicy;
-import org.apache.qpid.server.model.NamedAddressSpace;
-import org.apache.qpid.server.model.NoFactoryForTypeException;
-import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.Session;
-import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.UnknownConfiguredObjectException;
+import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
@@ -111,9 +97,7 @@ import org.apache.qpid.server.txn.LocalTransaction.ActivityTimeAccessor;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.ExchangeExistsException;
 import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
-import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
 import org.apache.qpid.transport.network.Ticker;
@@ -1465,7 +1449,7 @@ public class AMQChannel
         }
 
         @Override
-        public long deliverToClient(final ConsumerImpl sub, final ServerMessage message,
+        public long deliverToClient(final ConsumerTarget_0_8 target, final ServerMessage message,
                                     final InstanceProperties props, final long deliveryTag)
         {
 
@@ -2962,9 +2946,9 @@ public class AMQChannel
                         _connection.writeFrame(declareOkBody.generateFrame(getChannelId()));
                     }
                 }
-                catch (ExchangeExistsException e)
+                catch (AbstractConfiguredObject.DuplicateNameException e)
                 {
-                    exchange = e.getExistingExchange();
+                    exchange = (Exchange<?>) e.getExisting();
                     if (!exchange.getType().equals(typeString))
                     {
                         _connection.sendConnectionClose(ErrorCodes.NOT_ALLOWED, "Attempt to redeclare exchange: '"
@@ -3323,10 +3307,10 @@ public class AMQChannel
                     }
                 }
             }
-            catch (QueueExistsException qe)
+            catch (AbstractConfiguredObject.DuplicateNameException qe)
             {
 
-                queue = qe.getExistingQueue();
+                queue = (Queue<?>) qe.getExisting();
 
                 if (!queue.verifySessionAccess(this))
                 {

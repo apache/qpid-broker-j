@@ -27,13 +27,11 @@ import java.util.Map;
 import org.apache.qpid.server.logging.messages.ConfigStoreMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedAttributeField;
-import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.JsonFileConfigStore;
 
-@ManagedObject(type=JsonVirtualHostNodeImpl.VIRTUAL_HOST_NODE_TYPE, category=false, validChildTypes = "org.apache.qpid.server.virtualhostnode.JsonVirtualHostNodeImpl#getSupportedChildTypes()")
 public class JsonVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<JsonVirtualHostNodeImpl> implements JsonVirtualHostNode<JsonVirtualHostNodeImpl>
 {
     public static final String VIRTUAL_HOST_NODE_TYPE = "JSON";

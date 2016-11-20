@@ -62,6 +62,12 @@ public class TestKitCarImpl extends AbstractConfiguredObject<TestKitCarImpl>
         return getObjectFactory().createAsync(childClass, attributes, this);
     }
 
+    @Override
+    protected void logOperation(final String operation)
+    {
+
+    }
+
     private static CurrentThreadTaskExecutor newTaskExecutor()
     {
         CurrentThreadTaskExecutor currentThreadTaskExecutor = new CurrentThreadTaskExecutor();

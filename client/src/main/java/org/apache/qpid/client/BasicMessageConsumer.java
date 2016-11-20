@@ -76,7 +76,7 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
      */
     private final AtomicReference<MessageListener> _messageListener = new AtomicReference<MessageListener>();
 
-    private int _consumerTag;
+    private String _consumerTag;
 
     private final int _channelId;
 
@@ -855,12 +855,12 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
     }
 
     /** The consumer tag allows us to close the consumer by sending a jmsCancel method to the broker */
-    public int getConsumerTag()
+    public String getConsumerTag()
     {
         return _consumerTag;
     }
 
-    public void setConsumerTag(int consumerTag)
+    public void setConsumerTag(String consumerTag)
     {
         _consumerTag = consumerTag;
     }

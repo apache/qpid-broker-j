@@ -85,7 +85,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
         _addressSpaceRegistry = addressSpaceRegistry;
         _broker = addressSpaceRegistry.getBroker();
 
-        _managementNode = new ManagementNode(this, addressSpaceRegistry.getBroker(), null);
+        _managementNode = new ManagementNode(this, addressSpaceRegistry.getBroker());
         _propertiesNode = new VirtualHostPropertiesNode(this);
         _messageStore = new MemoryMessageStore();
         _principal = new ManagementAddressSpacePrincipal(this);

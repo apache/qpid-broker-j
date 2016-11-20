@@ -25,7 +25,8 @@ import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.VirtualHostLogInclusionRule;
 
-@ManagedObject( category = false, type = VirtualHostNameAndLevelLogInclusionRule.TYPE)
+@ManagedObject( category = false, type = VirtualHostNameAndLevelLogInclusionRule.TYPE,
+                amqpName = "org.apache.qpid.VirtualHostNameAndLevelLogbackLogInclusionRule")
 public interface VirtualHostNameAndLevelLogInclusionRule<X extends VirtualHostNameAndLevelLogInclusionRule<X>> extends VirtualHostLogInclusionRule<X>, LogBackLogInclusionRule
 {
     String TYPE = "NameAndLevel";

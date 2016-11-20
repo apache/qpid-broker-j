@@ -22,8 +22,8 @@ package org.apache.qpid.server.logging.messages;
 
 import static org.apache.qpid.server.logging.AbstractMessageLogger.DEFAULT_LOG_HIERARCHY_PREFIX;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.apache.qpid.server.logging.LogMessage;
 
 import java.text.MessageFormat;
@@ -63,38 +63,38 @@ public class ManagementConsoleMessages
     }
 
     public static final String MANAGEMENTCONSOLE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "managementconsole";
-    public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "managementconsole.open";
-    public static final String LISTENING_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "managementconsole.listening";
-    public static final String STOPPED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "managementconsole.stopped";
-    public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "managementconsole.close";
-    public static final String SHUTTING_DOWN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "managementconsole.shutting_down";
-    public static final String STARTUP_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "managementconsole.startup";
     public static final String READY_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "managementconsole.ready";
+    public static final String SHUTTING_DOWN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "managementconsole.shutting_down";
+    public static final String STOPPED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "managementconsole.stopped";
+    public static final String LISTENING_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "managementconsole.listening";
+    public static final String STARTUP_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "managementconsole.startup";
+    public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "managementconsole.close";
+    public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "managementconsole.open";
 
     static
     {
         LoggerFactory.getLogger(MANAGEMENTCONSOLE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
-        LoggerFactory.getLogger(LISTENING_LOG_HIERARCHY);
-        LoggerFactory.getLogger(STOPPED_LOG_HIERARCHY);
-        LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(SHUTTING_DOWN_LOG_HIERARCHY);
-        LoggerFactory.getLogger(STARTUP_LOG_HIERARCHY);
         LoggerFactory.getLogger(READY_LOG_HIERARCHY);
+        LoggerFactory.getLogger(SHUTTING_DOWN_LOG_HIERARCHY);
+        LoggerFactory.getLogger(STOPPED_LOG_HIERARCHY);
+        LoggerFactory.getLogger(LISTENING_LOG_HIERARCHY);
+        LoggerFactory.getLogger(STARTUP_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.ManagementConsole_logmessages", _currentLocale);
     }
 
     /**
      * Log a ManagementConsole message of the Format:
-     * <pre>MNG-1007 : Open : User {0}</pre>
+     * <pre>MNG-1004 : {0} Management Ready</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPEN(String param1)
+    public static LogMessage READY(String param1)
     {
-        String rawMessage = _messages.getString("OPEN");
+        String rawMessage = _messages.getString("READY");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
@@ -112,181 +112,7 @@ public class ManagementConsoleMessages
 
             public String getLogHierarchy()
             {
-                return OPEN_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a ManagementConsole message of the Format:
-     * <pre>MNG-1002 : Starting : {0} : Listening on {1} port {2,number,#}</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage LISTENING(String param1, String param2, Number param3)
-    {
-        String rawMessage = _messages.getString("LISTENING");
-
-        final Object[] messageArguments = {param1, param2, param3};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            public String toString()
-            {
-                return message;
-            }
-
-            public String getLogHierarchy()
-            {
-                return LISTENING_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a ManagementConsole message of the Format:
-     * <pre>MNG-1005 : {0} Management Stopped</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage STOPPED(String param1)
-    {
-        String rawMessage = _messages.getString("STOPPED");
-
-        final Object[] messageArguments = {param1};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            public String toString()
-            {
-                return message;
-            }
-
-            public String getLogHierarchy()
-            {
-                return STOPPED_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a ManagementConsole message of the Format:
-     * <pre>MNG-1008 : Close : User {0}</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage CLOSE(String param1)
-    {
-        String rawMessage = _messages.getString("CLOSE");
-
-        final Object[] messageArguments = {param1};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            public String toString()
-            {
-                return message;
-            }
-
-            public String getLogHierarchy()
-            {
-                return CLOSE_LOG_HIERARCHY;
+                return READY_LOG_HIERARCHY;
             }
 
             @Override
@@ -377,6 +203,122 @@ public class ManagementConsoleMessages
 
     /**
      * Log a ManagementConsole message of the Format:
+     * <pre>MNG-1005 : {0} Management Stopped</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage STOPPED(String param1)
+    {
+        String rawMessage = _messages.getString("STOPPED");
+
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return STOPPED_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a ManagementConsole message of the Format:
+     * <pre>MNG-1002 : Starting : {0} : Listening on {1} port {2,number,#}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage LISTENING(String param1, String param2, Number param3)
+    {
+        String rawMessage = _messages.getString("LISTENING");
+
+        final Object[] messageArguments = {param1, param2, param3};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return LISTENING_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a ManagementConsole message of the Format:
      * <pre>MNG-1001 : {0} Management Startup</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
@@ -435,14 +377,14 @@ public class ManagementConsoleMessages
 
     /**
      * Log a ManagementConsole message of the Format:
-     * <pre>MNG-1004 : {0} Management Ready</pre>
+     * <pre>MNG-1008 : Close : User {0}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage READY(String param1)
+    public static LogMessage CLOSE(String param1)
     {
-        String rawMessage = _messages.getString("READY");
+        String rawMessage = _messages.getString("CLOSE");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
@@ -460,7 +402,65 @@ public class ManagementConsoleMessages
 
             public String getLogHierarchy()
             {
-                return READY_LOG_HIERARCHY;
+                return CLOSE_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a ManagementConsole message of the Format:
+     * <pre>MNG-1007 : Open : User {0}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage OPEN(String param1)
+    {
+        String rawMessage = _messages.getString("OPEN");
+
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return OPEN_LOG_HIERARCHY;
             }
 
             @Override

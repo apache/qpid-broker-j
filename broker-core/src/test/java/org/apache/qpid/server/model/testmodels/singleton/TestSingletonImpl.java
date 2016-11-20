@@ -250,6 +250,12 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
         return SYSTEM_PRINCIPAL;
     }
 
+    @Override
+    protected void logOperation(final String operation)
+    {
+
+    }
+
     public <T> T doAsSystem(PrivilegedAction<T> action)
     {
         return Subject.doAs(SYSTEM_SUBJECT, action);

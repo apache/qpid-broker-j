@@ -56,11 +56,11 @@ import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObjectFinder;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
-import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.OperationTimeoutException;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -110,6 +110,7 @@ public class RestServlet extends AbstractServlet
     private final boolean _hierarchyInitializationRequired;
     private volatile RequestInfoParser _requestInfoParser;
     private RestUserPreferenceHandler _userPreferenceHandler;
+    private ConfiguredObjectFinder _objectFinder;
 
     @SuppressWarnings("unused")
     public RestServlet()
@@ -133,6 +134,7 @@ public class RestServlet extends AbstractServlet
         {
             doInitialization();
         }
+        _objectFinder = new ConfiguredObjectFinder(getBroker());
         _requestInfoParser = new RequestInfoParser(_hierarchy);
         Handler.register();
         Long preferenceOperationTimeout = getManagementConfiguration().getContextValue(Long.class, PREFERENCE_OPERTAION_TIMEOUT_CONTEXT_NAME);
@@ -181,116 +183,17 @@ public class RestServlet extends AbstractServlet
         }
     }
 
+
     private Collection<ConfiguredObject<?>> getTargetObjects(RequestInfo requestInfo,
                                                              List<Predicate<ConfiguredObject<?>>> filterPredicateList)
     {
         List<String> names = requestInfo.getModelParts();
+        ConfiguredObject<?> root = getBroker();
+        Class<? extends ConfiguredObject>[] hierarchy = _hierarchy;
 
-        Collection<ConfiguredObject<?>> parents = new ArrayList<>();
-        parents.add(getBroker());
-        Collection<ConfiguredObject<?>> children = new ArrayList<>();
+        Collection<ConfiguredObject<?>> parents = _objectFinder.findObjectsFromPath(names, hierarchy, true);
 
-        Map<Class<? extends ConfiguredObject>, String> filters =
-                new HashMap<>();
-
-        final Model model = getBroker().getModel();
-        boolean wildcard = false;
-        Class<? extends ConfiguredObject> parentType = Broker.class;
-        for (int i = 0; i < _hierarchy.length; i++)
-        {
-            if (model.getChildTypes(parentType).contains(_hierarchy[i]))
-            {
-                parentType = _hierarchy[i];
-                for (ConfiguredObject<?> parent : parents)
-                {
-                    if (names.size() > i
-                        && names.get(i) != null
-                        && !names.get(i).equals("*")
-                        && names.get(i).trim().length() != 0)
-                    {
-                        for (ConfiguredObject<?> child : parent.getChildren(_hierarchy[i]))
-                        {
-                            if (child.getName().equals(names.get(i)))
-                            {
-                                children.add(child);
-                            }
-                        }
-                        if (children.isEmpty())
-                        {
-                            return null;
-                        }
-                    }
-                    else
-                    {
-                        wildcard = true;
-                        children.addAll((Collection<? extends ConfiguredObject<?>>) parent.getChildren(_hierarchy[i]));
-                    }
-                }
-            }
-            else
-            {
-                children = parents;
-                if (names.size() > i
-                    && names.get(i) != null
-                    && !names.get(i).equals("*")
-                    && names.get(i).trim().length() != 0)
-                {
-                    filters.put(_hierarchy[i], names.get(i));
-                }
-                else
-                {
-                    wildcard = true;
-                }
-            }
-
-            parents = children;
-            children = new ArrayList<>();
-        }
-
-        if (!filters.isEmpty() && !parents.isEmpty())
-        {
-            Collection<ConfiguredObject<?>> potentials = parents;
-            parents = new ArrayList<>();
-
-            for (ConfiguredObject o : potentials)
-            {
-
-                boolean match = true;
-
-                for (Map.Entry<Class<? extends ConfiguredObject>, String> entry : filters.entrySet())
-                {
-                    Collection<? extends ConfiguredObject> ancestors =
-                            getAncestors(getConfiguredClass(), entry.getKey(), o);
-                    match = false;
-                    for (ConfiguredObject ancestor : ancestors)
-                    {
-                        if (ancestor.getName().equals(entry.getValue()))
-                        {
-                            match = true;
-                            break;
-                        }
-                    }
-                    if (!match)
-                    {
-                        break;
-                    }
-                }
-                if (match)
-                {
-                    parents.add(o);
-                }
-            }
-        }
-
-        if (parents.isEmpty() && !wildcard)
-        {
-            return null;
-        }
-        else if (filterPredicateList.isEmpty())
-        {
-            return parents;
-        }
-        else
+        if (!(parents == null || filterPredicateList.isEmpty()))
         {
             Iterator<ConfiguredObject<?>> iter = parents.iterator();
             while (iter.hasNext())
@@ -306,8 +209,8 @@ public class RestServlet extends AbstractServlet
                 }
             }
 
-            return parents;
         }
+        return parents;
     }
 
     private List<Predicate<ConfiguredObject<?>>> buildFilterPredicates(final HttpServletRequest request)
@@ -332,36 +235,6 @@ public class RestServlet extends AbstractServlet
             }
         }
         return Collections.unmodifiableList(predicates);
-    }
-
-    private Collection<? extends ConfiguredObject> getAncestors(Class<? extends ConfiguredObject> childType,
-                                                                Class<? extends ConfiguredObject> ancestorType,
-                                                                ConfiguredObject child)
-    {
-        Collection<ConfiguredObject> ancestors = new HashSet<>();
-        Collection<Class<? extends ConfiguredObject>> parentTypes = child.getModel().getParentTypes(childType);
-
-        for(Class<? extends ConfiguredObject> parentClazz : parentTypes)
-        {
-            if(parentClazz == ancestorType)
-            {
-                ConfiguredObject parent = child.getParent(parentClazz);
-                if(parent != null)
-                {
-                    ancestors.add(parent);
-                }
-            }
-            else
-            {
-                ConfiguredObject parent = child.getParent(parentClazz);
-                if(parent != null)
-                {
-                    ancestors.addAll(getAncestors(parentClazz, ancestorType, parent));
-                }
-            }
-        }
-
-        return ancestors;
     }
 
     @Override
@@ -585,7 +458,9 @@ public class RestServlet extends AbstractServlet
                 Class<? extends ConfiguredObject> objClass = getConfiguredClass();
                 if (_hierarchy.length > 1)
                 {
-                    List<ConfiguredObject> parents = findAllObjectParents(names);
+
+                    List<ConfiguredObject> parents =
+                            _objectFinder.findObjectParentsFromPath(names, _hierarchy, getConfiguredClass());
                     theParent = parents.remove(0);
                     otherParents = parents.toArray(new ConfiguredObject[parents.size()]);
                 }
@@ -853,7 +728,9 @@ public class RestServlet extends AbstractServlet
             ConfiguredObject[] otherParents = null;
             if (_hierarchy.length > 1)
             {
-                List<ConfiguredObject> parents = findAllObjectParents(names);
+
+                List<ConfiguredObject> parents =
+                        _objectFinder.findObjectParentsFromPath(names, _hierarchy, getConfiguredClass());
                 theParent = parents.remove(0);
                 otherParents = parents.toArray(new ConfiguredObject[parents.size()]);
             }
@@ -934,68 +811,6 @@ public class RestServlet extends AbstractServlet
             }
         }
         return providedObject;
-    }
-
-    private List<ConfiguredObject> findAllObjectParents(List<String> names)
-    {
-        Collection<ConfiguredObject>[] objects = new Collection[_hierarchy.length];
-        for (int i = 0; i < _hierarchy.length - 1; i++)
-        {
-            objects[i] = new HashSet<>();
-            if (i == 0)
-            {
-                for (ConfiguredObject object : getBroker().getChildren(_hierarchy[0]))
-                {
-                    if (object.getName().equals(names.get(0)))
-                    {
-                        objects[0].add(object);
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                for (int j = i - 1; j >= 0; j--)
-                {
-                    if (getBroker().getModel().getChildTypes(_hierarchy[j]).contains(_hierarchy[i]))
-                    {
-                        for (ConfiguredObject<?> parent : objects[j])
-                        {
-                            for (ConfiguredObject<?> object : parent.getChildren(_hierarchy[i]))
-                            {
-                                if (object.getName().equals(names.get(i)))
-                                {
-                                    objects[i].add(object);
-                                }
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
-
-        }
-        List<ConfiguredObject> parents = new ArrayList<>();
-        Class<? extends ConfiguredObject> objClass = getConfiguredClass();
-        Collection<Class<? extends ConfiguredObject>> parentClasses =
-                getBroker().getModel().getParentTypes(objClass);
-        for (int i = _hierarchy.length - 2; i >= 0; i--)
-        {
-            if (parentClasses.contains(_hierarchy[i]))
-            {
-                if (objects[i].size() == 1)
-                {
-                    parents.add(objects[i].iterator().next());
-                }
-                else
-                {
-                    throw new IllegalArgumentException("Cannot deduce parent of class "
-                                                       + _hierarchy[i].getSimpleName());
-                }
-            }
-
-        }
-        return parents;
     }
 
     private Map<String, Object> getRequestProvidedObject(HttpServletRequest request, final RequestInfo requestInfo)

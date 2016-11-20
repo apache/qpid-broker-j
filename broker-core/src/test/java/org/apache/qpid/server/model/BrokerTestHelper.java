@@ -32,7 +32,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.Principal;
 import java.security.PrivilegedAction;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.security.auth.Subject;
@@ -52,7 +58,6 @@ import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
-import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -282,7 +287,6 @@ public class BrokerTestHelper
     }
 
     public static Queue<?> createQueue(String queueName, VirtualHost<?> virtualHost)
-            throws QueueExistsException
     {
         Map<String,Object> attributes = new HashMap<String, Object>();
         attributes.put(Queue.ID, UUIDGenerator.generateRandomUUID());

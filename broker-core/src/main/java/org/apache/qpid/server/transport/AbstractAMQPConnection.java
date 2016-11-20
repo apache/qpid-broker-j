@@ -908,4 +908,11 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
             }
         }
     }
+
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        getEventLogger().message(ConnectionMessages.OPERATION(operation));
+    }
 }

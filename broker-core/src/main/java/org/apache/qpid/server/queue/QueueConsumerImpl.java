@@ -84,6 +84,7 @@ class QueueConsumerImpl
     private final ConsumerTarget _target;
     private volatile QueueContext _queueContext;
 
+
     @ManagedAttributeField
     private boolean _exclusive;
     @ManagedAttributeField
@@ -97,6 +98,8 @@ class QueueConsumerImpl
     @ManagedAttributeField
     private int _priority;
 
+    private final String _linkName;
+
     private QueueConsumerNode _queueConsumerNode;
 
     QueueConsumerImpl(final AbstractQueue<?> queue,
@@ -108,7 +111,7 @@ class QueueConsumerImpl
                       final Integer priority)
     {
         super(parentsMap(queue, target.getSessionModel().getModelObject()),
-              createAttributeMap(consumerName, filters, optionSet, priority));
+              createAttributeMap(target.getSessionModel(), consumerName, filters, optionSet, priority));
         _messageClass = messageClass;
         _sessionReference = target.getSessionModel().getConnectionReference();
         _consumerNumber = CONSUMER_NUMBER_GENERATOR.getAndIncrement();
@@ -118,6 +121,7 @@ class QueueConsumerImpl
         _isTransient = optionSet.contains(Option.TRANSIENT);
         _target = target;
         _queue = queue;
+        _linkName = consumerName;
 
         // Access control
         authorise(Operation.CREATE);
@@ -127,13 +131,19 @@ class QueueConsumerImpl
         setupLogging();
     }
 
-    private static Map<String, Object> createAttributeMap(String name,
+    private static Map<String, Object> createAttributeMap(final AMQSessionModel sessionModel,
+                                                          String linkName,
                                                           FilterManager filters,
                                                           EnumSet<Option> optionSet,
                                                           Integer priority)
     {
         Map<String,Object> attributes = new HashMap<String, Object>();
         attributes.put(ID, UUID.randomUUID());
+        String name = sessionModel.getAMQPConnection().getConnectionId()
+                      + "|"
+                      + sessionModel.getChannelId()
+                      + "|"
+                      + linkName;
         attributes.put(NAME, name);
         attributes.put(EXCLUSIVE, optionSet.contains(Option.EXCLUSIVE));
         attributes.put(NO_LOCAL, optionSet.contains(Option.NO_LOCAL));
@@ -165,6 +175,12 @@ class QueueConsumerImpl
     public ConsumerTarget getTarget()
     {
         return _target;
+    }
+
+    @Override
+    public String getLinkName()
+    {
+        return _linkName;
     }
 
     @Override
@@ -289,6 +305,12 @@ class QueueConsumerImpl
     public void queueEmpty()
     {
         _target.queueEmpty();
+    }
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        getEventLogger().message(SubscriptionMessages.OPERATION(operation));
     }
 
     @Override

@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.qpid.server.logging.OperationLogMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -59,5 +60,12 @@ public abstract class AbstractPluginAdapter<X extends Plugin<X>> extends Abstrac
     protected Broker<?> getBroker()
     {
         return _broker;
+    }
+
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        _broker.getEventLogger().message(new OperationLogMessage(this, operation));
     }
 }

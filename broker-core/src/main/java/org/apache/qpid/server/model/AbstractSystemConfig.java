@@ -260,16 +260,56 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         _configurationStore.upgradeStoreStructure();
     }
 
-    @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.ACTIVE)
+
+    @StateTransition(currentState = State.ACTIVE, desiredState = State.STOPPED)
+    protected ListenableFuture<Void> doStop()
+    {
+        return doAfter(getContainer().closeAsync(), new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                _configurationStore.closeConfigurationStore();
+                _configurationStore = createStoreObject();
+
+                if (isManagementMode())
+                {
+                    _configurationStore = new ManagementModeStoreHandler(_configurationStore, AbstractSystemConfig.this);
+                }
+
+                _configurationStore.init(AbstractSystemConfig.this);
+                _configurationStore.upgradeStoreStructure();
+                AbstractSystemConfig.super.setState(State.STOPPED);
+            }
+        });
+
+    }
+
+
+    @StateTransition(currentState = { State.UNINITIALIZED, State.STOPPED }, desiredState = State.ACTIVE)
     protected ListenableFuture<Void> activate()
     {
+        return doAfter(makeActive(), new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                AbstractSystemConfig.super.setState(State.ACTIVE);
+            }
+        });
+    }
+
+
+    protected ListenableFuture<Void> makeActive()
+    {
+
         final EventLogger eventLogger = _eventLogger;
         final EventLogger startupLogger = initiateStartupLogging();
 
 
         try
         {
-            final Container<?> container = initateStoreAndRecovery();
+            final Container<?> container = initiateStoreAndRecovery();
 
             container.setEventLogger(startupLogger);
             final SettableFuture<Void> returnVal = SettableFuture.create();
@@ -309,7 +349,8 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
     }
 
-    private Container<?> initateStoreAndRecovery() throws IOException
+
+    private Container<?> initiateStoreAndRecovery() throws IOException
     {
         ConfiguredObjectRecord[] initialRecords = convertToConfigurationRecords(getInitialConfigurationLocation());
         final DurableConfigurationStore store = getConfigurationStore();
@@ -338,7 +379,10 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
         if(containerType != null)
         {
-            updateModel(containerType.getModel());
+            if(containerType.getModel() != getModel())
+            {
+                updateModel(containerType.getModel());
+            }
             containerType.getRecoverer(this).upgradeAndRecover(records);
 
         }
@@ -359,7 +403,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
         try
         {
-            final Container<?> container = initateStoreAndRecovery();
+            final Container<?> container = initiateStoreAndRecovery();
 
             container.setEventLogger(startupLogger);
             return Futures.immediateFuture(null);
@@ -537,6 +581,12 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     public void setOnContainerCloseTask(final Runnable onContainerCloseTask)
     {
         _onContainerCloseTask = onContainerCloseTask;
+    }
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        getEventLogger().message(BrokerMessages.OPERATION(operation));
     }
 
     public static String getDefaultValue(String attrName)

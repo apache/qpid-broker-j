@@ -30,7 +30,7 @@ public class ReturnMessage extends UnprocessedMessage_0_8
 
     public ReturnMessage(AMQShortString exchange, AMQShortString routingKey, AMQShortString replyText, int replyCode)
     {
-        super(-1,0,exchange,routingKey,false);
+        super(-1,"",exchange,routingKey,false);
         _replyText = replyText;
         _replyCode = replyCode;
     }

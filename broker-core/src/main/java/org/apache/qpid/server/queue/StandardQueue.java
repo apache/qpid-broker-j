@@ -23,7 +23,7 @@ package org.apache.qpid.server.queue;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.Queue;
 
-@ManagedObject( category = false, type="standard" )
+@ManagedObject( category = false, type="standard", amqpName = "org.apache.qpid.StandardQueue" )
 public interface StandardQueue<X extends StandardQueue<X>> extends Queue<X>
 {
 }

@@ -417,7 +417,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
                                 final InstanceProperties props,
                                 final long deliveryTag)
     {
-        return _deliveryMethod.deliverToClient(consumer, message, props, deliveryTag);
+        return _deliveryMethod.deliverToClient(this, message, props, deliveryTag);
 
     }
 

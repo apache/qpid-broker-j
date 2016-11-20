@@ -153,6 +153,12 @@ public class BindingImpl
     }
 
     @Override
+    protected void logOperation(final String operation)
+    {
+        getEventLogger().message(BindingMessages.OPERATION(operation));
+    }
+
+    @Override
     public boolean equals(final Object o)
     {
         if (this == o)

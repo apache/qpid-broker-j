@@ -26,7 +26,9 @@ import java.util.Map;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.server.logging.messages.AuthenticationProviderMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
@@ -102,6 +104,12 @@ class ManagedUser extends AbstractConfiguredObject<ManagedUser> implements User<
     public void setPassword(final String password)
     {
         setAttributes(Collections.<String, Object>singletonMap(User.PASSWORD, password));
+    }
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        _authenticationManager.getParent(Container.class).getEventLogger().message(AuthenticationProviderMessages.OPERATION(operation));
     }
 
 }

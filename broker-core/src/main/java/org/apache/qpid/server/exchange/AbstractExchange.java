@@ -61,7 +61,7 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.NamedAddressSpace;
-import org.apache.qpid.server.model.Publisher;
+import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
@@ -383,7 +383,13 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         _bindings.remove(binding);
     }
 
-    public final Collection<Binding<?>> getBindings()
+    @Override
+    public Collection<Binding<?>> getBindings()
+    {
+        return getBindingsImpl();
+    }
+
+    private Collection<Binding<?>> getBindingsImpl()
     {
         return Collections.unmodifiableList(_bindings);
     }
@@ -519,6 +525,14 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     protected abstract List<? extends BaseQueue> doRoute(final ServerMessage message,
                                                          final String routingAddress,
                                                          final InstanceProperties instanceProperties);
+
+    @Override
+    public void bind(@Param(name = "queue") final Queue<?> queue,
+                     @Param(name = "bindingKey") final String bindingKey,
+                     @Param(name = "arguments") final Map<String, Object> arguments)
+    {
+        addBinding(bindingKey, queue, arguments);
+    }
 
     @Override
     public long getMessagesIn()
@@ -838,18 +852,12 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         if(org.apache.qpid.server.model.Binding.class.isAssignableFrom(clazz))
         {
 
-            return (Collection<C>) getBindings();
+            return (Collection<C>) getBindingsImpl();
         }
         else
         {
             return Collections.EMPTY_SET;
         }
-    }
-
-    private interface BindingListener<X extends AbstractExchange<X>>
-    {
-        void bindingAdded(AbstractExchange<X> exchange, Binding<?> binding);
-        void bindingRemoved(AbstractExchange<X> exchange, Binding<?> binding);
     }
 
     private static final class BindingIdentifier
@@ -908,12 +916,6 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         }
     }
 
-    @Override
-    public Collection<Publisher> getPublishers()
-    {
-        return Collections.emptySet();
-    }
-
     // Used by the protocol layers
     @Override
     public boolean deleteBinding(final String bindingKey, final Queue<?> queue)
@@ -938,17 +940,6 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     }
 
     @Override
-    public org.apache.qpid.server.model.Binding createBinding(final String bindingKey,
-                                                              final Queue queue,
-                                                              final Map<String, Object> bindingArguments,
-                                                              final Map<String, Object> attributes)
-    {
-        addBinding(bindingKey, (Queue<?>) queue, bindingArguments);
-        final Binding<?> binding = getBinding(bindingKey, (Queue<?>) queue);
-        return binding;
-    }
-
-    @Override
     public NamedAddressSpace getAddressSpace()
     {
         return _virtualHost;
@@ -959,5 +950,11 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             throws AccessControlException
     {
         authorise(token, PUBLISH_ACTION, arguments);
+    }
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        getEventLogger().message(ExchangeMessages.OPERATION(operation));
     }
 }

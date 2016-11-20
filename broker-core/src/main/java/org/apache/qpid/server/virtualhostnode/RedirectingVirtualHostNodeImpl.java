@@ -34,6 +34,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.logging.OperationLogMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -277,6 +278,13 @@ public class RedirectingVirtualHostNodeImpl
             }
         }
     }
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        _broker.getEventLogger().message(new OperationLogMessage(this,operation));
+    }
+
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override

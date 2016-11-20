@@ -34,7 +34,7 @@ import java.util.Set;
 
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
-public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject> implements ConfiguredObjectOperation<C>, InjectedAttributeStatisticOrOperation<C>
+public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject<?>> implements ConfiguredObjectOperation<C>, InjectedAttributeStatisticOrOperation<C>
 {
     private final Method _operation;
     private final List<OperationParameter> _params;
@@ -255,6 +255,12 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject> imple
     public boolean isNonModifying()
     {
         return _nonModifying;
+    }
+
+    @Override
+    public boolean isAssociateAsIfChildren()
+    {
+        return false;
     }
 
     @Override

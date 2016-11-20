@@ -250,6 +250,12 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     int getNumberOfObjectsPendingFinalization();
 
     @ManagedOperation(nonModifying = true,
+            description = "Restart the broker within the same JVM",
+            changesConfiguredObjectState = false,
+            log = true)
+    void restart();
+
+    @ManagedOperation(nonModifying = true,
             description = "Initiates garbage collection",
             changesConfiguredObjectState = false)
     void performGC();

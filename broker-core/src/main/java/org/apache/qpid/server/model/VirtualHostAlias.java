@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.model;
 
-@ManagedObject( creatable = false )
+@ManagedObject
 public interface VirtualHostAlias<X extends VirtualHostAlias<X>> extends ConfiguredObject<X>
 {
     String PRIORITY = "priority";

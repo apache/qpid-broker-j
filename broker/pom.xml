@@ -142,6 +142,13 @@
 
     <dependency>
       <groupId>org.apache.qpid</groupId>
+      <artifactId>qpid-broker-plugins-management-amqp</artifactId>
+      <version>${project.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-plugins-memory-store</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>

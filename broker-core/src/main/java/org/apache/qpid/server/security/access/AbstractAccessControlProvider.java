@@ -31,6 +31,7 @@ import org.apache.qpid.server.logging.messages.AccessControlMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.CommonAccessControlProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
@@ -99,4 +100,10 @@ public abstract class AbstractAccessControlProvider<X extends AbstractAccessCont
                              });
     }
 
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        getAncestor(Container.class).getEventLogger().message(AccessControlMessages.OPERATION(operation));
+    }
 }

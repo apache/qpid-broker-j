@@ -611,7 +611,7 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
      * Registers the consumer with the broker
      */
     public void sendConsume(BasicMessageConsumer_0_10 consumer, String queueName,
-                            boolean nowait, int tag)
+                            boolean nowait)
             throws QpidException, FailoverException
     {
         queueName = preprocessAddressTopic(consumer, queueName);
@@ -631,13 +631,13 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
         boolean acceptModeNone = getAcknowledgeMode() == NO_ACKNOWLEDGE;
 
         String queue = queueName == null ? destination.getAddressName() : queueName;
+        String consumerTag = consumer.getConsumerTag();
         getQpidSession().messageSubscribe
-            (queue, String.valueOf(tag),
+            (queue, consumerTag,
              acceptModeNone ? MessageAcceptMode.NONE : MessageAcceptMode.EXPLICIT,
              preAcquire ? MessageAcquireMode.PRE_ACQUIRED : MessageAcquireMode.NOT_ACQUIRED, null, 0, arguments,
              consumer.isExclusive() ? Option.EXCLUSIVE : Option.NONE);
 
-        String consumerTag = (consumer).getConsumerTagString();
 
         if (capacity == 0)
         {
@@ -814,7 +814,7 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
         {
             for (BasicMessageConsumer consumer : getConsumers())
             {
-                getQpidSession().messageStop(String.valueOf(consumer.getConsumerTag()),
+                getQpidSession().messageStop(consumer.getConsumerTag(),
                                              Option.UNRELIABLE);
             }
             sync();
@@ -823,7 +823,7 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
         {
             for (BasicMessageConsumer_0_10 consumer : getConsumers())
             {
-                String consumerTag = String.valueOf(consumer.getConsumerTag());
+                String consumerTag = consumer.getConsumerTag();
                 //only set if msg list is null
                 try
                 {

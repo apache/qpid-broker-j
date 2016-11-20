@@ -22,7 +22,7 @@ package org.apache.qpid.server.model;
 
 import java.util.Map;
 
-@ManagedObject
+@ManagedObject( amqpName = "org.apache.qpid.Binding")
 public interface Binding<X extends Binding<X>> extends ConfiguredObject<X>
 {
 

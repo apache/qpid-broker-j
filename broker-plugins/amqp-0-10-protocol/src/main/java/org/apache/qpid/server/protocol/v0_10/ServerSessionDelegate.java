@@ -52,6 +52,7 @@ import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.LifetimePolicy;
@@ -77,9 +78,7 @@ import org.apache.qpid.server.txn.TimeoutDtxException;
 import org.apache.qpid.server.txn.UnknownDtxBranchException;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.ExchangeExistsException;
 import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
-import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
@@ -936,9 +935,9 @@ public class ServerSessionDelegate extends SessionDelegate
                 {
                     exception(session, method, ExecutionErrorCode.NOT_FOUND, "Unknown Exchange Type: " + method.getType());
                 }
-                catch(ExchangeExistsException e)
+                catch(AbstractConfiguredObject.DuplicateNameException e)
                 {
-                    Exchange<?> exchange = e.getExistingExchange();
+                    Exchange<?> exchange = (Exchange<?>) e.getExisting();
                     if(!exchange.getType().equals(method.getType()))
                     {
                         exception(session, method, ExecutionErrorCode.NOT_ALLOWED,
@@ -1530,9 +1529,9 @@ public class ServerSessionDelegate extends SessionDelegate
                 queue = addressSpace.createMessageSource(Queue.class, arguments);
 
             }
-            catch(QueueExistsException qe)
+            catch(AbstractConfiguredObject.DuplicateNameException qe)
             {
-                queue = qe.getExistingQueue();
+                queue = (Queue<?>) qe.getExisting();
                 if (!verifySessionAccess((ServerSession) session, queue))
                 {
                     String description = "Cannot declare queue('" + queueName + "'),"

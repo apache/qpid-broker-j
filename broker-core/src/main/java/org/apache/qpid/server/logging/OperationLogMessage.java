@@ -18,9 +18,33 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
+package org.apache.qpid.server.logging;
 
-@ManagedObject
-public interface Publisher<X extends Publisher<X>> extends ConfiguredObject<X>
+import org.apache.qpid.server.model.ConfiguredObject;
+
+public class OperationLogMessage implements LogMessage
 {
+
+    private final String _hierarchy;
+    private final String _logMessage;
+
+    public OperationLogMessage(ConfiguredObject<?> object, String operation)
+    {
+        _hierarchy = AbstractMessageLogger.DEFAULT_LOG_HIERARCHY_PREFIX
+                     + "." + object.getCategoryClass().getSimpleName().toLowerCase()
+                     + ".operation";
+        _logMessage = object.getCategoryClass().getSimpleName() + "("+object.getName()+") : Operation " + operation;
+    }
+
+    @Override
+    public String getLogHierarchy()
+    {
+        return _hierarchy;
+    }
+
+    @Override
+    public String toString()
+    {
+        return _logMessage;
+    }
 }

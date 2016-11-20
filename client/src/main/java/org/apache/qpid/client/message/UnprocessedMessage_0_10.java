@@ -35,7 +35,7 @@ public class UnprocessedMessage_0_10 extends UnprocessedMessage
 
     public UnprocessedMessage_0_10(MessageTransfer xfr)
     {
-        super(Integer.parseInt(xfr.getDestination()));
+        super(xfr.getDestination());
         _transfer = xfr;
     }
 

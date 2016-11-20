@@ -30,7 +30,9 @@ import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
 
-@ManagedObject( category = false, type = "HTTP", validChildTypes = "org.apache.qpid.server.model.port.HttpPortImpl#getSupportedChildTypes()")
+@ManagedObject( category = false, type = "HTTP",
+        validChildTypes = "org.apache.qpid.server.model.port.HttpPortImpl#getSupportedChildTypes()",
+        amqpName = "org.apache.qpid.HttpPort")
 public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X>
 {
     String DEFAULT_HTTP_NEED_CLIENT_AUTH = "false";

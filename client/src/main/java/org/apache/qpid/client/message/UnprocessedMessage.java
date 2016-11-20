@@ -32,10 +32,10 @@ import org.apache.qpid.client.AMQSession;
  */
 public abstract class UnprocessedMessage implements AMQSession.Dispatchable
 {
-    private final int _consumerTag;
+    private final String _consumerTag;
 
 
-    public UnprocessedMessage(int consumerTag)
+    public UnprocessedMessage(String consumerTag)
     {
         _consumerTag = consumerTag;
     }
@@ -44,7 +44,7 @@ public abstract class UnprocessedMessage implements AMQSession.Dispatchable
     abstract public long getDeliveryTag();
 
 
-    public int getConsumerTag()
+    public String getConsumerTag()
     {
         return _consumerTag;
     }

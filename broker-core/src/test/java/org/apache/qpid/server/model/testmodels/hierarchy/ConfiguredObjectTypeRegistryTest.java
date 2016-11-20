@@ -94,8 +94,8 @@ public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
                 _typeRegistry.getOperations(object.getClass());
         assertEquals(2, kitCarOperations.size());
         assertTrue(kitCarOperations.containsKey("openDoor"));
-        final ConfiguredObjectOperation<TestCar> operation =
-                (ConfiguredObjectOperation<TestCar>) kitCarOperations.get("openDoor");
+        final ConfiguredObjectOperation<TestCar<?>> operation =
+                (ConfiguredObjectOperation<TestCar<?>>) kitCarOperations.get("openDoor");
 
         // test explicitly setting parameter
         Object returnVal = operation.perform(object, Collections.<String, Object>singletonMap("door", "DRIVER"));

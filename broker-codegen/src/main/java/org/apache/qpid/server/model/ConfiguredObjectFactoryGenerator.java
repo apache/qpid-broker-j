@@ -287,29 +287,43 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
 
         final Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues =
                 processingEnv.getElementUtils().getElementValuesWithDefaults(annotationMirror);
+        boolean wrapCallToSuper = false;
+        boolean log = false;
         for (ExecutableElement executableElement : elementValues.keySet())
         {
             if ("changesConfiguredObjectState".contentEquals(executableElement.getSimpleName()))
             {
-                final String callToSuper = "super." + methodElement.getSimpleName().toString() + parameterList;
-
-                pw.print("        ");
-                if (methodElement.getReturnType().getKind() != TypeKind.VOID)
-                {
-                    pw.print("return ");
-                }
-                if ((Boolean) elementValues.get(executableElement).getValue())
-                {
-                    pw.println(wrapByDoOnConfigThread(callToSuper, className, methodElement));
-                }
-                else
-                {
-                    pw.println(callToSuper + ";");
-                }
-
-                break;
+                wrapCallToSuper = (Boolean) elementValues.get(executableElement).getValue();
+            }
+            else if("log".contentEquals(executableElement.getSimpleName()))
+            {
+                log = (Boolean) elementValues.get(executableElement).getValue();
             }
         }
+
+        if(log)
+        {
+            pw.print("        logOperation(\"");
+            pw.print(methodElement.getSimpleName().toString());
+            pw.println("\");");
+        }
+
+        final String callToSuper = "super." + methodElement.getSimpleName().toString() + parameterList;
+
+        pw.print("        ");
+        if (methodElement.getReturnType().getKind() != TypeKind.VOID)
+        {
+            pw.print("return ");
+        }
+        if (wrapCallToSuper)
+        {
+            pw.println(wrapByDoOnConfigThread(callToSuper, className, methodElement));
+        }
+        else
+        {
+            pw.println(callToSuper + ";");
+        }
+
 
         pw.println("    }");
         pw.println();

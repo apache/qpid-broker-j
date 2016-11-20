@@ -24,7 +24,8 @@ import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.Queue;
 
-@ManagedObject( category = false, type= SortedQueue.SORTED_QUEUE_TYPE)
+@ManagedObject( category = false, type= SortedQueue.SORTED_QUEUE_TYPE,
+        amqpName = "org.apache.qpid.SortedQueue")
 public interface SortedQueue<X extends SortedQueue<X>> extends Queue<X>
 {
     String SORT_KEY = "sortKey";

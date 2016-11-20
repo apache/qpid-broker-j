@@ -26,7 +26,7 @@ import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 import org.apache.qpid.server.store.preferences.PreferencesRoot;
 
-@ManagedObject(category=true, managesChildren=true)
+@ManagedObject(category=true, managesChildren=true, amqpName = "org.apache.qpid.VirtualHostNode")
 public interface VirtualHostNode<X extends VirtualHostNode<X>> extends ConfiguredObject<X>, PreferencesRoot
 {
     String QPID_INITIAL_CONFIG_VIRTUALHOST_CONFIG_VAR = "qpid.initial_config_virtualhost_config";

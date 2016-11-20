@@ -32,12 +32,11 @@ import java.util.concurrent.TimeoutException;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.OperationLogMessage;
 import org.apache.qpid.server.logging.messages.HighAvailabilityMessages;
 import org.apache.qpid.server.logging.subjects.BDBHAVirtualHostNodeLogSubject;
 import org.apache.qpid.server.logging.subjects.GroupLogSubject;
@@ -48,9 +47,8 @@ import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.model.SystemConfig;
-import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDBHARemoteReplicationNodeImpl> implements BDBHARemoteReplicationNode<BDBHARemoteReplicationNodeImpl>
@@ -60,7 +58,7 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
 
     private final ReplicatedEnvironmentFacade _replicatedEnvironmentFacade;
     private final String _address;
-    private final Broker _broker;
+    private final Broker<?> _broker;
 
     private volatile Date _joinTime;
     private volatile long _lastTransactionId;
@@ -232,6 +230,12 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
         }
     }
 
+    @Override
+    protected void logOperation(final String operation)
+    {
+        getEventLogger().message(new OperationLogMessage(this, operation));
+    }
+
     void setRole(NodeRole role)
     {
         _lastKnownRole = role;
@@ -271,6 +275,6 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
 
     private EventLogger getEventLogger()
     {
-        return ((SystemConfig)getParent(VirtualHostNode.class).getParent(Broker.class).getParent(SystemConfig.class)).getEventLogger();
+        return _broker.getEventLogger();
     }
 }

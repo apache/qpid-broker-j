@@ -22,8 +22,8 @@ package org.apache.qpid.server.logging.messages;
 
 import static org.apache.qpid.server.logging.AbstractMessageLogger.DEFAULT_LOG_HIERARCHY_PREFIX;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.apache.qpid.server.logging.LogMessage;
 
 import java.text.MessageFormat;
@@ -63,32 +63,92 @@ public class TrustStoreMessages
     }
 
     public static final String TRUSTSTORE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore";
-    public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore.open";
-    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore.create";
     public static final String DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore.delete";
     public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore.close";
+    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore.create";
+    public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore.operation";
+    public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore.open";
 
     static
     {
         LoggerFactory.getLogger(TRUSTSTORE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
-        LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
         LoggerFactory.getLogger(DELETE_LOG_HIERARCHY);
         LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.TrustStore_logmessages", _currentLocale);
     }
 
     /**
      * Log a TrustStore message of the Format:
-     * <pre>TST-1002 : Open</pre>
+     * <pre>TST-1004 : Delete "{0}"</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPEN()
+    public static LogMessage DELETE(String param1)
     {
-        String rawMessage = _messages.getString("OPEN");
+        String rawMessage = _messages.getString("DELETE");
+
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return DELETE_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a TrustStore message of the Format:
+     * <pre>TST-1003 : Close</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage CLOSE()
+    {
+        String rawMessage = _messages.getString("CLOSE");
 
         final String message = rawMessage;
 
@@ -101,7 +161,7 @@ public class TrustStoreMessages
 
             public String getLogHierarchy()
             {
-                return OPEN_LOG_HIERARCHY;
+                return CLOSE_LOG_HIERARCHY;
             }
 
             @Override
@@ -192,14 +252,14 @@ public class TrustStoreMessages
 
     /**
      * Log a TrustStore message of the Format:
-     * <pre>TST-1004 : Delete "{0}"</pre>
+     * <pre>TST-1005 : Operation : {0}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage DELETE(String param1)
+    public static LogMessage OPERATION(String param1)
     {
-        String rawMessage = _messages.getString("DELETE");
+        String rawMessage = _messages.getString("OPERATION");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
@@ -217,7 +277,7 @@ public class TrustStoreMessages
 
             public String getLogHierarchy()
             {
-                return DELETE_LOG_HIERARCHY;
+                return OPERATION_LOG_HIERARCHY;
             }
 
             @Override
@@ -250,14 +310,14 @@ public class TrustStoreMessages
 
     /**
      * Log a TrustStore message of the Format:
-     * <pre>TST-1003 : Close</pre>
+     * <pre>TST-1002 : Open</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLOSE()
+    public static LogMessage OPEN()
     {
-        String rawMessage = _messages.getString("CLOSE");
+        String rawMessage = _messages.getString("OPEN");
 
         final String message = rawMessage;
 
@@ -270,7 +330,7 @@ public class TrustStoreMessages
 
             public String getLogHierarchy()
             {
-                return CLOSE_LOG_HIERARCHY;
+                return OPEN_LOG_HIERARCHY;
             }
 
             @Override

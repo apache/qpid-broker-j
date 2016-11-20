@@ -29,11 +29,11 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.messages.AuthenticationProviderMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.AuthenticationProviderMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Container;
@@ -192,4 +192,11 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     {
         return _disabledMechanisms;
     }
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        _container.getEventLogger().message(AuthenticationProviderMessages.OPERATION(operation));
+    }
+
 }

@@ -25,7 +25,9 @@ import java.util.Map;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.server.logging.OperationLogMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
@@ -69,5 +71,11 @@ abstract class AbstractVirtualHostAlias<X extends AbstractVirtualHostAlias<X>>
                 setState(State.DELETED);
             }
         });
+    }
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        getPort().getParent(Broker.class).getEventLogger().message(new OperationLogMessage(this, operation));
     }
 }

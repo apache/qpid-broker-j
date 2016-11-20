@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.model;
 
-@ManagedObject
+@ManagedObject(amqpName = "org.apache.qpid.VirtualHostLogger")
 public interface VirtualHostLogger <X extends VirtualHostLogger<X>> extends ConfiguredObject<X>
 {
     void stopLogging();

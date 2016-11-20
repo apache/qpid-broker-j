@@ -117,7 +117,7 @@ public class BasicMessageConsumer_0_8 extends BasicMessageConsumer<UnprocessedMe
 
     void sendCancel() throws QpidException, FailoverException
     {
-        BasicCancelBody body = getSession().getMethodRegistry().createBasicCancelBody(new AMQShortString(String.valueOf(getConsumerTag())), false);
+        BasicCancelBody body = getSession().getMethodRegistry().createBasicCancelBody(new AMQShortString(getConsumerTag()), false);
 
         final AMQFrame cancelFrame = body.generateFrame(getChannelId());
 

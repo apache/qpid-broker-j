@@ -35,7 +35,7 @@ import java.util.Set;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
-public class ConfiguredObjectMethodOperation<C extends ConfiguredObject> implements ConfiguredObjectOperation<C>
+public class ConfiguredObjectMethodOperation<C extends ConfiguredObject<?>> implements ConfiguredObjectOperation<C>
 {
     private final Method _operation;
     private final OperationParameterFromAnnotation[] _params;
@@ -226,6 +226,12 @@ public class ConfiguredObjectMethodOperation<C extends ConfiguredObject> impleme
     public boolean isNonModifying()
     {
         return _operation.getAnnotation(ManagedOperation.class).nonModifying();
+    }
+
+    @Override
+    public boolean isAssociateAsIfChildren()
+    {
+        return _operation.getAnnotation(ManagedOperation.class).associateAsIfChildren();
     }
 
     @Override

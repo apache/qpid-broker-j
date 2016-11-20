@@ -20,9 +20,10 @@
  */
 package org.apache.qpid.server.virtualhost.derby;
 
+import java.util.Map;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ManagedAttributeField;
-import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.MessageStore;
@@ -31,9 +32,6 @@ import org.apache.qpid.server.store.derby.DerbyUtils;
 import org.apache.qpid.server.util.FileHelper;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 
-import java.util.Map;
-
-@ManagedObject(category = false, type = DerbyVirtualHostImpl.VIRTUAL_HOST_TYPE)
 public class DerbyVirtualHostImpl extends AbstractVirtualHost<DerbyVirtualHostImpl> implements DerbyVirtualHost<DerbyVirtualHostImpl>
 {
     public static final String VIRTUAL_HOST_TYPE = "DERBY";

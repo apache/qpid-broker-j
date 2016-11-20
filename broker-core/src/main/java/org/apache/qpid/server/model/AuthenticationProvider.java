@@ -29,7 +29,7 @@ import javax.security.sasl.SaslServer;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 
-@ManagedObject( creatable = false )
+@ManagedObject
 public interface AuthenticationProvider<X extends AuthenticationProvider<X>> extends ConfiguredObject<X>
 {
 

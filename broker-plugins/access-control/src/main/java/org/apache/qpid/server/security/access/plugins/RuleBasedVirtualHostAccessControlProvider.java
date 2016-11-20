@@ -31,7 +31,7 @@ import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.model.VirtualHostAccessControlProvider;
 import org.apache.qpid.server.security.Result;
 
-@ManagedObject( category = false, type= RuleBasedVirtualHostAccessControlProvider.RULE_BASED_TYPE)
+@ManagedObject( category = false, type= RuleBasedVirtualHostAccessControlProvider.RULE_BASED_TYPE, amqpName = "org.apache.qpid.RuleBaseVirtualHostAccessControlProvider")
 public interface RuleBasedVirtualHostAccessControlProvider<X extends RuleBasedVirtualHostAccessControlProvider<X>> extends VirtualHostAccessControlProvider<X>
 {
     String RULE_BASED_TYPE = "RuleBased";

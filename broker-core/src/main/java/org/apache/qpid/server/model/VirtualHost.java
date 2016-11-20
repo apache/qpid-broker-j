@@ -20,7 +20,9 @@
  */
 package org.apache.qpid.server.model;
 
-@ManagedObject( defaultType = "ProvidedStore", description = VirtualHost.CLASS_DESCRIPTION)
+import java.util.Collection;
+
+@ManagedObject( defaultType = "ProvidedStore", description = VirtualHost.CLASS_DESCRIPTION, amqpName = "org.apache.qpid.VirtualHost")
 public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<X>,
                                                                NamedAddressSpace
 {
@@ -41,5 +43,9 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     @DerivedAttribute( persist = true )
     String getModelVersion();
+
+    @Override
+    @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false, associateAsIfChildren = true)
+    Collection<? extends Connection<?>> getConnections();
 
 }

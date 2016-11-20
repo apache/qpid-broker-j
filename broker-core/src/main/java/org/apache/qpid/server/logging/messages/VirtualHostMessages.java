@@ -22,8 +22,8 @@ package org.apache.qpid.server.logging.messages;
 
 import static org.apache.qpid.server.logging.AbstractMessageLogger.DEFAULT_LOG_HIERARCHY_PREFIX;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.apache.qpid.server.logging.LogMessage;
 
 import java.text.MessageFormat;
@@ -63,38 +63,40 @@ public class VirtualHostMessages
     }
 
     public static final String VIRTUALHOST_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "virtualhost";
-    public static final String CLOSED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "virtualhost.closed";
+    public static final String CREATED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "virtualhost.created";
     public static final String STATS_DATA_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "virtualhost.stats_data";
-    public static final String STATS_MSGS_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "virtualhost.stats_msgs";
+    public static final String ERRORED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "virtualhost.errored";
+    public static final String CLOSED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "virtualhost.closed";
+    public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "virtualhost.operation";
     public static final String FILESYSTEM_FULL_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "virtualhost.filesystem_full";
     public static final String FILESYSTEM_NOTFULL_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "virtualhost.filesystem_notfull";
-    public static final String CREATED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "virtualhost.created";
-    public static final String ERRORED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "virtualhost.errored";
+    public static final String STATS_MSGS_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "virtualhost.stats_msgs";
 
     static
     {
         LoggerFactory.getLogger(VIRTUALHOST_LOG_HIERARCHY);
-        LoggerFactory.getLogger(CLOSED_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CREATED_LOG_HIERARCHY);
         LoggerFactory.getLogger(STATS_DATA_LOG_HIERARCHY);
-        LoggerFactory.getLogger(STATS_MSGS_LOG_HIERARCHY);
+        LoggerFactory.getLogger(ERRORED_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CLOSED_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
         LoggerFactory.getLogger(FILESYSTEM_FULL_LOG_HIERARCHY);
         LoggerFactory.getLogger(FILESYSTEM_NOTFULL_LOG_HIERARCHY);
-        LoggerFactory.getLogger(CREATED_LOG_HIERARCHY);
-        LoggerFactory.getLogger(ERRORED_LOG_HIERARCHY);
+        LoggerFactory.getLogger(STATS_MSGS_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.VirtualHost_logmessages", _currentLocale);
     }
 
     /**
      * Log a VirtualHost message of the Format:
-     * <pre>VHT-1002 : Closed : {0}</pre>
+     * <pre>VHT-1001 : Created : {0}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CLOSED(String param1)
+    public static LogMessage CREATED(String param1)
     {
-        String rawMessage = _messages.getString("CLOSED");
+        String rawMessage = _messages.getString("CREATED");
 
         final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
@@ -112,7 +114,7 @@ public class VirtualHostMessages
 
             public String getLogHierarchy()
             {
-                return CLOSED_LOG_HIERARCHY;
+                return CREATED_LOG_HIERARCHY;
             }
 
             @Override
@@ -203,16 +205,16 @@ public class VirtualHostMessages
 
     /**
      * Log a VirtualHost message of the Format:
-     * <pre>VHT-1004 : {0} : {1,choice,0#delivered|1#received} : {2,number,#.###} msg/s peak : {3,number,#} msgs total</pre>
+     * <pre>VHT-1005 : {0} Unexpected fatal error</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage STATS_MSGS(String param1, Number param2, Number param3, Number param4)
+    public static LogMessage ERRORED(String param1)
     {
-        String rawMessage = _messages.getString("STATS_MSGS");
+        String rawMessage = _messages.getString("ERRORED");
 
-        final Object[] messageArguments = {param1, param2, param3, param4};
+        final Object[] messageArguments = {param1};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -228,7 +230,123 @@ public class VirtualHostMessages
 
             public String getLogHierarchy()
             {
-                return STATS_MSGS_LOG_HIERARCHY;
+                return ERRORED_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a VirtualHost message of the Format:
+     * <pre>VHT-1002 : Closed : {0}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage CLOSED(String param1)
+    {
+        String rawMessage = _messages.getString("CLOSED");
+
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return CLOSED_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a VirtualHost message of the Format:
+     * <pre>VHT-1008 : Operation : {0}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage OPERATION(String param1)
+    {
+        String rawMessage = _messages.getString("OPERATION");
+
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return OPERATION_LOG_HIERARCHY;
             }
 
             @Override
@@ -377,16 +495,16 @@ public class VirtualHostMessages
 
     /**
      * Log a VirtualHost message of the Format:
-     * <pre>VHT-1001 : Created : {0}</pre>
+     * <pre>VHT-1004 : {0} : {1,choice,0#delivered|1#received} : {2,number,#.###} msg/s peak : {3,number,#} msgs total</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CREATED(String param1)
+    public static LogMessage STATS_MSGS(String param1, Number param2, Number param3, Number param4)
     {
-        String rawMessage = _messages.getString("CREATED");
+        String rawMessage = _messages.getString("STATS_MSGS");
 
-        final Object[] messageArguments = {param1};
+        final Object[] messageArguments = {param1, param2, param3, param4};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -402,65 +520,7 @@ public class VirtualHostMessages
 
             public String getLogHierarchy()
             {
-                return CREATED_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a VirtualHost message of the Format:
-     * <pre>VHT-1005 : {0} Unexpected fatal error</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage ERRORED(String param1)
-    {
-        String rawMessage = _messages.getString("ERRORED");
-
-        final Object[] messageArguments = {param1};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            public String toString()
-            {
-                return message;
-            }
-
-            public String getLogHierarchy()
-            {
-                return ERRORED_LOG_HIERARCHY;
+                return STATS_MSGS_LOG_HIERARCHY;
             }
 
             @Override

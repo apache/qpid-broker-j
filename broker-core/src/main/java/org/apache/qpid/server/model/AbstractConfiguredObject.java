@@ -3320,6 +3320,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         _userPreferences = userPreferences;
     }
 
+    protected abstract void logOperation(String operation);
+
     //=========================================================================================
 
     static String interpolate(ConfiguredObject<?> object, String value)
@@ -3625,12 +3627,18 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
-    public final static class DuplicateNameException extends IllegalArgumentException
+    public static class DuplicateNameException extends IllegalArgumentException
     {
         private final ConfiguredObject<?> _existing;
-        private DuplicateNameException(final ConfiguredObject<?> existing)
+
+        protected DuplicateNameException(final ConfiguredObject<?> existing)
         {
-            super("Child of type " + existing.getClass().getSimpleName() + " already exists with name of " + existing.getName());
+            this("Child of type " + existing.getClass().getSimpleName() + " already exists with name of " + existing.getName(), existing);
+        }
+
+        protected DuplicateNameException(String message, final ConfiguredObject<?> existing)
+        {
+            super(message);
             _existing = existing;
         }
 

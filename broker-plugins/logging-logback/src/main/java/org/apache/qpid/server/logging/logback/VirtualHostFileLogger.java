@@ -33,7 +33,10 @@ import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.VirtualHostLogger;
 
-@ManagedObject( category = false, type = VirtualHostFileLogger.TYPE, validChildTypes = "org.apache.qpid.server.logging.logback.AbstractLogger#getSupportedVirtualHostLoggerChildTypes()")
+@ManagedObject( category = false,
+                type = VirtualHostFileLogger.TYPE,
+                validChildTypes = "org.apache.qpid.server.logging.logback.AbstractLogger#getSupportedVirtualHostLoggerChildTypes()",
+                amqpName = "org.apache.qpid.VirtualHostLogbackFileLogger")
 public interface VirtualHostFileLogger<X extends VirtualHostFileLogger<X>> extends VirtualHostLogger<X>
 {
     String TYPE = "File";

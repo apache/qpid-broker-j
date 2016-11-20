@@ -44,12 +44,12 @@ import javax.net.ssl.X509TrustManager;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.messages.TrustStoreMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.TrustStoreMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -403,5 +403,12 @@ public class ManagedPeerCertificateTrustStoreImpl
         {
             return _x509cert.getNotAfter();
         }
+    }
+
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        _broker.getEventLogger().message(TrustStoreMessages.OPERATION(operation));
     }
 }

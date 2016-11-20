@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.exchange;
 
-import static org.apache.qpid.common.AMQPFilterTypes.*;
+import static org.apache.qpid.common.AMQPFilterTypes.JMS_SELECTOR;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -40,19 +40,18 @@ import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Binding;
+import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.server.model.BrokerTestHelper;
-import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class TopicExchangeTest extends QpidTestCase
 {
 
-    private TopicExchange _exchange;
+    private TopicExchangeImpl _exchange;
     private VirtualHost<?> _vhost;
 
 
@@ -67,7 +66,7 @@ public class TopicExchangeTest extends QpidTestCase
         attributes.put(Exchange.DURABLE, false);
         attributes.put(Exchange.TYPE, ExchangeDefaults.TOPIC_EXCHANGE_CLASS);
 
-        _exchange = (TopicExchange) _vhost.createChild(Exchange.class, attributes, _vhost);
+        _exchange = (TopicExchangeImpl) _vhost.createChild(Exchange.class, attributes, _vhost);
         _exchange.open();
     }
 
@@ -88,7 +87,7 @@ public class TopicExchangeTest extends QpidTestCase
         }
     }
 
-    private Queue<?> createQueue(String name) throws QueueExistsException
+    private Queue<?> createQueue(String name)
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(Queue.NAME, name);

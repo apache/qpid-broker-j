@@ -20,17 +20,17 @@
  */
 package org.apache.qpid.client.message;
 
-import org.apache.qpid.framing.AMQShortString;
-import org.apache.qpid.framing.BasicDeliverBody;
-import org.apache.qpid.framing.ContentBody;
-import org.apache.qpid.framing.ContentHeaderBody;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.framing.AMQShortString;
+import org.apache.qpid.framing.BasicDeliverBody;
+import org.apache.qpid.framing.ContentBody;
+import org.apache.qpid.framing.ContentHeaderBody;
 
 /**
  * This class contains everything needed to process a JMS message. It assembles the deliver body, the content header and
@@ -56,7 +56,7 @@ public class UnprocessedMessage_0_8 extends UnprocessedMessage
     /** List of ContentBody instances. Due to fragmentation you don't know how big this will be in general */
     private List<ContentBody> _bodies;
 
-    public UnprocessedMessage_0_8(long deliveryId, int consumerTag, AMQShortString exchange, AMQShortString routingKey, boolean redelivered)
+    public UnprocessedMessage_0_8(long deliveryId, String consumerTag, AMQShortString exchange, AMQShortString routingKey, boolean redelivered)
     {
         super(consumerTag);
         _exchange = exchange;

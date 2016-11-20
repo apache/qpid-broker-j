@@ -29,7 +29,9 @@ import org.apache.qpid.server.exchange.ExchangeReferrer;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.MessageDestination;
 
-@ManagedObject( description = Exchange.CLASS_DESCRIPTION )
+@ManagedObject( description = Exchange.CLASS_DESCRIPTION,
+        amqpName = "org.apache.qpid.Exchange"
+        )
 public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, MessageDestination,
                                                          ExchangeReferrer
 {
@@ -54,8 +56,8 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
     UnroutableMessageBehaviour getUnroutableMessageBehaviour();
 
     //children
-    Collection<? extends Binding> getBindings();
-    Collection<Publisher> getPublishers();
+    @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
+    Collection<Binding<?>> getBindings();
 
     // Statistics
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Bindings")
@@ -74,11 +76,10 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
     long getMessagesIn();
 
 
-    //operations
-    Binding createBinding(String bindingKey,
-                          Queue queue,
-                          Map<String,Object> bindingArguments,
-                          Map<String, Object> attributes);
+    @ManagedOperation(changesConfiguredObjectState = true)
+    void bind(@Param(name="queue") Queue<?> queue,
+              @Param(name="bindingKey") String bindingKey,
+              @Param(name="arguments", defaultValue = "{}") Map<String,Object> arguments);
 
     /**
      * @return true if the exchange will be deleted after all queues have been detached

@@ -281,6 +281,19 @@ public class QpidBrokerTestCase extends QpidTestCase
         return getConnection(curl);
     }
 
+    public Connection getConnectionForVHost(String vhost)
+            throws URLSyntaxException, NamingException, JMSException
+    {
+        ConnectionURL curl = new AMQConnectionURL(getConnectionFactory().getConnectionURLString());
+        curl.setVirtualHost(vhost);
+        curl = new AMQConnectionURL(curl.toString());
+
+        curl.setUsername(GUEST_USERNAME);
+        curl.setPassword(GUEST_PASSWORD);
+        return getConnection(curl);
+    }
+
+
     public Connection getConnection(ConnectionURL url) throws JMSException
     {
         _logger.debug("get connection for " + url.getURL());

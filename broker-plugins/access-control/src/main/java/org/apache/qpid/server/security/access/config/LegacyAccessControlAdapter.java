@@ -70,7 +70,9 @@ class LegacyAccessControlAdapter
                                                                     "performGC",
                                                                     "getThreadStackTraces",
                                                                     "findThreadStackTraces",
-                                                                    "extractConfig")));
+                                                                    "extractConfig",
+                                                                    "restart")));
+
     private static final Set<String> VIRTUALHOST_UPDATE_OPERATIONS =
             Collections.unmodifiableSet(new HashSet<>(Arrays.asList("importMessageStore",
                                                                     "extractMessageStore")));

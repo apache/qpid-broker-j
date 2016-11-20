@@ -1308,7 +1308,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return _broker;
     }
 
-    private ListenableFuture<? extends Queue<?>> addQueueAsync(Map<String, Object> attributes) throws QueueExistsException
+    private ListenableFuture<? extends Queue<?>> addQueueAsync(Map<String, Object> attributes)
     {
         if (shouldCreateDLQ(attributes))
         {
@@ -1322,18 +1322,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return Futures.immediateFuture(addQueueWithoutDLQ(attributes));
     }
 
-    private Queue<?> addQueueWithoutDLQ(Map<String, Object> attributes) throws QueueExistsException
+    private Queue<?> addQueueWithoutDLQ(Map<String, Object> attributes)
     {
-        try
-        {
-            return (Queue) getObjectFactory().create(Queue.class, attributes, this);
-        }
-        catch (DuplicateNameException e)
-        {
-            throw new QueueExistsException(String.format("Queue with name '%s' already exists", e.getName()),
-                                           (Queue<?>) e.getExisting());
-        }
-
+        return (Queue) getObjectFactory().create(Queue.class, attributes, this);
     }
 
 
@@ -1387,7 +1378,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
 
     private ListenableFuture<Exchange<?>> addExchangeAsync(Map<String,Object> attributes)
-            throws ExchangeExistsException, ReservedExchangeNameException,
+            throws ReservedExchangeNameException,
                    NoFactoryForTypeException
     {
         final SettableFuture<Exchange<?>> returnVal = SettableFuture.create();
@@ -1403,15 +1394,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                 @Override
                                 public void onFailure(final Throwable t)
                                 {
-                                    if(t instanceof DuplicateNameException)
-                                    {
-                                        DuplicateNameException dne = (DuplicateNameException) t;
-                                        returnVal.setException(new ExchangeExistsException((Exchange<?>) dne.getExisting()));
-                                    }
-                                    else
-                                    {
-                                        returnVal.setException(t);
-                                    }
+                                    returnVal.setException(t);
                                 }
                             }, getTaskExecutor());
         return returnVal;
@@ -2190,10 +2173,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             attributes.put(org.apache.qpid.server.model.Exchange.ALTERNATE_EXCHANGE, null);
             dlExchange = (Exchange<?>) createChild(Exchange.class, attributes);;
         }
-        catch(ExchangeExistsException e)
+        catch(AbstractConfiguredObject.DuplicateNameException e)
         {
             // We're ok if the exchange already exists
-            dlExchange = e.getExistingExchange();
+            dlExchange = (Exchange<?>) e.getExisting();
         }
         catch (ReservedExchangeNameException | NoFactoryForTypeException | UnknownConfiguredObjectException e)
         {
@@ -2212,21 +2195,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 args.put(CREATE_DLQ_ON_CREATION, false);
                 args.put(Queue.MAXIMUM_DELIVERY_ATTEMPTS, 0);
 
-                try
-                {
+                args.put(Queue.ID, UUID.randomUUID());
+                args.put(Queue.NAME, dlQueueName);
+                args.put(Queue.DURABLE, true);
+                dlQueue = addQueueWithoutDLQ(args);
+                childAdded(dlQueue);
 
-
-                    args.put(Queue.ID, UUID.randomUUID());
-                    args.put(Queue.NAME, dlQueueName);
-                    args.put(Queue.DURABLE, true);
-                    dlQueue = addQueueWithoutDLQ(args);
-                    childAdded(dlQueue);
-                }
-                catch (QueueExistsException e)
-                {
-                    // TODO - currently theoretically for two threads to be creating a queue at the same time.
-                    // All model changing operations should be moved to the task executor of the virtual host
-                }
             }
         }
 
@@ -2556,6 +2530,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             setState(finalState);
             reportIfError(getState());
         }
+    }
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        getEventLogger().message(VirtualHostMessages.OPERATION(operation));
     }
 
     protected void startFileSystemSpaceChecking()

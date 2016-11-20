@@ -20,10 +20,12 @@
 package org.apache.qpid.server.virtualhost.derby;
 
 import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.store.FileBasedSettings;
 import org.apache.qpid.server.store.SizeMonitoringSettings;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
+@ManagedObject(category = false, type = DerbyVirtualHostImpl.VIRTUAL_HOST_TYPE, amqpName = "org.apache.qpid.DerbyVirtualHost")
 public interface DerbyVirtualHost<X extends DerbyVirtualHost<X>> extends QueueManagingVirtualHost<X>,
                                                                          FileBasedSettings,
                                                                          SizeMonitoringSettings

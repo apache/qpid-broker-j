@@ -23,7 +23,16 @@ package org.apache.qpid.client;
 import java.io.Serializable;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -41,17 +50,16 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import javax.jms.*;
 import javax.jms.IllegalStateException;
-import javax.jms.Queue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQChannelClosedException;
 import org.apache.qpid.AMQDisconnectedException;
-import org.apache.qpid.QpidException;
+import org.apache.qpid.AMQException;
 import org.apache.qpid.AMQInvalidArgumentException;
 import org.apache.qpid.AMQInvalidRoutingKeyException;
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQDestination.DestSyntax;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.failover.FailoverNoopSupport;
@@ -70,6 +78,7 @@ import org.apache.qpid.client.message.JMSTextMessage;
 import org.apache.qpid.client.message.MessageEncryptionHelper;
 import org.apache.qpid.client.message.MessageFactoryRegistry;
 import org.apache.qpid.client.message.UnprocessedMessage;
+import org.apache.qpid.client.messaging.address.Link;
 import org.apache.qpid.client.messaging.address.Node;
 import org.apache.qpid.client.util.FlowControllingBlockingQueue;
 import org.apache.qpid.client.util.JMSExceptionHelper;
@@ -206,7 +215,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      */
     private int _nextTag = 1;
 
-    private final Map<Integer,C> _consumers = new ConcurrentHashMap<>();
+    private final Map<String,C> _consumers = new ConcurrentHashMap<>();
 
     /** Provides a count of consumers on destinations, in order to be able to know if a destination has consumers. */
     private ConcurrentMap<Destination, AtomicInteger> _destinationConsumerCount =
@@ -307,7 +316,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      */
     protected Collection<C> getConsumers()
     {
-        return new ArrayList(_consumers.values());
+        return new ArrayList<>(_consumers.values());
     }
 
     protected void setUsingDispatcherForCleanup(boolean usingDispatcherForCleanup)
@@ -924,7 +933,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 
 
 
-    public void confirmConsumerCancelled(int consumerTag)
+    public void confirmConsumerCancelled(String consumerTag)
     {
         C consumer = _consumers.get(consumerTag);
         if (consumer != null)
@@ -2691,11 +2700,20 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      */
     private void consumeFromQueue(C consumer, String queueName, boolean nowait) throws QpidException, FailoverException
     {
-        int tagId = _nextTag++;
+        Link link = consumer.getDestination().getLink();
+        String linkName;
+        if(link != null && link.getName() != null && consumer.getDestination().getAddressType() == AMQDestination.QUEUE_TYPE)
+        {
+            linkName = link.getName();
+        }
+        else
+        {
+            linkName = String.valueOf(_nextTag++);
+        }
 
-        consumer.setConsumerTag(tagId);
+        consumer.setConsumerTag(linkName);
         // we must register the consumer in the map before we actually start listening
-        _consumers.put(tagId, consumer);
+        _consumers.put(linkName, consumer);
 
         synchronized (consumer.getDestination())
         {
@@ -2706,12 +2724,12 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 
         try
         {
-            sendConsume(consumer, queueName, nowait, tagId);
+            sendConsume(consumer, queueName, nowait);
         }
         catch (QpidException e)
         {
             // clean-up the map in the event of an error
-            _consumers.remove(tagId);
+            _consumers.remove(linkName);
             throw e;
         }
     }
@@ -2765,7 +2783,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
             throws QpidException;
 
     public abstract void sendConsume(C consumer, String queueName,
-                                     boolean nowait, int tag) throws QpidException, FailoverException;
+                                     boolean nowait) throws QpidException, FailoverException;
 
     private P createProducerImpl(final Destination destination, final Boolean mandatory, final Boolean immediate)
             throws JMSException
@@ -3152,7 +3170,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         _producers.put(producerId, producer);
     }
 
-    private void rejectMessagesForConsumerTag(int consumerTag)
+    private void rejectMessagesForConsumerTag(String consumerTag)
     {
         Iterator<Dispatchable> messages = _queue.iterator();
         if (_logger.isDebugEnabled())
@@ -3172,7 +3190,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         {
             UnprocessedMessage message = (UnprocessedMessage) messages.next();
 
-            if (message.getConsumerTag() == consumerTag)
+            if (message.getConsumerTag().equals(consumerTag))
             {
 
                 if (_queue.remove(message))

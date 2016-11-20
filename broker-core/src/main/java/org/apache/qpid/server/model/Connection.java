@@ -23,7 +23,7 @@ package org.apache.qpid.server.model;
 import java.util.Collection;
 import java.util.Date;
 
-@ManagedObject( creatable = false )
+@ManagedObject( creatable = false, amqpName = "org.apache.qpid.Connection")
 public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
 {
 

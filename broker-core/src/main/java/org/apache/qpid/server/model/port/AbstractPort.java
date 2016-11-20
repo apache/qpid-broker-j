@@ -28,18 +28,18 @@ import java.util.Set;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-
-import org.apache.qpid.configuration.CommonProperties;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.messages.PortMessages;
-import org.apache.qpid.server.model.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.BrokerMessages;
+import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.Port;
@@ -314,6 +314,12 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     public Collection<TrustStore> getTrustStores()
     {
         return _trustStores;
+    }
+
+    @Override
+    protected void logOperation(final String operation)
+    {
+        _eventLogger.message(PortMessages.OPERATION(operation));
     }
 
     @Override

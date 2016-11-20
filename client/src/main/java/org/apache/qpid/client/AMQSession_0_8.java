@@ -502,8 +502,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
     @Override
     public void sendConsume(BasicMessageConsumer_0_8 consumer,
                             String queueName,
-                            boolean nowait,
-                            int tag) throws QpidException, FailoverException
+                            boolean nowait) throws QpidException, FailoverException
     {
         queueName = preprocessAddressTopic(consumer, queueName);
 
@@ -519,7 +518,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
         BasicConsumeBody body = getMethodRegistry().createBasicConsumeBody(getTicket(),
                                                                            queueName,
-                                                                           String.valueOf(tag),
+                                                                           consumer.getConsumerTag(),
                                                                            consumer.isNoLocal(),
                                                                            consumer.getAcknowledgeMode() == Session.NO_ACKNOWLEDGE,
                                                                            consumer.isExclusive(),
@@ -997,7 +996,14 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
     public void sync() throws QpidException
     {
-        declareExchange("amq.direct", "direct", false);
+        if(getAMQConnection().isVirtualHostPropertiesSupported())
+        {
+            isBound(null, "$virtualhostProperties", null);
+        }
+        else
+        {
+            declareExchange("amq.direct", "direct", false);
+        }
     }
 
     @Override

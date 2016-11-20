@@ -20,8 +20,12 @@
 package org.apache.qpid.server.virtualhostnode;
 
 import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 
+@ManagedObject(type=JsonVirtualHostNodeImpl.VIRTUAL_HOST_NODE_TYPE,
+        category=false, validChildTypes = "org.apache.qpid.server.virtualhostnode.JsonVirtualHostNodeImpl#getSupportedChildTypes()",
+        amqpName = "org.apache.qpid.JsonVirtualHostNode")
 public interface JsonVirtualHostNode<X extends JsonVirtualHostNode<X>> extends org.apache.qpid.server.model.VirtualHostNode<X>, org.apache.qpid.server.store.FileBasedSettings
 {
 

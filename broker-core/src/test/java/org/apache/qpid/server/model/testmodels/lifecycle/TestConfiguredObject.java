@@ -102,6 +102,12 @@ public class TestConfiguredObject extends AbstractConfiguredObject
     }
 
     @Override
+    protected void logOperation(final String operation)
+    {
+
+    }
+
+    @Override
     protected void onOpen()
     {
         if (_throwExceptionOnOpen)
