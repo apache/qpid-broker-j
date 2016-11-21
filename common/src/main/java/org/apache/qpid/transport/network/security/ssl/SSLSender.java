@@ -238,7 +238,7 @@ public class SSLSender implements ByteBufferSender
                     {
                         continue;
                     }
-
+                    break;
                 case NEED_TASK:
                     doTasks();
                     break;
@@ -281,7 +281,7 @@ public class SSLSender implements ByteBufferSender
                     {
                         SSLUtil.verifyHostname(engine, _hostname);
                     }
-
+                    break;
                 case NOT_HANDSHAKING:
                     break; //do  nothing
 
