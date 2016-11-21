@@ -103,7 +103,7 @@ public class ListPropertyValue extends GeneratedPropertySupport
         {
             return true;
         }
-        if (obj == null || !(obj instanceof ListPropertyValue))
+        if (obj == null || getClass() != obj.getClass())
         {
             return false;
         }

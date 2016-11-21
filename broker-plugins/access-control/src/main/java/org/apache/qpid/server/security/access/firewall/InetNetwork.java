@@ -62,7 +62,7 @@ class InetNetwork
     public boolean equals(Object obj)
     {
         return (obj != null) &&
-               (obj instanceof InetNetwork) &&
+               (getClass() == obj.getClass()) &&
                ((InetNetwork) obj).network.equals(network) &&
                ((InetNetwork) obj).netmask.equals(netmask);
     }

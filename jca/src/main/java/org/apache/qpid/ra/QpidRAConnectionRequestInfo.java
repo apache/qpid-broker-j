@@ -317,7 +317,12 @@ public class QpidRAConnectionRequestInfo implements ConnectionRequestInfo
    @Override
    public boolean equals(final Object obj)
    {
-      if (obj instanceof QpidRAConnectionRequestInfo)
+      if (this == obj)
+      {
+         return true;
+      }
+
+      if (obj != null && getClass() == obj.getClass())
       {
          QpidRAConnectionRequestInfo you = (QpidRAConnectionRequestInfo)obj;
          return Util.compare(_userName, you.getUserName()) && Util.compare(_password, you.getPassword()) &&

@@ -385,7 +385,12 @@ public class BrokerDetails implements Serializable
 
     public boolean equals(Object o)
     {
-        if (!(o instanceof BrokerDetails))
+        if (this == o)
+        {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass())
         {
             return false;
         }

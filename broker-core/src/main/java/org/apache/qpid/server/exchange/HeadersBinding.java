@@ -252,12 +252,7 @@ class HeadersBinding
             return true;
         }
 
-        if (o == null)
-        {
-            return false;
-        }
-
-        if (!(o instanceof HeadersBinding))
+        if (o == null || getClass() != o.getClass())
         {
             return false;
         }

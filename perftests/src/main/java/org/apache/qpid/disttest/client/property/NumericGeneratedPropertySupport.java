@@ -155,7 +155,7 @@ public abstract class NumericGeneratedPropertySupport extends GeneratedPropertyS
         {
             return true;
         }
-        if (obj == null || !(obj instanceof NumericGeneratedPropertySupport))
+        if (obj == null || getClass() != obj.getClass())
         {
             return false;
         }

@@ -109,7 +109,7 @@ public class RangePropertyValue extends NumericGeneratedPropertySupport
         {
             return true;
         }
-        if (!(obj instanceof RangePropertyValue))
+        if (obj == null || getClass() != obj.getClass())
         {
             return false;
         }

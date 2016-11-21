@@ -309,7 +309,12 @@ public class QpidRAManagedConnectionFactory implements ManagedConnectionFactory,
    @Override
    public boolean equals(final Object obj)
    {
-      if (obj instanceof QpidRAManagedConnectionFactory)
+      if (this == obj)
+      {
+         return true;
+      }
+
+      if (obj != null && getClass() == obj.getClass())
       {
          QpidRAManagedConnectionFactory other = (QpidRAManagedConnectionFactory)obj;
 

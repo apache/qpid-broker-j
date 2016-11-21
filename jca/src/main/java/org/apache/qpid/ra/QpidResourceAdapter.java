@@ -522,19 +522,17 @@ public class QpidResourceAdapter implements ResourceAdapter, Serializable
     */
    public boolean equals(final Object obj)
    {
-      if (obj == null)
+      if (this == null)
+      {
+         return true;
+      }
+
+      if (obj == null || getClass() != obj.getClass())
       {
          return false;
       }
 
-      if (obj instanceof QpidResourceAdapter)
-      {
-         return _raProperties.equals(((QpidResourceAdapter)obj).getProperties());
-      }
-      else
-      {
-         return false;
-      }
+      return _raProperties.equals(((QpidResourceAdapter)obj).getProperties());
    }
 
    /**

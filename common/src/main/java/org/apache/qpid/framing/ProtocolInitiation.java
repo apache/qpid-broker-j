@@ -96,7 +96,12 @@ public class ProtocolInitiation extends AMQDataBlock implements EncodableAMQData
 
     public boolean equals(Object o)
     {
-        if (!(o instanceof ProtocolInitiation))
+        if (this == o)
+        {
+            return true;
+        }
+
+        if (o == null || getClass() != o.getClass())
         {
             return false;
         }

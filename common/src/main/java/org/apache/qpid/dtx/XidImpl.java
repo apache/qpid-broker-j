@@ -188,7 +188,7 @@ public class XidImpl implements Xid
         {
             return true;
         }
-        if (o instanceof XidImpl)
+        if (o != null && getClass() == o.getClass())
         {
             XidImpl other = (XidImpl) o;
             if (_formatID == other.getFormatId())

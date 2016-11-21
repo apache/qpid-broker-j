@@ -1173,12 +1173,7 @@ public class FieldTable
             return true;
         }
 
-        if (o == null)
-        {
-            return false;
-        }
-
-        if (!(o instanceof FieldTable))
+        if (o == null || getClass() != o.getClass())
         {
             return false;
         }

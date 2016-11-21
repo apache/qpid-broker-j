@@ -673,7 +673,7 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         {
             return true;
         }
-        if (!(o instanceof AMQDestination))
+        if (o == null || getClass() != o.getClass())
         {
             return false;
         }

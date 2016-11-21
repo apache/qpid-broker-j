@@ -79,7 +79,7 @@ public class AMQPProtocolVersionWrapper
         {
             return true;
         }
-        if (!(o instanceof AMQPProtocolVersionWrapper))
+        if (o == null || getClass() != o.getClass())
         {
             return false;
         }
