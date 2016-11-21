@@ -3554,7 +3554,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                 synchronized (_lock)
                 {
                     _connectionStopped.set(connectionStopped);
-                    _lock.notify();
+                    _lock.notifyAll();
 
                     if (_dispatcherLogger.isDebugEnabled())
                     {
