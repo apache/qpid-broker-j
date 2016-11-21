@@ -3323,7 +3323,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         _userPreferences = userPreferences;
     }
 
-    protected EventLogger getEventLogger()
+    private EventLogger getEventLogger()
     {
         for(ConfiguredObject<?> parent : _parents.values())
         {
