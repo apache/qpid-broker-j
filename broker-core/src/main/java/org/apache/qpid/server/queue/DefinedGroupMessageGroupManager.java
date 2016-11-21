@@ -79,13 +79,13 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
             }
             if(--_activeCount == 0)
             {
+                _groupMap.remove(_group);
                 if(!_skippedEntries.isEmpty())
                 {
                     _resetHelper.resetSubPointersForGroups(_skippedEntries.first());
                     _skippedEntries.clear();
                 }
                 _consumer = null;
-                _groupMap.remove(_group);
             }
         }
 

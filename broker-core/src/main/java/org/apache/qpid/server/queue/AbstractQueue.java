@@ -1263,11 +1263,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 if(QueueContext._releasedUpdater.compareAndSet(subContext, oldEntry, entry))
                 {
+                    notifyConsumer(sub);
                     break;
                 }
             }
         }
-        notifyConsumer(sub);
     }
 
 
