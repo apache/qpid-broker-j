@@ -318,7 +318,7 @@ public class EncodingUtils
         return encodedByteLength();
     }
 
-    public static long readLongAsShortString(QpidByteBuffer buffer)
+    public static long readLongAsShortString(QpidByteBuffer buffer) throws AMQFrameDecodingException
     {
         short length = buffer.getUnsignedByte();
         short pos = 0;
@@ -341,7 +341,7 @@ public class EncodingUtils
             isNegative = false;
         }
 
-        result = digit - (byte) '0';
+        result = toNumber(digit);
         pos++;
 
         while (pos < length)
@@ -349,10 +349,20 @@ public class EncodingUtils
             pos++;
             digit = buffer.get();
             result = (result << 3) + (result << 1);
-            result += digit - (byte) '0';
+            result += toNumber(digit);
         }
 
         return isNegative ? -result : result;
+    }
+
+    private static int toNumber(final byte digit) throws AMQFrameDecodingException
+    {
+        if (digit >= '0' && digit <= '9')
+        {
+            return digit - (byte) '0';
+        }
+        throw new AMQFrameDecodingException(String.format("Unexpected character '%c' in string representing long value",
+                                                          digit));
     }
 
     public static byte[] asUTF8Bytes(CharSequence string)
