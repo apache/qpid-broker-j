@@ -29,10 +29,8 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.logging.LogLevel;
-import org.apache.qpid.server.logging.OperationLogMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
@@ -108,10 +106,4 @@ public abstract class AbstractNameAndLevelLogInclusionRule<X extends AbstractNam
         return Futures.immediateFuture(null);
     }
 
-
-    @Override
-    protected void logOperation(final String operation)
-    {
-        getAncestor(Container.class).getEventLogger().message(new OperationLogMessage(this, operation));
-    }
 }

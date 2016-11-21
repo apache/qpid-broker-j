@@ -49,7 +49,6 @@ import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.OperationLogMessage;
 import org.apache.qpid.server.logging.messages.ConfigStoreMessages;
 import org.apache.qpid.server.logging.subjects.MessageStoreLogSubject;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
@@ -645,10 +644,4 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
         return Collections.unmodifiableCollection(supportedTypes);
     }
 
-
-    @Override
-    protected void logOperation(final String operation)
-    {
-        _broker.getEventLogger().message(new OperationLogMessage(this, operation));
-    }
 }

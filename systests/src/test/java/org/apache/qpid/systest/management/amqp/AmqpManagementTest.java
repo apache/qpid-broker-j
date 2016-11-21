@@ -22,6 +22,7 @@ package org.apache.qpid.systest.management.amqp;
 
 import static org.apache.qpid.server.model.Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -102,6 +103,33 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         assertNotNull("The response did not include the org.apache.qpid.Port type",
                       ((MapMessage) responseMessage).getObject("org.apache.qpid.Port"));
     }
+
+    // test get types on $management
+    public void testQueryBrokerManagement() throws Exception
+    {
+        setupBrokerManagementConnection();
+
+        MapMessage message = _session.createMapMessage();
+
+        message.setStringProperty("identity", "self");
+        message.setStringProperty("type", "org.amqp.management");
+        message.setStringProperty("operation", "QUERY");
+        message.setObject("attributeNames", new ArrayList<>());
+        message.setJMSReplyTo(_replyAddress);
+
+        _producer.send(message);
+
+        Message responseMessage = _consumer.receive(getReceiveTimeout());
+        assertNotNull("A response message was not sent", responseMessage);
+        assertEquals("The correlation id does not match the sent message's messageId", message.getJMSMessageID(), responseMessage.getJMSCorrelationID());
+        assertTrue("The response message does not have a status code",
+                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
+        assertEquals("The response code did not indicate success", 200, responseMessage.getIntProperty("statusCode"));
+        assertTrue("The response was not a MapMessage", responseMessage instanceof MapMessage);
+
+
+    }
+
 
     // test get types on a virtual host
     public void testGetTypesOnVhostManagement() throws Exception
@@ -635,5 +663,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
                    Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
         assertEquals("The response code did not indicate success", 200, responseMessage.getIntProperty("statusCode"));
     }
+
+
 
 }

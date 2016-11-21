@@ -46,7 +46,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.logging.OperationLogMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
@@ -462,12 +461,6 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
                 }
             }
             return super.changeAttribute(name, desired);
-        }
-
-        @Override
-        protected void logOperation(final String operation)
-        {
-            _broker.getEventLogger().message(new OperationLogMessage(this, operation));
         }
 
         @StateTransition(currentState = {State.UNINITIALIZED,State.ERRORED}, desiredState = State.ACTIVE)

@@ -37,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.logging.OperationLogMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
@@ -224,12 +223,6 @@ public class FileBasedGroupProviderImpl
                         + childClass);
     }
 
-    @Override
-    protected void logOperation(final String operation)
-    {
-        getAncestor(Container.class).getEventLogger().message(new OperationLogMessage(this, operation));
-    }
-
     private Set<Principal> getGroupPrincipals()
     {
 
@@ -390,12 +383,6 @@ public class FileBasedGroupProviderImpl
                             + childClass);
         }
 
-        @Override
-        protected void logOperation(final String operation)
-        {
-            getAncestor(Container.class).getEventLogger().message(new OperationLogMessage(this, operation));
-        }
-
         @StateTransition( currentState = State.ACTIVE, desiredState = State.DELETED )
         private ListenableFuture<Void> doDelete()
         {
@@ -429,12 +416,6 @@ public class FileBasedGroupProviderImpl
                     Class<C> clazz)
             {
                 return Collections.emptySet();
-            }
-
-            @Override
-            protected void logOperation(final String operation)
-            {
-                getAncestor(Container.class).getEventLogger().message(new OperationLogMessage(this, operation));
             }
 
             @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.ACTIVE)

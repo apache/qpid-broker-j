@@ -75,6 +75,9 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.logging.OperationLogMessage;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.security.AccessControl;
 import org.apache.qpid.server.security.Result;
@@ -3320,7 +3323,44 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         _userPreferences = userPreferences;
     }
 
-    protected abstract void logOperation(String operation);
+    protected EventLogger getEventLogger()
+    {
+        for(ConfiguredObject<?> parent : _parents.values())
+        {
+            if(parent instanceof EventLoggerProvider)
+            {
+                return ((EventLoggerProvider)parent).getEventLogger();
+            }
+            else if(parent instanceof AbstractConfiguredObject)
+            {
+                final EventLogger eventLogger = ((AbstractConfiguredObject<?>) parent).getEventLogger();
+                if(eventLogger != null)
+                {
+                    return eventLogger;
+                }
+            }
+        }
+        return null;
+    }
+
+    protected void logOperation(String operation)
+    {
+        EventLogger eventLogger = getEventLogger();
+        if(eventLogger != null)
+        {
+            eventLogger.message(new OperationLogMessage(this, operation));
+        }
+        else
+        {
+            LOGGER.info(getCategoryClass().getSimpleName()
+                        + "("
+                        + getName()
+                        + ") : Operation "
+                        + operation
+                        + " invoked by user "
+                        + AuthenticatedPrincipal.getCurrentUser().getName());
+        }
+    }
 
     //=========================================================================================
 

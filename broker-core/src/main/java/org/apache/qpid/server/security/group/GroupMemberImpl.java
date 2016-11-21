@@ -25,9 +25,7 @@ import java.util.Map;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.server.logging.OperationLogMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.Group;
 import org.apache.qpid.server.model.GroupMember;
 import org.apache.qpid.server.model.ManagedObject;
@@ -61,9 +59,4 @@ public class GroupMemberImpl extends AbstractConfiguredObject<GroupMemberImpl> i
         return Futures.immediateFuture(null);
     }
 
-    @Override
-    protected void logOperation(final String operation)
-    {
-        getAncestor(Container.class).getEventLogger().message(new OperationLogMessage(this, operation));
-    }
 }

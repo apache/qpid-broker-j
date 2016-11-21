@@ -21,12 +21,16 @@
 package org.apache.qpid.server.model;
 
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 import org.apache.qpid.server.store.preferences.PreferencesRoot;
 
 @ManagedObject (creatable = false)
-public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObject<X>, ModelRoot, PreferencesRoot
+public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObject<X>,
+                                                                 ModelRoot,
+                                                                 PreferencesRoot,
+                                                                 EventLoggerProvider
 {
 
     String MANAGEMENT_MODE = "managementMode";

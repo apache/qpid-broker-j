@@ -230,12 +230,6 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
         }
     }
 
-    @Override
-    protected void logOperation(final String operation)
-    {
-        getEventLogger().message(new OperationLogMessage(this, operation));
-    }
-
     void setRole(NodeRole role)
     {
         _lastKnownRole = role;

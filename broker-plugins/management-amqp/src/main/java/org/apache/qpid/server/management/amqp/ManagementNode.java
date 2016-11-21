@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -121,6 +122,28 @@ class ManagementNode implements MessageSource, MessageDestination
     public static final int STATUS_CODE_CONFLICT = 409;
     public static final int STATUS_CODE_INTERNAL_ERROR = 500;
     public static final int STATUS_CODE_NOT_IMPLEMENTED= 501;
+    private static final Comparator<? super ConfiguredObject<?>> OBJECT_COMPARATOR =
+            new Comparator<ConfiguredObject<?>>()
+            {
+                @Override
+                public int compare(final ConfiguredObject<?> o1, final ConfiguredObject<?> o2)
+                {
+                    if(o1 == o2)
+                    {
+                        return 0;
+                    }
+                    int result = o1.getCategoryClass().getSimpleName().compareTo(o2.getCategoryClass().getSimpleName());
+                    if(result == 0)
+                    {
+                        result = o1.getName().compareTo(o2.getName());
+                    }
+                    if(result == 0)
+                    {
+                        result = o1.getId().compareTo(o2.getId());
+                    }
+                    return result;
+                }
+            };
 
 
     private final NamedAddressSpace _addressSpace;
@@ -1017,7 +1040,186 @@ class ManagementNode implements MessageSource, MessageDestination
         {
             attributeNames = generateAttributeNames(entityType);
         }
-        return null;
+
+        List<ConfiguredObject<?>> objects = getObjects(entityType);
+        Collections.sort(objects, OBJECT_COMPARATOR);
+        if(headerMap.containsKey(OFFSET_HEADER))
+        {
+            int offset;
+            if(headerMap.get(OFFSET_HEADER) instanceof Number)
+            {
+                offset = ((Number) headerMap.get(OFFSET_HEADER)).intValue();
+            }
+            else
+            {
+                offset = Integer.parseInt(headerMap.get(OFFSET_HEADER).toString());
+            }
+            if(offset >= 0)
+            {
+                if(offset < objects.size())
+                {
+                    objects = objects.subList(offset, objects.size());
+                }
+                else
+                {
+                    objects = Collections.emptyList();
+                }
+            }
+            else if(objects.size() + offset > 0)
+            {
+                objects = objects.subList(objects.size()+offset, objects.size());
+            }
+        }
+
+        if(headerMap.containsKey(COUNT_HEADER))
+        {
+            int count;
+            if(headerMap.get(COUNT_HEADER) instanceof Number)
+            {
+                count = ((Number) headerMap.get(COUNT_HEADER)).intValue();
+            }
+            else
+            {
+                count = Integer.parseInt(headerMap.get(OFFSET_HEADER).toString());
+            }
+            if(count >= 0)
+            {
+                if(count < objects.size())
+                {
+                    objects = objects.subList(0, count);
+                }
+                else
+                {
+                    objects = Collections.emptyList();
+                }
+            }
+            else if(objects.size() + count > 0)
+            {
+                objects = objects.subList(0, objects.size()+count);
+            }
+        }
+        List<List<Object>> resultList = new ArrayList<>(objects.size());
+
+        for(ConfiguredObject<?> object : objects)
+        {
+            List<Object> attributes = new ArrayList<>(attributeNames.size());
+            Map<?,?> convertedObject = _managementOutputConverter.convertToOutput(object, true);
+            for(String attributeName : attributeNames)
+            {
+                attributes.add(convertedObject.get(attributeName));
+            }
+            resultList.add(attributes);
+        }
+        Map<Object, Object> result = new LinkedHashMap<>();
+        result.put(ATTRIBUTE_NAMES, attributeNames);
+        result.put(RESULTS, resultList);
+        return result;
+    }
+
+    private Collection<ConfiguredObject<?>> getChildrenOfType(ConfiguredObject<?> object, Class<? extends ConfiguredObject> type)
+    {
+        Set<ConfiguredObject<?>> children = new HashSet<>();
+        Class<? extends ConfiguredObject> categoryClass = ConfiguredObjectTypeRegistry.getCategory(type);
+        for(Class<? extends ConfiguredObject> childClass : _model.getChildTypes(object.getCategoryClass()))
+        {
+            if(childClass == categoryClass)
+            {
+                for (ConfiguredObject<?> child : object.getChildren(childClass))
+                {
+                    if(categoryClass == type || child.getTypeClass() == type)
+                    {
+                        children.add(child);
+                    }
+                }
+            }
+            else
+            {
+                if(_model.getAncestorCategories(categoryClass).contains(childClass))
+                {
+                    for(ConfiguredObject<?> child : object.getChildren(childClass))
+                    {
+                        children.addAll(getChildrenOfType(child, type));
+                    }
+                }
+            }
+        }
+        return children;
+    }
+
+    private List<ConfiguredObject<?>> getObjects(final String entityType)
+    {
+        Set<ConfiguredObject<?>> foundObjects;
+
+        if(entityType == null)
+        {
+            foundObjects = findAllChildren();
+
+        }
+        else
+        {
+            final Class<? extends ConfiguredObject> type = _managedTypes.get(entityType);
+            if(type != null)
+            {
+                foundObjects = new HashSet<>();
+                Collection<Class<? extends ConfiguredObject>> ancestorCategories =
+                        _model.getAncestorCategories(ConfiguredObjectTypeRegistry.getCategory(type));
+                if(ancestorCategories.contains(_managedObject.getCategoryClass()))
+                {
+                    foundObjects.addAll(getChildrenOfType(_managedObject, type));
+                }
+
+                for(Map.Entry<Class<? extends ConfiguredObject>, ConfiguredObjectOperation<?>> entry : _associatedChildrenOperations.entrySet())
+                {
+                    if(ancestorCategories.contains(entry.getKey()))
+                    {
+                        ConfiguredObjectOperation op = entry.getValue();
+                        for(ConfiguredObject<?> parent : (Collection<ConfiguredObject<?>>) op.perform(_managedObject, Collections.<String,Object>emptyMap()))
+                        {
+                            foundObjects.addAll(getChildrenOfType(parent, type));
+                        }
+                    }
+                }
+            }
+            else
+            {
+                throw new IllegalArgumentException("Unknown entity type: '"+entityType+"'");
+            }
+        }
+        // TODO - get the objects
+
+        return new ArrayList<>(foundObjects);
+    }
+
+    private Set<ConfiguredObject<?>> findAllChildren()
+    {
+        final Set<ConfiguredObject<?>> foundObjects;
+        foundObjects = new HashSet<>();
+        Set<ConfiguredObject<?>> parents = new HashSet<>();
+        Set<ConfiguredObject<?>> children;
+
+        parents.add(_managedObject);
+        for(ConfiguredObjectOperation op : _associatedChildrenOperations.values())
+        {
+            parents.addAll(
+                    (Collection<ConfiguredObject<?>>) op.perform(_managedObject, Collections.<String,Object>emptyMap()));
+        }
+        foundObjects.addAll(parents);
+        do
+        {
+            children = new HashSet<>();
+            for(ConfiguredObject<?> parent : parents)
+            {
+                for(Class<? extends ConfiguredObject> childClass : _model.getChildTypes(parent.getCategoryClass()))
+                {
+                    children.addAll((Collection<? extends ConfiguredObject<?>>) parent.getChildren(childClass));
+                }
+            }
+            parents = children;
+
+
+        }
+        while(foundObjects.addAll(parents));
+        return foundObjects;
     }
 
     private List<String> generateAttributeNames(String entityType)
