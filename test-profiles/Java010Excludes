@@ -87,5 +87,3 @@ org.apache.qpid.test.unit.basic.PropertyValueTest#testOverlyLargeHeaderRejected_
 // There is no way in the 0-10 client to cause a send to fail when the message does not reach any queue
 org.apache.qpid.server.queue.NodeAutoCreationPolicyTest#testSendingToNonMatchingQueuePatternBURL
 
-// Temporarily exclude one management test which fails on correlation id checking
-org.apache.qpid.systest.management.amqp.AmqpManagementTest#testGetTypesOnBrokerManagement
