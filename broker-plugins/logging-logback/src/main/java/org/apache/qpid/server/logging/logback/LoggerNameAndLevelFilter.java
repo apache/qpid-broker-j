@@ -61,7 +61,7 @@ public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent> implements E
         return _loggerName;
     }
 
-    private Filter<ILoggingEvent> createFilter(final String loggerName)
+    protected Filter<ILoggingEvent> createFilter(final String loggerName)
     {
         if(loggerName == null || "".equals(loggerName) || Logger.ROOT_LOGGER_NAME.equals(loggerName))
         {
