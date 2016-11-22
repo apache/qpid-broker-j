@@ -50,6 +50,8 @@ public class ControllerRunner extends AbstractRunner
     public static final String OUTPUT_DIR_PROP = "outputdir";
     public static final String WRITE_TO_DB = "writeToDb";
     public static final String RUN_ID = "runId";
+    public static final String REGISTRATION_TIMEOUT = "registrationTimeout";
+    public static final String COMMAND_RESPONSE_TIMEOUT = "commandResponseTimeout";
     public static final String HILL_CLIMB = "hill-climb";
     public static final String HILL_CLIMBER_MAX_NUMBER_OF_RUNS = "hill-climber.max-runs";
     public static final String HILL_CLIMBER_START_TARGET_RATE = "hill-climber.start-target-rate";
@@ -62,6 +64,8 @@ public class ControllerRunner extends AbstractRunner
     private static final String DISTRIBUTED_DEFAULT = "false";
     private static final String OUTPUT_DIR_DEFAULT = ".";
     private static final String WRITE_TO_DB_DEFAULT = "false";
+    private static final String REGISTRATION_TIMEOUT_DEFAULT = String.valueOf(60 * 1000);
+    private static final String COMMAND_RESPONSE_TIMEOUT_DEFAULT = String.valueOf(120 * 1000);
     private static final String HILL_CLIMB_DEFAULT = "false";
     private static final String HILL_CLIMBER_MAX_NUMBER_OF_RUNS_DEFAULT = "3";
     private static final String HILL_CLIMBER_START_TARGET_RATE_DEFAULT = "1025";
@@ -84,6 +88,8 @@ public class ControllerRunner extends AbstractRunner
         getCliOptions().put(OUTPUT_DIR_PROP, OUTPUT_DIR_DEFAULT);
         getCliOptions().put(WRITE_TO_DB, WRITE_TO_DB_DEFAULT);
         getCliOptions().put(RUN_ID, null);
+        getCliOptions().put(REGISTRATION_TIMEOUT, REGISTRATION_TIMEOUT_DEFAULT);
+        getCliOptions().put(COMMAND_RESPONSE_TIMEOUT, COMMAND_RESPONSE_TIMEOUT_DEFAULT);
         getCliOptions().put(HILL_CLIMB, HILL_CLIMB_DEFAULT);
         getCliOptions().put(HILL_CLIMBER_MAX_NUMBER_OF_RUNS,
                             HILL_CLIMBER_MAX_NUMBER_OF_RUNS_DEFAULT);
@@ -115,10 +121,7 @@ public class ControllerRunner extends AbstractRunner
 
         try
         {
-            Controller controller = new Controller(jmsDelegate,
-                                                   DistributedTestConstants.REGISTRATION_TIMEOUT,
-                                                   DistributedTestConstants.COMMAND_RESPONSE_TIMEOUT,
-                                                   getCliOptions());
+            Controller controller = new Controller(jmsDelegate, getCliOptions());
 
             String testConfigPath = getCliOptions().get(ControllerRunner.TEST_CONFIG_PROP);
             List<String> testConfigFiles = _configFileHelper.getTestConfigFiles(testConfigPath);

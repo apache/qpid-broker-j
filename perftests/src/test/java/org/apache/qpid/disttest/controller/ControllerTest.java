@@ -30,7 +30,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.apache.qpid.disttest.ControllerRunner;
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.controller.config.Config;
 import org.apache.qpid.disttest.jms.ControllerJmsDelegate;
@@ -55,8 +58,11 @@ public class ControllerTest extends QpidTestCase
     {
         super.setUp();
         _respondingJmsDelegate = mock(ControllerJmsDelegate.class);
+        final Map<String, String> controllerOptions = new HashMap<>();
+        controllerOptions.put(ControllerRunner.REGISTRATION_TIMEOUT, String.valueOf(REGISTRATION_TIMEOUT));
+        controllerOptions.put(ControllerRunner.COMMAND_RESPONSE_TIMEOUT, String.valueOf(COMMAND_RESPONSE_TIMEOUT));
         _controller = new Controller(_respondingJmsDelegate,
-                                     REGISTRATION_TIMEOUT, COMMAND_RESPONSE_TIMEOUT, Collections.<String,String>emptyMap());
+                                     controllerOptions);
         _clientRegistry = mock(ClientRegistry.class);
 
         Config configWithOneClient = createMockConfig(1);

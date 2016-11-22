@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.qpid.disttest.ControllerRunner;
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.controller.config.Config;
 import org.apache.qpid.disttest.controller.config.TestInstance;
@@ -51,12 +52,12 @@ public class Controller
     private ClientRegistry _clientRegistry;
 
 
-    public Controller(final ControllerJmsDelegate jmsDelegate, long registrationTimeout,
-                      long commandResponseTimeout, final Map<String, String> options)
+    public Controller(final ControllerJmsDelegate jmsDelegate,
+                      final Map<String, String> options)
     {
         _jmsDelegate = jmsDelegate;
-        _registrationTimeout = registrationTimeout;
-        _commandResponseTimeout = commandResponseTimeout;
+        _registrationTimeout = Integer.parseInt(options.get(ControllerRunner.REGISTRATION_TIMEOUT));
+        _commandResponseTimeout = Integer.parseInt(options.get(ControllerRunner.COMMAND_RESPONSE_TIMEOUT));
         _testRunnerFactory = new TestRunnerFactory();
         _clientRegistry = new ClientRegistry();
         _options = options;

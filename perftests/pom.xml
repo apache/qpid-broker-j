@@ -40,6 +40,8 @@
     <qpid.disttest.loglevel>info</qpid.disttest.loglevel>
     <qpid.disttest.duration>5000</qpid.disttest.duration>
     <qpid.disttest.distributed>false</qpid.disttest.distributed>
+    <qpid.disttest.registrationTimeout>60000</qpid.disttest.registrationTimeout>
+    <qpid.disttest.commandResponseTimeout>120000</qpid.disttest.commandResponseTimeout>
 
     <!-- The following provide values for the disttest command line -->
     <qpid.disttest.test_config>${basedir}/etc/testdefs</qpid.disttest.test_config>
@@ -186,6 +188,8 @@
             <argument>test-config=${qpid.disttest.test_config}</argument>
             <argument>distributed=${qpid.disttest.distributed}</argument>
             <argument>writeToDb=false</argument>
+            <argument>registrationTimeout=${qpid.disttest.registrationTimeout}</argument>
+            <argument>commandResponseTimeout=${qpid.disttest.commandResponseTimeout}</argument>
             <argument>hill-climb=${qpid.disttest.hillclimb}</argument>
             <argument>hill-climber.max-runs=${qpid.disttest.hillclimb.max_runs}</argument>
             <argument>hill-climber.start-target-rate=${qpid.disttest.hillclimb.start_target_rate}</argument>
@@ -266,6 +270,8 @@
                 <argument>test-config=${qpid.disttest.test_config}</argument>
                 <argument>distributed=false</argument>
                 <argument>writeToDb=false</argument>
+                <argument>registrationTimeout=${qpid.disttest.registrationTimeout}</argument>
+                <argument>commandResponseTimeout=${qpid.disttest.commandResponseTimeout}</argument>
                 <argument>hill-climb=${qpid.disttest.hillclimb}</argument>
                 <argument>hill-climber.max-runs=${qpid.disttest.hillclimb.max_runs}</argument>
                 <argument>hill-climber.start-target-rate=${qpid.disttest.hillclimb.start_target_rate}</argument>
