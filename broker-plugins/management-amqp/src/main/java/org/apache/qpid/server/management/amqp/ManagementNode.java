@@ -162,6 +162,8 @@ class ManagementNode implements MessageSource, MessageDestination
 
     private final ManagementOutputConverter _managementOutputConverter;
 
+    private final ManagementInputConverter _managementInputConverter;
+
     ManagementNode(final NamedAddressSpace addressSpace,
                    final ConfiguredObject<?> configuredObject)
     {
@@ -174,6 +176,8 @@ class ManagementNode implements MessageSource, MessageDestination
 
         populateMetaData();
         _managementOutputConverter = new ManagementOutputConverter(this);
+        _managementInputConverter = new ManagementInputConverter(this);
+
         _configuredObjectFinder = new ConfiguredObjectFinder(configuredObject);
     }
 
@@ -1033,10 +1037,32 @@ class ManagementNode implements MessageSource, MessageDestination
 
     private Map<?, ?> performQuery(final Map<String, Object> headerMap, final Map messageBody)
     {
-        List<String> attributeNames = (List<String>) messageBody.get(ATTRIBUTE_NAMES);
+
+        List<Object> attributeNameObjects = _managementInputConverter.convert(List.class, messageBody.get(ATTRIBUTE_NAMES));
+        List<String> attributeNames;
+        if(attributeNameObjects == null)
+        {
+            attributeNames = Collections.emptyList();
+        }
+        else
+        {
+            attributeNames = new ArrayList<>(attributeNameObjects.size());
+            for(Object nameObject : attributeNameObjects)
+            {
+                if(nameObject == null)
+                {
+                    throw new IllegalArgumentException("All attribute names must be non-null");
+                }
+                else
+                {
+                    attributeNames.add(nameObject.toString());
+                }
+            }
+        }
+
         String entityType = (String)headerMap.get(ENTITY_TYPE_HEADER);
 
-        if(attributeNames == null || attributeNames.isEmpty())
+        if(attributeNames.isEmpty())
         {
             attributeNames = generateAttributeNames(entityType);
         }
@@ -1226,6 +1252,11 @@ class ManagementNode implements MessageSource, MessageDestination
     {
         Set<String> attrNameSet = new HashSet<>();
         List<String> attributeNames = new ArrayList<>();
+        for(String standardAttribute : Arrays.asList(IDENTITY_ATTRIBUTE, TYPE_ATTRIBUTE, QPID_TYPE, OBJECT_PATH))
+        {
+            attrNameSet.add(standardAttribute);
+            attributeNames.add(standardAttribute);
+        }
         final ConfiguredObjectTypeRegistry typeRegistry = _model.getTypeRegistry();
         List<Class<? extends ConfiguredObject>> classes = new ArrayList<>();
 
@@ -1253,11 +1284,24 @@ class ManagementNode implements MessageSource, MessageDestination
         {
             for(String name : typeRegistry.getAttributeNames(clazz))
             {
-                if(attrNameSet.add(name))
+                if(!ConfiguredObject.ID.equals(name) && attrNameSet.add(name))
                 {
                     attributeNames.add(name);
                 }
             }
+            final Class<? extends ConfiguredObject> category = ConfiguredObjectTypeRegistry.getCategory(clazz);
+            if(category != _managedObject.getCategoryClass()
+               && !isSyntheticChildClass(category))
+            {
+                for (Class<? extends ConfiguredObject> parentType : _model.getParentTypes(category))
+                {
+                    if (parentType != _managedObject.getCategoryClass())
+                    {
+                        attributeNames.add(parentType.getSimpleName().toLowerCase());
+                    }
+                }
+            }
+
         }
 
         return attributeNames;

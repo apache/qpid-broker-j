@@ -24,6 +24,7 @@ import static org.apache.qpid.server.model.Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MES
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 
 import javax.jms.Connection;
@@ -126,8 +127,63 @@ public class AmqpManagementTest extends QpidBrokerTestCase
                    Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
         assertEquals("The response code did not indicate success", 200, responseMessage.getIntProperty("statusCode"));
         assertTrue("The response was not a MapMessage", responseMessage instanceof MapMessage);
+        ArrayList resultMessageKeys = Collections.list(((MapMessage) responseMessage).getMapNames());
+        assertEquals("The response map has two entries", 2, resultMessageKeys.size());
+        assertTrue("The response map does not contain attribute names", resultMessageKeys.contains("attributeNames"));
+        assertTrue("The response map does not contain results ", resultMessageKeys.contains("results"));
+        Object attributeNames = ((MapMessage)responseMessage).getObject("attributeNames");
+        assertTrue("The attribute names are not a list", attributeNames instanceof Collection);
+        Collection attributeNamesCollection = (Collection)attributeNames;
+        assertTrue("The attribute names do not contain identity", attributeNamesCollection.contains("identity"));
+        assertTrue("The attribute names do not contain name", attributeNamesCollection.contains("name"));
 
+        assertTrue("The attribute names do not contain qpid-type", attributeNamesCollection.contains("qpid-type"));
 
+        // Now test filtering by type
+        message.setStringProperty("identity", "self");
+        message.setStringProperty("type", "org.amqp.management");
+        message.setStringProperty("operation", "QUERY");
+        message.setStringProperty("entityType", "org.apache.qpid.Exchange");
+
+        message.setObject("attributeNames", "[\"name\", \"identity\", \"type\"]");
+        message.setJMSReplyTo(_replyAddress);
+        _producer.send(message);
+
+        responseMessage = _consumer.receive(getReceiveTimeout());
+        assertNotNull("A response message was not sent", responseMessage);
+        assertEquals("The correlation id does not match the sent message's messageId", message.getJMSMessageID(), responseMessage.getJMSCorrelationID());
+        assertTrue("The response message does not have a status code",
+                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
+        assertEquals("The response code did not indicate success", 200, responseMessage.getIntProperty("statusCode"));
+        assertTrue("The response was not a MapMessage", responseMessage instanceof MapMessage);
+        resultMessageKeys = Collections.list(((MapMessage) responseMessage).getMapNames());
+        assertEquals("The response map has two entries", 2, resultMessageKeys.size());
+        assertTrue("The response map does not contain attribute names", resultMessageKeys.contains("attributeNames"));
+        assertTrue("The response map does not contain results ", resultMessageKeys.contains("results"));
+        attributeNames = ((MapMessage)responseMessage).getObject("attributeNames");
+        assertTrue("The attribute names are not a list", attributeNames instanceof Collection);
+        attributeNamesCollection = (Collection)attributeNames;
+        assertEquals("The attributeNames are no as expected", Arrays.asList("name", "identity", "type"), attributeNamesCollection);
+        Object resultsObject = ((MapMessage) responseMessage).getObject("results");
+        assertTrue("results is not a collection", resultsObject instanceof Collection);
+        Collection results = (Collection)resultsObject;
+
+        final int numberOfExchanges = results.size();
+        assertTrue("results should have at least 4 elements", numberOfExchanges >= 4);
+
+        message.setStringProperty("identity", "self");
+        message.setStringProperty("type", "org.amqp.management");
+        message.setStringProperty("operation", "QUERY");
+        message.setStringProperty("entityType", "org.apache.qpid.DirectExchange");
+
+        message.setObject("attributeNames", "[\"name\", \"identity\", \"type\"]");
+        message.setJMSReplyTo(_replyAddress);
+        _producer.send(message);
+
+        responseMessage = _consumer.receive(getReceiveTimeout());
+        final Collection directExchanges = (Collection) ((MapMessage) responseMessage).getObject("results");
+        assertTrue("There are the same number of results when searching for direct exchanges as when searching for all exchanges", directExchanges.size() < numberOfExchanges);
+        assertTrue("The list of direct exchanges is not a proper subset of the list of all exchanges", results.containsAll(directExchanges));
     }
 
 
