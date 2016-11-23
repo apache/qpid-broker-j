@@ -561,7 +561,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget
 
     public boolean isFlowModeChangeAllowed()
     {
-        return _creditManager.hasNeitherCredit();
+        return !_creditManager.hasCredit();
     }
 
     public void flush()

@@ -63,12 +63,6 @@ public class CreditCreditManager implements FlowCreditManager_0_10
         return (_bytesCredit != 0L  && _messageCredit != 0L);
     }
 
-    @Override
-    public boolean hasNeitherCredit()
-    {
-        return _bytesCredit == 0L && _messageCredit == 0L;
-    }
-
     public synchronized boolean useCreditForMessage(long msgSize)
     {
         if(_messageCredit >= 0L)

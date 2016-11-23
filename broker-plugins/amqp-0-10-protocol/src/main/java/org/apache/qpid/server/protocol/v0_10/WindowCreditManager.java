@@ -83,12 +83,6 @@ public class WindowCreditManager implements FlowCreditManager_0_10
                 && (_messageCreditLimit < 0L || _messageCreditLimit > _messageUsed);
     }
 
-    @Override
-    public boolean hasNeitherCredit()
-    {
-        return _bytesCreditLimit == 0L && _messageCreditLimit == 0L;
-    }
-
     public synchronized boolean useCreditForMessage(final long msgSize)
     {
         if(_messageCreditLimit >= 0L)
