@@ -202,6 +202,7 @@ public class AMQMessageDelegate_0_10 extends AbstractAMQMessageDelegate
         if(messageId == null)
         {
             _messageProps.clearMessageId();
+            _messageID = null;
         }
         else
         {

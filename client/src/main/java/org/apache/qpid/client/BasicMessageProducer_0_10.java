@@ -127,6 +127,7 @@ public class BasicMessageProducer_0_10 extends BasicMessageProducer
             messageProps.setUserId(userIDBytes);
         }
                 
+        delegate.setJMSMessageID((String)null);
         if (messageId != null)
         {
             messageProps.setMessageId(messageId);
