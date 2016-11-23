@@ -26,19 +26,13 @@ public interface QueueConsumerManager
 {
     void addConsumer(QueueConsumer<?> consumer);
     boolean removeConsumer(QueueConsumer<?> consumer);
-    /*public*/ boolean setInterest(QueueConsumer<?> consumer, boolean interested); // called from Consumer
-    /*private*/ boolean setNotified(QueueConsumer<?> consumer, boolean notified, final boolean conditional); // called from Queue
+    boolean setInterest(QueueConsumer<?> consumer, boolean interested);
+    boolean setNotified(QueueConsumer<?> consumer, boolean notified);
 
-    // should be priority and then insertion order
     Iterator<QueueConsumer<?>> getInterestedIterator();
-
     Iterator<QueueConsumer<?>> getAllIterator();
     Iterator<QueueConsumer<?>> getNonAcquiringIterator();
 
     int getAllSize();
-    //        int getInterestedSize();
-    int getNotifiedAcquiringSize();
-
-
     int getHighestNotifiedPriority();
 }

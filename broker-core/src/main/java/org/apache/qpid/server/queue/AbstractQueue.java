@@ -1861,8 +1861,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         boolean queueEmpty = false;
         MessageContainer messageContainer = null;
 
-        _queueConsumerManager.clearStateAffirmationFlag(consumer);
-
+        _queueConsumerManager.setNotified(consumer, false);
         try
         {
 
@@ -1870,11 +1869,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 messageContainer = attemptDelivery(consumer);
 
-
                 if(messageContainer.getMessageInstance() == null)
                 {
-                    _queueConsumerManager.setNotified(consumer, false, true);
-
                     if (messageContainer.hasNoAvailableMessages())
                     {
                         queueEmpty = true;
@@ -1888,6 +1884,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         }
                     }
                     messageContainer = null;
+                }
+                else
+                {
+                    _queueConsumerManager.setNotified(consumer, true);
                 }
             }
             else
@@ -2225,7 +2225,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private boolean notifyConsumer(final QueueConsumer<?> consumer)
     {
-        if(consumerHasAvailableMessages(consumer) && _queueConsumerManager.setNotified(consumer, true, false))
+        if(consumerHasAvailableMessages(consumer) && _queueConsumerManager.setNotified(consumer, true))
         {
             consumer.notifyWork();
             return true;

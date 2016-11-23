@@ -29,7 +29,6 @@ final class QueueConsumerNode
     private QueueConsumerNodeListEntry _listEntry;
     private QueueConsumerManagerImpl.NodeState _state = QueueConsumerManagerImpl.NodeState.REMOVED;
     private QueueConsumerNodeListEntry _allEntry;
-    private boolean _affirmed;
 
     QueueConsumerNode(final QueueConsumerManagerImpl queueConsumerManager, final QueueConsumer<?> queueConsumer)
     {
@@ -47,37 +46,21 @@ final class QueueConsumerNode
         return _state;
     }
 
-    public synchronized void clearAffirmation()
-    {
-        _affirmed = false;
-    }
-
-
     public synchronized boolean moveFromTo(Collection<QueueConsumerManagerImpl.NodeState> fromStates,
-                                           QueueConsumerManagerImpl.NodeState toState,
-                                           final boolean conditional)
+                                           QueueConsumerManagerImpl.NodeState toState)
     {
         if (fromStates.contains(_state))
         {
-            if(!conditional || !_affirmed)
+            if (_listEntry != null)
             {
-                if (_listEntry != null)
-                {
-                    _listEntry.remove();
-                }
-                _state = toState;
-                _listEntry = _queueConsumerManager.addNodeToInterestList(this);
-                return true;
+                _listEntry.remove();
             }
-            else
-            {
-                _affirmed = false;
-                return false;
-            }
+            _state = toState;
+            _listEntry = _queueConsumerManager.addNodeToInterestList(this);
+            return true;
         }
         else
         {
-            _affirmed = _state == toState;
             return false;
         }
     }
