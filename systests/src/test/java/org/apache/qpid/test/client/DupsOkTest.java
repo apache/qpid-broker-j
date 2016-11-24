@@ -20,9 +20,8 @@
  */
 package org.apache.qpid.test.client;
 
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -33,8 +32,10 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+
+import org.apache.qpid.client.AMQDestination;
+import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 
 public class DupsOkTest extends QpidBrokerTestCase
@@ -48,12 +49,11 @@ public class DupsOkTest extends QpidBrokerTestCase
     {
         super.setUp();
 
-        _queue = (Queue)  getInitialContext().lookup("queue");
-
-
         //Declare the queue
         Connection consumerConnection = getConnection();
-        consumerConnection.createSession(false,Session.AUTO_ACKNOWLEDGE).createConsumer(_queue).close();
+        Session session = consumerConnection.createSession(false,Session.AUTO_ACKNOWLEDGE);
+        _queue = createTestQueue(session);
+        session.close();
 
         //Create Producer put some messages on the queue
         Connection producerConnection = getConnection();
@@ -90,7 +90,12 @@ public class DupsOkTest extends QpidBrokerTestCase
 
         MessageConsumer consumer = clientSession.createConsumer(_queue);
 
-        assertEquals("The queue should have msgs at start", MSG_COUNT, ((AMQSession) clientSession).getQueueDepth((AMQDestination) _queue));
+        if(!isBroker10())
+        {
+            assertEquals("The queue should have msgs at start",
+                         MSG_COUNT,
+                         ((AMQSession) clientSession).getQueueDepth((AMQDestination) _queue));
+        }
 
         clientConnection.start();
 
@@ -158,9 +163,12 @@ public class DupsOkTest extends QpidBrokerTestCase
         clientSession.close();
 
         final Session clientSession2 = clientConnection.createSession(false, Session.DUPS_OK_ACKNOWLEDGE);
-
-        assertEquals("The queue should have 0 msgs left", 0, ((AMQSession) clientSession2).getQueueDepth((AMQDestination) _queue));
-
+        if(!isBroker10())
+        {
+            assertEquals("The queue should have 0 msgs left",
+                         0,
+                         ((AMQSession) clientSession2).getQueueDepth((AMQDestination) _queue));
+        }
         clientConnection.close();
     }
 

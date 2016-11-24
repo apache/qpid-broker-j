@@ -68,3 +68,11 @@ org.apache.qpid.test.client.QueueBrowserDupsOkTest#testMultipleOverlappingGetEnu
 org.apache.qpid.test.client.QueueBrowserTransactedTest#testBrowsingWithSelector
 org.apache.qpid.test.client.QueueBrowserTransactedTest#testMultipleOverlappingGetEnum
 
+
+// No exception is thrown when attempting to consume from a deleted temp topic
+org.apache.qpid.test.unit.topic.TemporaryTopicTest#testExplicitTemporaryTopicDeletion
+// the temporary topic does not display topic like behaviour (only one consumer receives the message)
+org.apache.qpid.test.unit.topic.TemporaryTopicTest#testMessageDeliveryUsingTemporaryTopic
+// No exception is thrown when attempting to make a durable subscription to the temporary topic
+org.apache.qpid.test.unit.topic.TemporaryTopicTest#testDurableSubscriptionProhibited
+

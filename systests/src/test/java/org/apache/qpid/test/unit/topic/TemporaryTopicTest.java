@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.test.unit.topic;
 
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
@@ -29,6 +27,8 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TemporaryTopic;
 import javax.jms.TextMessage;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 
 /**
@@ -69,7 +69,7 @@ public class TemporaryTopicTest extends QpidBrokerTestCase
      * Note: Under < 0-10 {@link TemporaryTopic#delete()} only marks the queue as deleted
      * on the client. 0-10 causes the topic to be deleted from the Broker.
      */
-    public void testExplictTemporaryTopicDeletion() throws Exception
+    public void testExplicitTemporaryTopicDeletion() throws Exception
     {
         final Connection conn = getConnection();
 
@@ -86,7 +86,6 @@ public class TemporaryTopicTest extends QpidBrokerTestCase
         catch (JMSException je)
         {
             //pass
-            assertEquals("Temporary Topic has consumers so cannot be deleted", je.getMessage());
         }
 
         consumer.close();
@@ -102,7 +101,6 @@ public class TemporaryTopicTest extends QpidBrokerTestCase
         catch (JMSException je)
         {
             //pass
-            assertEquals("Cannot consume from a deleted destination", je.getMessage());
         }
     }
 
@@ -125,7 +123,7 @@ public class TemporaryTopicTest extends QpidBrokerTestCase
         catch (JMSException je)
         {
             // pass
-            assertEquals("Cannot consume from a temporary destination created on another connection", je.getMessage());
+
         }
     }
 

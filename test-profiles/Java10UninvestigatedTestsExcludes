@@ -14,14 +14,10 @@ org.apache.qpid.server.logging.QueueLoggingTest#*
 org.apache.qpid.server.logging.TransientQueueLoggingTest#*
 org.apache.qpid.server.queue.NodeAutoCreationPolicyTest#*
 org.apache.qpid.server.security.auth.manager.ExternalAuthenticationTest#*
-org.apache.qpid.server.security.auth.manager.MD5AuthenticationManagerTest#*
-org.apache.qpid.server.security.auth.manager.ScramSha1AuthenticationManagerTest#*
-org.apache.qpid.server.security.auth.manager.ScramSha256AuthenticationManagerTest#*
 org.apache.qpid.test.unit.basic.LargeMessageTest#*
 org.apache.qpid.test.unit.client.connection.ConnectionStartTest#*
 org.apache.qpid.test.unit.client.connection.ExceptionListenerTest#*
 org.apache.qpid.test.unit.client.DynamicQueueExchangeCreateTest#*
-org.apache.qpid.test.unit.topic.TemporaryTopicTest#*
 org.apache.qpid.client.prefetch.PrefetchBehaviourTest#*
 org.apache.qpid.client.redelivered.RedeliveredMessageTest#*
 org.apache.qpid.client.SynchReceiveTest#*
@@ -30,7 +26,7 @@ org.apache.qpid.client.session.ExchangeDeleteTest#*
 org.apache.qpid.client.session.QueueDeclareTest#*
 org.apache.qpid.client.session.QueueDeleteTest#*
 org.apache.qpid.test.client.failover.FailoverTest#*
-org.apache.qpid.test.client.DupsOkTest#*
+//org.apache.qpid.test.client.DupsOkTest#*
 org.apache.qpid.systest.prefetch.ZeroPrefetchTest#*
 org.apache.qpid.systest.messageencryption.MessageEncryptionTest#*
 org.apache.qpid.systest.MessageCompressionTest#*
