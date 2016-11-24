@@ -17,7 +17,7 @@
 # under the License.
 #
 
-// QPID-7181 Causes a Broker crash
+// Test uses a selector containing a name which is invalid for JMS and is therefore rejected by the Java Broker
 qpid_tests.broker_1_0.selector.SelectorTests.test_special_fields
 
 // Broker for Java currently fails to select messages matching JMSDestination = 'a'
@@ -32,8 +32,6 @@ qpid_tests.broker_1_0.translation.TranslationTests.test_translate_list_1
 qpid_tests.broker_1_0.translation.TranslationTests.test_translate_list_2
 qpid_tests.broker_1_0.translation.TranslationTests.test_translate_map_1
 qpid_tests.broker_1_0.translation.TranslationTests.test_translate_map_2
-qpid_tests.broker_1_0.translation.TranslationTests.test_translation_exchange_1
-qpid_tests.broker_1_0.translation.TranslationTests.test_translation_queue_1
 qpid_tests.broker_1_0.legacy_exchanges.LegacyExchangeTests.test_direct
 qpid_tests.broker_1_0.legacy_exchanges.LegacyExchangeTests.test_headers
 qpid_tests.broker_1_0.legacy_exchanges.LegacyExchangeTests.test_topic
