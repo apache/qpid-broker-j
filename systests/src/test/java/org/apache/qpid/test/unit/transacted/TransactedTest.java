@@ -27,31 +27,29 @@ import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
+import javax.jms.Queue;
+import javax.jms.Session;
 import javax.jms.TextMessage;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.jms.Session;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class TransactedTest extends QpidBrokerTestCase
 {
-    private AMQQueue queue1;
+    private Queue queue1;
 
-    private AMQConnection con;
+    private Connection con;
     private Session session;
     private MessageConsumer consumer1;
     private MessageProducer producer2;
 
-    private AMQConnection prepCon;
+    private Connection prepCon;
     private Session prepSession;
     private MessageProducer prepProducer1;
 
-    private AMQConnection testCon;
+    private Connection testCon;
     private Session testSession;
     private MessageConsumer testConsumer1;
     private MessageConsumer testConsumer2;
@@ -63,14 +61,14 @@ public class TransactedTest extends QpidBrokerTestCase
         {
             super.setUp();
             _logger.info("Create Connection");
-            con = (AMQConnection) getConnection("guest", "guest");
+            con = getConnection("guest", "guest");
             _logger.info("Create Session");
             session = con.createSession(true, Session.SESSION_TRANSACTED);
             _logger.info("Create Q1");
-            queue1 = new AMQQueue(session.getDefaultQueueExchangeName(), "Q1",
-                                  "Q1", false, true);
+            queue1 = createTestQueue(session, "Q1");
             _logger.info("Create Q2");
-            AMQQueue queue2 = new AMQQueue(session.getDefaultQueueExchangeName(), "Q2", false);
+            Queue queue2 = createTestQueue(session, "Q2");
+            session.commit();
 
             _logger.info("Create Consumer of Q1");
             consumer1 = session.createConsumer(queue1);
@@ -87,10 +85,10 @@ public class TransactedTest extends QpidBrokerTestCase
             con.start();
 
             _logger.info("Create prep connection");
-            prepCon = (AMQConnection) getConnection("guest", "guest");
+            prepCon = getConnection("guest", "guest");
 
             _logger.info("Create prep session");
-            prepSession = prepCon.createSession(false, AMQSession.AUTO_ACKNOWLEDGE);
+            prepSession = prepCon.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
             _logger.info("Create prep producer to Q1");
             prepProducer1 = prepSession.createProducer(queue1);
@@ -99,9 +97,9 @@ public class TransactedTest extends QpidBrokerTestCase
             prepCon.start();
 
             _logger.info("Create test connection");
-            testCon = (AMQConnection) getConnection("guest", "guest");
+            testCon = getConnection("guest", "guest");
             _logger.info("Create test session");
-            testSession = testCon.createSession(false, AMQSession.AUTO_ACKNOWLEDGE);
+            testSession = testCon.createSession(false, Session.AUTO_ACKNOWLEDGE);
             _logger.info("Create test consumer of q2");
             testConsumer2 = testSession.createConsumer(queue2);
         }
@@ -209,7 +207,7 @@ public class TransactedTest extends QpidBrokerTestCase
         // ensure sent messages are not visible and received messages are requeued
         expect("RB_A", consumer1.receive(1000), true);
         expect("RB_B", consumer1.receive(1000), true);
-        expect("RB_C", consumer1.receive(1000), isBroker010()?false:true);
+        expect("RB_C", consumer1.receive(1000), (isBroker010()||isBroker10())?false:true);
         _logger.info("Starting new connection");
         testCon.start();
         testConsumer1 = testSession.createConsumer(queue1);
@@ -226,13 +224,14 @@ public class TransactedTest extends QpidBrokerTestCase
 
     public void testResendsMsgsAfterSessionClose() throws Exception
     {
-        AMQConnection con = (AMQConnection) getConnection("guest", "guest");
+        Connection con = getConnection("guest", "guest");
 
         Session consumerSession = con.createSession(true, Session.SESSION_TRANSACTED);
-        AMQQueue queue3 = new AMQQueue(consumerSession.getDefaultQueueExchangeName(), "Q3", false);
+        Queue queue3 = createTestQueue(session, "Q3");
+        session.commit();
         MessageConsumer consumer = consumerSession.createConsumer(queue3);
 
-        AMQConnection con2 = (AMQConnection) getConnection("guest", "guest");
+        Connection con2 = getConnection("guest", "guest");
         Session producerSession = con2.createSession(true, Session.SESSION_TRANSACTED);
         MessageProducer producer = producerSession.createProducer(queue3);
 
@@ -323,7 +322,7 @@ public class TransactedTest extends QpidBrokerTestCase
     public void testCommitOnClosedSession() throws Exception
     {
         Connection connnection = getConnection();
-        javax.jms.Session transactedSession = connnection.createSession(true, Session.SESSION_TRANSACTED);
+        Session transactedSession = connnection.createSession(true, Session.SESSION_TRANSACTED);
         transactedSession.close();
         try
         {
@@ -339,7 +338,7 @@ public class TransactedTest extends QpidBrokerTestCase
     public void testRollbackOnClosedSession() throws Exception
     {
         Connection connnection = getConnection();
-        javax.jms.Session transactedSession = connnection.createSession(true, Session.SESSION_TRANSACTED);
+        Session transactedSession = connnection.createSession(true, Session.SESSION_TRANSACTED);
         transactedSession.close();
         try
         {
@@ -355,7 +354,7 @@ public class TransactedTest extends QpidBrokerTestCase
     public void testGetTransactedOnClosedSession() throws Exception
     {
         Connection connnection = getConnection();
-        javax.jms.Session transactedSession = connnection.createSession(true, Session.SESSION_TRANSACTED);
+        Session transactedSession = connnection.createSession(true, Session.SESSION_TRANSACTED);
         transactedSession.close();
         try
         {

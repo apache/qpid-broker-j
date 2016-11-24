@@ -165,8 +165,9 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         }
     }
 
-    static Map fixMapValues(final Map<String, Object> map)
+    static Map fixMapValues(Map<String, Object> map)
     {
+        map = new LinkedHashMap<>(map);
         for(Map.Entry<String,Object> entry : map.entrySet())
         {
             entry.setValue(fixValue(entry.getValue()));
@@ -194,8 +195,9 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         }
     }
 
-    static List fixListValues(final List list)
+    static List fixListValues(List list)
     {
+        list = new ArrayList(list);
         ListIterator iterator = list.listIterator();
         while(iterator.hasNext())
         {

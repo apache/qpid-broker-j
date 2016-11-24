@@ -21,10 +21,6 @@
 
 package org.apache.qpid.test.unit.client.temporaryqueue;
 
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Message;
@@ -33,6 +29,10 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TemporaryQueue;
 import javax.jms.TextMessage;
+
+import org.apache.qpid.client.AMQDestination;
+import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
  * Tests the behaviour of {@link TemporaryQueue}.
@@ -77,7 +77,7 @@ public class TemporaryQueueTest extends QpidBrokerTestCase
         catch (JMSException je)
         {
             //pass
-            assertEquals("Cannot consume from a temporary destination created on another connection", je.getMessage());
+            assertEquals(isBroker10() ? "Can't consume from a temporary destination created using another connection" : "Cannot consume from a temporary destination created on another connection", je.getMessage());
         }
     }
 
@@ -185,7 +185,14 @@ public class TemporaryQueueTest extends QpidBrokerTestCase
         catch (JMSException je)
         {
             //pass
-            assertEquals("Temporary Queue has consumers so cannot be deleted", je.getMessage());
+            if(isBroker10())
+            {
+                assertEquals("A consumer is consuming from the temporary destination", je.getMessage());
+            }
+            else
+            {
+                assertEquals("Temporary Queue has consumers so cannot be deleted", je.getMessage());
+            }
         }
         consumer.close();
 

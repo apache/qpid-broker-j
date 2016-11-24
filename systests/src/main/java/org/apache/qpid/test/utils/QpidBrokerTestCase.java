@@ -18,27 +18,16 @@
 package org.apache.qpid.test.utils;
 
 import java.io.File;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.jms.BytesMessage;
-import javax.jms.Connection;
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.MapMessage;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
-import javax.jms.ObjectMessage;
-import javax.jms.Queue;
-import javax.jms.Session;
-import javax.jms.StreamMessage;
-import javax.jms.TextMessage;
-import javax.jms.Topic;
+import javax.jms.*;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -107,9 +96,10 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     private final Map<String, String> _propertiesSetForBroker = new HashMap<>();
     private final List<Connection> _connections = new ArrayList<>();
-    protected AMQConnectionFactory _connectionFactory;
+    protected ConnectionFactory _connectionFactory;
     private BrokerHolder _defaultBroker;
     private MessageType _messageType = MessageType.TEXT;
+    private Hashtable _initialContextEnvironment = new Hashtable();
 
     @Override
     public void runBare() throws Throwable
@@ -204,6 +194,11 @@ public class QpidBrokerTestCase extends QpidTestCase
         return BROKER_PROTOCOL.equals(Protocol.AMQP_0_10);
     }
 
+    public boolean isBroker10()
+    {
+        return BROKER_PROTOCOL.equals(Protocol.AMQP_1_0);
+    }
+
     public Protocol getBrokerProtocol()
     {
         return BROKER_PROTOCOL;
@@ -223,7 +218,7 @@ public class QpidBrokerTestCase extends QpidTestCase
      */
     public InitialContext getInitialContext() throws NamingException
     {
-        return new InitialContext();
+        return new InitialContext(_initialContextEnvironment);
     }
 
     /**
@@ -233,7 +228,7 @@ public class QpidBrokerTestCase extends QpidTestCase
      * @return A connection factory
      * @throws NamingException if there is an error getting the factory
      */
-    public AMQConnectionFactory getConnectionFactory() throws NamingException
+    public ConnectionFactory getConnectionFactory() throws NamingException
     {
         if (_connectionFactory == null)
         {
@@ -256,9 +251,41 @@ public class QpidBrokerTestCase extends QpidTestCase
      * @return A connection factory
      * @throws NamingException if there is an error getting the factory
      */
-    public AMQConnectionFactory getConnectionFactory(String factoryName) throws NamingException
+    public ConnectionFactory getConnectionFactory(String factoryName) throws NamingException
     {
-        return (AMQConnectionFactory) getInitialContext().lookup(factoryName);
+        return getConnectionFactory(factoryName, "test", "clientid");
+    }
+    public ConnectionFactory getConnectionFactory(String factoryName, String vhost, String clientId) throws NamingException
+    {
+
+        if(isBroker10())
+        {
+            if("failover".equals(factoryName))
+            {
+                _initialContextEnvironment.put("property.connectionfactory.failover.remoteURI",
+                                               "failover:(amqp://localhost:"
+                                               + System.getProperty("test.port")
+                                               + ",amqp://localhost:"
+                                               + System.getProperty("test.port.alt")
+                                               + ")?failover.maxReconnectAttempts=20&amqp.vhost="
+                                               + vhost
+                                               + "&jms.clientID="
+                                               + clientId
+                                               + "&jms.forceSyncSend=true");
+            }
+            else if("default".equals(factoryName))
+            {
+                _initialContextEnvironment.put("property.connectionfactory.default.remoteURI",
+                                               "amqp://localhost:"
+                                               + System.getProperty("test.port")
+                                               + "?amqp.vhost="
+                                               + vhost
+                                               + "&jms.clientID="
+                                               + clientId);
+
+            }
+        }
+        return (ConnectionFactory) getInitialContext().lookup(factoryName);
     }
 
     public Connection getConnection() throws JMSException, NamingException
@@ -269,7 +296,7 @@ public class QpidBrokerTestCase extends QpidTestCase
     public Connection getConnectionWithOptions(Map<String, String> options)
             throws URLSyntaxException, NamingException, JMSException
     {
-        ConnectionURL curl = new AMQConnectionURL(getConnectionFactory().getConnectionURLString());
+        ConnectionURL curl = new AMQConnectionURL(((AMQConnectionFactory)getConnectionFactory()).getConnectionURLString());
         for (Map.Entry<String, String> entry : options.entrySet())
         {
             curl.setOption(entry.getKey(), entry.getValue());
@@ -284,7 +311,7 @@ public class QpidBrokerTestCase extends QpidTestCase
     public Connection getConnectionForVHost(String vhost)
             throws URLSyntaxException, NamingException, JMSException
     {
-        ConnectionURL curl = new AMQConnectionURL(getConnectionFactory().getConnectionURLString());
+        ConnectionURL curl = new AMQConnectionURL(((AMQConnectionFactory)getConnectionFactory()).getConnectionURLString());
         curl.setVirtualHost(vhost);
         curl = new AMQConnectionURL(curl.toString());
 
@@ -330,6 +357,28 @@ public class QpidBrokerTestCase extends QpidTestCase
         return new AMQQueue(ExchangeDefaults.DIRECT_EXCHANGE_NAME, getTestQueueName());
     }
 
+    public Queue createTestQueue(Session session) throws JMSException
+    {
+        return createTestQueue(session, getTestQueueName());
+    }
+
+    public Queue createTestQueue(Session session, String queueName) throws JMSException
+    {
+        if(isBroker10())
+        {
+            createEntityUsingAmqpManagement(queueName, session, "org.apache.qpid.Queue");
+
+            return session.createQueue(queueName);
+        }
+        else
+        {
+
+            AMQQueue amqQueue = new AMQQueue(ExchangeDefaults.DIRECT_EXCHANGE_NAME, queueName);
+            session.createConsumer(amqQueue).close();
+            return amqQueue;
+        }
+    }
+
     /**
      * Return a Topic specific for this test.
      * Uses getTestQueueName() as the name of the topic
@@ -338,6 +387,105 @@ public class QpidBrokerTestCase extends QpidTestCase
     {
         return new AMQTopic(ExchangeDefaults.TOPIC_EXCHANGE_NAME, getTestQueueName());
     }
+
+    protected Topic createTopic(final Connection con, final String topicName) throws JMSException
+    {
+        if(isBroker10())
+        {
+            Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            createEntityUsingAmqpManagement(topicName, session, "org.apache.qpid.TopicExchange");
+
+            return session.createTopic(topicName);
+
+        }
+        else
+        {
+            return new AMQTopic(ExchangeDefaults.TOPIC_EXCHANGE_NAME, topicName);
+        }
+    }
+
+    protected Topic createTopicOnDirect(final Connection con, String topicName) throws JMSException, URISyntaxException
+    {
+        if(isBroker10())
+        {
+            Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            return session.createTopic("amq.direct/"+topicName);
+        }
+        else
+        {
+            return new AMQTopic(
+                    "direct://amq.direct/"+topicName+"/"+topicName+"?routingkey='"+topicName+"',exclusive='true',autodelete='true'");
+        }
+    }
+
+
+    protected Topic createTopicOnFanout(final Connection con, String topicName) throws JMSException, URISyntaxException
+    {
+        if(isBroker10())
+        {
+            Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            return session.createTopic("amq.fanout/"+topicName);
+        }
+        else
+        {
+            return new AMQTopic(
+                    "fanout://amq.fanout/"+topicName+"/"+topicName+"?routingkey='"+topicName+"',exclusive='true',autodelete='true'");
+        }
+    }
+
+    private void createEntityUsingAmqpManagement(final String name, final Session session, final String type)
+            throws JMSException
+    {
+        MessageProducer producer = session.createProducer(session.createQueue("$management"));
+
+        MapMessage createMessage = session.createMapMessage();
+        createMessage.setStringProperty("type", type);
+        createMessage.setStringProperty("operation", "CREATE");
+        createMessage.setString("name", name);
+        createMessage.setString("object-path", name);
+        producer.send(createMessage);
+    }
+
+
+    protected List managementQueryObjects(final Session session, final String type) throws JMSException
+    {
+        MessageProducer producer = session.createProducer(session.createQueue("$management"));
+        final TemporaryQueue responseQ = session.createTemporaryQueue();
+        MessageConsumer consumer = session.createConsumer(responseQ);
+        MapMessage message = session.createMapMessage();
+        message.setStringProperty("identity", "self");
+        message.setStringProperty("type", "org.amqp.management");
+        message.setStringProperty("operation", "QUERY");
+        message.setStringProperty("entityType", type);
+        message.setString("attributeNames", "[]");
+        message.setJMSReplyTo(responseQ);
+
+        producer.send(message);
+
+        Message response = consumer.receive();
+        try
+        {
+            if (response instanceof MapMessage)
+            {
+                return (List) ((MapMessage) response).getObject("results");
+            }
+            else if (response instanceof ObjectMessage)
+            {
+                Object body = ((ObjectMessage) response).getObject();
+                if (body instanceof Map)
+                {
+                    return (List) ((Map) body).get("results");
+                }
+            }
+            throw new IllegalArgumentException("Cannot parse the results from a management query");
+        }
+        finally
+        {
+            consumer.close();
+            responseQ.delete();
+        }
+    }
+
 
     /**
      * Send messages to the given destination.
@@ -473,9 +621,9 @@ public class QpidBrokerTestCase extends QpidTestCase
     {
         try
         {
-            if (getConnectionFactory().getConnectionURL().getBrokerCount() > 0)
+            if (((AMQConnectionFactory)getConnectionFactory()).getConnectionURL().getBrokerCount() > 0)
             {
-                return getConnectionFactory().getConnectionURL().getBrokerDetails(0);
+                return ((AMQConnectionFactory)getConnectionFactory()).getConnectionURL().getBrokerDetails(0);
             }
             else
             {
@@ -705,7 +853,15 @@ public class QpidBrokerTestCase extends QpidTestCase
                    QpidException, NamingException
     {
         _logger.debug("get connection for id " + id);
-        Connection con = getConnectionFactory().createConnection(username, password, id);
+        Connection con;
+        if(isBroker10())
+        {
+            con = getConnectionFactory("default", "test", id).createConnection(username, password);
+        }
+        else
+        {
+            con = ((AMQConnectionFactory)getConnectionFactory()).createConnection(username, password, id);
+        }
         //add the connection in the list of connections
         _connections.add(con);
         return con;

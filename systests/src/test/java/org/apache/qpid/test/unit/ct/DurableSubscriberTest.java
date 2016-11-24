@@ -17,7 +17,6 @@
  */
 package org.apache.qpid.test.unit.ct;
 
-import javax.jms.Connection;
 import javax.jms.Message;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
@@ -29,10 +28,8 @@ import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
 
-import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.AMQTopic;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
@@ -54,7 +51,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
     {
         if (isBrokerStorePersistent())
         {
-            TopicConnectionFactory factory = getConnectionFactory();
+            TopicConnectionFactory factory = (TopicConnectionFactory) getConnectionFactory();
             Topic topic = (Topic) getInitialContext().lookup(_topicName);
             //create and register a durable subscriber then close it
             TopicConnection durConnection = factory.createTopicConnection("guest", "guest");
@@ -89,7 +86,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
                 throw e;
             }
             //now recreate the durable subscriber and check the received messages
-            factory = getConnectionFactory();
+            factory = (TopicConnectionFactory) getConnectionFactory();
             topic = (Topic) getInitialContext().lookup(_topicName);
             TopicConnection durConnection2 = factory.createTopicConnection("guest", "guest");
             TopicSession durSession2 = durConnection2.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -118,7 +115,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
     {
         if (isBrokerStorePersistent())
         {
-            TopicConnectionFactory factory = getConnectionFactory();
+            TopicConnectionFactory factory = (TopicConnectionFactory) getConnectionFactory();
             Topic topic = (Topic) getInitialContext().lookup(_topicName);
             //create and register a durable subscriber with a message selector and then close it
             TopicConnection durConnection = factory.createTopicConnection("guest", "guest");
@@ -139,7 +136,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
                 throw e;
             }
             topic = (Topic) getInitialContext().lookup(_topicName);
-            factory = getConnectionFactory();
+            factory = (TopicConnectionFactory) getConnectionFactory();
             TopicConnection pubConnection = factory.createTopicConnection("guest", "guest");
             TopicSession pubSession = pubConnection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
             TopicPublisher publisher = pubSession.createPublisher(topic);
@@ -196,7 +193,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
         
         final String SUB_NAME=getTestQueueName();
         
-        TopicConnectionFactory factory = getConnectionFactory();
+        TopicConnectionFactory factory = (TopicConnectionFactory) getConnectionFactory();
         Topic topic = (Topic) getInitialContext().lookup(_topicName);
         
         //create and register a durable subscriber then unsubscribe it
@@ -291,7 +288,7 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
         
         final String SUB_NAME=getTestQueueName();
         
-        TopicConnectionFactory factory = getConnectionFactory();
+        TopicConnectionFactory factory = (TopicConnectionFactory) getConnectionFactory();
         Topic topic = (Topic) getInitialContext().lookup(_topicName);
         
         //create and register a durable subscriber with selector then unsubscribe it
@@ -371,10 +368,10 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
             return;
         }
         
-        Connection conn = getConnection();
+        TopicConnection conn = (TopicConnection) getConnection();
         conn.start();
         Session session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        AMQTopic topic = new AMQTopic((AMQConnection) conn, "testResubscribeWithChangedSelectorAndRestart");
+        Topic topic = createTopic(conn, "testResubscribeWithChangedSelectorAndRestart");
         MessageProducer producer = session.createProducer(topic);
         
         // Create durable subscriber that matches A
@@ -458,10 +455,10 @@ public class DurableSubscriberTest extends QpidBrokerTestCase
         }
         
         // Reconnect to broker
-        Connection connection = getConnectionFactory().createConnection("guest", "guest");
+        TopicConnection connection = (TopicConnection) getConnectionFactory().createConnection("guest", "guest");
         connection.start();
         session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        topic = new AMQTopic((AMQConnection) connection, "testResubscribeWithChangedSelectorAndRestart");
+        topic = createTopic(connection, "testResubscribeWithChangedSelectorAndRestart");
         producer = session.createProducer(topic);
 
         //verify no messages now present on the queue after we restart the broker

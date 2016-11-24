@@ -44,7 +44,7 @@ public class XAResourceTest extends AbstractXATestCase
 
     public void testIsSameRMJoin() throws Exception
     {
-        XAConnectionFactory factory = getConnectionFactory(FACTORY_NAME);
+        XAConnectionFactory factory = (XAConnectionFactory) getConnectionFactory(FACTORY_NAME);
         XAConnection conn1 = factory.createXAConnection("guest", "guest");
         XAConnection conn2 = factory.createXAConnection("guest", "guest");
         XAConnection conn3 = factory.createXAConnection("guest", "guest");
@@ -89,7 +89,7 @@ public class XAResourceTest extends AbstractXATestCase
      */
     public void testIsSameRMSingleCF() throws Exception
     {
-        XAConnectionFactory factory = getConnectionFactory(FACTORY_NAME);
+        XAConnectionFactory factory = (XAConnectionFactory) getConnectionFactory(FACTORY_NAME);
         XAConnection conn = factory.createXAConnection("guest","guest");
         XASession session = conn.createXASession();
         XAResource xaResource1 = session.getXAResource();
@@ -115,10 +115,10 @@ public class XAResourceTest extends AbstractXATestCase
             secondBroker.start();
             setTestSystemProperty("test.port.alt", String.valueOf(secondBroker.getAmqpPort()));
 
-            ConnectionURL url = getConnectionFactory(FACTORY_NAME).getConnectionURL();
+            ConnectionURL url = ((AMQConnectionFactory)getConnectionFactory(FACTORY_NAME)).getConnectionURL();
             XAConnectionFactory factory = new AMQConnectionFactory(url);
             XAConnectionFactory factory2 = new AMQConnectionFactory(url);
-            XAConnectionFactory factory3 = getConnectionFactory(ALT_FACTORY_NAME);
+            XAConnectionFactory factory3 = (XAConnectionFactory) getConnectionFactory(ALT_FACTORY_NAME);
 
             XAConnection conn = factory.createXAConnection("guest", "guest");
             XAConnection conn2 = factory2.createXAConnection("guest", "guest");

@@ -82,7 +82,6 @@
                integration-test phase below instead -->
           <skip>true</skip>
           <systemPropertyVariables>
-            <java.naming.provider.url>test-profiles${file.separator}test-provider.properties</java.naming.provider.url>
             <test.output.dir>${test.output.dir}</test.output.dir>
           </systemPropertyVariables>
         </configuration>

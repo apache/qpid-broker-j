@@ -20,14 +20,13 @@
  */
 package org.apache.qpid.test.unit.close;
 
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQTopic;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
 import javax.jms.Session;
 import javax.jms.Topic;
+import javax.jms.TopicConnection;
 import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
  * @author Apache Software Foundation
@@ -48,9 +47,9 @@ public class TopicPublisherCloseTest extends QpidBrokerTestCase
 
     public void testAllMethodsThrowAfterConnectionClose() throws Exception
     {
-        AMQConnection connection =   (AMQConnection) getConnection("guest", "guest");
+        TopicConnection connection =   (TopicConnection) getConnection("guest", "guest");
 
-        Topic destination1 = new AMQTopic(connection, "t1");
+        Topic destination1 = createTopic(connection, "t1");
         TopicSession session1 = connection.createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
         TopicPublisher pub = session1.createPublisher(destination1);
         connection.close();

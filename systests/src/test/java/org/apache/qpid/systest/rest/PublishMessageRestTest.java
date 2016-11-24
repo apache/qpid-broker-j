@@ -19,12 +19,12 @@
  */
 package org.apache.qpid.systest.rest;
 
-import static org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet.SC_UNPROCESSABLE_ENTITY;
-
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -62,9 +62,10 @@ public class PublishMessageRestTest extends QpidRestTestCase
         _connection = getConnection();
         _connection.start();
 
-        _session = _connection.createSession(true, Session.SESSION_TRANSACTED);
+        _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         _queueName = getTestQueueName();
-        Destination queue = _session.createQueue(_queueName);
+        Destination queue = createTestQueue(_session);
+
         _consumer = _session.createConsumer(queue);
 
         _publishMessageOpUrl = String.format("virtualhost/%s/%s/publishMessage", TEST1_VIRTUALHOST, TEST1_VIRTUALHOST);
@@ -95,12 +96,23 @@ public class PublishMessageRestTest extends QpidRestTestCase
         assertNull("Unexpected JMSCorrelationID", message.getJMSCorrelationID());
         assertEquals("Unexpected JMSExpiration", 0, message.getJMSExpiration());
         assertNotSame("Unexpected JMSTimestamp", 0, message.getJMSTimestamp());
-        assertFalse("Unexpected number of mesage properties", message.getPropertyNames().hasMoreElements());
+
+        // remove any JMSX properties which may be added by the client library
+        ArrayList propertyNames = new ArrayList(Collections.list(message.getPropertyNames()));
+        Iterator iter = propertyNames.iterator();
+        while(iter.hasNext())
+        {
+            if(iter.next().toString().startsWith("JMSX"))
+            {
+                iter.remove();
+            }
+        }
+        assertTrue("Unexpected number of mesage properties: " + propertyNames, propertyNames.isEmpty());
     }
 
     public void testPublishMessageWithPropertiesAndHeaders() throws Exception
     {
-        final String messageId = UUID.randomUUID().toString();
+        final String messageId = "ID:" + UUID.randomUUID().toString();
         final long tomorrow = TimeUnit.DAYS.toMillis(1) + System.currentTimeMillis();
         final Map<String, Object> headers =  new HashMap<>();
         headers.put("stringprop", "mystring");
@@ -119,7 +131,7 @@ public class PublishMessageRestTest extends QpidRestTestCase
 
         Message message = _consumer.receive(getLongReceiveTimeout());
         assertNotNull("Expected message not received", message);
-        final String jmsMessageID = message.getJMSMessageID().replaceFirst("ID:", "");
+        final String jmsMessageID = message.getJMSMessageID();
         assertEquals("Unexpected JMSMessageID", messageId, jmsMessageID);
         assertEquals("Unexpected JMSExpiration", tomorrow, message.getJMSExpiration());
 

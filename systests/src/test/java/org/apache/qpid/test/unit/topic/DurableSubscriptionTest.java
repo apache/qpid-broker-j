@@ -34,6 +34,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
+import javax.jms.TopicConnection;
 import javax.jms.TopicSubscriber;
 
 import org.slf4j.Logger;
@@ -43,7 +44,6 @@ import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQNoRouteException;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.AMQTopic;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
@@ -70,8 +70,8 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
 
     public void testUnsubscribe() throws Exception
     {
-        AMQConnection con = (AMQConnection) getConnection();
-        AMQTopic topic = new AMQTopic(con, "MyDurableSubscriptionTestTopic");
+        TopicConnection con = (TopicConnection) getConnection();
+        Topic topic = createTopic(con, "MyDurableSubscriptionTestTopic");
         _logger.info("Create Session 1");
         Session session1 = con.createSession(false, AMQSession.NO_ACKNOWLEDGE);
         _logger.info("Create Consumer on Session 1");
@@ -155,7 +155,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         connection.start();
 
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Topic topic = new AMQTopic(connection, MY_TOPIC);
+        Topic topic = createTopic(connection, MY_TOPIC);
         MessageProducer producer = session.createProducer(topic);
 
         TopicSubscriber subscriber = session.createDurableSubscriber(topic, MY_SUBSCRIPTION, "1 = 1", false);
@@ -241,8 +241,8 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
 
     private void durabilityImpl(int ackMode, boolean restartBroker) throws Exception
     {        
-        AMQConnection con = (AMQConnection) getConnection();
-        AMQTopic topic = new AMQTopic(con, MY_TOPIC);
+        TopicConnection con = (TopicConnection) getConnection();
+        Topic topic = createTopic(con, MY_TOPIC);
         Session session1 = con.createSession(false, ackMode);
         MessageConsumer consumer1 = session1.createConsumer(topic);
 
@@ -346,24 +346,24 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
     {
         Message msg;
         // Create producer.
-        AMQConnection con0 = (AMQConnection) getConnection();
+        TopicConnection con0 = (TopicConnection) getConnection();
         con0.start();
         Session session0 = con0.createSession(false, ackMode);
 
-        AMQTopic topic = new AMQTopic(con0, MY_TOPIC);
+        Topic topic = createTopic(con0, MY_TOPIC);
 
         Session sessionProd = con0.createSession(false, ackMode);
         MessageProducer producer = sessionProd.createProducer(topic);
 
         // Create consumer 1.
-        AMQConnection con1 = (AMQConnection) getConnection();
+        Connection con1 = getConnection();
         con1.start();
         Session session1 = con1.createSession(false, ackMode);
 
         MessageConsumer consumer1 = session1.createConsumer(topic);
 
         // Create consumer 2.
-        AMQConnection con2 = (AMQConnection) getConnection();
+        Connection con2 = getConnection();
         con2.start();
         Session session2 = con2.createSession(false, ackMode);
 
@@ -459,7 +459,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
     	Connection conn = getConnection();
     	conn.start();
     	Session session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-    	AMQTopic topic = new AMQTopic((AMQConnection) conn, "MyTestDurableWithInvalidSelectorTopic");
+    	Topic topic = createTopic(conn, "MyTestDurableWithInvalidSelectorTopic");
     	MessageProducer producer = session.createProducer(topic);
     	producer.send(session.createTextMessage("testDurableWithInvalidSelector1"));
     	try 
@@ -496,7 +496,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
     	Connection conn = getConnection();
     	conn.start();
     	Session session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-    	AMQTopic topic = new AMQTopic((AMQConnection) conn, "testDurableWithInvalidDestinationTopic");
+    	Topic topic = createTopic(conn, "testDurableWithInvalidDestinationTopic");
     	try 
     	{
     		TopicSubscriber deadSubscriber = session.createDurableSubscriber(null, "testDurableWithInvalidDestinationsub");
@@ -531,7 +531,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         Connection conn = getConnection();
         conn.start();
         Session session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        AMQTopic topic = new AMQTopic((AMQConnection) conn, "testResubscribeWithChangedSelector");
+        Topic topic = createTopic(conn, "testResubscribeWithChangedSelector");
         MessageProducer producer = session.createProducer(topic);
         
         // Create durable subscriber that matches A
@@ -627,7 +627,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         Connection conn = getConnection();
         conn.start();
         Session session = conn.createSession(true, Session.SESSION_TRANSACTED);
-        AMQTopic topic = new AMQTopic((AMQConnection) conn, "sameMessageSelector");
+        Topic topic = createTopic(conn, "sameMessageSelector");
                 
         //create and register a durable subscriber with a message selector and then close it
         TopicSubscriber subOne = session.createDurableSubscriber(topic, "sameMessageSelector", "testprop = TRUE", false);
@@ -702,7 +702,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         Connection conn = getConnection();
         conn.start();
         Session session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        AMQTopic topic = new AMQTopic((AMQConnection) conn, "testResubscribeWithChangedSelectorNoClose");
+        Topic topic = createTopic(conn, "testResubscribeWithChangedSelectorNoClose");
         
         // Create durable subscriber that matches A
         TopicSubscriber subA = session.createDurableSubscriber(topic, 
@@ -774,7 +774,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         Connection conn = getConnection();
         conn.start();
         Session session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        AMQTopic topic = new AMQTopic((AMQConnection) conn, "subscriptionName");
+        Topic topic = createTopic(conn, "subscriptionName");
                 
         // create and register a durable subscriber with no message selector
         TopicSubscriber subOne = session.createDurableSubscriber(topic, "subscriptionName", null, false);
@@ -839,7 +839,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         Connection conn = getConnection();
         conn.start();
         Session session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        AMQTopic topic = new AMQTopic((AMQConnection) conn, "subscriptionName");
+        Topic topic = createTopic(conn, "subscriptionName");
                 
         // create and register a durable subscriber with no message selector
         session.createDurableSubscriber(topic, "subscriptionName", null, false);

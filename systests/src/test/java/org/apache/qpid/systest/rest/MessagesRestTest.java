@@ -74,9 +74,8 @@ public class MessagesRestTest extends QpidRestTestCase
         _startTime = System.currentTimeMillis();
         _connection = getConnection();
         _session = _connection.createSession(true, Session.SESSION_TRANSACTED);
-        String queueName = getTestQueueName();
-        Destination queue = _session.createQueue(queueName);
-        _session.createConsumer(queue).close();
+        Destination queue = createTestQueue(_session);
+        _session.commit();
         _producer = _session.createProducer(queue);
 
         _ttl = TimeUnit.DAYS.toMillis(1);
@@ -243,8 +242,8 @@ public class MessagesRestTest extends QpidRestTestCase
     {
         String queueName = getTestQueueName();
         String queueName2 = queueName + "_2";
-        Destination queue2 = _session.createQueue(queueName2);
-        _session.createConsumer(queue2);
+        Destination queue2 = createTestQueue(_session, queueName2);
+        _session.commit();
 
         // get message IDs
         List<Long> ids = getMesssageIds(queueName);
@@ -299,9 +298,8 @@ public class MessagesRestTest extends QpidRestTestCase
     {
         String queueName = getTestQueueName();
         String queueName2 = queueName + "_2";
-        Destination queue2 = _session.createQueue(queueName2);
-        _session.createConsumer(queue2);
-
+        createTestQueue(_session, queueName2);
+        _session.commit();
         // move messages
 
         Map<String, Object> messagesData = new HashMap<>();
@@ -349,9 +347,8 @@ public class MessagesRestTest extends QpidRestTestCase
     {
         String queueName = getTestQueueName();
         String queueName2 = queueName + "_2";
-        Destination queue2 = _session.createQueue(queueName2);
-        _session.createConsumer(queue2);
-
+        createTestQueue(_session, queueName2);
+        _session.commit();
         // get message IDs
         List<Long> ids = getMesssageIds(queueName);
 
@@ -388,9 +385,8 @@ public class MessagesRestTest extends QpidRestTestCase
     {
         String queueName = getTestQueueName();
         String queueName2 = queueName + "_2";
-        Destination queue2 = _session.createQueue(queueName2);
-        _session.createConsumer(queue2);
-
+        Destination queue2 = createTestQueue(_session, queueName2);
+        _session.commit();
         // get message IDs
         List<Long> ids = getMesssageIds(queueName);
 
@@ -443,8 +439,8 @@ public class MessagesRestTest extends QpidRestTestCase
     {
         String queueName = getTestQueueName();
         String queueName2 = queueName + "_2";
-        Destination queue2 = _session.createQueue(queueName2);
-        _session.createConsumer(queue2);
+        Destination queue2 = createTestQueue(_session, queueName2);
+        _session.commit();
 
         // copy messages
         Map<String, Object> messagesData = new HashMap<>();

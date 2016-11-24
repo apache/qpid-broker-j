@@ -20,37 +20,36 @@
  */
 package org.apache.qpid.test.unit.topic;
 
-import javax.jms.JMSException;
-import javax.naming.NamingException;
-import org.apache.qpid.QpidException;
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.AMQTopic;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
 import javax.jms.Connection;
 import javax.jms.InvalidDestinationException;
+import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
+import javax.jms.TopicConnection;
 import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
+import javax.naming.NamingException;
+
+import org.apache.qpid.QpidException;
+import org.apache.qpid.client.AMQQueue;
+import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.url.URLSyntaxException;
 
 
-/** @author Apache Software Foundation */
 public class TopicSessionTest extends QpidBrokerTestCase
 {
     public void testTopicSubscriptionUnsubscription() throws Exception
     {
 
-        AMQConnection con = (AMQConnection) getConnection("guest", "guest");
-        AMQTopic topic = new AMQTopic(con.getDefaultTopicExchangeName(), "MyTopic");
+        TopicConnection con = (TopicConnection) getConnection("guest", "guest");
+        String topicName = "MyTopic";
+        Topic topic = createTopic(con, topicName);
         TopicSession session1 = con.createTopicSession(true, AMQSession.NO_ACKNOWLEDGE);
         TopicSubscriber sub = session1.createDurableSubscriber(topic, "subscription0");
         TopicPublisher publisher = session1.createPublisher(topic);
@@ -64,6 +63,7 @@ public class TopicSessionTest extends QpidBrokerTestCase
         tm = (TextMessage) sub.receive(2000);
         assertNotNull(tm);
         session1.commit();
+        sub.close();
         session1.unsubscribe("subscription0");
 
         try
@@ -95,11 +95,11 @@ public class TopicSessionTest extends QpidBrokerTestCase
 
     private void subscriptionNameReuseForDifferentTopic(boolean shutdown) throws Exception
     {
-        AMQConnection con = (AMQConnection) getConnection("guest", "guest");
-        AMQTopic topic = new AMQTopic(con, "MyTopic1" + String.valueOf(shutdown));
-        AMQTopic topic2 = new AMQTopic(con, "MyOtherTopic1" + String.valueOf(shutdown));
+        TopicConnection con = (TopicConnection) getConnection("guest", "guest");
+        Topic topic = createTopic(con, "MyTopic1" + String.valueOf(shutdown));
+        Topic topic2 = createTopic(con, "MyOtherTopic1" + String.valueOf(shutdown));
 
-        TopicSession session1 = con.createTopicSession(true, AMQSession.AUTO_ACKNOWLEDGE);
+        TopicSession session1 = con.createTopicSession(true, Session.AUTO_ACKNOWLEDGE);
         TopicSubscriber sub = session1.createDurableSubscriber(topic, "subscription0");
         TopicPublisher publisher = session1.createPublisher(null);
 
@@ -115,9 +115,9 @@ public class TopicSessionTest extends QpidBrokerTestCase
         {
             session1.close();
             con.close();
-            con =  (AMQConnection) getConnection("guest", "guest");
+            con = (TopicConnection) getConnection("guest", "guest");
             con.start();
-            session1 = con.createTopicSession(true, AMQSession.NO_ACKNOWLEDGE);
+            session1 = con.createTopicSession(true, Session.AUTO_ACKNOWLEDGE);
             publisher = session1.createPublisher(null);
         }
         sub.close();
@@ -141,14 +141,14 @@ public class TopicSessionTest extends QpidBrokerTestCase
 
     public void testUnsubscriptionAfterConnectionClose() throws Exception
     {
-        AMQConnection con1 = (AMQConnection) getClientConnection("guest", "guest", "clientid");
-        AMQTopic topic = new AMQTopic(con1, "MyTopic3");
+        TopicConnection con1 = (TopicConnection) getClientConnection("guest", "guest", "clientid");
+        Topic topic = createTopic(con1, "MyTopic3");
 
-        TopicSession session1 = con1.createTopicSession(true, AMQSession.AUTO_ACKNOWLEDGE);
+        TopicSession session1 = con1.createTopicSession(true, Session.AUTO_ACKNOWLEDGE);
         TopicPublisher publisher = session1.createPublisher(topic);
 
-        AMQConnection con2 = (AMQConnection) getClientConnection("guest", "guest", "clientid");
-        TopicSession session2 = con2.createTopicSession(true, AMQSession.AUTO_ACKNOWLEDGE);
+        TopicConnection con2 = (TopicConnection) getClientConnection("guest", "guest", "clientid");
+        TopicSession session2 = con2.createTopicSession(true, Session.AUTO_ACKNOWLEDGE);
         TopicSubscriber sub = session2.createDurableSubscriber(topic, "subscription0");
 
         con2.start();
@@ -161,14 +161,15 @@ public class TopicSessionTest extends QpidBrokerTestCase
         con2.close();
         publisher.publish(session1.createTextMessage("Hello2"));
         session1.commit();
-        con2 =  (AMQConnection) getClientConnection("guest", "guest", "clientid");
-        session2 = con2.createTopicSession(true, AMQSession.NO_ACKNOWLEDGE);
+        con2 = (TopicConnection) getClientConnection("guest", "guest", "clientid");
+        session2 = con2.createTopicSession(true,Session.AUTO_ACKNOWLEDGE);
         sub = session2.createDurableSubscriber(topic, "subscription0");
         con2.start();
         tm = (TextMessage) sub.receive(2000);
         session2.commit();
         assertNotNull(tm);
         assertEquals("Hello2", tm.getText());
+        sub.close();
         session2.unsubscribe("subscription0");
         con1.close();
         con2.close();
@@ -177,8 +178,8 @@ public class TopicSessionTest extends QpidBrokerTestCase
     public void testTextMessageCreation() throws Exception
     {
 
-        AMQConnection con = (AMQConnection) getConnection("guest", "guest");
-        AMQTopic topic = new AMQTopic(con, "MyTopic4");
+        TopicConnection con = (TopicConnection) getConnection("guest", "guest");
+        Topic topic = createTopic(con, "MyTopic4");
         TopicSession session1 = con.createTopicSession(true, AMQSession.AUTO_ACKNOWLEDGE);
         TopicPublisher publisher = session1.createPublisher(topic);
         MessageConsumer consumer1 = session1.createConsumer(topic);
@@ -225,9 +226,9 @@ public class TopicSessionTest extends QpidBrokerTestCase
     public void testNoLocal() throws Exception
     {
 
-        AMQConnection con = (AMQConnection) getConnection("guest", "guest");
+        TopicConnection con = (TopicConnection) getConnection("guest", "guest");
 
-        AMQTopic topic = new AMQTopic(con, "testNoLocal");
+        Topic topic = createTopic(con, "testNoLocal");
 
         noLocalTest(con, topic);
 
@@ -239,9 +240,9 @@ public class TopicSessionTest extends QpidBrokerTestCase
     public void testNoLocalDirectExchange() throws Exception
     {
 
-        AMQConnection con = (AMQConnection) getConnection("guest", "guest");
+        TopicConnection con = (TopicConnection) getConnection("guest", "guest");
 
-        AMQTopic topic = new AMQTopic("direct://amq.direct/testNoLocal/testNoLocal?routingkey='testNoLocal',exclusive='true',autodelete='true'");
+        Topic topic = createTopicOnDirect(con, "testNoLocal");
 
         noLocalTest(con, topic);
 
@@ -254,9 +255,9 @@ public class TopicSessionTest extends QpidBrokerTestCase
     public void testNoLocalFanoutExchange() throws Exception
     {
 
-        AMQConnection con = (AMQConnection) getConnection("guest", "guest");
+        TopicConnection con = (TopicConnection) getConnection("guest", "guest");
 
-        AMQTopic topic = new AMQTopic("fanout://amq.fanout/testNoLocal/testNoLocal?routingkey='testNoLocal',exclusive='true',autodelete='true'");
+        Topic topic = createTopicOnFanout(con, "testNoLocal");
 
         noLocalTest(con, topic);
 
@@ -264,7 +265,7 @@ public class TopicSessionTest extends QpidBrokerTestCase
     }
 
 
-    private void noLocalTest(AMQConnection con, AMQTopic topic)
+    private void noLocalTest(TopicConnection con, Topic topic)
             throws JMSException, URLSyntaxException, QpidException, NamingException
     {
         TopicSession session1 = con.createTopicSession(true, AMQSession.AUTO_ACKNOWLEDGE);
@@ -322,7 +323,7 @@ public class TopicSessionTest extends QpidBrokerTestCase
         m = (TextMessage) noLocal.receive(100);
         assertNull(m);
 
-        AMQConnection con2 = (AMQConnection) getClientConnection("guest", "guest", "foo");
+        TopicConnection con2 = (TopicConnection) getClientConnection("guest", "guest", "foo");
         TopicSession session2 = con2.createTopicSession(true, AMQSession.AUTO_ACKNOWLEDGE);
         TopicPublisher publisher2 = session2.createPublisher(topic);
 

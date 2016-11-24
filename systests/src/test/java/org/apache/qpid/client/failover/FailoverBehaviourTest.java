@@ -1162,7 +1162,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Exception
 
     private AMQConnection createConnectionWithFailover(Map<String,String> connectionOptions) throws NamingException, JMSException, URLSyntaxException
     {
-        BrokerDetails origBrokerDetails =  getConnectionFactory("default").getConnectionURL().getBrokerDetails(0);
+        BrokerDetails origBrokerDetails =  ((AMQConnectionFactory)getConnectionFactory("default")).getConnectionURL().getBrokerDetails(0);
 
         String retries = "200";
         String connectdelay = "1000";

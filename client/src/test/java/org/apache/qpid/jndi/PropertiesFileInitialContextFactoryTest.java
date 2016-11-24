@@ -44,6 +44,13 @@ public class PropertiesFileInitialContextFactoryTest extends QpidTestCase
 {
     private static final String CONNECTION_URL = "amqp://username:password@clientid/test?brokerlist='tcp://testContextFromProviderURL:5672'";
 
+    @Override
+    public void setUp() throws Exception
+    {
+        super.setUp();
+        setTestSystemProperty("java.naming.provider.url", null);
+    }
+
     public void testQueueNamesWithTrailingSpaces() throws Exception
     {
         Context ctx = prepareContext();

@@ -61,7 +61,7 @@ public class AMQQueueDeferredOrderingTest extends QpidBrokerTestCase
 
         public ASyncProducer(Queue q, int start, int end) throws JMSException
         {
-            this.session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            this.session = con.createSession(true, Session.SESSION_TRANSACTED);
             this._logger.info("Create Consumer of Q1");
             this.producer = this.session.createProducer(q);
             this.start = start;
@@ -76,7 +76,7 @@ public class AMQQueueDeferredOrderingTest extends QpidBrokerTestCase
                 for (int i = start; i < end && !_shutdownThreads; i++)
                 {
                     producer.send(session.createTextMessage(Integer.toString(i)));
-                    ((AMQSession<?, ?>)session).sync();
+                    session.commit();
                 }
                 this._logger.info("Sent " + (end - start) + " messages");
             }
@@ -99,7 +99,7 @@ public class AMQQueueDeferredOrderingTest extends QpidBrokerTestCase
         _logger.info("Create Session");
         session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
         _logger.info("Create Q");
-        queue = getTestQueue();
+        queue = createTestQueue(session);
         _logger.info("Create Consumer of Q");
         consumer = session.createConsumer(queue);
         _logger.info("Start Connection");

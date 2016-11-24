@@ -22,12 +22,12 @@ package org.apache.qpid.test.utils;
 
 import java.util.concurrent.CountDownLatch;
 
+import javax.jms.ConnectionFactory;
 import javax.naming.NamingException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.jms.ConnectionListener;
 
 public class FailoverBaseCase extends QpidBrokerTestCase implements ConnectionListener
@@ -65,7 +65,7 @@ public class FailoverBaseCase extends QpidBrokerTestCase implements ConnectionLi
      * @throws Exception
      */
     @Override
-    public AMQConnectionFactory getConnectionFactory() throws NamingException
+    public ConnectionFactory getConnectionFactory() throws NamingException
     {
         _logger.info("get ConnectionFactory");
         if (_connectionFactory == null)

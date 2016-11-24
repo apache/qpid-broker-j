@@ -32,7 +32,6 @@ import javax.jms.JMSException;
 
 import junit.framework.TestCase;
 
-import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
@@ -218,7 +217,7 @@ public class Asserts
         }
     }
 
-    public static void assertConnection(Map<String, Object> connectionData, AMQConnection connection)
+    public static void assertConnection(Map<String, Object> connectionData, final int sessions)
             throws JMSException
     {
         assertNotNull("Unexpected connection data", connectionData);
@@ -229,6 +228,7 @@ public class Asserts
                                 Connection.LIFETIME_POLICY,
                                 Connection.INCOMING,
                                 Connection.REMOTE_PROCESS_NAME,
+                                Connection.REMOTE_PROCESS_PID,
                                 Connection.LOCAL_ADDRESS,
                                 Connection.PROPERTIES,
                                 ConfiguredObject.TYPE,
@@ -242,8 +242,6 @@ public class Asserts
 
         assertEquals("Unexpected value for connection attribute " + Connection.PORT,
                      TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT, connectionData.get(Connection.PORT));
-        assertEquals("Unexpected value of connection attribute " + Connection.SESSION_COUNT_LIMIT,
-                     (int) connection.getMaximumChannelCount(), connectionData.get(Connection.SESSION_COUNT_LIMIT));
         assertEquals("Unexpected value of connection attribute " + Connection.CLIENT_ID, "clientid",
                      connectionData.get(Connection.CLIENT_ID));
         assertEquals("Unexpected value of connection attribute " + Connection.PRINCIPAL, "guest",
@@ -260,7 +258,7 @@ public class Asserts
                                 "messagesIn",
                                 "messagesOut",
                                 "sessionCount");
-        assertEquals("Unexpected value of connection statistics attribute sessionCount ", 1,
+        assertEquals("Unexpected value of connection statistics attribute sessionCount ", sessions,
                      statistics.get("sessionCount"));
     }
 

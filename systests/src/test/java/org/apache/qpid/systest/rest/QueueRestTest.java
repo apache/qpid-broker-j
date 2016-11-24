@@ -51,8 +51,6 @@ public class QueueRestTest extends QpidRestTestCase
     private static final int MESSAGE_PAYLOAD_SIZE = 6;
     private static final int ENQUEUED_MESSAGES = 1;
     private static final int DEQUEUED_MESSAGES = 1;
-    private static final int ENQUEUED_BYTES = MESSAGE_PAYLOAD_SIZE;
-    private static final int DEQUEUED_BYTES = MESSAGE_PAYLOAD_SIZE;
 
     private Connection _connection;
 
@@ -61,8 +59,8 @@ public class QueueRestTest extends QpidRestTestCase
         super.setUp();
         _connection = getConnection();
         Session session = _connection.createSession(true, Session.SESSION_TRANSACTED);
-        String queueName = getTestQueueName();
-        Destination queue = session.createQueue(queueName);
+        Destination queue = createTestQueue(session);
+        session.commit();
         MessageConsumer consumer = session.createConsumer(queue);
         MessageProducer producer = session.createProducer(queue);
 
@@ -89,13 +87,18 @@ public class QueueRestTest extends QpidRestTestCase
             Map<String, Object> queueDetails = getRestTestHelper().find(Queue.NAME, name, queues);
             Asserts.assertQueue(name, "standard", queueDetails);
 
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> bindings = (List<Map<String, Object>>) queueDetails.get(QUEUE_ATTRIBUTE_BINDINGS);
-            assertNotNull("Queue bindings are not found", bindings);
-            assertEquals("Unexpected number of bindings", 1, bindings.size());
+            if(!isBroker10())
+            {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> bindings =
+                        (List<Map<String, Object>>) queueDetails.get(QUEUE_ATTRIBUTE_BINDINGS);
+                assertNotNull("Queue bindings are not found", bindings);
+                assertEquals("Unexpected number of bindings", 1, bindings.size());
 
-            Map<String, Object> directExchangeBinding = getRestTestHelper().find(Binding.EXCHANGE, "amq.direct", bindings);
-            Asserts.assertBinding(name, "amq.direct", directExchangeBinding);
+                Map<String, Object> directExchangeBinding =
+                        getRestTestHelper().find(Binding.EXCHANGE, "amq.direct", bindings);
+                Asserts.assertBinding(name, "amq.direct", directExchangeBinding);
+            }
         }
     }
 
@@ -106,14 +109,21 @@ public class QueueRestTest extends QpidRestTestCase
         Asserts.assertQueue(queueName, "standard", queueDetails);
         assertStatistics(queueDetails);
 
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> bindings = (List<Map<String, Object>>) queueDetails.get(QUEUE_ATTRIBUTE_BINDINGS);
-        assertNotNull("Queue bindings are not found", bindings);
-        assertEquals("Unexpected number of bindings", 1, bindings.size());
+        // For 1.0 we won't have bound the queue to an exchange
+        if(!isBroker10())
+        {
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> bindings = (List<Map<String, Object>>) queueDetails.get(QUEUE_ATTRIBUTE_BINDINGS);
 
-        Map<String, Object> directExchangeBinding = getRestTestHelper().find(Binding.EXCHANGE, "amq.direct", bindings);
-        Asserts.assertBinding(queueName, "amq.direct", directExchangeBinding);
-
+            assertNotNull("Queue bindings are not found", bindings);
+            assertEquals("Unexpected number of bindings", isBroker10() ? 0 : 1, bindings.size());
+            if (!isBroker10())
+            {
+                Map<String, Object> directExchangeBinding =
+                        getRestTestHelper().find(Binding.EXCHANGE, "amq.direct", bindings);
+                Asserts.assertBinding(queueName, "amq.direct", directExchangeBinding);
+            }
+        }
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> consumers = (List<Map<String, Object>>) queueDetails.get(QUEUE_ATTRIBUTE_CONSUMERS);
         assertNotNull("Queue consumers are not found", consumers);
@@ -176,7 +186,7 @@ public class QueueRestTest extends QpidRestTestCase
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> bindings = (List<Map<String, Object>>) queueDetails.get(QUEUE_ATTRIBUTE_BINDINGS);
         assertNotNull("Queue bindings are not found", bindings);
-        assertEquals("Unexpected number of bindings", exchanges.length + 1, bindings.size());
+        assertEquals("Unexpected number of bindings", exchanges.length + (isBroker10() ? 0 : 1), bindings.size());
 
         Map<String, Object> searchAttributes = new HashMap<String, Object>();
         searchAttributes.put(Binding.NAME, bindingName);
@@ -241,20 +251,20 @@ public class QueueRestTest extends QpidRestTestCase
                 statistics.get("consumerCount"));
         assertEquals("Unexpected queue statistics attribute " + "consumerCountWithCredit", 1,
                 statistics.get("consumerCountWithCredit"));
-        assertEquals("Unexpected queue statistics attribute " + "bindingCount", 1, statistics.get("bindingCount"));
+        assertEquals("Unexpected queue statistics attribute " + "bindingCount", isBroker10() ? 0 : 1, statistics.get("bindingCount"));
         assertEquals("Unexpected queue statistics attribute " + "persistentDequeuedMessages", DEQUEUED_MESSAGES,
                 statistics.get("persistentDequeuedMessages"));
         assertEquals("Unexpected queue statistics attribute " + "totalDequeuedMessages", DEQUEUED_MESSAGES,
                 statistics.get("totalDequeuedMessages"));
-        assertEquals("Unexpected queue statistics attribute " + "totalDequeuedBytes", DEQUEUED_BYTES,
+        assertEquals("Unexpected queue statistics attribute " + "totalDequeuedBytes", isBroker10() ? 164 : MESSAGE_PAYLOAD_SIZE,
                 statistics.get("totalDequeuedBytes"));
-        assertEquals("Unexpected queue statistics attribute " + "persistentDequeuedBytes", DEQUEUED_BYTES,
+        assertEquals("Unexpected queue statistics attribute " + "persistentDequeuedBytes", isBroker10() ? 164 : MESSAGE_PAYLOAD_SIZE,
                 statistics.get("totalDequeuedBytes"));
-        assertEquals("Unexpected queue statistics attribute " + "persistentEnqueuedBytes", ENQUEUED_BYTES
-                + DEQUEUED_BYTES, statistics.get("persistentEnqueuedBytes"));
-        assertEquals("Unexpected queue statistics attribute " + "totalEnqueuedBytes", ENQUEUED_BYTES + DEQUEUED_BYTES,
+        assertEquals("Unexpected queue statistics attribute " + "persistentEnqueuedBytes", isBroker10() ? 328 : 2*MESSAGE_PAYLOAD_SIZE,
+                     statistics.get("persistentEnqueuedBytes"));
+        assertEquals("Unexpected queue statistics attribute " + "totalEnqueuedBytes", isBroker10() ? 328 : 2*MESSAGE_PAYLOAD_SIZE,
                 statistics.get("totalEnqueuedBytes"));
-        assertEquals("Unexpected queue statistics attribute " + "queueDepthBytes", ENQUEUED_BYTES,
+        assertEquals("Unexpected queue statistics attribute " + "queueDepthBytes", isBroker10() ? 164 : MESSAGE_PAYLOAD_SIZE,
                 statistics.get("queueDepthBytes"));
     }
 }

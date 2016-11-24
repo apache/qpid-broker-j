@@ -51,6 +51,12 @@
       <scope>provided</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.qpid</groupId>
+      <artifactId>qpid-jms-client</artifactId>
+      <version>${qpid-jms-client-version}</version>
+    </dependency>
+
     <!-- jca deps -->
     <dependency>
       <groupId>org.apache.qpid</groupId>

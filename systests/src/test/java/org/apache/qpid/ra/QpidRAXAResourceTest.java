@@ -41,7 +41,7 @@ public class QpidRAXAResourceTest extends QpidBrokerTestCase
         QpidRAManagedConnection mc = (QpidRAManagedConnection)mcf.createManagedConnection(null, null);
         AMQXAResource xa1 = (AMQXAResource)mc.getXAResource();
 
-        XAConnectionFactory factory = getConnectionFactory(FACTORY_NAME);
+        XAConnectionFactory factory = (XAConnectionFactory) getConnectionFactory(FACTORY_NAME);
         XAConnection connection = factory.createXAConnection("guest", "guest");
         XASession s2 = connection.createXASession();
         AMQXAResource xaResource = (AMQXAResource)connection.createXASession().getXAResource();

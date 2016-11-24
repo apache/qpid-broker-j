@@ -39,6 +39,7 @@ import javax.security.sasl.Sasl;
 import javax.security.sasl.SaslClient;
 import javax.security.sasl.SaslException;
 
+import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.codec.ClientDecoder;
 import org.apache.qpid.framing.AMQDataBlock;
@@ -87,7 +88,7 @@ public class MaxFrameSizeTest extends QpidBrokerTestCase
         {
             Connection conn = new Connection();
             final ConnectionSettings settings = new ConnectionSettings();
-            BrokerDetails brokerDetails = getConnectionFactory().getConnectionURL().getAllBrokerDetails().get(0);
+            BrokerDetails brokerDetails = ((AMQConnectionFactory)getConnectionFactory()).getConnectionURL().getAllBrokerDetails().get(0);
             settings.setHost(brokerDetails.getHost());
             settings.setPort(brokerDetails.getPort());
             settings.setUsername(GUEST_USERNAME);
@@ -158,7 +159,7 @@ public class MaxFrameSizeTest extends QpidBrokerTestCase
         {
             Connection conn = new Connection();
             final ConnectionSettings settings = new ConnectionSettings();
-            BrokerDetails brokerDetails = getConnectionFactory().getConnectionURL().getAllBrokerDetails().get(0);
+            BrokerDetails brokerDetails = ((AMQConnectionFactory)getConnectionFactory()).getConnectionURL().getAllBrokerDetails().get(0);
             settings.setHost(brokerDetails.getHost());
             settings.setPort(brokerDetails.getPort());
             settings.setUsername(GUEST_USERNAME);
@@ -210,7 +211,7 @@ public class MaxFrameSizeTest extends QpidBrokerTestCase
     private void doAMQP08test(int frameSize, ResultEvaluator evaluator)
             throws NamingException, IOException, AMQFrameDecodingException, AMQProtocolVersionException
     {
-        BrokerDetails brokerDetails = getConnectionFactory().getConnectionURL().getAllBrokerDetails().get(0);
+        BrokerDetails brokerDetails = ((AMQConnectionFactory)getConnectionFactory()).getConnectionURL().getAllBrokerDetails().get(0);
 
         Socket socket = new Socket(brokerDetails.getHost(), brokerDetails.getPort());
         socket.setTcpNoDelay(true);

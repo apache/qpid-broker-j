@@ -20,15 +20,16 @@
  */
 package org.apache.qpid.test.unit.topic;
 
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.AMQTopic;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
+import javax.jms.Connection;
 import javax.jms.MessageConsumer;
 import javax.jms.TextMessage;
+import javax.jms.Topic;
+import javax.jms.TopicConnection;
 import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
+
+import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
  * @author Apache Software Foundation
@@ -48,9 +49,9 @@ public class TopicPublisherTest extends QpidBrokerTestCase
     public void testUnidentifiedProducer() throws Exception
     {
 
-        AMQConnection con =  (AMQConnection) getConnection("guest", "guest");
-        AMQTopic topic = new AMQTopic(con,"MyTopic");
-        TopicSession session1 = con.createTopicSession(false, AMQSession.NO_ACKNOWLEDGE);
+        Connection con =  getConnection("guest", "guest");
+        Topic topic = createTopic(con, "MyTopic");
+        TopicSession session1 = ((TopicConnection)con).createTopicSession(false, AMQSession.NO_ACKNOWLEDGE);
         TopicPublisher publisher = session1.createPublisher(null);
         MessageConsumer consumer1 = session1.createConsumer(topic);
         con.start();

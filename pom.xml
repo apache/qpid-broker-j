@@ -81,7 +81,7 @@
     <java.target>1.7</java.target>
 
     <!-- enforcer plugin config properties -->
-    <supported-test-profiles-regex>(java-mms.0-9|java-mms.0-9-1|java-mms.0-10|java-bdb.0-9|java-bdb.0-9-1|java-bdb.0-10|java-dby.0-9|java-dby.0-9-1|java-dby.0-10|java-dby-mem.0-9|java-dby-mem.0-9-1|java-dby-mem.0-10|cpp|java-json.0-9-1|java-json.0-10)</supported-test-profiles-regex>
+    <supported-test-profiles-regex>(java-mms.0-9|java-mms.0-9-1|java-mms.0-10|java-mms.1-0|java-bdb.0-9|java-bdb.0-9-1|java-bdb.0-10|java-dby.0-9|java-dby.0-9-1|java-dby.0-10|java-dby-mem.0-9|java-dby-mem.0-9-1|java-dby-mem.0-10|cpp|java-json.0-9-1|java-json.0-10)</supported-test-profiles-regex>
 
     <!-- surefire forked jvm arguments -->
     <argLine>-Xmx512m</argLine>
@@ -110,6 +110,8 @@
     <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
     <profile.broker.clean.between.tests>true</profile.broker.clean.between.tests>
     <profile.test_receive_timeout>1000</profile.test_receive_timeout>
+    <profile.java.naming.factory.initial>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</profile.java.naming.factory.initial>
+    <profile.java.naming.provider.url>test-profiles${file.separator}test-provider.properties</profile.java.naming.provider.url>
 
     <dollar.sign>$</dollar.sign>
     <at.sign>@</at.sign>
@@ -353,7 +355,6 @@
           <systemPropertyVariables>
             <!-- Defaults -->
             <QPID_HOME>${qpid.home}</QPID_HOME>
-            <java.naming.factory.initial>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</java.naming.factory.initial>
             <broker.config>${qpid.home}${file.separator}etc${file.separator}config-systests.json</broker.config>
             <max_prefetch>1000</max_prefetch>
             <qpid.dest_syntax>BURL</qpid.dest_syntax>
@@ -389,6 +390,8 @@
             <test.output.dir>${test.output.dir}</test.output.dir>
             <broker.clean.between.tests>true</broker.clean.between.tests>
             <qpid.test_receive_timeout>${profile.test_receive_timeout}</qpid.test_receive_timeout>
+            <java.naming.factory.initial>${profile.java.naming.factory.initial}</java.naming.factory.initial>
+            <java.naming.provider.url>${profile.java.naming.provider.url}</java.naming.provider.url>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -773,6 +776,28 @@
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
         <profile.test_receive_timeout>2000</profile.test_receive_timeout>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>java-mms.1-0</id>
+      <activation>
+        <property>
+          <name>profile</name>
+          <value>java-mms.1-0</value>
+        </property>
+      </activation>
+      <properties>
+        <profile>java-mms.1-0</profile>
+        <profile.specific.excludes>JavaTransientExcludes Java10Excludes Java10BrokenTestsExcludes Java10UninvestigatedTestsExcludes</profile.specific.excludes>
+        <profile.broker.version>v1_0</profile.broker.version>
+        <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10","AMQP_1_0"]</profile.test.amqp_port_protocols>
+        <profile.broker.persistent>false</profile.broker.persistent>
+        <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
+        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
+        <profile.java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</profile.java.naming.factory.initial>
+        <profile.java.naming.provider.url>test-profiles${file.separator}test-provider-1-0.properties</profile.java.naming.provider.url>
+
       </properties>
     </profile>
 

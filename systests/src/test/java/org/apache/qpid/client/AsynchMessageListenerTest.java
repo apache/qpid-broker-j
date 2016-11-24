@@ -57,7 +57,7 @@ public class AsynchMessageListenerTest extends QpidBrokerTestCase
         _consumerConnection = getConnection();
         _consumerConnection.start();
         _consumerSession = _consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        _queue = _consumerSession.createQueue(_testQueueName);
+        _queue = createTestQueue(_consumerSession);
         _consumer = _consumerSession.createConsumer(_queue);
 
         // Populate queue
@@ -107,7 +107,8 @@ public class AsynchMessageListenerTest extends QpidBrokerTestCase
         catch (JMSException e)
         {
             // PASS
-            assertEquals("A listener has already been set.", e.getMessage());
+            String message = e.getMessage();
+            assertTrue("A listener has already been set.".equals(message) || "Cannot synchronously receive a message when a MessageListener is set".equals(message));
         }
     }
 

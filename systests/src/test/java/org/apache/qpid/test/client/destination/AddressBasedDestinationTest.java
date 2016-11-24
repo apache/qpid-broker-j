@@ -335,7 +335,7 @@ public class AddressBasedDestinationTest extends QpidBrokerTestCase
 
         setTestSystemProperty("test.port.alt", String.valueOf(alternativePort));
 
-        AMQConnection connection = null;
+        Connection connection = null;
         try
         {
             connection = getConnectionFactory("failover").createConnection(GUEST_USERNAME, GUEST_PASSWORD);

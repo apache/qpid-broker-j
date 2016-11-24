@@ -35,8 +35,8 @@ public class JMSXUserIDTest extends QpidBrokerTestCase
     public void testJMSXUserIDIsSetByDefault() throws Exception
     {
         Connection connection = getConnection();
-        Destination destination = getTestQueue();
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        Destination destination = createTestQueue(session);
         MessageConsumer consumer = session.createConsumer(destination);
         MessageProducer producer = session.createProducer(destination);
         TextMessage message = session.createTextMessage("test");

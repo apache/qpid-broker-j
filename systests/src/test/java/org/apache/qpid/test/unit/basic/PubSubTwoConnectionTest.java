@@ -20,17 +20,15 @@
  */
 package org.apache.qpid.test.unit.basic;
 
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.AMQTopic;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
 import javax.jms.Connection;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
+
+import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
  * @author Apache Software Foundation
@@ -54,14 +52,14 @@ public class PubSubTwoConnectionTest extends QpidBrokerTestCase
     public void testTwoConnections() throws Exception
     {
 
-        AMQConnection con1 = (AMQConnection) getConnection("guest", "guest");
+        Connection con1 = getConnection("guest", "guest");
 
-        Topic topic = new AMQTopic(con1, "MyTopic");
+        Topic topic = createTopic(con1, "MyTopic");
 
         Session session1 = con1.createSession(false, AMQSession.NO_ACKNOWLEDGE);
         MessageProducer producer = session1.createProducer(topic);
 
-        Connection con2 = (AMQConnection) getConnection("guest", "guest") ;
+        Connection con2 = getConnection("guest", "guest") ;
         Session session2 = con2.createSession(false, AMQSession.NO_ACKNOWLEDGE);
         MessageConsumer consumer = session2.createConsumer(topic);
         con2.start();        

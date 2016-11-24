@@ -30,6 +30,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -46,7 +47,6 @@ import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.client.RejectBehaviour;
 import org.apache.qpid.configuration.ClientProperties;
@@ -65,7 +65,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
     private long _positiveTimeout;
     private long _negativeTimeout;
 
-    private AMQConnection _conn;
+    private Connection _conn;
     private Session _session;
     private MessageProducer _publisher;
     private Session _pubSession;
@@ -83,12 +83,13 @@ public class CommitRollbackTest extends QpidBrokerTestCase
     private void newConnection() throws Exception
     {
         _logger.debug("calling newConnection()");
-        _conn = (AMQConnection) getConnection();
+        _conn = getConnection();
 
         _session = _conn.createSession(true, Session.SESSION_TRANSACTED);
 
         final String queueName = getTestQueueName();
-        _jmsQueue = _session.createQueue(queueName);
+        _jmsQueue = createTestQueue(_session);
+        _session.commit();
         _consumer = _session.createConsumer(_jmsQueue);
 
         _pubSession = _conn.createSession(true, Session.SESSION_TRANSACTED);
@@ -415,9 +416,11 @@ public class CommitRollbackTest extends QpidBrokerTestCase
     {
         newConnection();
 
-        Queue queue = (Queue) getInitialContext().lookup("queue");
+        Queue queue = createTestQueue(_session,"example.queue");
+        _session.commit();
+
         // create a consumer
-             MessageConsumer cons = _session.createConsumer(queue);           
+        MessageConsumer cons = _session.createConsumer(queue);
         MessageProducer prod = _session.createProducer(queue);
         Message message =  _session.createTextMessage("Message");
         message.setJMSCorrelationID("m1");
@@ -435,7 +438,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         // Check that the message has been dequeued
         _session.close();
         _conn.close();
-        _conn = (AMQConnection) getConnection();
+        _conn = getConnection();
         _conn.start();
         Session session = _conn.createSession(false, Session.CLIENT_ACKNOWLEDGE);
         cons = session.createConsumer(queue);        
@@ -528,7 +531,7 @@ public class CommitRollbackTest extends QpidBrokerTestCase
         final int rollbackTime = 2000;
         final int numberOfMessages = 1000;
         final int numberOfConsumers = 2;
-        final long testTimeout = numberOfMessages * _positiveTimeout / numberOfConsumers;
+        final long testTimeout = 60*1000L;
         sendMessage(_pubSession, _jmsQueue, numberOfMessages);
 
         List<ListenableFuture<Void >> consumerFutures = new ArrayList<>(numberOfConsumers);

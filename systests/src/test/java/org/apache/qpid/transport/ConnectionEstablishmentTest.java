@@ -41,6 +41,7 @@ import javax.jms.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.codec.ClientDecoder;
 import org.apache.qpid.configuration.ClientProperties;
@@ -89,7 +90,7 @@ public class ConnectionEstablishmentTest extends QpidBrokerTestCase
     public void testAuthenticationBypass() throws Exception
     {
         String virtualHost = TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST;
-        ConnectionURL connectionURL = getConnectionFactory().getConnectionURL();
+        ConnectionURL connectionURL = ((AMQConnectionFactory)getConnectionFactory()).getConnectionURL();
         BrokerDetails brokerDetails = connectionURL.getAllBrokerDetails().get(0);
         try (Socket socket = new Socket(brokerDetails.getHost(), brokerDetails.getPort());
              OutputStream os = socket.getOutputStream())

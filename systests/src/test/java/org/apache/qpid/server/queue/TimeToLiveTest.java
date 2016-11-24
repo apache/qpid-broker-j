@@ -31,6 +31,8 @@ import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
+import javax.jms.Topic;
+import javax.jms.TopicConnection;
 import javax.jms.TopicSubscriber;
 import javax.naming.NamingException;
 
@@ -38,11 +40,9 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.AMQTopic;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class TimeToLiveTest extends QpidBrokerTestCase
@@ -251,12 +251,12 @@ public class TimeToLiveTest extends QpidBrokerTestCase
     public void testPassiveTTLwithDurableSubscription() throws Exception
     {
         //Create Client 1
-        Connection clientConnection = getConnection();
+        TopicConnection clientConnection = (TopicConnection) getConnection();
         
         Session clientSession = clientConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         
         // Create and close the durable subscriber
-        AMQTopic topic = new AMQTopic((AMQConnection) clientConnection, getTestQueueName());
+        Topic topic = createTopic(clientConnection, getTestQueueName());
         TopicSubscriber durableSubscriber = clientSession.createDurableSubscriber(topic, getTestQueueName(),"testprop='TimeToLiveTest'", false);
         durableSubscriber.close();
         
@@ -348,11 +348,11 @@ public class TimeToLiveTest extends QpidBrokerTestCase
     public void testActiveTTLwithDurableSubscription() throws Exception
     {
         //Create Client 1
-        Connection clientConnection = getConnection();
+        TopicConnection clientConnection = (TopicConnection) getConnection();
         Session clientSession = clientConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         
         // Create and close the durable subscriber
-        AMQTopic topic = new AMQTopic((AMQConnection) clientConnection, getTestQueueName());
+        Topic topic = createTopic(clientConnection, getTestQueueName());
         TopicSubscriber durableSubscriber = clientSession.createDurableSubscriber(topic, "MyDurableTTLSubscription","testprop='TimeToLiveTest'", false);
         durableSubscriber.close();
         

@@ -133,7 +133,7 @@ public class QueueTest extends AbstractXATestCase
             // lookup connection factory
             try
             {
-                _queueFactory = getConnectionFactory();
+                _queueFactory = (XAQueueConnectionFactory) getConnectionFactory();
             }
             catch (Exception e)
             {

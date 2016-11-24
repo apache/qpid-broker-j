@@ -32,7 +32,6 @@ import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -102,14 +101,14 @@ public class ConnectionRestTest extends QpidRestTestCase
     {
         List<Map<String, Object>> connections = getRestTestHelper().getJsonAsList("connection");
         assertEquals("Unexpected number of connections", 1, connections.size());
-        Asserts.assertConnection(connections.get(0), (AMQConnection) _connection);
+        Asserts.assertConnection(connections.get(0), isBroker10() ? 2 : 1);
     }
 
     public void testGetVirtualHostConnections() throws Exception
     {
         List<Map<String, Object>> connections = getRestTestHelper().getJsonAsList("virtualhost/test/test/getConnections");
         assertEquals("Unexpected number of connections", 1, connections.size());
-        Asserts.assertConnection(connections.get(0), (AMQConnection) _connection);
+        Asserts.assertConnection(connections.get(0), isBroker10() ? 2 : 1);
     }
 
     public void testGetConnectionByName() throws Exception
@@ -221,7 +220,7 @@ public class ConnectionRestTest extends QpidRestTestCase
 
     private void assertConnection(Map<String, Object> connectionDetails) throws JMSException
     {
-        Asserts.assertConnection(connectionDetails, (AMQConnection) _connection);
+        Asserts.assertConnection(connectionDetails, isBroker10() ? 2 : 1);
 
         @SuppressWarnings("unchecked")
         Map<String, Object> statistics = (Map<String, Object>) connectionDetails.get(Asserts.STATISTICS_ATTRIBUTE);

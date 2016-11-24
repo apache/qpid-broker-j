@@ -21,10 +21,6 @@
 package org.apache.qpid.test.unit.xa;
 
 
-import junit.framework.TestSuite;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.jms.Queue;
 import javax.jms.QueueConnection;
 import javax.jms.QueueSession;
@@ -35,6 +31,10 @@ import javax.jms.XAQueueSession;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
+
+import junit.framework.TestSuite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class FaultTest extends AbstractXATestCase
@@ -114,7 +114,7 @@ public class FaultTest extends AbstractXATestCase
         if (!isBroker08())
         {
             _queue = (Queue) getInitialContext().lookup(QUEUENAME);
-            _queueFactory = getConnectionFactory();
+            _queueFactory = (XAQueueConnectionFactory) getConnectionFactory();
             _xaqueueConnection = _queueFactory.createXAQueueConnection("guest", "guest");
             XAQueueSession session = _xaqueueConnection.createXAQueueSession();
             _queueConnection = _queueFactory.createQueueConnection("guest","guest");

@@ -1,0 +1,31 @@
+// Exclude client test of initial context factory, as the 1.0 profile uses the 1.0 context factory
+org.apache.qpid.jndi.PropertiesFileInitialContextFactoryTest#*
+
+// Exclude Address based tests
+org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#*
+org.apache.qpid.test.client.destination.AddressBasedDestinationTest#*
+
+// Exclude Tests requiring XA
+org.apache.qpid.test.unit.xa.FaultTest#*
+org.apache.qpid.test.unit.xa.TopicTest#*
+org.apache.qpid.test.unit.xa.QueueTest#*
+org.apache.qpid.jms.xa.XAResourceTest#*
+org.apache.qpid.ra.QpidRAConnectionTest#*
+org.apache.qpid.ra.QpidRAXAResourceTest#*
+
+
+// Exclude tests of AMQP 0-x features
+org.apache.qpid.test.client.ImmediateAndMandatoryPublishingTest#*
+org.apache.qpid.test.client.CloseOnNoRouteForMandatoryMessageTest#*
+org.apache.qpid.server.exchange.ReturnUnroutableMandatoryMessageTest#*
+
+// Exclude tests of connection URL failover method property
+org.apache.qpid.server.failover.FailoverMethodTest#*
+
+// Testing that the 0-x implementation of a durable topic does not cause queue growth when messages are excluded by selectors
+org.apache.qpid.test.unit.topic.TopicSessionTest#testNonMatchingMessagesHandledCorrectly
+
+// These tests explicitly meddle with prefetch - maybe there should be equivalents for AMQP 1.0
+org.apache.qpid.test.unit.transacted.CommitRollbackTest#testRollbackSessionAfterCreditExhausted
+
+

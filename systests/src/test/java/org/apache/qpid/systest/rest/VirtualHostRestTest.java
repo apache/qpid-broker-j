@@ -37,7 +37,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.junit.Assert;
 
-import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
@@ -57,7 +56,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
 
     public static final String EMPTY_VIRTUALHOSTNODE_NAME = "emptyVHN";
 
-    private AMQConnection _connection;
+    private Connection _connection;
 
     @Override
     protected void customizeConfiguration() throws Exception
@@ -81,9 +80,9 @@ public class VirtualHostRestTest extends QpidRestTestCase
     public void testGetHost() throws Exception
     {
         // create AMQP connection to get connection JSON details
-        _connection = (AMQConnection) getConnection();
-        Session session = _connection.createSession(true, Session.SESSION_TRANSACTED);
-        session.createConsumer(getTestQueue());
+        _connection = getConnection();
+        Session session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        createTestQueue(session);
 
         Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/test");
         Asserts.assertVirtualHost("test", hostDetails);
@@ -114,7 +113,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> connections = getRestTestHelper().getJsonAsList("virtualhost/test/test/getConnections");
         assertEquals("Unexpected number of connections", 1, connections.size());
-        Asserts.assertConnection(connections.get(0), _connection);
+        Asserts.assertConnection(connections.get(0), isBroker10() ? 2 : 1);
     }
 
     public void testCreateProvidedVirtualHost() throws Exception
