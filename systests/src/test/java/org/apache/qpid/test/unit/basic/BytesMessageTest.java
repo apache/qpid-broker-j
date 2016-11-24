@@ -242,9 +242,10 @@ public class BytesMessageTest extends QpidBrokerTestCase implements MessageListe
     public void testModificationAfterSend() throws Exception
     {
         Connection connection = getConnection();
+        Session producerSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        BytesMessage jmsMsg = producerSession.createBytesMessage();
+        Destination destination = createTestQueue(producerSession, "testQ");
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        BytesMessage jmsMsg = session.createBytesMessage();
-        Destination destination = getTestQueue();
 
         /* Set the constant message contents. */
 
@@ -256,7 +257,7 @@ public class BytesMessageTest extends QpidBrokerTestCase implements MessageListe
         connection.start();
 
         /* Send messages. */
-        MessageProducer producer = session.createProducer(destination);
+        MessageProducer producer = producerSession.createProducer(destination);
 
         MessageConsumer consumer = session.createConsumer(destination);
         
@@ -269,6 +270,7 @@ public class BytesMessageTest extends QpidBrokerTestCase implements MessageListe
             producer.send(jmsMsg);
         }
 
+        producerSession.close();
 
         for(int writtenMsgCount = 0; writtenMsgCount < 10; writtenMsgCount++)
         {
@@ -278,6 +280,8 @@ public class BytesMessageTest extends QpidBrokerTestCase implements MessageListe
                          recvdMsg.getBodyLength());
 
         }
+
+        connection.close();
     }
 
 }

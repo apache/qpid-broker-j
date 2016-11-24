@@ -20,8 +20,7 @@
  */
 package org.apache.qpid.test.client.message;
 
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import java.util.UUID;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -30,7 +29,8 @@ import javax.jms.MessageProducer;
 import javax.jms.ObjectMessage;
 import javax.jms.Queue;
 import javax.jms.Session;
-import java.util.UUID;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class ObjectMessageTest extends QpidBrokerTestCase
 {
@@ -51,9 +51,7 @@ public class ObjectMessageTest extends QpidBrokerTestCase
         _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
         //Create Queue
-        String queueName = getTestQueueName();
-        ((AMQSession) _session).createQueue(queueName, true, false, false);
-        Queue queue = _session.createQueue("direct://amq.direct/"+queueName+"/"+queueName+"?durable='false'&autodelete='true'");
+        Queue queue = createTestQueue(_session);
 
         //Create Consumer
         _consumer = _session.createConsumer(queue);
@@ -141,7 +139,7 @@ public class ObjectMessageTest extends QpidBrokerTestCase
     public void testSendEmptyObjectMessage() throws JMSException
     {
         ObjectMessage testMessage = _session.createObjectMessage();
-        testMessage.setStringProperty("test-property", "test-value");
+        testMessage.setStringProperty("testProperty", "test-value");
         assertNotNull("Object was null", testMessage.toString());
 
         _producer.send(testMessage);
@@ -150,7 +148,7 @@ public class ObjectMessageTest extends QpidBrokerTestCase
 
         assertNotNull("Message was not received.", receivedMessage);
         assertNull("No object was sent", receivedMessage.getObject());
-        assertEquals("Unexpected property received", "test-value", receivedMessage.getStringProperty("test-property"));
+        assertEquals("Unexpected property received", "test-value", receivedMessage.getStringProperty("testProperty"));
     }
 
 }

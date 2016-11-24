@@ -19,71 +19,49 @@
  */
 package org.apache.qpid.test.unit.basic;
 
-import org.junit.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.message.JMSObjectMessage;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.jms.MessageNotWriteableException;
-import javax.jms.MessageProducer;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.jms.Connection;
+import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageListener;
+import javax.jms.MessageNotWriteableException;
+import javax.jms.MessageProducer;
+import javax.jms.ObjectMessage;
+import javax.jms.Session;
+
+import org.junit.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
+
 public class ObjectMessageTest extends QpidBrokerTestCase implements MessageListener
 {
     private static final Logger _logger = LoggerFactory.getLogger(ObjectMessageTest.class);
 
-    private AMQConnection _connection;
-    private AMQDestination _destination;
-    private AMQSession _session;
-    private final List<JMSObjectMessage> received = new ArrayList<JMSObjectMessage>();
-    private final List<Payload> messages = new ArrayList<Payload>();
+    private Connection _connection;
+    private Destination _destination;
+    private Session _session;
+    private final List<Message> received = new ArrayList<>();
+    private final List<Payload> messages = new ArrayList<>();
     private int _count = 100;
     public String _connectionString = "vm://:1";
 
     protected void setUp() throws Exception
     {
         super.setUp();
-        try
-        {
-            init( (AMQConnection) getConnection("guest", "guest"));
-        }
-        catch (Exception e)
-        {
-            fail("Uable to initialise: " + e);
-        }
-    }
-
-    protected void tearDown() throws Exception
-    {
-        super.tearDown();
-    }
-
-    private void init(AMQConnection connection) throws Exception
-    {
-        init(connection, new AMQQueue(connection, randomize("ObjectMessageTest"), true));
-    }
-
-    private void init(AMQConnection connection, AMQDestination destination) throws Exception
-    {
-        _connection = connection;
-        _destination = destination;
-        _session = (AMQSession) connection.createSession(false, AMQSession.NO_ACKNOWLEDGE);
+        _connection = getConnection("guest", "guest");
+        _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        _destination = createTestQueue(_session);
 
         // set up a slow consumer
-        _session.createConsumer(destination).setMessageListener(this);
-        connection.start();
+        _session.createConsumer(_destination).setMessageListener(this);
+        _connection.start();
     }
 
     public void test() throws Exception
@@ -127,13 +105,16 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
     void check() throws JMSException
     {
         List<Object> actual = new ArrayList<Object>();
-        for (JMSObjectMessage m : received)
+        for (Message message : received)
         {
-            actual.add(m.getObject());
+            assertTrue(message instanceof ObjectMessage);
+
+            ObjectMessage objectMessage = (ObjectMessage)message;
+            actual.add(objectMessage.getObject());
 
             try
             {
-                m.setObject("Test text");
+                objectMessage.setObject("Test text");
                 Assert.fail("Message should not be writeable");
             }
             catch (MessageNotWriteableException mnwe)
@@ -141,11 +122,11 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
                 // normal execution
             }
 
-            m.clearBody();
+            objectMessage.clearBody();
 
             try
             {
-                m.setObject("Test text");
+                objectMessage.setObject("Test text");
             }
             catch (MessageNotWriteableException mnwe)
             {
@@ -155,7 +136,7 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
             // Check property write status
             try
             {
-                m.setStringProperty("test", "test");
+                objectMessage.setStringProperty("test", "test");
                 Assert.fail("Message should not be writeable");
             }
             catch (MessageNotWriteableException mnwe)
@@ -163,11 +144,11 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
                 // normal execution
             }
 
-            m.clearProperties();
+            objectMessage.clearProperties();
 
             try
             {
-                m.setStringProperty("test", "test");
+                objectMessage.setStringProperty("test", "test");
             }
             catch (MessageNotWriteableException mnwe)
             {
@@ -221,14 +202,9 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
     {
         synchronized (received)
         {
-            received.add((JMSObjectMessage) message);
+            received.add(message);
             received.notify();
         }
-    }
-
-    private static String randomize(String in)
-    {
-        return in + System.currentTimeMillis();
     }
 
     private static class Payload implements Serializable
@@ -254,23 +230,5 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
         {
             return "Payload[" + data + "]";
         }
-    }
-
-    public static void main(String[] argv) throws Exception
-    {
-        ObjectMessageTest test = new ObjectMessageTest();
-        test._connectionString = (argv.length == 0) ? "vm://:1" : argv[0];
-        test.setUp();
-        if (argv.length > 1)
-        {
-            test._count = Integer.parseInt(argv[1]);
-        }
-
-        test.test();
-    }
-
-    public static junit.framework.Test suite()
-    {
-        return new junit.framework.TestSuite(ObjectMessageTest.class);
     }
 }

@@ -15,7 +15,7 @@ org.apache.qpid.server.logging.TransientQueueLoggingTest#*
 org.apache.qpid.server.queue.NodeAutoCreationPolicyTest#*
 org.apache.qpid.server.security.auth.manager.ExternalAuthenticationTest#*
 org.apache.qpid.server.security.auth.manager.MD5AuthenticationManagerTest#*
-org.apache.qpid.server.security.auth.mana.ger.ScramSha1AuthenticationManagerTest#*
+org.apache.qpid.server.security.auth.manager.ScramSha1AuthenticationManagerTest#*
 org.apache.qpid.server.security.auth.manager.ScramSha256AuthenticationManagerTest#*
 org.apache.qpid.test.unit.basic.LargeMessageTest#*
 org.apache.qpid.test.unit.client.connection.ConnectionStartTest#*
@@ -68,7 +68,6 @@ org.apache.qpid.test.unit.topic.DurableSubscriptionTest#*
 org.apache.qpid.test.unit.message.UTF8Test#*
 org.apache.qpid.test.unit.close.MessageConsumerCloseTest#*
 org.apache.qpid.test.unit.close.JavaServerCloseRaceConditionTest#*
-org.apache.qpid.test.unit.client.message.ObjectMessageTest#*
 org.apache.qpid.test.unit.client.MaxDeliveryCountTest#*
 org.apache.qpid.test.unit.client.connection.ConnectionTest#*
 org.apache.qpid.test.unit.client.connection.ConnectionFactoryTest#*
@@ -78,7 +77,6 @@ org.apache.qpid.test.unit.client.AMQSessionTest#*
 org.apache.qpid.test.unit.basic.SessionStartTest#*
 org.apache.qpid.test.unit.basic.PubSubTwoConnectionTest#*
 org.apache.qpid.test.unit.basic.PropertyValueTest#*
-org.apache.qpid.test.unit.basic.ObjectMessageTest#*
 org.apache.qpid.test.unit.basic.MultipleConnectionTest#*
 org.apache.qpid.test.unit.basic.InvalidDestinationTest#*
 org.apache.qpid.test.unit.basic.FieldTableMessageTest#*
@@ -90,7 +88,6 @@ org.apache.qpid.test.unit.ack.Acknowledge2ConsumersTest#*
 org.apache.qpid.test.client.RollbackOrderTest#*
 org.apache.qpid.test.client.queue.LVQTest#*
 org.apache.qpid.test.client.message.SelectorTest#*
-org.apache.qpid.test.client.message.ObjectMessageTest#*
 org.apache.qpid.test.client.message.MessageToStringTest#*
 org.apache.qpid.test.client.message.JMSReplyToTest#*
 org.apache.qpid.test.client.message.JMSDestinationTest#*

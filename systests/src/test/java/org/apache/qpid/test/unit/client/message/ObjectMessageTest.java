@@ -20,53 +20,50 @@
  */
 package org.apache.qpid.test.unit.client.message;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
 
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
+import javax.jms.Connection;
+import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.ObjectMessage;
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
+import javax.jms.Session;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class ObjectMessageTest extends QpidBrokerTestCase implements MessageListener
 {
     private static final Logger _logger = LoggerFactory.getLogger(ObjectMessageTest.class);
 
-    private AMQConnection connection;
-    private AMQDestination destination;
-    private AMQSession session;
+    private Connection connection;
+    private Destination destination;
+    private Session session;
     private MessageProducer producer;
     private Serializable[] data;
     private volatile boolean waiting;
     private int received;
     private final ArrayList items = new ArrayList();
 
-    private String _broker = "vm://:1";
-
     protected void setUp() throws Exception
     {
         super.setUp();
-        connection =  (AMQConnection) getConnection("guest", "guest");
-        destination = new AMQQueue(connection, randomize("LatencyTest"), true);
-        session = (AMQSession) connection.createSession(false, AMQSession.NO_ACKNOWLEDGE);
+        connection =  getConnection("guest", "guest");
+        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        destination = createTestQueue(session);
 
         // set up a consumer
         session.createConsumer(destination).setMessageListener(this);
         connection.start();
 
         // create a publisher
-        producer = session.createProducer(destination, false, false);
+        producer = session.createProducer(destination);
         A a1 = new A(1, "A");
         A a2 = new A(2, "a");
         B b = new B(1, "B");
@@ -85,13 +82,6 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
         super.tearDown();
     }
 
-    public ObjectMessageTest()
-    { }
-
-    ObjectMessageTest(String broker) throws Exception
-    {
-        _broker = broker;
-    }
 
     public void testSendAndReceive() throws Exception
     {
@@ -159,14 +149,6 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
         assertEquals(Float.MAX_VALUE, msg.getObjectProperty("TestFloatProperty"));
     }
 
-    public void testSetObjectPropertyForByteArray() throws Exception
-    {
-        byte[] array = { 1, 2, 3, 4, 5 };
-        ObjectMessage msg = session.createObjectMessage(data[0]);
-        msg.setObjectProperty("TestByteArrayProperty", array);
-        assertTrue(Arrays.equals(array, (byte[]) msg.getObjectProperty("TestByteArrayProperty")));
-    }
-
     public void testSetObjectForNull() throws Exception
     {
         ObjectMessage msg = session.createObjectMessage();
@@ -195,7 +177,7 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
 
     public void check() throws Exception
     {
-        Object[] actual = (Object[]) items.toArray();
+        Object[] actual = items.toArray();
         if (actual.length != data.length)
         {
             throw new Exception("Expected " + data.length + " objects, got " + actual.length);
@@ -263,17 +245,6 @@ public class ObjectMessageTest extends QpidBrokerTestCase implements MessageList
             received++;
             notify();
         }
-    }
-
-    public static void main(String[] argv) throws Exception
-    {
-        String broker = (argv.length > 0) ? argv[0] : "vm://:1";
-        if ("-help".equals(broker))
-        {
-            System.out.println("Usage: <broker>");
-        }
-
-        new ObjectMessageTest(broker).testSendAndReceive();
     }
 
     private static class A implements Serializable
