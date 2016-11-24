@@ -72,6 +72,7 @@ public class MetaDataServlet extends AbstractServlet
             throws ServletException, IOException
     {
         response.setContentType("application/json");
+        sendCachingHeadersOnResponse(response);
         response.setStatus(HttpServletResponse.SC_OK);
 
         Map<String, Map> classToDataMap = new TreeMap<>();
