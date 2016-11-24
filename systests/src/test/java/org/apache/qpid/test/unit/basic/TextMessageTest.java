@@ -20,48 +20,48 @@
  */
 package org.apache.qpid.test.unit.basic;
 
-import org.junit.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.message.JMSTextMessage;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.jms.MessageNotWriteableException;
-import javax.jms.MessageProducer;
-import javax.jms.Session;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import javax.jms.Connection;
+import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageListener;
+import javax.jms.MessageNotWriteableException;
+import javax.jms.MessageProducer;
+import javax.jms.Session;
+import javax.jms.TextMessage;
+
+import org.junit.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
+
 public class TextMessageTest extends QpidBrokerTestCase implements MessageListener
 {
     private static final Logger _logger = LoggerFactory.getLogger(TextMessageTest.class);
 
-    private AMQConnection _connection;
+    private Connection _connection;
     private Destination _destination;
-    private AMQSession _session;
-    private final List<JMSTextMessage> received = new ArrayList<JMSTextMessage>();
+    private Session _session;
+    private final List<Message> received = new ArrayList<>();
     private final List<String> messages = new ArrayList<String>();
     private int _count = 100;
-    public String _connectionString = "vm://:1";
     private CountDownLatch _waitForCompletion;
+    private MessageConsumer _consumer;
 
     protected void setUp() throws Exception
     {
         super.setUp();
         try
         {
-            init((AMQConnection) getConnection("guest", "guest"));
+            init(getConnection("guest", "guest"));
         }
         catch (Exception e)
         {
@@ -74,29 +74,26 @@ public class TextMessageTest extends QpidBrokerTestCase implements MessageListen
         super.tearDown();
     }
 
-    private void init(AMQConnection connection) throws Exception
-    {
-        Destination destination =
-            new AMQQueue(connection.getDefaultQueueExchangeName(), randomize("TextMessageTest"), true);
-        init(connection, destination);
-    }
-
-    private void init(AMQConnection connection, Destination destination) throws Exception
+    private void init(Connection connection) throws Exception
     {
         _connection = connection;
+        connection.start();
+        final Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Destination destination = createTestQueue(session);
+        session.close();
+        _session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         _destination = destination;
-        _session = (AMQSession) connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
         // set up a slow consumer
         try
         {
-            _session.createConsumer(destination).setMessageListener(this);
+            _consumer = _session.createConsumer(destination);
+            _consumer.setMessageListener(this);
         }
         catch (Throwable  e)
         {
             _logger.error("Error creating consumer", e);
         }
-        connection.start();
     }
 
     public void test() throws Exception
@@ -131,14 +128,16 @@ public class TextMessageTest extends QpidBrokerTestCase implements MessageListen
     void check() throws JMSException
     {
         List<String> actual = new ArrayList<String>();
-        for (JMSTextMessage m : received)
+        for (Message message : received)
         {
-            actual.add(m.getText());
+            assertTrue("Message is not a text message", message instanceof TextMessage);
+            TextMessage textMessage = (TextMessage)message;
+            actual.add(textMessage.getText());
 
             // Check body write status
             try
             {
-                m.setText("Test text");
+                textMessage.setText("Test text");
                 Assert.fail("Message should not be writeable");
             }
             catch (MessageNotWriteableException mnwe)
@@ -146,11 +145,11 @@ public class TextMessageTest extends QpidBrokerTestCase implements MessageListen
                 // normal execution
             }
 
-            m.clearBody();
+            textMessage.clearBody();
 
             try
             {
-                m.setText("Test text");
+                textMessage.setText("Test text");
             }
             catch (MessageNotWriteableException mnwe)
             {
@@ -160,7 +159,7 @@ public class TextMessageTest extends QpidBrokerTestCase implements MessageListen
             // Check property write status
             try
             {
-                m.setStringProperty("test", "test");
+                textMessage.setStringProperty("test", "test");
                 Assert.fail("Message should not be writeable");
             }
             catch (MessageNotWriteableException mnwe)
@@ -168,11 +167,11 @@ public class TextMessageTest extends QpidBrokerTestCase implements MessageListen
                 // normal execution
             }
 
-            m.clearProperties();
+            textMessage.clearProperties();
 
             try
             {
-                m.setStringProperty("test", "test");
+                textMessage.setStringProperty("test", "test");
             }
             catch (MessageNotWriteableException mnwe)
             {
@@ -226,20 +225,9 @@ public class TextMessageTest extends QpidBrokerTestCase implements MessageListen
         synchronized (received)
         {
             _logger.info("===== received one message");
-            received.add((JMSTextMessage) message);
+            received.add(message);
             _waitForCompletion.countDown();
         }
     }
 
-    private static String randomize(String in)
-    {
-        return in + System.currentTimeMillis();
-    }
-
-
-
-    public static junit.framework.Test suite()
-    {
-         return new junit.framework.TestSuite(TextMessageTest.class);
-    }
 }

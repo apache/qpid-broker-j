@@ -20,17 +20,9 @@
  */
 package org.apache.qpid.test.unit.message;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQHeadersExchange;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.url.AMQBindingURL;
-import org.apache.qpid.url.BindingURL;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.jms.Connection;
 import javax.jms.Message;
@@ -38,14 +30,14 @@ import javax.jms.MessageConsumer;
 import javax.jms.MessageEOFException;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
+import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.StreamMessage;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
  * @author Apache Software Foundation
@@ -56,26 +48,14 @@ public class StreamMessageTest extends QpidBrokerTestCase
 
     public void testStreamMessageEOF() throws Exception
     {
-        AMQConnection con = (AMQConnection) getConnection("guest", "guest");
-        AMQSession consumerSession = (AMQSession) con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-
-        AMQHeadersExchange queue =
-            new AMQHeadersExchange(new AMQBindingURL(
-                    ExchangeDefaults.HEADERS_EXCHANGE_CLASS + "://" + ExchangeDefaults.HEADERS_EXCHANGE_NAME
-                    + "/test/queue1?" + BindingURL.OPTION_ROUTING_KEY + "='F0000=1'"));
-
-        Map<String,Object> ft = new HashMap<>();
-        ft.put("x-match", "any");
-        ft.put("F1000", "1");
-        consumerSession.declareAndBind(queue, ft);
+        Connection con = getConnection("guest", "guest");
+        Session consumerSession = con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+        Queue queue = createTestQueue(consumerSession);
         MessageConsumer consumer = consumerSession.createConsumer(queue);
-        // force synch to ensure the consumer has resulted in a bound queue
-        // ((AMQSession) consumerSession).declareExchangeSynch(ExchangeDefaults.HEADERS_EXCHANGE_NAME, ExchangeDefaults.HEADERS_EXCHANGE_CLASS);
-        // This is the default now
 
-        Connection con2 = (AMQConnection) getConnection("guest", "guest");
+        Connection con2 = getConnection("guest", "guest");
 
-        AMQSession producerSession = (AMQSession) con2.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+        Session producerSession = con2.createSession(false, Session.CLIENT_ACKNOWLEDGE);
 
         // Need to start the "producer" connection in order to receive bounced messages
         _logger.info("Starting producer connection");
@@ -84,10 +64,7 @@ public class StreamMessageTest extends QpidBrokerTestCase
         MessageProducer mandatoryProducer = producerSession.createProducer(queue);
 
         // Third test - should be routed
-        _logger.info("Sending isBound message");
         StreamMessage msg = producerSession.createStreamMessage();
-
-        msg.setStringProperty("F1000", "1");
 
         msg.writeByte((byte) 42);
 
@@ -118,9 +95,12 @@ public class StreamMessageTest extends QpidBrokerTestCase
         final CountDownLatch awaitMessages = new CountDownLatch(1);
         final AtomicReference<Throwable> listenerCaughtException = new AtomicReference<Throwable>();
 
-        AMQConnection con = (AMQConnection) getConnection("guest", "guest");
-        AMQSession consumerSession = (AMQSession) con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        AMQQueue queue = new AMQQueue(con.getDefaultQueueExchangeName(), "testQ");
+        Connection con = getConnection("guest", "guest");
+        Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Queue queue = createTestQueue(session);
+        session.close();
+
+        Session consumerSession = con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
         MessageConsumer consumer = consumerSession.createConsumer(queue);
         consumer.setMessageListener(new MessageListener()
             {
@@ -145,8 +125,8 @@ public class StreamMessageTest extends QpidBrokerTestCase
                 }
             });
 
-        Connection con2 = (AMQConnection) getConnection("guest", "guest");
-        AMQSession producerSession = (AMQSession) con2.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+        Connection con2 = getConnection("guest", "guest");
+        Session producerSession = con2.createSession(false, Session.CLIENT_ACKNOWLEDGE);
         MessageProducer producer = producerSession.createProducer(queue);
         con.start();
         StreamMessage sm = producerSession.createStreamMessage();

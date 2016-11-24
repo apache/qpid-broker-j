@@ -19,17 +19,9 @@
  */
 package org.apache.qpid.test.unit.basic;
 
-import org.junit.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.message.JMSBytesMessage;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.transport.util.Waiter;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -42,10 +34,13 @@ import javax.jms.MessageNotReadableException;
 import javax.jms.MessageNotWriteableException;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+
+import org.junit.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.transport.util.Waiter;
 
 public class BytesMessageTest extends QpidBrokerTestCase implements MessageListener
 {
@@ -54,36 +49,25 @@ public class BytesMessageTest extends QpidBrokerTestCase implements MessageListe
     private Connection _connection;
     private Destination _destination;
     private Session _session;
-    private final List<JMSBytesMessage> received = new ArrayList<JMSBytesMessage>();
+    private final List<Message> received = new ArrayList<>();
     private final List<byte[]> messages = new ArrayList<byte[]>();
     private int _count = 100;
-    public String _connectionString = "vm://:1";
 
     protected void setUp() throws Exception
     {
         super.setUp();
-        init((AMQConnection) getConnection("guest", "guest"));
+        _connection = getConnection("guest", "guest");
+        _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        _destination = createTestQueue(_session);
+
+        // Set up a slow consumer.
+        _session.createConsumer(_destination).setMessageListener(this);
+        _connection.start();
     }
 
     protected void tearDown() throws Exception
     {
         super.tearDown();
-    }
-
-    void init(AMQConnection connection) throws Exception
-    {
-        init(connection, new AMQQueue(connection, randomize("BytesMessageTest"), true));
-    }
-
-    void init(AMQConnection connection, AMQDestination destination) throws Exception
-    {
-        _connection = connection;
-        _destination = destination;
-        _session = connection.createSession(false, AMQSession.NO_ACKNOWLEDGE);
-
-        // Set up a slow consumer.
-        _session.createConsumer(destination).setMessageListener(this);
-        connection.start();
     }
 
     public void test() throws Exception
@@ -140,18 +124,20 @@ public class BytesMessageTest extends QpidBrokerTestCase implements MessageListe
 
     void check() throws JMSException
     {
-        List<byte[]> actual = new ArrayList<byte[]>();
-        for (JMSBytesMessage m : received)
+        List<byte[]> actual = new ArrayList<>();
+        for (Message message : received)
         {
-            ByteBuffer buffer = m.getData();
-            byte[] data = new byte[buffer.remaining()];
-            buffer.get(data);
+
+            BytesMessage bytesMessage = (BytesMessage)message;
+
+            byte[] data = new byte[(int) bytesMessage.getBodyLength()];
+            bytesMessage.readBytes(data);
             actual.add(data);
 
             // Check Body Write Status
             try
             {
-                m.writeBoolean(true);
+                bytesMessage.writeBoolean(true);
                 Assert.fail("Message should not be writeable");
             }
             catch (MessageNotWriteableException mnwe)
@@ -159,11 +145,11 @@ public class BytesMessageTest extends QpidBrokerTestCase implements MessageListe
                 // normal execution
             }
 
-            m.clearBody();
+            bytesMessage.clearBody();
 
             try
             {
-                m.writeBoolean(true);
+                bytesMessage.writeBoolean(true);
             }
             catch (MessageNotWriteableException mnwe)
             {
@@ -173,7 +159,7 @@ public class BytesMessageTest extends QpidBrokerTestCase implements MessageListe
             // Check property write status
             try
             {
-                m.setStringProperty("test", "test");
+                bytesMessage.setStringProperty("test", "test");
                 Assert.fail("Message should not be writeable");
             }
             catch (MessageNotWriteableException mnwe)
@@ -181,11 +167,11 @@ public class BytesMessageTest extends QpidBrokerTestCase implements MessageListe
                 // normal execution
             }
 
-            m.clearProperties();
+            bytesMessage.clearProperties();
 
             try
             {
-                m.setStringProperty("test", "test");
+                bytesMessage.setStringProperty("test", "test");
             }
             catch (MessageNotWriteableException mnwe)
             {
@@ -246,39 +232,12 @@ public class BytesMessageTest extends QpidBrokerTestCase implements MessageListe
     {
         synchronized (received)
         {
-            received.add((JMSBytesMessage) message);
+            received.add(message);
             received.notify();
         }
     }
 
-    private static String randomize(String in)
-    {
-        return in + System.currentTimeMillis();
-    }
 
-    public static void main(String[] argv) throws Exception
-    {
-        final String connectionString;
-        final int count;
-        if (argv.length == 0)
-        {
-            connectionString = "vm://:1";
-            count = 100;
-        }
-        else
-        {
-            connectionString = argv[0];
-            count = Integer.parseInt(argv[1]);
-        }
-
-        _logger.info("connectionString = " + connectionString);
-        _logger.info("count = " + count);
-
-        BytesMessageTest test = new BytesMessageTest();
-        test._connectionString = connectionString;
-        test._count = count;
-        test.test();
-    }
 
     public void testModificationAfterSend() throws Exception
     {

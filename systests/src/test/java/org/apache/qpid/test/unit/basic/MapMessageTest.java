@@ -20,16 +20,11 @@
  */
 package org.apache.qpid.test.unit.basic;
 
-import org.junit.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.message.JMSMapMessage;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
+import javax.jms.Connection;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.MapMessage;
@@ -39,22 +34,24 @@ import javax.jms.MessageListener;
 import javax.jms.MessageNotWriteableException;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+
+import org.junit.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class MapMessageTest extends QpidBrokerTestCase implements MessageListener
 {
     private static final Logger _logger = LoggerFactory.getLogger(MapMessageTest.class);
 
-    private AMQConnection _connection;
+    private Connection _connection;
     private Destination _destination;
-    private AMQSession _session;
-    private final List<JMSMapMessage> received = new ArrayList<JMSMapMessage>();
+    private Session _session;
+    private final List<Message> received = new ArrayList<>();
 
     private static final String MESSAGE = "Message ";
     private int _count = 100;
-    public String _connectionString = "vm://:1";
     private byte[] _bytes = { 99, 98, 97, 96, 95 };
     private static final float _smallfloat = 100.0f;
 
@@ -63,7 +60,13 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
         super.setUp();
         try
         {
-            init((AMQConnection) getConnection("guest", "guest"));
+            _connection = getConnection("guest", "guest");
+            _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            _destination = createTestQueue(_session);
+
+            // set up a slow consumer
+            _session.createConsumer(_destination).setMessageListener(this);
+            _connection.start();
         }
         catch (Exception e)
         {
@@ -75,23 +78,6 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
     {
         _logger.info("Tearing Down unit.basic.MapMessageTest");
         super.tearDown();
-    }
-
-    private void init(AMQConnection connection) throws Exception
-    {
-        Destination destination = new AMQQueue(connection, randomize("MapMessageTest"), true);
-        init(connection, destination);
-    }
-
-    private void init(AMQConnection connection, Destination destination) throws Exception
-    {
-        _connection = connection;
-        _destination = destination;
-        _session = (AMQSession) connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
-        // set up a slow consumer
-        _session.createConsumer(destination).setMessageListener(this);
-        connection.start();
     }
 
     public void test() throws Exception
@@ -179,22 +165,26 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
 
     void check() throws JMSException
     {
-         int count = 0;
-        for (JMSMapMessage m : received)
+        int count = 0;
+        for (Message message : received)
         {
-             testMapValues(m, count);
+            assertTrue("Message is not a MapMessage", message instanceof MapMessage);
 
-            testCorrectExceptions(m);
+            MapMessage mapMessage = (MapMessage) message;
 
-            testMessageWriteStatus(m);
+            testMapValues(mapMessage, count);
 
-            testPropertyWriteStatus(m);
+            testCorrectExceptions(mapMessage);
+
+            testMessageWriteStatus(mapMessage);
+
+            testPropertyWriteStatus(mapMessage);
 
             count++;
         }
     }
 
-    private void testCorrectExceptions(JMSMapMessage m) throws JMSException
+    private void testCorrectExceptions(MapMessage m) throws JMSException
     {
         testBoolean(m);
 
@@ -217,7 +207,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
         testString(m);
     }
 
-    private void testString(JMSMapMessage m) throws JMSException
+    private void testString(MapMessage m) throws JMSException
     {
 
         Assert.assertFalse(m.getBoolean("message"));
@@ -307,7 +297,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
         Assert.assertEquals(MESSAGE + m.getInt("messageNumber"), m.getString("message"));
     }
 
-    private void testShort(JMSMapMessage m) throws JMSException
+    private void testShort(MapMessage m) throws JMSException
     {
 
         // Try bad reads
@@ -382,7 +372,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
         Assert.assertEquals("" + Short.MAX_VALUE, m.getString("short"));
     }
 
-    private void testLong(JMSMapMessage m) throws JMSException
+    private void testLong(MapMessage m) throws JMSException
     {
 
         // Try bad reads
@@ -473,7 +463,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
         Assert.assertEquals("" + Long.MAX_VALUE, m.getString("long"));
     }
 
-    private void testDouble(JMSMapMessage m) throws JMSException
+    private void testDouble(MapMessage m) throws JMSException
     {
 
         // Try bad reads
@@ -565,7 +555,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
         Assert.assertEquals("" + Double.MAX_VALUE, m.getString("double"));
     }
 
-    private void testFloat(JMSMapMessage m) throws JMSException
+    private void testFloat(MapMessage m) throws JMSException
     {
 
         // Try bad reads
@@ -648,7 +638,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
         Assert.assertEquals("" + Float.MAX_VALUE, m.getString("float"));
     }
 
-    private void testInt(JMSMapMessage m) throws JMSException
+    private void testInt(MapMessage m) throws JMSException
     {
 
         // Try bad reads
@@ -731,7 +721,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
         Assert.assertEquals("" + Integer.MAX_VALUE, m.getString("int"));
     }
 
-    private void testChar(JMSMapMessage m) throws JMSException
+    private void testChar(MapMessage m) throws JMSException
     {
 
         // Try bad reads
@@ -821,7 +811,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
         Assert.assertEquals("" + 'c', m.getString("char"));
     }
 
-    private void testBytes(JMSMapMessage m) throws JMSException
+    private void testBytes(MapMessage m) throws JMSException
     {
         // Try bad reads
         try
@@ -920,7 +910,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
 
     }
 
-    private void testByte(JMSMapMessage m) throws JMSException
+    private void testByte(MapMessage m) throws JMSException
     {
         // Try bad reads
         try
@@ -988,7 +978,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
 
     }
 
-    private void testBoolean(JMSMapMessage m) throws JMSException
+    private void testBoolean(MapMessage m) throws JMSException
     {
 
         Assert.assertEquals((m.getInt("messageNumber") / 2) == 0, m.getBoolean("odd"));
@@ -1078,7 +1068,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
         Assert.assertEquals("" + ((m.getInt("messageNumber") / 2) == 0), m.getString("odd"));
     }
 
-    private void testPropertyWriteStatus(JMSMapMessage m) throws JMSException
+    private void testPropertyWriteStatus(MapMessage m) throws JMSException
     {
         // Check property write status
         try
@@ -1103,7 +1093,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
         }
     }
 
-    private void testMessageWriteStatus(JMSMapMessage m) throws JMSException
+    private void testMessageWriteStatus(MapMessage m) throws JMSException
     {
         try
         {
@@ -1127,7 +1117,7 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
         }
     }
 
-    private void testMapValues(JMSMapMessage m, int count) throws JMSException
+    private void testMapValues(MapMessage m, int count) throws JMSException
     {
         // Test get<Primiative>
 
@@ -1239,31 +1229,9 @@ public class MapMessageTest extends QpidBrokerTestCase implements MessageListene
         synchronized (received)
         {
             _logger.info("****************** Recevied Messgage:" + message);
-            received.add((JMSMapMessage) message);
+            received.add(message);
             received.notify();
         }
     }
 
-    private static String randomize(String in)
-    {
-        return in + System.currentTimeMillis();
-    }
-
-    public static void main(String[] argv) throws Exception
-    {
-        MapMessageTest test = new MapMessageTest();
-        test._connectionString = (argv.length == 0) ? "vm://:1" : argv[0];
-        test.setUp();
-        if (argv.length > 1)
-        {
-            test._count = Integer.parseInt(argv[1]);
-        }
-
-        test.test();
-    }
-
-    public static junit.framework.Test suite()
-    {
-        return new junit.framework.TestSuite(MapMessageTest.class);
-    }
 }

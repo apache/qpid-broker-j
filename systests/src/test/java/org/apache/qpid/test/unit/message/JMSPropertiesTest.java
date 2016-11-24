@@ -20,16 +20,9 @@
  */
 package org.apache.qpid.test.unit.message;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.qpid.AMQPInvalidClassException;
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.message.NonQpidObjectMessage;
-import org.apache.qpid.client.message.QpidMessageProperties;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.jms.Connection;
 import javax.jms.Destination;
@@ -41,9 +34,13 @@ import javax.jms.ObjectMessage;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.client.message.NonQpidObjectMessage;
+import org.apache.qpid.client.message.QpidMessageProperties;
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
  * @author Apache Software Foundation
@@ -52,8 +49,6 @@ public class JMSPropertiesTest extends QpidBrokerTestCase
 {
 
     private static final Logger _logger = LoggerFactory.getLogger(JMSPropertiesTest.class);
-
-    public String _connectionString = "vm://:1";
 
     public static final String JMS_CORR_ID = "QPIDID_01";
     public static final int JMS_DELIV_MODE = 1;
@@ -73,16 +68,16 @@ public class JMSPropertiesTest extends QpidBrokerTestCase
 
     public void testJMSProperties() throws Exception
     {
-        AMQConnection con = (AMQConnection) getConnection("guest", "guest");
-        AMQSession consumerSession = (AMQSession) con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        Queue queue =
-            new AMQQueue(con.getDefaultQueueExchangeName(), "someQ", "someQ", false, true);
+        Connection con = getConnection("guest", "guest");
+        Session consumerSession = con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+
+        Queue queue = createTestQueue(consumerSession, "someQ");
         MessageConsumer consumer = consumerSession.createConsumer(queue);
 
-        AMQConnection con2 = (AMQConnection) getConnection("guest", "guest");
+        Connection con2 = getConnection("guest", "guest");
         Session producerSession = con2.createSession(false, Session.CLIENT_ACKNOWLEDGE);
         MessageProducer producer = producerSession.createProducer(queue);
-        Destination JMS_REPLY_TO = new AMQQueue(con2, "my.replyto");
+        Destination JMS_REPLY_TO = createTestQueue(producerSession, "my.replyto");
         // create a test message to send
         ObjectMessage sentMsg = new NonQpidObjectMessage(producerSession);
         sentMsg.setJMSCorrelationID(JMS_CORR_ID);
@@ -98,24 +93,13 @@ public class JMSPropertiesTest extends QpidBrokerTestCase
 
         try
         {
-            sentMsg.setObjectProperty(NULL_OBJECT_PROPERTY, null);
-            fail("Null Object Property value set");
-        }
-        catch (MessageFormatException mfe)
-        {
-            // Check the error message
-            assertEquals("Incorrect error message", AMQPInvalidClassException.INVALID_OBJECT_MSG + "null", mfe.getMessage());
-        }
-
-        try
-        {
             sentMsg.setObjectProperty(INVALID_OBJECT_PROPERTY, new Exception());
             fail("Non primitive Object Property value set");
         }
         catch (MessageFormatException mfe)
         {
-            // Check the error message
-            assertEquals("Incorrect error message: " + mfe.getMessage(), AMQPInvalidClassException.INVALID_OBJECT_MSG + Exception.class, mfe.getMessage());
+            // pass
+
         }
 
         // send it
@@ -173,10 +157,10 @@ public class JMSPropertiesTest extends QpidBrokerTestCase
     public void testQpidExtensionProperties() throws Exception
     {
         Connection con = getConnection("guest", "guest");
-        Session ssn = (AMQSession) con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+        Session ssn = con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
         con.start();
 
-        Topic topic = ssn.createTopic("test");
+        Topic topic = createTopic(con, "test");
         MessageConsumer consumer = ssn.createConsumer(topic);
         MessageProducer prod = ssn.createProducer(topic);
         Message m = ssn.createMessage();

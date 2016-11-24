@@ -32,7 +32,6 @@ org.apache.qpid.test.client.QueueBrowserPreAckTest#*
 org.apache.qpid.test.client.QueueBrowserTransactedTest#*
 org.apache.qpid.client.HeartbeatTest#*
 org.apache.qpid.client.message.AMQPEncodedMapMessageTest#*
-org.apache.qpid.client.message.JmsObjectMessageTest#*
 org.apache.qpid.client.prefetch.PrefetchBehaviourTest#*
 org.apache.qpid.client.redelivered.RedeliveredMessageTest#*
 org.apache.qpid.client.SynchReceiveTest#*
@@ -40,7 +39,6 @@ org.apache.qpid.client.SyncPublishTest#*
 org.apache.qpid.client.session.ExchangeDeleteTest#*
 org.apache.qpid.client.session.QueueDeclareTest#*
 org.apache.qpid.client.session.QueueDeleteTest#*
-org.apache.qpid.client.message.JmsObjectMessageTest#*
 org.apache.qpid.test.client.failover.FailoverTest#*
 org.apache.qpid.test.client.DupsOkTest#*
 org.apache.qpid.systest.prefetch.ZeroPrefetchTest#*
@@ -68,8 +66,6 @@ org.apache.qpid.server.queue.ArrivalTimeFilterTest#*
 org.apache.qpid.server.message.MessageProtocolConversionTest#*
 org.apache.qpid.test.unit.topic.DurableSubscriptionTest#*
 org.apache.qpid.test.unit.message.UTF8Test#*
-org.apache.qpid.test.unit.message.StreamMessageTest#*
-org.apache.qpid.test.unit.message.JMSPropertiesTest#*
 org.apache.qpid.test.unit.close.MessageConsumerCloseTest#*
 org.apache.qpid.test.unit.close.JavaServerCloseRaceConditionTest#*
 org.apache.qpid.test.unit.client.message.ObjectMessageTest#*
@@ -79,17 +75,14 @@ org.apache.qpid.test.unit.client.connection.ConnectionFactoryTest#*
 org.apache.qpid.test.unit.client.connection.BrokerClosesClientConnectionTest#*
 org.apache.qpid.test.unit.client.channelclose.CloseWithBlockingReceiveTest#*
 org.apache.qpid.test.unit.client.AMQSessionTest#*
-org.apache.qpid.test.unit.basic.TextMessageTest#*
 org.apache.qpid.test.unit.basic.SessionStartTest#*
 org.apache.qpid.test.unit.basic.PubSubTwoConnectionTest#*
 org.apache.qpid.test.unit.basic.PropertyValueTest#*
 org.apache.qpid.test.unit.basic.ObjectMessageTest#*
 org.apache.qpid.test.unit.basic.MultipleConnectionTest#*
-org.apache.qpid.test.unit.basic.MapMessageTest#*
 org.apache.qpid.test.unit.basic.InvalidDestinationTest#*
 org.apache.qpid.test.unit.basic.FieldTableMessageTest#*
 org.apache.qpid.test.unit.basic.close.CloseTest#*
-org.apache.qpid.test.unit.basic.BytesMessageTest#*
 org.apache.qpid.test.unit.ack.RecoverTest#*
 org.apache.qpid.test.unit.ack.AcknowledgeTest#*
 org.apache.qpid.test.unit.ack.AcknowledgeOnMessageTest#*

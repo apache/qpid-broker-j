@@ -28,4 +28,10 @@ org.apache.qpid.test.unit.topic.TopicSessionTest#testNonMatchingMessagesHandledC
 // These tests explicitly meddle with prefetch - maybe there should be equivalents for AMQP 1.0
 org.apache.qpid.test.unit.transacted.CommitRollbackTest#testRollbackSessionAfterCreditExhausted
 
+// This test covers the client version specific mechanisms for restricting the types of Object which can be sent via an ObjectMessage
+org.apache.qpid.client.message.ObjectMessageClassWhitelistingTest#*
+
+// This test checks that the client behaves in a non-JMS spec compliant way
+org.apache.qpid.test.unit.message.JMSPropertiesTest#testQpidExtensionProperties
+
 

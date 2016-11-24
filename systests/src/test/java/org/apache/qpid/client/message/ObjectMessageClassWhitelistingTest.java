@@ -38,7 +38,7 @@ import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
-public class JmsObjectMessageTest extends QpidBrokerTestCase
+public class ObjectMessageClassWhitelistingTest extends QpidBrokerTestCase
 {
     public static final int TIMEOUT = 10000;
     public static final int TEST_VALUE = 37;
@@ -172,7 +172,7 @@ public class JmsObjectMessageTest extends QpidBrokerTestCase
     public void testWhiteListedAnonymousClassByConnectionUrlObjectMessage() throws Exception
     {
         Map<String, String> connectionOptions = new HashMap<>();
-        connectionOptions.put(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST, JmsObjectMessageTest.class.getCanonicalName());
+        connectionOptions.put(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST, ObjectMessageClassWhitelistingTest.class.getCanonicalName());
         final Connection c = getConnectionWithOptions(connectionOptions);
         doTestWhiteListedEnclosedClassTest(c, createAnonymousObject(TEST_VALUE));
     }
@@ -180,8 +180,8 @@ public class JmsObjectMessageTest extends QpidBrokerTestCase
     public void testBlackListedAnonymousClassByConnectionUrlObjectMessage() throws Exception
     {
         Map<String, String> connectionOptions = new HashMap<>();
-        connectionOptions.put(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST, JmsObjectMessageTest.class.getPackage().getName());
-        connectionOptions.put(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_BLACK_LIST, JmsObjectMessageTest.class.getCanonicalName());
+        connectionOptions.put(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST, ObjectMessageClassWhitelistingTest.class.getPackage().getName());
+        connectionOptions.put(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_BLACK_LIST, ObjectMessageClassWhitelistingTest.class.getCanonicalName());
 
         final Connection c = getConnectionWithOptions(connectionOptions);
         doTestBlackListedEnclosedClassTest(c, createAnonymousObject(TEST_VALUE));
@@ -190,7 +190,7 @@ public class JmsObjectMessageTest extends QpidBrokerTestCase
     public void testWhiteListedNestedClassByConnectionUrlObjectMessage() throws Exception
     {
         Map<String, String> connectionOptions = new HashMap<>();
-        connectionOptions.put(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST, JmsObjectMessageTest.NestedClass.class.getCanonicalName());
+        connectionOptions.put(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST, ObjectMessageClassWhitelistingTest.NestedClass.class.getCanonicalName());
         final Connection c = getConnectionWithOptions(connectionOptions);
         doTestWhiteListedEnclosedClassTest(c, new NestedClass(TEST_VALUE));
     }
@@ -198,7 +198,7 @@ public class JmsObjectMessageTest extends QpidBrokerTestCase
     public void testBlackListedNestedClassByConnectionUrlObjectMessage() throws Exception
     {
         Map<String, String> connectionOptions = new HashMap<>();
-        connectionOptions.put(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST, JmsObjectMessageTest.class.getCanonicalName());
+        connectionOptions.put(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_WHITE_LIST, ObjectMessageClassWhitelistingTest.class.getCanonicalName());
         connectionOptions.put(ConnectionURL.OPTIONS_OBJECT_MESSAGE_CLASS_HIERARCHY_BLACK_LIST, NestedClass.class.getCanonicalName());
 
         final Connection c = getConnectionWithOptions(connectionOptions);
