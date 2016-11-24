@@ -22,8 +22,6 @@ org.apache.qpid.test.unit.client.connection.ConnectionStartTest#*
 org.apache.qpid.test.unit.client.connection.ExceptionListenerTest#*
 org.apache.qpid.test.unit.client.DynamicQueueExchangeCreateTest#*
 org.apache.qpid.test.unit.topic.TemporaryTopicTest#*
-org.apache.qpid.test.client.QueueBrowserNoAckTest#*
-org.apache.qpid.test.client.QueueBrowserPreAckTest#*
 org.apache.qpid.client.prefetch.PrefetchBehaviourTest#*
 org.apache.qpid.client.redelivered.RedeliveredMessageTest#*
 org.apache.qpid.client.SynchReceiveTest#*

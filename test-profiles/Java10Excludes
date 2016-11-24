@@ -48,5 +48,9 @@ org.apache.qpid.test.unit.ack.RecoverTest#testRecoverSessionAfterCreditExhausted
 // Tests a message implementation using an 0-9 data type
 org.apache.qpid.test.unit.basic.FieldTableMessageTest#*
 
+// 0-x specific acknowledge modes
+org.apache.qpid.test.client.QueueBrowserNoAckTest#*
+org.apache.qpid.test.client.QueueBrowserPreAckTest#*
+
 
 
