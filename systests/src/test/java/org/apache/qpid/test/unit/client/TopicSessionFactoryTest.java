@@ -55,7 +55,6 @@ public class TopicSessionFactoryTest extends QpidBrokerTestCase
         catch (javax.jms.IllegalStateException s)
         {
             // PASS
-            assertEquals("Cannot call createBrowser from TopicSession", s.getMessage());
         }
     }
 
@@ -70,7 +69,6 @@ public class TopicSessionFactoryTest extends QpidBrokerTestCase
         catch (javax.jms.IllegalStateException s)
         {
             // PASS
-            assertEquals("Cannot call createQueue from TopicSession", s.getMessage());
         }
     }
 
@@ -85,7 +83,6 @@ public class TopicSessionFactoryTest extends QpidBrokerTestCase
         catch (javax.jms.IllegalStateException s)
         {
             // PASS
-            assertEquals("Cannot call createTemporaryQueue from TopicSession", s.getMessage());
         }
     }
 

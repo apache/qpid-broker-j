@@ -20,6 +20,17 @@
  */
 package org.apache.qpid.test.unit.basic;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import javax.jms.BytesMessage;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageListener;
+import javax.jms.MessageProducer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,17 +45,6 @@ import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.framing.FieldTableFactory;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
-import javax.jms.BytesMessage;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageListener;
-import javax.jms.MessageProducer;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 public class FieldTableMessageTest extends QpidBrokerTestCase implements MessageListener
 {
     private static final Logger _logger = LoggerFactory.getLogger(FieldTableMessageTest.class);
@@ -55,7 +55,6 @@ public class FieldTableMessageTest extends QpidBrokerTestCase implements Message
     private final ArrayList<JMSBytesMessage> received = new ArrayList<JMSBytesMessage>();
     private FieldTable _expected;
     private int _count = 10;
-    private String _connectionString = "vm://:1";
     private CountDownLatch _waitForCompletion;
 
     protected void setUp() throws Exception
@@ -154,12 +153,4 @@ public class FieldTableMessageTest extends QpidBrokerTestCase implements Message
         return in + System.currentTimeMillis();
     }
 
-    public static void main(String[] argv) throws Exception
-    {
-        FieldTableMessageTest test = new FieldTableMessageTest();
-        test._connectionString = (argv.length == 0) ? "vm://:1" : argv[0];
-        test.setUp();
-        test._count = (argv.length > 1) ? Integer.parseInt(argv[1]) : 5;
-        test.test();
-    }
 }

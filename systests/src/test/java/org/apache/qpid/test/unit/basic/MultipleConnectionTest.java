@@ -19,48 +19,44 @@
  */
 package org.apache.qpid.test.unit.basic;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.AMQTopic;
-import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
+import javax.jms.Connection;
+import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
+import javax.jms.Topic;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class MultipleConnectionTest extends QpidBrokerTestCase
 {
     private static final Logger _logger = LoggerFactory.getLogger(MultipleConnectionTest.class);
 
-    public static final String _defaultBroker = "vm://:1";
-    public String _connectionString = _defaultBroker;
 
     private class Receiver
     {
-        private AMQConnection _connection;
+        private Connection _connection;
         private Session[] _sessions;
         private MessageCounter[] _counters;
 
-        Receiver(String broker, AMQDestination dest, int sessions) throws Exception
+        Receiver(Destination dest, int sessions) throws Exception
         {
-            this((AMQConnection) getConnection("guest", "guest"), dest, sessions);
+            this(getConnection("guest", "guest"), dest, sessions);
         }
 
-        Receiver(AMQConnection connection, AMQDestination dest, int sessions) throws Exception
+        Receiver(Connection connection, Destination dest, int sessions) throws Exception
         {
             _connection = connection;
-            _sessions = new AMQSession[sessions];
+            _sessions = new Session[sessions];
             _counters = new MessageCounter[sessions];
             for (int i = 0; i < sessions; i++)
             {
-                _sessions[i] = _connection.createSession(false, AMQSession.NO_ACKNOWLEDGE);
+                _sessions[i] = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
                 _counters[i] = new MessageCounter(_sessions[i].toString());
                 _sessions[i].createConsumer(dest).setMessageListener(_counters[i]);
             }
@@ -81,19 +77,19 @@ public class MultipleConnectionTest extends QpidBrokerTestCase
 
     private class Publisher
     {
-        private AMQConnection _connection;
+        private Connection _connection;
         private Session _session;
         private MessageProducer _producer;
 
-        Publisher(String broker, AMQDestination dest) throws Exception
+        Publisher(Destination dest) throws Exception
         {
-            this((AMQConnection) getConnection("guest", "guest"), dest);
+            this(getConnection("guest", "guest"), dest);
         }
 
-        Publisher(AMQConnection connection, AMQDestination dest) throws Exception
+        Publisher(Connection connection, Destination dest) throws Exception
         {
             _connection = connection;
-            _session = _connection.createSession(false, AMQSession.NO_ACKNOWLEDGE);
+            _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             _producer = _session.createProducer(dest);
         }
 
@@ -171,30 +167,15 @@ public class MultipleConnectionTest extends QpidBrokerTestCase
         }
     }
 
-    private static String randomize(String in)
-    {
-        return in + System.currentTimeMillis();
-    }
-
-    public static void main(String[] argv) throws Exception
-    {
-        String broker = (argv.length > 0) ? argv[0] : _defaultBroker;
-
-        MultipleConnectionTest test = new MultipleConnectionTest();
-        test._connectionString = broker;
-        test.test();
-    }
-
     public void test() throws Exception
     {
-        String broker = _connectionString;
         int messages = 10;
 
-        AMQTopic topic = new AMQTopic(ExchangeDefaults.TOPIC_EXCHANGE_NAME, "amq.topic");
+        Topic topic = createTopic(getConnection(), getTestName());
 
-        Receiver[] receivers = new Receiver[] { new Receiver(broker, topic, 2), new Receiver(broker, topic, 14) };
+        Receiver[] receivers = new Receiver[] { new Receiver(topic, 2), new Receiver(topic, 14) };
 
-        Publisher publisher = new Publisher(broker, topic);
+        Publisher publisher = new Publisher(topic);
         for (int i = 0; i < messages; i++)
         {
             publisher.send("Message " + (i + 1));
@@ -213,10 +194,5 @@ public class MultipleConnectionTest extends QpidBrokerTestCase
                 receivers[i].close();
             }
         }
-    }
-
-    public static junit.framework.Test suite()
-    {
-        return new junit.framework.TestSuite(MultipleConnectionTest.class);
     }
 }

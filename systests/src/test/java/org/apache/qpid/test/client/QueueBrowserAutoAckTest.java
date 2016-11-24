@@ -53,7 +53,8 @@ public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
 
         setupSession();
 
-        _queue = _clientSession.createQueue(getTestQueueName());
+        _queue = createTestQueue(_clientSession);
+
         _clientSession.createConsumer(_queue).close();
 
         //Ensure there are no messages on the queue to start with.
@@ -137,16 +138,18 @@ public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
         //Check what the session believes the queue count to be.
         long queueDepth = 0;
 
-        try
+        if(!isBroker10())
         {
-            queueDepth = ((AMQSession) _clientSession).getQueueDepth((AMQDestination) _queue);
-        }
-        catch (QpidException e)
-        {
-        }
+            try
+            {
+                queueDepth = ((AMQSession) _clientSession).getQueueDepth((AMQDestination) _queue);
+            }
+            catch (QpidException e)
+            {
+            }
 
-        assertEquals("Session reports Queue expectedDepth not as expected", expectedDepth, queueDepth);
-
+            assertEquals("Session reports Queue expectedDepth not as expected", expectedDepth, queueDepth);
+        }
 
         // Browse the queue to get a second opinion
         int msgCount = 0;
@@ -427,7 +430,8 @@ public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
         {
             QueueBrowser browser = _clientSession.createBrowser(getTestQueue());
             Enumeration messages = browser.getEnumeration();
-            fail("Expected exception when attempting to browse on a stopped connection did not occur");
+            // it is not a requirement to fail - but it shouldn't hang... so failure for this test is simply
+            // non-completion
         }
         catch(javax.jms.IllegalStateException e)
         {

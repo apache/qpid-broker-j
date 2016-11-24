@@ -27,7 +27,6 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
 
-import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
@@ -56,11 +55,11 @@ public class PubSubTwoConnectionTest extends QpidBrokerTestCase
 
         Topic topic = createTopic(con1, "MyTopic");
 
-        Session session1 = con1.createSession(false, AMQSession.NO_ACKNOWLEDGE);
+        Session session1 = con1.createSession(false, Session.AUTO_ACKNOWLEDGE);
         MessageProducer producer = session1.createProducer(topic);
 
         Connection con2 = getConnection("guest", "guest") ;
-        Session session2 = con2.createSession(false, AMQSession.NO_ACKNOWLEDGE);
+        Session session2 = con2.createSession(false, Session.AUTO_ACKNOWLEDGE);
         MessageConsumer consumer = session2.createConsumer(topic);
         con2.start();        
         producer.send(session1.createTextMessage("Hello"));

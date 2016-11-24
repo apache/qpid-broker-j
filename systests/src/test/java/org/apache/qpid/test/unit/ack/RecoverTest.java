@@ -19,14 +19,8 @@
  */
 package org.apache.qpid.test.unit.ack;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.configuration.ClientProperties;
-import org.apache.qpid.jms.Session;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jms.Connection;
 import javax.jms.Destination;
@@ -36,9 +30,14 @@ import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
+import javax.jms.Session;
 import javax.jms.TextMessage;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.configuration.ClientProperties;
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class RecoverTest extends QpidBrokerTestCase
 {
@@ -49,7 +48,7 @@ public class RecoverTest extends QpidBrokerTestCase
     private volatile Exception _error;
     private AtomicInteger count;
 
-    protected AMQConnection _connection;
+    protected Connection _connection;
     protected Session _consumerSession;
     protected MessageConsumer _consumer;
     static final int SENT_COUNT = 4;
@@ -64,10 +63,10 @@ public class RecoverTest extends QpidBrokerTestCase
 
     protected void initTest() throws Exception
     {
-        _connection = (AMQConnection) getConnection();
+        _connection = getConnection();
 
         _consumerSession = _connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        Queue queue = _consumerSession.createQueue(getTestQueueName());
+        Queue queue = createTestQueue(_consumerSession);
 
         _consumer = _consumerSession.createConsumer(queue);
 
@@ -174,19 +173,15 @@ public class RecoverTest extends QpidBrokerTestCase
 
     public void testAcknowledgePerConsumer() throws Exception
     {
-        AMQConnection con = (AMQConnection) getConnection();
+        Connection con = getConnection();
 
         Session consumerSession = con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        Queue queue =
-                new AMQQueue(consumerSession.getDefaultQueueExchangeName(), "Q1", "Q1",
-                             false, true);
-        Queue queue2 =
-                new AMQQueue(consumerSession.getDefaultQueueExchangeName(), "Q2", "Q2",
-                             false, true);
+        Queue queue = createTestQueue(consumerSession, "Q1");
+        Queue queue2 = createTestQueue(consumerSession, "Q2");
         MessageConsumer consumer = consumerSession.createConsumer(queue);
         MessageConsumer consumer2 = consumerSession.createConsumer(queue2);
 
-        AMQConnection con2 = (AMQConnection) getConnection();
+        Connection con2 = getConnection();
         Session producerSession = con2.createSession(false, Session.CLIENT_ACKNOWLEDGE);
         MessageProducer producer = producerSession.createProducer(queue);
         MessageProducer producer2 = producerSession.createProducer(queue2);
@@ -216,12 +211,10 @@ public class RecoverTest extends QpidBrokerTestCase
 
     public void testRecoverInAutoAckListener() throws Exception
     {
-        AMQConnection con = (AMQConnection) getConnection();
+        Connection con = getConnection();
 
         final Session consumerSession = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Queue queue =
-                new AMQQueue(consumerSession.getDefaultQueueExchangeName(), "Q3", "Q3",
-                             false, true);
+        Queue queue = createTestQueue(consumerSession, "Q3");
         MessageConsumer consumer = consumerSession.createConsumer(queue);
         MessageProducer producer = consumerSession.createProducer(queue);
         producer.send(consumerSession.createTextMessage("hello"));
@@ -317,9 +310,9 @@ public class RecoverTest extends QpidBrokerTestCase
      */
     public void testOrderingWithSyncConsumer() throws Exception
     {
-        Connection con = (Connection) getConnection();
-        javax.jms.Session session = con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        Destination topic = session.createTopic("myTopic");
+        Connection con = getConnection();
+        Session session = con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+        Destination topic = createTopic(con, "myTopic");
         MessageConsumer cons = session.createConsumer(topic);
         
         sendMessage(session,topic,8);
@@ -368,9 +361,9 @@ public class RecoverTest extends QpidBrokerTestCase
      */
     public void testOrderingWithAsyncConsumer() throws Exception
     {
-        Connection con = (Connection) getConnection();
-        final javax.jms.Session session = con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        Destination topic = session.createTopic("myTopic");
+        Connection con = getConnection();
+        final Session session = con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
+        Destination topic = createTopic(con, "myTopic");
         MessageConsumer cons = session.createConsumer(topic);
         
         sendMessage(session,topic,8);

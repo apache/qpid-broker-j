@@ -444,6 +444,10 @@ public class QpidBrokerTestCase extends QpidTestCase
         createMessage.setString("name", name);
         createMessage.setString("object-path", name);
         producer.send(createMessage);
+        if(session.getTransacted())
+        {
+            session.commit();
+        }
     }
 
 

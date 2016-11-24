@@ -54,7 +54,6 @@ public class QueueSessionFactoryTest extends QpidBrokerTestCase
         catch (javax.jms.IllegalStateException s)
         {
             // PASS
-            assertEquals("Cannot call createTemporaryTopic from QueueSession", s.getMessage());
         }
     }
 
@@ -69,7 +68,6 @@ public class QueueSessionFactoryTest extends QpidBrokerTestCase
         catch (javax.jms.IllegalStateException s)
         {
             // PASS
-            assertEquals("Cannot call createTopic from QueueSession", s.getMessage());
         }
     }
 
@@ -86,7 +84,6 @@ public class QueueSessionFactoryTest extends QpidBrokerTestCase
         catch (javax.jms.IllegalStateException s)
         {
             // PASS
-            assertEquals("Cannot call createDurableSubscriber from QueueSession", s.getMessage());
         }
     }
 
@@ -101,7 +98,7 @@ public class QueueSessionFactoryTest extends QpidBrokerTestCase
         catch (javax.jms.IllegalStateException s)
         {
             // PASS
-            assertEquals("Cannot call unsubscribe from QueueSession", s.getMessage());
+
         }
     }
 

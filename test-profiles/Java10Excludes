@@ -34,4 +34,19 @@ org.apache.qpid.client.message.ObjectMessageClassWhitelistingTest#*
 // This test checks that the client behaves in a non-JMS spec compliant way
 org.apache.qpid.test.unit.message.JMSPropertiesTest#testQpidExtensionProperties
 
+// This test mainly covers the AMQP 0-x client's heartbeating implementation
+org.apache.qpid.client.HeartbeatTest#*
+
+// This is a test of the MapMessage implementation for the 0-x client
+org.apache.qpid.client.message.AMQPEncodedMapMessageTest#*
+
+// Uses an 0-x client API to acknowledge up to a particular message rather than the most recent
+org.apache.qpid.test.unit.ack.RecoverTest#testRecoverResendsMsgsAckOnEarlier
+// Tests the effect of setting the prefetch value
+org.apache.qpid.test.unit.ack.RecoverTest#testRecoverSessionAfterCreditExhausted
+
+// Tests a message implementation using an 0-9 data type
+org.apache.qpid.test.unit.basic.FieldTableMessageTest#*
+
+
 

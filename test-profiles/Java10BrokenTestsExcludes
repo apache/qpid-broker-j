@@ -51,4 +51,20 @@ org.apache.qpid.systest.management.amqp.AmqpManagementTest#testGetTypesOnVhostMa
 // We are allowed to consume from a temporary queue which should have been deleted
 org.apache.qpid.test.unit.client.temporaryqueue.TemporaryQueueTest#testExplictTemporaryQueueDeletion
 
+// client issue - the other tests demonstrate that it is not fulfilling the requirements of a TopicSession,
+// so it shouldn't implement it ...
+org.apache.qpid.test.unit.client.QueueSessionFactoryTest#testQueueSessionIsNotATopicSession
+// ... and vice versa
+org.apache.qpid.test.unit.client.QueueSessionFactoryTest#testTopicSessionCannotCreateCreateBrowser
+
+
+// QueueBrowsers appear to be broken
+org.apache.qpid.test.client.QueueBrowserAutoAckTest#testBrowsingWithSelector
+org.apache.qpid.test.client.QueueBrowserAutoAckTest#testMultipleOverlappingGetEnum
+org.apache.qpid.test.client.QueueBrowserClientAckTest#testBrowsingWithSelector
+org.apache.qpid.test.client.QueueBrowserClientAckTest#testMultipleOverlappingGetEnum
+org.apache.qpid.test.client.QueueBrowserDupsOkTest#testBrowsingWithSelector
+org.apache.qpid.test.client.QueueBrowserDupsOkTest#testMultipleOverlappingGetEnum
+org.apache.qpid.test.client.QueueBrowserTransactedTest#testBrowsingWithSelector
+org.apache.qpid.test.client.QueueBrowserTransactedTest#testMultipleOverlappingGetEnum
 
