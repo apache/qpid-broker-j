@@ -1682,6 +1682,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         preSetAlternateExchange();
                         _alternateExchange = null;
 
+                        _stopped.set(true);
+                        _queueHouseKeepingTask.cancel();
+
                         performQueueDeleteTasks();
                         deleted();
 
