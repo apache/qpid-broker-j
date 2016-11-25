@@ -24,6 +24,8 @@ import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CHANNEL_F
 
 import java.security.AccessControlContext;
 import java.security.AccessControlException;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -146,7 +148,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     private long _lastAttachedTime;
 
     private short _receivingChannel;
-    private short _sendingChannel;
+    private short _sendingChannel = -1;
 
 
     // has to be a power of two
@@ -205,6 +207,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     public void setReceivingChannel(final short receivingChannel)
     {
         _receivingChannel = receivingChannel;
+        _logSubject.updateSessionDetails();
         switch(_state)
         {
             case INACTIVE:
@@ -551,6 +554,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     public void setSendingChannel(final short sendingChannel)
     {
         _sendingChannel = sendingChannel;
+        _logSubject.updateSessionDetails();
         switch(_state)
         {
             case INACTIVE:
@@ -563,6 +567,17 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                 // TODO error
 
         }
+
+        AccessController.doPrivileged((new PrivilegedAction<Object>()
+        {
+            @Override
+            public Object run()
+            {
+                _connection.getEventLogger().message(ChannelMessages.CREATE());
+
+                return null;
+            }
+        }), _accessControllerContext);
     }
 
     public void sendFlow(final Flow flow)
@@ -1249,6 +1264,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
             {
                 task.performAction(this);
             }
+            getAMQPConnection().getEventLogger().message(_logSubject,ChannelMessages.CLOSE());
         }
     }
 

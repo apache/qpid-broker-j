@@ -20,15 +20,21 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
+import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CHANNEL_FORMAT;
+
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.transport.AMQPConnection;
 
-import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CHANNEL_FORMAT;
-
 public class ChannelLogSubject extends AbstractLogSubject
 {
-
+    private final AMQSessionModel<?> _sessionModel;
     public ChannelLogSubject(AMQSessionModel session)
+    {
+        _sessionModel = session;
+        updateSessionDetails();
+    }
+
+    public void updateSessionDetails()
     {
         /**
          * LOG FORMAT used by the AMQPConnectorActor follows
@@ -43,14 +49,12 @@ public class ChannelLogSubject extends AbstractLogSubject
          * 3 - Virtualhost
          * 4 - Channel ID
          */
-        AMQPConnection connection = session.getAMQPConnection();
+        AMQPConnection connection = _sessionModel.getAMQPConnection();
         setLogStringWithFormat(CHANNEL_FORMAT,
                                connection == null ? -1L : connection.getConnectionId(),
                                (connection == null || connection.getAuthorizedPrincipal() == null) ? "?" : connection.getAuthorizedPrincipal().getName(),
                                (connection == null || connection.getRemoteAddressString() == null) ? "?" : connection.getRemoteAddressString(),
                                (connection == null || connection.getAddressSpaceName() == null) ? "?" : connection.getAddressSpaceName(),
-                               session.getChannelId());
-
+                               _sessionModel.getChannelId());
     }
-
 }

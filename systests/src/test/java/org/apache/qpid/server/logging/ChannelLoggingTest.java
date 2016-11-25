@@ -20,18 +20,19 @@
  */
 package org.apache.qpid.server.logging;
 
-import org.apache.qpid.QpidException;
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
+import java.util.List;
+import java.util.regex.Pattern;
 
 import javax.jms.Connection;
 import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
-import java.util.List;
-import java.util.regex.Pattern;
+
+import org.apache.qpid.QpidException;
+import org.apache.qpid.client.AMQConnection;
+import org.apache.qpid.client.AMQDestination;
+import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
 
 public class ChannelLoggingTest extends AbstractTestLogging
 {
@@ -74,8 +75,15 @@ public class ChannelLoggingTest extends AbstractTestLogging
 
         int PREFETCH = 12;
 
-        // Test that calling session.close gives us the expected output
-        ((AMQConnection)connection).createSession(false, Session.AUTO_ACKNOWLEDGE,PREFETCH);
+        if(!(isBroker010() || isBroker10()))
+        {
+            // Test that calling session.close gives us the expected output
+            ((AMQConnection) connection).createSession(false, Session.AUTO_ACKNOWLEDGE, PREFETCH);
+        }
+        else
+        {
+            connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        }
 
         // Wait to ensure that the CHN-1001 message is logged
         waitForMessage("CHN-1001");
@@ -83,16 +91,16 @@ public class ChannelLoggingTest extends AbstractTestLogging
         List<String> results = findMatches("CHN-1001");
 
         // Validation
-        assertEquals("CHN-1001 messages not logged", 1, results.size());
+        assertEquals("CHN-1001 messages not logged", isBroker10() ? 2 : 1, results.size());
 
-        String log = getLogMessage(results, 0);
+        String log = getLogMessage(results, isBroker10() ? 1 : 0);
         //  MESSAGE [con:0(guest@anonymous(3273383)/test)/ch:1] CHN-1001 : Create
         validateMessageID("CHN-1001", log);
         final String fromActor = fromActor(log);
         final int channelID = getChannelID(fromActor);
         assertEquals("Incorrect Channel in actor:"+fromActor(log), isBroker010()? 0 : 1, channelID);
 
-        if (!isBroker010())
+        if (!(isBroker010() || isBroker10()))
         {
             // Wait to ensure that the CHN-1004 message is logged
             waitForMessage("CHN-1004");
@@ -363,13 +371,13 @@ public class ChannelLoggingTest extends AbstractTestLogging
     }
     private void validateChannelClose(List<String> results)
     {
-        String open = getLogMessage(results, 0);
+        String open = getLogMessage(results, isBroker10() ? 1 : 0);
         String close = getLogMessageFromEnd(results, 0);
 
         validateMessageID("CHN-1001", open);
         validateMessageID("CHN-1003", close);
         assertEquals("Message should be Close", "Close", getMessageString(fromMessage(close)));
-        assertEquals("Incorrect Channel ID closed", isBroker010()? 0 : 1, getChannelID(fromSubject(close)));
+        assertEquals("Incorrect Channel ID closed: " + close, isBroker010()? 0 : 1, getChannelID(fromSubject(close)));
         assertEquals("Channel IDs should be the same", getChannelID(fromActor(open)), getChannelID(fromSubject(close)));
         assertEquals("Connection IDs should be the same", getConnectionID(fromActor(open)), getConnectionID(fromSubject(close)));
     }

@@ -74,5 +74,16 @@ org.apache.qpid.test.client.QueueBrowserPreAckTest#*
 // The new client does not (and should not) support our custom MD5 HEXED / HASHED mechanisms
 org.apache.qpid.server.security.auth.manager.MD5AuthenticationManagerTest#*
 
+// The binding logging tests focus on the behaviour of the old client with regard to creating (and binding) queues on
+// the creation of consumers.
+org.apache.qpid.server.logging.BindingLoggingTest#*
+
+// These tests are 0-8/9/9-1 specific and are also excluded in the 0-10 profile
+org.apache.qpid.server.logging.ChannelLoggingTest#testChannelStartsFlowStopped
+org.apache.qpid.server.logging.ChannelLoggingTest#testChannelStartConsumerFlowStarted
+// This test is testing AMQP 0-x specific behaviour
+org.apache.qpid.server.logging.ChannelLoggingTest#testChannelClosedOnExclusiveQueueDeclaredOnDifferentSession
+
+
 
 

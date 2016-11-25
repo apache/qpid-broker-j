@@ -20,10 +20,6 @@
  */
 package org.apache.qpid.server.logging;
 
-import org.apache.qpid.server.logging.subjects.AbstractTestLogSubject;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.util.LogMonitor;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.NumberFormat;
@@ -32,6 +28,10 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+
+import org.apache.qpid.server.logging.subjects.AbstractTestLogSubject;
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.util.LogMonitor;
 
 /**
  * Abstract superclass for logging test set up and utility methods.

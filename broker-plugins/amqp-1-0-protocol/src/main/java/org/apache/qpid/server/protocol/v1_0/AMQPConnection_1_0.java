@@ -501,12 +501,20 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     {
 
         assertState(FrameReceivingState.ANY_FRAME);
-        Session_1_0 endpoint = _receivingSessions[channel];
-        if (endpoint != null)
+        final Session_1_0 session = getSession(channel);
+        if (session != null)
         {
-            _receivingSessions[channel] = null;
+            AccessController.doPrivileged(new PrivilegedAction<Object>()
+            {
+                @Override
+                public Object run()
+                {
+                    _receivingSessions[channel] = null;
 
-            endpoint.receiveEnd(end);
+                    session.receiveEnd(end);
+                    return null;
+                }
+            }, session.getAccessControllerContext());
         }
         else
         {
@@ -1423,7 +1431,14 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
             @Override
             public void performAction(final ConnectionHandler object)
             {
-                ((Session_1_0)session).close(cause, message);
+                AccessController.doPrivileged(new PrivilegedAction<Void>() {
+                    @Override
+                    public Void run()
+                    {
+                        ((Session_1_0)session).close(cause, message);
+                        return null;
+                    }
+                }, ((Session_1_0)session).getAccessControllerContext());
             }
         });
 
