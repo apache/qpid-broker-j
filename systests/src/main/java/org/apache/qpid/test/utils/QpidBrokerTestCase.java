@@ -44,7 +44,9 @@ import org.slf4j.MDC;
 import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.client.AMQConnectionURL;
+import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQQueue;
+import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.client.AMQTopic;
 import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.exchange.ExchangeDefaults;
@@ -498,6 +500,70 @@ public class QpidBrokerTestCase extends QpidTestCase
         {
             consumer.close();
             responseQ.delete();
+        }
+    }
+
+    public long getQueueDepth(final Connection con, final Queue destination) throws JMSException, QpidException
+    {
+        if(isBroker10())
+        {
+            Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            try
+            {
+
+                MessageProducer producer = session.createProducer(session.createQueue("$management"));
+                final TemporaryQueue responseQ = session.createTemporaryQueue();
+                MessageConsumer consumer = session.createConsumer(responseQ);
+                MapMessage message = session.createMapMessage();
+                message.setStringProperty("index", "object-path");
+                message.setStringProperty("key", destination.getQueueName());
+                message.setStringProperty("type", "org.apache.qpid.Queue");
+                message.setStringProperty("operation", "getStatistics");
+                message.setStringProperty("statistics", "[\"queueDepthMessages\"]");
+
+                message.setJMSReplyTo(responseQ);
+
+                producer.send(message);
+
+                Message response = consumer.receive();
+                try
+                {
+                    if (response instanceof MapMessage)
+                    {
+                        return ((MapMessage) response).getLong("queueDepthMessages");
+                    }
+                    else if (response instanceof ObjectMessage)
+                    {
+                        Object body = ((ObjectMessage) response).getObject();
+                        if (body instanceof Map)
+                        {
+                            return Long.valueOf(((Map) body).get("queueDepthMessages").toString());
+                        }
+                    }
+                    throw new IllegalArgumentException("Cannot parse the results from a management operation");
+                }
+                finally
+                {
+                    consumer.close();
+                    responseQ.delete();
+                }
+            }
+            finally
+            {
+                session.close();
+            }
+        }
+        else
+        {
+            Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            try
+            {
+                return ((AMQSession<?, ?>) session).getQueueDepth((AMQDestination) destination);
+            }
+            finally
+            {
+                session.close();
+            }
         }
     }
 

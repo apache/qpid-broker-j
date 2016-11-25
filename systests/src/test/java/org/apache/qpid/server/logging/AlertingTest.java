@@ -26,8 +26,6 @@ import javax.jms.Connection;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
@@ -74,7 +72,7 @@ public class AlertingTest extends AbstractTestLogging
     {
         _connection = getConnection();
         _session = _connection.createSession(true, Session.SESSION_TRANSACTED);
-        _destination = _session.createQueue(getTestQueueName());
+        _destination = createTestQueue(_session);
 
         // Consumer is only used to actually create the destination
         _session.createConsumer(_destination).close();
@@ -148,7 +146,7 @@ public class AlertingTest extends AbstractTestLogging
         setupConnection();
 
         // Validate the queue depth is as expected
-        long messageCount = ((AMQSession<?, ?>) _session).getQueueDepth((AMQDestination) _destination);
+        long messageCount = getQueueDepth(_connection, _destination);
         assertEquals("Broker has invalid message count for test", 2, messageCount);
 
         // Ensure the alert has not occurred yet
