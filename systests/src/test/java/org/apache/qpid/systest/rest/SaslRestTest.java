@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
@@ -279,6 +280,15 @@ public class SaslRestTest extends QpidRestTestCase
         applyCookiesToConnection(cookies, connection);
         Map<String, Object> response2 = getRestTestHelper().readJsonResponseAsMap(connection);
         assertNull("Unexpected user", response2.get("user"));
+    }
+
+    public void testRequestingAuthenticationForUnsupportedSaslMechanism() throws Exception
+    {
+        startBrokerNow();
+        HttpURLConnection connection = requestSasServerChallenge("UNSUPPORTED");
+        int responseCode = connection.getResponseCode();
+        connection.disconnect();
+        assertEquals("Unexpected response", HttpServletResponse.SC_EXPECTATION_FAILED, responseCode);
     }
 
     private HttpURLConnection requestSasServerChallenge(String mechanism) throws IOException

@@ -128,7 +128,7 @@ public class SaslServlet extends AbstractServlet
 
             if(mechanism != null)
             {
-                if(id == null)
+                if(id == null && subjectCreator.getMechanisms().contains(mechanism))
                 {
                     LOGGER.debug("Creating SaslServer for mechanism: {}", mechanism);
 
