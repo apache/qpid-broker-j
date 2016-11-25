@@ -20,6 +20,7 @@ package org.apache.qpid.test.utils;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -433,16 +434,26 @@ public class QpidBrokerTestCase extends QpidTestCase
         }
     }
 
-    private void createEntityUsingAmqpManagement(final String name, final Session session, final String type)
+    protected void createEntityUsingAmqpManagement(final String name, final Session session, final String type)
             throws JMSException
     {
-        MessageProducer producer = session.createProducer(session.createQueue("$management"));
+        createEntityUsingAmqpManagement(name, session, type, Collections.<String,Object>emptyMap());
+    }
+
+    protected void createEntityUsingAmqpManagement(final String name, final Session session, final String type, Map<String, Object> attributes)
+            throws JMSException
+    {
+        MessageProducer producer = session.createProducer(session.createQueue(isBroker10() ? "$management" : "ADDR:$management"));
 
         MapMessage createMessage = session.createMapMessage();
         createMessage.setStringProperty("type", type);
         createMessage.setStringProperty("operation", "CREATE");
         createMessage.setString("name", name);
         createMessage.setString("object-path", name);
+        for(Map.Entry<String,Object> entry : attributes.entrySet())
+        {
+            createMessage.setObject(entry.getKey(), entry.getValue());
+        }
         producer.send(createMessage);
         if(session.getTransacted())
         {

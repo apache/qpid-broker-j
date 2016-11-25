@@ -18,15 +18,18 @@
  */
 package org.apache.qpid.server.logging;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Session;
 
-import org.apache.qpid.AMQException;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.protocol.ErrorCodes;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ExclusivityPolicy;
+import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.security.acl.AbstractACLTestCase;
 
 /**
@@ -45,6 +48,8 @@ public class AccessControlLoggingTest extends AbstractTestLogging
     private static final String ACL_LOG_PREFIX = "ACL-";
     private static final String USER = "client";
     private static final String PASS = "guest";
+    private Connection _connection;
+    private Session _session;
 
     public void setUp() throws Exception
     {
@@ -53,9 +58,14 @@ public class AccessControlLoggingTest extends AbstractTestLogging
                 "ACL ALLOW client CREATE QUEUE name='allow'",
                 "ACL ALLOW-LOG client CREATE QUEUE name='allow-log'",
                 "ACL DENY client CREATE QUEUE name='deny'",
-                "ACL DENY-LOG client CREATE QUEUE name='deny-log'");
+                "ACL DENY-LOG client CREATE QUEUE name='deny-log'",
+                "ACL ALLOW client PUBLISH EXCHANGE name='' routingkey='$management");
 
         super.setUp();
+
+        _connection = getConnection(USER, PASS);
+        _session = _connection.createSession(true, Session.SESSION_TRANSACTED);
+        _connection.start();
 
     }
 
@@ -64,6 +74,7 @@ public class AccessControlLoggingTest extends AbstractTestLogging
     {
         try
         {
+            _connection.close();
             super.tearDown();
         }
         catch (JMSException e)
@@ -78,14 +89,44 @@ public class AccessControlLoggingTest extends AbstractTestLogging
      */
     public void testAllow() throws Exception
 	{
-        Connection conn = getConnection(USER, PASS);
-        Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        conn.start();
-        ((AMQSession<?, ?>) sess).createQueue("allow", false, false, false);
+        String name = "allow";
+        boolean autoDelete = false;
+        boolean durable = false;
+        boolean exclusive = false;
+        createQueue(name, autoDelete, durable, exclusive);
 
         List<String> matches = findMatches(ACL_LOG_PREFIX + 1001);
 
         assertTrue("Should be no ACL log messages", matches.isEmpty());
+    }
+
+    protected void createQueue(final String name,
+                               final boolean autoDelete,
+                               final boolean durable, final boolean exclusive)
+            throws JMSException
+    {
+        Map<String,Object> attributes = new LinkedHashMap<>();
+        attributes.put(ConfiguredObject.NAME, name);
+        attributes.put(ConfiguredObject.DURABLE, durable);
+        LifetimePolicy lifetimePolicy;
+        ExclusivityPolicy exclusivityPolicy;
+
+        if (exclusive)
+        {
+            lifetimePolicy = autoDelete
+                    ? LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS
+                    : durable ? LifetimePolicy.PERMANENT : LifetimePolicy.DELETE_ON_CONNECTION_CLOSE;
+            exclusivityPolicy = durable ? ExclusivityPolicy.CONTAINER : ExclusivityPolicy.CONNECTION;
+        }
+        else
+        {
+            lifetimePolicy = autoDelete ? LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS : LifetimePolicy.PERMANENT;
+            exclusivityPolicy = ExclusivityPolicy.NONE;
+        }
+
+        attributes.put(Queue.EXCLUSIVE, exclusivityPolicy.toString());
+        attributes.put(Queue.LIFETIME_POLICY, lifetimePolicy.toString());
+        createEntityUsingAmqpManagement(name, _session, "org.apache.qpid.Queue", attributes);
     }
 
     /**
@@ -93,10 +134,7 @@ public class AccessControlLoggingTest extends AbstractTestLogging
      */
     public void testAllowLog() throws Exception
     {
-        Connection conn = getConnection(USER, PASS);
-        Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        conn.start();
-        ((AMQSession<?, ?>) sess).createQueue("allow-log", false, false, false);
+        createQueue("allow-log", false, false, false);
 
         List<String> matches = findMatches(ACL_LOG_PREFIX + 1001);
 
@@ -121,19 +159,7 @@ public class AccessControlLoggingTest extends AbstractTestLogging
      */
     public void testDenyLog() throws Exception
     {
-        Connection conn = getConnection(USER, PASS);
-        Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        conn.start();
-        try
-        {
-            ((AMQSession<?, ?>) sess).createQueue("deny-log", false, false, false);
-	        fail("Should have denied queue creation");
-        }
-        catch (AMQException amqe)
-        {
-            // Denied, so exception thrown
-            assertEquals("Expected ACCESS_REFUSED error code", ErrorCodes.ACCESS_REFUSED, amqe.getErrorCode());
-        }
+        createQueue("deny-log", false, false, false);
 
         List<String> matches = findMatches(ACL_LOG_PREFIX + 1002);
 
@@ -158,19 +184,7 @@ public class AccessControlLoggingTest extends AbstractTestLogging
      */
     public void testDeny() throws Exception
     {
-        Connection conn = getConnection(USER, PASS);
-        Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        conn.start();
-        try
-        {
-            ((AMQSession<?, ?>) sess).createQueue("deny", false, false, false);
-            fail("Should have denied queue creation");
-        }
-        catch (AMQException amqe)
-        {
-            // Denied, so exception thrown
-            assertEquals("Expected ACCESS_REFUSED error code", ErrorCodes.ACCESS_REFUSED, amqe.getErrorCode());
-        }
+        createQueue("deny", false, false, false);
 
         List<String> matches = findMatches(ACL_LOG_PREFIX + 1002);
 
