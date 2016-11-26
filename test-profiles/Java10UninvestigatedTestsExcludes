@@ -35,9 +35,6 @@ org.apache.qpid.client.prefetch.PrefetchBehaviourTest#*
 org.apache.qpid.client.redelivered.RedeliveredMessageTest#*
 org.apache.qpid.client.SynchReceiveTest#*
 org.apache.qpid.client.SyncPublishTest#*
-org.apache.qpid.client.session.ExchangeDeleteTest#*
-org.apache.qpid.client.session.QueueDeclareTest#*
-org.apache.qpid.client.session.QueueDeleteTest#*
 org.apache.qpid.test.client.failover.FailoverTest#*
 org.apache.qpid.systest.prefetch.ZeroPrefetchTest#*
 org.apache.qpid.systest.messageencryption.MessageEncryptionTest#*
@@ -47,8 +44,6 @@ org.apache.qpid.server.stats.StatisticsReportingTest#*
 org.apache.qpid.server.security.acl.ExternalACLTest#*
 org.apache.qpid.server.security.acl.ExhaustiveACLTest#*
 org.apache.qpid.server.queue.TimeToLiveTest#*
-org.apache.qpid.server.queue.SortedQueueTest#*
-org.apache.qpid.server.queue.QueueDepthWithSelectorTest#*
 org.apache.qpid.server.queue.QueueBindTest#*
 org.apache.qpid.server.queue.ProducerFlowControlTest#*
 org.apache.qpid.server.queue.PriorityQueueTest#*
@@ -73,7 +68,6 @@ org.apache.qpid.test.unit.client.connection.BrokerClosesClientConnectionTest#*
 org.apache.qpid.test.unit.client.channelclose.CloseWithBlockingReceiveTest#*
 org.apache.qpid.test.unit.client.AMQSessionTest#*
 org.apache.qpid.test.unit.basic.SessionStartTest#*
-org.apache.qpid.test.unit.basic.PropertyValueTest#*
 org.apache.qpid.test.unit.basic.InvalidDestinationTest#*
 org.apache.qpid.test.unit.basic.FieldTableMessageTest#*
 org.apache.qpid.test.unit.basic.close.CloseTest#*

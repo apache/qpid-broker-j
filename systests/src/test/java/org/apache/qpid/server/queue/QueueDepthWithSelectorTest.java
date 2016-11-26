@@ -21,11 +21,6 @@
 
 package org.apache.qpid.server.queue;
 
-import org.apache.qpid.QpidException;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Message;
@@ -33,6 +28,9 @@ import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
+
+import org.apache.qpid.QpidException;
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
  * Test Case to ensure that messages are correctly returned.
@@ -65,12 +63,12 @@ public class QueueDepthWithSelectorTest extends QpidBrokerTestCase
         super.setUp();
 
         _messages = new Message[MSG_COUNT];
-        _queue = getTestQueue();
-        
+
         //Create Producer
         _producerConnection = getConnection();
         _producerConnection.start();
         _producerSession = _producerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        _queue = createTestQueue(_producerSession);
         _producer = _producerSession.createProducer(_queue);
 
         // Create consumer
@@ -110,9 +108,9 @@ public class QueueDepthWithSelectorTest extends QpidBrokerTestCase
         try
         {
             Connection connection = getConnection();
-            AMQSession session = (AMQSession)connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
-            long queueDepth = session.getQueueDepth((AMQDestination) _queue);
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            connection.start();
+            long queueDepth = getQueueDepth(connection, _queue);
             assertEquals("Session reports Queue depth not as expected", expectedDepth, queueDepth);
             
             connection.close();
@@ -156,7 +154,7 @@ public class QueueDepthWithSelectorTest extends QpidBrokerTestCase
 
         //do a synchronous op to ensure the acks are processed
         //on the broker before proceeding
-        ((AMQSession)_clientSession).sync();
+        _clientSession.createTemporaryQueue().delete();
     }
 
     /**

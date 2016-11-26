@@ -39,26 +39,24 @@ import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
+import javax.jms.TextMessage;
 
 import com.google.common.base.Strings;
 import org.junit.Assert;
-
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.message.JMSTextMessage;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.client.AMQConnection;
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class PropertyValueTest extends QpidBrokerTestCase implements MessageListener
 {
     private static final Logger _logger = LoggerFactory.getLogger(PropertyValueTest.class);
 
-    private AMQConnection _connection;
+    private Connection _connection;
     private Destination _destination;
     private Session _session;
-    private final List<JMSTextMessage> received = new ArrayList<JMSTextMessage>();
+    private final List<TextMessage> received = new ArrayList<>();
     private final List<String> messages = new ArrayList<String>();
     private Map<String, Destination> _replyToDestinations;
     private int _count = 1;
@@ -74,21 +72,16 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
         super.tearDown();
     }
 
-    private void init(AMQConnection connection) throws Exception
-    {
-        Destination destination = new AMQQueue(connection, randomize("PropertyValueTest"), true);
-        init(connection, destination);
-    }
-
-    private void init(AMQConnection connection, Destination destination) throws Exception
+    private void init(Connection connection) throws Exception
     {
         _connection = connection;
-        _destination = destination;
-        _session = (AMQSession) connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        _session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        _destination = createTestQueue(_session);
 
         // set up a slow consumer
-        _session.createConsumer(destination).setMessageListener(this);
-        connection.start();
+        connection.start()
+        ;
+        _session.createConsumer(_destination).setMessageListener(this);
     }
 
     private Message getTestMessage() throws Exception
@@ -184,8 +177,8 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
      */
     public void testLargeHeader_010_HeadersFillContentHeaderFrame() throws Exception
     {
-        _connection = (AMQConnection) getConnection();
-        int maximumFrameSize = (int) _connection.getMaximumFrameSize();
+        _connection = getConnection();
+        int maximumFrameSize = (int) ((AMQConnection)_connection).getMaximumFrameSize();
         Map<String, String> headerProperties = new HashMap<>();
         int headerPropertySize = ((1<<16) - 1);
         int i = 0;
@@ -231,8 +224,8 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
 
     public void testLargeHeader_08091_HeadersFillContentHeaderFrame() throws Exception
     {
-        _connection = (AMQConnection) getConnection();
-        int maximumFrameSize = (int) _connection.getMaximumFrameSize();
+        _connection =  getConnection();
+        int maximumFrameSize = (int) ((AMQConnection)_connection).getMaximumFrameSize();
         String propertyName = "string";
         int overhead = calculateOverHead_08091_FrameWithHeader(propertyName);
 
@@ -246,7 +239,7 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
         _session = _connection.createSession(true, Session.SESSION_TRANSACTED);
         MessageProducer producer = _session.createProducer(_session.createQueue(getTestQueueName()));
 
-        int maximumFrameSize = (int) _connection.getMaximumFrameSize();
+        int maximumFrameSize = (int) ((AMQConnection)_connection).getMaximumFrameSize();
         String propertyName = "string";
         int overhead = calculateOverHead_08091_FrameWithHeader(propertyName);
 
@@ -323,7 +316,7 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
                 _logger.error("Run Number:" + run++);
                 try
                 {
-                    init( (AMQConnection) getConnection());
+                    init(getConnection());
                 }
                 catch (Exception e)
                 {
@@ -379,7 +372,7 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
             }
             else
             {
-                q = new AMQQueue(_connection, "TestReply");
+                q = _session.createQueue("TestReply");
             }
 
             m.setJMSReplyTo(q);
@@ -415,7 +408,7 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
     void check() throws JMSException, URISyntaxException
     {
         List<String> actual = new ArrayList<String>();
-        for (JMSTextMessage m : received)
+        for (TextMessage m : received)
         {
             actual.add(m.getText());
 
@@ -504,14 +497,10 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
     {
         synchronized (received)
         {
-            received.add((JMSTextMessage) message);
+            received.add((TextMessage) message);
             received.notify();
         }
     }
 
-    private static String randomize(String in)
-    {
-        return in + System.currentTimeMillis();
-    }
 
 }

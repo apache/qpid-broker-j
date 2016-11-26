@@ -40,10 +40,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.QpidException;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class SortedQueueTest extends QpidBrokerTestCase
@@ -62,11 +58,10 @@ public class SortedQueueTest extends QpidBrokerTestCase
     protected void setUp() throws Exception
     {
         super.setUp();
-        setTestClientSystemProperty(ClientProperties.MAX_PREFETCH_PROP_NAME, "1");
         // Sort value array to generated "expected" order of messages.
         Arrays.sort(VALUES_SORTED);
         _producerConnection = getConnection();
-        _consumerConnection = getConnection();
+        _consumerConnection = getConnectionWithPrefetch(1);
         _producerSession = _producerConnection.createSession(true, Session.SESSION_TRANSACTED);
         _receiveInterval = isBrokerStorePersistent() ? 3000l : 1500l;
     }
@@ -337,11 +332,9 @@ public class SortedQueueTest extends QpidBrokerTestCase
     private Queue createQueue() throws QpidException, JMSException
     {
         final Map<String, Object> arguments = new HashMap<String, Object>();
-        arguments.put(QueueArgumentsConverter.QPID_QUEUE_SORT_KEY, TEST_SORT_KEY);
-        ((AMQSession<?,?>) _producerSession).createQueue(getTestQueueName(), false, true, false, arguments);
-        final Queue queue = new AMQQueue("amq.direct", getTestQueueName());
-        ((AMQSession<?,?>) _producerSession).declareAndBind((AMQDestination) queue);
-        return queue;
+        arguments.put(SortedQueue.SORT_KEY, TEST_SORT_KEY);
+        createEntityUsingAmqpManagement(getTestQueueName(), _producerSession, "org.apache.qpid.SortedQueue", arguments);
+        return getQueueFromName(_producerSession, getTestQueueName());
     }
 
     private Message getSortableTestMesssage(final String key) throws JMSException

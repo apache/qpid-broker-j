@@ -98,6 +98,18 @@ org.apache.qpid.transport.MaxFrameSizeTest#*
 // This test is concerned with the 0-x client establishing a connection to a supported version
 org.apache.qpid.transport.ProtocolNegotiationTest#testProtocolNegotiationFromUnsupportedVersion
 
+// These tests are testing extensions to JMS on the 0-x client to manipulate AMQP 0-x model objects like Queues and Exchanges
+org.apache.qpid.client.session.ExchangeDeleteTest#*
+org.apache.qpid.client.session.QueueDeclareTest#*
+org.apache.qpid.client.session.QueueDeleteTest#*
+
+// The tests are Protocol version specific constraints on total header property size
+org.apache.qpid.test.unit.basic.PropertyValueTest#testOverlyLargeHeaderRejected_08091
+org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_08091_HeadersFillContentHeaderFrame
+org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_010_HeadersFillContentHeaderFrame
+
+
+
 
 
 

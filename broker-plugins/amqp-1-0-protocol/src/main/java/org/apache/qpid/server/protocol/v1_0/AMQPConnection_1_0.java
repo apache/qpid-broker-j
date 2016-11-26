@@ -123,7 +123,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 {
 
     private static Logger LOGGER = LoggerFactory.getLogger(AMQPConnection_1_0.class);
-    private static final Logger FRAME_LOGGER = LoggerFactory.getLogger("FRM");
+    private static final Logger FRAME_LOGGER = LoggerFactory.getLogger("org.apache.qpid.server.protocol.frame");
 
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();

@@ -19,11 +19,13 @@ package org.apache.qpid.test.utils;
 
 import java.io.File;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -254,46 +256,97 @@ public class QpidBrokerTestCase extends QpidTestCase
      * @return A connection factory
      * @throws NamingException if there is an error getting the factory
      */
-    public ConnectionFactory getConnectionFactory(String factoryName) throws NamingException
+    public ConnectionFactory getConnectionFactory(String factoryName)
+            throws NamingException
     {
         return getConnectionFactory(factoryName, "test", "clientid");
     }
-    public ConnectionFactory getConnectionFactory(String factoryName, String vhost, String clientId) throws NamingException
+    public ConnectionFactory getConnectionFactory(String factoryName, String vhost, String clientId)
+            throws NamingException
+    {
+        return getConnectionFactory(factoryName, vhost, clientId, Collections.<String, String>emptyMap());
+    }
+    public ConnectionFactory getConnectionFactory(String factoryName, String vhost, String clientId, Map<String,String> options)
+            throws NamingException
     {
 
         if(isBroker10())
         {
+            Map<String,String> actualOptions = new LinkedHashMap<>();
+            actualOptions.put("amqp.vhost", vhost);
+            actualOptions.put("jms.clientID", clientId);
+            actualOptions.put("jms.forceSyncSend", "true");
+            actualOptions.putAll(options);
             if("failover".equals(factoryName))
             {
+                if(!actualOptions.containsKey("failover.maxReconnectAttempts"))
+                {
+                    actualOptions.put("failover.maxReconnectAttempts", "2");
+                }
+                final StringBuilder stem = new StringBuilder("failover:(amqp://localhost:")
+                                                  .append(System.getProperty("test.port"))
+                                                  .append(",amqp://localhost:")
+                                                  .append(System.getProperty("test.port.alt"))
+                                                  .append(")");
+                appendOptions(actualOptions, stem);
+
                 _initialContextEnvironment.put("property.connectionfactory.failover.remoteURI",
-                                               "failover:(amqp://localhost:"
-                                               + System.getProperty("test.port")
-                                               + ",amqp://localhost:"
-                                               + System.getProperty("test.port.alt")
-                                               + ")?failover.maxReconnectAttempts=20&amqp.vhost="
-                                               + vhost
-                                               + "&jms.clientID="
-                                               + clientId
-                                               + "&jms.forceSyncSend=true");
+                                               stem.toString());
             }
             else if("default".equals(factoryName))
             {
+                final StringBuilder stem = new StringBuilder("amqp://localhost:").append(System.getProperty("test.port"));
+
+
+                appendOptions(actualOptions, stem);
+
                 _initialContextEnvironment.put("property.connectionfactory.default.remoteURI",
-                                               "amqp://localhost:"
-                                               + System.getProperty("test.port")
-                                               + "?amqp.vhost="
-                                               + vhost
-                                               + "&jms.clientID="
-                                               + clientId);
+                                               stem.toString());
 
             }
         }
         return (ConnectionFactory) getInitialContext().lookup(factoryName);
     }
 
+    private void appendOptions(final Map<String, String> actualOptions, final StringBuilder stem)
+    {
+        boolean first = true;
+        for(Map.Entry<String, String> option : actualOptions.entrySet())
+        {
+            if(first)
+            {
+                stem.append('?');
+                first = false;
+            }
+            else
+            {
+                stem.append('&');
+            }
+            stem.append(option.getKey()).append('=').append(URLEncoder.encode(option.getValue()));
+        }
+    }
+
     public Connection getConnection() throws JMSException, NamingException
     {
         return getConnection(GUEST_USERNAME, GUEST_PASSWORD);
+    }
+
+    public Connection getConnectionWithPrefetch(int prefetch) throws JMSException, NamingException, URLSyntaxException
+    {
+        if(isBroker10())
+        {
+            String factoryName = Boolean.getBoolean(PROFILE_USE_SSL) ? "default.ssl" : "default";
+
+            final Map<String, String> options =
+                    Collections.singletonMap("jms.prefetchPolicy.all", String.valueOf(prefetch));
+            final ConnectionFactory connectionFactory = getConnectionFactory(factoryName, "test", "clientid", options);
+            return connectionFactory.createConnection(GUEST_USERNAME, GUEST_PASSWORD);
+
+        }
+        else
+        {
+            return getConnectionWithOptions(Collections.singletonMap("max_prefetch", String.valueOf(prefetch)));
+        }
     }
 
     public Connection getConnectionWithOptions(Map<String, String> options)
@@ -358,6 +411,18 @@ public class QpidBrokerTestCase extends QpidTestCase
     public Queue getTestQueue()
     {
         return new AMQQueue(ExchangeDefaults.DIRECT_EXCHANGE_NAME, getTestQueueName());
+    }
+
+    public Queue getQueueFromName(Session session, String name) throws JMSException
+    {
+        if(isBroker10())
+        {
+            return session.createQueue(name);
+        }
+        else
+        {
+            return session.createQueue("ADDR: '" + name + "'");
+        }
     }
 
     public Queue createTestQueue(Session session) throws JMSException
