@@ -299,9 +299,9 @@ public class AMQChannel
         if (acks)
         {
 
-            target = ConsumerTarget_0_8.createAckTarget(this,
-                                                        AMQShortString.EMPTY_STRING, null,
-                                                        INFINITE_CREDIT_CREDIT_MANAGER, getDeliveryMethod);
+            target = ConsumerTarget_0_8.createGetAckTarget(this,
+                                                           AMQShortString.EMPTY_STRING, null,
+                                                           INFINITE_CREDIT_CREDIT_MANAGER, getDeliveryMethod);
         }
         else
         {
@@ -935,13 +935,16 @@ public class AMQChannel
 
     /**
      * Add a message to the channel-based list of unacknowledged messages
-     *
-     * @param entry       the record of the message on the queue that was delivered
+     *  @param entry       the record of the message on the queue that was delivered
      * @param deliveryTag the delivery tag used when delivering the message (see protocol spec for description of the
      *                    delivery tag)
      * @param consumer The consumer that is to acknowledge this message.
+     * @param usesCredit
      */
-    public void addUnacknowledgedMessage(MessageInstance entry, long deliveryTag, ConsumerImpl consumer)
+    public void addUnacknowledgedMessage(MessageInstance entry,
+                                         long deliveryTag,
+                                         ConsumerImpl consumer,
+                                         final boolean usesCredit)
     {
         if (_logger.isDebugEnabled())
         {
@@ -949,7 +952,7 @@ public class AMQChannel
                                + ") for " + consumer + " on " + entry.getOwningResource().getName());
         }
 
-        _unacknowledgedMessageMap.add(deliveryTag, entry, (ConsumerTarget_0_8) consumer.getTarget());
+        _unacknowledgedMessageMap.add(deliveryTag, entry, consumer, usesCredit);
 
     }
 
@@ -1015,15 +1018,17 @@ public class AMQChannel
      */
     public void requeue(long deliveryTag)
     {
-        MessageInstance unacked = _unacknowledgedMessageMap.remove(deliveryTag, true);
 
-        if (unacked != null)
+        final UnacknowledgedMessageMap.Entry entry = _unacknowledgedMessageMap.remove(deliveryTag, true);
+
+        if (entry != null)
         {
+            MessageInstance unacked = entry.getMessageInstance();
             // Mark message redelivered
             unacked.setRedelivered();
 
             // Ensure message is released for redelivery
-            unacked.release(unacked.getAcquiringConsumer());
+            unacked.release(entry.getConsumer());
         }
         else
         {
@@ -1765,19 +1770,21 @@ public class AMQChannel
     private void deadLetter(long deliveryTag)
     {
         final UnacknowledgedMessageMap unackedMap = getUnacknowledgedMessageMap();
-        final MessageInstance rejectedQueueEntry = unackedMap.remove(deliveryTag, true);
+        final UnacknowledgedMessageMap.Entry entry = unackedMap.remove(deliveryTag, true);
 
-        if (rejectedQueueEntry == null)
+        if (entry == null)
         {
             _logger.warn("No message found, unable to DLQ delivery tag: " + deliveryTag);
         }
         else
         {
-            final ServerMessage msg = rejectedQueueEntry.getMessage();
+
+            final MessageInstance messageInstance = entry.getMessageInstance();
+            final ServerMessage msg = messageInstance.getMessage();
             int requeues = 0;
-            if (rejectedQueueEntry.makeAcquisitionUnstealable(rejectedQueueEntry.getAcquiringConsumer()))
+            if (messageInstance.makeAcquisitionUnstealable(entry.getConsumer()))
             {
-                requeues = rejectedQueueEntry.routeToAlternate(new Action<MessageInstance>()
+                requeues = messageInstance.routeToAlternate(new Action<MessageInstance>()
                 {
                     @Override
                     public void performAction(final MessageInstance requeueEntry)
@@ -1792,7 +1799,7 @@ public class AMQChannel
             if(requeues == 0)
             {
 
-                final TransactionLogResource owningResource = rejectedQueueEntry.getOwningResource();
+                final TransactionLogResource owningResource = messageInstance.getOwningResource();
                 if(owningResource instanceof Queue)
                 {
                     final Queue<?> queue = (Queue<?>) owningResource;
@@ -2566,19 +2573,19 @@ public class AMQChannel
             _logger.debug("RECV[" + _channelId + "] BasicNack[" +" deliveryTag: " + deliveryTag + " multiple: " + multiple + " requeue: " + requeue + " ]");
         }
 
-        Map<Long, MessageInstance> nackedMessageMap = new LinkedHashMap<>();
+        Map<Long, UnacknowledgedMessageMap.Entry> nackedMessageMap = new LinkedHashMap<>();
         _unacknowledgedMessageMap.collect(deliveryTag, multiple, nackedMessageMap);
 
-        for(MessageInstance message : nackedMessageMap.values())
+        for(UnacknowledgedMessageMap.Entry unackedEntry : nackedMessageMap.values())
         {
 
-            if (message == null)
+            if (unackedEntry == null)
             {
                 _logger.warn("Ignoring nack request as message is null for tag:" + deliveryTag);
             }
             else
             {
-
+                MessageInstance message = unackedEntry.getMessageInstance();
                 if (message.getMessage() == null)
                 {
                     _logger.warn("Message has already been purged, unable to nack.");

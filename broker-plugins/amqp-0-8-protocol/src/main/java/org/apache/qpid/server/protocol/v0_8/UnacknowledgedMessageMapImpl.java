@@ -27,39 +27,49 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
 {
-    private static final class MessageTargetPair
+    private static final class EntryImpl implements Entry
     {
         private final MessageInstance _messageInstance;
-        private final ConsumerTarget _target;
+        private final ConsumerImpl _consumer;
+        private final boolean _usesCredit;
 
-        private MessageTargetPair(final MessageInstance messageInstance, final ConsumerTarget target)
+        private EntryImpl(final MessageInstance messageInstance, final ConsumerImpl consumer, final boolean usesCredit)
         {
             _messageInstance = messageInstance;
-            _target = target;
+            _consumer = consumer;
+            _usesCredit = usesCredit;
         }
 
+        @Override
         public MessageInstance getMessageInstance()
         {
             return _messageInstance;
         }
 
-        public ConsumerTarget getTarget()
+        @Override
+        public ConsumerImpl getConsumer()
         {
-            return _target;
+            return _consumer;
         }
 
+        @Override
         public long getSize()
         {
             return _messageInstance.getMessage().getSize();
         }
+
+        public boolean isUsesCredit()
+        {
+            return _usesCredit;
+        }
     }
-    private final Map<Long, MessageTargetPair> _map;
+    private final Map<Long, EntryImpl> _map;
     // we keep this separately as it is accessed by the management thread
     private volatile int _size;
 
@@ -71,7 +81,7 @@ class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
         _creditRestorer = creditRestorer;
     }
 
-    public void collect(long deliveryTag, boolean multiple, Map<Long, MessageInstance> msgs)
+    public void collect(long deliveryTag, boolean multiple, Map<Long, Entry> msgs)
     {
         if (multiple)
         {
@@ -79,7 +89,7 @@ class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
         }
         else
         {
-            final MessageInstance entry = get(deliveryTag);
+            final Entry entry = _map.get(deliveryTag);
             if(entry != null)
             {
                 msgs.put(deliveryTag, entry);
@@ -88,40 +98,40 @@ class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
 
     }
 
-    public void remove(Map<Long,MessageInstance> msgs)
+    private void remove(Collection<Long> msgs)
     {
-        for (Long deliveryTag : msgs.keySet())
+        for (Long deliveryTag : msgs)
         {
             remove(deliveryTag, true);
         }
     }
 
-    public MessageInstance remove(long deliveryTag, final boolean restoreCredit)
+    public Entry remove(long deliveryTag, final boolean restoreCredit)
     {
-        MessageTargetPair message = _map.remove(deliveryTag);
-        if(message != null)
+        EntryImpl entry = _map.remove(deliveryTag);
+        if(entry != null)
         {
             _size--;
-            if(restoreCredit)
+            if(restoreCredit && entry.isUsesCredit())
             {
-                _creditRestorer.restoreCredit(message.getTarget(), 1, message.getSize());
+                _creditRestorer.restoreCredit(entry.getConsumer().getTarget(), 1, entry.getSize());
             }
         }
-        return message.getMessageInstance();
+        return entry;
     }
 
     public void visit(Visitor visitor)
     {
-        for (Map.Entry<Long, MessageTargetPair> entry : _map.entrySet())
+        for (Map.Entry<Long, EntryImpl> entry : _map.entrySet())
         {
             visitor.callback(entry.getKey(), entry.getValue().getMessageInstance());
         }
         visitor.visitComplete();
     }
 
-    public void add(long deliveryTag, MessageInstance message, final ConsumerTarget target)
+    public void add(long deliveryTag, MessageInstance message, final ConsumerImpl consumer, final boolean usesCredit)
     {
-        if(_map.put(deliveryTag, new MessageTargetPair(message,target)) == null)
+        if(_map.put(deliveryTag, new EntryImpl(message, consumer, usesCredit)) == null)
         {
             _size++;
         }
@@ -138,7 +148,7 @@ class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
 
     public MessageInstance get(long key)
     {
-        MessageTargetPair messageTargetPair = _map.get(key);
+        Entry messageTargetPair = _map.get(key);
         return messageTargetPair == null ? null : messageTargetPair.getMessageInstance();
     }
 
@@ -146,13 +156,14 @@ class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
     {
         if(multiple)
         {
-            Map<Long, MessageInstance> ackedMessageMap = new LinkedHashMap<>();
+            Map<Long, Entry> ackedMessageMap = new LinkedHashMap<>();
             collect(deliveryTag, multiple, ackedMessageMap);
-            remove(ackedMessageMap);
+            remove(ackedMessageMap.keySet());
             List<MessageInstance> acknowledged = new ArrayList<>();
-            for (MessageInstance instance : ackedMessageMap.values())
+            for (Entry entry : ackedMessageMap.values())
             {
-                if (instance.makeAcquisitionUnstealable(instance.getAcquiringConsumer()))
+                MessageInstance instance = entry.getMessageInstance();
+                if (instance.makeAcquisitionUnstealable(entry.getConsumer()))
                 {
                     acknowledged.add(instance);
                 }
@@ -162,8 +173,8 @@ class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
         else
         {
             MessageInstance instance;
-            instance = remove(deliveryTag, true);
-            if(instance != null && instance.makeAcquisitionUnstealable(instance.getAcquiringConsumer()))
+            final Entry entry = remove(deliveryTag, true);
+            if(entry != null && (instance = entry.getMessageInstance()).makeAcquisitionUnstealable(entry.getConsumer()))
             {
                 return Collections.singleton(instance);
             }
@@ -175,11 +186,11 @@ class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
         }
     }
 
-    private void collect(long key, Map<Long, MessageInstance> msgs)
+    private void collect(long key, Map<Long, Entry> msgs)
     {
-        for (Map.Entry<Long, MessageTargetPair> entry : _map.entrySet())
+        for (Map.Entry<Long, EntryImpl> entry : _map.entrySet())
         {
-            msgs.put(entry.getKey(), entry.getValue().getMessageInstance());
+            msgs.put(entry.getKey(), entry.getValue());
             if (entry.getKey() == key)
             {
                 break;

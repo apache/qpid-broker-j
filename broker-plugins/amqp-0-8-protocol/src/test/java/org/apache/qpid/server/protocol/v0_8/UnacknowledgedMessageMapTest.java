@@ -73,7 +73,7 @@ public class UnacknowledgedMessageMapTest extends QpidTestCase
         for(int i = 0; i < size; i++)
         {
             msgs[i] = createMessageInstance(i);
-            map.add((long)i, msgs[i], null);
+            map.add((long)i, msgs[i], _consumer, true);
         }
         return msgs;
     }

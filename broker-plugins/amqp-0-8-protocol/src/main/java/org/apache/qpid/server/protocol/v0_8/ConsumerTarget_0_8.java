@@ -209,27 +209,31 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
                                consumerTag,
                                filters, creditManager,
                                channel.getClientDeliveryMethod(),
-                               multiQueue);
+                               multiQueue, true);
     }
 
 
-    public static ConsumerTarget_0_8 createAckTarget(AMQChannel channel,
-                                                     AMQShortString consumerTag, FieldTable filters,
-                                                     FlowCreditManager_0_8 creditManager,
-                                                     ClientDeliveryMethod deliveryMethod)
+    public static ConsumerTarget_0_8 createGetAckTarget(AMQChannel channel,
+                                                        AMQShortString consumerTag, FieldTable filters,
+                                                        FlowCreditManager_0_8 creditManager,
+                                                        ClientDeliveryMethod deliveryMethod)
     {
-        return new AckConsumer(channel, consumerTag, filters, creditManager, deliveryMethod, false);
+        return new AckConsumer(channel, consumerTag, filters, creditManager, deliveryMethod, false, false);
     }
 
     static final class AckConsumer extends ConsumerTarget_0_8
     {
+        private final boolean _usesCredit;
+
         public AckConsumer(AMQChannel channel,
                            AMQShortString consumerTag, FieldTable filters,
                            FlowCreditManager_0_8 creditManager,
                            ClientDeliveryMethod deliveryMethod,
-                           boolean multiQueue)
+                           boolean multiQueue,
+                           final boolean usesCredit)
         {
             super(channel, consumerTag, filters, creditManager, deliveryMethod, multiQueue);
+            _usesCredit = usesCredit;
         }
 
         /**
@@ -252,7 +256,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
                 long deliveryTag = getChannel().getNextDeliveryTag();
 
                 addUnacknowledgedMessage(entry);
-                getChannel().addUnacknowledgedMessage(entry, deliveryTag, consumer);
+                getChannel().addUnacknowledgedMessage(entry, deliveryTag, consumer, _usesCredit);
                 long size = sendToClient(consumer, entry.getMessage(), entry.getInstanceProperties(), deliveryTag);
                 entry.incrementDeliveryCount();
             }

@@ -33,7 +33,6 @@ import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.QpidException;
 import org.apache.qpid.server.consumer.ConsumerImpl;
-import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
@@ -77,7 +76,7 @@ public class ExtractResendAndRequeueTest extends QpidTestCase
         when(_queue.isDeleted()).thenReturn(_queueDeleted);
         _consumer = mock(ConsumerImpl.class);
         when(_consumer.getConsumerNumber()).thenReturn(ConsumerImpl.CONSUMER_NUMBER_GENERATOR.getAndIncrement());
-        ConsumerTarget target = mock(ConsumerTarget.class);
+        ConsumerImpl consumer = mock(ConsumerImpl.class);
 
         long id = 0;
 
@@ -100,7 +99,7 @@ public class ExtractResendAndRequeueTest extends QpidTestCase
                 }
             }).when(entry).delete();
 
-            _unacknowledgedMessageMap.add(id, entry, target);
+            _unacknowledgedMessageMap.add(id, entry, consumer, true);
             _referenceList.add(entry);
             //Increment ID;
             id++;
