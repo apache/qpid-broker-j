@@ -21,10 +21,6 @@
 
 package org.apache.qpid.test.unit.ack;
 
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Message;
@@ -32,6 +28,9 @@ import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
+
+import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
  * Test the various JMS Acknowledge Modes the single testAcking method does all
@@ -63,6 +62,7 @@ public class AcknowledgeTest extends QpidBrokerTestCase
     protected void init(boolean transacted, int mode) throws Exception
     {
         _consumerSession = _connection.createSession(transacted, mode);
+        _queue = createTestQueue(_consumerSession);
         _consumer = _consumerSession.createConsumer(_queue);
         _producer = _consumerSession.createProducer(_queue);
 
@@ -70,9 +70,10 @@ public class AcknowledgeTest extends QpidBrokerTestCase
         sendMessage(_consumerSession, _queue, 1);
 
         syncIfNotTransacted(transacted);
-
+        _connection.start();
         assertEquals("Wrong number of messages on queue", 1,
-                     ((AMQSession<?,?>) _consumerSession).getQueueDepth((AMQDestination) _queue));
+                     getQueueDepth(_connection, _queue));
+        _connection.stop();
     }
 
     /**
@@ -97,7 +98,7 @@ public class AcknowledgeTest extends QpidBrokerTestCase
 
         _connection.start();
 
-        Message msg = _consumer.receive(1500);
+        Message msg = _consumer.receive(getReceiveTimeout());
 
         int count = 0;
         while (count < NUM_MESSAGES)
@@ -115,7 +116,7 @@ public class AcknowledgeTest extends QpidBrokerTestCase
 
             doAcknowlegement(msg);
 
-            msg = _consumer.receive(1500);
+            msg = _consumer.receive(getReceiveTimeout());
         }
 
         if (_consumerSession.getTransacted())
@@ -125,7 +126,7 @@ public class AcknowledgeTest extends QpidBrokerTestCase
         }
 
         assertEquals("Wrong number of messages on queue", 0,
-                     ((AMQSession<?,?>) _consumerSession).getQueueDepth((AMQDestination) _queue));
+                     getQueueDepth(_connection, _queue));
     }
 
     /**
@@ -182,7 +183,7 @@ public class AcknowledgeTest extends QpidBrokerTestCase
     {
         if(!transacted)
         {
-            ((AMQSession<?,?>)_consumerSession).sync();
+            _consumerSession.createTemporaryQueue().delete();
         }
     }
 }

@@ -20,62 +20,53 @@
  */
 package org.apache.qpid.test.unit.client.connection;
 
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
+import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
+import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+
+import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class ConnectionStartTest extends QpidBrokerTestCase
 {
 
-    private String _broker = "vm://:1";
-
-    private AMQConnection _connection;
+    private Connection _connection;
     private Session _consumerSess;
     private MessageConsumer _consumer;
 
     protected void setUp() throws Exception
     {
         super.setUp();
-        try
-        {
+
+        Connection pubCon = getConnection();
+
+        Session pubSess = pubCon.createSession(false, AMQSession.AUTO_ACKNOWLEDGE);
+        Queue queue = createTestQueue(pubSess);
 
 
-            AMQConnection pubCon = (AMQConnection) getConnection("guest", "guest");
+        MessageProducer pub = pubSess.createProducer(queue);
 
-            AMQQueue queue = new AMQQueue(pubCon,"ConnectionStartTest");
+        _connection = getConnection();
 
-            Session pubSess = pubCon.createSession(false, AMQSession.AUTO_ACKNOWLEDGE);
+        _consumerSess = _connection.createSession(false, AMQSession.AUTO_ACKNOWLEDGE);
 
-            MessageProducer pub = pubSess.createProducer(queue);
+        _consumer = _consumerSess.createConsumer(queue);
 
-            _connection = (AMQConnection) getConnection("guest", "guest");
+        //publish after queue is created to ensure it can be routed as expected
+        pub.send(pubSess.createTextMessage("Initial Message"));
 
-            _consumerSess = _connection.createSession(false, AMQSession.AUTO_ACKNOWLEDGE);
+        pubCon.close();
 
-            _consumer = _consumerSess.createConsumer(queue);
 
-            //publish after queue is created to ensure it can be routed as expected
-            pub.send(pubSess.createTextMessage("Initial Message"));
-
-            pubCon.close();
-
-        }
-        catch (Exception e)
-        {
-            _logger.error("Connection to " + _broker + " should succeed.", e);
-            fail("Connection to " + _broker + " should succeed. Reason: " + e);
-        }
     }
 
     protected void tearDown() throws Exception
@@ -88,13 +79,9 @@ public class ConnectionStartTest extends QpidBrokerTestCase
     {
         try
         {
-            assertTrue("Connection should not be started", !_connection.started());
-            //Note that this next line will start the dispatcher in the session
-            // should really not be called before _connection start
-            //assertTrue("There should not be messages waiting for the consumer", _consumer.receiveNoWait() == null);
+            assertNull("No messages should be delivered when the connection is stopped", _consumer.receive(500));
             _connection.start();
-            assertTrue("There should be messages waiting for the consumer", _consumer.receive(10*1000) != null);
-            assertTrue("Connection should be started", _connection.started());
+            assertTrue("There should be messages waiting for the consumer", _consumer.receive(getReceiveTimeout()) != null);
 
         }
         catch (JMSException e)
@@ -104,20 +91,18 @@ public class ConnectionStartTest extends QpidBrokerTestCase
 
     }
 
-    public void testMessageListenerConnection()
+    public void testMessageListenerConnection() throws Exception
     {
         final CountDownLatch _gotMessage = new CountDownLatch(1);
 
         try
         {
-            assertTrue("Connection should not be started", !_connection.started());
             _consumer.setMessageListener(new MessageListener()
             {
                 public void onMessage(Message message)
                 {
                     try
                     {
-                        assertTrue("Connection should be started", _connection.started());
                         assertEquals("Mesage Received", "Initial Message", ((TextMessage) message).getText());
                         _gotMessage.countDown();
                     }
@@ -127,10 +112,9 @@ public class ConnectionStartTest extends QpidBrokerTestCase
                     }
                 }
             });
-
-            assertTrue("Connection should not be started", !_connection.started());
+            Thread.sleep(500);
+            assertEquals("No messages should be delivered before connection start", 1L,_gotMessage.getCount());
             _connection.start();
-            assertTrue("Connection should be started", _connection.started());
 
             try
             {

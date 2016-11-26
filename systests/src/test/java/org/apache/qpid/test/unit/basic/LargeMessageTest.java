@@ -21,14 +21,7 @@
 package org.apache.qpid.test.unit.basic;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
+import javax.jms.Connection;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
@@ -36,46 +29,33 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
+
 public class LargeMessageTest extends QpidBrokerTestCase
 {
     private static final Logger _logger = LoggerFactory.getLogger(LargeMessageTest.class);
 
     private Destination _destination;
-    private AMQSession _session;
-    private AMQConnection _connection;
+    private Session _session;
+    private Connection _connection;
     
     protected void setUp() throws Exception
     {
         super.setUp();
-        try
-        {
-            _connection = (AMQConnection) getConnection("guest", "guest");
-            init( _connection );
-        }
-        catch (Exception e)
-        {
-            fail("Unable to initialilse connection: " + e);
-        }
+        _connection = getConnection();
+        _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        _destination = createTestQueue(_session);
+
+        _connection.start();
     }
 
     protected void tearDown() throws Exception
     {
         _connection.close();
         super.tearDown();
-    }
-
-    private void init(AMQConnection connection) throws Exception
-    {
-        Destination destination = new AMQQueue(connection, "LargeMessageTest", true);
-        init(connection, destination);
-    }
-
-    private void init(AMQConnection connection, Destination destination) throws Exception
-    {
-         _destination = destination;
-        _session = (AMQSession) connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
-        connection.start();
     }
 
     // Test boundary of 1 packet to 2 packets
@@ -183,8 +163,4 @@ public class LargeMessageTest extends QpidBrokerTestCase
         return builder.toString();
     }
 
-    public static junit.framework.Test suite()
-    {
-        return new junit.framework.TestSuite(LargeMessageTest.class);
-    }
 }

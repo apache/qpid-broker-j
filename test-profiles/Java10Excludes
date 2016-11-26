@@ -85,5 +85,23 @@ org.apache.qpid.server.logging.ChannelLoggingTest#testChannelStartConsumerFlowSt
 org.apache.qpid.server.logging.ChannelLoggingTest#testChannelClosedOnExclusiveQueueDeclaredOnDifferentSession
 
 
+// These tests test acknowledge modes that are 0-8/9/10 client specific
+org.apache.qpid.test.unit.ack.AcknowledgeTest#testNoAck
+org.apache.qpid.test.unit.ack.AcknowledgeTest#testPreAck
+org.apache.qpid.test.unit.ack.AcknowledgeOnMessageTest#testNoAck
+org.apache.qpid.test.unit.ack.AcknowledgeOnMessageTest#testPreAck
+
+
+// Low level test on ensuring frames are not bigger than negotiated max - there should probably be an equivalent for 1.0
+org.apache.qpid.transport.MaxFrameSizeTest#*
+
+// This test is concerned with the 0-x client establishing a connection to a supported version
+org.apache.qpid.transport.ProtocolNegotiationTest#testProtocolNegotiationFromUnsupportedVersion
+
+
+
+
+
+
 
 

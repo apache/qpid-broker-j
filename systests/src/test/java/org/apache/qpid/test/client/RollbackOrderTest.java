@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.test.client;
 
-import junit.framework.AssertionFailedError;
-
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -31,9 +31,10 @@ import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.Queue;
 import javax.jms.Session;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+
+import junit.framework.AssertionFailedError;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
  * RollbackOrderTest, QPID-1864, QPID-1871
@@ -98,7 +99,7 @@ public class RollbackOrderTest extends QpidBrokerTestCase
         _connection = getConnection();
 
         _session = _connection.createSession(true, Session.SESSION_TRANSACTED);
-        _queue = _session.createQueue(getTestQueueName());
+        _queue = createTestQueue(_session);
         _consumer = _session.createConsumer(_queue);
 
         //Send more messages so it is more likely that the dispatcher is

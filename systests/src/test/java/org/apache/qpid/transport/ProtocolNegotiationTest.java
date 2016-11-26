@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,7 +58,20 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
     private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolNegotiationTest.class);
     private static final int SO_TIMEOUT = 5000;
     public static final int AMQP_HEADER_LEN = 8;
-    private ProtocolVersion _expectedProtocolInit;
+    private Protocol _expectedProtocolInit;
+
+    private static final Map<Protocol, List<List<Byte>>> HEADERS = new HashMap<>();
+
+    static
+    {
+        HEADERS.put(Protocol.AMQP_0_8,   Collections.singletonList(Arrays.asList((byte)1, (byte)1, (byte)8, (byte)0)));
+        HEADERS.put(Protocol.AMQP_0_9,   Collections.singletonList(Arrays.asList((byte)1, (byte)1, (byte)0, (byte)9)));
+        HEADERS.put(Protocol.AMQP_0_9_1, Collections.singletonList(Arrays.asList((byte)0, (byte)0, (byte)9, (byte)1)));
+        HEADERS.put(Protocol.AMQP_0_10,  Collections.singletonList(Arrays.asList((byte)1, (byte)1, (byte)0, (byte)10)));
+        HEADERS.put(Protocol.AMQP_1_0,   Arrays.asList(Arrays.asList((byte)3, (byte)1, (byte)0, (byte)0),
+                                                       Arrays.asList((byte)0, (byte)1, (byte)0, (byte)0)));
+
+    }
 
     public void setUp() throws Exception
     {
@@ -78,7 +92,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
                                   Collections.singletonMap(AmqpPort.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY, null));
 
         super.setUp();
-        _expectedProtocolInit = convertProtocolToProtocolVersion(getBrokerProtocol());
+        _expectedProtocolInit = getBrokerProtocol();
     }
 
     public void testWrongProtocolHeaderSent_BrokerRespondsWithSupportedProtocol() throws Exception
@@ -104,10 +118,23 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
 
             ProtocolInitiation protocolInitiation = new ProtocolInitiation(QpidByteBuffer.wrap(receivedHeader));
 
-            assertEquals("Unexpected protocol initialisation", _expectedProtocolInit, protocolInitiation.checkVersion());
+            assertTrue("Unexpected protocol initialisation", matchedExpectedVersion(receivedHeader));
         }
     }
 
+    private boolean matchedExpectedVersion(byte[] header)
+    {
+        if(header[0] != 'A' || header[1] != 'M' || header[2] != 'Q' || header[3] != 'P')
+        {
+            return false;
+        }
+        List<Byte> version = new ArrayList<>();
+        for(int i = 4; i<8; i++)
+        {
+            version.add(header[i]);
+        }
+        return HEADERS.get(_expectedProtocolInit).contains(version);
+    }
 
     public void testNoProtocolHeaderSent_BrokerClosesConnection() throws Exception
     {
@@ -146,8 +173,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
         {
             socket.setSoTimeout(5000);
 
-            final ProtocolVersion protocolVersion = convertProtocolToProtocolVersion(getBrokerProtocol());
-            ProtocolInitiation pi = new ProtocolInitiation(protocolVersion);
+            byte[] header = getHeaderBytesForBrokerVersion();
 
             final InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", getDefaultAmqpPort());
             _logger.debug("Making connection to {}", inetSocketAddress);
@@ -161,7 +187,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
             final InputStream inputStream = socket.getInputStream();
 
             // write header
-            pi.writePayload(sender);
+            sender.send(QpidByteBuffer.wrap(header));
             sender.flush();
 
             // reader header
@@ -188,14 +214,28 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
         }
     }
 
+    private byte[] getHeaderBytesForBrokerVersion()
+    {
+        byte[] header = new byte[8];
+        header[0] = 'A';
+        header[1] = 'M';
+        header[2] = 'Q';
+        header[3] = 'P';
+        List<Byte> version = HEADERS.get(getBrokerProtocol()).iterator().next();
+        int i = 4;
+        for(byte b : version)
+        {
+            header[i++] = b;
+        }
+        return header;
+    }
+
     public void testIllegalFrameSent_BrokerClosesConnection() throws Exception
     {
         try(Socket socket = new Socket())
         {
             socket.setSoTimeout(5000);
 
-            final ProtocolVersion protocolVersion = convertProtocolToProtocolVersion(getBrokerProtocol());
-            ProtocolInitiation pi = new ProtocolInitiation(protocolVersion);
 
             final InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", getDefaultAmqpPort());
             _logger.debug("Making connection to {}", inetSocketAddress);
@@ -208,7 +248,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
 
             // write header
             TestSender sender = new TestSender(socket.getOutputStream());
-            pi.writePayload(sender);
+            sender.send(QpidByteBuffer.wrap(getHeaderBytesForBrokerVersion()));
             sender.flush();
 
             // reader header
@@ -242,7 +282,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
                 setTestSystemProperty(ClientProperties.AMQP_VERSION, version);
                 AMQConnection connection = (AMQConnection)getConnection();
                 LOGGER.debug("Negotiated version {}", connection.getProtocolVersion());
-                assertEquals("Unexpected version negotiated: " + connection.getProtocolVersion(), _expectedProtocolInit, connection.getProtocolVersion());
+                assertEquals("Unexpected version negotiated: " + connection.getProtocolVersion(), convertProtocolToProtocolVersion(_expectedProtocolInit), connection.getProtocolVersion());
                 connection.close();
             }
         }
@@ -271,6 +311,9 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
         final ProtocolVersion protocolVersion;
         switch(p)
         {
+            case AMQP_1_0:
+                protocolVersion = null;
+                break;
             case AMQP_0_10:
                 protocolVersion = ProtocolVersion.v0_10;
                 break;

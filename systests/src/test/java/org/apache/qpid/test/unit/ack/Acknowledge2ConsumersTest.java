@@ -21,16 +21,14 @@
 
 package org.apache.qpid.test.unit.ack;
 
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class Acknowledge2ConsumersTest extends QpidBrokerTestCase
 {
@@ -46,7 +44,6 @@ public class Acknowledge2ConsumersTest extends QpidBrokerTestCase
     {
         super.setUp();
 
-        _queue = (Queue) getInitialContext().lookup("queue");
 
         //Create Producer put some messages on the queue
         _con = getConnection();
@@ -56,8 +53,9 @@ public class Acknowledge2ConsumersTest extends QpidBrokerTestCase
     {
         _producerSession = _con.createSession(true, Session.SESSION_TRANSACTED);
         _consumerSession = _con.createSession(transacted, mode);
-        _consumerA = _consumerSession.createConsumer(_queue);
+        _queue = createTestQueue(_producerSession);
         _con.start();
+        _consumerA = _consumerSession.createConsumer(_queue);
     }
 
     /**
@@ -105,7 +103,7 @@ public class Acknowledge2ConsumersTest extends QpidBrokerTestCase
         // and close the session to release any prefetched messages.
         _consumerSession.close();
         assertEquals("Wrong number of messages on queue", NUM_MESSAGES - count,
-                     ((AMQSession) _producerSession).getQueueDepth((AMQDestination) _queue));
+                     getQueueDepth(_con, _queue));
 
         // Clean up messages that may be left on the queue
         _consumerSession = _con.createSession(transacted, mode);

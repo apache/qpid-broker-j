@@ -62,7 +62,7 @@ public class JMSReplyToTest extends QpidBrokerTestCase
     public void testRequestResponseUsingJmsReplyTo() throws Exception
     {
         final String responseQueueName = getTestQueueName() + ".response";
-        Queue replyToQueue = _session.createQueue(responseQueueName);
+        Queue replyToQueue = createTestQueue(_session, responseQueueName);
         sendRequestAndValidateResponse(replyToQueue);
     }
 
@@ -113,7 +113,7 @@ public class JMSReplyToTest extends QpidBrokerTestCase
         final Connection responderConnection =  getConnection();
         responderConnection.start();
         final Session responderSession = responderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        final Queue requestQueue = responderSession.createQueue(requestQueueName);
+        final Queue requestQueue = createTestQueue(responderSession, requestQueueName);
 
         final MessageConsumer requestConsumer = responderSession.createConsumer(requestQueue);
         requestConsumer.setMessageListener(new AsyncResponder(responderSession));

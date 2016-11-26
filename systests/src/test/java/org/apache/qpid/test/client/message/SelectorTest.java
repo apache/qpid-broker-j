@@ -20,17 +20,10 @@
  */
 package org.apache.qpid.test.client.message;
 
-import org.junit.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.BasicMessageProducer;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
+import javax.jms.Connection;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
 import javax.jms.InvalidSelectorException;
@@ -39,16 +32,22 @@ import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
+import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
-import java.util.concurrent.CountDownLatch;
+
+import org.junit.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class SelectorTest extends QpidBrokerTestCase implements MessageListener
 {
     private static final Logger _logger = LoggerFactory.getLogger(SelectorTest.class);
 
-    private AMQConnection _connection;
-    private AMQDestination _destination;
+    private Connection _connection;
+    private Queue _destination;
     private int count;
     private static final String INVALID_SELECTOR = "Cost LIKE 5";
     CountDownLatch _responseLatch = new CountDownLatch(1);
@@ -58,19 +57,12 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
     protected void setUp() throws Exception
     {
         super.setUp();
-        init((AMQConnection) getConnection());
-    }
+        _connection = getConnection();
+        Session session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-    private void init(AMQConnection connection) throws JMSException
-    {
-        init(connection, new AMQQueue(connection, getTestQueueName(), true));
-    }
-
-    private void init(AMQConnection connection, AMQDestination destination) throws JMSException
-    {
-        _connection = connection;
-        _destination = destination;
-        connection.start();
+        _destination = createTestQueue(session);
+        session.close();
+        _connection.start();
     }
 
     public void onMessage(Message message)
@@ -82,58 +74,41 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
 
     public void testUsingOnMessage() throws Exception
     {
-        String selector = "Cost = 2 AND \"property-with-hyphen\" = 'wibble'";
-        Session session = _connection.createSession(false, AMQSession.NO_ACKNOWLEDGE);
+        String selector = "Cost = 2 AND foo = 'wibble'";
+        Session session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         session.createConsumer(_destination, selector).setMessageListener(this);
 
-        try
+        Message msg = session.createTextMessage("Message");
+        msg.setJMSPriority(1);
+        msg.setIntProperty("Cost", 2);
+        msg.setStringProperty("foo", "wibble");
+        msg.setJMSType("Special");
+
+        _logger.info("Sending Message:" + msg);
+
+        final MessageProducer producer = session.createProducer(_destination);
+        producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
+        producer.send(msg);
+        _logger.info("Message sent, waiting for response...");
+
+        _responseLatch.await(getReceiveTimeout(), TimeUnit.MILLISECONDS);
+
+        if (count > 0)
         {
-            Message msg = session.createTextMessage("Message");
-            msg.setJMSPriority(1);
-            msg.setIntProperty("Cost", 2);
-            msg.setStringProperty("property-with-hyphen", "wibble");
-            msg.setJMSType("Special");
-
-            _logger.info("Sending Message:" + msg);
-
-            ((BasicMessageProducer) session.createProducer(_destination)).send(msg, DeliveryMode.NON_PERSISTENT);
-            _logger.info("Message sent, waiting for response...");
-
-            _responseLatch.await();
-
-            if (count > 0)
-            {
-                _logger.info("Got message");
-            }
-
-            if (count == 0)
-            {
-                fail("Did not get message!");
-                // throw new RuntimeException("Did not get message!");
-            }
+            _logger.info("Got message");
         }
-        catch (JMSException e)
+
+        if (count == 0)
         {
-            _logger.debug("JMS:" + e.getClass().getSimpleName() + ":" + e.getMessage());
-            if (!(e instanceof InvalidSelectorException))
-            {
-                fail("Wrong exception:" + e.getMessage());
-            }
-            else
-            {
-                _logger.debug("SUCCESS!!");
-            }
-        }
-        catch (InterruptedException e)
-        {
-            _logger.debug("IE :" + e.getClass().getSimpleName() + ":" + e.getMessage());
+            fail("Did not get message!");
+            // throw new RuntimeException("Did not get message!");
         }
 
     }
 
     public void testUnparsableSelectors() throws Exception
     {
-        AMQSession session = (AMQSession) _connection.createSession(false, AMQSession.NO_ACKNOWLEDGE);
+        Session session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         boolean caught = false;
 
         //Try Creating a Browser
@@ -173,7 +148,7 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
         //Try Creating a Receiever
         try
         {
-            session.createReceiver(session.createQueue("Ping"), INVALID_SELECTOR);
+            session.createConsumer(session.createQueue("Ping"), INVALID_SELECTOR);
         }
         catch (JMSException e)
         {
@@ -189,7 +164,7 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
 
         try
         {
-            session.createReceiver(session.createQueue("Ping"), BAD_MATHS_SELECTOR);
+            session.createConsumer(session.createQueue("Ping"), BAD_MATHS_SELECTOR);
         }
         catch (JMSException e)
         {
@@ -219,9 +194,8 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
         sentMsg.setStringProperty("testproperty", "hello"); // "hello" % 5 makes no sense
         producer.send(sentMsg);
         recvd = consumer.receive(RECEIVE_TIMEOUT);
-        assertNull("Message ausing runtime selector error should be received", recvd);
+        assertNull("Message causing runtime selector error should be received", recvd);
 
-        assertFalse("Connection should not be closed", _connection.isClosed());
     }
 
     public void testSelectorWithJMSMessageID() throws Exception
@@ -269,10 +243,10 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
 
     public void testSelectorWithJMSDeliveryMode() throws Exception
     {
-        Session session = _connection.createSession(false, Session.SESSION_TRANSACTED);
+        Session session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-        Destination dest1 = session.createTopic("test1");
-        Destination dest2 = session.createTopic("test2");
+        Destination dest1 = createTopic(_connection, "test1");
+        Destination dest2 = createTopic(_connection, "test2");
 
         MessageProducer prod1 = session.createProducer(dest1);
         MessageProducer prod2 = session.createProducer(dest2);

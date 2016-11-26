@@ -20,17 +20,15 @@
  */
 package org.apache.qpid.test.unit.ack;
 
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.failover.FailoverException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageListener;
-import javax.jms.Session;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.qpid.client.failover.FailoverException;
 
 /**
  * This test extends the synchronous AcknowledgeTest to use a MessageListener
@@ -131,7 +129,7 @@ public class AcknowledgeOnMessageTest extends AcknowledgeTest implements Message
             else
             {
                 _logger.info("AOMT: Check QueueDepth:" + _queue);
-                long onQueue=((AMQSession) getConnection().createSession(false, Session.AUTO_ACKNOWLEDGE)).getQueueDepth((AMQDestination) _queue);
+                long onQueue=getQueueDepth(_connection, _queue);
                 fail("All messages not received missing:" + _receivedAll.getCount() + "/" + NUM_MESSAGES+" On Queue:"+onQueue);
 
             }
@@ -164,7 +162,7 @@ public class AcknowledgeOnMessageTest extends AcknowledgeTest implements Message
 
         _logger.info("AOMT: check number of message at end of test.");
         assertEquals("Wrong number of messages on queue", 0,
-                     ((AMQSession) getConnection().createSession(false, Session.AUTO_ACKNOWLEDGE)).getQueueDepth((AMQDestination) _queue));
+                     getQueueDepth(_connection, _queue));
     }
 
     /**
