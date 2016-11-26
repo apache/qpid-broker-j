@@ -482,6 +482,15 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         assertEquals("Incorrect response code", 200, responseMessage.getIntProperty("statusCode"));
         checkResponseIsMapType(responseMessage);
         assertEquals("The name of the virtual host is not as expected", "test", getValueFromMapResponse(responseMessage, "name"));
+
+        message.setBoolean("actuals", false);
+        _producer.send(message);
+        responseMessage = _consumer.receive(getReceiveTimeout());
+        assertNotNull("A response message was not sent", responseMessage);
+        assertTrue("The response message does not have a status code",
+                   Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
+        checkResponseIsMapType(responseMessage);
+        assertNotNull("Derived attribute (productVersion) should be available", getValueFromMapResponse(responseMessage, "productVersion"));
     }
 
     // create a virtual host from $management

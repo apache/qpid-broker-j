@@ -91,6 +91,7 @@ class ManagementNode implements MessageSource, MessageDestination
     public static final String IDENTITY_ATTRIBUTE = "identity";
     public static final String INDEX_ATTRIBUTE = "index";
     public static final String KEY_ATTRIBUTE = "key";
+    public static final String ACTUALS_ATTRIBUTE = "actuals";
 
     public static final String TYPE_ATTRIBUTE = "type";
     public static final String OPERATION_HEADER = "operation";
@@ -614,8 +615,20 @@ class ManagementNode implements MessageSource, MessageDestination
         InternalMessageHeader requestHeader = message.getMessageHeader();
 
         final Map<String, Object> headers = requestHeader.getHeaderMap();
-
         ConfiguredObject<?> object = findObject(clazz, headers);
+
+        boolean actuals = true;
+        if(message.getMessageBody() instanceof Map)
+        {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> attributes = (Map<String, Object>) message.getMessageBody();
+            if (attributes.containsKey(ACTUALS_ATTRIBUTE))
+            {
+                Object actualsObject = attributes.get(ACTUALS_ATTRIBUTE);
+                actuals = actualsObject instanceof Boolean ? ((Boolean)actualsObject) : Boolean.parseBoolean(String.valueOf(actualsObject));
+            }
+        }
+
         if(object != null)
         {
             final MutableMessageHeader responseHeader = new MutableMessageHeader();
@@ -625,10 +638,10 @@ class ManagementNode implements MessageSource, MessageDestination
             responseHeader.setMessageId(UUID.randomUUID().toString());
             responseHeader.setHeader(STATUS_CODE_HEADER, STATUS_CODE_OK);
 
-            // TODO - remove insecure on insecure channel, provide mechanism for requesting effective rather than actual
+            // TODO - remove insecure on insecure channel
 
             return InternalMessage.createMapMessage(_addressSpace.getMessageStore(), responseHeader,
-                                                    _managementOutputConverter.convertToOutput(object, true));
+                                                    _managementOutputConverter.convertToOutput(object, actuals));
         }
         else
         {
