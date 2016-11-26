@@ -42,20 +42,16 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
     public static final MessageMetaData_1_0 DELETED_MESSAGE_METADATA = new MessageMetaData_1_0(Collections.<Section>emptyList(), new SectionEncoderImpl(DESCRIBED_TYPE_REGISTRY));
 
     private long _arrivalTime;
-    private final long _size;
-
 
     public Message_1_0(final StoredMessage<MessageMetaData_1_0> storedMessage)
     {
-        super(storedMessage, null);
-        _size = storedMessage.getMetaData().getContentSize();
+        super(storedMessage, null, storedMessage.getMetaData().getContentSize());
     }
 
     public Message_1_0(final StoredMessage<MessageMetaData_1_0> storedMessage,
                        final Object connectionReference)
     {
-        super(storedMessage, connectionReference);
-        _size = storedMessage.getMetaData().getContentSize();
+        super(storedMessage, connectionReference, storedMessage.getMetaData().getContentSize());
         _arrivalTime = System.currentTimeMillis();
     }
 
@@ -81,11 +77,6 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
     public MessageMetaData_1_0.MessageHeader_1_0 getMessageHeader()
     {
         return getMessageMetaData().getMessageHeader();
-    }
-
-    public long getSize()
-    {
-        return _size;
     }
 
     public long getExpiration()

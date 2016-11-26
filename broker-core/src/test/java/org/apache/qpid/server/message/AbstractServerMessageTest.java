@@ -38,7 +38,7 @@ public class AbstractServerMessageTest extends QpidTestCase
         public TestMessage(final StoredMessage<T> handle,
                            final Object connectionReference)
         {
-            super(handle, connectionReference);
+            super(handle, connectionReference, 0);
         }
 
         @Override
@@ -51,12 +51,6 @@ public class AbstractServerMessageTest extends QpidTestCase
         public AMQMessageHeader getMessageHeader()
         {
             return null;
-        }
-
-        @Override
-        public long getSize()
-        {
-            return 0;
         }
 
         @Override

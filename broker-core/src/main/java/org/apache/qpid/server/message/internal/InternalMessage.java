@@ -45,7 +45,6 @@ import org.apache.qpid.util.ByteBufferUtils;
 public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, InternalMessageMetaData>
 {
     private final Object _messageBody;
-    private final int _contentSize;
     private InternalMessageHeader _header;
     private String _initialRoutingAddress;
 
@@ -54,18 +53,16 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
                 final InternalMessageHeader header,
                 final Object messageBody)
     {
-        super(handle, null);
+        super(handle, null, handle.getMetaData().getContentSize());
         _header = header;
         _messageBody = messageBody;
-        _contentSize = handle.getMetaData().getContentSize();
     }
 
     InternalMessage(final StoredMessage<InternalMessageMetaData> msg)
     {
-        super(msg, null);
-        _contentSize = msg.getMetaData().getContentSize();
+        super(msg, null, msg.getMetaData().getContentSize());
         _header = msg.getMetaData().getHeader();
-        Collection<QpidByteBuffer> bufs = msg.getContent(0, _contentSize);
+        Collection<QpidByteBuffer> bufs = msg.getContent(0, (int)getSize());
 
         try(ObjectInputStream is = new ObjectInputStream(new ByteBufferInputStream(ByteBufferUtils.combine(bufs))))
         {
@@ -93,12 +90,6 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
     public InternalMessageHeader getMessageHeader()
     {
         return _header;
-    }
-
-    @Override
-    public long getSize()
-    {
-        return _contentSize;
     }
 
     @Override

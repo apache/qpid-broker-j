@@ -69,7 +69,7 @@ public class ExtractResendAndRequeue implements UnacknowledgedMessageMap.Visitor
 
     public void visitComplete()
     {
-        _unacknowledgedMessageMap.clear();
+
     }
 
 }

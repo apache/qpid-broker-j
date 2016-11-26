@@ -49,6 +49,12 @@ public class InfiniteCreditCreditManager implements FlowCreditManager_0_8
     }
 
     @Override
+    public boolean isBytesLimited()
+    {
+        return false;
+    }
+
+    @Override
     public boolean isCreditOverBatchLimit()
     {
         return false;

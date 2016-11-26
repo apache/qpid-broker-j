@@ -121,6 +121,12 @@ class Pre0_10CreditManager implements FlowCreditManager_0_8
     }
 
     @Override
+    public boolean isBytesLimited()
+    {
+        return _bytesCredit != 0;
+    }
+
+    @Override
     public boolean isCreditOverBatchLimit()
     {
         return _messageCredit > _batchLimit;

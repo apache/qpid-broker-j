@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,18 +16,14 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
-
 package org.apache.qpid.server.protocol.v0_8;
 
-import org.apache.qpid.server.flow.FlowCreditManager;
+import org.apache.qpid.server.consumer.ConsumerTarget;
 
-public interface FlowCreditManager_0_8 extends FlowCreditManager
+public interface CreditRestorer
 {
+    void restoreCredit(final ConsumerTarget target, final int count, final long size);
 
-    boolean isNotBytesLimitedAndHighPrefetch();
-
-    boolean isBytesLimited();
-
-    boolean isCreditOverBatchLimit();
 }

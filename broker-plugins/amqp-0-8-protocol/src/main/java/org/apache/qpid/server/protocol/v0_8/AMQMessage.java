@@ -34,7 +34,6 @@ import org.apache.qpid.server.store.StoredMessage;
 public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMetaData>
 {
     private static final MessageMetaData DELETED_MESSAGE_METADATA = new MessageMetaData(new MessagePublishInfo(), new ContentHeaderBody(new BasicContentHeaderProperties()), 0);
-    private final long _size;
 
     public AMQMessage(StoredMessage<MessageMetaData> handle)
     {
@@ -43,8 +42,8 @@ public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMet
 
     public AMQMessage(StoredMessage<MessageMetaData> handle, Object connectionReference)
     {
-        super(handle, connectionReference);
-        _size = handle.getMetaData().getContentSize();
+        super(handle, connectionReference, handle.getMetaData().getContentSize());
+        ;
     }
 
     public MessageMetaData getMessageMetaData()
@@ -86,11 +85,6 @@ public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMet
     public long getArrivalTime()
     {
         return getMessageMetaData().getArrivalTime();
-    }
-
-    public long getSize()
-    {
-        return _size;
     }
 
     public boolean isImmediate()

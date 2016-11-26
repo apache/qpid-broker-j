@@ -388,29 +388,9 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
 
     public void restoreCredit(final ServerMessage message)
     {
-        boolean hasCredit = _creditManager.hasCredit();
+        // This method is only called when the queue is restoring credit it allocated and then could not use
         _creditManager.restoreCredit(1, message.getSize());
-        if(_creditManager.hasCredit() != hasCredit)
-        {
-            if (hasCredit || !_creditManager.isNotBytesLimitedAndHighPrefetch())
-            {
-                _channel.updateAllConsumerNotifyWorkDesired();
-            }
-        }
-        else if (hasCredit)
-        {
-            if (_creditManager.isNotBytesLimitedAndHighPrefetch())
-            {
-                if (_creditManager.isCreditOverBatchLimit())
-                {
-                    _channel.updateAllConsumerNotifyWorkDesired();
-                }
-            }
-            else
-            {
-                notifyWork();
-            }
-        }
+        updateNotifyWorkDesired();
     }
 
     protected long sendToClient(final ConsumerImpl consumer, final ServerMessage message,
@@ -454,8 +434,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
     {
         _unacknowledgedBytes.addAndGet(-entry.getMessage().getSize());
         _unacknowledgedCount.decrementAndGet();
-
-        restoreCredit(entry.getMessage());
     }
 
     @Override

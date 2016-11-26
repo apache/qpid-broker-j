@@ -438,8 +438,12 @@ public class LastValueQueueTest extends QpidBrokerTestCase
         int numberOfMessagesReceived = 0;
         while(numberOfShutdownsReceived < 2)
         {
-            message = _consumer.receive(10000);
-            assertNotNull(message);
+            message = _consumer.receive(5000);
+            if(message == null)
+            {
+                System.err.println("here's a good place for a breakpoint");
+            }
+            assertNotNull("null recieved after " + numberOfMessagesReceived + " messages and " + numberOfShutdownsReceived + " shutdowns", message);
 
             if (message.propertyExists(BackgroundMessageProducer.SHUTDOWN))
             {

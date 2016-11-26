@@ -20,23 +20,25 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import org.apache.qpid.QpidException;
-import org.apache.qpid.server.consumer.ConsumerImpl;
-import org.apache.qpid.server.message.MessageInstance;
-import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.queue.QueueEntry;
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import org.apache.qpid.QpidException;
+import org.apache.qpid.server.consumer.ConsumerImpl;
+import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.queue.QueueEntry;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
  * QPID-1385 : Race condition between added to unacked map and resending due to a rollback.
@@ -69,13 +71,13 @@ public class ExtractResendAndRequeueTest extends QpidTestCase
     public void setUp() throws QpidException
     {
         _queueDeleted = false;
-        _unacknowledgedMessageMap = new UnacknowledgedMessageMapImpl(100);
+        _unacknowledgedMessageMap = new UnacknowledgedMessageMapImpl(100, mock(CreditRestorer.class));
         _queue = mock(Queue.class);
         when(_queue.getName()).thenReturn(getName());
         when(_queue.isDeleted()).thenReturn(_queueDeleted);
         _consumer = mock(ConsumerImpl.class);
         when(_consumer.getConsumerNumber()).thenReturn(ConsumerImpl.CONSUMER_NUMBER_GENERATOR.getAndIncrement());
-
+        ConsumerTarget target = mock(ConsumerTarget.class);
 
         long id = 0;
 
@@ -98,7 +100,7 @@ public class ExtractResendAndRequeueTest extends QpidTestCase
                 }
             }).when(entry).delete();
 
-            _unacknowledgedMessageMap.add(id, entry);
+            _unacknowledgedMessageMap.add(id, entry, target);
             _referenceList.add(entry);
             //Increment ID;
             id++;
@@ -147,7 +149,7 @@ public class ExtractResendAndRequeueTest extends QpidTestCase
 
         assertEquals("Message count for resend not correct.", INITIAL_MSG_COUNT, msgToResend.size());
         assertEquals("Message count for requeue not correct.", 0, msgToRequeue.size());
-        assertEquals("Map was not emptied", 0, _unacknowledgedMessageMap.size());
+
     }
 
     /**
@@ -176,7 +178,6 @@ public class ExtractResendAndRequeueTest extends QpidTestCase
 
         assertEquals("Message count for resend not correct.", 0, msgToResend.size());
         assertEquals("Message count for requeue not correct.", INITIAL_MSG_COUNT, msgToRequeue.size());
-        assertEquals("Map was not emptied", 0, _unacknowledgedMessageMap.size());
     }
 
 

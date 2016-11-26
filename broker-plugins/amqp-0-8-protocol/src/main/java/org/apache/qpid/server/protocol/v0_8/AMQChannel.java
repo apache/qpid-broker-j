@@ -106,7 +106,7 @@ public class AMQChannel
         implements AMQSessionModel<AMQChannel>,
                    AsyncAutoCommitTransaction.FutureRecorder,
                    ServerChannelMethodProcessor,
-                   EventLoggerProvider
+                   EventLoggerProvider, CreditRestorer
 {
     public static final int DEFAULT_PREFETCH = 4096;
 
@@ -156,7 +156,7 @@ public class AMQChannel
 
     private final LinkedList<AsyncCommand> _unfinishedCommandsQueue = new LinkedList<AsyncCommand>();
 
-    private UnacknowledgedMessageMap _unacknowledgedMessageMap = new UnacknowledgedMessageMapImpl(DEFAULT_PREFETCH);
+    private final UnacknowledgedMessageMap _unacknowledgedMessageMap;
 
     private final AtomicBoolean _suspended = new AtomicBoolean(false);
 
@@ -224,7 +224,7 @@ public class AMQChannel
         _creditManager = new Pre0_10CreditManager(0L, 0L,
                                                   connection.getContextValue(Long.class, AMQPConnection_0_8.HIGH_PREFETCH_LIMIT),
                                                   connection.getContextValue(Long.class, AMQPConnection_0_8.BATCH_LIMIT));
-
+        _unacknowledgedMessageMap = new UnacknowledgedMessageMapImpl(DEFAULT_PREFETCH, this);
         _connection = connection;
         _channelId = channelId;
 
@@ -949,7 +949,7 @@ public class AMQChannel
                                + ") for " + consumer + " on " + entry.getOwningResource().getName());
         }
 
-        _unacknowledgedMessageMap.add(deliveryTag, entry);
+        _unacknowledgedMessageMap.add(deliveryTag, entry, (ConsumerTarget_0_8) consumer.getTarget());
 
     }
 
@@ -967,23 +967,40 @@ public class AMQChannel
      */
     private void requeue()
     {
+        final Map<Long, MessageInstance> unackedMapCopy = new LinkedHashMap<>();
         // we must create a new map since all the messages will get a new delivery tag when they are redelivered
-        Collection<MessageInstance> messagesToBeDelivered = _unacknowledgedMessageMap.cancelAllMessages();
+        _unacknowledgedMessageMap.visit(new UnacknowledgedMessageMap.Visitor()
+        {
+            @Override
+            public boolean callback(final long deliveryTag, final MessageInstance message)
+            {
+                unackedMapCopy.put(deliveryTag, message);
+                return false;
+            }
 
-        if (!messagesToBeDelivered.isEmpty())
+            @Override
+            public void visitComplete()
+            {
+
+            }
+        });
+
+        if (!unackedMapCopy.isEmpty())
         {
             if (_logger.isDebugEnabled())
             {
-                _logger.debug("Requeuing " + messagesToBeDelivered.size() + " unacked messages. for " + toString());
+                _logger.debug("Requeuing " + unackedMapCopy.size() + " unacked messages. for " + toString());
             }
 
         }
 
-        for (MessageInstance unacked : messagesToBeDelivered)
+        for (Map.Entry<Long,MessageInstance> entry : unackedMapCopy.entrySet())
         {
+            MessageInstance unacked = entry.getValue();
             // Mark message redelivered
             unacked.setRedelivered();
-
+            // here we wish to restore credit
+            _unacknowledgedMessageMap.remove(entry.getKey(), true);
             // Ensure message is released for redelivery
             unacked.release(unacked.getAcquiringConsumer());
         }
@@ -998,7 +1015,7 @@ public class AMQChannel
      */
     public void requeue(long deliveryTag)
     {
-        MessageInstance unacked = _unacknowledgedMessageMap.remove(deliveryTag);
+        MessageInstance unacked = _unacknowledgedMessageMap.remove(deliveryTag, true);
 
         if (unacked != null)
         {
@@ -1108,7 +1125,12 @@ public class AMQChannel
             // all messages in the unacked map as redelivered.
             message.setRedelivered();
 
-            if (!resendInternal(message))
+            if (resendInternal(message))
+            {
+                // remove from unacked map - don't want to restore credit though(!)
+                _unacknowledgedMessageMap.remove(deliveryTag, false);
+            }
+            else
             {
                 msgToRequeue.put(deliveryTag, message);
             }
@@ -1132,7 +1154,8 @@ public class AMQChannel
             //Amend the delivery counter as the client hasn't seen these messages yet.
             message.decrementDeliveryCount();
 
-            _unacknowledgedMessageMap.remove(deliveryTag);
+            // here we do wish to restore credit
+            _unacknowledgedMessageMap.remove(deliveryTag, true);
 
             message.setRedelivered();
             message.release(message.getAcquiringConsumer());
@@ -1742,7 +1765,7 @@ public class AMQChannel
     private void deadLetter(long deliveryTag)
     {
         final UnacknowledgedMessageMap unackedMap = getUnacknowledgedMessageMap();
-        final MessageInstance rejectedQueueEntry = unackedMap.remove(deliveryTag);
+        final MessageInstance rejectedQueueEntry = unackedMap.remove(deliveryTag, true);
 
         if (rejectedQueueEntry == null)
         {
@@ -3758,6 +3781,34 @@ public class AMQChannel
         if(_consumersWithPendingWork.add((ConsumerTarget_0_8) target))
         {
             getAMQPConnection().notifyWork(this);
+        }
+    }
+
+    @Override
+    public void restoreCredit(final ConsumerTarget target, final int count, final long size)
+    {
+        boolean hasCredit = _creditManager.hasCredit();
+        _creditManager.restoreCredit(count, size);
+        if(_creditManager.hasCredit() != hasCredit)
+        {
+            if (hasCredit || !_creditManager.isNotBytesLimitedAndHighPrefetch())
+            {
+                updateAllConsumerNotifyWorkDesired();
+            }
+        }
+        else if (hasCredit)
+        {
+            if (_creditManager.isNotBytesLimitedAndHighPrefetch())
+            {
+                if (_creditManager.isCreditOverBatchLimit())
+                {
+                    updateAllConsumerNotifyWorkDesired();
+                }
+            }
+            else if(_creditManager.isBytesLimited())
+            {
+                target.notifyWork();
+            }
         }
     }
 

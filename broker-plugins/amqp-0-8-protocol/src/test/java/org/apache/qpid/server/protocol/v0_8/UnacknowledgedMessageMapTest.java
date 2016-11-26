@@ -27,6 +27,7 @@ import java.util.Collection;
 
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class UnacknowledgedMessageMapTest extends QpidTestCase
@@ -35,7 +36,7 @@ public class UnacknowledgedMessageMapTest extends QpidTestCase
 
     public void testDeletedMessagesCantBeAcknowledged()
     {
-        UnacknowledgedMessageMap map = new UnacknowledgedMessageMapImpl(100);
+        UnacknowledgedMessageMap map = new UnacknowledgedMessageMapImpl(100, mock(CreditRestorer.class));
         final int expectedSize = 5;
         MessageInstance[] msgs = populateMap(map,expectedSize);
         assertEquals(expectedSize,map.size());
@@ -47,7 +48,7 @@ public class UnacknowledgedMessageMapTest extends QpidTestCase
             assertTrue("Message " + i + " is missing", acknowledged.contains(msgs[i]));
         }
 
-        map = new UnacknowledgedMessageMapImpl(100);
+        map = new UnacknowledgedMessageMapImpl(100, mock(CreditRestorer.class));
         msgs = populateMap(map,expectedSize);
         // simulate some messages being ttl expired
         when(msgs[2].makeAcquisitionUnstealable(_consumer)).thenReturn(Boolean.FALSE);
@@ -72,7 +73,7 @@ public class UnacknowledgedMessageMapTest extends QpidTestCase
         for(int i = 0; i < size; i++)
         {
             msgs[i] = createMessageInstance(i);
-            map.add((long)i,msgs[i]);
+            map.add((long)i, msgs[i], null);
         }
         return msgs;
     }
@@ -82,6 +83,9 @@ public class UnacknowledgedMessageMapTest extends QpidTestCase
         MessageInstance instance = mock(MessageInstance.class);
         when(instance.makeAcquisitionUnstealable(_consumer)).thenReturn(Boolean.TRUE);
         when(instance.getAcquiringConsumer()).thenReturn(_consumer);
+        ServerMessage message = mock(ServerMessage.class);
+        when(message.getSize()).thenReturn(0L);
+        when(instance.getMessage()).thenReturn(message);
         return instance;
     }
 }

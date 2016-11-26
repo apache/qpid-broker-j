@@ -42,6 +42,7 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
 
     private static final AtomicReferenceFieldUpdater<AbstractServerMessageImpl, Collection> _resourcesUpdater =
             AtomicReferenceFieldUpdater.newUpdater(AbstractServerMessageImpl.class, Collection.class,"_resources");
+    private final long _size;
 
 
     private volatile int _referenceCount = 0;
@@ -50,10 +51,17 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
     private volatile Collection<UUID> _resources;
 
 
-    public AbstractServerMessageImpl(StoredMessage<T> handle, Object connectionReference)
+    public AbstractServerMessageImpl(StoredMessage<T> handle, Object connectionReference, final long size)
     {
         _handle = handle;
         _connectionReference = connectionReference;
+        _size = size;
+    }
+
+    @Override
+    public long getSize()
+    {
+        return _size;
     }
 
     public StoredMessage<T> getStoredMessage()
@@ -188,7 +196,9 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
     final public Object getConnectionReference()
     {
         return _connectionReference;
-    }public String toString()
+    }
+
+    public String toString()
     {
         return "Message[" + debugIdentity() + "]";
     }
@@ -200,7 +210,7 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
         private static final AtomicIntegerFieldUpdater<Reference> _releasedUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(Reference.class, "_released");
 
-        private AbstractServerMessageImpl<X, T> _message;
+        private final AbstractServerMessageImpl<X, T> _message;
         private final UUID _resourceId;
         private volatile int _released;
 
