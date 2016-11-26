@@ -169,6 +169,12 @@ public abstract class AbstractNonConnectionAcceptingVirtualHost<X extends Abstra
     }
 
     @Override
+    public String getProductVersion()
+    {
+        return getAncestor(Broker.class).getProductVersion();
+    }
+
+    @Override
     protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
                                                                              final Map<String, Object> attributes,
                                                                              final ConfiguredObject... otherParents)

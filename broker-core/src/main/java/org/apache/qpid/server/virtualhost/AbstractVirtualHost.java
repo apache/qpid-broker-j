@@ -2277,6 +2277,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
+    public String getProductVersion()
+    {
+        return _broker.getProductVersion();
+    }
+
+    @Override
     public DurableConfigurationStore getDurableConfigurationStore()
     {
         return _virtualHostNode.getConfigurationStore();

@@ -44,6 +44,9 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     @DerivedAttribute( persist = true )
     String getModelVersion();
 
+    @DerivedAttribute
+    String getProductVersion();
+
     @Override
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false, associateAsIfChildren = true)
     Collection<? extends Connection<?>> getConnections();
