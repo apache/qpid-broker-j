@@ -483,7 +483,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         checkResponseIsMapType(responseMessage);
         assertEquals("The name of the virtual host is not as expected", "test", getValueFromMapResponse(responseMessage, "name"));
 
-        message.setBoolean("actuals", false);
+        message.setBooleanProperty("actuals", false);
         _producer.send(message);
         responseMessage = _consumer.receive(getReceiveTimeout());
         assertNotNull("A response message was not sent", responseMessage);

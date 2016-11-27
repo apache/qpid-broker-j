@@ -627,20 +627,9 @@ class ManagementNode implements MessageSource, MessageDestination
         InternalMessageHeader requestHeader = message.getMessageHeader();
 
         final Map<String, Object> headers = requestHeader.getHeaderMap();
+        final boolean actuals = headers.get(ACTUALS_ATTRIBUTE) == null || Boolean.parseBoolean(String.valueOf(headers.get(ACTUALS_ATTRIBUTE)));
+
         ConfiguredObject<?> object = findObject(clazz, headers);
-
-        boolean actuals = true;
-        if(message.getMessageBody() instanceof Map)
-        {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> attributes = (Map<String, Object>) message.getMessageBody();
-            if (attributes.containsKey(ACTUALS_ATTRIBUTE))
-            {
-                Object actualsObject = attributes.get(ACTUALS_ATTRIBUTE);
-                actuals = actualsObject instanceof Boolean ? ((Boolean)actualsObject) : Boolean.parseBoolean(String.valueOf(actualsObject));
-            }
-        }
-
         if(object != null)
         {
             final MutableMessageHeader responseHeader = new MutableMessageHeader();
