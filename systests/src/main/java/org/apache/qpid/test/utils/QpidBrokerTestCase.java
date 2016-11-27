@@ -353,7 +353,7 @@ public class QpidBrokerTestCase extends QpidTestCase
         }
         else
         {
-            return getConnectionWithOptions(Collections.singletonMap("max_prefetch", String.valueOf(prefetch)));
+            return getConnectionWithOptions(Collections.singletonMap("maxprefetch", String.valueOf(prefetch)));
         }
     }
 
