@@ -49,6 +49,18 @@ public class ExistingQueueDrainer implements QueueCreator
         }
     }
 
+    @Override
+    public String getProtocolVersion(final Connection connection)
+    {
+        return null;
+    }
+
+    @Override
+    public String getProviderVersion(final Connection connection)
+    {
+        return null;
+    }
+
     private void drainQueue(Connection connection, String queueName)
     {
         try

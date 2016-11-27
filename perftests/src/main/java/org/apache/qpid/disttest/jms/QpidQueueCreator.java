@@ -252,7 +252,59 @@ public class QpidQueueCreator implements QueueCreator
         {
             executorService.shutdown();
         }
+    }
 
+    @Override
+    public String getProtocolVersion(final Connection connection)
+    {
+        if (connection != null)
+        {
+            try
+            {
+                final Method method = connection.getClass().getMethod("getProtocolVersion"); // Qpid 0-8..0-10 method only
+                Object version =  method.invoke(connection);
+                return String.valueOf(version);
+            }
+            catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
+            {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * We currently rely on the fact that the client version numbers follow the broker's.
+     * This should be changed to use AMQP Management.
+     *
+     * @param connection
+     * @return
+     */
+    @Override
+    public String getProviderVersion(final Connection connection)
+    {
+        // Unfortunately, Qpid 0-8..0-10 does not define ConnectionMetaData#getProviderVersion in a useful way
+        String qpidRelease = getQpidReleaseVersionByReflection("org.apache.qpid.configuration.CommonProperties");
+        if (qpidRelease == null)
+        {
+            qpidRelease = getQpidReleaseVersionByReflection("org.apache.qpid.common.QpidProperties");  // < 0.32
+        }
+        return qpidRelease;
+    }
+
+    private String getQpidReleaseVersionByReflection(final String className)
+    {
+        try
+        {
+            Class clazz = Class.forName(className);
+            Method method = clazz.getMethod("getReleaseVersion");
+            Object version =  method.invoke(null);
+            return String.valueOf(version);
+        }
+        catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
+        {
+            return null;
+        }
     }
 
     private void closeAllSessions(final Map<Thread, AMQSession<?, ?>> sessionMap)

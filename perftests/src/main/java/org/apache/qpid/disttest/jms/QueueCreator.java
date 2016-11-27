@@ -33,4 +33,7 @@ public interface QueueCreator
 
     void createQueues(Connection connection, Session session, List<QueueConfig> configs);
     void deleteQueues(Connection connection, Session session, List<QueueConfig> configs);
+
+    String getProtocolVersion(Connection connection);
+    String getProviderVersion(Connection connection);
 }

@@ -24,6 +24,7 @@ import javax.jms.Connection;
 import javax.jms.Session;
 
 import org.apache.qpid.disttest.controller.config.QueueConfig;
+
 public class NoOpQueueCreator implements QueueCreator
 {
     @Override
@@ -34,5 +35,17 @@ public class NoOpQueueCreator implements QueueCreator
     @Override
     public void deleteQueues(Connection connection, Session session, List<QueueConfig> configs)
     {
+    }
+
+    @Override
+    public String getProtocolVersion(final Connection connection)
+    {
+        return null;
+    }
+
+    @Override
+    public String getProviderVersion(final Connection connection)
+    {
+        return null;
     }
 }

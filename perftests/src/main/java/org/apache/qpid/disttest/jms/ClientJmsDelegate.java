@@ -19,8 +19,6 @@
  */
 package org.apache.qpid.disttest.jms;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.UUID;
@@ -73,6 +71,7 @@ public class ClientJmsDelegate
     private final MessageProducer _controlQueueProducer;
 
     private final String _clientName;
+    private final QueueCreator _queueCreator;
     private Queue _instructionQueue;
 
     private final ConcurrentMap<String, Connection> _testConnections;
@@ -106,6 +105,7 @@ public class ClientJmsDelegate
             _testMessageProviders = new ConcurrentHashMap<>();
             _defaultMessageProvider = new MessageProvider(null);
             _testSessionToConnections = new ConcurrentHashMap<>();
+            _queueCreator = QpidQueueCreatorFactory.createInstance();
         }
         catch (final NamingException ne)
         {
@@ -744,7 +744,7 @@ public class ClientJmsDelegate
 
         if (connection != null)
         {
-            return getProviderVersion(connection);
+            return _queueCreator.getProviderVersion(connection);
         }
         else
         {
@@ -758,83 +758,12 @@ public class ClientJmsDelegate
         Connection connection = getConnectionFor(session);
         if (connection != null)
         {
-            return getProtocolVersion(connection);
+            return _queueCreator.getProtocolVersion(connection);
         }
         else
         {
             return null;
         }
-    }
-
-    private String getProviderVersion(final Connection connection)
-    {
-        try
-        {
-            // Unfortunately, Qpid 0-8..0-10 does not define ConnectionMetaData#getProviderVersion in a useful way
-            String qpidRelease = getQpidReleaseVersionByReflection("org.apache.qpid.configuration.CommonProperties");
-            if (qpidRelease == null)
-            {
-                qpidRelease = getQpidReleaseVersionByReflection("org.apache.qpid.common.QpidProperties");  // < 0.32
-
-                if (qpidRelease == null && connection.getMetaData() != null)
-                {
-                    ConnectionMetaData metaData = connection.getMetaData();
-                    qpidRelease = metaData.getProviderVersion();
-                }
-            }
-
-            return qpidRelease;
-        }
-        catch (JMSException e)
-        {
-            return null;
-        }
-    }
-
-    private String getQpidReleaseVersionByReflection(final String className)
-    {
-        try
-        {
-            Class clazz = Class.forName(className);
-            Method method = clazz.getMethod("getReleaseVersion");
-            Object version =  method.invoke(null);
-            return String.valueOf(version);
-        }
-        catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
-        {
-            return null;
-        }
-    }
-
-    private String getProtocolVersion(final Connection connection)
-    {
-        if (connection != null)
-        {
-            try
-            {
-                final Method method = connection.getClass().getMethod("getProtocolVersion"); // Qpid 0-8..0-10 method only
-                Object version =  method.invoke(connection);
-                return String.valueOf(version);
-            }
-            catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
-            {
-                try
-                {
-                    ConnectionMetaData  metaData = connection.getMetaData();
-                    if (metaData != null && ("QpidJMS".equals(metaData.getJMSProviderName()) ||
-                                             "AMQP.ORG".equals(metaData.getJMSProviderName())))
-                    {
-                        return "1.0";
-                    }
-                }
-                catch (JMSException e1)
-                {
-                    return null;
-                }
-                return null;
-            }
-        }
-        return null;
     }
 
     private Connection getConnectionFor(final Session session)

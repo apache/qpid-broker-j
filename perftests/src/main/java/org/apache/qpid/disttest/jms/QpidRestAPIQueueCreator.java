@@ -19,22 +19,32 @@
  */
 package org.apache.qpid.disttest.jms;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.jms.Connection;
+import javax.jms.ConnectionMetaData;
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.jms.QueueBrowser;
 import javax.jms.Session;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.StringEntity;
@@ -54,12 +64,15 @@ public class QpidRestAPIQueueCreator implements QueueCreator
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(QpidRestAPIQueueCreator.class);
     private static int _drainPollTimeout = Integer.getInteger(QUEUE_CREATOR_DRAIN_POLL_TIMEOUT, 500);
+    private static final TypeReference<List<HashMap<String, Object>>> MAP_TYPE_REFERENCE = new TypeReference<List<HashMap<String,Object>>>(){};
+
     private final HttpHost _management;
     private final String _managementUser;
     private final String _managementPassword;
     private final String _virtualhostnode;
     private final String _virtualhost;
     private final String _queueApiUrl;
+    private final String _brokerApiUrl;
 
     public QpidRestAPIQueueCreator()
     {
@@ -71,6 +84,7 @@ public class QpidRestAPIQueueCreator implements QueueCreator
 
         _management = HttpHost.create(System.getProperty("perftests.manangement-url", "http://localhost:8080"));
         _queueApiUrl = System.getProperty("perftests.manangement-api-queue", "/api/latest/queue/%s/%s/%s");
+        _brokerApiUrl = System.getProperty("perftests.manangement-api-broker", "/api/latest/broker");
     }
 
     @Override
@@ -96,6 +110,47 @@ public class QpidRestAPIQueueCreator implements QueueCreator
             drainQueue(connection, queueName);
             managementDeleteQueue(queueName, context);
         }
+    }
+
+    @Override
+    public String getProtocolVersion(final Connection connection)
+    {
+        if (connection != null)
+        {
+            try
+            {
+                final Method method = connection.getClass().getMethod("getProtocolVersion"); // Qpid 0-8..0-10 method only
+                Object version =  method.invoke(connection);
+                return String.valueOf(version);
+            }
+            catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
+            {
+                try
+                {
+                    ConnectionMetaData metaData = connection.getMetaData();
+                    if (metaData != null && ("QpidJMS".equals(metaData.getJMSProviderName()) ||
+                                             "AMQP.ORG".equals(metaData.getJMSProviderName())))
+                    {
+                        return "1.0";
+                    }
+                }
+                catch (JMSException e1)
+                {
+                    return null;
+                }
+                return null;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public String getProviderVersion(final Connection connection)
+    {
+        HttpClientContext context = HttpClientContext.create();
+
+        final Map<String, Object> stringObjectMap = managementQueryBroker(context);
+        return stringObjectMap == null || stringObjectMap.get("productVersion") == null ? null : String.valueOf(stringObjectMap.get("productVersion"));
     }
 
     private void drainQueue(Connection connection, String queueName)
@@ -181,6 +236,13 @@ public class QpidRestAPIQueueCreator implements QueueCreator
         }
     }
 
+    private Map<String, Object> managementQueryBroker(final HttpClientContext context)
+    {
+        HttpGet get = new HttpGet(_brokerApiUrl);
+        final List<Map<String, Object>> maps = executeManagement(get, context);
+        return maps.isEmpty() ? Collections.<String, Object>emptyMap() : maps.get(0);
+    }
+
     private void managementCreateQueue(final String name, final HttpClientContext context)
     {
         HttpPut put = new HttpPut(String.format(_queueApiUrl, _virtualhostnode, _virtualhost, name));
@@ -210,7 +272,7 @@ public class QpidRestAPIQueueCreator implements QueueCreator
         }
     }
 
-    private void executeManagement(final HttpRequest httpRequest, final HttpClientContext context)
+    private List<Map<String, Object>> executeManagement(final HttpRequest httpRequest, final HttpClientContext context)
     {
         try
         {
@@ -228,6 +290,19 @@ public class QpidRestAPIQueueCreator implements QueueCreator
                 throw new RuntimeException(String.format("Failed : HTTP error code : %d  status line : %s", statusCode,
                                                          response.getStatusLine()));
             }
+
+            if (response.getEntity() != null)
+            {
+                try (ByteArrayOutputStream bos = new ByteArrayOutputStream())
+                {
+                    response.getEntity().writeTo(bos);
+                    if (bos.size() > 0)
+                    {
+                        return new ObjectMapper().readValue(bos.toByteArray(), MAP_TYPE_REFERENCE);
+                    }
+                }
+            }
+            return null;
 
         }
         catch (IOException | org.apache.http.auth.AuthenticationException e)
