@@ -554,6 +554,29 @@ public class QpidBrokerTestCase extends QpidTestCase
         }
     }
 
+    protected void performOperationUsingAmqpManagement(final String name, final String operation, final Session session, final String type, Map<String,Object> arguments)
+            throws JMSException
+    {
+        MessageProducer producer = session.createProducer(session.createQueue(isBroker10() ? "$management" : "ADDR:$management"));
+
+        MapMessage opMessage = session.createMapMessage();
+        opMessage.setStringProperty("type", type);
+        opMessage.setStringProperty("operation", operation);
+        opMessage.setStringProperty("index", "object-path");
+
+        opMessage.setStringProperty("key", name);
+        for(Map.Entry<String,Object> argument : arguments.entrySet())
+        {
+            opMessage.setObjectProperty(argument.getKey(), argument.getValue());
+        }
+
+        producer.send(opMessage);
+        if(session.getTransacted())
+        {
+            session.commit();
+        }
+    }
+
 
     protected List managementQueryObjects(final Session session, final String type) throws JMSException
     {

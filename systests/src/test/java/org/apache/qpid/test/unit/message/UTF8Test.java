@@ -20,7 +20,12 @@
  */
 package org.apache.qpid.test.unit.message;
 
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 import javax.jms.Connection;
 import javax.jms.Destination;
@@ -29,10 +34,8 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.naming.InitialContext;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Properties;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 
 /**
@@ -67,13 +70,14 @@ public class UTF8Test extends QpidBrokerTestCase
     {
         Connection con =  getConnection();
         Session sess = con.createSession(false, javax.jms.Session.AUTO_ACKNOWLEDGE);
-        final Destination dest = getDestination(exchangeName, routingKey, queueName);
+        final Destination receivingDestination = getReceivingDestination(exchangeName, routingKey, queueName, sess);
+        final Destination sendingDestination = getSendingDestination(exchangeName, routingKey, queueName, sess);
 
-        final MessageConsumer msgCons = sess.createConsumer(dest);
+        final MessageConsumer msgCons = sess.createConsumer(receivingDestination);
         con.start();
 
         // Send data
-        MessageProducer msgProd = sess.createProducer(dest);
+        MessageProducer msgProd = sess.createProducer(sendingDestination);
         TextMessage message = sess.createTextMessage(data);
         message.setStringProperty("stringProperty", data);
         msgProd.send(message);
@@ -85,15 +89,45 @@ public class UTF8Test extends QpidBrokerTestCase
         assertEquals(data, message.getStringProperty("stringProperty"));
     }
 
-    private Destination getDestination(String exch, String routkey, String qname) throws Exception
+    private Destination getReceivingDestination(String exch, String routkey, String qname, final Session session) throws Exception
     {
         Properties props = new Properties();
-        props.setProperty("destination.directUTF8Queue",
-                "direct://" + exch + "//" + qname + "?autodelete='false'&durable='false'"
-                        + "&routingkey='" + routkey + "'");
-
+        if(isBroker10())
+        {
+            props.setProperty("queue.recvDest", qname);
+            createTestQueue(session, qname);
+        }
+        else
+        {
+            props.setProperty("destination.recvDest",
+                              "direct://" + exch + "//" + qname + "?autodelete='false'&durable='false'"
+                              + "&routingkey='" + routkey + "'");
+        }
         // Get our connection context
         InitialContext ctx = new InitialContext(props);
-        return (Destination) ctx.lookup("directUTF8Queue");
+        return (Destination) ctx.lookup("recvDest");
+    }
+
+    private Destination getSendingDestination(String exch, String routkey, String qname, final Session session) throws Exception
+    {
+        Properties props = new Properties();
+        if(isBroker10())
+        {
+            props.setProperty("topic.sendDest", exch +"/" + routkey);
+            createEntityUsingAmqpManagement(exch, session, "org.apache.qpid.DirectExchange");
+            final Map<String, Object> arguments = new HashMap<>();
+            arguments.put("queue",qname);
+            arguments.put("bindingKey", routkey);
+            performOperationUsingAmqpManagement(exch, "bind", session, "org.apache.qpid.DirectExchange", arguments);
+        }
+        else
+        {
+            props.setProperty("destination.sendDest",
+                              "direct://" + exch + "//" + qname + "?autodelete='false'&durable='false'"
+                              + "&routingkey='" + routkey + "'");
+        }
+        // Get our connection context
+        InitialContext ctx = new InitialContext(props);
+        return (Destination) ctx.lookup("sendDest");
     }
 }
