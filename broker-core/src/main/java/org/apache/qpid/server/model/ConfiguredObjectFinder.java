@@ -32,7 +32,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.util.Strings;
@@ -79,10 +81,19 @@ public class ConfiguredObjectFinder
             }
         }
     }
+    private String[] getPathElements(final String path)
+    {
+        String[] pathElements = path.split("(?<!\\\\)" + Pattern.quote("/"));
+        for(int i = 0; i<pathElements.length; i++)
+        {
+            pathElements[i] = pathElements[i].replaceAll("\\\\(.)","$1");
+        }
+        return pathElements;
+    }
 
     public ConfiguredObject<?> findObjectFromPath(String path, Class<? extends ConfiguredObject> category)
     {
-        return findObjectFromPath(Arrays.asList(path.split("/")), category);
+        return findObjectFromPath(Arrays.asList(getPathElements(path)), category);
     }
 
     public ConfiguredObject<?> findObjectFromPath(List<String> path, Class<? extends ConfiguredObject> category)
@@ -348,7 +359,15 @@ public class ConfiguredObjectFinder
 
     public String getPath(final ConfiguredObject<?> object)
     {
-        return Strings.join("/", getPathAsList(object));
+        final List<String> pathAsList = getPathAsList(object);
+        ListIterator<String> iter = pathAsList.listIterator();
+        while(iter.hasNext())
+        {
+            String element = iter.next();
+            iter.set(element.replaceAll("([\\\\/])", "\\\\$1"));
+
+        }
+        return Strings.join("/", pathAsList);
     }
 
     public List<String> getPathAsList(final ConfiguredObject<?> object)

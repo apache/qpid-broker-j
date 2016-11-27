@@ -581,7 +581,8 @@ public class QpidBrokerTestCase extends QpidTestCase
                 MessageConsumer consumer = session.createConsumer(responseQ);
                 MapMessage message = session.createMapMessage();
                 message.setStringProperty("index", "object-path");
-                message.setStringProperty("key", destination.getQueueName());
+                final String escapedName = destination.getQueueName().replaceAll("([/\\\\])", "\\\\$1");
+                message.setStringProperty("key", escapedName);
                 message.setStringProperty("type", "org.apache.qpid.Queue");
                 message.setStringProperty("operation", "getStatistics");
                 message.setStringProperty("statistics", "[\"queueDepthMessages\"]");

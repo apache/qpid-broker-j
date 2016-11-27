@@ -26,20 +26,18 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.jms.BytesMessage;
+import javax.jms.Connection;
+import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
+import javax.jms.Session;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.message.JMSBytesMessage;
 import org.apache.qpid.framing.AMQFrameDecodingException;
 import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.framing.FieldTableFactory;
@@ -49,10 +47,10 @@ public class FieldTableMessageTest extends QpidBrokerTestCase implements Message
 {
     private static final Logger _logger = LoggerFactory.getLogger(FieldTableMessageTest.class);
 
-    private AMQConnection _connection;
-    private AMQDestination _destination;
-    private AMQSession _session;
-    private final ArrayList<JMSBytesMessage> received = new ArrayList<JMSBytesMessage>();
+    private Connection _connection;
+    private Destination _destination;
+    private Session _session;
+    private final ArrayList<BytesMessage> received = new ArrayList<>();
     private FieldTable _expected;
     private int _count = 10;
     private CountDownLatch _waitForCompletion;
@@ -60,31 +58,20 @@ public class FieldTableMessageTest extends QpidBrokerTestCase implements Message
     protected void setUp() throws Exception
     {
         super.setUp();
-        init( (AMQConnection) getConnection("guest", "guest"));
+        _connection = getConnection();
+        _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        _destination = createTestQueue(_session);
+        // set up a slow consumer
+        _session.createConsumer(_destination).setMessageListener(this);
+        _connection.start();
+
+        // _expected = new FieldTableTest().load("FieldTableTest2.properties");
+        _expected = load();
     }
 
     protected void tearDown() throws Exception
     {
         super.tearDown();
-    }
-
-    private void init(AMQConnection connection) throws Exception
-    {
-        init(connection, new AMQQueue(connection, randomize("FieldTableMessageTest"), true));
-    }
-
-    private void init(AMQConnection connection, AMQDestination destination) throws Exception
-    {
-        _connection = connection;
-        _destination = destination;
-        _session = (AMQSession) connection.createSession(false, AMQSession.NO_ACKNOWLEDGE);
-
-        // set up a slow consumer
-        _session.createConsumer(destination).setMessageListener(this);
-        connection.start();
-
-        // _expected = new FieldTableTest().load("FieldTableTest2.properties");
-        _expected = load();
     }
 
     private FieldTable load() throws IOException
@@ -125,9 +112,8 @@ public class FieldTableMessageTest extends QpidBrokerTestCase implements Message
 
     void check() throws JMSException, AMQFrameDecodingException, IOException
     {
-        for (Object m : received)
+        for (BytesMessage bytesMessage : received)
         {
-            final BytesMessage bytesMessage = (BytesMessage) m;
             final long bodyLength = bytesMessage.getBodyLength();
             byte[] data = new byte[(int) bodyLength];
             bytesMessage.readBytes(data);
@@ -143,14 +129,10 @@ public class FieldTableMessageTest extends QpidBrokerTestCase implements Message
     {
         synchronized (received)
         {
-            received.add((JMSBytesMessage) message);
+            received.add((BytesMessage) message);
             _waitForCompletion.countDown();
         }
     }
 
-    private static String randomize(String in)
-    {
-        return in + System.currentTimeMillis();
-    }
 
 }

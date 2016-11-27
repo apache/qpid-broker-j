@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
 
@@ -583,7 +584,7 @@ class ManagementNode implements MessageSource, MessageDestination
                 }
                 if (path != null && !attributes.containsKey(ConfiguredObject.NAME))
                 {
-                    String[] pathElements = path.split("/");
+                    String[] pathElements = getPathElements(path);
                     attributes.put(ConfiguredObject.NAME, pathElements[pathElements.length - 1]);
                 }
                 object.setAttributes(attributes);
@@ -608,6 +609,17 @@ class ManagementNode implements MessageSource, MessageDestination
             return createFailureResponse(message, STATUS_CODE_NOT_FOUND, "No such object");
         }
     }
+
+    private String[] getPathElements(final String path)
+    {
+        String[] pathElements = path.split("(?<!\\\\)" + Pattern.quote("/"));
+        for(int i = 0; i<pathElements.length; i++)
+        {
+            pathElements[i] = pathElements[i].replaceAll("\\\\(.)","$1");
+        }
+        return pathElements;
+    }
+
 
     private InternalMessage performReadOperation(final Class<? extends ConfiguredObject> clazz,
                                                  final InternalMessage message)
@@ -697,7 +709,7 @@ class ManagementNode implements MessageSource, MessageDestination
                 {
 
                     List<ConfiguredObject> parents =
-                            _configuredObjectFinder.findObjectParentsFromPath(Arrays.asList(path.split("/")), hierarchy, _model.getTypeRegistry().getCategory(clazz));
+                            _configuredObjectFinder.findObjectParentsFromPath(Arrays.asList(getPathElements(path)), hierarchy, _model.getTypeRegistry().getCategory(clazz));
                     if(parents.isEmpty())
                     {
                         return createFailureResponse(message, STATUS_CODE_NOT_FOUND, "The '"+OBJECT_PATH+"' "+path+" does not identify a valid parent");

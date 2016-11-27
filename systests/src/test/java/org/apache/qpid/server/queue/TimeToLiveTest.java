@@ -40,9 +40,7 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class TimeToLiveTest extends QpidBrokerTestCase
@@ -83,14 +81,8 @@ public class TimeToLiveTest extends QpidBrokerTestCase
         Connection clientConnection = getConnection();
 
         Session clientSession = clientConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Queue queue = clientSession.createQueue(QUEUE);
+        Queue queue = createTestQueue(clientSession, QUEUE);
 
-        // Create then close the consumer so the queue is actually created
-        // Closing it then reopening it ensures that the consumer shouldn't get messages
-        // which should have expired and allows a shorter sleep period. See QPID-1418
-
-        MessageConsumer consumer = clientSession.createConsumer(queue);
-        consumer.close();
 
         //Create Producer
         Connection producerConnection = getConnection();
@@ -103,7 +95,7 @@ public class TimeToLiveTest extends QpidBrokerTestCase
 
         MessageProducer producer = producerSession.createProducer(queue);
 
-        consumer = clientSession.createConsumer(queue);
+        MessageConsumer consumer = clientSession.createConsumer(queue);
         if(prefetchMessages)
         {
             clientConnection.start();
@@ -207,9 +199,9 @@ public class TimeToLiveTest extends QpidBrokerTestCase
     public void testActiveTTL() throws Exception
     {
         Connection producerConnection = getConnection();
-        AMQSession producerSession = (AMQSession) producerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Queue queue = producerSession.createTemporaryQueue();
-        producerSession.declareAndBind((AMQDestination) queue);
+        Session producerSession = producerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Queue queue = createTestQueue(producerSession);
+
         MessageProducer producer = producerSession.createProducer(queue);
         producer.setTimeToLive(1000L);
 
@@ -228,7 +220,8 @@ public class TimeToLiveTest extends QpidBrokerTestCase
         {
             lastPass = messageCount;
             Thread.sleep(100);
-            messageCount = producerSession.getQueueDepth((AMQDestination) queue);
+            producerConnection.start();
+            messageCount = getQueueDepth(producerConnection, queue);
 
             // If we have received messages in the last loop then extend the timeout time.
             // if we get messages stuck that are not expiring then the failureTime will occur
@@ -339,6 +332,7 @@ public class TimeToLiveTest extends QpidBrokerTestCase
         Assert.assertFalse("Final message has first set.", receivedSecond.getBooleanProperty("first"));
         Assert.assertEquals("Final message has incorrect TTL.", 0L, receivedSecond.getLongProperty("TTL"));
 
+        durableSubscriber.close();
         clientSession.unsubscribe(getTestQueueName());
         clientConnection.close();
 
@@ -358,7 +352,8 @@ public class TimeToLiveTest extends QpidBrokerTestCase
         
         //Create Producer
         Connection producerConnection = getConnection();
-        AMQSession producerSession = (AMQSession) producerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        producerConnection.start();
+        Session producerSession = producerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         MessageProducer producer = producerSession.createProducer(topic);
         producer.setTimeToLive(1000L);
 
@@ -372,12 +367,12 @@ public class TimeToLiveTest extends QpidBrokerTestCase
         // check Queue depth for up to TIMEOUT seconds after the Queue Depth hasn't changed for 100ms.
         long messageCount = MSG_COUNT;
         long lastPass;
-        AMQQueue subcriptionQueue = new AMQQueue("amq.topic","clientid" + ":" + "MyDurableTTLSubscription");
+        Queue subcriptionQueue = isBroker10() ? producerSession.createQueue("qpid_/clientid_/MyDurableTTLSubscription") : new AMQQueue("amq.topic","clientid" + ":" + "MyDurableTTLSubscription");
         do
         {
             lastPass = messageCount;
             Thread.sleep(100);
-            messageCount = producerSession.getQueueDepth((AMQDestination) subcriptionQueue);
+            messageCount = getQueueDepth(producerConnection, subcriptionQueue);
 
             // If we have received messages in the last loop then extend the timeout time.
             // if we get messages stuck that are not expiring then the failureTime will occur
