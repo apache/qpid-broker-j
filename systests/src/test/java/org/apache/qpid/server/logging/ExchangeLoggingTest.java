@@ -21,16 +21,16 @@
 package org.apache.qpid.server.logging;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.MessageProducer;
-import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
-
-import org.apache.qpid.client.AMQSession;
+import javax.jms.Topic;
 
 /**
  * Exchange
@@ -49,9 +49,10 @@ public class ExchangeLoggingTest extends AbstractTestLogging
 
     private Connection _connection;
     private Session _session;
-    private Queue _queue;
+    private Topic _topic;
     private String _name;
     private String _type;
+    private String _topicName;
 
     @Override
     public void setUp() throws Exception
@@ -65,7 +66,8 @@ public class ExchangeLoggingTest extends AbstractTestLogging
         _type = "direct";
         _name = getTestQueueName()+ "-exchange";
 
-        _queue = _session.createQueue(_type + "://" + _name + "/queue/queue");
+        _topicName = isBroker10() ? _name + "/queue" : "ADDR: " + _name + "/queue" ;
+        _topic = _session.createTopic(_topicName);
 
     }
 
@@ -87,19 +89,31 @@ public class ExchangeLoggingTest extends AbstractTestLogging
 
     public void testExchangeCreateDurable() throws JMSException, IOException
     {
-        // The client cannot create durable exchanges lets just look at the
-        // ones the broker creates at startup.
 
-        // They should all be durable
+        //Ignore broker startup messages
+        _monitor.markDiscardPoint();
+
+        createExchangeUsingAmqpManagement(_name, _type, true);
 
         // Ensure we have received the EXH log msg.
         waitForMessage("EXH-1001");
 
         List<String> results = findMatches(EXH_PREFIX);
 
-        assertTrue("No Results found for Exchange.", results.size()>0);
+        assertTrue("No Results found for Exchange.", results.size()==1);
 
-        validateExchangeCreate(results, true, false);
+        validateExchangeCreate(results, true, true);
+    }
+
+    private void createExchangeUsingAmqpManagement(final String name, final String type, final boolean durable)
+            throws JMSException
+    {
+        final Map<String, Object> attributes = new LinkedHashMap();
+        attributes.put("object-path", name);
+        attributes.put("qpid-type", type);
+        attributes.put("durable", durable);
+
+        createEntityUsingAmqpManagement(name, _session, "org.apache.qpid.Exchange", attributes);
     }
 
     /**
@@ -121,7 +135,7 @@ public class ExchangeLoggingTest extends AbstractTestLogging
         //Ignore broker startup messages
         _monitor.markDiscardPoint();
 
-        _session.createConsumer(_queue);
+        createExchangeUsingAmqpManagement(_name, _type, false);
         // Ensure we have received the EXH log msg.
         waitForMessage("EXH-1001");
 
@@ -175,10 +189,8 @@ public class ExchangeLoggingTest extends AbstractTestLogging
         //Ignore broker startup messages
         _monitor.markDiscardPoint();
 
-        //create the exchange by creating a consumer
-        _session.createConsumer(_queue).close();
-
-        ((AMQSession) _session).deleteExchange(_name);
+        createExchangeUsingAmqpManagement(_name, _type, false);
+        deleteEntityUsingAmqpManagement(_name, _session, "org.apache.qpid.Exchange");
 
         //Wait and ensure we get our last EXH-1002 msg
         waitForMessage("EXH-1002");
@@ -201,8 +213,9 @@ public class ExchangeLoggingTest extends AbstractTestLogging
     {
         //Ignore broker startup messages
         _monitor.markDiscardPoint();
+        createExchangeUsingAmqpManagement(_name, _type, false);
 
-        if (!isBroker010())
+        if (!(isBroker010() || isBroker10()))
         {
             // Default 0-8..-0-9-1 behaviour is for messages to be rejected (returned to client).
             setTestClientSystemProperty("qpid.default_mandatory", "false");
@@ -211,13 +224,13 @@ public class ExchangeLoggingTest extends AbstractTestLogging
         _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
         // Do not create consumer so queue is not created and message will be discarded.
-        final MessageProducer producer = _session.createProducer(_queue);
+        final MessageProducer producer = _session.createProducer(_topic);
 
         // Sending message
         final TextMessage msg = _session.createTextMessage("msg");
         producer.send(msg);
 
-        final String expectedMessageBody = "Discarded Message : Name: \"" + _name + "\" Routing Key: \"" + _queue.getQueueName() + "\"";
+        final String expectedMessageBody = "Discarded Message : Name: \"" + _name + "\" Routing Key: \"queue\"";
 
         // Ensure we have received the EXH log msg.
         waitForMessage("EXH-1003");

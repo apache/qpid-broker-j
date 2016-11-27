@@ -18,6 +18,7 @@
 package org.apache.qpid.test.utils;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -322,7 +323,14 @@ public class QpidBrokerTestCase extends QpidTestCase
             {
                 stem.append('&');
             }
-            stem.append(option.getKey()).append('=').append(URLEncoder.encode(option.getValue()));
+            try
+            {
+                stem.append(option.getKey()).append('=').append(URLEncoder.encode(option.getValue(), "UTF-8"));
+            }
+            catch (UnsupportedEncodingException e)
+            {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -521,6 +529,24 @@ public class QpidBrokerTestCase extends QpidTestCase
         {
             createMessage.setObject(entry.getKey(), entry.getValue());
         }
+        producer.send(createMessage);
+        if(session.getTransacted())
+        {
+            session.commit();
+        }
+    }
+
+    protected void deleteEntityUsingAmqpManagement(final String name, final Session session, final String type)
+            throws JMSException
+    {
+        MessageProducer producer = session.createProducer(session.createQueue(isBroker10() ? "$management" : "ADDR:$management"));
+
+        MapMessage createMessage = session.createMapMessage();
+        createMessage.setStringProperty("type", type);
+        createMessage.setStringProperty("operation", "DELETE");
+        createMessage.setStringProperty("index", "object-path");
+
+        createMessage.setStringProperty("key", name);
         producer.send(createMessage);
         if(session.getTransacted())
         {

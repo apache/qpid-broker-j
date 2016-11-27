@@ -64,9 +64,6 @@ org.apache.qpid.test.unit.ack.RecoverTest#testRecoverResendsMsgsAckOnEarlier
 // Tests the effect of setting the prefetch value
 org.apache.qpid.test.unit.ack.RecoverTest#testRecoverSessionAfterCreditExhausted
 
-// Tests a message implementation using an 0-9 data type
-org.apache.qpid.test.unit.basic.FieldTableMessageTest#*
-
 // 0-x specific acknowledge modes
 org.apache.qpid.test.client.QueueBrowserNoAckTest#*
 org.apache.qpid.test.client.QueueBrowserPreAckTest#*
@@ -91,6 +88,8 @@ org.apache.qpid.test.unit.ack.AcknowledgeTest#testPreAck
 org.apache.qpid.test.unit.ack.AcknowledgeOnMessageTest#testNoAck
 org.apache.qpid.test.unit.ack.AcknowledgeOnMessageTest#testPreAck
 
+// This test is checking features of the 0-x client specific implementation of Session
+org.apache.qpid.test.unit.client.AMQSessionTest#*
 
 // Low level test on ensuring frames are not bigger than negotiated max - there should probably be an equivalent for 1.0
 org.apache.qpid.transport.MaxFrameSizeTest#*

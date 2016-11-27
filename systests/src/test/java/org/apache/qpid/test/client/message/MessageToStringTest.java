@@ -20,8 +20,11 @@
  */
 package org.apache.qpid.test.client.message;
 
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.util.UUID;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -35,11 +38,8 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.StreamMessage;
 import javax.jms.TextMessage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.util.UUID;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class MessageToStringTest extends QpidBrokerTestCase
 {
@@ -62,9 +62,7 @@ public class MessageToStringTest extends QpidBrokerTestCase
         String queueName = getTestQueueName();
 
         //Create Queue
-        ((AMQSession) _session).createQueue(queueName, true, false, false);
-        _queue = _session.createQueue("direct://amq.direct/"+queueName+"/"+queueName+"?durable='false'&autodelete='true'");
-
+        _queue = createTestQueue(_session);
 
         _consumer = _session.createConsumer(_queue);
 

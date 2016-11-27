@@ -20,13 +20,13 @@
 */
 package org.apache.qpid.server.logging;
 
-import javax.jms.Connection;
-
-import org.apache.qpid.configuration.CommonProperties;
-
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
+
+import javax.jms.Connection;
+
+import org.apache.qpid.configuration.CommonProperties;
 
 public class ConnectionLoggingTest extends AbstractTestLogging
 {
@@ -131,7 +131,7 @@ public class ConnectionLoggingTest extends AbstractTestLogging
         assertEquals("unexpected Client Version option state", clientVersionPresent, message.contains(
                 "Client Version :"));
 
-        if(clientVersionPresent && clientVersionValue != null)
+        if(clientVersionPresent && clientVersionValue != null && !isBroker10())
         {
             assertTrue("Client version value is not present: " + clientVersionValue, message.contains(
                     clientVersionValue));
@@ -140,7 +140,7 @@ public class ConnectionLoggingTest extends AbstractTestLogging
         assertEquals("unexpected Client Product option state", clientVersionPresent, message.contains(
                 "Client Product :"));
 
-        if(clientProductPresent && clientProductValue != null)
+        if(clientProductPresent && clientProductValue != null && !isBroker10())
         {
             assertTrue("Client product value is not present: " + clientProductValue, message.contains(
                     clientProductValue));

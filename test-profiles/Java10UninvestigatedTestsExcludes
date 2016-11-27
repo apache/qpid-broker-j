@@ -21,10 +21,8 @@
 // working, defined as broken, or excluded as they test version specific functionality
 
 org.apache.qpid.server.AbruptClientDisconnectTest#*
-org.apache.qpid.server.logging.ConnectionLoggingTest#*
 org.apache.qpid.server.logging.ConsumerLoggingTest#*
 org.apache.qpid.server.logging.DurableQueueLoggingTest#*
-org.apache.qpid.server.logging.ExchangeLoggingTest#*
 org.apache.qpid.server.logging.QueueLoggingTest#*
 org.apache.qpid.server.logging.TransientQueueLoggingTest#*
 org.apache.qpid.server.queue.NodeAutoCreationPolicyTest#*
@@ -65,12 +63,10 @@ org.apache.qpid.test.unit.client.connection.ConnectionTest#*
 org.apache.qpid.test.unit.client.connection.ConnectionFactoryTest#*
 org.apache.qpid.test.unit.client.connection.BrokerClosesClientConnectionTest#*
 org.apache.qpid.test.unit.client.channelclose.CloseWithBlockingReceiveTest#*
-org.apache.qpid.test.unit.client.AMQSessionTest#*
 org.apache.qpid.test.unit.basic.SessionStartTest#*
 org.apache.qpid.test.unit.basic.InvalidDestinationTest#*
 org.apache.qpid.test.unit.basic.close.CloseTest#*
 org.apache.qpid.test.client.queue.LVQTest#*
-org.apache.qpid.test.client.message.MessageToStringTest#*
 org.apache.qpid.test.client.message.JMSDestinationTest#*
 org.apache.qpid.test.client.FlowControlTest#*
 org.apache.qpid.systest.rest.ConnectionRestTest#*
