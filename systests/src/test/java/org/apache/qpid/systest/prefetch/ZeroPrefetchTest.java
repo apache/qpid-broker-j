@@ -29,7 +29,6 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class ZeroPrefetchTest extends QpidBrokerTestCase
@@ -42,13 +41,12 @@ public class ZeroPrefetchTest extends QpidBrokerTestCase
     // if the first connection has no prefetch
     public void testZeroPrefetch() throws Exception
     {
-        setTestClientSystemProperty(ClientProperties.MAX_PREFETCH_PROP_NAME, "0");
-        Connection prefetch1Connection = getConnection();
+        Connection prefetch1Connection = getConnectionWithPrefetch(0);
 
         prefetch1Connection.start();
 
         final Session prefetch1session = prefetch1Connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Queue queue = prefetch1session.createQueue(getTestQueueName());
+        Queue queue = createTestQueue(prefetch1session);
         MessageConsumer prefetch1consumer = prefetch1session.createConsumer(queue);
 
 
@@ -69,7 +67,7 @@ public class ZeroPrefetchTest extends QpidBrokerTestCase
         assertNotNull("First message was not received", receivedMessage);
         assertEquals("Message property was not as expected", firstPropertyValue, receivedMessage.getStringProperty(TEST_PROPERTY_NAME));
 
-        Connection prefetch2Connection = getConnection();
+        Connection prefetch2Connection = getConnectionWithPrefetch(0);
 
         prefetch2Connection.start();
         final Session prefetch2session = prefetch2Connection.createSession(false, Session.AUTO_ACKNOWLEDGE);

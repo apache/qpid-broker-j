@@ -39,10 +39,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.QpidException;
-import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.configuration.ClientProperties;
+import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class PriorityQueueTest extends QpidBrokerTestCase
@@ -85,13 +84,8 @@ public class PriorityQueueTest extends QpidBrokerTestCase
 
     public void testPriority() throws JMSException, NamingException, QpidException
     {
-        final Map<String,Object> arguments = new HashMap<String, Object>();
-        arguments.put("x-qpid-priorities",10);
-        ((AMQSession) producerSession).createQueue(QUEUE, true, false, false, arguments);
-        queue = (Queue) producerSession.createQueue("direct://amq.direct/"+QUEUE+"/"+QUEUE+"?durable='false'&autodelete='true'");
-
-        ((AMQSession) producerSession).declareAndBind((AMQDestination)queue);
-        producer = producerSession.createProducer(queue);
+        final int priorities = 10;
+        createPriorityQueue(priorities);
 
         for (int msg = 0; msg < MSG_COUNT; msg++)
         {
@@ -124,15 +118,37 @@ public class PriorityQueueTest extends QpidBrokerTestCase
         assertEquals("Incorrect number of message received", 50, receivedCount);
     }
 
+    private void createPriorityQueue(final int priorities) throws QpidException, JMSException
+    {
+        if(isBroker10())
+        {
+            final Map<String, Object> attributes = new HashMap<>();
+            attributes.put(PriorityQueue.PRIORITIES, priorities);
+            attributes.put(PriorityQueue.DURABLE, false);
+            attributes.put(PriorityQueue.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS.toString());
+            createEntityUsingAmqpManagement(getTestQueueName(), producerSession, "org.apache.qpid.PriorityQueue", attributes);
+            queue = producerSession.createQueue(getTestQueueName());
+        }
+        else
+        {
+
+            final Map<String, Object> arguments = new HashMap<String, Object>();
+            arguments.put("x-qpid-priorities", priorities);
+            ((AMQSession) producerSession).createQueue(getTestQueueName(), true, false, false, arguments);
+            queue = (Queue) producerSession.createQueue("direct://amq.direct/"
+                                                        + getTestQueueName()
+                                                        + "/"
+                                                        + getTestQueueName()
+                                                        + "?durable='false'&autodelete='true'");
+
+            ((AMQSession) producerSession).declareAndBind((AMQDestination) queue);
+        }
+        producer = producerSession.createProducer(queue);
+    }
+
     public void testOddOrdering() throws QpidException, JMSException
     {
-        final Map<String,Object> arguments = new HashMap<String, Object>();
-        arguments.put("x-qpid-priorities",3);
-        ((AMQSession) producerSession).createQueue(QUEUE, true, false, false, arguments);
-        queue = producerSession.createQueue("direct://amq.direct/"+QUEUE+"/"+QUEUE+"?durable='false'&autodelete='true'");
-
-        ((AMQSession) producerSession).declareAndBind((AMQDestination)queue);
-        producer = producerSession.createProducer(queue);
+        createPriorityQueue(3);
 
         // In order ABC
         producer.setPriority(9);
@@ -214,20 +230,12 @@ public class PriorityQueueTest extends QpidBrokerTestCase
      */
     public void testMessageReflectionWithPriorityIncreaseOnTransactedSessionsWithPrefetch1() throws Exception
     {
-        setTestClientSystemProperty(ClientProperties.MAX_PREFETCH_PROP_NAME, "1");
-        Connection conn = getConnection();
+        Connection conn = getConnectionWithPrefetch(1);
         conn.start();
-        assertEquals("Prefetch not reset", 1, ((AMQConnection) conn).getMaxPrefetch());
-
         final Session producerSess = conn.createSession(true, Session.SESSION_TRANSACTED);
         final Session consumerSess = conn.createSession(true, Session.SESSION_TRANSACTED);
 
-        //declare a priority queue with 10 priorities
-        final Map<String,Object> arguments = new HashMap<String, Object>();
-        arguments.put("x-qpid-priorities",10);
-        ((AMQSession<?,?>) producerSess).createQueue(getTestQueueName(), false, true, false, arguments);
-
-        Queue queue = producerSess.createQueue(getTestQueueName());
+        createPriorityQueue(10);
 
         //create the consumer, producer, add message listener
         CountDownLatch latch = new CountDownLatch(5);

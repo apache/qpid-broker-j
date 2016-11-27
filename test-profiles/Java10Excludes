@@ -107,6 +107,18 @@ org.apache.qpid.test.unit.basic.PropertyValueTest#testOverlyLargeHeaderRejected_
 org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_08091_HeadersFillContentHeaderFrame
 org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_010_HeadersFillContentHeaderFrame
 
+// This test concerns 0-8/0-10 bytes limiting flow control
+org.apache.qpid.test.client.FlowControlTest#*
+
+// Failover tests are tests of the 0-x client behaviour
+org.apache.qpid.client.failover.FailoverBehaviourTest#*
+org.apache.qpid.client.failover.MultipleBrokersFailoverTest#*
+org.apache.qpid.test.client.failover.FailoverTest#*
+
+
+// Tests explicit binding using the mechanisms of the 0-x client/protocol
+org.apache.qpid.server.queue.QueueBindTest#*
+
 
 
 
