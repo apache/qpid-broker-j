@@ -47,11 +47,6 @@
         <tck.work.directory>${project.build.directory}/${tck}/work</tck.work.directory>
         <tck.ts.jte>${project.build.testOutputDirectory}/ts.jte</tck.ts.jte>
         <tck.test>com/</tck.test>
-
-        <qpid.legacy.jms.client.groupid>org.apache.qpid</qpid.legacy.jms.client.groupid>
-        <qpid.legacy.jms.client.artifactid>qpid-client</qpid.legacy.jms.client.artifactid>
-        <qpid.legacy.jms.client.version>${project.version}</qpid.legacy.jms.client.version>
-        <qpid.legacy.jms.client.type>jar</qpid.legacy.jms.client.type>
     </properties>
 
     <dependencies>

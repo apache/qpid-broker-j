@@ -35,7 +35,7 @@ public class ArgumentParserTest extends QpidTestCase
     public static final String DISTRIBUTED_PROP = "distributed";
 
     public static final String TEST_CONFIG_DEFAULT = "perftests-config.json";
-    public static final String JNDI_CONFIG_DEFAULT = "perftests-jndi.properties";
+    public static final String JNDI_CONFIG_DEFAULT = "jndi.properties";
     public static final String DISTRIBUTED_DEFAULT = "false";
 
     private Map<String,String> _options = new HashMap<String, String>();

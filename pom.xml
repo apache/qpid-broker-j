@@ -162,6 +162,11 @@
     <maven-docbx-plugin-version>2.0.15</maven-docbx-plugin-version>
     <maven-docbook-xml-plugin-version>5.0-all</maven-docbook-xml-plugin-version>
 
+    <qpid.legacy.jms.client.groupid>org.apache.qpid</qpid.legacy.jms.client.groupid>
+    <qpid.legacy.jms.client.artifactid>qpid-client</qpid.legacy.jms.client.artifactid>
+    <qpid.legacy.jms.client.version>${project.version}</qpid.legacy.jms.client.version>
+    <qpid.legacy.jms.client.type>jar</qpid.legacy.jms.client.type>
+
     <!-- These versions needs to be kept in sync with versions in parent pom-->
     <maven-project-info-reports-plugin-version>2.8</maven-project-info-reports-plugin-version>
     <maven-failsafe-and-surefire-plugins-version>2.18.1</maven-failsafe-and-surefire-plugins-version>

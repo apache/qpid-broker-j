@@ -24,7 +24,7 @@
       "_name": "TestWillError",
       "_queues":[
         {
-          "_name": "direct://amq.direct//testQueue"
+          "_name": "testQueue"
         }
       ],
       "_clients":[

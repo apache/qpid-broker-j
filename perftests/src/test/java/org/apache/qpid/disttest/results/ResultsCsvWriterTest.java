@@ -23,15 +23,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import com.google.common.io.Resources;
+
 import org.apache.qpid.disttest.controller.ResultsForAllTests;
-import org.apache.qpid.disttest.results.ResultsCsvWriter;
 import org.apache.qpid.disttest.results.aggregation.ITestResult;
 import org.apache.qpid.disttest.results.formatting.CSVFormatter;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
-import org.apache.qpid.util.FileUtils;
 
 public class ResultsCsvWriterTest extends QpidTestCase
 {
@@ -48,7 +49,7 @@ public class ResultsCsvWriterTest extends QpidTestCase
         _resultsFileWriter.setCsvFormater(_csvFormater);
     }
 
-    public void testWriteResultsToFile()
+    public void testWriteResultsToFile() throws Exception
     {
         List<ITestResult> testResult1 = mock(List.class);
         ResultsForAllTests results1 = mock(ResultsForAllTests.class);
@@ -69,19 +70,20 @@ public class ResultsCsvWriterTest extends QpidTestCase
         _resultsFileWriter.writeResults(results1, "config1.json");
 
         File resultsFile1 = new File(_outputDir, "config1.csv");
-        assertEquals(expectedCsvContents1, FileUtils.readFileAsString(resultsFile1));
+
+        assertEquals(expectedCsvContents1, Resources.toString(resultsFile1.toURI().toURL(), StandardCharsets.UTF_8));
 
         _resultsFileWriter.writeResults(results2, "config2.json");
 
         File resultsFile2 = new File(_outputDir, "config2.csv");
-        assertEquals(expectedCsvContents2, FileUtils.readFileAsString(resultsFile2));
+        assertEquals(expectedCsvContents2, Resources.toString(resultsFile2.toURI().toURL(), StandardCharsets.UTF_8));
 
         when(_csvFormater.format(any(List.class))).thenReturn(expectedSummaryFileContents);
 
         _resultsFileWriter.end();
 
         File summaryFile = new File(_outputDir, ResultsCsvWriter.TEST_SUMMARY_FILE_NAME);
-        assertEquals(expectedSummaryFileContents, FileUtils.readFileAsString(summaryFile));
+        assertEquals(expectedSummaryFileContents, Resources.toString(summaryFile.toURI().toURL(), StandardCharsets.UTF_8));
     }
 
 

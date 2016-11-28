@@ -32,7 +32,7 @@
       ],
       "_queues":[
         {
-          "_name": "direct://amq.direct//testQueue"
+          "_name": "testQueue"
         }
       ],
       "_clients":[
@@ -48,7 +48,7 @@
                   "_producers": [
                     {
                       "_name": "participantProducer1",
-                      "_destinationName": "direct://amq.direct//testQueue",
+                      "_destinationName": "testQueue",
                       "_numberOfMessages": 10
                     }
                   ]
@@ -69,7 +69,7 @@
                   "_consumers": [
                     {
                       "_name": "participantConsumer1",
-                      "_destinationName": "direct://amq.direct//testQueue",
+                      "_destinationName": "testQueue",
                       "_numberOfMessages": 10
                     }
                   ]

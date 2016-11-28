@@ -29,7 +29,7 @@ public class QpidQueueCreatorFactory
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(QpidQueueCreatorFactory.class);
 
-    private static final String QUEUE_CREATOR_CLASS_NAME_SYSTEM_PROPERTY = "qpid.disttest.queue.creator.class";
+    public static final String QUEUE_CREATOR_CLASS_NAME_SYSTEM_PROPERTY = "qpid.disttest.queue.creator.class";
 
     private QpidQueueCreatorFactory()
     {
@@ -40,7 +40,7 @@ public class QpidQueueCreatorFactory
         String queueCreatorClassName = System.getProperty(QUEUE_CREATOR_CLASS_NAME_SYSTEM_PROPERTY);
         if(queueCreatorClassName == null)
         {
-            queueCreatorClassName = QpidQueueCreator.class.getName();
+            queueCreatorClassName = NoOpQueueCreator.class.getName();
         }
         else
         {

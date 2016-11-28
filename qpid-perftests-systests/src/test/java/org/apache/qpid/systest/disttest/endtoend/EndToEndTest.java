@@ -37,8 +37,11 @@ import java.util.Map;
 
 import org.apache.qpid.disttest.ControllerRunner;
 import org.apache.qpid.disttest.DistributedTestException;
+import org.apache.qpid.disttest.jms.QpidQueueCreatorFactory;
+import org.apache.qpid.disttest.jms.QpidRestAPIQueueCreator;
 import org.apache.qpid.disttest.message.ParticipantAttribute;
 import org.apache.qpid.disttest.results.aggregation.TestResultAggregator;
+import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.util.FileUtils;
 
@@ -57,7 +60,12 @@ public class EndToEndTest extends QpidBrokerTestCase
     @Override
     public void setUp() throws Exception
     {
+        getDefaultBrokerConfiguration().addHttpManagementConfiguration();
         super.setUp();
+        setSystemProperty("perftests.manangement-url", String.format("http://localhost:%d", getDefaultBroker().getHttpPort()));
+        setSystemProperty("perftests.broker-virtualhostnode", "test");
+        setSystemProperty("perftests.broker-virtualhost", "test");
+        setSystemProperty(QpidQueueCreatorFactory.QUEUE_CREATOR_CLASS_NAME_SYSTEM_PROPERTY, QpidRestAPIQueueCreator.class.getName());
         _outputDir = createTemporaryOutputDirectory();
         assertTrue("Output dir must not exist", _outputDir.isDirectory());
     }

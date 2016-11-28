@@ -45,7 +45,7 @@ import org.apache.qpid.disttest.db.ResultsDbWriter.Clock;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.results.ResultsTestFixture;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.test.utils.TestFileUtils;
 
 public class ResultsDbWriterTest extends QpidTestCase
 {
@@ -69,7 +69,7 @@ public class ResultsDbWriterTest extends QpidTestCase
     {
         try
         {
-            FileUtils.deleteDirectory(_tempDbDirectory.getAbsolutePath());
+            TestFileUtils.delete(_tempDbDirectory, true);
         }
         finally
         {

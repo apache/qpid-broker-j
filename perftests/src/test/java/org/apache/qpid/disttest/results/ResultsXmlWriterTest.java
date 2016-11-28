@@ -24,14 +24,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+
+import com.google.common.io.Resources;
 
 import org.apache.qpid.disttest.controller.ResultsForAllTests;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.results.aggregation.ITestResult;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
-import org.apache.qpid.util.FileUtils;
 
 public class ResultsXmlWriterTest extends QpidTestCase
 {
@@ -39,7 +41,7 @@ public class ResultsXmlWriterTest extends QpidTestCase
 
     private ResultsWriter _resultsFileWriter = new ResultsXmlWriter(_outputDir);
 
-    public void testResultForNoTests()
+    public void testResultForNoTests() throws Exception
     {
         ResultsForAllTests resultsForAllTests = mock(ResultsForAllTests.class);
 
@@ -50,10 +52,10 @@ public class ResultsXmlWriterTest extends QpidTestCase
 
         File resultsFile = new File(_outputDir, "config.xml");
 
-        assertEquals(expectedXmlContent, FileUtils.readFileAsString(resultsFile));
+        assertEquals(expectedXmlContent, Resources.toString(resultsFile.toURI().toURL(), StandardCharsets.UTF_8));
     }
 
-    public void testResultForOneTest()
+    public void testResultForOneTest() throws Exception
     {
         ITestResult test = mock(ITestResult.class);
         when(test.getName()).thenReturn("mytest");
@@ -70,10 +72,10 @@ public class ResultsXmlWriterTest extends QpidTestCase
 
         File resultsFile = new File(_outputDir, "config.xml");
 
-        assertEquals(expectedXmlContent, FileUtils.readFileAsString(resultsFile));
+        assertEquals(expectedXmlContent,   Resources.toString(resultsFile.toURI().toURL(), StandardCharsets.UTF_8));
     }
 
-    public void testResultForOneTestWithError()
+    public void testResultForOneTestWithError() throws Exception
     {
         ParticipantResult resultWithError = mock(ParticipantResult.class);
         when(resultWithError.hasError()).thenReturn(true);
@@ -98,7 +100,7 @@ public class ResultsXmlWriterTest extends QpidTestCase
 
         File resultsFile = new File(_outputDir, "config.xml");
 
-        assertEquals(expectedXmlContent, FileUtils.readFileAsString(resultsFile));
+        assertEquals(expectedXmlContent, Resources.toString(resultsFile.toURI().toURL(), StandardCharsets.UTF_8));
     }
 
 }

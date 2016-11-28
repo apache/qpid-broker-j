@@ -31,36 +31,43 @@
   <properties>
     <dependency-change-verification>true</dependency-change-verification>
 
-    <!-- Overrides for system properties understood by Qpid JMS 0-8..0-10 client -->
-    <qpid.amqp.version>0-9</qpid.amqp.version>
-    <qpid.dest_syntax>BURL</qpid.dest_syntax>
-    <qpid.close_timeout>90000</qpid.close_timeout>
+    <!-- Properties filtered into the JNDI properties -->
+    <perftests.messaging-hostpost-plain>localhost:5672</perftests.messaging-hostpost-plain>
+    <perftests.messaging-hostpost-tls>localhost:5672</perftests.messaging-hostpost-tls>
+    <perftests.messaging-user>guest</perftests.messaging-user>
+    <perftests.messaging-password>guest</perftests.messaging-password>
+    <perftests.results-directory>results</perftests.results-directory>
+
+    <!-- Properties used by the REST API Queue Creator -->
+    <perftests.manangement-user>guest</perftests.manangement-user>
+    <perftests.manangement-password>guest</perftests.manangement-password>
+    <perftests.broker-virtualhostnode>default</perftests.broker-virtualhostnode>
+    <perftests.broker-virtualhost>default</perftests.broker-virtualhost>
+    <perftests.manangement-url>http://localhost:8080</perftests.manangement-url>
+
+
+    <perftests.hillclimb>false</perftests.hillclimb>
+    <perftests.hillclimb.max_runs>3</perftests.hillclimb.max_runs>
+    <perftests.hillclimb.start_target_rate>1025.0</perftests.hillclimb.start_target_rate>
+    <perftests.hillclimb.production_to_target_ratio_success_threshold>0.95</perftests.hillclimb.production_to_target_ratio_success_threshold>
+    <perftests.hillclimb.consumption_to_production_ratio_success_threshold>0.95</perftests.hillclimb.consumption_to_production_ratio_success_threshold>
+    <perftests.hillclimb.minimum_delta>1.0</perftests.hillclimb.minimum_delta>
+    <perftests.hillclimb.bias>0.25</perftests.hillclimb.bias>
+
+    <!-- The following provide values for the disttest command line -->
+    <perftests.test-config>${basedir}/etc/testdefs</perftests.test-config>
+    <perftests.test-config.write_to_db>false</perftests.test-config.write_to_db>
+    <perftests.distributed>false</perftests.distributed>
 
     <!-- Overrides for system properties understood by disttest itself -->
     <qpid.disttest.loglevel>info</qpid.disttest.loglevel>
     <qpid.disttest.duration>5000</qpid.disttest.duration>
-    <qpid.disttest.distributed>false</qpid.disttest.distributed>
     <qpid.disttest.registrationTimeout>60000</qpid.disttest.registrationTimeout>
     <qpid.disttest.commandResponseTimeout>120000</qpid.disttest.commandResponseTimeout>
-
-    <!-- The following provide values for the disttest command line -->
-    <qpid.disttest.test_config>${basedir}/etc/testdefs</qpid.disttest.test_config>
-    <qpid.disttest.hillclimb>false</qpid.disttest.hillclimb>
-    <qpid.disttest.hillclimb.max_runs>3</qpid.disttest.hillclimb.max_runs>
-    <qpid.disttest.hillclimb.start_target_rate>1025.0</qpid.disttest.hillclimb.start_target_rate>
-    <qpid.disttest.hillclimb.production_to_target_ratio_success_threshold>0.95</qpid.disttest.hillclimb.production_to_target_ratio_success_threshold>
-    <qpid.disttest.hillclimb.consumption_to_production_ratio_success_threshold>0.95</qpid.disttest.hillclimb.consumption_to_production_ratio_success_threshold>
-    <qpid.disttest.hillclimb.minimum_delta>1.0</qpid.disttest.hillclimb.minimum_delta>
-    <qpid.disttest.hillclimb.bias>0.25</qpid.disttest.hillclimb.bias>
   </properties>
 
   <dependencies>
     <!-- client deps -->
-    <dependency>
-      <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-client</artifactId>
-      <version>${project.version}</version>
-    </dependency>
 
     <dependency>
       <groupId>org.apache.geronimo.specs</groupId>
@@ -139,6 +146,10 @@
       </testResource>
       <testResource>
         <directory>src/test/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+          <include>**/*</include>
+        </includes>
       </testResource>
     </testResources>
 
@@ -171,63 +182,6 @@
       </plugin>
 
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>${exec-maven-plugin-version}</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>java</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <mainClass>org.apache.qpid.disttest.ControllerRunner</mainClass>
-          <arguments>
-            <argument>jndi-config=${basedir}/etc/perftests-jndi.properties</argument>
-            <argument>test-config=${qpid.disttest.test_config}</argument>
-            <argument>distributed=${qpid.disttest.distributed}</argument>
-            <argument>writeToDb=false</argument>
-            <argument>registrationTimeout=${qpid.disttest.registrationTimeout}</argument>
-            <argument>commandResponseTimeout=${qpid.disttest.commandResponseTimeout}</argument>
-            <argument>hill-climb=${qpid.disttest.hillclimb}</argument>
-            <argument>hill-climber.max-runs=${qpid.disttest.hillclimb.max_runs}</argument>
-            <argument>hill-climber.start-target-rate=${qpid.disttest.hillclimb.start_target_rate}</argument>
-            <argument>hill-climber.production-to-target-ratio-success-threshold=${qpid.disttest.hillclimb.production_to_target_ratio_success_threshold}</argument>
-            <argument>hill-climber.consumption-to-production-ratio-success-threshold=${qpid.disttest.hillclimb.consumption_to_production_ratio_success_threshold}</argument>
-            <argument>hill-climber.minimum-delta=${qpid.disttest.hillclimb.minimum_delta}</argument>
-            <argument>hill-climber.bias=${qpid.disttest.hillclimb.bias}</argument>
-          </arguments>
-          <classpathScope>compile</classpathScope>
-          <systemProperties>
-            <systemProperty>
-              <key>qpid.disttest.loglevel</key>
-              <value>${qpid.disttest.loglevel}</value>
-            </systemProperty>
-            <systemProperty>
-              <key>qpid.disttest.duration</key>
-              <value>${qpid.disttest.duration}</value>
-            </systemProperty>
-            <systemProperty>
-              <key>qpid.amqp.version</key>
-              <value>${qpid.amqp.version}</value>
-            </systemProperty>
-            <systemProperty>
-              <key>qpid.dest_syntax</key>
-              <value>${qpid.dest_syntax}</value>
-            </systemProperty>
-            <systemProperty>
-              <key>qpid.close_timeout</key>
-              <value>${qpid.close_timeout}</value>
-            </systemProperty>
-            <systemProperty>
-               <key>java.naming.factory.initial</key>
-               <value>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</value>
-            </systemProperty>
-          </systemProperties>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
@@ -239,70 +193,145 @@
           </excludes>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <configuration>
+          <delimiters>
+            <delimiter>${*}</delimiter>
+          </delimiters>
+          <useDefaultDelimiters>false</useDefaultDelimiters>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <profiles>
     <profile>
-      <id>qpid-jms-client</id>
+      <id>perftests</id>
       <activation>
         <property>
-          <name>client</name>
-          <value>qpid-jms-client</value>
+          <name>perftests</name>
         </property>
       </activation>
       <build>
         <plugins>
           <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <version>${exec-maven-plugin-version}</version>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
             <executions>
               <execution>
+                <id>enforce-property</id>
+                <goals>
+                  <goal>enforce</goal>
+                </goals>
+                <configuration>
+                  <rules>
+                    <requireProperty>
+                      <property>perftests</property>
+                      <regex>^(qpid-jms-client)|(jms-client-0-9)|(jms-client-0-10)$</regex>
+                    </requireProperty>
+                  </rules>
+                  <fail>true</fail>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>run-perftests</id>
                 <goals>
                   <goal>java</goal>
                 </goals>
+                <phase>integration-test</phase>
+                <configuration>
+                  <mainClass>org.apache.qpid.disttest.ControllerRunner</mainClass>
+                  <classpathScope>compile</classpathScope>
+                  <arguments>
+                    <argument>jndi-config=${java.naming.provider.url}</argument>
+                    <argument>test-config=${perftests.test-config}</argument>
+                    <argument>distributed=${perftests.distributed}</argument>
+                    <argument>writeToDb=${perftests.test-config.write_to_db}</argument>
+                    <argument>registrationTimeout=${qpid.disttest.registrationTimeout}</argument>
+                    <argument>commandResponseTimeout=${qpid.disttest.commandResponseTimeout}</argument>
+                    <argument>hill-climb=${perftests.hillclimb}</argument>
+                    <argument>hill-climber.max-runs=${perftests.hillclimb.max_runs}</argument>
+                    <argument>hill-climber.start-target-rate=${perftests.hillclimb.start_target_rate}</argument>
+                    <argument>hill-climber.production-to-target-ratio-success-threshold=${perftests.hillclimb.production_to_target_ratio_success_threshold}</argument>
+                    <argument>hill-climber.consumption-to-production-ratio-success-threshold=${perftests.hillclimb.consumption_to_production_ratio_success_threshold}</argument>
+                    <argument>hill-climber.minimum-delta=${perftests.hillclimb.minimum_delta}</argument>
+                    <argument>hill-climber.bias=${perftests.hillclimb.bias}</argument>
+                  </arguments>
+                  <systemProperties>
+                    <systemProperty>
+                      <key>qpid.disttest.loglevel</key>
+                      <value>${qpid.disttest.loglevel}</value>
+                    </systemProperty>
+                    <systemProperty>
+                      <key>qpid.disttest.duration</key>
+                      <value>${qpid.disttest.duration}</value>
+                    </systemProperty>
+                    <systemProperty>
+                      <key>java.naming.factory.initial</key>
+                      <value>${java.naming.factory.initial}</value>
+                    </systemProperty>
+                    <systemProperty>
+                      <key>qpid.disttest.queue.creator.class</key>
+                      <value>org.apache.qpid.disttest.jms.QpidRestAPIQueueCreator</value>
+                    </systemProperty>
+                    <systemProperty>
+                      <key>perftests.manangement-user</key>
+                      <value>${perftests.manangement-user}</value>
+                    </systemProperty>
+                    <systemProperty>
+                      <key>perftests.manangement-password</key>
+                      <value>${perftests.manangement-password}</value>
+                    </systemProperty>
+                    <systemProperty>
+                      <key>perftests.broker-virtualhostnode</key>
+                      <value>${perftests.broker-virtualhostnode}</value>
+                    </systemProperty>
+                    <systemProperty>
+                      <key>perftests.broker-virtualhost</key>
+                      <value>${perftests.broker-virtualhost}</value>
+                    </systemProperty>
+                    <systemProperty>
+                      <key>perftests.manangement-url</key>
+                      <value>${perftests.manangement-url}</value>
+                    </systemProperty>
+                    <!-- The following two are used by the legacy client only -->
+                    <systemProperty>
+                      <key>qpid.dest_syntax</key>
+                      <value>${qpid.dest_syntax}</value>
+                    </systemProperty>
+                    <systemProperty>
+                      <key>qpid.amqp.version</key>
+                      <value>${qpid.amqp.version}</value>
+                    </systemProperty>
+                  </systemProperties>
+                </configuration>
               </execution>
             </executions>
-            <configuration>
-              <mainClass>org.apache.qpid.disttest.ControllerRunner</mainClass>
-              <arguments>
-                <argument>jndi-config=${basedir}/etc/perftests-jndi-qpid-jms-client.properties</argument>
-                <argument>test-config=${qpid.disttest.test_config}</argument>
-                <argument>distributed=false</argument>
-                <argument>writeToDb=false</argument>
-                <argument>registrationTimeout=${qpid.disttest.registrationTimeout}</argument>
-                <argument>commandResponseTimeout=${qpid.disttest.commandResponseTimeout}</argument>
-                <argument>hill-climb=${qpid.disttest.hillclimb}</argument>
-                <argument>hill-climber.max-runs=${qpid.disttest.hillclimb.max_runs}</argument>
-                <argument>hill-climber.start-target-rate=${qpid.disttest.hillclimb.start_target_rate}</argument>
-                <argument>hill-climber.production-to-target-ratio-success-threshold=${qpid.disttest.hillclimb.production_to_target_ratio_success_threshold}</argument>
-                <argument>hill-climber.consumption-to-production-ratio-success-threshold=${qpid.disttest.hillclimb.consumption_to_production_ratio_success_threshold}</argument>
-                <argument>hill-climber.minimum-delta=${qpid.disttest.hillclimb.minimum_delta}</argument>
-                <argument>hill-climber.bias=${qpid.disttest.hillclimb.bias}</argument>
-              </arguments>
-              <classpathScope>compile</classpathScope>
-              <systemProperties>
-                <systemProperty>
-                  <key>qpid.disttest.loglevel</key>
-                  <value>${qpid.disttest.loglevel}</value>
-                </systemProperty>
-                <systemProperty>
-                  <key>qpid.disttest.duration</key>
-                  <value>${qpid.disttest.duration}</value>
-                </systemProperty>
-                <systemProperty>
-                  <key>java.naming.factory.initial</key>
-                  <value>org.apache.qpid.jms.jndi.JmsInitialContextFactory</value>
-                </systemProperty>
-                <systemProperty>
-                  <key>qpid.disttest.queue.creator.class</key>
-                  <value>org.apache.qpid.disttest.jms.QpidRestAPIQueueCreator</value>
-                </systemProperty>
-              </systemProperties>
-            </configuration>
           </plugin>
         </plugins>
       </build>
+    </profile>
+
+    <profile>
+      <id>qpid-jms-client</id>
+      <activation>
+        <property>
+          <name>perftests</name>
+          <value>qpid-jms-client</value>
+        </property>
+      </activation>
+      <properties>
+        <java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</java.naming.factory.initial>
+        <java.naming.provider.url>${project.build.directory}/test-classes/qpid-jms-client/jndi.properties</java.naming.provider.url>
+        <qpid.amqp.version></qpid.amqp.version>
+        <qpid.dest_syntax></qpid.dest_syntax>
+      </properties>
       <dependencies>
         <dependency>
           <groupId>org.apache.qpid</groupId>
@@ -311,6 +340,53 @@
         </dependency>
       </dependencies>
     </profile>
+    <profile>
+      <id>jms-client-0-9</id>
+      <activation>
+        <property>
+          <name>perftests</name>
+          <value>jms-client-0-9</value>
+        </property>
+      </activation>
+      <properties>
+        <java.naming.factory.initial>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</java.naming.factory.initial>
+        <java.naming.provider.url>${project.build.directory}/test-classes/jms-client/jndi.properties</java.naming.provider.url>
+        <qpid.amqp.version>0-9</qpid.amqp.version>
+        <qpid.dest_syntax>BURL</qpid.dest_syntax>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>${qpid.legacy.jms.client.groupid}</groupId>
+          <artifactId>${qpid.legacy.jms.client.artifactid}</artifactId>
+          <version>${qpid.legacy.jms.client.version}</version>
+          <type>${qpid.legacy.jms.client.type}</type>
+          <scope>compile</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>jms-client-0-10</id>
+      <activation>
+        <property>
+          <name>perftests</name>
+          <value>jms-client-0-10</value>
+        </property>
+      </activation>
+      <properties>
+        <java.naming.factory.initial>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</java.naming.factory.initial>
+        <java.naming.provider.url>${project.build.directory}/test-classes/jms-client/jndi.properties</java.naming.provider.url>
+        <qpid.amqp.version>0-10</qpid.amqp.version>
+        <qpid.dest_syntax>BURL</qpid.dest_syntax>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>${qpid.legacy.jms.client.groupid}</groupId>
+          <artifactId>${qpid.legacy.jms.client.artifactid}</artifactId>
+          <version>${qpid.legacy.jms.client.version}</version>
+          <type>${qpid.legacy.jms.client.type}</type>
+          <scope>compile</scope>
+        </dependency>
+      </dependencies>
+    </profile>
   </profiles>
-
 </project>

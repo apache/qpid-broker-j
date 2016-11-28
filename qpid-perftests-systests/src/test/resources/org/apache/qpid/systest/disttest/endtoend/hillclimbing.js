@@ -24,8 +24,6 @@ var acknowledgeMode = 0;
 var deliveryMode = 2;
 
 var queueName = "testQueueHillClimbing";
-var destination = "BURL:direct://amq.direct//".concat(queueName)
-    .concat("?durable='true'");
 
 var test = {
     "_name": "HillClimbing",
@@ -43,7 +41,7 @@ var test = {
                 "_acknowledgeMode": acknowledgeMode,
                 "_producers": [{
                     "_name": "Producer1",
-                    "_destinationName": destination,
+                    "_destinationName": queueName,
                     "_deliveryMode": deliveryMode,
                     "_maximumDuration": duration
                 }]
@@ -59,7 +57,7 @@ var test = {
                 "_acknowledgeMode": acknowledgeMode,
                 "_consumers": [{
                     "_name": "Consumer1",
-                    "_destinationName": destination,
+                    "_destinationName": queueName,
                     "_maximumDuration": duration
                 }]
             }]

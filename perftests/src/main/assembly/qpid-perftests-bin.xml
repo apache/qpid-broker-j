@@ -51,11 +51,6 @@
     <dependencySet>
       <outputDirectory>/lib</outputDirectory>
       <useProjectArtifact>true</useProjectArtifact>
-      <excludes>
-        <!-- Exclude client artifacts, user provides appropriate version -->
-        <exclude>org.apache.qpid:qpid-client</exclude>
-        <exclude>org.apache.qpid:qpid-common</exclude>
-      </excludes>
     </dependencySet>
     <dependencySet>
       <outputDirectory>/lib</outputDirectory>

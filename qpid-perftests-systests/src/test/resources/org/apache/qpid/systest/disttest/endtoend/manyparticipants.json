@@ -24,10 +24,10 @@
     "_name": "ManyParticipants",
     "_queues":[
       {
-        "_name": "direct://amq.direct//testQueue1"
+        "_name": "testQueue1"
       },
       {
-        "_name": "direct://amq.direct//testQueue2"
+        "_name": "testQueue2"
       }
     ],
     "_clients":[
@@ -43,7 +43,7 @@
                 "_producers": [
                   {
                     "_name": "participantProducer1",
-                    "_destinationName": "direct://amq.direct//testQueue1",
+                    "_destinationName": "testQueue1",
                     "_numberOfMessages": 10
                   }
                 ]
@@ -64,7 +64,7 @@
                 "_producers": [
                   {
                     "_name": "participantProducer2",
-                    "_destinationName": "direct://amq.direct//testQueue2",
+                    "_destinationName": "testQueue2",
                     "_numberOfMessages": 10
                   }
                 ]
@@ -85,7 +85,7 @@
                 "_consumers": [
                   {
                     "_name": "participantConsumer1",
-                    "_destinationName": "direct://amq.direct//testQueue1",
+                    "_destinationName": "testQueue1",
                     "_numberOfMessages": 10
                   }
                 ]
@@ -101,7 +101,7 @@
                 "_consumers": [
                   {
                     "_name": "participantConsumer2",
-                    "_destinationName": "direct://amq.direct//testQueue2",
+                    "_destinationName": "testQueue2",
                     "_numberOfMessages": 10
                   }
                 ]
