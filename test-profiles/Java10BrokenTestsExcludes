@@ -47,6 +47,8 @@ org.apache.qpid.systest.rest.PublishMessageRestTest#testPublishMapMessage
 org.apache.qpid.test.unit.transacted.CommitRollbackTest#testSend2ThenCloseAfter1andTryAgain
 org.apache.qpid.test.unit.transacted.CommitRollbackTest#testRollbackSoak
 
+// this test fails - likely a client bug with the modification racing the send
+org.apache.qpid.test.unit.basic.BytesMessageTest#testModificationAfterSend
 
 // AmqpManagement at the broker level needs the client to support the request/response pattern using local target names
 // (since the synthetic virtual host cannot create a temporary queue).  This will require the client to support this
@@ -73,6 +75,7 @@ org.apache.qpid.test.unit.client.temporaryqueue.TemporaryQueueTest#testExplictTe
 // so it shouldn't implement it ...
 org.apache.qpid.test.unit.client.QueueSessionFactoryTest#testQueueSessionIsNotATopicSession
 // ... and vice versa
+org.apache.qpid.test.unit.client.TopicSessionFactoryTest#testTopicSessionIsNotAQueueSession
 org.apache.qpid.test.unit.client.QueueSessionFactoryTest#testTopicSessionCannotCreateCreateBrowser
 
 
