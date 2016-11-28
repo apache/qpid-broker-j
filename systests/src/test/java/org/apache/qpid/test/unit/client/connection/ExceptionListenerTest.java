@@ -75,9 +75,12 @@ public class ExceptionListenerTest extends QpidBrokerTestCase
 
         assertEquals("Unexpected number of exceptions received", 1, exceptionCounter.intValue());
         LOGGER.debug("exception was", _lastExceptionListenerException);
-        assertNotNull("Exception should have cause", _lastExceptionListenerException.getCause());
-        Class<? extends Exception> expectedExceptionClass = isBroker010() ? ConnectionException.class : AMQConnectionClosedException.class;
-        assertEquals(expectedExceptionClass, _lastExceptionListenerException.getCause().getClass());
+        if(!isBroker10())
+        {
+            assertNotNull("Exception should have cause", _lastExceptionListenerException.getCause());
+            Class<? extends Exception> expectedExceptionClass = isBroker010() ? ConnectionException.class : AMQConnectionClosedException.class;
+            assertEquals(expectedExceptionClass, _lastExceptionListenerException.getCause().getClass());
+        }
     }
 
     /**
