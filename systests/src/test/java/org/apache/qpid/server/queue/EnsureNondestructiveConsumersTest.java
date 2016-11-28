@@ -55,15 +55,26 @@ public class EnsureNondestructiveConsumersTest extends QpidBrokerTestCase
         _connection.start();
     }
 
-    private void createQueueEnsureNondestructiveConsumerOption(boolean ensureNonDestructiveConsumer) throws
-                                                                                                     QpidException
+    private void createQueueEnsureNondestructiveConsumerOption(boolean ensureNonDestructiveConsumer)
+            throws QpidException, JMSException
     {
         final Map<String,Object> arguments = new HashMap<>();
-
-        arguments.put("qpid.ensure_nondestructive_consumers", String.valueOf(ensureNonDestructiveConsumer));
-        ((AMQSession<?,?>) _session).createQueue(_queueName, false, true, false, arguments);
-        _queue = new org.apache.qpid.client.AMQQueue("amq.direct", _queueName);
-        ((AMQSession<?,?>) _session).declareAndBind((AMQDestination)_queue);
+        if(isBroker10())
+        {
+            if(ensureNonDestructiveConsumer)
+            {
+                arguments.put("ensureNondestructiveConsumers", true);
+            }
+            createEntityUsingAmqpManagement(_queueName, _session, "org.apache.qpid.Queue", arguments);
+            _queue = _session.createQueue(_queueName);
+        }
+        else
+        {
+            arguments.put("qpid.ensure_nondestructive_consumers", String.valueOf(ensureNonDestructiveConsumer));
+            ((AMQSession<?, ?>) _session).createQueue(_queueName, false, true, false, arguments);
+            _queue = new org.apache.qpid.client.AMQQueue("amq.direct", _queueName);
+            ((AMQSession<?, ?>) _session).declareAndBind((AMQDestination) _queue);
+        }
     }
 
     public void testEnsureNondestructiveConsumers() throws QpidException, JMSException
