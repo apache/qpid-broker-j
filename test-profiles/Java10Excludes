@@ -142,6 +142,9 @@ org.apache.qpid.test.unit.client.connection.ConnectionTest#*
 // Tests conversion between 0-8/9/9-1 and 0-10
 org.apache.qpid.server.message.MessageProtocolConversionTest#*
 
+// Tests the interaction between the Broker's supported protocols and what the 0-x client agrees to
+org.apache.qpid.server.SupportedProtocolVersionsTest#*
+
 
 
 

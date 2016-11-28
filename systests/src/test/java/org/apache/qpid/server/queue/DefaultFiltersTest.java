@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.queue;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,16 +56,25 @@ public class DefaultFiltersTest extends QpidBrokerTestCase
         _connection.start();
     }
 
-    private void createQueueWithDefaultFilter(String selector) throws QpidException
+    private void createQueueWithDefaultFilter(String selector) throws QpidException, JMSException
     {
         final Map<String,Object> arguments = new HashMap<>();
         selector = selector.replace("\\", "\\\\");
         selector = selector.replace("\"", "\\\"");
-
-        arguments.put("qpid.default_filters","{ \"x-filter-jms-selector\" : { \"x-filter-jms-selector\" : [ \""+selector+"\" ] } }");
-        ((AMQSession<?,?>) _session).createQueue(_queueName, false, true, false, arguments);
-        _queue = new org.apache.qpid.client.AMQQueue("amq.direct", _queueName);
-        ((AMQSession<?,?>) _session).declareAndBind((AMQDestination)_queue);
+        if(isBroker10())
+        {
+            createEntityUsingAmqpManagement(_queueName, _session, "org.apache.qpid.Queue",
+                                            Collections.<String,Object>singletonMap("defaultFilters", "{ \"x-filter-jms-selector\" : { \"x-filter-jms-selector\" : [ \"" + selector + "\" ] } }" ));
+            _queue = _session.createQueue(_queueName);
+        }
+        else
+        {
+            arguments.put("qpid.default_filters",
+                          "{ \"x-filter-jms-selector\" : { \"x-filter-jms-selector\" : [ \"" + selector + "\" ] } }");
+            ((AMQSession<?, ?>) _session).createQueue(_queueName, false, true, false, arguments);
+            _queue = new org.apache.qpid.client.AMQQueue("amq.direct", _queueName);
+            ((AMQSession<?, ?>) _session).declareAndBind((AMQDestination) _queue);
+        }
     }
 
     public void testDefaultFilterIsApplied() throws QpidException, JMSException
