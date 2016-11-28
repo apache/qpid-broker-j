@@ -20,16 +20,16 @@
  */
 package org.apache.qpid.test.unit.basic.close;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
+import javax.jms.Connection;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class CloseTest extends QpidBrokerTestCase
 {
@@ -37,10 +37,10 @@ public class CloseTest extends QpidBrokerTestCase
 
     public void testCloseQueueReceiver() throws  Exception
     {
-        AMQConnection connection = (AMQConnection) getConnection("guest", "guest");
+        Connection connection = getConnection();
 
-        Session session = connection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
-
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        createTestQueue(session, "test-queue");
         Queue queue = session.createQueue("test-queue");
         MessageConsumer consumer = session.createConsumer(queue);
 

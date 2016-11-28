@@ -56,7 +56,6 @@ org.apache.qpid.test.unit.client.connection.ConnectionTest#*
 org.apache.qpid.test.unit.client.connection.ConnectionFactoryTest#*
 org.apache.qpid.test.unit.client.connection.BrokerClosesClientConnectionTest#*
 org.apache.qpid.test.unit.client.channelclose.CloseWithBlockingReceiveTest#*
-org.apache.qpid.test.unit.basic.close.CloseTest#*
 org.apache.qpid.test.client.queue.LVQTest#*
 org.apache.qpid.test.client.message.JMSDestinationTest#*
 org.apache.qpid.systest.rest.ConnectionRestTest#*
