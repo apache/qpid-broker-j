@@ -32,8 +32,8 @@
     <dependency-change-verification>true</dependency-change-verification>
 
     <!-- Properties filtered into the JNDI properties -->
-    <perftests.messaging-hostpost-plain>localhost:5672</perftests.messaging-hostpost-plain>
-    <perftests.messaging-hostpost-tls>localhost:5672</perftests.messaging-hostpost-tls>
+    <perftests.messaging-hostport-plain>localhost:5672</perftests.messaging-hostport-plain>
+    <perftests.messaging-hostport-tls>localhost:5672</perftests.messaging-hostport-tls>
     <perftests.messaging-user>guest</perftests.messaging-user>
     <perftests.messaging-password>guest</perftests.messaging-password>
     <perftests.results-directory>results</perftests.results-directory>
