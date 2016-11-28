@@ -452,13 +452,13 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         public long getExpiration()
         {
-            if(_properties.getAbsoluteExpiryTime() != null && _properties.getCreationTime() != null)
+            if(_properties.getAbsoluteExpiryTime() != null)
             {
-                return _properties.getAbsoluteExpiryTime().getTime() - _properties.getCreationTime().getTime();
+                return _properties.getAbsoluteExpiryTime().getTime();
             }
             else
             {
-                return _header.getTtl() == null ? 0L : _header.getTtl().longValue();
+                return _header.getTtl() == null || _properties.getCreationTime() == null ? 0L : _header.getTtl().longValue() + _properties.getCreationTime().getTime();
             }
         }
 

@@ -81,7 +81,14 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
 
     public long getExpiration()
     {
-        return getMessageHeader().getExpiration();
+        final MessageMetaData_1_0 metaData = getMessageMetaData();
+        final MessageMetaData_1_0.MessageHeader_1_0 messageHeader = metaData.getMessageHeader();
+        long expiration = messageHeader.getExpiration();
+        if(expiration == 0L && metaData.getHeaderSection().getTtl() != null)
+        {
+            expiration = _arrivalTime + metaData.getHeaderSection().getTtl().longValue();
+        }
+        return expiration;
     }
 
     public long getArrivalTime()
