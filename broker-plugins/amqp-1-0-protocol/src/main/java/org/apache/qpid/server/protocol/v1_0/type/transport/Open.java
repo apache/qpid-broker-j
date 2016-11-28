@@ -116,7 +116,7 @@ public class Open
         return _outgoingLocales;
     }
 
-    public void setOutgoingLocales(Symbol[] outgoingLocales)
+    public void setOutgoingLocales(Symbol... outgoingLocales)
     {
         _outgoingLocales = outgoingLocales;
     }
@@ -126,7 +126,7 @@ public class Open
         return _incomingLocales;
     }
 
-    public void setIncomingLocales(Symbol[] incomingLocales)
+    public void setIncomingLocales(Symbol... incomingLocales)
     {
         _incomingLocales = incomingLocales;
     }
@@ -136,7 +136,7 @@ public class Open
         return _offeredCapabilities;
     }
 
-    public void setOfferedCapabilities(Symbol[] offeredCapabilities)
+    public void setOfferedCapabilities(Symbol... offeredCapabilities)
     {
         _offeredCapabilities = offeredCapabilities;
     }

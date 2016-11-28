@@ -119,6 +119,9 @@ org.apache.qpid.test.client.failover.FailoverTest#*
 // Tests explicit binding using the mechanisms of the 0-x client/protocol
 org.apache.qpid.server.queue.QueueBindTest#*
 
+// Tests for configuration options for the 0-x client
+org.apache.qpid.test.unit.basic.InvalidDestinationTest#testInvalidDestinationOnMessageProducer
+org.apache.qpid.test.unit.basic.InvalidDestinationTest#testInvalidDestinationOnMessageProducerURL
 
 
 

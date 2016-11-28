@@ -28,6 +28,7 @@ import javax.jms.InvalidDestinationException;
 import javax.jms.JMSException;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
+import javax.jms.QueueConnection;
 import javax.jms.QueueSender;
 import javax.jms.QueueSession;
 import javax.jms.Session;
@@ -41,12 +42,12 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class InvalidDestinationTest extends QpidBrokerTestCase
 {
-    private AMQConnection _connection;
+    private Connection _connection;
 
     protected void setUp() throws Exception
     {
         super.setUp();
-        _connection = (AMQConnection) getConnection("guest", "guest");
+        _connection = getConnection("guest", "guest");
     }
 
     protected void tearDown() throws Exception
@@ -55,16 +56,14 @@ public class InvalidDestinationTest extends QpidBrokerTestCase
         super.tearDown();
     }
 
+
     public void testInvalidDestination() throws Exception
     {
-        QueueSession queueSession = _connection.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
+        QueueSession queueSession = ((QueueConnection)_connection).createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
 
         Queue invalidDestination = queueSession.createQueue("unknownQ");
 
-        Queue validDestination = queueSession.createQueue(getTestQueueName());
-
-        // This is the only easy way to create and bind a queue from the API :-(
-        queueSession.createConsumer(validDestination);
+        Queue validDestination = createTestQueue(queueSession);
         QueueSender sender;
         TextMessage msg= queueSession.createTextMessage("Hello");
 

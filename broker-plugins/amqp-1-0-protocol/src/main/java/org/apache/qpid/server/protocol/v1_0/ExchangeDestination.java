@@ -34,6 +34,8 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.txn.ServerTransaction;
 
@@ -103,7 +105,15 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
                                       null);
 
 
-        return enqueues == 0 && !_discardUnroutable ? REJECTED : ACCEPTED;
+        return enqueues == 0 && !_discardUnroutable ? createdRejectedOutcome(getRoutingAddress(message)) : ACCEPTED;
+    }
+
+    private Outcome createdRejectedOutcome(final String routingAddress)
+    {
+        Rejected rejected = new Rejected();
+        final Error notFoundError = new Error(AmqpError.NOT_FOUND, "Unknown destination '"+routingAddress+'"');
+        rejected.setError(notFoundError);
+        return rejected;
     }
 
     @Override

@@ -32,6 +32,8 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusExpiryPolicy;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.txn.ServerTransaction;
 
@@ -98,7 +100,16 @@ public class NodeReceivingDestination implements ReceivingDestination
         int enqueues = _destination.send(message, routingAddress, instanceProperties, txn, null);
 
 
-        return enqueues == 0 && !_discardUnroutable ? REJECTED : ACCEPTED;
+        return enqueues == 0 && !_discardUnroutable ? createdRejectedOutcome(message) : ACCEPTED;
+    }
+
+    private Outcome createdRejectedOutcome(final Message_1_0 message)
+    {
+        String routingAddress = getRoutingAddress(message);
+        Rejected rejected = new Rejected();
+        final Error notFoundError = new Error(AmqpError.NOT_FOUND, "Unknown destination '" + routingAddress + '"');
+        rejected.setError(notFoundError);
+        return rejected;
     }
 
     @Override
@@ -134,6 +145,11 @@ public class NodeReceivingDestination implements ReceivingDestination
                      && messageHeader.getTo().startsWith(_destination.getName() + "/"))
             {
                 routingAddress = messageHeader.getTo().substring(1+_destination.getName().length());
+            }
+            else if (messageHeader.getTo() != null
+                     && (_destination.getName() == null || _destination.getName().trim().equals("")))
+            {
+                routingAddress = messageHeader.getTo();
             }
             else
             {

@@ -153,12 +153,15 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                     (byte) 0
             };
 
+    private static final Symbol ANONYMOUS_RELAY = Symbol.valueOf("ANONYMOUS-RELAY");
+
     private FrameWriter _frameWriter;
     private ProtocolHandler _frameHandler;
     private volatile boolean _transportBlockedForWriting;
     private volatile SubjectAuthenticationResult _successfulAuthenticationResult;
     private boolean _blocking;
     private final Object _blockingLock = new Object();
+    private List<Symbol> _offeredCapabilities;
 
     private enum FrameReceivingState
     {
@@ -258,6 +261,10 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         serverProperties.put(Symbol.valueOf(ServerPropertyNames.QPID_INSTANCE_NAME), broker.getName());
 
         setProperties(serverProperties);
+
+        List<Symbol> offeredCapabilities = new ArrayList<>();
+        offeredCapabilities.add(ANONYMOUS_RELAY);
+        setOfferedCapabilities(offeredCapabilities);
 
         setRemoteAddress(network.getRemoteAddress());
 
@@ -879,6 +886,12 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     {
         _properties = properties;
     }
+
+    public void setOfferedCapabilities(final List<Symbol> offeredCapabilities)
+    {
+        _offeredCapabilities = offeredCapabilities;
+    }
+
 
     private void setClosedForOutput(final boolean closed)
     {
@@ -1549,6 +1562,13 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         // TODO - should we try to set the hostname based on the connection information?
         // open.setHostname();
         open.setIdleTimeOut(UnsignedInteger.valueOf(_desiredIdleTimeout));
+
+        // set the offered capabilities
+        if(_offeredCapabilities != null && !_offeredCapabilities.isEmpty())
+        {
+            open.setOfferedCapabilities(_offeredCapabilities.toArray(new Symbol[_offeredCapabilities.size()]));
+        }
+
         if (_properties != null)
         {
             open.setProperties(_properties);
