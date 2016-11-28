@@ -20,32 +20,40 @@
  */
 package org.apache.qpid.test.unit.basic;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import javax.jms.Connection;
+import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageListener;
+import javax.jms.Session;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class SessionStartTest extends QpidBrokerTestCase implements MessageListener
 {
     private static final Logger _logger = LoggerFactory.getLogger(SessionStartTest.class);
 
-    private AMQConnection _connection;
-    private AMQDestination _destination;
-    private AMQSession _session;
-    private int count;
+    private Connection _connection;
+    private Destination _destination;
+    private Session _session;
+    private CountDownLatch _countdownLatch;
 
     protected void setUp() throws Exception
     {
         super.setUp();
-        init((AMQConnection) getConnection("guest", "guest"));
+        _connection = getConnection();
+        _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        _destination = createTestQueue(_session);
+        _connection.start();
+
+        _session.createConsumer(_destination).setMessageListener(this);
+        _countdownLatch = new CountDownLatch(1);
     }
 
     protected void tearDown() throws Exception
@@ -53,37 +61,13 @@ public class SessionStartTest extends QpidBrokerTestCase implements MessageListe
         super.tearDown();
     }
 
-    private void init(AMQConnection connection) throws Exception
-    {
-        init(connection,
-            new AMQQueue(connection.getDefaultQueueExchangeName(), randomize("SessionStartTest"), true));
-    }
-
-    private void init(AMQConnection connection, AMQDestination destination) throws Exception
-    {
-        _connection = connection;
-        _destination = destination;
-        connection.start();
-
-        _session = (AMQSession) connection.createSession(false, AMQSession.NO_ACKNOWLEDGE);
-        _session.createConsumer(destination).setMessageListener(this);
-    }
-
-    public synchronized void test() throws JMSException, InterruptedException
+    public void test() throws JMSException, InterruptedException
     {
         try
         {
             _session.createProducer(_destination).send(_session.createTextMessage("Message"));
             _logger.info("Message sent, waiting for response...");
-            wait(1000);
-            if (count > 0)
-            {
-                _logger.info("Got message");
-            }
-            else
-            {
-                throw new RuntimeException("Did not get message!");
-            }
+            _countdownLatch.await(getReceiveTimeout(), TimeUnit.MILLISECONDS);
         }
         finally
         {
@@ -92,14 +76,9 @@ public class SessionStartTest extends QpidBrokerTestCase implements MessageListe
         }
     }
 
-    public synchronized void onMessage(Message message)
+    public void onMessage(Message message)
     {
-        count++;
-        notify();
+        _countdownLatch.countDown();
     }
 
-    private static String randomize(String in)
-    {
-        return in + System.currentTimeMillis();
-    }
 }
