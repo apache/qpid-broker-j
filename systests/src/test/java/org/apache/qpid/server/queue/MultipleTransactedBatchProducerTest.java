@@ -25,10 +25,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
+import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
+import javax.jms.Queue;
 import javax.jms.Session;
 
 import org.slf4j.Logger;
@@ -50,6 +52,7 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
     private String _queueName;
 
     private volatile String _failMsg;
+    private Queue _queue;
 
     public void setUp() throws Exception
     {
@@ -82,27 +85,28 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
      */
     public void testMultipleBatchedProducersWithMultipleConsumersUsingSelectors() throws Exception
     {
-        String selector1 = ("(\"" + _queueName +"\" % " + NUM_CONSUMERS + ") = 0");
-        String selector2 = ("(\"" + _queueName +"\" % " + NUM_CONSUMERS + ") = 1");
-        String selector3 = ("(\"" + _queueName +"\" % " + NUM_CONSUMERS + ") = 2");
+        String selector1 = ("(randomValue % " + NUM_CONSUMERS + ") = 0");
+        String selector2 = ("(randomValue % " + NUM_CONSUMERS + ") = 1");
+        String selector3 = ("(randomValue % " + NUM_CONSUMERS + ") = 2");
 
         //create consumers
         Connection conn1 = getConnection();
         conn1.setExceptionListener(new ExceptionHandler("conn1"));
         Session sess1 = conn1.createSession(true, Session.SESSION_TRANSACTED);
-        MessageConsumer cons1 = sess1.createConsumer(sess1.createQueue(_queueName), selector1);
+        _queue = createTestQueue(sess1, _queueName);
+        MessageConsumer cons1 = sess1.createConsumer(_queue, selector1);
         cons1.setMessageListener(new Cons(sess1,"consumer1"));
 
         Connection conn2 = getConnection();
         conn2.setExceptionListener(new ExceptionHandler("conn2"));
         Session sess2 = conn2.createSession(true, Session.SESSION_TRANSACTED);
-        MessageConsumer cons2 = sess2.createConsumer(sess2.createQueue(_queueName), selector2);
+        MessageConsumer cons2 = sess2.createConsumer(_queue, selector2);
         cons2.setMessageListener(new Cons(sess2,"consumer2"));
 
         Connection conn3 = getConnection();
         conn3.setExceptionListener(new ExceptionHandler("conn3"));
         Session sess3 = conn3.createSession(true, Session.SESSION_TRANSACTED);
-        MessageConsumer cons3 = sess3.createConsumer(sess3.createQueue(_queueName), selector3);
+        MessageConsumer cons3 = sess3.createConsumer(_queue, selector3);
         cons3.setMessageListener(new Cons(sess3,"consumer3"));
 
         conn1.start();
@@ -114,8 +118,8 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
         connA.setExceptionListener(new ExceptionHandler("connA"));
         Connection connB = getConnection();
         connB.setExceptionListener(new ExceptionHandler("connB"));
-        Thread producer1 = new Thread(new ProducerThread(connA, _queueName, "producer1"));
-        Thread producer2 = new Thread(new ProducerThread(connB, _queueName, "producer2"));
+        Thread producer1 = new Thread(new ProducerThread(connA, _queue, "producer1"));
+        Thread producer2 = new Thread(new ProducerThread(connB, _queue, "producer2"));
 
         producer1.start();
         Thread.sleep(10);
@@ -149,7 +153,7 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
             val = RANDOM.nextInt(Integer.MAX_VALUE);
         }
 
-        message.setIntProperty(_queueName, val);
+        message.setIntProperty("randomValue", val);
 
         return message;
     }
@@ -173,7 +177,7 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
             try
             {
                 msgCount = message.getIntProperty(INDEX);
-                msgID = message.getIntProperty(_queueName);
+                msgID = message.getIntProperty("randomValue");
             }
             catch (JMSException e)
             {
@@ -198,10 +202,10 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
     private class ProducerThread implements Runnable
     {
         private Connection _conn;
-        private String _dest;
+        private Destination _dest;
         private String _desc;
 
-        public ProducerThread(Connection conn, String dest, String desc)
+        public ProducerThread(Connection conn, Destination dest, String desc)
         {
             _conn = conn;
             _dest = dest;
@@ -213,7 +217,7 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
             try
             {
                 Session session = _conn.createSession(true, Session.SESSION_TRANSACTED);
-                sendMessage(session, session.createQueue(_dest), MESSAGE_COUNT, BATCH_SIZE);
+                sendMessage(session, _dest, MESSAGE_COUNT, BATCH_SIZE);
             }
             catch (Exception e)
             {

@@ -1069,7 +1069,7 @@ public class QpidBrokerTestCase extends QpidTestCase
      *
      * @return String name for a queue
      */
-    protected String getTestQueueName()
+    protected String  getTestQueueName()
     {
         return getClass().getSimpleName() + "-" + getName();
     }
