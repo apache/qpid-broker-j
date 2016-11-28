@@ -967,7 +967,8 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                             MessageDestination messageDestination = getAddressSpace().getDefaultDestination();
                             destination = new NodeReceivingDestination(messageDestination, target.getDurable(),
                                                                        target.getExpiryPolicy(), "",
-                                                                       target.getCapabilities());
+                                                                       target.getCapabilities(),
+                                                                       _connection.getEventLogger());
                             target.setCapabilities(destination.getCapabilities());
 
                             if(_blockingEntities.contains(messageDestination))
@@ -1008,7 +1009,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
                             {
                                 destination =
                                         new NodeReceivingDestination(messageDestination, target.getDurable(),
-                                                                     target.getExpiryPolicy(), addr, target.getCapabilities());
+                                                                     target.getExpiryPolicy(), addr, target.getCapabilities(), _connection.getEventLogger());
                                 target.setCapabilities(destination.getCapabilities());
 
                             }

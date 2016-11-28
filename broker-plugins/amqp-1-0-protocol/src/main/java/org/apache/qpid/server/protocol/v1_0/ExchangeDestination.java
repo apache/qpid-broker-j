@@ -26,6 +26,7 @@ import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
@@ -98,14 +99,19 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
                     return null;
                 }};
 
+        final String routingAddress = getRoutingAddress(message);
         int enqueues = _exchange.send(message,
-                                      getRoutingAddress(message),
+                                      routingAddress,
                                       instanceProperties,
                                       txn,
                                       null);
 
+        if(enqueues == 0)
+        {
+            _exchange.getEventLogger().message(ExchangeMessages.DISCARDMSG(_exchange.getName(), routingAddress));
+        }
 
-        return enqueues == 0 && !_discardUnroutable ? createdRejectedOutcome(getRoutingAddress(message)) : ACCEPTED;
+        return enqueues == 0 && !_discardUnroutable ? createdRejectedOutcome(routingAddress) : ACCEPTED;
     }
 
     private Outcome createdRejectedOutcome(final String routingAddress)

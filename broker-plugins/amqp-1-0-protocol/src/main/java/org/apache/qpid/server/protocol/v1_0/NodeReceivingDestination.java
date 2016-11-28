@@ -23,6 +23,8 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.model.Exchange;
@@ -43,6 +45,7 @@ public class NodeReceivingDestination implements ReceivingDestination
     public static final Rejected REJECTED = new Rejected();
     private static final Outcome[] OUTCOMES = { ACCEPTED, REJECTED};
     private final boolean _discardUnroutable;
+    private final EventLogger _eventLogger;
 
     private MessageDestination _destination;
     private TerminusDurability _durability;
@@ -52,12 +55,14 @@ public class NodeReceivingDestination implements ReceivingDestination
     public NodeReceivingDestination(MessageDestination destination,
                                     TerminusDurability durable,
                                     TerminusExpiryPolicy expiryPolicy,
-                                    final String address, final Symbol[] capabilities)
+                                    final String address, final Symbol[] capabilities,
+                                    final EventLogger eventLogger)
     {
         _destination = destination;
         _durability = durable;
         _expiryPolicy = expiryPolicy;
         _address = address;
+        _eventLogger = eventLogger;
         _discardUnroutable = destination instanceof Exchange
                              && ((capabilities != null && Arrays.asList(capabilities).contains(DISCARD_UNROUTABLE))
                                  || ((Exchange)destination).getUnroutableMessageBehaviour() == Exchange.UnroutableMessageBehaviour.DISCARD);
@@ -99,6 +104,10 @@ public class NodeReceivingDestination implements ReceivingDestination
 
         int enqueues = _destination.send(message, routingAddress, instanceProperties, txn, null);
 
+        if(enqueues == 0)
+        {
+            _eventLogger.message(ExchangeMessages.DISCARDMSG(_destination.getName(), routingAddress));
+        }
 
         return enqueues == 0 && !_discardUnroutable ? createdRejectedOutcome(message) : ACCEPTED;
     }
