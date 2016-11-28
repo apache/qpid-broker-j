@@ -38,7 +38,7 @@ public class CloseWithBlockingReceiveTest extends QpidBrokerTestCase
     {
         final Connection connection =  getConnection();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Destination destination = session.createQueue(getTestQueueName());
+        Destination destination = createTestQueue(session);
         MessageConsumer consumer = session.createConsumer(destination);
         connection.start();
 
