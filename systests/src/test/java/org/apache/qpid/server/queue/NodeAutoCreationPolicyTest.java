@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import javax.jms.Connection;
+import javax.jms.InvalidDestinationException;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -152,12 +153,12 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
 
     public void testSendingToQueuePattern() throws Exception
     {
-        final Queue queue = _session.createQueue("ADDR: fooQueue ; { assert: never, node: { type: queue } }");
+        final Queue queue = _session.createQueue(isBroker10() ? "fooQueue" : "ADDR: fooQueue ; { assert: never, node: { type: queue } }");
         final MessageProducer producer = _session.createProducer(queue);
         producer.send(_session.createTextMessage("Hello world!"));
 
         final MessageConsumer consumer = _session.createConsumer(queue);
-        Message received = consumer.receive(2000l);
+        Message received = consumer.receive(getReceiveTimeout());
         assertNotNull(received);
         assertTrue(received instanceof TextMessage);
         assertEquals("Hello world!", ((TextMessage)received).getText());
@@ -166,7 +167,7 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
 
     public void testSendingToNonMatchingQueuePattern() throws Exception
     {
-        final Queue queue = _session.createQueue("ADDR: foQueue ; { assert: never, node: { type: queue } }");
+        final Queue queue = _session.createQueue(isBroker10() ? "foQueue" : "ADDR: foQueue ; { assert: never, node: { type: queue } }");
         try
         {
             final MessageProducer producer = _session.createProducer(queue);
@@ -174,26 +175,32 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
         }
         catch(JMSException e)
         {
-            assertNotNull(e.getLinkedException());
-
-            assertEquals("The name 'foQueue' supplied in the address doesn't resolve to an exchange or a queue",
-                         e.getLinkedException().getMessage());
+            if(isBroker10())
+            {
+                assertTrue(e instanceof InvalidDestinationException);
+            }
+            else
+            {
+                assertNotNull(e.getLinkedException());
+                assertEquals("The name 'foQueue' supplied in the address doesn't resolve to an exchange or a queue",
+                             e.getLinkedException().getMessage());
+            }
         }
     }
 
 
     public void testSendingToExchangePattern() throws Exception
     {
-        final Topic topic = _session.createTopic("ADDR: barExchange/foo ; { assert: never, node: { type: topic } }");
+        final Topic topic = _session.createTopic(isBroker10() ? "barExchange/foo" : "ADDR: barExchange/foo ; { assert: never, node: { type: topic } }");
         final MessageProducer producer = _session.createProducer(topic);
         producer.send(_session.createTextMessage("Hello world!"));
 
         final MessageConsumer consumer = _session.createConsumer(topic);
-        Message received = consumer.receive(1000l);
+        Message received = consumer.receive(getShortReceiveTimeout());
         assertNull(received);
 
         producer.send(_session.createTextMessage("Hello world2!"));
-        received = consumer.receive(1000l);
+        received = consumer.receive(getReceiveTimeout());
 
         assertNotNull(received);
 
@@ -204,7 +211,7 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
 
     public void testSendingToNonMatchingTopicPattern() throws Exception
     {
-        final Topic topic = _session.createTopic("ADDR: baa ; { assert: never, node: { type: topic } }");
+        final Topic topic = _session.createTopic(isBroker10() ? "baa" : "ADDR: baa ; { assert: never, node: { type: topic } }");
         try
         {
             final MessageProducer producer = _session.createProducer(topic);
@@ -212,10 +219,16 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
         }
         catch(JMSException e)
         {
-            assertNotNull(e.getLinkedException());
-
-            assertEquals("The name 'baa' supplied in the address doesn't resolve to an exchange or a queue",
-                         e.getLinkedException().getMessage());
+            if(isBroker10())
+            {
+                assertTrue(e instanceof InvalidDestinationException);
+            }
+            else
+            {
+                assertNotNull(e.getLinkedException());
+                assertEquals("The name 'baa' supplied in the address doesn't resolve to an exchange or a queue",
+                             e.getLinkedException().getMessage());
+            }
         }
     }
 
@@ -227,7 +240,7 @@ public class NodeAutoCreationPolicyTest extends QpidBrokerTestCase
         producer.send(_session.createTextMessage("Hello world!"));
 
         final MessageConsumer consumer = _session.createConsumer(queue);
-        Message received = consumer.receive(2000l);
+        Message received = consumer.receive(getReceiveTimeout());
         assertNotNull(received);
         assertTrue(received instanceof TextMessage);
         assertEquals("Hello world!", ((TextMessage)received).getText());

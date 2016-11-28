@@ -123,6 +123,10 @@ org.apache.qpid.server.queue.QueueBindTest#*
 org.apache.qpid.test.unit.basic.InvalidDestinationTest#testInvalidDestinationOnMessageProducer
 org.apache.qpid.test.unit.basic.InvalidDestinationTest#testInvalidDestinationOnMessageProducerURL
 
+org.apache.qpid.server.queue.NodeAutoCreationPolicyTest#testSendingToQueuePatternBURL
+org.apache.qpid.server.queue.NodeAutoCreationPolicyTest#testSendingToNonMatchingQueuePatternBURL
+
+
 
 
 
