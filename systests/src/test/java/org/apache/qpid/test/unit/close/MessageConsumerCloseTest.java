@@ -47,7 +47,7 @@ public class MessageConsumerCloseTest  extends QpidBrokerTestCase
         Connection connection = getConnection();
         connection.start();
         final Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        Destination destination = getTestQueue();
+        Destination destination = createTestQueue(session);
         MessageConsumer consumer1 = session.createConsumer(destination);
         sendMessage(session, destination, 2);
 
@@ -74,7 +74,7 @@ public class MessageConsumerCloseTest  extends QpidBrokerTestCase
         Connection connection = getConnection();
         final CountDownLatch receiveLatch = new CountDownLatch(1);
         final Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        Destination destination = getTestQueue();
+        Destination destination = createTestQueue(session);
         MessageConsumer consumer = session.createConsumer(destination);
         sendMessage(session, destination, 2);
         connection.start();
@@ -101,10 +101,16 @@ public class MessageConsumerCloseTest  extends QpidBrokerTestCase
         assertTrue("Message is not received", messageReceived);
 
         consumer = session.createConsumer(destination);
-        Message message1 = consumer.receive(1000l);
-        assertNotNull("message1 is not received", message1);
-        Message message2 = consumer.receive(1000l);
-        assertNotNull("message2 is not received", message2);
+        final CountDownLatch receiveLatch2 = new CountDownLatch(2);
+        consumer.setMessageListener(new MessageListener()
+        {
+            @Override
+            public void onMessage(Message message)
+            {
+                receiveLatch2.countDown();
+            }
+        });
+        assertTrue( receiveLatch2.await(1l, TimeUnit.SECONDS));
     }
 
     public void testPrefetchedMessagesReleasedOnConsumerClose() throws Exception
@@ -112,7 +118,7 @@ public class MessageConsumerCloseTest  extends QpidBrokerTestCase
         Connection connection = getConnection();
         final Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
 
-        Destination destination = getTestQueue();
+        Destination destination = createTestQueue(session);
         MessageConsumer consumer = session.createConsumer(destination);
 
         sendMessage(session, destination, 3);
@@ -146,7 +152,7 @@ public class MessageConsumerCloseTest  extends QpidBrokerTestCase
         Connection connection = getConnection();
         final Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
 
-        Destination destination = getTestQueue();
+        Destination destination = createTestQueue(session);
         MessageConsumer consumer = session.createConsumer(destination);
 
         int messageNumber = 4;
