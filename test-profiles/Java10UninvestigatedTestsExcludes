@@ -31,7 +31,6 @@ org.apache.qpid.client.prefetch.PrefetchBehaviourTest#*
 org.apache.qpid.client.redelivered.RedeliveredMessageTest#*
 org.apache.qpid.client.SynchReceiveTest#*
 org.apache.qpid.client.SyncPublishTest#*
-org.apache.qpid.server.stats.StatisticsReportingTest#*
 org.apache.qpid.server.security.acl.ExternalACLTest#*
 org.apache.qpid.server.security.acl.ExhaustiveACLTest#*
 org.apache.qpid.server.queue.ProducerFlowControlTest#*
@@ -48,12 +47,8 @@ org.apache.qpid.test.client.message.JMSDestinationTest#*
 org.apache.qpid.systest.rest.ConnectionRestTest#*
 org.apache.qpid.systest.rest.MessagesRestTest#*
 org.apache.qpid.transport.ConnectionEstablishmentTest#*
-org.apache.qpid.test.unit.transacted.TransactionTimeoutTest#*
-org.apache.qpid.test.unit.transacted.TransactionTimeoutDisabledTest#*
 org.apache.qpid.test.unit.topic.TopicPublisherTest#*
-org.apache.qpid.test.client.message.JMSXUserIDTest#*
 org.apache.qpid.systest.disttest.endtoend.EndToEndTest#*
-org.apache.qpid.systest.disttest.QpidQueueCreatorTest#*
 
 
 

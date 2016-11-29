@@ -40,7 +40,6 @@ import junit.framework.TestCase;
 
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.util.LogMonitor;
@@ -88,15 +87,14 @@ public abstract class TransactionTimeoutTestCase extends QpidBrokerTestCase impl
         _monitor = new LogMonitor(getOutputFile());
 
         // Connect to broker
-        setTestClientSystemProperty(ClientProperties.MAX_PREFETCH_PROP_NAME, String.valueOf(1));
-        _con = getConnection();
+        _con = getConnectionWithPrefetch(1);
         _con.setExceptionListener(this);
         _con.start();
         
         // Create queue
         Session qsession = _con.createSession(true, Session.SESSION_TRANSACTED);
+        _queue = createTestQueue(qsession);
         _queue = qsession.createQueue(getTestQueueName());
-        qsession.close();
         
         // Create producer and consumer
         producer();
@@ -137,8 +135,10 @@ public abstract class TransactionTimeoutTestCase extends QpidBrokerTestCase impl
             msg.setIntProperty("i", i);
             _producer.send(msg);
         }
-
-        ((AMQSession<?, ?>)_psession).sync();
+        if(!isBroker10())
+        {
+            ((AMQSession<?, ?>)_psession).sync();
+        }
     }
     
     /**

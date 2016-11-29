@@ -25,18 +25,10 @@ import java.util.Map;
 
 import javax.jms.Connection;
 import javax.jms.Destination;
-import javax.jms.JMSException;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.apache.qpid.QpidException;
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQQueue;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.BrokerDetails;
-import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
@@ -60,7 +52,6 @@ public class StatisticsReportingTest extends QpidBrokerTestCase
     protected Connection _conToVhost1, _conToVhost2, _conToVhost3;
     protected String _queueName = "statistics";
     protected Destination _queue;
-    protected String _brokerUrl;
     private long _startTestTime;
 
     @Override
@@ -82,13 +73,9 @@ public class StatisticsReportingTest extends QpidBrokerTestCase
         super.setUp();
         _monitor = new LogMonitor(getOutputFile());
 
-        BrokerDetails brokerDetails = getBrokerDetailsFromDefaultConnectionUrl();
-        brokerDetails.setPort(getDefaultBroker().getAmqpPort());
-
-        _brokerUrl = brokerDetails.toString();
-        _conToVhost1 = new AMQConnection(_brokerUrl, USER, USER, "clientid", VHOST_NAME1);
-        _conToVhost2 = new AMQConnection(_brokerUrl, USER, USER, "clientid", VHOST_NAME2);
-        _conToVhost3 = new AMQConnection(_brokerUrl, USER, USER, "clientid", VHOST_NAME3);
+        _conToVhost1 = getConnectionForVHost(VHOST_NAME1, "admin", "admin");
+        _conToVhost2 = getConnectionForVHost(VHOST_NAME2, "admin", "admin");
+        _conToVhost3 = getConnectionForVHost(VHOST_NAME3, "admin", "admin");
 
         _conToVhost1.start();
         _conToVhost2.start();
@@ -161,7 +148,7 @@ public class StatisticsReportingTest extends QpidBrokerTestCase
     private void sendUsing(Connection con, int number, int size) throws Exception
     {
         Session session = con.createSession(true, Session.SESSION_TRANSACTED);
-        createQueue(session);
+        _queue = createTestQueue(session, _queueName);
         MessageProducer producer = session.createProducer(_queue);
         String content = new String(new byte[size]);
         TextMessage msg = session.createTextMessage(content);
@@ -173,13 +160,4 @@ public class StatisticsReportingTest extends QpidBrokerTestCase
         session.close();
     }
 
-    private void createQueue(Session session) throws QpidException, JMSException
-    {
-        _queue = new AMQQueue(ExchangeDefaults.DIRECT_EXCHANGE_NAME, _queueName);
-        if (!((AMQSession<?,?>) session).isQueueBound((AMQDestination) _queue))
-        {
-            ((AMQSession<?,?>) session).createQueue(_queueName, false, true, false, null);
-            ((AMQSession<?,?>) session).declareAndBind((AMQDestination) new AMQQueue(ExchangeDefaults.DIRECT_EXCHANGE_NAME, _queueName));
-        }
-    }
 }

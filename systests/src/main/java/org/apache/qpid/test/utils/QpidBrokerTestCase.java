@@ -375,13 +375,28 @@ public class QpidBrokerTestCase extends QpidTestCase
     public Connection getConnectionForVHost(String vhost)
             throws URLSyntaxException, NamingException, JMSException
     {
-        ConnectionURL curl = new AMQConnectionURL(((AMQConnectionFactory)getConnectionFactory()).getConnectionURLString());
-        curl.setVirtualHost(vhost);
-        curl = new AMQConnectionURL(curl.toString());
+        return getConnectionForVHost(vhost, GUEST_USERNAME, GUEST_PASSWORD);
+    }
 
-        curl.setUsername(GUEST_USERNAME);
-        curl.setPassword(GUEST_PASSWORD);
-        return getConnection(curl);
+    public Connection getConnectionForVHost(String vhost, String username, String password)
+            throws URLSyntaxException, NamingException, JMSException
+    {
+
+        if(isBroker10())
+        {
+            return getConnectionFactory(Boolean.getBoolean(PROFILE_USE_SSL) ? "default.ssl" : "default", vhost, "clientId").createConnection(username, password);
+        }
+        else
+        {
+            ConnectionURL curl =
+                    new AMQConnectionURL(((AMQConnectionFactory) getConnectionFactory()).getConnectionURLString());
+            curl.setVirtualHost("/"+vhost);
+            curl = new AMQConnectionURL(curl.toString());
+
+            curl.setUsername(username);
+            curl.setPassword(password);
+            return getConnection(curl);
+        }
     }
 
 

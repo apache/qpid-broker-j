@@ -25,25 +25,24 @@
 
 org.apache.qpid.client.TemporaryQueuePrefixTest#*
 
+// AMQP 1.0 allows more than one txn per session, so our mechanism of installing transaction timeout tickers will need to change
+org.apache.qpid.test.unit.transacted.TransactionTimeoutTest#*
+org.apache.qpid.test.unit.transacted.TransactionTimeoutDisabledTest#*
+
 
 // Testing behaviour of changing the topic associated with a durable subscriber
-
 org.apache.qpid.test.unit.topic.TopicSessionTest#testSubscriptionNameReuseForDifferentTopicSingleConnection
 org.apache.qpid.test.unit.topic.TopicSessionTest#testSubscriptionNameReuseForDifferentTopicTwoConnections
 
 
 // somewhere in the process, the expiration time appears to be being modified (or we are only using relative expiration)
-
 org.apache.qpid.systest.rest.PublishMessageRestTest#testPublishMessageWithPropertiesAndHeaders
 
 
 // the received message is being treated as an object message (because it lacks the necessary JMS annotation?)
-
 org.apache.qpid.systest.rest.PublishMessageRestTest#testPublishMapMessage
 
-
 // Tests failing waiting for messages - needs investigation
-
 org.apache.qpid.test.unit.transacted.CommitRollbackTest#testSend2ThenCloseAfter1andTryAgain
 org.apache.qpid.test.unit.transacted.CommitRollbackTest#testRollbackSoak
 
@@ -52,7 +51,6 @@ org.apache.qpid.test.unit.basic.BytesMessageTest#testModificationAfterSend
 
 // AmqpManagement at the broker level needs the client to support the request/response pattern using local target names
 // (since the synthetic virtual host cannot create a temporary queue).  This will require the client to support this
-
 org.apache.qpid.systest.management.amqp.AmqpManagementTest#testCreateQueueOnBrokerManagement
 org.apache.qpid.systest.management.amqp.AmqpManagementTest#testCreateBindingOnBrokerManagement
 org.apache.qpid.systest.management.amqp.AmqpManagementTest#testCreateConnectionOnBrokerManagement
@@ -64,7 +62,6 @@ org.apache.qpid.systest.management.amqp.AmqpManagementTest#testQueryBrokerManage
 // This test fails with error The underlying correlation-id is not binary and so can't be returned
 // however the correlation id in the incoming message was set as byte[] so the issue is within the conversion to
 // the InternalMessage and back
-
 org.apache.qpid.systest.management.amqp.AmqpManagementTest#testGetTypesOnVhostManagement
 
 

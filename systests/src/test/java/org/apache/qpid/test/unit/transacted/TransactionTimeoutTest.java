@@ -24,7 +24,7 @@ import javax.jms.DeliveryMode;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageProducer;
-import javax.jms.Queue;
+import javax.jms.Topic;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Session;
@@ -334,7 +334,7 @@ public class TransactionTimeoutTest extends TransactionTimeoutTestCase
 
     private void checkTransactionCommittedOnNonRoutableQueueMessage(int deliveryMode) throws JMSException, Exception
     {
-        Queue nonExisting = _psession.createQueue(getTestQueueName() + System.currentTimeMillis());
+        Topic nonExisting = _psession.createTopic(isBroker10() ? "amq.fanout/foo" : "ADDR: amq.fanout/foo");
         MessageProducer producer = _psession.createProducer(nonExisting);
         Message message = _psession.createMessage();
         producer.send(message, deliveryMode, Message.DEFAULT_PRIORITY, Message.DEFAULT_TIME_TO_LIVE);

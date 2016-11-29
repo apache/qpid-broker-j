@@ -513,7 +513,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
                    Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
         assertEquals("Incorrect response code", 201, responseMessage.getIntProperty("statusCode"));
         _connection.close();
-        _connection = getConnectionForVHost("/"+virtualHostName);
+        _connection = getConnectionForVHost(virtualHostName);
         setupSession();
 
         message = _session.createMapMessage();

@@ -145,6 +145,11 @@ org.apache.qpid.server.message.MessageProtocolConversionTest#*
 // Tests the interaction between the Broker's supported protocols and what the 0-x client agrees to
 org.apache.qpid.server.SupportedProtocolVersionsTest#*
 
+// Tests the client setting of JMSXUserId and the client options to control that
+org.apache.qpid.test.client.message.JMSXUserIDTest#*
+
+
+
 
 
 
