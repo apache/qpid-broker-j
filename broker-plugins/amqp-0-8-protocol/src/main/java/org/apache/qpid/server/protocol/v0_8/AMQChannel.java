@@ -1280,7 +1280,15 @@ public class AMQChannel
             }
             else
             {
-                consumer.getTarget().send(consumer, messageInstance, false);
+                if (messageInstance.makeAcquisitionUnstealable(consumer)
+                    && _creditManager.useCreditForMessage(association.getSize()))
+                {
+                    consumer.getTarget().send(consumer, messageInstance, false);
+                }
+                else
+                {
+                    messageInstance.release(consumer);
+                }
             }
         }
         _resendList.clear();
