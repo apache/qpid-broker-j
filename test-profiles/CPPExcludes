@@ -174,6 +174,7 @@ org.apache.qpid.client.TemporaryQueuePrefixTest#*
 // QPID-3936: Exclude Performance Test Framework tests
 org.apache.qpid.systest.disttest.*
 org.apache.qpid.disttest.*
+org.apache.qpid.systest.disttest.endtoend.*
 
 // Exclude REST API tests for Broker for Java
 org.apache.qpid.systest.rest.*
