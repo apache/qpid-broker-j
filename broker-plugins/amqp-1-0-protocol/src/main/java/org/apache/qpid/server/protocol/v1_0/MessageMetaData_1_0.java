@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -38,6 +39,7 @@ import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequence;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
@@ -450,15 +452,19 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             }
         }
 
+        @Override
         public long getExpiration()
         {
-            if(_properties.getAbsoluteExpiryTime() != null)
+            final Date absoluteExpiryTime = _properties == null ? null : _properties.getAbsoluteExpiryTime();
+            if(absoluteExpiryTime != null)
             {
-                return _properties.getAbsoluteExpiryTime().getTime();
+                return absoluteExpiryTime.getTime();
             }
             else
             {
-                return _header.getTtl() == null || _properties.getCreationTime() == null ? 0L : _header.getTtl().longValue() + _properties.getCreationTime().getTime();
+                final Date creationTime = _properties == null ? null : _properties.getCreationTime();
+                final UnsignedInteger ttl = _header == null ? null : _header.getTtl();
+                return ttl == null || creationTime == null ? 0L : ttl.longValue() + creationTime.getTime();
             }
         }
 
