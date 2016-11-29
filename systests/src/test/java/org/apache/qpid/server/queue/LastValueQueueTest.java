@@ -365,13 +365,13 @@ public class LastValueQueueTest extends QpidBrokerTestCase
         Queue browseQueue;
         if(isBroker10())
         {
-            AMQBindingURL url =
-                    new AMQBindingURL("direct://amq.direct//" + _queueName + "?browse='true'&durable='true'");
-            browseQueue = new AMQQueue(url);
+            browseQueue = _consumerSession.createQueue(_queueName);
         }
         else
         {
-            browseQueue = _consumerSession.createQueue(_queueName);
+            AMQBindingURL url =
+                    new AMQBindingURL("direct://amq.direct//" + _queueName + "?browse='true'&durable='true'");
+            browseQueue = new AMQQueue(url);
         }
 
         _consumer = _consumerSession.createConsumer(browseQueue);
