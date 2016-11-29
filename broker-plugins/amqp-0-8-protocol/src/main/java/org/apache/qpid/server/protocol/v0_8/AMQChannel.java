@@ -46,6 +46,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Collections2;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +86,7 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.PublishAuthorisationCache;
+import org.apache.qpid.server.protocol.v0_8.UnacknowledgedMessageMap.Visitor;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageHandle;
@@ -111,7 +114,16 @@ public class AMQChannel
     public static final int DEFAULT_PREFETCH = 4096;
 
     private static final Logger _logger = LoggerFactory.getLogger(AMQChannel.class);
-    public static final InfiniteCreditCreditManager INFINITE_CREDIT_CREDIT_MANAGER = new InfiniteCreditCreditManager();
+    private static final InfiniteCreditCreditManager INFINITE_CREDIT_CREDIT_MANAGER = new InfiniteCreditCreditManager();
+    private static final Function<MessageConsumerAssociation, MessageInstance>
+            MESSAGE_INSTANCE_FUNCTION = new Function<MessageConsumerAssociation, MessageInstance>()
+    {
+        @Override
+        public MessageInstance apply(final MessageConsumerAssociation input)
+        {
+            return input.getMessageInstance();
+        }
+    };
     private final DefaultQueueAssociationClearingTask
             _defaultQueueAssociationClearingTask = new DefaultQueueAssociationClearingTask();
 
@@ -178,7 +190,7 @@ public class AMQChannel
     private LogSubject _logSubject;
     private volatile boolean _rollingBack;
 
-    private List<MessageInstance> _resendList = new ArrayList<MessageInstance>();
+    private List<MessageConsumerAssociation> _resendList = new ArrayList<>();
     private static final
     AMQShortString IMMEDIATE_DELIVERY_REPLY_TEXT = new AMQShortString("Immediate delivery is not possible.");
 
@@ -970,14 +982,13 @@ public class AMQChannel
      */
     private void requeue()
     {
-        final Map<Long, MessageInstance> unackedMapCopy = new LinkedHashMap<>();
-        // we must create a new map since all the messages will get a new delivery tag when they are redelivered
-        _unacknowledgedMessageMap.visit(new UnacknowledgedMessageMap.Visitor()
+        final Map<Long, MessageConsumerAssociation> copy = new LinkedHashMap<>();
+        _unacknowledgedMessageMap.visit(new Visitor()
         {
             @Override
-            public boolean callback(final long deliveryTag, final MessageInstance message)
+            public boolean callback(final long deliveryTag, final MessageConsumerAssociation messageConsumerPair)
             {
-                unackedMapCopy.put(deliveryTag, message);
+                copy.put(deliveryTag, messageConsumerPair);
                 return false;
             }
 
@@ -988,24 +999,24 @@ public class AMQChannel
             }
         });
 
-        if (!unackedMapCopy.isEmpty())
+        if (!copy.isEmpty())
         {
             if (_logger.isDebugEnabled())
             {
-                _logger.debug("Requeuing " + unackedMapCopy.size() + " unacked messages. for " + toString());
+                _logger.debug("Requeuing {} unacked messages", copy.size());
             }
-
         }
 
-        for (Map.Entry<Long,MessageInstance> entry : unackedMapCopy.entrySet())
+        for (Map.Entry<Long, MessageConsumerAssociation> entry : copy.entrySet())
         {
-            MessageInstance unacked = entry.getValue();
+            MessageInstance unacked = entry.getValue().getMessageInstance();
+            ConsumerImpl consumer = entry.getValue().getConsumer();
             // Mark message redelivered
             unacked.setRedelivered();
             // here we wish to restore credit
             _unacknowledgedMessageMap.remove(entry.getKey(), true);
             // Ensure message is released for redelivery
-            unacked.release(unacked.getAcquiringConsumer());
+            unacked.release(consumer);
         }
 
     }
@@ -1019,22 +1030,20 @@ public class AMQChannel
     public void requeue(long deliveryTag)
     {
 
-        final UnacknowledgedMessageMap.Entry entry = _unacknowledgedMessageMap.remove(deliveryTag, true);
+        final MessageConsumerAssociation association = _unacknowledgedMessageMap.remove(deliveryTag, true);
 
-        if (entry != null)
+        if (association != null)
         {
-            MessageInstance unacked = entry.getMessageInstance();
+            MessageInstance unacked = association.getMessageInstance();
             // Mark message redelivered
             unacked.setRedelivered();
 
             // Ensure message is released for redelivery
-            unacked.release(entry.getConsumer());
+            unacked.release(association.getConsumer());
         }
         else
         {
-            _logger.warn("Requested requeue of message:" + deliveryTag + " but no such delivery tag exists."
-                      + _unacknowledgedMessageMap.size());
-
+            _logger.warn("Requested requeue of message: {} but no such delivery tag exists.", deliveryTag);
         }
 
     }
@@ -1064,97 +1073,76 @@ public class AMQChannel
         return false;
     }
 
-    private boolean resendInternal(MessageInstance messageInstance)
-    {
-        ConsumerImpl subscriber = messageInstance.getDeliveredConsumer();
-        if (subscriber != null && subscriber.getSessionModel() == this)
-        {
-            ConsumerTarget target = subscriber.getTarget();
-            if (target.getState() != ConsumerTarget.State.CLOSED)
-            {
-                target.send(subscriber, messageInstance, false);
-                return true;
-            }
-
-        }
-        return false;
-    }
-
     /**
      * Called to resend all outstanding unacknowledged messages to this same channel.
      *
      */
     private void resend()
     {
-
-
-        final Map<Long, MessageInstance> msgToRequeue = new LinkedHashMap<Long, MessageInstance>();
-        final Map<Long, MessageInstance> msgToResend = new LinkedHashMap<Long, MessageInstance>();
+        final Map<Long, MessageConsumerAssociation> msgToRequeue = new LinkedHashMap<>();
+        final Map<Long, MessageConsumerAssociation> msgToResend = new LinkedHashMap<>();
 
         if (_logger.isDebugEnabled())
         {
-            _logger.debug("unacked map Size:" + _unacknowledgedMessageMap.size());
+            _logger.debug("Unacknowledged messages: {}", _unacknowledgedMessageMap.size());
         }
 
-        // Process the Unacked-Map.
-        // Marking messages who still have a consumer for to be resent
-        // and those that don't to be requeued.
-        _unacknowledgedMessageMap.visit(new ExtractResendAndRequeue(_unacknowledgedMessageMap,
-                                                                    msgToRequeue,
-                                                                    msgToResend
-        ));
-
-
-        // Process Messages to Resend
-        if (_logger.isDebugEnabled())
+        _unacknowledgedMessageMap.visit(new Visitor()
         {
-            if (!msgToResend.isEmpty())
+            @Override
+            public boolean callback(final long deliveryTag, final MessageConsumerAssociation association)
             {
-                _logger.debug("Preparing (" + msgToResend.size() + ") message to resend.");
-            }
-            else
-            {
-                _logger.debug("No message to resend.");
-            }
-        }
 
-        for (Map.Entry<Long, MessageInstance> entry : msgToResend.entrySet())
+                if (association.getConsumer().isClosed())
+                {
+                    // consumer has gone
+                    msgToRequeue.put(deliveryTag, association);
+                }
+                else
+                {
+                    // Consumer still exists
+                    msgToResend.put(deliveryTag,  association);
+                }
+                return false;
+            }
+
+            @Override
+            public void visitComplete()
+            {
+            }
+        });
+
+
+        for (Map.Entry<Long, MessageConsumerAssociation> entry : msgToResend.entrySet())
         {
-            MessageInstance message = entry.getValue();
             long deliveryTag = entry.getKey();
-
-            //Amend the delivery counter as the client hasn't seen these messages yet.
-            message.decrementDeliveryCount();
+            MessageInstance message = entry.getValue().getMessageInstance();
+            ConsumerImpl consumer = entry.getValue().getConsumer();
 
             // Without any details from the client about what has been processed we have to mark
             // all messages in the unacked map as redelivered.
             message.setRedelivered();
 
-            if (resendInternal(message))
+            if (message.makeAcquisitionUnstealable(consumer))
             {
+                message.decrementDeliveryCount();
+
+                consumer.getTarget().send(consumer, message, false);
                 // remove from unacked map - don't want to restore credit though(!)
                 _unacknowledgedMessageMap.remove(deliveryTag, false);
             }
             else
             {
-                msgToRequeue.put(deliveryTag, message);
-            }
-        } // for all messages
-        // } else !isSuspend
-
-        if (_logger.isDebugEnabled())
-        {
-            if (!msgToRequeue.isEmpty())
-            {
-                _logger.debug("Preparing (" + msgToRequeue.size() + ") message to requeue");
+                msgToRequeue.put(deliveryTag, entry.getValue());
             }
         }
 
         // Process Messages to Requeue at the front of the queue
-        for (Map.Entry<Long, MessageInstance> entry : msgToRequeue.entrySet())
+        for (Map.Entry<Long, MessageConsumerAssociation> entry : msgToRequeue.entrySet())
         {
-            MessageInstance message = entry.getValue();
             long deliveryTag = entry.getKey();
+            MessageInstance message = entry.getValue().getMessageInstance();
+            ConsumerImpl consumer = entry.getValue().getConsumer();
 
             //Amend the delivery counter as the client hasn't seen these messages yet.
             message.decrementDeliveryCount();
@@ -1163,18 +1151,12 @@ public class AMQChannel
             _unacknowledgedMessageMap.remove(deliveryTag, true);
 
             message.setRedelivered();
-            message.release(message.getAcquiringConsumer());
-
+            message.release(consumer);
         }
     }
 
 
-    /**
-     * Used only for testing purposes.
-     *
-     * @return the map of unacknowledged messages
-     */
-    public UnacknowledgedMessageMap getUnacknowledgedMessageMap()
+    private UnacknowledgedMessageMap getUnacknowledgedMessageMap()
     {
         return _unacknowledgedMessageMap;
     }
@@ -1222,13 +1204,7 @@ public class AMQChannel
         }
     }
 
-    public boolean isSuspended()
-    {
-        return _suspended.get()  || _closing.get() || _connection.isClosing();
-    }
-
-
-    public void commit(final Runnable immediateAction, boolean async)
+    private void commit(final Runnable immediateAction, boolean async)
     {
 
 
@@ -1294,16 +1270,17 @@ public class AMQChannel
 
         postRollbackTask.run();
 
-        for(MessageInstance entry : _resendList)
+        for(MessageConsumerAssociation association : _resendList)
         {
-            ConsumerImpl sub = entry.getAcquiringConsumer();
-            if (sub == null || sub.isClosed())
+            final MessageInstance messageInstance = association.getMessageInstance();
+            final ConsumerImpl consumer = association.getConsumer();
+            if (consumer.isClosed())
             {
-                entry.release(sub);
+                messageInstance.release(consumer);
             }
             else
             {
-                resendInternal(entry);
+                consumer.getTarget().send(consumer, messageInstance, false);
             }
         }
         _resendList.clear();
@@ -1579,9 +1556,9 @@ public class AMQChannel
 
     private class MessageAcknowledgeAction implements ServerTransaction.Action
     {
-        private Collection<MessageInstance> _ackedMessages;
+        private Collection<MessageConsumerAssociation> _ackedMessages;
 
-        public MessageAcknowledgeAction(Collection<MessageInstance> ackedMessages)
+        public MessageAcknowledgeAction(Collection<MessageConsumerAssociation> ackedMessages)
         {
             _ackedMessages = ackedMessages;
         }
@@ -1590,9 +1567,9 @@ public class AMQChannel
         {
             try
             {
-                for(MessageInstance entry : _ackedMessages)
+                for(MessageConsumerAssociation association : _ackedMessages)
                 {
-                    entry.delete();
+                    association.getMessageInstance().delete();
                 }
             }
             finally
@@ -1607,9 +1584,9 @@ public class AMQChannel
             // explicit rollbacks resend the message after the rollback-ok is sent
             if(_rollingBack)
             {
-                for(MessageInstance entry : _ackedMessages)
+                for(MessageConsumerAssociation association : _ackedMessages)
                 {
-                    entry.makeAcquisitionStealable();
+                    association.getMessageInstance().makeAcquisitionStealable();
                 }
                 _resendList.addAll(_ackedMessages);
             }
@@ -1617,9 +1594,10 @@ public class AMQChannel
             {
                 try
                 {
-                    for(MessageInstance entry : _ackedMessages)
+                    for(MessageConsumerAssociation association : _ackedMessages)
                     {
-                        entry.release(entry.getAcquiringConsumer());
+                        final MessageInstance messageInstance = association.getMessageInstance();
+                        messageInstance.release(association.getConsumer());
                     }
                 }
                 finally
@@ -1770,19 +1748,19 @@ public class AMQChannel
     private void deadLetter(long deliveryTag)
     {
         final UnacknowledgedMessageMap unackedMap = getUnacknowledgedMessageMap();
-        final UnacknowledgedMessageMap.Entry entry = unackedMap.remove(deliveryTag, true);
+        final MessageConsumerAssociation association = unackedMap.remove(deliveryTag, true);
 
-        if (entry == null)
+        if (association == null)
         {
             _logger.warn("No message found, unable to DLQ delivery tag: " + deliveryTag);
         }
         else
         {
 
-            final MessageInstance messageInstance = entry.getMessageInstance();
+            final MessageInstance messageInstance = association.getMessageInstance();
             final ServerMessage msg = messageInstance.getMessage();
             int requeues = 0;
-            if (messageInstance.makeAcquisitionUnstealable(entry.getConsumer()))
+            if (messageInstance.makeAcquisitionUnstealable(association.getConsumer()))
             {
                 requeues = messageInstance.routeToAlternate(new Action<MessageInstance>()
                 {
@@ -2046,8 +2024,9 @@ public class AMQChannel
             _logger.debug("RECV[" + _channelId + "] BasicAck[" +" deliveryTag: " + deliveryTag + " multiple: " + multiple + " ]");
         }
 
-        Collection<MessageInstance> ackedMessages = _unacknowledgedMessageMap.acknowledge(deliveryTag, multiple);
-        _transaction.dequeue(ackedMessages, new MessageAcknowledgeAction(ackedMessages));
+        Collection<MessageConsumerAssociation> ackedMessages = _unacknowledgedMessageMap.acknowledge(deliveryTag, multiple);
+        final Collection<MessageInstance> messages = Collections2.transform(ackedMessages, MESSAGE_INSTANCE_FUNCTION);
+        _transaction.dequeue(messages, new MessageAcknowledgeAction(ackedMessages));
     }
 
     @Override
@@ -2573,19 +2552,19 @@ public class AMQChannel
             _logger.debug("RECV[" + _channelId + "] BasicNack[" +" deliveryTag: " + deliveryTag + " multiple: " + multiple + " requeue: " + requeue + " ]");
         }
 
-        Map<Long, UnacknowledgedMessageMap.Entry> nackedMessageMap = new LinkedHashMap<>();
+        Map<Long, MessageConsumerAssociation> nackedMessageMap = new LinkedHashMap<>();
         _unacknowledgedMessageMap.collect(deliveryTag, multiple, nackedMessageMap);
 
-        for(UnacknowledgedMessageMap.Entry unackedEntry : nackedMessageMap.values())
+        for(MessageConsumerAssociation unackedMessageConsumerAssociation : nackedMessageMap.values())
         {
 
-            if (unackedEntry == null)
+            if (unackedMessageConsumerAssociation == null)
             {
                 _logger.warn("Ignoring nack request as message is null for tag:" + deliveryTag);
             }
             else
             {
-                MessageInstance message = unackedEntry.getMessageInstance();
+                MessageInstance message = unackedMessageConsumerAssociation.getMessageInstance();
                 if (message.getMessage() == null)
                 {
                     _logger.warn("Message has already been purged, unable to nack.");

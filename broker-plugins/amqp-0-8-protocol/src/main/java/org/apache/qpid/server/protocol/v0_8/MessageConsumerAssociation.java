@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,36 +17,17 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.protocol.v0_8;
 
-import java.util.Collection;
-import java.util.Map;
+package org.apache.qpid.server.protocol.v0_8;
 
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
 
-
-public interface UnacknowledgedMessageMap
+public interface MessageConsumerAssociation
 {
-    interface Visitor
-    {
-        boolean callback(final long deliveryTag, final MessageConsumerAssociation messageConsumerPair);
+    MessageInstance getMessageInstance();
 
-        void visitComplete();
-    }
+    ConsumerImpl getConsumer();
 
-    void visit(Visitor visitor);
-
-    void add(long deliveryTag, MessageInstance message, final ConsumerImpl target, final boolean usesCredit);
-
-    MessageConsumerAssociation remove(long deliveryTag, final boolean restoreCredit);
-
-    int size();
-
-    MessageInstance get(long deliveryTag);
-
-    Collection<MessageConsumerAssociation> acknowledge(long deliveryTag, boolean multiple);
-    void collect(long key, boolean multiple, Map<Long, MessageConsumerAssociation> msgs);
+    long getSize();
 }
-
-

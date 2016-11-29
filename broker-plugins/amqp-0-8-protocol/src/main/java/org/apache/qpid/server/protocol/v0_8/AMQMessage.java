@@ -43,7 +43,6 @@ public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMet
     public AMQMessage(StoredMessage<MessageMetaData> handle, Object connectionReference)
     {
         super(handle, connectionReference, handle.getMetaData().getContentSize());
-        ;
     }
 
     public MessageMetaData getMessageMetaData()

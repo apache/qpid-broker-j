@@ -25,6 +25,9 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collection;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Collections2;
+
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
@@ -32,6 +35,16 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class UnacknowledgedMessageMapTest extends QpidTestCase
 {
+    public static final Function<MessageConsumerAssociation, MessageInstance>
+            MESSAGE_INSTANCE_FUNCTION = new Function<MessageConsumerAssociation, MessageInstance>()
+
+    {
+        @Override
+        public MessageInstance apply(final MessageConsumerAssociation input)
+        {
+            return input.getMessageInstance();
+        }
+    };
     private final ConsumerImpl _consumer = mock(ConsumerImpl.class);
 
     public void testDeletedMessagesCantBeAcknowledged()
@@ -40,12 +53,13 @@ public class UnacknowledgedMessageMapTest extends QpidTestCase
         final int expectedSize = 5;
         MessageInstance[] msgs = populateMap(map,expectedSize);
         assertEquals(expectedSize,map.size());
-        Collection<MessageInstance> acknowledged = map.acknowledge(100, true);
+        Collection<MessageConsumerAssociation> acknowledged = map.acknowledge(100, true);
+        Collection<MessageInstance> acknowledgedMessages = Collections2.transform(acknowledged, MESSAGE_INSTANCE_FUNCTION);
         assertEquals(expectedSize, acknowledged.size());
         assertEquals(0,map.size());
         for(int i = 0; i < expectedSize; i++)
         {
-            assertTrue("Message " + i + " is missing", acknowledged.contains(msgs[i]));
+            assertTrue("Message " + i + " is missing", acknowledgedMessages.contains(msgs[i]));
         }
 
         map = new UnacknowledgedMessageMapImpl(100, mock(CreditRestorer.class));
@@ -58,11 +72,12 @@ public class UnacknowledgedMessageMapTest extends QpidTestCase
 
 
         acknowledged = map.acknowledge(100, true);
+        acknowledgedMessages = Collections2.transform(acknowledged, MESSAGE_INSTANCE_FUNCTION);
         assertEquals(expectedSize-2, acknowledged.size());
         assertEquals(0,map.size());
         for(int i = 0; i < expectedSize; i++)
         {
-            assertEquals(i != 2 && i != 4, acknowledged.contains(msgs[i]));
+            assertEquals(i != 2 && i != 4, acknowledgedMessages.contains(msgs[i]));
         }
 
     }
