@@ -1054,9 +1054,16 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     protected Connection getConnectionWithSyncPublishing() throws URLSyntaxException, NamingException, JMSException
     {
-        Map<String, String> options = new HashMap<>();
-        options.put(ConnectionURL.OPTIONS_SYNC_PUBLISH, "all");
-        return getConnectionWithOptions(options);
+        if(isBroker10())
+        {
+            return getConnection();
+        }
+        else
+        {
+            Map<String, String> options = new HashMap<>();
+            options.put(ConnectionURL.OPTIONS_SYNC_PUBLISH, "all");
+            return getConnectionWithOptions(options);
+        }
     }
 
     protected Connection getClientConnection(String username, String password, String id)

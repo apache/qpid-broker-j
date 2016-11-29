@@ -99,5 +99,5 @@ org.apache.qpid.server.queue.ConsumerPriorityTest#*
 org.apache.qpid.server.queue.ArrivalTimeFilterTest#*
 
 // Broker should issue drain to client when flow control is enforced, so that existing credit is used up (test will also need updating)
-//org.apache.qpid.server.queue.ProducerFlowControlTest#*
+org.apache.qpid.server.queue.ProducerFlowControlTest#*
 
