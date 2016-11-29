@@ -94,3 +94,10 @@ org.apache.qpid.test.unit.topic.TemporaryTopicTest#testMessageDeliveryUsingTempo
 // No exception is thrown when attempting to make a durable subscription to the temporary topic
 org.apache.qpid.test.unit.topic.TemporaryTopicTest#testDurableSubscriptionProhibited
 
+// These tests require some way to set properties on the link established by the client
+org.apache.qpid.server.queue.ConsumerPriorityTest#*
+org.apache.qpid.server.queue.ArrivalTimeFilterTest#*
+
+// Broker should issue drain to client when flow control is enforced, so that existing credit is used up (test will also need updating)
+//org.apache.qpid.server.queue.ProducerFlowControlTest#*
+
