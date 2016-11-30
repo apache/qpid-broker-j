@@ -109,6 +109,7 @@ import org.apache.qpid.server.security.SubjectFixedResultAccessControl;
 import org.apache.qpid.server.security.SubjectFixedResultAccessControl.ResultCalculator;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
@@ -2553,6 +2554,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
             scheduleHouseKeepingTask(getHousekeepingCheckPeriod(), _fileSystemSpaceChecker);
         }
+    }
+
+    @Override
+    public SocketConnectionMetaData getConnectionMetaData()
+    {
+        return getBroker().getConnectionMetaData();
     }
 
     @StateTransition( currentState = { State.STOPPED, State.ERRORED }, desiredState = State.ACTIVE )

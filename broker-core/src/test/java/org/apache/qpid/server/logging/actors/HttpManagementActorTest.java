@@ -20,17 +20,18 @@
  */
 package org.apache.qpid.server.logging.actors;
 
-import javax.security.auth.Subject;
-
-import org.apache.qpid.server.logging.LogMessage;
-import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
-import org.apache.qpid.server.security.auth.TestPrincipalUtils;
-
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.List;
+
+import javax.security.auth.Subject;
+
+import org.apache.qpid.server.logging.LogMessage;
+import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
+import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
+import org.apache.qpid.server.security.auth.TestPrincipalUtils;
 
 public class HttpManagementActorTest extends BaseActorTestCase
 {
@@ -68,6 +69,12 @@ public class HttpManagementActorTest extends BaseActorTestCase
                                         public SocketAddress getRemoteAddress()
                                         {
                                             return new InetSocketAddress(IP, PORT);
+                                        }
+
+                                        @Override
+                                        public SocketConnectionMetaData getConnectionMetaData()
+                                        {
+                                            return null;
                                         }
 
                                         @Override

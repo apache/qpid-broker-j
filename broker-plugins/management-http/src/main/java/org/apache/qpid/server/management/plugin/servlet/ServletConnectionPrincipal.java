@@ -20,27 +20,39 @@
  */
 package org.apache.qpid.server.management.plugin.servlet;
 
-import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
-
-import javax.servlet.ServletRequest;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.server.model.Transport;
+import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
+import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
 
 public class ServletConnectionPrincipal implements ManagementConnectionPrincipal
 {
     private static final long serialVersionUID = 1L;
 
     private final InetSocketAddress _address;
+    private ServletRequestMetaData _metadata;
 
-    public ServletConnectionPrincipal(ServletRequest request)
+    public ServletConnectionPrincipal(HttpServletRequest request)
     {
         _address = new InetSocketAddress(request.getRemoteHost(), request.getRemotePort());
+        _metadata = new ServletRequestMetaData(request);
     }
 
     @Override
     public SocketAddress getRemoteAddress()
     {
         return _address;
+    }
+
+    @Override
+    public SocketConnectionMetaData getConnectionMetaData()
+    {
+        return _metadata;
     }
 
     @Override
@@ -81,5 +93,44 @@ public class ServletConnectionPrincipal implements ManagementConnectionPrincipal
     public String getType()
     {
         return "HTTP";
+    }
+
+    private static class ServletRequestMetaData implements SocketConnectionMetaData
+    {
+        private final HttpServletRequest _request;
+
+        public ServletRequestMetaData(final HttpServletRequest request)
+        {
+            _request = request;
+        }
+
+        @Override
+        public String getLocalAddress()
+        {
+            return _request.getServerName() + ":" + _request.getServerPort();
+        }
+
+        @Override
+        public String getRemoteAddress()
+        {
+            return _request.getRemoteHost() + ":" + _request.getRemotePort();
+        }
+
+        @Override
+        public Protocol getProtocol()
+        {
+            return Protocol.HTTP;
+        }
+
+        @Override
+        public Transport getTransport()
+        {
+            return _request.isSecure() ? Transport.SSL : Transport.TCP;
+        }
+
+        public String getHttpProtocol()
+        {
+            return _request.getProtocol();
+        }
     }
 }

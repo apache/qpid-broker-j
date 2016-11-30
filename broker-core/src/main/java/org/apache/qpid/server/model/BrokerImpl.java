@@ -71,6 +71,8 @@ import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.SubjectFixedResultAccessControl;
 import org.apache.qpid.server.security.SubjectFixedResultAccessControl.ResultCalculator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
+import org.apache.qpid.server.security.auth.SocketConnectionPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.SimpleAuthenticationManager;
 import org.apache.qpid.server.security.group.GroupPrincipal;
@@ -1001,6 +1003,30 @@ public class BrokerImpl extends AbstractContainer<BrokerImpl> implements Broker<
     public Principal getUser()
     {
         return AuthenticatedPrincipal.getCurrentUser();
+    }
+
+    @Override
+    public SocketConnectionMetaData getConnectionMetaData()
+    {
+        Subject subject = Subject.getSubject(AccessController.getContext());
+        final SocketConnectionPrincipal principal;
+        if(subject != null)
+        {
+            Set<SocketConnectionPrincipal> principals = subject.getPrincipals(SocketConnectionPrincipal.class);
+            if(!principals.isEmpty())
+            {
+                principal = principals.iterator().next();
+            }
+            else
+            {
+                principal = null;
+            }
+        }
+        else
+        {
+            principal = null;
+        }
+        return principal == null ? null : principal.getConnectionMetaData();
     }
 
     @Override

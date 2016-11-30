@@ -20,13 +20,15 @@
  */
 package org.apache.qpid.server.security.auth;
 
-import java.io.Serializable;
-import java.net.SocketAddress;
-import java.security.Principal;
+import org.apache.qpid.server.model.ManagedAttributeValueType;
+import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.server.model.Transport;
 
-public interface SocketConnectionPrincipal extends Principal, Serializable
+@ManagedAttributeValueType
+public interface SocketConnectionMetaData
 {
-    SocketAddress getRemoteAddress();
-
-    SocketConnectionMetaData getConnectionMetaData();
+    String getLocalAddress();
+    String getRemoteAddress();
+    Protocol getProtocol();
+    Transport getTransport();
 }

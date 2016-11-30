@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.preferences.UserPreferencesCreator;
 
@@ -279,6 +280,12 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
             description = "Returns the principal of the currently authenticated user",
             changesConfiguredObjectState = false)
     Principal getUser();
+
+    @ManagedOperation(nonModifying = true,
+            description = "Returns metadata concerning the current connection",
+            changesConfiguredObjectState = false)
+    SocketConnectionMetaData getConnectionMetaData();
+
 
     @ManagedOperation(nonModifying = true,
             description = "Returns the groups to which the currently authenticated user belongs",

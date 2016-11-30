@@ -18,15 +18,17 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.security.auth;
+package org.apache.qpid.server.connection;
 
-import java.io.Serializable;
-import java.net.SocketAddress;
-import java.security.Principal;
+import java.util.UUID;
 
-public interface SocketConnectionPrincipal extends Principal, Serializable
+import org.apache.qpid.server.model.ManagedAttributeValueType;
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
+
+@ManagedAttributeValueType
+public interface AmqpConnectionMetaData extends SocketConnectionMetaData
 {
-    SocketAddress getRemoteAddress();
-
-    SocketConnectionMetaData getConnectionMetaData();
+    UUID getConnectionId();
+    Port getPort();
 }

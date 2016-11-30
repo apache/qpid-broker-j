@@ -45,6 +45,7 @@ import org.apache.qpid.server.model.StatisticType;
 import org.apache.qpid.server.model.StatisticUnit;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.QueueEntry;
+import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.EventListener;
@@ -235,6 +236,11 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
 
     @ManagedOperation(description = "Resets statistics on this object and all child objects", changesConfiguredObjectState = false, nonModifying = true)
     void resetStatistics();
+
+    @ManagedOperation(nonModifying = true,
+            description = "Returns metadata concerning the current connection",
+            changesConfiguredObjectState = false)
+    SocketConnectionMetaData getConnectionMetaData();
 
     Broker<?> getBroker();
 

@@ -21,7 +21,11 @@
 package org.apache.qpid.server.connection;
 
 import java.net.SocketAddress;
+import java.util.UUID;
 
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.security.auth.SocketConnectionPrincipal;
 import org.apache.qpid.server.transport.AMQPConnection;
 
@@ -30,10 +34,12 @@ public class ConnectionPrincipal implements SocketConnectionPrincipal
     private static final long serialVersionUID = 1L;
 
     private final AMQPConnection<?> _connection;
+    private AmqpConnectionMetaData _metadata;
 
     public ConnectionPrincipal(final AMQPConnection<?> connection)
     {
         _connection = connection;
+        _metadata = new ConnectionMetaData(connection);
     }
 
     @Override
@@ -46,6 +52,12 @@ public class ConnectionPrincipal implements SocketConnectionPrincipal
     public SocketAddress getRemoteAddress()
     {
         return _connection.getRemoteSocketAddress();
+    }
+
+    @Override
+    public AmqpConnectionMetaData getConnectionMetaData()
+    {
+        return _metadata;
     }
 
     public AMQPConnection<?> getConnection()
@@ -79,5 +91,51 @@ public class ConnectionPrincipal implements SocketConnectionPrincipal
     public int hashCode()
     {
         return _connection.hashCode();
+    }
+
+    private static class ConnectionMetaData implements AmqpConnectionMetaData
+    {
+        private final AMQPConnection<?> _connection;
+
+        ConnectionMetaData(final AMQPConnection<?> connection)
+        {
+            _connection = connection;
+        }
+
+        @Override
+        public UUID getConnectionId()
+        {
+            return _connection.getId();
+        }
+
+        @Override
+        public Port getPort()
+        {
+            return _connection.getPort();
+        }
+
+        @Override
+        public String getLocalAddress()
+        {
+            return _connection.getLocalAddress();
+        }
+
+        @Override
+        public String getRemoteAddress()
+        {
+            return _connection.getRemoteAddress();
+        }
+
+        @Override
+        public Protocol getProtocol()
+        {
+            return _connection.getProtocol();
+        }
+
+        @Override
+        public Transport getTransport()
+        {
+            return _connection.getTransport();
+        }
     }
 }
