@@ -52,6 +52,9 @@ public class JDBCVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<JDB
     @ManagedAttributeField
     private String _password;
 
+    @ManagedAttributeField
+    private String _tableNamePrefix;
+
     @ManagedObjectFactoryConstructor
     public JDBCVirtualHostNodeImpl(Map<String, Object> attributes, Broker<?> parent)
     {
@@ -91,6 +94,12 @@ public class JDBCVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<JDB
     public String getPassword()
     {
         return _password;
+    }
+
+    @Override
+    public String getTableNamePrefix()
+    {
+        return _tableNamePrefix;
     }
 
     @Override

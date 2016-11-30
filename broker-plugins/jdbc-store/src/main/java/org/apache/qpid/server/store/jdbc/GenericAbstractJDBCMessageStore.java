@@ -42,13 +42,15 @@ public abstract class GenericAbstractJDBCMessageStore extends org.apache.qpid.se
         if (_messageStoreOpen.compareAndSet(false, true))
         {
             _parent = parent;
-
+            super.setTablePrefix(getTablePrefix(parent));
             doOpen(parent);
 
             createOrOpenMessageStoreDatabase();
             setMaximumMessageId();
         }
     }
+
+    protected abstract String getTablePrefix(final ConfiguredObject<?> parent);
 
     protected abstract void doOpen(final ConfiguredObject<?> parent)
             throws StoreException;

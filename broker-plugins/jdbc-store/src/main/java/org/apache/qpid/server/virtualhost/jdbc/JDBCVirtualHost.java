@@ -20,6 +20,7 @@
 package org.apache.qpid.server.virtualhost.jdbc;
 
 import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory;
 import org.apache.qpid.server.store.jdbc.JDBCSettings;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
@@ -39,5 +40,11 @@ public interface JDBCVirtualHost<X extends JDBCVirtualHost<X>> extends QueueMana
 
     @ManagedAttribute(secure=true)
     String getPassword();
+
+    @ManagedContextDefault(name = "jdbcvirtualhost.tableNamePrefix")
+    String DEFAULT_JDBC_VIRTUALHOST_TABLE_NAME_PREFIX = "";
+
+    @ManagedAttribute(secure=true, defaultValue = "${jdbcvirtualhost.tableNamePrefix}")
+    String getTableNamePrefix();
 
 }

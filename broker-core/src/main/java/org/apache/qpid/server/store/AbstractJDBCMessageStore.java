@@ -32,9 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -57,67 +55,21 @@ import org.apache.qpid.server.store.handler.MessageInstanceHandler;
 
 public abstract class AbstractJDBCMessageStore implements MessageStore
 {
-    private static final String DB_VERSION_TABLE_NAME = "QPID_DB_VERSION";
-
-    private static final String QUEUE_ENTRY_TABLE_NAME = "QPID_QUEUE_ENTRIES";
-
-    private static final String META_DATA_TABLE_NAME = "QPID_MESSAGE_METADATA";
-    private static final String MESSAGE_CONTENT_TABLE_NAME = "QPID_MESSAGE_CONTENT";
-
-
-    private static final String XID_TABLE_NAME = "QPID_XIDS";
-    private static final String XID_ACTIONS_TABLE_NAME = "QPID_XID_ACTIONS";
-
-    public static final Set<String> MESSAGE_STORE_TABLE_NAMES = new HashSet<String>(Arrays.asList(DB_VERSION_TABLE_NAME,
-                                                                                                  META_DATA_TABLE_NAME, MESSAGE_CONTENT_TABLE_NAME,
-                                                                                                  QUEUE_ENTRY_TABLE_NAME,
-                                                                                                  XID_TABLE_NAME, XID_ACTIONS_TABLE_NAME));
+    private static final String DB_VERSION_TABLE_NAME_SUFFIX = "QPID_DB_VERSION";
+    private static final String QUEUE_ENTRY_TABLE_NAME_SUFFIX = "QPID_QUEUE_ENTRIES";
+    private static final String META_DATA_TABLE_NAME_SUFFIX = "QPID_MESSAGE_METADATA";
+    private static final String MESSAGE_CONTENT_TABLE_NAME_SUFFIX = "QPID_MESSAGE_CONTENT";
+    private static final String XID_TABLE_NAME_SUFFIX = "QPID_XIDS";
+    private static final String XID_ACTIONS_TABLE_NAME_SUFFIX = "QPID_XID_ACTIONS";
 
     private static final int DB_VERSION = 8;
 
     private final AtomicLong _messageId = new AtomicLong(0);
 
-    private static final String CREATE_DB_VERSION_TABLE = "CREATE TABLE "+ DB_VERSION_TABLE_NAME + " ( version int not null )";
-    private static final String INSERT_INTO_DB_VERSION = "INSERT INTO "+ DB_VERSION_TABLE_NAME + " ( version ) VALUES ( ? )";
-    private static final String SELECT_FROM_DB_VERSION = "SELECT version FROM " + DB_VERSION_TABLE_NAME;
-    private static final String UPDATE_DB_VERSION = "UPDATE " + DB_VERSION_TABLE_NAME + " SET version = ?";
-
-
-    private static final String INSERT_INTO_QUEUE_ENTRY = "INSERT INTO " + QUEUE_ENTRY_TABLE_NAME + " (queue_id, message_id) values (?,?)";
-    private static final String DELETE_FROM_QUEUE_ENTRY = "DELETE FROM " + QUEUE_ENTRY_TABLE_NAME + " WHERE queue_id = ? AND message_id =?";
-    private static final String SELECT_FROM_QUEUE_ENTRY = "SELECT queue_id, message_id FROM " + QUEUE_ENTRY_TABLE_NAME + " ORDER BY queue_id, message_id";
-    private static final String SELECT_FROM_QUEUE_ENTRY_FOR_QUEUE = "SELECT queue_id, message_id FROM " + QUEUE_ENTRY_TABLE_NAME + " WHERE queue_id = ? ORDER BY queue_id, message_id";
-
-    private static final String INSERT_INTO_MESSAGE_CONTENT = "INSERT INTO " + MESSAGE_CONTENT_TABLE_NAME
-                                                              + "( message_id, content ) values (?, ?)";
-    private static final String SELECT_FROM_MESSAGE_CONTENT = "SELECT content FROM " + MESSAGE_CONTENT_TABLE_NAME
-                                                              + " WHERE message_id = ?";
-    private static final String DELETE_FROM_MESSAGE_CONTENT = "DELETE FROM " + MESSAGE_CONTENT_TABLE_NAME
-                                                              + " WHERE message_id = ?";
-
-    private static final String INSERT_INTO_META_DATA = "INSERT INTO " + META_DATA_TABLE_NAME + "( message_id , meta_data ) values (?, ?)";
-    private static final String SELECT_FROM_META_DATA =
-            "SELECT meta_data FROM " + META_DATA_TABLE_NAME + " WHERE message_id = ?";
-    private static final String DELETE_FROM_META_DATA = "DELETE FROM " + META_DATA_TABLE_NAME + " WHERE message_id = ?";
-    private static final String SELECT_ALL_FROM_META_DATA = "SELECT message_id, meta_data FROM " + META_DATA_TABLE_NAME;
-    private static final String SELECT_ONE_FROM_META_DATA = "SELECT message_id, meta_data FROM " + META_DATA_TABLE_NAME + " WHERE message_id = ?";
-
-    private static final String INSERT_INTO_XIDS =
-            "INSERT INTO "+ XID_TABLE_NAME +" ( format, global_id, branch_id ) values (?, ?, ?)";
-    private static final String DELETE_FROM_XIDS = "DELETE FROM " + XID_TABLE_NAME
-                                                   + " WHERE format = ? and global_id = ? and branch_id = ?";
-    private static final String SELECT_ALL_FROM_XIDS = "SELECT format, global_id, branch_id FROM " + XID_TABLE_NAME;
-    private static final String INSERT_INTO_XID_ACTIONS =
-            "INSERT INTO "+ XID_ACTIONS_TABLE_NAME +" ( format, global_id, branch_id, action_type, " +
-            "queue_id, message_id ) values (?,?,?,?,?,?) ";
-    private static final String DELETE_FROM_XID_ACTIONS = "DELETE FROM " + XID_ACTIONS_TABLE_NAME
-                                                          + " WHERE format = ? and global_id = ? and branch_id = ?";
-    private static final String SELECT_ALL_FROM_XID_ACTIONS =
-            "SELECT action_type, queue_id, message_id FROM " + XID_ACTIONS_TABLE_NAME +
-            " WHERE format = ? and global_id = ? and branch_id = ?";
 
     protected final EventManager _eventManager = new EventManager();
     private ConfiguredObject<?> _parent;
+    private String _tablePrefix = "";
 
     protected abstract boolean isMessageStoreOpen();
 
@@ -136,9 +88,10 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             Connection conn = newAutoCommitConnection();
             try
             {
-                setMaxMessageId(conn, "SELECT max(message_id) FROM " + MESSAGE_CONTENT_TABLE_NAME, 1);
-                setMaxMessageId(conn, "SELECT max(message_id) FROM " + META_DATA_TABLE_NAME, 1);
-                setMaxMessageId(conn, "SELECT queue_id, max(message_id) FROM " + QUEUE_ENTRY_TABLE_NAME + " GROUP BY queue_id " , 2);
+                setMaxMessageId(conn, "SELECT max(message_id) FROM " + getMessageContentTableName(), 1);
+                setMaxMessageId(conn, "SELECT max(message_id) FROM " + getMetaDataTableName(), 1);
+                setMaxMessageId(conn, "SELECT queue_id, max(message_id) FROM " + getQueueEntryTableName()
+                                      + " GROUP BY queue_id " , 2);
             }
             finally
             {
@@ -188,7 +141,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         try
         {
             conn = newAutoCommitConnection();
-            if (tableExists(DB_VERSION_TABLE_NAME, conn))
+            if (tableExists(getDbVersionTableName(), conn))
             {
                 upgradeIfNecessary(parent);
             }
@@ -208,13 +161,13 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         try (Connection conn = newAutoCommitConnection())
         {
 
-            try (PreparedStatement statement = conn.prepareStatement(SELECT_FROM_DB_VERSION))
+            try (PreparedStatement statement = conn.prepareStatement("SELECT version FROM " + getDbVersionTableName()))
             {
                 try (ResultSet rs = statement.executeQuery())
                 {
                     if (!rs.next())
                     {
-                        throw new StoreException(DB_VERSION_TABLE_NAME + " does not contain the database version");
+                        throw new StoreException(getDbVersionTableName() + " does not contain the database version");
                     }
                     int version = rs.getInt(1);
                     switch (version)
@@ -248,7 +201,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     {
         try (Connection conn = newAutoCommitConnection())
         {
-            try (PreparedStatement statement = conn.prepareStatement(UPDATE_DB_VERSION))
+            try (PreparedStatement statement = conn.prepareStatement("UPDATE " + getDbVersionTableName()
+                                                                     + " SET version = ?"))
             {
                 statement.setInt(1, newVersion);
                 statement.execute();
@@ -318,14 +272,15 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     private void createVersionTable(final Connection conn) throws SQLException
     {
-        if(!tableExists(DB_VERSION_TABLE_NAME, conn))
+        if(!tableExists(getDbVersionTableName(), conn))
         {
             try (Statement stmt = conn.createStatement())
             {
-                stmt.execute(CREATE_DB_VERSION_TABLE);
+                stmt.execute("CREATE TABLE " + getDbVersionTableName() + " ( version int not null )");
             }
 
-            try (PreparedStatement pstmt = conn.prepareStatement(INSERT_INTO_DB_VERSION))
+            try (PreparedStatement pstmt = conn.prepareStatement("INSERT INTO " + getDbVersionTableName()
+                                                                 + " ( version ) VALUES ( ? )"))
             {
                 pstmt.setInt(1, DB_VERSION);
                 pstmt.execute();
@@ -335,11 +290,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     private void createQueueEntryTable(final Connection conn) throws SQLException
     {
-        if(!tableExists(QUEUE_ENTRY_TABLE_NAME, conn))
+        if(!tableExists(getQueueEntryTableName(), conn))
         {
             try (Statement stmt = conn.createStatement())
             {
-                stmt.execute("CREATE TABLE " + QUEUE_ENTRY_TABLE_NAME + " ( queue_id varchar(36) not null, message_id "
+                stmt.execute("CREATE TABLE " + getQueueEntryTableName()
+                             + " ( queue_id varchar(36) not null, message_id "
                              + getSqlBigIntType() + " not null, PRIMARY KEY (queue_id, message_id) )");
             }
         }
@@ -348,12 +304,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     private void createMetaDataTable(final Connection conn) throws SQLException
     {
-        if(!tableExists(META_DATA_TABLE_NAME, conn))
+        if(!tableExists(getMetaDataTableName(), conn))
         {
             try (Statement stmt = conn.createStatement())
             {
                 stmt.execute("CREATE TABLE "
-                             + META_DATA_TABLE_NAME
+                             + getMetaDataTableName()
                              + " ( message_id "
                              + getSqlBigIntType()
                              + " not null, meta_data "
@@ -366,12 +322,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     private void createMessageContentTable(final Connection conn) throws SQLException
     {
-        if(!tableExists(MESSAGE_CONTENT_TABLE_NAME, conn))
+        if(!tableExists(getMessageContentTableName(), conn))
         {
             try (Statement stmt = conn.createStatement())
             {
                 stmt.execute("CREATE TABLE "
-                             + MESSAGE_CONTENT_TABLE_NAME
+                             + getMessageContentTableName()
                              + " ( message_id "
                              + getSqlBigIntType()
                              + " not null, content "
@@ -384,12 +340,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     private void createXidTable(final Connection conn) throws SQLException
     {
-        if(!tableExists(XID_TABLE_NAME, conn))
+        if(!tableExists(getXidTableName(), conn))
         {
             try (Statement stmt = conn.createStatement())
             {
                 stmt.execute("CREATE TABLE "
-                             + XID_TABLE_NAME
+                             + getXidTableName()
                              + " ( format " + getSqlBigIntType() + " not null,"
                              + " global_id "
                              + getSqlVarBinaryType(64)
@@ -404,12 +360,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     private void createXidActionTable(final Connection conn) throws SQLException
     {
-        if(!tableExists(XID_ACTIONS_TABLE_NAME, conn))
+        if(!tableExists(getXidActionsTableName(), conn))
         {
             try (Statement stmt = conn.createStatement())
             {
                 stmt.execute("CREATE TABLE "
-                             + XID_ACTIONS_TABLE_NAME
+                             + getXidActionsTableName()
                              + " ( format "
                              + getSqlBigIntType()
                              + " not null,"
@@ -458,7 +414,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             Connection conn = newConnection();
             try
             {
-                PreparedStatement stmt = conn.prepareStatement(DELETE_FROM_META_DATA);
+                PreparedStatement stmt = conn.prepareStatement("DELETE FROM " + getMetaDataTableName()
+                                                               + " WHERE message_id = ?");
                 try
                 {
                     stmt.setLong(1,messageId);
@@ -472,7 +429,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
                     getLogger().debug("Deleted metadata for message {}", messageId);
 
-                    stmt = conn.prepareStatement(DELETE_FROM_MESSAGE_CONTENT);
+                    stmt = conn.prepareStatement("DELETE FROM " + getMessageContentTableName()
+                                                 + " WHERE message_id = ?");
                     stmt.setLong(1, messageId);
                     results = stmt.executeUpdate();
                 }
@@ -584,7 +542,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                                   messageId, queue.getName(), queue.getId(), conn);
             }
 
-            try (PreparedStatement stmt = conn.prepareStatement(INSERT_INTO_QUEUE_ENTRY))
+            try (PreparedStatement stmt = conn.prepareStatement("INSERT INTO " + getQueueEntryTableName()
+                                                                + " (queue_id, message_id) values (?,?)"))
             {
                 stmt.setString(1, queue.getId().toString());
                 stmt.setLong(2, messageId);
@@ -609,7 +568,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
         try
         {
-            try (PreparedStatement stmt = conn.prepareStatement(DELETE_FROM_QUEUE_ENTRY))
+            try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM " + getQueueEntryTableName()
+                                                                + " WHERE queue_id = ? AND message_id =?"))
             {
                 stmt.setString(1, queueId.toString());
                 stmt.setLong(2, messageId);
@@ -644,7 +604,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
         try
         {
-            PreparedStatement stmt = conn.prepareStatement(DELETE_FROM_XIDS);
+            PreparedStatement stmt = conn.prepareStatement("DELETE FROM " + getXidTableName()
+                                                           + " WHERE format = ? and global_id = ? and branch_id = ?");
             try
             {
                 stmt.setLong(1,format);
@@ -664,7 +625,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 stmt.close();
             }
 
-            stmt = conn.prepareStatement(DELETE_FROM_XID_ACTIONS);
+            stmt = conn.prepareStatement("DELETE FROM " + getXidActionsTableName()
+                                         + " WHERE format = ? and global_id = ? and branch_id = ?");
             try
             {
                 stmt.setLong(1,format);
@@ -696,7 +658,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         try
         {
 
-            PreparedStatement stmt = conn.prepareStatement(INSERT_INTO_XIDS);
+            PreparedStatement stmt = conn.prepareStatement("INSERT INTO " + getXidTableName()
+                                                           + " ( format, global_id, branch_id ) values (?, ?, ?)");
             try
             {
                 stmt.setLong(1,format);
@@ -719,7 +682,9 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             }
 
 
-            stmt = conn.prepareStatement(INSERT_INTO_XID_ACTIONS);
+            stmt = conn.prepareStatement("INSERT INTO " + getXidActionsTableName()
+                                         + " ( format, global_id, branch_id, action_type, " +
+                                         "queue_id, message_id ) values (?,?,?,?,?,?) ");
 
             try
             {
@@ -762,6 +727,45 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             throw new StoreException("Error writing xid ", e);
         }
 
+    }
+
+    public void onOpen(final ConfiguredObject<?> parent)
+    {
+    }
+
+    public void setTablePrefix(final String tablePrefix)
+    {
+        _tablePrefix = tablePrefix;
+    }
+
+    private String getDbVersionTableName()
+    {
+        return _tablePrefix + DB_VERSION_TABLE_NAME_SUFFIX;
+    }
+
+    private String getQueueEntryTableName()
+    {
+        return _tablePrefix + QUEUE_ENTRY_TABLE_NAME_SUFFIX;
+    }
+
+    private String getMetaDataTableName()
+    {
+        return _tablePrefix + META_DATA_TABLE_NAME_SUFFIX;
+    }
+
+    private String getMessageContentTableName()
+    {
+        return _tablePrefix + MESSAGE_CONTENT_TABLE_NAME_SUFFIX;
+    }
+
+    private String getXidTableName()
+    {
+        return _tablePrefix + XID_TABLE_NAME_SUFFIX;
+    }
+
+    private String getXidActionsTableName()
+    {
+        return _tablePrefix + XID_ACTIONS_TABLE_NAME_SUFFIX;
     }
 
     private static final class ConnectionWrapper
@@ -846,7 +850,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     {
         getLogger().debug("Adding metadata for message {}", messageId);
 
-        PreparedStatement stmt = conn.prepareStatement(INSERT_INTO_META_DATA);
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO " + getMetaDataTableName()
+                                                       + "( message_id , meta_data ) values (?, ?)");
         try
         {
             stmt.setLong(1, messageId);
@@ -967,7 +972,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         Connection conn = newAutoCommitConnection();
         try
         {
-            PreparedStatement stmt = conn.prepareStatement(SELECT_FROM_META_DATA);
+            PreparedStatement stmt = conn.prepareStatement("SELECT meta_data FROM " + getMetaDataTableName()
+                                                           + " WHERE message_id = ?");
             try
             {
                 stmt.setLong(1,messageId);
@@ -1032,7 +1038,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         try
         {
 
-            stmt = conn.prepareStatement(INSERT_INTO_MESSAGE_CONTENT);
+            stmt = conn.prepareStatement("INSERT INTO " + getMessageContentTableName()
+                                         + "( message_id, content ) values (?, ?)");
             stmt.setLong(1, messageId);
             stmt.setBinaryStream(2, new ByteArrayInputStream(data), data.length);
             stmt.executeUpdate();
@@ -1059,7 +1066,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         {
             conn = newAutoCommitConnection();
 
-            stmt = conn.prepareStatement(SELECT_FROM_MESSAGE_CONTENT);
+            stmt = conn.prepareStatement("SELECT content FROM " + getMessageContentTableName()
+                                         + " WHERE message_id = ?");
             stmt.setLong(1,messageId);
             ResultSet rs = stmt.executeQuery();
 
@@ -1684,7 +1692,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             try
             {
                 conn = newAutoCommitConnection();
-                try (PreparedStatement stmt = conn.prepareStatement(SELECT_ONE_FROM_META_DATA))
+                try (PreparedStatement stmt = conn.prepareStatement("SELECT message_id, meta_data FROM " + getMetaDataTableName()
+                                                                    + " WHERE message_id = ?"))
                 {
                     stmt.setLong(1, messageId);
                     try (ResultSet rs = stmt.executeQuery())
@@ -1738,7 +1747,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 Statement stmt = conn.createStatement();
                 try
                 {
-                    ResultSet rs = stmt.executeQuery(SELECT_ALL_FROM_META_DATA);
+                    ResultSet rs = stmt.executeQuery("SELECT message_id, meta_data FROM " + getMetaDataTableName());
                     try
                     {
                         while (rs.next())
@@ -1788,7 +1797,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             try
             {
                 conn = newAutoCommitConnection();
-                PreparedStatement stmt = conn.prepareStatement(SELECT_FROM_QUEUE_ENTRY_FOR_QUEUE);
+                PreparedStatement stmt = conn.prepareStatement("SELECT queue_id, message_id FROM " + getQueueEntryTableName()
+                                                               + " WHERE queue_id = ? ORDER BY queue_id, message_id");
                 try
                 {
                     stmt.setString(1, queue.getId().toString());
@@ -1838,7 +1848,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 Statement stmt = conn.createStatement();
                 try
                 {
-                    ResultSet rs = stmt.executeQuery(SELECT_FROM_QUEUE_ENTRY);
+                    ResultSet rs = stmt.executeQuery("SELECT queue_id, message_id FROM " + getQueueEntryTableName()
+                                                     + " ORDER BY queue_id, message_id");
                     try
                     {
                         while (rs.next())
@@ -1885,7 +1896,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 Statement stmt = conn.createStatement();
                 try
                 {
-                    ResultSet rs = stmt.executeQuery(SELECT_ALL_FROM_XIDS);
+                    ResultSet rs = stmt.executeQuery("SELECT format, global_id, branch_id FROM " + getXidTableName());
                     try
                     {
                         while (rs.next())
@@ -1913,7 +1924,9 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                     List<RecordImpl> enqueues = new ArrayList<>();
                     List<RecordImpl> dequeues = new ArrayList<>();
 
-                    PreparedStatement pstmt = conn.prepareStatement(SELECT_ALL_FROM_XID_ACTIONS);
+                    PreparedStatement pstmt = conn.prepareStatement("SELECT action_type, queue_id, message_id FROM " + getXidActionsTableName()
+                                                                    +
+                                                                    " WHERE format = ? and global_id = ? and branch_id = ?");
 
                     try
                     {
@@ -1978,10 +1991,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             Connection conn = newAutoCommitConnection();
             try
             {
-                List<String> tables = new ArrayList<String>();
-                tables.addAll(MESSAGE_STORE_TABLE_NAMES);
 
-                for (String tableName : tables)
+                for (String tableName : getTableNames())
                 {
                     Statement stmt = conn.createStatement();
                     try
@@ -2007,6 +2018,16 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         {
             getLogger().error("Exception while deleting store tables", e);
         }
+    }
+
+    public List<String> getTableNames()
+    {
+        return Arrays.asList(getDbVersionTableName(),
+                             getMetaDataTableName(),
+                             getMessageContentTableName(),
+                             getQueueEntryTableName(),
+                             getXidTableName(),
+                             getXidActionsTableName());
     }
 
 

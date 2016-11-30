@@ -21,6 +21,7 @@
 package org.apache.qpid.server.store.jdbc;
 
 import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.store.preferences.PreferenceStoreAttributes;
 
@@ -41,4 +42,11 @@ public interface JDBCSystemConfig<X extends JDBCSystemConfig<X>> extends SystemC
     @ManagedAttribute( description = "Configuration for the preference store, e.g. type, path, etc.",
             defaultValue = "{\"type\": \"Provided\"}")
     PreferenceStoreAttributes getPreferenceStoreAttributes();
+
+    @ManagedContextDefault(name = "systemConfig.tableNamePrefix")
+    String DEFAULT_SYSTEM_CONFIG_TABLE_NAME_PREFIX = "";
+
+    @ManagedAttribute(secure=true, defaultValue = "${systemConfig.tableNamePrefix}")
+    String getTableNamePrefix();
+
 }

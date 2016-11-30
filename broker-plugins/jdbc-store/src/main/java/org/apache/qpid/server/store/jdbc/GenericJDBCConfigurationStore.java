@@ -78,10 +78,10 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
             throws StoreException
     {
         changeState(CONFIGURED, OPEN);
-
         _parent = parent;
 
         JDBCSettings settings = (JDBCSettings) parent;
+        super.setTableNamePrefix(settings.getTableNamePrefix());
         _connectionURL = settings.getConnectionUrl();
 
         JDBCDetails details = JDBCDetails.getDetailsForJdbcUrl(_connectionURL, parent);
@@ -240,6 +240,12 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
 
     private class ProvidedMessageStore extends GenericAbstractJDBCMessageStore
     {
+        @Override
+        protected String getTablePrefix(final ConfiguredObject<?> parent)
+        {
+            return ((JDBCSettings)_parent).getTableNamePrefix();
+        }
+
         @Override
         protected void doOpen(final ConfiguredObject<?> parent)
         {
