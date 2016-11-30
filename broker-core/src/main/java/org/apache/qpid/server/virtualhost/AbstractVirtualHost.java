@@ -594,11 +594,17 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         PreferencesRoot preferencesRoot = getParent(VirtualHostNode.class);
         _preferenceStore = preferencesRoot.createPreferenceStore();
 
-        _houseKeepingTaskExecutor = new HousekeepingExecutor("virtualhost-" + getName() + "-pool",
-                                                             getHousekeepingThreadCount(),
-                                                             getSystemTaskSubject("Housekeeping", getPrincipal()));
+        createHousekeepingExecutor();
+    }
 
-
+    private void createHousekeepingExecutor()
+    {
+        if(_houseKeepingTaskExecutor == null || _houseKeepingTaskExecutor.isTerminated())
+        {
+            _houseKeepingTaskExecutor = new HousekeepingExecutor("virtualhost-" + getName() + "-pool",
+                                                                 getHousekeepingThreadCount(),
+                                                                 getSystemTaskSubject("Housekeeping", getPrincipal()));
+        }
     }
 
     private void checkVHostStateIsActive()
@@ -2568,7 +2574,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private ListenableFuture<Void> onRestart()
     {
         resetStatistics();
-
+        createHousekeepingExecutor();
 
         final List<ConfiguredObjectRecord> records = new ArrayList<>();
 
