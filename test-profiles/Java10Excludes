@@ -148,6 +148,21 @@ org.apache.qpid.server.SupportedProtocolVersionsTest#*
 // Tests the client setting of JMSXUserId and the client options to control that
 org.apache.qpid.test.client.message.JMSXUserIDTest#*
 
+// Test of 0-x client settings around creating exchanges/queues dynamically
+org.apache.qpid.test.unit.client.DynamicQueueExchangeCreateTest#*
+
+// This test aims to establish a connection without going through SASL exchanges.  The model for 1.0 is different, and
+// this should probably be tested in a new protocol specific broker test
+org.apache.qpid.transport.ConnectionEstablishmentTest#*
+
+org.apache.qpid.test.client.message.JMSDestinationTest#testReceiveResend
+org.apache.qpid.test.client.message.JMSDestinationTest#testQueueWithBindingUrlUsingCustomExchange
+org.apache.qpid.test.client.message.JMSDestinationTest#testQueueWithBindingUrlUsingAmqDirectExchange
+org.apache.qpid.test.client.message.JMSDestinationTest#testQueueWithBindingUrlUsingDefaultExchange
+
+
+
+
 
 
 

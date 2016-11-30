@@ -20,10 +20,8 @@
  */
 package org.apache.qpid.test.client.message;
 
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.CustomJMSXProperty;
-import org.apache.qpid.configuration.ClientProperties;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
 import javax.jms.Destination;
@@ -36,8 +34,10 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import org.apache.qpid.client.AMQDestination;
+import org.apache.qpid.client.CustomJMSXProperty;
+import org.apache.qpid.configuration.ClientProperties;
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
  * From the API Docs getJMSDestination:
@@ -71,7 +71,7 @@ public class JMSDestinationTest extends QpidBrokerTestCase
     public void testQueue() throws Exception
     {
 
-        Queue queue = _session.createQueue(getTestQueueName());
+        Queue queue = createTestQueue(_session);
 
         MessageConsumer consumer = _session.createConsumer(queue);
 
@@ -98,7 +98,7 @@ public class JMSDestinationTest extends QpidBrokerTestCase
     public void testTopic() throws Exception
     {
 
-        Topic topic = _session.createTopic(getTestQueueName() + "Topic");
+        Topic topic = createTopic(_connection, getTestQueueName() + "Topic");
 
         MessageConsumer consumer = _session.createConsumer(topic);
 
@@ -125,7 +125,7 @@ public class JMSDestinationTest extends QpidBrokerTestCase
     public void testQueueAsync() throws Exception
     {
 
-        Queue queue = _session.createQueue(getTestQueueName());
+        Queue queue = createTestQueue(_session);
 
         MessageConsumer consumer = _session.createConsumer(queue);
 
