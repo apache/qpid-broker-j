@@ -31,4 +31,8 @@ public interface AmqpConnectionMetaData extends SocketConnectionMetaData
 {
     UUID getConnectionId();
     Port getPort();
+    String getClientId();
+    String getClientVersion();
+    String getClientProduct();
+
 }

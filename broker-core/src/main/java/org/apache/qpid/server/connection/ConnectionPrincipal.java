@@ -137,5 +137,23 @@ public class ConnectionPrincipal implements SocketConnectionPrincipal
         {
             return _connection.getTransport();
         }
+
+        @Override
+        public String getClientId()
+        {
+            return _connection.getClientId();
+        }
+
+        @Override
+        public String getClientVersion()
+        {
+            return _connection.getClientVersion();
+        }
+
+        @Override
+        public String getClientProduct()
+        {
+            return _connection.getClientProduct();
+        }
     }
 }
