@@ -69,7 +69,7 @@ public class LiveQueueOperationsTest extends QpidBrokerTestCase
         Connection conn = getConnection();
         conn.start();
         final Session session = conn.createSession(true, Session.SESSION_TRANSACTED);
-        Queue queue = getTestQueue();
+        final Queue queue = createTestQueue(session);
         session.createConsumer(queue).close();
 
         sendMessage(session, queue, 250);

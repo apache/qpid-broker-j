@@ -33,7 +33,7 @@ org.apache.qpid.client.SyncPublishTest#*
 org.apache.qpid.server.security.acl.ExternalACLTest#*
 org.apache.qpid.server.security.acl.ExhaustiveACLTest#*
 org.apache.qpid.server.queue.ModelTest#*
-org.apache.qpid.server.queue.LiveQueueOperationsTest#*
+//org.apache.qpid.server.queue.LiveQueueOperationsTest#*
 org.apache.qpid.test.unit.topic.DurableSubscriptionTest#*
 org.apache.qpid.test.unit.close.JavaServerCloseRaceConditionTest#*
 org.apache.qpid.test.unit.client.MaxDeliveryCountTest#*
