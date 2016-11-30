@@ -593,6 +593,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         PreferencesRoot preferencesRoot = getParent(VirtualHostNode.class);
         _preferenceStore = preferencesRoot.createPreferenceStore();
+
+        _houseKeepingTaskExecutor = new HousekeepingExecutor("virtualhost-" + getName() + "-pool",
+                                                             getHousekeepingThreadCount(),
+                                                             getSystemTaskSubject("Housekeeping", getPrincipal()));
+
+
     }
 
     private void checkVHostStateIsActive()
@@ -2441,10 +2447,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
     private ListenableFuture<Void> onActivate()
     {
-
-        _houseKeepingTaskExecutor = new HousekeepingExecutor("virtualhost-" + getName() + "-pool",
-                                                             getHousekeepingThreadCount(),
-                                                             getSystemTaskSubject("Housekeeping", getPrincipal()));
 
         long threadPoolKeepAliveTimeout = getContextValue(Long.class, CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT);
 
