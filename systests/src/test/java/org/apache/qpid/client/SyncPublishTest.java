@@ -23,6 +23,7 @@ package org.apache.qpid.client;
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.MessageProducer;
+import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TemporaryQueue;
 
@@ -53,7 +54,8 @@ public class SyncPublishTest extends QpidBrokerTestCase
         MessageProducer producer = session.createProducer(null);
         try
         {
-            producer.send(session.createQueue("direct://amq.direct/unknown/unknown"),session.createTextMessage("hello"));
+            final Queue queue = session.createQueue(isBroker10() ? "amq.direct/unknown" : "direct://amq.direct/unknown/unknown");
+            producer.send(queue, session.createTextMessage("hello"));
             fail("Send to unknown destination should result in error");
         }
         catch (JMSException e)
@@ -69,7 +71,8 @@ public class SyncPublishTest extends QpidBrokerTestCase
         MessageProducer producer = session.createProducer(null);
         try
         {
-            producer.send(session.createQueue("direct://amq.direct/unknown/unknown"),session.createTextMessage("hello"));
+            final Queue queue = session.createQueue(isBroker10() ? "amq.direct/unknown" : "direct://amq.direct/unknown/unknown");
+            producer.send(queue,session.createTextMessage("hello"));
             fail("Send to unknown destination should result in error");
         }
         catch (JMSException e)
