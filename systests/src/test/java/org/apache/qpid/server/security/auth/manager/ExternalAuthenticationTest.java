@@ -32,11 +32,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
 import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
+import javax.jms.Session;
+import javax.naming.InitialContext;
 
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.server.model.AuthenticationProvider;
@@ -59,6 +63,11 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
     {
         super.setUp();
         setSystemProperty("javax.net.debug", "ssl");
+        setSystemProperty("javax.net.ssl.keyStore", null);
+        setSystemProperty("javax.net.ssl.keyStorePassword", null);
+        setSystemProperty("javax.net.ssl.trustStore", null);
+        setSystemProperty("javax.net.ssl.trustStorePassword", null);
+
     }
 
     @Override
@@ -76,12 +85,11 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
         setCommonBrokerSSLProperties(true);
         super.startDefaultBroker();
 
-        setClientKeystoreProperties();
-        setClientTrustoreProperties();
-
         try
         {
-            getExternalSSLConnection(false);
+            final Connection connection =
+                    getExternalSSLConnection(false, TRUSTSTORE, TRUSTSTORE_PASSWORD, KEYSTORE, KEYSTORE_PASSWORD, null);
+            connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         }
         catch (JMSException e)
         {
@@ -109,9 +117,6 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
         getDefaultBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT, Port.AUTHENTICATION_PROVIDER, TestBrokerConfiguration.ENTRY_NAME_EXTERNAL_PROVIDER);
         super.startDefaultBroker();
 
-        setClientKeystoreProperties();
-        setClientTrustoreProperties();
-
         try
         {
             getConnection();
@@ -132,11 +137,11 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
         setCommonBrokerSSLProperties(false);
         super.startDefaultBroker();
 
-        setClientTrustoreProperties();
-
         try
         {
-            getExternalSSLConnection(true);
+            final Connection connection =
+                    getExternalSSLConnection(true, TRUSTSTORE, TRUSTSTORE_PASSWORD, null, null, null);
+            connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             fail("Connection should not succeed");
         }
         catch (JMSException e)
@@ -154,12 +159,15 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
         setCommonBrokerSSLProperties(true);
         super.startDefaultBroker();
 
-        setUntrustedClientKeystoreProperties();
-        setClientTrustoreProperties();
-
         try
         {
-            getExternalSSLConnection(false, "&ssl_cert_alias='" + TestSSLConstants.CERT_ALIAS_UNTRUSTED_CLIENT + "'");
+            getExternalSSLConnection(false,
+                                     TRUSTSTORE,
+                                     TRUSTSTORE_PASSWORD,
+                                     UNTRUSTED_KEYSTORE,
+                                     KEYSTORE_PASSWORD,
+                                     TestSSLConstants.CERT_ALIAS_UNTRUSTED_CLIENT
+                                    );
             fail("Connection should not succeed");
         }
         catch (JMSException e)
@@ -216,13 +224,16 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
 
         super.startDefaultBroker();
 
-        setClientKeystoreProperties();
-        setClientTrustoreProperties();
-
         try
         {
             //use the app1 cert, which IS in the peerstore (and has CA in the trustStore)
-            getExternalSSLConnection(false, "&ssl_cert_alias='app1'");
+            final Connection connection = getExternalSSLConnection(false,
+                                                                   TRUSTSTORE,
+                                                                   TRUSTSTORE_PASSWORD,
+                                                                   KEYSTORE,
+                                                                   KEYSTORE_PASSWORD,
+                                                                   "app1");
+            connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         }
         catch (JMSException e)
         {
@@ -232,7 +243,7 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
         try
         {
             //use the app2 cert, which is NOT in the peerstore (but is signed by the same CA as app1)
-            getExternalSSLConnection(false, "&ssl_cert_alias='app2'");
+            getExternalSSLConnection(false, TRUSTSTORE, TRUSTSTORE_PASSWORD, KEYSTORE, KEYSTORE_PASSWORD, "app2");
             if(!useTrustAndPeerStore)
             {
                 fail("Client's validation against the broker's multi store manager unexpectedly passed, when configured store was expected to deny.");
@@ -262,12 +273,17 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
 
         super.startDefaultBroker();
 
-        setClientKeystoreProperties();
-        setClientTrustoreProperties();
-
         try
         {
-            getExternalSSLConnection(false, "&ssl_cert_alias='app2'");
+            final Connection connection = getExternalSSLConnection(false,
+                                                                   TRUSTSTORE,
+                                                                   TRUSTSTORE_PASSWORD,
+                                                                   KEYSTORE,
+                                                                   KEYSTORE_PASSWORD,
+                                                                   "app2");
+
+            connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
         }
         catch (JMSException e)
         {
@@ -303,12 +319,15 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
 
         super.startDefaultBroker();
 
-        setClientKeystoreProperties();
-        setClientTrustoreProperties();
-
         try
         {
-            getExternalSSLConnection(false, "&ssl_cert_alias='app2'");
+            final Connection connection = getExternalSSLConnection(false,
+                                                                   TRUSTSTORE,
+                                                                   TRUSTSTORE_PASSWORD,
+                                                                   KEYSTORE,
+                                                                   KEYSTORE_PASSWORD,
+                                                                   "app2");
+            connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         }
         catch (JMSException e)
         {
@@ -329,24 +348,68 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
         }
     }
 
-    private Connection getExternalSSLConnection(boolean includeUserNameAndPassword) throws Exception
+    private Connection getExternalSSLConnection(boolean includeUserNameAndPassword,
+                                                final String trustStoreLocation,
+                                                final String trustStorePassword,
+                                                final String keyStoreLocation,
+                                                final String keyStorePassword,
+                                                final String certAlias) throws Exception
     {
-        return getExternalSSLConnection(includeUserNameAndPassword, "");
-    }
-
-    private Connection getExternalSSLConnection(boolean includeUserNameAndPassword, String optionString) throws Exception
-    {
-        int amqpTlsPort = getDefaultBroker().getAmqpTlsPort();
-        String url = "amqp://%s@test/?brokerlist='tcp://localhost:%s?ssl='true'&sasl_mechs='EXTERNAL'%s'";
-        if (includeUserNameAndPassword)
+        if(isBroker10())
         {
-            url = String.format(url, "guest:guest", String.valueOf(amqpTlsPort), optionString);
+            final Hashtable<String, String> env = new Hashtable<>();
+            final StringBuilder uri = new StringBuilder("amqps://localhost:").append(String.valueOf(getDefaultBroker().getAmqpTlsPort())).append("?amqp.vhost=test&amqp.saslMechanisms=EXTERNAL");
+            if(trustStoreLocation != null)
+            {
+                uri.append("&transport.trustStoreLocation=").append(trustStoreLocation);
+            }
+            if(trustStorePassword != null)
+            {
+                uri.append("&transport.trustStorePassword=").append(trustStorePassword);
+            }
+            if(keyStoreLocation != null)
+            {
+                uri.append("&transport.keyStoreLocation=").append(keyStoreLocation);
+            }
+            if(keyStorePassword != null)
+            {
+                uri.append("&transport.keyStorePassword=").append(keyStorePassword);
+            }
+            if(certAlias != null)
+            {
+                uri.append("&transport.keyAlias=").append(certAlias);
+            }
+            env.put("connectionfactory.externalauth", uri.toString());
+            InitialContext initialContext = new InitialContext(env);
+            final ConnectionFactory connectionFactory = (ConnectionFactory) initialContext.lookup("externalauth");
+            if(includeUserNameAndPassword)
+            {
+                return connectionFactory.createConnection("guest","guest");
+            }
+            else
+            {
+                return connectionFactory.createConnection();
+            }
         }
         else
         {
-            url = String.format(url, ":", String.valueOf(amqpTlsPort), optionString);
+            setSystemProperty("javax.net.ssl.keyStore", keyStoreLocation);
+            setSystemProperty("javax.net.ssl.keyStorePassword", keyStorePassword);
+            setSystemProperty("javax.net.ssl.trustStore", trustStoreLocation);
+            setSystemProperty("javax.net.ssl.trustStorePassword", trustStorePassword);
+            String certAliasOption = certAlias == null ? "" : "&ssl_cert_alias='"+certAlias+"'";
+            int amqpTlsPort = getDefaultBroker().getAmqpTlsPort();
+            String url = "amqp://%s@test/?brokerlist='tcp://localhost:%s?ssl='true'&sasl_mechs='EXTERNAL'%s'";
+            if (includeUserNameAndPassword)
+            {
+                url = String.format(url, "guest:guest", String.valueOf(amqpTlsPort), certAliasOption);
+            }
+            else
+            {
+                url = String.format(url, ":", String.valueOf(amqpTlsPort), certAliasOption);
+            }
+            return getConnection(new AMQConnectionURL(url));
         }
-        return getConnection(new AMQConnectionURL(url));
     }
 
     private void setCommonBrokerSSLProperties(boolean needClientAuth)
@@ -388,21 +451,4 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
         config.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT, Port.AUTHENTICATION_PROVIDER, TestBrokerConfiguration.ENTRY_NAME_EXTERNAL_PROVIDER);
     }
 
-    private void setUntrustedClientKeystoreProperties()
-    {
-        setSystemProperty("javax.net.ssl.keyStore", UNTRUSTED_KEYSTORE);
-        setSystemProperty("javax.net.ssl.keyStorePassword", KEYSTORE_PASSWORD);
-    }
-
-    private void setClientKeystoreProperties()
-    {
-        setSystemProperty("javax.net.ssl.keyStore", KEYSTORE);
-        setSystemProperty("javax.net.ssl.keyStorePassword", KEYSTORE_PASSWORD);
-    }
-
-    private void setClientTrustoreProperties()
-    {
-        setSystemProperty("javax.net.ssl.trustStore", TRUSTSTORE);
-        setSystemProperty("javax.net.ssl.trustStorePassword", TRUSTSTORE_PASSWORD);
-    }
 }
