@@ -192,24 +192,108 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
     private void assertConnectionCloseWasReported(Exception exception, Class<? extends Exception> linkedExceptionClass)
     {
         assertNotNull("Did not receive exception", exception);
-        assertNotNull("Exception should have a cause", exception.getCause());
-        assertEquals("Unexpected exception cause", linkedExceptionClass, exception.getCause().getClass());
+        if(!isBroker10())
+        {
+            assertNotNull("Exception should have a cause", exception.getCause());
+            assertEquals("Unexpected exception cause", linkedExceptionClass, exception.getCause().getClass());
+        }
     }
 
     private void assertJmsObjectsClosed()
     {
-        assertTrue("Connection should be marked as closed", ((AMQConnection) _connection).isClosed());
-        assertTrue("Session should be marked as closed", ((AMQSession) _session).isClosed());
-        assertTrue("Producer should be marked as closed", ((BasicMessageProducer) _producer).isClosed());
-        assertTrue("Consumer should be marked as closed", ((BasicMessageConsumer) _consumer).isClosed());
+        assertTrue("Connection should be marked as closed", connectionIsClosed());
+        assertTrue("Session should be marked as closed", sessionIsClosed());
+        assertTrue("Producer should be marked as closed", producerIsClosed());
+        assertTrue("Consumer should be marked as closed", consumerIsClosed());
+    }
+
+    private boolean producerIsClosed()
+    {
+        if(isBroker10())
+        {
+            try
+            {
+                _producer.setPriority(7);
+                return false;
+            }
+            catch (JMSException e)
+            {
+                return true;
+            }
+        }
+        else
+        {
+            return ((BasicMessageProducer) _producer).isClosed();
+        }
+
+    }
+
+    private boolean sessionIsClosed()
+    {
+        if(isBroker10())
+        {
+            try
+            {
+                _session.createProducer(null);
+                return false;
+            }
+            catch (JMSException e)
+            {
+                return true;
+            }
+        }
+        else
+        {
+            return ((AMQSession) _session).isClosed();
+        }
+    }
+
+    private boolean connectionIsClosed()
+    {
+        if(isBroker10())
+        {
+            try
+            {
+                _connection.stop();
+                return false;
+            }
+            catch (JMSException e)
+            {
+                return true;
+            }
+        }
+        else
+        {
+            return ((AMQConnection) _connection).isClosed();
+        }
     }
 
     private void assertJmsObjectsOpen()
     {
-        assertFalse("Connection should not be marked as closed", ((AMQConnection) _connection).isClosed());
-        assertFalse("Session should not be marked as closed", ((AMQSession) _session).isClosed());
-        assertFalse("Producer should not be marked as closed", ((BasicMessageProducer) _producer).isClosed());
-        assertFalse("Consumer should not be marked as closed", ((BasicMessageConsumer) _consumer).isClosed());
+        assertFalse("Connection should not be marked as closed", connectionIsClosed());
+        assertFalse("Session should not be marked as closed", sessionIsClosed());
+        assertFalse("Producer should not be marked as closed", producerIsClosed());
+        assertFalse("Consumer should not be marked as closed", consumerIsClosed());
+    }
+
+    private boolean consumerIsClosed()
+    {
+        if(isBroker10())
+        {
+            try
+            {
+                _consumer.getMessageSelector();
+                return false;
+            }
+            catch (JMSException e)
+            {
+                return true;
+            }
+        }
+        else
+        {
+            return ((BasicMessageConsumer) _consumer).isClosed();
+        }
     }
 
     private final class RecordingExceptionListener implements ExceptionListener
@@ -253,10 +337,11 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
         Listener listener = new Listener();
 
         Session session = _connection.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        MessageConsumer consumer1 = session.createConsumer(getTestQueue());
+        final Queue testQueue = createTestQueue(session);
+        MessageConsumer consumer1 = session.createConsumer(testQueue);
         consumer1.setMessageListener(listener);
 
-        MessageProducer producer = _session.createProducer(getTestQueue());
+        MessageProducer producer = _session.createProducer(testQueue);
         producer.send(_session.createTextMessage("test message"));
 
         _connection.start();
@@ -276,14 +361,14 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
 
         Connection connection2 = getConnection();
         Session session2 = connection2.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        MessageConsumer consumer2 = session2.createConsumer(getTestQueue());
+        MessageConsumer consumer2 = session2.createConsumer(testQueue);
         consumer2.setMessageListener(listener);
         connection2.start();
 
 
         Connection connection3 = getConnection();
         Session session3 = connection3.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        MessageConsumer consumer3 = session3.createConsumer(getTestQueue());
+        MessageConsumer consumer3 = session3.createConsumer(testQueue);
         consumer3.setMessageListener(listener);
         connection3.start();
 

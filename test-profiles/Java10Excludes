@@ -155,10 +155,16 @@ org.apache.qpid.test.unit.client.DynamicQueueExchangeCreateTest#*
 // this should probably be tested in a new protocol specific broker test
 org.apache.qpid.transport.ConnectionEstablishmentTest#*
 
+// test of 0-10 client specific behaviour
 org.apache.qpid.test.client.message.JMSDestinationTest#testReceiveResend
+// BURL specific tests
 org.apache.qpid.test.client.message.JMSDestinationTest#testQueueWithBindingUrlUsingCustomExchange
 org.apache.qpid.test.client.message.JMSDestinationTest#testQueueWithBindingUrlUsingAmqDirectExchange
 org.apache.qpid.test.client.message.JMSDestinationTest#testQueueWithBindingUrlUsingDefaultExchange
+
+// test of 0-x client threading / exception handling
+org.apache.qpid.test.unit.close.JavaServerCloseRaceConditionTest#*
+
 
 
 
