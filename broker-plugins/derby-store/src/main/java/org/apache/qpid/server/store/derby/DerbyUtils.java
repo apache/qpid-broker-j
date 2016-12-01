@@ -24,7 +24,7 @@ package org.apache.qpid.server.store.derby;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.Driver;
@@ -40,15 +40,14 @@ import org.apache.qpid.server.store.StoreException;
 
 public class DerbyUtils
 {
-    public static final String MEMORY_STORE_LOCATION = ":memory:";
-    public static final String DERBY_SINGLE_DB_SHUTDOWN_CODE = "08006";
+    static final String MEMORY_STORE_LOCATION = ":memory:";
+    private static final String DERBY_SINGLE_DB_SHUTDOWN_CODE = "08006";
     private static final String SQL_DRIVER_NAME = "org.apache.derby.jdbc.EmbeddedDriver";
     private static final String TABLE_EXISTENCE_QUERY = "SELECT 1 FROM SYS.SYSTABLES WHERE TABLENAME = ?";
-    private static final Charset UTF8_CHARSET = Charset.forName("UTF-8");
 
     private static final Logger DERBY_LOG = LoggerFactory.getLogger("DERBY");
-    public static final DerbyLogWriter DERBY_LOG_WRITER = new DerbyLogWriter();
-    public static final String DERBY_STREAM_ERROR_METHOD = "derby.stream.error.method";
+    private static final DerbyLogWriter DERBY_LOG_WRITER = new DerbyLogWriter();
+    private static final String DERBY_STREAM_ERROR_METHOD = "derby.stream.error.method";
 
     public static void configureDerbyLogging()
     {
@@ -56,6 +55,19 @@ public class DerbyUtils
         {
             // direct derby logging to a Qpid specific handler
             System.setProperty(DERBY_STREAM_ERROR_METHOD, "org.apache.qpid.server.store.derby.DerbyUtils.getDerbyLogWriter");
+        }
+    }
+
+    public static boolean isAvailable()
+    {
+        try
+        {
+            Class.forName(SQL_DRIVER_NAME);
+            return true;
+        }
+        catch (ClassNotFoundException | NoClassDefFoundError e)
+        {
+            return false;
         }
     }
 
@@ -136,7 +148,7 @@ public class DerbyUtils
             return null;
         }
         byte[] bytes = blob.getBytes(1, (int) blob.length());
-        return new String(bytes, UTF8_CHARSET);
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
     protected static byte[] getBlobAsBytes(ResultSet rs, int col) throws SQLException

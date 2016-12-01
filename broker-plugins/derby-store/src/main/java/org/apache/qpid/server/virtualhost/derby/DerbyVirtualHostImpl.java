@@ -50,7 +50,7 @@ public class DerbyVirtualHostImpl extends AbstractVirtualHost<DerbyVirtualHostIm
     @ManagedAttributeField
     private Long _storeOverfullSize;
 
-    @ManagedObjectFactoryConstructor
+    @ManagedObjectFactoryConstructor(conditionallyAvailable = true, condition = "org.apache.qpid.server.store.derby.DerbyUtils#isAvailable()")
     public DerbyVirtualHostImpl(final Map<String, Object> attributes,
                                 final VirtualHostNode<?> virtualHostNode)
     {

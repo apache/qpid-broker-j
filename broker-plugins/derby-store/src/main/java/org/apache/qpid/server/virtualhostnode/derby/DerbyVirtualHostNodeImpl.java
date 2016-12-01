@@ -54,7 +54,7 @@ public class DerbyVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<De
     @ManagedAttributeField
     private String _storePath;
 
-    @ManagedObjectFactoryConstructor
+    @ManagedObjectFactoryConstructor(conditionallyAvailable = true, condition = "org.apache.qpid.server.store.derby.DerbyUtils#isAvailable()")
     public DerbyVirtualHostNodeImpl(Map<String, Object> attributes, Broker<?> parent)
     {
         super(attributes, parent);
