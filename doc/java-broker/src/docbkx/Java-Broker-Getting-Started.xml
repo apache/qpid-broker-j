@@ -130,11 +130,6 @@
                                                       stay in the quiesced
                                                       state during
                                                       management mode.
- -os,--overwrite-store                                overwrite the broker
-                                                      configuration store
-                                                      with the current
-                                                      initial
-                                                      configuration
  -prop,--config-property &lt;name=value&gt;                 set a configuration
                                                       property to use when
                                                       resolving variables

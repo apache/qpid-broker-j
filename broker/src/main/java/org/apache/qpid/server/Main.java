@@ -83,9 +83,6 @@ public class Main
     private static final Option OPTION_INITIAL_CONFIGURATION_PATH = OptionBuilder.withArgName("path").hasArg()
             .withDescription("set the location of initial JSON config to use when creating/overwriting a broker configuration store").withLongOpt("initial-config-path").create("icp");
 
-    private static final Option OPTION_OVERWRITE_CONFIGURATION_STORE = OptionBuilder.withDescription("overwrite the broker configuration store with the current initial configuration")
-            .withLongOpt("overwrite-store").create("os");
-
     private static final Option OPTION_CREATE_INITIAL_CONFIG = OptionBuilder.withArgName("path").hasOptionalArg().withDescription("create a copy of the initial config file, either to an" +
             " optionally specified file path, or as " + SystemConfig.DEFAULT_INITIAL_CONFIG_NAME + " in the current directory")
             .withLongOpt("create-initial-config").create("cic");
@@ -114,7 +111,6 @@ public class Main
         OPTIONS.addOption(OPTION_VERSION);
         OPTIONS.addOption(OPTION_CONFIGURATION_STORE_PATH);
         OPTIONS.addOption(OPTION_CONFIGURATION_STORE_TYPE);
-        OPTIONS.addOption(OPTION_OVERWRITE_CONFIGURATION_STORE);
         OPTIONS.addOption(OPTION_CREATE_INITIAL_CONFIG);
         OPTIONS.addOption(OPTION_INITIAL_CONFIGURATION_PATH);
         OPTIONS.addOption(OPTION_MANAGEMENT_MODE);
