@@ -173,7 +173,11 @@ public class AMQMessageDelegate_0_8 extends AbstractAMQMessageDelegate
 
     public void setJMSMessageID(UUID messageId) throws JMSException
     {
-        if (messageId != null)
+        if (messageId == null)
+        {
+            getContentHeaderProperties().setMessageId((String)null);
+        }
+        else
         {
             getContentHeaderProperties().setMessageId(asShortStringMsgId(messageId));
         }
