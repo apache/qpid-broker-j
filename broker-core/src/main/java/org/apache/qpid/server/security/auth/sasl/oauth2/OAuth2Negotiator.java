@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,37 +18,42 @@
  *
  */
 
-package org.apache.qpid.server.security.auth.manager.oauth2;
+package org.apache.qpid.server.security.auth.sasl.oauth2;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
+import org.apache.qpid.server.security.auth.AuthenticationResult;
+import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProvider;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 
-/**
- * https://developers.google.com/gmail/xoauth2_protocol
- */
-class OAuth2SaslServer implements SaslServer
+public class OAuth2Negotiator implements SaslNegotiator
 {
+
     public static final String MECHANISM = "XOAUTH2";
-    public static final String ACCESS_TOKEN_PROPERTY = "accessToken";
-
     private static final String BEARER_PREFIX = "Bearer ";
+    private OAuth2AuthenticationProvider<?> _authenticationProvider;
+    private volatile boolean _isComplete;
 
-    private String _accessToken;
-    private boolean _isComplete;
-
-    @Override
-    public String getMechanismName()
+    public OAuth2Negotiator(OAuth2AuthenticationProvider<?> authenticationProvider)
     {
-        return MECHANISM;
+        _authenticationProvider = authenticationProvider;
     }
 
     @Override
-    public byte[] evaluateResponse(final byte[] response) throws SaslException
+    public AuthenticationResult handleResponse(final byte[] response)
     {
+        if (_isComplete)
+        {
+            return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR,
+                                            new IllegalStateException(
+                                                    "Multiple Authentications not permitted."));
+        }
+        else
+        {
+            _isComplete = true;
+        }
         Map<String, String> responsePairs = splitResponse(response);
 
         String auth = responsePairs.get("auth");
@@ -57,67 +61,23 @@ class OAuth2SaslServer implements SaslServer
         {
             if (auth.startsWith(BEARER_PREFIX))
             {
-                _accessToken = auth.substring(BEARER_PREFIX.length());
-                _isComplete = true;
+                return _authenticationProvider.authenticateViaAccessToken(auth.substring(BEARER_PREFIX.length()));
             }
             else
             {
-                throw new SaslException("The 'auth' part of response does not not begin with the expected prefix");
+                return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, new IllegalArgumentException("The 'auth' part of response does not not begin with the expected prefix"));
             }
         }
         else
         {
-            throw new SaslException("The mandatory 'auth' part of the response was absent.");
-        }
-
-        return new byte[0];
-    }
-
-    @Override
-    public boolean isComplete()
-    {
-        return _isComplete;
-    }
-
-    @Override
-    public String getAuthorizationID()
-    {
-        return null;
-    }
-
-    @Override
-    public Object getNegotiatedProperty(final String propName)
-    {
-        if (!_isComplete)
-        {
-            throw new IllegalStateException("authentication exchange has not completed");
-        }
-        if (ACCESS_TOKEN_PROPERTY.equals(propName))
-        {
-            return _accessToken;
-        }
-        else
-        {
-            return null;
+            return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, new IllegalArgumentException("The mandatory 'auth' part of the response was absent."));
         }
     }
 
     @Override
-    public byte[] unwrap(final byte[] incoming, final int offset, final int len) throws SaslException
+    public void dispose()
     {
-        throw new SaslException("");
-    }
 
-    @Override
-    public byte[] wrap(final byte[] outgoing, final int offset, final int len) throws SaslException
-    {
-        throw new SaslException("");
-    }
-
-    @Override
-    public void dispose() throws SaslException
-    {
-        _accessToken = null;
     }
 
     private Map<String, String> splitResponse(final byte[] response)

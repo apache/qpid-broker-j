@@ -30,6 +30,8 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.security.sasl.SaslException;
 
+import org.apache.qpid.server.security.auth.sasl.PasswordSource;
+
 public class ScramSaslServerSourceAdapter implements ScramSaslServerSource
 {
     private static final byte[] INT_1 = new byte[]{0, 0, 0, 1};
@@ -39,11 +41,6 @@ public class ScramSaslServerSourceAdapter implements ScramSaslServerSource
     private final SecureRandom _random = new SecureRandom();
     private final PasswordSource _passwordSource;
     private final String _digestName;
-
-    public interface PasswordSource
-    {
-        char[] getPassword(String username);
-    }
 
     public ScramSaslServerSourceAdapter(final int iterationCount,
                                         final String hmacName,
@@ -60,6 +57,18 @@ public class ScramSaslServerSourceAdapter implements ScramSaslServerSource
     public int getIterationCount()
     {
         return _iterationCount;
+    }
+
+    @Override
+    public String getDigestName()
+    {
+        return _digestName;
+    }
+
+    @Override
+    public String getHmacName()
+    {
+        return _hmacName;
     }
 
     private Mac createShaHmac(final byte[] keyBytes)

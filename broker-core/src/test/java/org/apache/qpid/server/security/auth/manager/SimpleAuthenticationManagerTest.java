@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
@@ -28,13 +31,13 @@ import java.util.Set;
 import java.util.UUID;
 
 import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.security.auth.sasl.SaslUtil;
-import org.apache.qpid.server.security.auth.sasl.plain.PlainSaslServer;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -67,21 +70,14 @@ public class SimpleAuthenticationManagerTest extends QpidTestCase
         assertTrue("SCRAM-SHA-256 was not present: " + mechanisms, mechanisms.contains("SCRAM-SHA-256"));
     }
 
-    public void testCreateSaslServerForUnsupportedMechanisms() throws Exception
+    public void testCreateSaslNegotiatorForUnsupportedMechanisms() throws Exception
     {
         String[] unsupported = new String[] { "EXTERNAL", "CRAM-MD5-HEX", "CRAM-MD5-HASHED", "ANONYMOUS", "GSSAPI"};
         for (int i = 0; i < unsupported.length; i++)
         {
             String mechanism = unsupported[i];
-            try
-            {
-                _authenticationManager.createSaslServer(mechanism, "test", null);
-                fail("Mechanism " + mechanism + " should not be supported by SimpleAuthenticationManager");
-            }
-            catch (SaslException e)
-            {
-                // pass
-            }
+            SaslNegotiator negotiator = _authenticationManager.createSaslNegotiator(mechanism, null);
+            assertNull("Mechanism " + mechanism + " should not be supported by SimpleAuthenticationManager", negotiator);
         }
     }
 
@@ -158,21 +154,25 @@ public class SimpleAuthenticationManagerTest extends QpidTestCase
         assertEquals("Unexpected principals size", 0, principals.size());
     }
 
-    private AuthenticationResult authenticatePlain(String userName, String userPassword) throws SaslException, Exception
+    private AuthenticationResult authenticatePlain(String userName, String userPassword) throws Exception
     {
-        PlainSaslServer ss = (PlainSaslServer) _authenticationManager.createSaslServer("PLAIN", "test", null);
+        SaslSettings saslSettings = mock(SaslSettings.class);
+        SaslNegotiator saslNegotiator = _authenticationManager.createSaslNegotiator("PLAIN", saslSettings);
         byte[] response = SaslUtil.generatePlainClientResponse(userName, userPassword);
-
-        return _authenticationManager.authenticate(ss, response);
+        return saslNegotiator.handleResponse(response);
     }
 
-    private AuthenticationResult authenticateCramMd5(String userName, String userPassword) throws SaslException, Exception
+    private AuthenticationResult authenticateCramMd5(String userName, String userPassword) throws Exception
     {
-        SaslServer ss = _authenticationManager.createSaslServer("CRAM-MD5", "test", null);
-        byte[] challenge = ss.evaluateResponse(new byte[0]);
+        SaslSettings saslSettings = mock(SaslSettings.class);
+        when(saslSettings.getLocalFQDN()).thenReturn("testHost");
+        SaslNegotiator saslNegotiator = _authenticationManager.createSaslNegotiator("CRAM-MD5", saslSettings);
+        AuthenticationResult result = saslNegotiator.handleResponse(new byte[0]);
+        assertEquals("Unexpected SASL status", AuthenticationStatus.CONTINUE, result.getStatus());
+
+        byte[] challenge = result.getChallenge();
         byte[] response = SaslUtil.generateCramMD5ClientResponse(userName, userPassword, challenge);
 
-        AuthenticationResult result = _authenticationManager.authenticate(ss, response);
-        return result;
+        return saslNegotiator.handleResponse(response);
     }
 }

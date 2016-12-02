@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
@@ -29,8 +30,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import javax.security.auth.login.AccountNotFoundException;
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -40,10 +39,14 @@ import org.apache.qpid.server.model.User;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
 {
+    private static final String TEST_USER_NAME = "admin";
+    private static final String TEST_USER_PASSWORD = "admin";
     private ConfigModelPasswordManagingAuthenticationProvider<?> _authManager;
 
 
@@ -93,27 +96,6 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
         assertFalse("PLAIN authentication should not be available on an insecure connection", insecureCreator.getMechanisms().contains("PLAIN"));
         SubjectCreator secureCreator = _authManager.getSubjectCreator(true);
         assertTrue("PLAIN authentication should be available on a secure connection", secureCreator.getMechanisms().contains("PLAIN"));
-
-        try
-        {
-            SaslServer saslServer = secureCreator.createSaslServer("PLAIN", "127.0.0.1", null);
-            assertNotNull(saslServer);
-        }
-        catch (SaslException e)
-        {
-            fail("Unable to create a SaslServer for PLAIN authentication on a secure connection" + e.getMessage());
-        }
-
-        try
-        {
-            SaslServer saslServer = insecureCreator.createSaslServer("PLAIN", "127.0.0.1", null);
-            fail("Erroneously created a SaslServer for PLAIN authentication on an insecure connection");
-        }
-        catch (SaslException e)
-        {
-            // Pass
-        }
-
     }
 
     public void testAddChildAndThenDelete() throws ExecutionException, InterruptedException
@@ -245,5 +227,44 @@ abstract class ManagedAuthenticationManagerTestBase extends QpidTestCase
 
     }
 
+    public void testGetMechanisms() throws Exception
+    {
+        assertFalse("Should support at least one mechanism", _authManager.getMechanisms().isEmpty());
+    }
+
+    public void testAuthenticateValidCredentials() throws Exception
+    {
+        _authManager.createUser(TEST_USER_NAME, TEST_USER_PASSWORD, Collections.<String, String>emptyMap());
+        AuthenticationResult result = _authManager.authenticate(TEST_USER_NAME, TEST_USER_PASSWORD);
+        assertEquals("Unexpected result status", AuthenticationResult.AuthenticationStatus.SUCCESS, result.getStatus());
+        assertEquals("Unexpected result principal", TEST_USER_NAME, result.getMainPrincipal().getName());
+    }
+
+    public void testAuthenticateInvalidCredentials() throws Exception
+    {
+        _authManager.createUser(TEST_USER_NAME, TEST_USER_PASSWORD, Collections.<String, String>emptyMap());
+        AuthenticationResult result = _authManager.authenticate(TEST_USER_NAME, TEST_USER_PASSWORD + "1");
+        assertEquals("Unexpected result status", AuthenticationResult.AuthenticationStatus.ERROR, result.getStatus());
+        assertNull("Unexpected result principal", result.getMainPrincipal());
+    }
+
+    public void testAllSaslMechanisms() throws Exception
+    {
+        final SaslSettings saslSettings = mock(SaslSettings.class);
+        when(saslSettings.getLocalFQDN()).thenReturn("testhost.example.com");
+        for (String mechanism : _authManager.getMechanisms())
+        {
+            final SaslNegotiator negotiator = _authManager.createSaslNegotiator(mechanism, saslSettings);
+            assertNotNull(String.format("Could not create SASL negotiator for mechanism '%s'", mechanism), negotiator);
+        }
+    }
+
+    public void testUnsupportedSaslMechanisms() throws Exception
+    {
+        final SaslSettings saslSettings = mock(SaslSettings.class);
+        when(saslSettings.getLocalFQDN()).thenReturn("testhost.example.com");
+        final SaslNegotiator negotiator = _authManager.createSaslNegotiator("UNSUPPORTED MECHANISM", saslSettings);
+        assertNull("Should not be able to create SASL negotiator for unsupported mechanism", negotiator);
+    }
 
 }

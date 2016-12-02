@@ -28,6 +28,8 @@ import javax.security.sasl.SaslServer;
 
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 
 @ManagedObject
 public interface AuthenticationProvider<X extends AuthenticationProvider<X>> extends ConfiguredObject<X>
@@ -56,27 +58,5 @@ public interface AuthenticationProvider<X extends AuthenticationProvider<X>> ext
     @ManagedAttribute( defaultValue = "[]")
     List<String> getDisabledMechanisms();
 
-
-    /**
-     * Creates a SASL server for the specified mechanism name for the given
-     * fully qualified domain name.
-     *
-     * @param mechanism mechanism name
-     * @param localFQDN domain name
-     * @param externalPrincipal externally authenticated Principal
-     * @return SASL server
-     * @throws javax.security.sasl.SaslException
-     */
-    SaslServer createSaslServer(String mechanism, String localFQDN, Principal externalPrincipal) throws SaslException;
-
-    /**
-     * Authenticates a user using SASL negotiation.
-     *
-     * @param server SASL server
-     * @param response SASL response to process
-     *
-     * @return authentication result
-     */
-    AuthenticationResult authenticate(SaslServer server, byte[] response);
-
+    SaslNegotiator createSaslNegotiator(String mechanism, final SaslSettings saslSettings);
 }

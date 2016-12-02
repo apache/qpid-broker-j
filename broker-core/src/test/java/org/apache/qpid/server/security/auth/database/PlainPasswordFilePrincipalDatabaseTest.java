@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.AbstractScramAuthenticationManager;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -52,7 +53,8 @@ public class PlainPasswordFilePrincipalDatabaseTest extends AbstractPasswordFile
     public void setUp() throws Exception
     {
         super.setUp();
-        final AuthenticationProvider mockAuthenticationProvider = mock(AuthenticationProvider.class);
+        final PasswordCredentialManagingAuthenticationProvider
+                mockAuthenticationProvider = mock(PasswordCredentialManagingAuthenticationProvider.class);
         when(mockAuthenticationProvider.getContextValue(Integer.class, AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT)).thenReturn(4096);
         _database = new PlainPasswordFilePrincipalDatabase(mockAuthenticationProvider);
         _testPwdFiles.clear();

@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -19,21 +18,19 @@
  *
  */
 
-package org.apache.qpid.server.security.auth.sasl.plain;
+package org.apache.qpid.server.security.auth.sasl.crammd5;
 
-import org.apache.qpid.server.security.auth.sasl.SaslServerTestCase;
-import org.apache.qpid.server.security.auth.sasl.UsernamePasswordInitialiser;
+import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
+import org.apache.qpid.server.security.auth.sasl.PasswordSource;
 
-public class PlainSaslServerTest extends SaslServerTestCase
+public class CramMd5Negotiator extends AbstractCramMd5Negotiator
 {
-    
-    protected void setUp() throws Exception
+    public static final String MECHANISM = "CRAM-MD5";
+
+    public CramMd5Negotiator(final PasswordCredentialManagingAuthenticationProvider<?> authenticationProvider,
+                             final String localFQDN,
+                             final PasswordSource passwordSource)
     {
-        UsernamePasswordInitialiser handler = new PlainInitialiser();
-        handler.initialise(db);
-        this.server = new PlainSaslServer(handler.getCallbackHandler());
-        correctResponse = new byte[]{0x0, (byte) username.charAt(0), 0x0, (byte) password.charAt(0)};
-        wrongResponse = new byte[]{0x0,(byte) username.charAt(0), 0x0, (byte) notPassword.charAt(0)};
+        super(authenticationProvider, localFQDN, passwordSource, PLAIN_PASSWORD_TRANSFORMER);
     }
-    
 }

@@ -21,6 +21,8 @@
 package org.apache.qpid.server.security.auth.manager;
 
 import static org.apache.qpid.server.security.auth.AuthenticatedPrincipalTestHelper.assertOnlyContainsWrapped;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -34,20 +36,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
-import javax.security.sasl.SaslServerFactory;
-
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.database.PlainPasswordFilePrincipalDatabase;
 import org.apache.qpid.server.security.auth.database.PrincipalDatabase;
 import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
@@ -56,12 +56,12 @@ import org.apache.qpid.test.utils.QpidTestCase;
  */
 public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
 {
-    private static final String LOCALHOST = "localhost";
     private static final String MOCK_MECH_NAME = "MOCK-MECH-NAME";
 
     private PrincipalDatabaseAuthenticationManager _manager = null; // Class under test
     private PrincipalDatabase _principalDatabase;
     private String _passwordFileLocation;
+    private SaslNegotiator _saslNegotiator = mock(SaslNegotiator.class);
 
     @Override
     public void setUp() throws Exception
@@ -97,12 +97,13 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         _manager.initialise();
     }
 
-    private void setUpPrincipalDatabase() throws SaslException
+    private void setUpPrincipalDatabase()
     {
         _principalDatabase = mock(PrincipalDatabase.class);
 
         when(_principalDatabase.getMechanisms()).thenReturn(Collections.singletonList(MOCK_MECH_NAME));
-        when(_principalDatabase.createSaslServer(MOCK_MECH_NAME, LOCALHOST, null)).thenReturn(new MySaslServer(false, true));
+        when(_principalDatabase.createSaslNegotiator(eq(MOCK_MECH_NAME), any(SaslSettings.class))).thenReturn(
+                _saslNegotiator);
     }
 
     private void setupManager(final boolean recovering)
@@ -124,7 +125,7 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
 
     public void testInitialiseWhenPasswordFileNotFound() throws Exception
     {
-        AuthenticationProvider mockAuthProvider = mock(AuthenticationProvider.class);
+        PasswordCredentialManagingAuthenticationProvider mockAuthProvider = mock(PasswordCredentialManagingAuthenticationProvider.class);
         when(mockAuthProvider.getContextValue(Integer.class, AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT)).thenReturn(4096);
         _principalDatabase = new PlainPasswordFilePrincipalDatabase(mockAuthProvider);
         setupManager(true);
@@ -142,7 +143,7 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
 
     public void testInitialiseWhenPasswordFileExists() throws Exception
     {
-        AuthenticationProvider mockAuthProvider = mock(AuthenticationProvider.class);
+        PasswordCredentialManagingAuthenticationProvider mockAuthProvider = mock(PasswordCredentialManagingAuthenticationProvider.class);
         when(mockAuthProvider.getContextValue(Integer.class, AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT)).thenReturn(4096);
         _principalDatabase = new PlainPasswordFilePrincipalDatabase(mockAuthProvider);
         setupManager(true);
@@ -169,18 +170,13 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         assertEquals("Unexpected principal name", "admin", p.getName());
     }
 
-    /**
-     * Tests that the SASL factory method createSaslServer correctly
-     * returns a non-null implementation.
-     */
     public void testSaslMechanismCreation() throws Exception
     {
         setupMocks();
 
-        SaslServer server = _manager.createSaslServer(MOCK_MECH_NAME, LOCALHOST, null);
-        assertNotNull(server);
-        // Merely tests the creation of the mechanism. Mechanisms themselves are tested
-        // by their own tests.
+        SaslSettings saslSettings = mock(SaslSettings.class);
+        SaslNegotiator saslNegotiator = _manager.createSaslNegotiator(MOCK_MECH_NAME, saslSettings);
+        assertNotNull(saslNegotiator);
     }
 
     /**
@@ -191,12 +187,11 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
     public void testSaslAuthenticationSuccess() throws Exception
     {
         setupMocks();
-
-        SaslServer testServer = createTestSaslServer(true, false);
-
-        AuthenticationResult result = _manager.authenticate(testServer, "12345".getBytes());
-
         UsernamePrincipal expectedPrincipal = new UsernamePrincipal("guest", _manager);
+
+        when(_saslNegotiator.handleResponse(any(byte[].class))).thenReturn(new AuthenticationResult(expectedPrincipal));
+
+        AuthenticationResult result = _saslNegotiator.handleResponse("12345".getBytes());
 
         assertOnlyContainsWrapped(expectedPrincipal, result.getPrincipals());
         assertEquals(AuthenticationStatus.SUCCESS, result.getStatus());
@@ -212,9 +207,9 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
     {
         setupMocks();
 
-        SaslServer testServer = createTestSaslServer(false, false);
+        when(_saslNegotiator.handleResponse(any(byte[].class))).thenReturn(new AuthenticationResult(AuthenticationStatus.CONTINUE));
 
-        AuthenticationResult result = _manager.authenticate(testServer, "12345".getBytes());
+        AuthenticationResult result = _saslNegotiator.handleResponse("12345".getBytes());
         assertEquals("Principals was not expected size", 0, result.getPrincipals().size());
 
         assertEquals(AuthenticationStatus.CONTINUE, result.getStatus());
@@ -230,9 +225,9 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
     {
         setupMocks();
 
-        SaslServer testServer = createTestSaslServer(false, true);
+        when(_saslNegotiator.handleResponse(any(byte[].class))).thenReturn(new AuthenticationResult(AuthenticationStatus.ERROR));
 
-        AuthenticationResult result = _manager.authenticate(testServer, "12345".getBytes());
+        AuthenticationResult result = _saslNegotiator.handleResponse("12345".getBytes());
         assertEquals("Principals was not expected size", 0, result.getPrincipals().size());
         assertEquals(AuthenticationStatus.ERROR, result.getStatus());
     }
@@ -250,7 +245,7 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         assertEquals(AuthenticationStatus.SUCCESS, result.getStatus());
     }
 
-    public void testNonSaslAuthenticationNotCompleted() throws Exception
+    public void testNonSaslAuthenticationErrored() throws Exception
     {
         setupMocks();
 
@@ -258,7 +253,7 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
 
         AuthenticationResult result = _manager.authenticate("guest", "wrongpassword");
         assertEquals("Principals was not expected size", 0, result.getPrincipals().size());
-        assertEquals(AuthenticationStatus.CONTINUE, result.getStatus());
+        assertEquals(AuthenticationStatus.ERROR, result.getStatus());
     }
 
     public void testOnCreate() throws Exception
@@ -319,98 +314,6 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
         if (passwordFile.exists())
         {
             passwordFile.delete();
-        }
-    }
-
-    /**
-     * Test SASL implementation used to test the authenticate() method.
-     */
-    private SaslServer createTestSaslServer(final boolean complete, final boolean throwSaslException)
-    {
-        return new MySaslServer(throwSaslException, complete);
-    }
-
-    public static final class MySaslServer implements SaslServer
-    {
-        private final boolean _throwSaslException;
-        private final boolean _complete;
-
-        public MySaslServer()
-        {
-            this(false, true);
-        }
-
-        private MySaslServer(boolean throwSaslException, boolean complete)
-        {
-            _throwSaslException = throwSaslException;
-            _complete = complete;
-        }
-
-        public String getMechanismName()
-        {
-            return null;
-        }
-
-        public byte[] evaluateResponse(byte[] response) throws SaslException
-        {
-            if (_throwSaslException)
-            {
-                throw new SaslException("Mocked exception");
-            }
-            return null;
-        }
-
-        public boolean isComplete()
-        {
-            return _complete;
-        }
-
-        public String getAuthorizationID()
-        {
-            return _complete ? "guest" : null;
-        }
-
-        public byte[] unwrap(byte[] incoming, int offset, int len) throws SaslException
-        {
-            return null;
-        }
-
-        public byte[] wrap(byte[] outgoing, int offset, int len) throws SaslException
-        {
-            return null;
-        }
-
-        public Object getNegotiatedProperty(String propName)
-        {
-            return null;
-        }
-
-        public void dispose() throws SaslException
-        {
-        }
-    }
-
-    public static class MySaslServerFactory implements SaslServerFactory
-    {
-        @Override
-        public SaslServer createSaslServer(String mechanism, String protocol,
-                String serverName, Map<String, ?> props, CallbackHandler cbh)
-                throws SaslException
-        {
-            if (MOCK_MECH_NAME.equals(mechanism))
-            {
-                return new MySaslServer();
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        @Override
-        public String[] getMechanismNames(Map<String, ?> props)
-        {
-            return new String[]{MOCK_MECH_NAME};
         }
     }
 }

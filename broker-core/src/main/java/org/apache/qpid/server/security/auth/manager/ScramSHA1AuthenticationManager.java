@@ -31,10 +31,10 @@ public class ScramSHA1AuthenticationManager
         extends AbstractScramAuthenticationManager<ScramSHA1AuthenticationManager>
 {
     public static final String PROVIDER_TYPE = "SCRAM-SHA-1";
-    private static final String HMAC_NAME = "HmacSHA1";
+    public static final String HMAC_NAME = "HmacSHA1";
 
     public static final String MECHANISM = "SCRAM-SHA-1";
-    private static final String DIGEST_NAME = "SHA-1";
+    public static final String DIGEST_NAME = "SHA-1";
 
 
     @ManagedObjectFactoryConstructor
@@ -50,13 +50,13 @@ public class ScramSHA1AuthenticationManager
     }
 
     @Override
-    protected String getDigestName()
+    public String getDigestName()
     {
         return DIGEST_NAME;
     }
 
     @Override
-    protected String getHmacName()
+    public String getHmacName()
     {
         return HMAC_NAME;
     }

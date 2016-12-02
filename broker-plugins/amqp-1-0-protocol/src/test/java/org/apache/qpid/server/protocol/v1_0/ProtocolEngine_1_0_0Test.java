@@ -29,6 +29,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -94,6 +96,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
     {
         super.setUp();
         _networkConnection = mock(ServerNetworkConnection.class);
+        when(_networkConnection.getLocalAddress()).thenReturn(new InetSocketAddress(0));
         _broker = mock(Broker.class);
         when(_broker.getModel()).thenReturn(BrokerModel.getInstance());
         final TaskExecutor taskExecutor = new TaskExecutorImpl();
@@ -199,9 +202,8 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
                 (new AnonymousAuthenticationManagerFactory()).create(null, attrs, _broker);
         when(_port.getAuthenticationProvider()).thenReturn(anonymousAuthenticationManager);
         allowMechanisms(AnonymousAuthenticationManager.MECHANISM_NAME);
-        final boolean useSASL = false;
 
-        createEngine(useSASL, Transport.TCP);
+        createEngine(Transport.TCP);
 
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance()
                                                                    .getHeaderIdentifier()));
@@ -219,9 +221,8 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
     public void testProtocolEngineWithNoSaslNonTLSandNoAnon() throws Exception
     {
         allowMechanisms("foo");
-        final boolean useSASL = false;
 
-        createEngine(useSASL, Transport.TCP);
+        createEngine(Transport.TCP);
 
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance().getHeaderIdentifier()));
 
@@ -246,9 +247,8 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         when(_networkConnection.getPeerPrincipal()).thenReturn(principal);
 
         allowMechanisms(ExternalAuthenticationManagerImpl.MECHANISM_NAME);
-        final boolean useSASL = false;
 
-        createEngine(useSASL, Transport.SSL);
+        createEngine(Transport.SSL);
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance().getHeaderIdentifier()));
 
         Open open = new Open();
@@ -267,9 +267,8 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
                 (new AnonymousAuthenticationManagerFactory()).create(null, attrs, _broker);
         when(_port.getAuthenticationProvider()).thenReturn(anonymousAuthenticationManager);
         allowMechanisms(AnonymousAuthenticationManager.MECHANISM_NAME);
-        final boolean useSASL = true;
 
-        createEngine(useSASL, Transport.TCP);
+        createEngine(Transport.TCP);
 
         _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0_SASL.getInstance()
                                                                    .getHeaderIdentifier()));
@@ -291,43 +290,14 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
     }
 
 
-    private void createEngine(final boolean useSASL, Transport transport)
+    private void createEngine(Transport transport)
     {
-        _protocolEngine_1_0_0 = new AMQPConnection_1_0(_broker, _networkConnection,
-                                                         _port, transport, 1, new AggregateTicker(),
-                                                         useSASL);
+        _protocolEngine_1_0_0 =
+                new AMQPConnection_1_0(_broker, _networkConnection, _port, transport, 1, new AggregateTicker());
     }
 
     private void allowMechanisms(String... mechanisms)
     {
         when(_subjectCreator.getMechanisms()).thenReturn(Arrays.asList(mechanisms));
     }
-
-    private final ByteBufferSender _sender = new ByteBufferSender()
-    {
-
-        @Override
-        public boolean isDirectBufferPreferred()
-        {
-            return false;
-        }
-
-        @Override
-        public void send(final QpidByteBuffer msg)
-        {
-            _protocolEngine_1_0_0.received(msg);
-        }
-
-        @Override
-        public void flush()
-        {
-
-        }
-
-        @Override
-        public void close()
-        {
-
-        }
-    };
 }

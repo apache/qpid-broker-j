@@ -20,10 +20,16 @@
  */
 package org.apache.qpid.server.security.auth.sasl;
 
+import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+
+import org.apache.qpid.server.security.auth.sasl.crammd5.CramMd5HashedNegotiator;
+import org.apache.qpid.server.security.auth.sasl.crammd5.CramMd5HexNegotiator;
+import org.apache.qpid.server.security.auth.sasl.crammd5.CramMd5Negotiator;
 
 public class SaslUtil
 {
@@ -57,6 +63,28 @@ public class SaslUtil
         return responseAsString.getBytes();
     }
 
+    public static byte[] generateCramMD5HashedClientResponse(String userName, String userPassword, byte[] challengeBytes)
+            throws Exception
+    {
+        char[] hash = toMD5Hashed(userPassword);
+
+        return generateCramMD5ClientResponse(userName, new String(hash), challengeBytes);
+    }
+
+    public static char[] toMD5Hashed(final String userPassword)
+            throws NoSuchAlgorithmException, UnsupportedEncodingException
+    {
+        byte[] digestedPasswordBytes = MessageDigest.getInstance("MD5").digest(userPassword.getBytes("UTF-8"));
+
+        char[] hash = new char[digestedPasswordBytes.length];
+        int index = 0;
+        for (byte b : digestedPasswordBytes)
+        {
+            hash[index++] = (char) b;
+        }
+        return hash;
+    }
+
     public static byte[] generateCramMD5ClientResponse(String userName, String userPassword, byte[] challengeBytes)
             throws Exception
     {
@@ -66,6 +94,24 @@ public class SaslUtil
         final byte[] messageAuthenticationCode = mac.doFinal(challengeBytes);
         String responseAsString = userName + " " + toHex(messageAuthenticationCode);
         return responseAsString.getBytes();
+    }
+
+    public static byte[] generateCramMD5ClientResponse(String mechanism, String userName, String userPassword, byte[] challengeBytes)
+            throws Exception
+    {
+        if (CramMd5Negotiator.MECHANISM.equals(mechanism))
+        {
+            return generateCramMD5ClientResponse(userName, userPassword, challengeBytes);
+        }
+        else if (CramMd5HexNegotiator.MECHANISM.equals(mechanism))
+        {
+            return generateCramMD5HexClientResponse(userName, userPassword, challengeBytes);
+        }
+        else if (CramMd5HashedNegotiator.MECHANISM.equals(mechanism))
+        {
+            return generateCramMD5HashedClientResponse(userName, userPassword, challengeBytes);
+        }
+        throw new IllegalArgumentException(String.format("Unsupported mechanism '%s'", mechanism));
     }
 
     public static String toHex(byte[] data)

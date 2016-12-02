@@ -33,7 +33,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import javax.security.sasl.SaslServer;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -44,6 +43,8 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.CachingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.manager.oauth2.cloudfoundry.CloudFoundryOAuth2IdentityResolverService;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.oauth2.OAuth2Negotiator;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
@@ -150,17 +151,16 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
     public void testGetSecureOnlyMechanisms() throws Exception
     {
         assertEquals("OAuth2 should be a secure only mechanism",
-                     Collections.singletonList(OAuth2SaslServer.MECHANISM), _authProvider.getSecureOnlyMechanisms());
+                     Collections.singletonList(OAuth2Negotiator.MECHANISM), _authProvider.getSecureOnlyMechanisms());
     }
 
     public void testAuthenticateViaSasl() throws Exception
     {
         _server.setEndpoints(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
                                                       createMockIdentityResolverEndpoint()));
-        SaslServer saslServer = _authProvider.createSaslServer(OAuth2SaslServer.MECHANISM, TEST_ENDPOINT_HOST, null);
-        AuthenticationResult authenticationResult = _authProvider.authenticate(saslServer, ("auth=Bearer "
-                                                                                            + TEST_VALID_ACCESS_TOKEN
-                                                                                            + "\1\1").getBytes(UTF8));
+        final SaslNegotiator negotiator = _authProvider.createSaslNegotiator(OAuth2Negotiator.MECHANISM, null);
+        AuthenticationResult authenticationResult = negotiator.handleResponse(("auth=Bearer " + TEST_VALID_ACCESS_TOKEN + "\1\1").getBytes(UTF8));
+
         assertSuccess(authenticationResult);
     }
 
@@ -172,10 +172,8 @@ public class OAuth2AuthenticationProviderImplTest extends QpidTestCase
         _server.setEndpoints(Collections.singletonMap(TEST_IDENTITY_RESOLVER_ENDPOINT_PATH,
                                                       mockIdentityResolverEndpoint));
 
-        SaslServer saslServer = _authProvider.createSaslServer(OAuth2SaslServer.MECHANISM, TEST_ENDPOINT_HOST, null);
-        AuthenticationResult authenticationResult = _authProvider.authenticate(saslServer, ("auth=Bearer "
-                                                                                            + TEST_INVALID_ACCESS_TOKEN
-                                                                                            + "\1\1").getBytes(UTF8));
+        final SaslNegotiator negotiator = _authProvider.createSaslNegotiator(OAuth2Negotiator.MECHANISM, null);
+        AuthenticationResult authenticationResult = negotiator.handleResponse(("auth=Bearer " + TEST_INVALID_ACCESS_TOKEN + "\1\1").getBytes(UTF8));
         assertFailure(authenticationResult, "invalid_token");
     }
 

@@ -20,24 +20,21 @@
  */
 package org.apache.qpid.server.security.auth.database;
 
-import org.apache.qpid.server.security.auth.UsernamePrincipal;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.security.Principal;
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Pattern;
 
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.login.AccountNotFoundException;
 import javax.xml.bind.DatatypeConverter;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.security.Principal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.regex.Pattern;
+import org.apache.qpid.server.security.auth.UsernamePrincipal;
 
 public class Base64MD5PasswordFilePrincipalDatabaseTest extends AbstractPasswordFilePrincipalDatabaseTest
 {
@@ -49,8 +46,7 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends AbstractPassword
     private static final Principal PRINCIPAL = new UsernamePrincipal(PRINCIPAL_USERNAME, null);
     private Base64MD5PasswordFilePrincipalDatabase _database;
     private File _pwdFile;
-    private List<File> _testPwdFiles = new ArrayList<File>();
-    
+
     static
     {
         byte[] decoded = DatatypeConverter.parseBase64Binary(PASSWORD_B64MD5HASHED);
@@ -70,7 +66,6 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends AbstractPassword
         _pwdFile = File.createTempFile(this.getClass().getName(), "pwd");
         _pwdFile.deleteOnExit();
         _database.open(_pwdFile);
-        _testPwdFiles.clear();
     }
 
     public void tearDown() throws Exception

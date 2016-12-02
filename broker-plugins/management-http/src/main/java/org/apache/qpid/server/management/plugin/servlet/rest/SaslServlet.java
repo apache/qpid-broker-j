@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Random;
 
 import javax.security.auth.Subject;
-import javax.security.sasl.SaslServer;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -46,6 +45,8 @@ import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.util.Strings;
 
@@ -58,7 +59,7 @@ public class SaslServlet extends AbstractServlet
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final String ATTR_RANDOM = "SaslServlet.Random";
     private static final String ATTR_ID = "SaslServlet.ID";
-    private static final String ATTR_SASL_SERVER = "SaslServlet.SaslServer";
+    private static final String ATTR_SASL_NEGOTIATOR = "SaslServlet.SaslNegotiator";
     private static final String ATTR_EXPIRY = "SaslServlet.Expiry";
     private static final long SASL_EXCHANGE_EXPIRY = 3000L;
 
@@ -132,16 +133,26 @@ public class SaslServlet extends AbstractServlet
                 {
                     LOGGER.debug("Creating SaslServer for mechanism: {}", mechanism);
 
-                    SaslServer saslServer = subjectCreator.createSaslServer(mechanism, request.getServerName(), null/*TODO*/);
-                    evaluateSaslResponse(request, response, session, saslResponse, saslServer, subjectCreator);
+                    SaslNegotiator saslNegotiator = subjectCreator.createSaslNegotiator(mechanism, new SaslSettings()
+                    {
+                        @Override
+                        public String getLocalFQDN()
+                        {
+                            return request.getServerName();
+                        }
+
+                        @Override
+                        public Principal getExternalPrincipal()
+                        {
+                            return null/*TODO*/;
+                        }
+                    });
+                    evaluateSaslResponse(request, response, session, saslResponse, saslNegotiator, subjectCreator);
                 }
                 else
                 {
+                    cleanup(request, session);
                     response.setStatus(HttpServletResponse.SC_EXPECTATION_FAILED);
-                    session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request));
-                    session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_SERVER,
-                                                                                               request));
-                    session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request));
                 }
             }
             else
@@ -152,28 +163,22 @@ public class SaslServlet extends AbstractServlet
                                                                                                          request))) && System.currentTimeMillis() < (Long) session.getAttribute(
                             HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request)))
                     {
-                        SaslServer saslServer = (SaslServer) session.getAttribute(HttpManagementUtil.getRequestSpecificAttributeName(
-                                ATTR_SASL_SERVER,
-                                request));
-                        evaluateSaslResponse(request, response, session, saslResponse, saslServer, subjectCreator);
+                        SaslNegotiator saslNegotiator =
+                                (SaslNegotiator) session.getAttribute(HttpManagementUtil.getRequestSpecificAttributeName(
+                                        ATTR_SASL_NEGOTIATOR,
+                                        request));
+                        evaluateSaslResponse(request, response, session, saslResponse, saslNegotiator, subjectCreator);
                     }
                     else
                     {
+                        cleanup(request, session);
                         response.setStatus(HttpServletResponse.SC_EXPECTATION_FAILED);
-                        session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request));
-                        session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_SERVER,
-                                                                                                   request));
-                        session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY,
-                                                                                                   request));
                     }
                 }
                 else
                 {
+                    cleanup(request, session);
                     response.setStatus(HttpServletResponse.SC_EXPECTATION_FAILED);
-                    session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request));
-                    session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_SERVER,
-                                                                                               request));
-                    session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request));
                 }
             }
         }
@@ -184,6 +189,19 @@ public class SaslServlet extends AbstractServlet
                 session.invalidate();
             }
         }
+    }
+
+    private void cleanup(final HttpServletRequest request, final HttpSession session)
+    {
+        final SaslNegotiator negotiator =
+                (SaslNegotiator) session.getAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_NEGOTIATOR, request));
+        if (negotiator != null)
+        {
+            negotiator.dispose();
+        }
+        session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request));
+        session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_NEGOTIATOR, request));
+        session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request));
     }
 
     private void checkSaslAuthEnabled(HttpServletRequest request)
@@ -206,15 +224,18 @@ public class SaslServlet extends AbstractServlet
 
     private void evaluateSaslResponse(final HttpServletRequest request,
                                       final HttpServletResponse response,
-                                      final HttpSession session, final String saslResponse, final SaslServer saslServer, SubjectCreator subjectCreator) throws IOException
+                                      final HttpSession session,
+                                      final String saslResponse,
+                                      final SaslNegotiator saslNegotiator,
+                                      SubjectCreator subjectCreator) throws IOException
     {
         byte[] saslResponseBytes = saslResponse == null
                 ? new byte[0]
                 : Strings.decodeBase64(saslResponse);
-        SubjectAuthenticationResult authenticationResult = subjectCreator.authenticate(saslServer, saslResponseBytes);
+        SubjectAuthenticationResult authenticationResult = subjectCreator.authenticate(saslNegotiator, saslResponseBytes);
         byte[] challenge = authenticationResult.getChallenge();
         Map<String, Object> outputObject = new LinkedHashMap<>();
-        int responseStatus;
+        int responseStatus = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 
         if (authenticationResult.getStatus() == AuthenticationResult.AuthenticationStatus.SUCCESS)
         {
@@ -226,9 +247,6 @@ public class SaslServlet extends AbstractServlet
                 Subject subject = HttpManagementUtil.createServletConnectionSubject(request, original);
 
                 HttpManagementUtil.saveAuthorisedSubject(request, subject);
-                session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request));
-                session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_SERVER, request));
-                session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request));
                 if(challenge != null && challenge.length != 0)
                 {
                     outputObject.put("challenge", DatatypeConverter.printBase64Binary(challenge));
@@ -239,13 +257,17 @@ public class SaslServlet extends AbstractServlet
             {
                 responseStatus = HttpServletResponse.SC_FORBIDDEN;
             }
+            finally
+            {
+                cleanup(request, session);
+            }
         }
         else if (authenticationResult.getStatus() == AuthenticationResult.AuthenticationStatus.CONTINUE)
         {
             Random rand = getRandom(request);
             String id = String.valueOf(rand.nextLong());
             session.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request), id);
-            session.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_SERVER, request), saslServer);
+            session.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_NEGOTIATOR, request), saslNegotiator);
             session.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request), System.currentTimeMillis() + SASL_EXCHANGE_EXPIRY);
 
             outputObject.put("id", id);
@@ -254,10 +276,8 @@ public class SaslServlet extends AbstractServlet
         }
         else
         {
-            session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request));
-            session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_SERVER, request));
-            session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request));
             responseStatus = HttpServletResponse.SC_UNAUTHORIZED;
+            cleanup(request, session);
         }
 
         sendJsonResponse(outputObject, request, response, responseStatus, false);

@@ -26,6 +26,10 @@ public interface ScramSaslServerSource
 {
     int getIterationCount();
 
+    String getDigestName();
+
+    String getHmacName();
+
     interface SaltAndPasswordKeys
     {
         byte[] getSalt();

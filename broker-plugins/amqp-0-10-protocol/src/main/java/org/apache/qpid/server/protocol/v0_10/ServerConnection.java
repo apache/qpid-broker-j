@@ -30,6 +30,8 @@ import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
@@ -37,6 +39,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
+import javax.security.sasl.SaslServer;
 
 import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.server.logging.EventLogger;
@@ -610,4 +613,44 @@ public class ServerConnection extends Connection
     {
         return super.isConnectionLost();
     }
+
+    @Override
+    protected void setLocale(String locale)
+    {
+        super.setLocale(locale);
+    }
+
+    @Override
+    protected void sendConnectionSecure(byte[] challenge, Option ... options)
+    {
+        super.sendConnectionSecure(challenge, options);
+    }
+
+    @Override
+    protected void sendConnectionTune(int channelMax, int maxFrameSize, int heartbeatMin, int heartbeatMax, Option ... options)
+    {
+        super.sendConnectionTune(channelMax, maxFrameSize, heartbeatMin, heartbeatMax, options);
+    }
+
+    @Override
+    protected void setChannelMax(int max)
+    {
+        super.setChannelMax(max);
+    }
+
+    @Override
+    protected void map(Session ssn, int channel)
+    {
+        super.map(ssn, channel);
+    }
+
+    @Override
+    protected void sendConnectionStart(final Map<String, Object> clientProperties,
+                                       final List<Object> mechanisms,
+                                       final List<Object> locales,
+                                       final Option... options)
+    {
+        super.sendConnectionStart(clientProperties, mechanisms, locales, options);
+    }
+
 }

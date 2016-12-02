@@ -23,27 +23,23 @@ package org.apache.qpid.server.security.auth.database;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.login.AccountNotFoundException;
-import javax.security.sasl.Sasl;
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.manager.AbstractScramAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ScramSHA1AuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ScramSHA256AuthenticationManager;
-import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5Initialiser;
-import org.apache.qpid.server.security.auth.sasl.plain.PlainInitialiser;
-import org.apache.qpid.server.security.auth.sasl.plain.PlainSaslServer;
-import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServer;
+import org.apache.qpid.server.security.auth.sasl.PasswordSource;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
+import org.apache.qpid.server.security.auth.sasl.crammd5.CramMd5Negotiator;
+import org.apache.qpid.server.security.auth.sasl.plain.PlainNegotiator;
+import org.apache.qpid.server.security.auth.sasl.scram.ScramNegotiator;
 import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServerSourceAdapter;
 
 /**
@@ -57,42 +53,29 @@ public class PlainPasswordFilePrincipalDatabase extends AbstractPasswordFilePrin
 {
 
     private final Logger _logger = LoggerFactory.getLogger(PlainPasswordFilePrincipalDatabase.class);
-    private final Map<String, CallbackHandler> _callbackHandlerMap = new HashMap<String, CallbackHandler>();
-    private final List<String> _mechanisms = Collections.unmodifiableList(Arrays.asList(PlainSaslServer.MECHANISM,
-                                                                                        CRAMMD5Initialiser.MECHANISM,
+    private final List<String> _mechanisms = Collections.unmodifiableList(Arrays.asList(PlainNegotiator.MECHANISM,
+                                                                                        CramMd5Negotiator.MECHANISM,
                                                                                         ScramSHA1AuthenticationManager.MECHANISM,
                                                                                         ScramSHA256AuthenticationManager.MECHANISM));
     private final ScramSaslServerSourceAdapter _scramSha1Adapter;
     private final ScramSaslServerSourceAdapter _scramSha256Adapter;
 
 
-    public PlainPasswordFilePrincipalDatabase(AuthenticationProvider<?> authenticationProvider)
+    public PlainPasswordFilePrincipalDatabase(PasswordCredentialManagingAuthenticationProvider<?> authenticationProvider)
     {
         super(authenticationProvider);
-        PlainInitialiser plainInitialiser = new PlainInitialiser();
-        plainInitialiser.initialise(this);
-        _callbackHandlerMap.put(PlainSaslServer.MECHANISM, plainInitialiser.getCallbackHandler());
-        _callbackHandlerMap.put(ScramSHA1AuthenticationManager.MECHANISM, plainInitialiser.getCallbackHandler());
-        _callbackHandlerMap.put(ScramSHA256AuthenticationManager.MECHANISM, plainInitialiser.getCallbackHandler());
 
-
-        CRAMMD5Initialiser crammd5Initialiser = new CRAMMD5Initialiser();
-        crammd5Initialiser.initialise(this);
-        _callbackHandlerMap.put(CRAMMD5Initialiser.MECHANISM, crammd5Initialiser.getCallbackHandler());
-
-        ScramSaslServerSourceAdapter.PasswordSource passwordSource =
-                new ScramSaslServerSourceAdapter.PasswordSource()
-                {
-                    @Override
-                    public char[] getPassword(final String username)
-                    {
-                        return lookupPassword(username);
-                    }
-                };
-
-        final int scramIterationCount = authenticationProvider.getContextValue(Integer.class, AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT);
-        _scramSha1Adapter = new ScramSaslServerSourceAdapter(scramIterationCount, "HmacSHA1", "SHA-1", passwordSource);
-        _scramSha256Adapter = new ScramSaslServerSourceAdapter(scramIterationCount, "HmacSHA256", "SHA-256", passwordSource);
+        PasswordSource passwordSource = getPasswordSource();
+        final int scramIterationCount = authenticationProvider.getContextValue(Integer.class,
+                                                                               AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT);
+        _scramSha1Adapter = new ScramSaslServerSourceAdapter(scramIterationCount,
+                                                             ScramSHA1AuthenticationManager.HMAC_NAME,
+                                                             ScramSHA1AuthenticationManager.DIGEST_NAME,
+                                                             passwordSource);
+        _scramSha256Adapter = new ScramSaslServerSourceAdapter(scramIterationCount,
+                                                               ScramSHA256AuthenticationManager.HMAC_NAME,
+                                                               ScramSHA256AuthenticationManager.DIGEST_NAME,
+                                                               passwordSource);
     }
 
 
@@ -110,7 +93,7 @@ public class PlainPasswordFilePrincipalDatabase extends AbstractPasswordFilePrin
     {
 
         char[] pwd = lookupPassword(principal);
-        
+
         if (pwd == null)
         {
             throw new AccountNotFoundException("Unable to lookup the specified users password");
@@ -146,33 +129,26 @@ public class PlainPasswordFilePrincipalDatabase extends AbstractPasswordFilePrin
     }
 
     @Override
-    public SaslServer createSaslServer(String mechanism, String localFQDN, Principal externalPrincipal) throws SaslException
+    public SaslNegotiator createSaslNegotiator(final String mechanism, final SaslSettings saslSettings)
     {
-        final CallbackHandler callbackHandler = _callbackHandlerMap.get(mechanism);
-        if(callbackHandler == null)
+        if (CramMd5Negotiator.MECHANISM.equals(mechanism))
         {
-            throw new SaslException("Unsupported mechanism: " + mechanism);
+            return new CramMd5Negotiator(getAuthenticationProvider(),
+                                         saslSettings.getLocalFQDN(),
+                                         getPasswordSource());
         }
-
-        if(CRAMMD5Initialiser.MECHANISM.equals(mechanism))
+        else if (PlainNegotiator.MECHANISM.equals(mechanism))
         {
-            //simply delegate to the built in CRAM-MD5 SaslServer
-            return Sasl.createSaslServer(mechanism, "AMQP", localFQDN, null, callbackHandler);
+            return new PlainNegotiator(getAuthenticationProvider());
         }
-        else if(PlainSaslServer.MECHANISM.equals(mechanism))
+        else if (ScramSHA1AuthenticationManager.MECHANISM.equals(mechanism))
         {
-            return new PlainSaslServer(callbackHandler);
+            return new ScramNegotiator(getAuthenticationProvider(), _scramSha1Adapter, ScramSHA1AuthenticationManager.MECHANISM);
         }
-        else if(ScramSHA1AuthenticationManager.MECHANISM.equals(mechanism))
+        else if (ScramSHA256AuthenticationManager.MECHANISM.equals(mechanism))
         {
-            return new ScramSaslServer(_scramSha1Adapter, mechanism, "HmacSHA1", "SHA-1");
+            return new ScramNegotiator(getAuthenticationProvider(), _scramSha256Adapter, ScramSHA256AuthenticationManager.MECHANISM);
         }
-        else if(ScramSHA256AuthenticationManager.MECHANISM.equals(mechanism))
-        {
-            return new ScramSaslServer(_scramSha256Adapter, mechanism, "HmacSHA256", "SHA-256");
-        }
-
-        throw new SaslException("Unsupported mechanism: " + mechanism);
+        return null;
     }
-
 }

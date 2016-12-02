@@ -18,33 +18,22 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
-import java.io.IOException;
-import java.security.Principal;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.callback.UnsupportedCallbackException;
-import javax.security.sasl.AuthorizeCallback;
-import javax.security.sasl.Sasl;
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
 
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.security.auth.AuthenticationResult;
-import org.apache.qpid.server.security.auth.UsernamePrincipal;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
+import org.apache.qpid.server.security.auth.sasl.kerberos.KerberosNegotiator;
 
 @ManagedObject( category = false, type = "Kerberos" )
 public class KerberosAuthenticationManager extends AbstractAuthenticationManager<KerberosAuthenticationManager>
 {
     public static final String PROVIDER_TYPE = "Kerberos";
-    private static final String GSSAPI_MECHANISM = "GSSAPI";
-    private final CallbackHandler _callbackHandler = new GssApiCallbackHandler();
+    public static final String GSSAPI_MECHANISM = "GSSAPI";
 
     @ManagedObjectFactoryConstructor
     protected KerberosAuthenticationManager(final Map<String, Object> attributes, final Container<?> container)
@@ -59,59 +48,15 @@ public class KerberosAuthenticationManager extends AbstractAuthenticationManager
     }
 
     @Override
-    public SaslServer createSaslServer(String mechanism, String localFQDN, Principal externalPrincipal) throws SaslException
+    public SaslNegotiator createSaslNegotiator(final String mechanism, final SaslSettings saslSettings)
     {
         if(GSSAPI_MECHANISM.equals(mechanism))
         {
-            return Sasl.createSaslServer(GSSAPI_MECHANISM, "AMQP", localFQDN,
-                                         new HashMap<String, Object>(), _callbackHandler);
+            return new KerberosNegotiator(this, saslSettings.getLocalFQDN());
         }
         else
         {
-            throw new SaslException("Unknown mechanism: " + mechanism);
-        }
-    }
-
-    @Override
-    public AuthenticationResult authenticate(SaslServer server, byte[] response)
-    {
-        try
-        {
-            // Process response from the client
-            byte[] challenge = server.evaluateResponse(response != null ? response : new byte[0]);
-
-            if (server.isComplete())
-            {
-                return new AuthenticationResult(new UsernamePrincipal(server.getAuthorizationID(), this), challenge);
-            }
-            else
-            {
-                return new AuthenticationResult(challenge, AuthenticationResult.AuthenticationStatus.CONTINUE);
-            }
-        }
-        catch (SaslException e)
-        {
-            return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
-        }
-    }
-
-    private static class GssApiCallbackHandler implements CallbackHandler
-    {
-
-        @Override
-        public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException
-        {
-            for(Callback callback : callbacks)
-            {
-                if (callback instanceof AuthorizeCallback)
-                {
-                    ((AuthorizeCallback) callback).setAuthorized(true);
-                }
-                else
-                {
-                    throw new UnsupportedCallbackException(callback);
-                }
-            }
+            return null;
         }
     }
 }

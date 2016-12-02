@@ -25,15 +25,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
-
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
-import org.apache.qpid.server.security.auth.sasl.anonymous.AnonymousSaslServer;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
+import org.apache.qpid.server.security.auth.sasl.anonymous.AnonymousNegotiator;
 
 @ManagedObject( category = false, type= "Anonymous" )
 public class AnonymousAuthenticationManager extends AbstractAuthenticationManager<AnonymousAuthenticationManager>
@@ -61,38 +60,15 @@ public class AnonymousAuthenticationManager extends AbstractAuthenticationManage
     }
 
     @Override
-    public SaslServer createSaslServer(String mechanism, String localFQDN, Principal externalPrincipal) throws SaslException
+    public SaslNegotiator createSaslNegotiator(final String mechanism, final SaslSettings saslSettings)
     {
         if(MECHANISM_NAME.equals(mechanism))
         {
-            return new AnonymousSaslServer();
+            return new AnonymousNegotiator(_anonymousAuthenticationResult);
         }
         else
         {
-            throw new SaslException("Unknown mechanism: " + mechanism);
-        }
-    }
-
-    @Override
-    public AuthenticationResult authenticate(SaslServer server, byte[] response)
-    {
-        try
-        {
-            // Process response from the client
-            byte[] challenge = server.evaluateResponse(response != null ? response : new byte[0]);
-
-            if (server.isComplete())
-            {
-                return _anonymousAuthenticationResult;
-            }
-            else
-            {
-                return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR);
-            }
-        }
-        catch (SaslException e)
-        {
-            return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
+            return null;
         }
     }
 

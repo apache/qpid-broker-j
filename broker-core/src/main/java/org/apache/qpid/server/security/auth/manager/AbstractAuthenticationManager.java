@@ -198,5 +198,4 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     {
         _container.getEventLogger().message(AuthenticationProviderMessages.OPERATION(operation));
     }
-
 }

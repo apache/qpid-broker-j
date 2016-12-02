@@ -36,8 +36,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
 import javax.xml.bind.DatatypeConverter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -56,6 +54,9 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.AbstractAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.AuthenticationResultCacher;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
+import org.apache.qpid.server.security.auth.sasl.oauth2.OAuth2Negotiator;
 import org.apache.qpid.server.util.ConnectionBuilder;
 import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -213,47 +214,13 @@ public class OAuth2AuthenticationProviderImpl
     @Override
     public List<String> getMechanisms()
     {
-        return Collections.singletonList(OAuth2SaslServer.MECHANISM);
+        return Collections.singletonList(OAuth2Negotiator.MECHANISM);
     }
 
     @Override
-    public SaslServer createSaslServer(final String mechanism,
-                                       final String localFQDN,
-                                       final Principal externalPrincipal)
-            throws SaslException
+    public SaslNegotiator createSaslNegotiator(final String mechanism, final SaslSettings saslSettings)
     {
-        if(OAuth2SaslServer.MECHANISM.equals(mechanism))
-        {
-            return new OAuth2SaslServer();
-        }
-        else
-        {
-            throw new SaslException("Unknown mechanism: " + mechanism);
-        }
-    }
-
-    @Override
-    public AuthenticationResult authenticate(final SaslServer server, final byte[] response)
-    {
-        try
-        {
-            // Process response from the client
-            byte[] challenge = server.evaluateResponse(response != null ? response : new byte[0]);
-
-            if (server.isComplete())
-            {
-                String accessToken = (String) server.getNegotiatedProperty(OAuth2SaslServer.ACCESS_TOKEN_PROPERTY);
-                return authenticateViaAccessToken(accessToken);
-            }
-            else
-            {
-                return new AuthenticationResult(challenge, AuthenticationResult.AuthenticationStatus.CONTINUE);
-            }
-        }
-        catch (SaslException e)
-        {
-            return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
-        }
+        return new OAuth2Negotiator(this);
     }
 
     @Override

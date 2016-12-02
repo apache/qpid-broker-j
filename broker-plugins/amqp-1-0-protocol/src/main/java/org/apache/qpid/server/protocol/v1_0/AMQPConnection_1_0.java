@@ -103,6 +103,7 @@ import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
@@ -211,10 +212,9 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
 
     private Map _properties;
-    private SaslServerProvider _saslServerProvider;
     private boolean _saslComplete;
 
-    private SaslServer _saslServer;
+    private SaslNegotiator _saslNegotiator;
     private String _localHostname;
     private long _desiredIdleTimeout;
 
@@ -244,14 +244,12 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                        AmqpPort<?> port,
                        Transport transport,
                        long id,
-                       final AggregateTicker aggregateTicker,
-                       final boolean useSASL)
+                       final AggregateTicker aggregateTicker)
     {
         super(broker, network, port, transport, Protocol.AMQP_1_0, id, aggregateTicker);
 
         _subjectCreator = port.getAuthenticationProvider().getSubjectCreator(transport.isSecure());
 
-        _saslServerProvider = useSASL ? asSaslServerProvider(_subjectCreator, network) : null;
         _port = port;
 
         Map<Symbol, Object> serverProperties = new LinkedHashMap<>();
@@ -322,9 +320,16 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     private void closeSaslWithFailure()
     {
         _saslComplete = true;
+        disposeSaslNegotiator();
         _frameReceivingState = FrameReceivingState.CLOSED;
         setClosedForInput(true);
         addCloseTicker();
+    }
+
+    private void disposeSaslNegotiator()
+    {
+        _saslNegotiator.dispose();
+        _saslNegotiator = null;
     }
 
     public void receiveSaslChallenge(final SaslChallenge saslChallenge)
@@ -905,16 +910,8 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         final Binary initialResponse = saslInit.getInitialResponse();
         byte[] response = initialResponse == null ? new byte[0] : initialResponse.getArray();
 
-
-        try
-        {
-            _saslServer = _saslServerProvider.getSaslServer(mechanism, "localhost");
-            processSaslResponse(response);
-        }
-        catch (SaslException e)
-        {
-            handleSaslError();
-        }
+        _saslNegotiator = _subjectCreator.createSaslNegotiator(mechanism, this);
+        processSaslResponse(response);
     }
 
     private void processSaslResponse(final byte[] response)
@@ -923,7 +920,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         SubjectAuthenticationResult authenticationResult = _successfulAuthenticationResult;
         if (authenticationResult == null)
         {
-            authenticationResult = _subjectCreator.authenticate(_saslServer, response != null ? response : new byte[0]);
+            authenticationResult = _subjectCreator.authenticate(_saslNegotiator, response != null ? response : new byte[0]);
             challenge = authenticationResult.getChallenge();
         }
 
@@ -938,6 +935,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                 send(new SASLFrame(outcome), null);
                 _saslComplete = true;
                 _frameReceivingState = FrameReceivingState.AMQP_HEADER;
+                disposeSaslNegotiator();
             }
             else
             {
@@ -1108,19 +1106,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     @Override
     public void encryptedTransport()
     {
-    }
-
-    private static SaslServerProvider asSaslServerProvider(final SubjectCreator subjectCreator,
-                                                           final ServerNetworkConnection network)
-    {
-        return new SaslServerProvider()
-        {
-            @Override
-            public SaslServer getSaslServer(String mechanism, String fqdn) throws SaslException
-            {
-                return subjectCreator.createSaslServer(mechanism, fqdn, network.getPeerPrincipal());
-            }
-        };
     }
 
     public String getAddress()

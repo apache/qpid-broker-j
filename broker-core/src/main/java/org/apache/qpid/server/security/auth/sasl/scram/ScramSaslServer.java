@@ -55,14 +55,12 @@ public class ScramSaslServer implements SaslServer
     private ScramSaslServerSource.SaltAndPasswordKeys _saltAndPassword;
 
     public ScramSaslServer(final ScramSaslServerSource authenticationManager,
-                           final String mechanism,
-                           final String hmacName,
-                           final String digestName)
+                           final String mechanism)
     {
         _authManager = authenticationManager;
         _mechanism = mechanism;
-        _hmacName = hmacName;
-        _digestName = digestName;
+        _hmacName = authenticationManager.getHmacName();
+        _digestName = authenticationManager.getDigestName();
     }
 
     enum State

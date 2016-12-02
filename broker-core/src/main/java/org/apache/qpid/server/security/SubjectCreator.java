@@ -29,14 +29,14 @@ import java.util.List;
 import java.util.Set;
 
 import javax.security.auth.Subject;
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 
 /**
  * Creates a {@link Subject} formed by the {@link Principal}'s returned from:
@@ -92,28 +92,19 @@ public class SubjectCreator
         return mechanisms;
     }
 
-    /**
-     * @see AuthenticationProvider#createSaslServer(String, String, Principal)
-     */
-    public SaslServer createSaslServer(String mechanism, String localFQDN, Principal externalPrincipal) throws SaslException
+    public SaslNegotiator createSaslNegotiator(String mechanism, final SaslSettings saslSettings)
     {
         if(!getMechanisms().contains(mechanism))
         {
-            throw new SaslException("Unsupported mechanism: " + mechanism + ".\nSupported mechanisms: " + getMechanisms());
+            return null;
         }
-        return _authenticationProvider.createSaslServer(mechanism, localFQDN, externalPrincipal);
+        return _authenticationProvider.createSaslNegotiator(mechanism, saslSettings);
     }
 
-    /**
-     * Authenticates a user using SASL negotiation.
-     *
-     * @param server SASL server
-     * @param response SASL response to process
-     */
-    public SubjectAuthenticationResult authenticate(SaslServer server, byte[] response)
+    public SubjectAuthenticationResult authenticate(SaslNegotiator saslNegotiator, byte[] response)
     {
-        AuthenticationResult authenticationResult = _authenticationProvider.authenticate(server, response);
-        if(server.isComplete())
+        AuthenticationResult authenticationResult = saslNegotiator.handleResponse(response);
+        if(authenticationResult.getStatus() == AuthenticationStatus.SUCCESS)
         {
             return createResultWithGroups(authenticationResult);
         }

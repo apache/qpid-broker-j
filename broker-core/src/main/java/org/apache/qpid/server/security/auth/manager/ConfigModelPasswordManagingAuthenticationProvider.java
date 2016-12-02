@@ -29,8 +29,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.security.auth.login.AccountNotFoundException;
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -40,8 +38,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.model.User;
-import org.apache.qpid.server.security.auth.AuthenticationResult;
-import org.apache.qpid.server.security.auth.UsernamePrincipal;
+import org.apache.qpid.server.security.auth.sasl.PasswordSource;
 
 public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extends ConfigModelPasswordManagingAuthenticationProvider<X>>
         extends AbstractAuthenticationManager<X>
@@ -56,10 +53,28 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
         super(attributes, container);
     }
 
-    ManagedUser getUser(final String username)
+    public ManagedUser getUser(final String username)
     {
         return _users.get(username);
     }
+
+    protected PasswordSource getPasswordSource()
+    {
+        return new PasswordSource()
+        {
+            @Override
+            public char[] getPassword(final String username)
+            {
+                ManagedUser user = getUser(username);
+                if (user == null)
+                {
+                    return null;
+                }
+                return user.getPassword().toCharArray();
+            }
+        };
+    }
+
 
     @Override
     public boolean createUser(final String username, final String password, final Map<String, String> attributes)
@@ -197,30 +212,6 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
             }
         });
 
-    }
-
-    @Override
-    public AuthenticationResult authenticate(final SaslServer server, final byte[] response)
-    {
-        try
-        {
-            // Process response from the client
-            byte[] challenge = server.evaluateResponse(response != null ? response : new byte[0]);
-
-            if (server.isComplete())
-            {
-                final String userId = server.getAuthorizationID();
-                return new AuthenticationResult(new UsernamePrincipal(userId, this), challenge);
-            }
-            else
-            {
-                return new AuthenticationResult(challenge, AuthenticationResult.AuthenticationStatus.CONTINUE);
-            }
-        }
-        catch (SaslException e)
-        {
-            return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
-        }
     }
 
     protected abstract String createStoredPassword(String password);

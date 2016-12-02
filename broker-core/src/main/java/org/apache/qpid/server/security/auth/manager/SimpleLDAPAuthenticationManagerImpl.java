@@ -23,7 +23,6 @@ import static java.util.Collections.disjoint;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 
-import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.Principal;
 import java.util.Arrays;
@@ -48,13 +47,6 @@ import javax.naming.directory.SearchResult;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.callback.NameCallback;
-import javax.security.auth.callback.UnsupportedCallbackException;
-import javax.security.sasl.AuthorizeCallback;
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
@@ -72,8 +64,9 @@ import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationS
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.ldap.AbstractLDAPSSLSocketFactory;
 import org.apache.qpid.server.security.auth.manager.ldap.LDAPSSLSocketFactoryGenerator;
-import org.apache.qpid.server.security.auth.sasl.plain.PlainPasswordCallback;
-import org.apache.qpid.server.security.auth.sasl.plain.PlainSaslServer;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
+import org.apache.qpid.server.security.auth.sasl.plain.PlainNegotiator;
 import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.apache.qpid.server.util.CipherSuiteAndProtocolRestrictingSSLSocketFactory;
 import org.apache.qpid.server.util.ParameterizedTypes;
@@ -287,50 +280,19 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     @Override
     public List<String> getMechanisms()
     {
-        return singletonList(PlainSaslServer.MECHANISM);
+        return singletonList(PlainNegotiator.MECHANISM);
     }
 
     @Override
-    public SaslServer createSaslServer(String mechanism, String localFQDN, Principal externalPrincipal) throws SaslException
+    public SaslNegotiator createSaslNegotiator(final String mechanism, final SaslSettings saslSettings)
     {
-        if(PlainSaslServer.MECHANISM.equals(mechanism))
+        if(PlainNegotiator.MECHANISM.equals(mechanism))
         {
-            return new PlainSaslServer(new SimpleLDAPPlainCallbackHandler());
+            return new PlainNegotiator(this);
         }
         else
         {
-            throw new SaslException("Unknown mechanism: " + mechanism);
-        }
-    }
-
-    @Override
-    public AuthenticationResult authenticate(SaslServer server, byte[] response)
-    {
-        try
-        {
-            // Process response from the client
-            byte[] challenge = server.evaluateResponse(response != null ? response : new byte[0]);
-
-            if (server.isComplete())
-            {
-                String authorizationID = server.getAuthorizationID();
-                _logger.debug("Authenticated as {}", authorizationID);
-
-                AuthenticationResult result = (AuthenticationResult)server.getNegotiatedProperty(PlainSaslServer.AUTHENTICATION_RESULT);
-                if (result == null)
-                {
-                    return new AuthenticationResult(AuthenticationStatus.ERROR);
-                }
-                return new AuthenticationResult(result.getMainPrincipal(), result.getPrincipals(), challenge);
-            }
-            else
-            {
-                return new AuthenticationResult(challenge, AuthenticationResult.AuthenticationStatus.CONTINUE);
-            }
-        }
-        catch (SaslException e)
-        {
-            return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
+            return null;
         }
     }
 
@@ -356,7 +318,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         if(name == null)
         {
             //The search didn't return anything, class as not-authenticated before it NPEs below
-            return new AuthenticationResult(AuthenticationStatus.CONTINUE);
+            return new AuthenticationResult(AuthenticationStatus.ERROR);
         }
 
         String providerAuthUrl = isSpecified(getProviderAuthUrl()) ? getProviderAuthUrl() : getProviderUrl();
@@ -388,7 +350,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         catch(AuthenticationException ae)
         {
             //Authentication failed
-            return new AuthenticationResult(AuthenticationStatus.CONTINUE);
+            return new AuthenticationResult(AuthenticationStatus.ERROR);
         }
         catch (NamingException e)
         {
@@ -639,53 +601,6 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         else
         {
             env.put(Context.SECURITY_AUTHENTICATION, "none");
-        }
-    }
-
-
-    private class SimpleLDAPPlainCallbackHandler implements CallbackHandler
-    {
-        @Override
-        public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException
-        {
-            String userId = null;
-            String password = null;
-            AuthenticationResult authenticated = null;
-            for(Callback callback : callbacks)
-            {
-                if (callback instanceof NameCallback)
-                {
-                    userId = ((NameCallback) callback).getDefaultName();
-                    if(password != null)
-                    {
-                        authenticated = getOrLoadAuthenticationResult(userId, password);
-                    }
-                }
-                else if (callback instanceof PlainPasswordCallback)
-                {
-                    password = ((PlainPasswordCallback)callback).getPlainPassword();
-                    if (userId != null)
-                    {
-                        authenticated = getOrLoadAuthenticationResult(userId, password);
-                        if(authenticated.getStatus()== AuthenticationResult.AuthenticationStatus.SUCCESS)
-                        {
-                            ((PlainPasswordCallback)callback).setAuthenticated(true);
-                        }
-                    }
-                }
-                else if (callback instanceof AuthorizeCallback)
-                {
-                    ((AuthorizeCallback) callback).setAuthorized(authenticated != null && authenticated.getStatus() == AuthenticationResult.AuthenticationStatus.SUCCESS);
-                    if (callback instanceof PlainSaslServer.AuthenticationResultPreservingAuthorizeCallback)
-                    {
-                        ((PlainSaslServer.AuthenticationResultPreservingAuthorizeCallback)callback).setAuthenticationResult(authenticated);
-                    }
-                }
-                else
-                {
-                    throw new UnsupportedCallbackException(callback);
-                }
-            }
         }
     }
 

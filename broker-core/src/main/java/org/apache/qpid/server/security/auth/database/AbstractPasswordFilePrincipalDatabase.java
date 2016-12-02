@@ -39,8 +39,9 @@ import javax.security.auth.login.AccountNotFoundException;
 
 import org.slf4j.Logger;
 
-import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
+import org.apache.qpid.server.security.auth.sasl.PasswordSource;
 import org.apache.qpid.server.util.BaseAction;
 import org.apache.qpid.server.util.FileHelper;
 
@@ -52,16 +53,16 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
     private final Map<String, U> _userMap = new HashMap<>();
     private final ReentrantLock _userUpdate = new ReentrantLock();
     private final FileHelper _fileHelper = new FileHelper();
-    private final AuthenticationProvider<?> _authenticationProvider;
+    private final PasswordCredentialManagingAuthenticationProvider<?> _authenticationProvider;
     private File _passwordFile;
 
-    public AbstractPasswordFilePrincipalDatabase(AuthenticationProvider<?> authenticationProvider)
+    public AbstractPasswordFilePrincipalDatabase(PasswordCredentialManagingAuthenticationProvider<?> authenticationProvider)
     {
         _authenticationProvider = authenticationProvider;
     }
 
     @Override
-    public final AuthenticationProvider<?> getAuthenticationProvider()
+    public final PasswordCredentialManagingAuthenticationProvider<?> getAuthenticationProvider()
     {
         return _authenticationProvider;
     }
@@ -195,6 +196,18 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
         {
             _userUpdate.unlock();
         }
+    }
+
+    protected PasswordSource getPasswordSource()
+    {
+        return new PasswordSource()
+        {
+            @Override
+            public char[] getPassword(final String username)
+            {
+                return lookupPassword(username);
+            }
+        };
     }
 
 

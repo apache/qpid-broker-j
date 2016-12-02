@@ -15,15 +15,16 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
 
-package org.apache.qpid.server.protocol.v1_0;
+package org.apache.qpid.server.security.auth.sasl;
 
+import org.apache.qpid.server.security.auth.AuthenticationResult;
 
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
-
-public interface SaslServerProvider
+public interface SaslNegotiator
 {
-    SaslServer getSaslServer(String mechanism, String fqdn) throws SaslException;
+    AuthenticationResult handleResponse(byte[] response);
+
+    void dispose();
 }

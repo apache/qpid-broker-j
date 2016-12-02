@@ -20,24 +20,13 @@
 package org.apache.qpid.server.security.auth.manager;
 
 import java.io.IOException;
-import java.security.Principal;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.callback.NameCallback;
-import javax.security.auth.callback.PasswordCallback;
-import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.AccountNotFoundException;
-import javax.security.sasl.AuthorizeCallback;
-import javax.security.sasl.Sasl;
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,9 +36,12 @@ import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
-import org.apache.qpid.server.security.auth.sasl.plain.PlainPasswordCallback;
-import org.apache.qpid.server.security.auth.sasl.plain.PlainSaslServer;
-import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServer;
+import org.apache.qpid.server.security.auth.sasl.PasswordSource;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
+import org.apache.qpid.server.security.auth.sasl.crammd5.CramMd5Negotiator;
+import org.apache.qpid.server.security.auth.sasl.plain.PlainNegotiator;
+import org.apache.qpid.server.security.auth.sasl.scram.ScramNegotiator;
 import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServerSourceAdapter;
 
 @ManagedObject( category = false, type = "Simple", register = false )
@@ -76,23 +68,18 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
     protected void postResolveChildren()
     {
         super.postResolveChildren();
-        ScramSaslServerSourceAdapter.PasswordSource passwordSource =
-                new ScramSaslServerSourceAdapter.PasswordSource()
-                {
-                    @Override
-                    public char[] getPassword(final String username)
-                    {
-                        String password = _users.get(username);
-                        return password == null ? null : password.toCharArray();
-                    }
-                };
+        PasswordSource passwordSource = getPasswordSource();
 
         final int scramIterationCount = getContextValue(Integer.class, AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT);
-        _scramSha1Adapter = new ScramSaslServerSourceAdapter(scramIterationCount, "HmacSHA1", "SHA-1", passwordSource);
-        _scramSha256Adapter = new ScramSaslServerSourceAdapter(scramIterationCount, "HmacSHA256", "SHA-256", passwordSource);
-
+        _scramSha1Adapter = new ScramSaslServerSourceAdapter(scramIterationCount,
+                                                             ScramSHA1AuthenticationManager.HMAC_NAME,
+                                                             ScramSHA1AuthenticationManager.DIGEST_NAME,
+                                                             passwordSource);
+        _scramSha256Adapter = new ScramSaslServerSourceAdapter(scramIterationCount,
+                                                               ScramSHA256AuthenticationManager.HMAC_NAME,
+                                                               ScramSHA256AuthenticationManager.DIGEST_NAME,
+                                                               passwordSource);
     }
-
 
     public void addUser(String username, String password)
     {
@@ -106,53 +93,29 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
     }
 
     @Override
-    public SaslServer createSaslServer(String mechanism, String localFQDN, Principal externalPrincipal) throws SaslException
+    public SaslNegotiator createSaslNegotiator(final String mechanism, final SaslSettings saslSettings)
     {
-        if (PLAIN_MECHANISM.equals(mechanism))
+        if (PlainNegotiator.MECHANISM.equals(mechanism))
         {
-            return new PlainSaslServer(new SimplePlainCallbackHandler());
+            return new PlainNegotiator(this);
         }
-        else if (CRAM_MD5_MECHANISM.equals(mechanism))
+        else if (CramMd5Negotiator.MECHANISM.equals(mechanism))
         {
-            return Sasl.createSaslServer(mechanism, "AMQP", localFQDN, null, new SimpleCramMd5CallbackHandler());
+            return new CramMd5Negotiator(this,
+                                         saslSettings.getLocalFQDN(),
+                                         getPasswordSource());
         }
-        else if (SCRAM_SHA1_MECHANISM.equals(mechanism))
+        else if (ScramSHA1AuthenticationManager.MECHANISM.equals(mechanism))
         {
-            return new ScramSaslServer(_scramSha1Adapter, mechanism, "HmacSHA1", "SHA-1");
+            return new ScramNegotiator(this, _scramSha1Adapter, ScramSHA1AuthenticationManager.MECHANISM);
         }
-        else if(ScramSHA256AuthenticationManager.MECHANISM.equals(mechanism))
+        else if (ScramSHA256AuthenticationManager.MECHANISM.equals(mechanism))
         {
-            return new ScramSaslServer(_scramSha256Adapter, mechanism, "HmacSHA256", "SHA-256");
+            return new ScramNegotiator(this, _scramSha256Adapter, ScramSHA256AuthenticationManager.MECHANISM);
         }
         else
         {
-            throw new SaslException("Unknown mechanism: " + mechanism);
-        }
-    }
-
-    @Override
-    public AuthenticationResult authenticate(SaslServer server, byte[] response)
-    {
-        try
-        {
-            // Process response from the client
-            byte[] challenge = server.evaluateResponse(response != null ? response : new byte[0]);
-
-            if (server.isComplete())
-            {
-                String authorizationID = server.getAuthorizationID();
-                _logger.debug("Authenticated as " + authorizationID);
-
-                return new AuthenticationResult(new UsernamePrincipal(authorizationID, this), challenge);
-            }
-            else
-            {
-                return new AuthenticationResult(challenge, AuthenticationResult.AuthenticationStatus.CONTINUE);
-            }
-        }
-        catch (SaslException e)
-        {
-            return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
+            return null;
         }
     }
 
@@ -215,70 +178,16 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
     {
     }
 
-    private class SimpleCramMd5CallbackHandler implements CallbackHandler
+    private PasswordSource getPasswordSource()
     {
-        public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException
+        return new PasswordSource()
         {
-            String username = null;
-            for (Callback callback : callbacks)
+            @Override
+            public char[] getPassword(final String username)
             {
-                if (callback instanceof NameCallback)
-                {
-                    username = ((NameCallback) callback).getDefaultName();
-                }
-                else if (callback instanceof PasswordCallback)
-                {
-                    if (_users.containsKey(username))
-                    {
-                        String password = _users.get(username);
-                        ((PasswordCallback) callback).setPassword(password.toCharArray());
-                    }
-                    else
-                    {
-                        throw new SaslException("Authentication failed");
-                    }
-                }
-                else if (callback instanceof AuthorizeCallback)
-                {
-                    ((AuthorizeCallback) callback).setAuthorized(true);
-                }
-                else
-                {
-                    throw new UnsupportedCallbackException(callback);
-                }
+                String password = _users.get(username);
+                return password == null ? null : password.toCharArray();
             }
-        }
-    }
-
-    private class SimplePlainCallbackHandler implements CallbackHandler
-    {
-        public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException
-        {
-            String username = null;
-             for (Callback callback : callbacks)
-            {
-                if (callback instanceof NameCallback)
-                {
-                    username = ((NameCallback) callback).getDefaultName();
-                }
-                else if (callback instanceof PlainPasswordCallback)
-                {
-                    if (_users.containsKey(username))
-                    {
-                        PlainPasswordCallback plainPasswordCallback = (PlainPasswordCallback) callback;
-                        String password = plainPasswordCallback.getPlainPassword();
-                        plainPasswordCallback.setAuthenticated(password.equals(_users.get(username)));
-                    }
-                }
-                else if (callback instanceof AuthorizeCallback)
-                {
-                    ((AuthorizeCallback) callback).setAuthorized(true);
-                }
-                else
-                {
-                    throw new UnsupportedCallbackException(callback);
-                }
-            }
-        }
+        };
     }
 }

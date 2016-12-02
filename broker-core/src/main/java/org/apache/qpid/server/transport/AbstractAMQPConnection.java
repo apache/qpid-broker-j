@@ -68,6 +68,7 @@ import org.apache.qpid.server.model.adapter.SessionAdapter;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.util.Action;
@@ -77,7 +78,7 @@ import org.apache.qpid.transport.network.Ticker;
 
 public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,T>, T>
         extends AbstractConfiguredObject<C>
-        implements ProtocolEngine, AMQPConnection<C>, EventLoggerProvider
+        implements ProtocolEngine, AMQPConnection<C>, EventLoggerProvider, SaslSettings
 
 {
     public static final FixedKeyMapCreator PUBLISH_ACTION_MAP_CREATOR = new FixedKeyMapCreator("routingKey", "immediate");
@@ -915,4 +916,25 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     {
         getEventLogger().message(ConnectionMessages.OPERATION(operation));
     }
+
+    @Override
+    public String getLocalFQDN()
+    {
+        SocketAddress address = getNetwork().getLocalAddress();
+        if (address instanceof InetSocketAddress)
+        {
+            return ((InetSocketAddress) address).getHostName();
+        }
+        else
+        {
+            throw new IllegalArgumentException("Unsupported socket address class: " + address);
+        }
+    }
+
+    @Override
+    public Principal getExternalPrincipal()
+    {
+        return getNetwork().getPeerPrincipal();
+    }
+
 }

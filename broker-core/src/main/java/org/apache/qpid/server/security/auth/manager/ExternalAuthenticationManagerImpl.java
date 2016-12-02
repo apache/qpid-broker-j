@@ -18,19 +18,16 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
-import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
-
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.security.auth.AuthenticationResult;
-import org.apache.qpid.server.security.auth.sasl.external.ExternalSaslServer;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
+import org.apache.qpid.server.security.auth.sasl.external.ExternalNegotiator;
 
 public class ExternalAuthenticationManagerImpl extends AbstractAuthenticationManager<ExternalAuthenticationManagerImpl>
         implements ExternalAuthenticationManager<ExternalAuthenticationManagerImpl>
@@ -59,42 +56,15 @@ public class ExternalAuthenticationManagerImpl extends AbstractAuthenticationMan
     }
 
     @Override
-    public SaslServer createSaslServer(String mechanism, String localFQDN, Principal externalPrincipal) throws SaslException
+    public SaslNegotiator createSaslNegotiator(final String mechanism, final SaslSettings saslSettings)
     {
         if(MECHANISM_NAME.equals(mechanism))
         {
-            return new ExternalSaslServer(externalPrincipal, _useFullDN, this);
+            return new ExternalNegotiator(this, saslSettings.getExternalPrincipal());
         }
         else
         {
-            throw new SaslException("Unknown mechanism: " + mechanism);
+            return null;
         }
     }
-
-    @Override
-    public AuthenticationResult authenticate(SaslServer server, byte[] response)
-    {
-        // Process response from the client
-        try
-        {
-            server.evaluateResponse(response != null ? response : new byte[0]);
-
-            Principal principal = ((ExternalSaslServer)server).getAuthenticatedPrincipal();
-
-            if(principal != null)
-            {
-                return new AuthenticationResult(principal);
-            }
-            else
-            {
-                return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR);
-            }
-        }
-        catch (SaslException e)
-        {
-            return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR,e);
-        }
-
-    }
-
 }

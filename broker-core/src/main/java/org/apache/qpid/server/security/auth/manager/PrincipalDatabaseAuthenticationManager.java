@@ -36,8 +36,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.security.auth.login.AccountNotFoundException;
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -59,6 +57,8 @@ import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.database.PrincipalDatabase;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.util.FileHelper;
 
 public abstract class PrincipalDatabaseAuthenticationManager<T extends PrincipalDatabaseAuthenticationManager<T>>
@@ -70,7 +70,6 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
 
 
     private final Map<Principal, PrincipalAdapter> _userMap = new ConcurrentHashMap<Principal, PrincipalAdapter>();
-    private final Container<?> _broker;
 
     private PrincipalDatabase _principalDatabase;
     @ManagedAttributeField
@@ -79,7 +78,6 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     protected PrincipalDatabaseAuthenticationManager(final Map<String, Object> attributes, final Container<?> broker)
     {
         super(attributes, broker);
-        _broker = broker;
     }
 
     @Override
@@ -159,34 +157,10 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         return _principalDatabase.getMechanisms();
     }
 
-    public SaslServer createSaslServer(String mechanism, String localFQDN, Principal externalPrincipal) throws SaslException
+    @Override
+    public SaslNegotiator createSaslNegotiator(final String mechanism, final SaslSettings saslSettings)
     {
-        return _principalDatabase.createSaslServer(mechanism, localFQDN, externalPrincipal);
-    }
-
-    /**
-     * @see org.apache.qpid.server.model.AuthenticationProvider#authenticate(SaslServer, byte[])
-     */
-    public AuthenticationResult authenticate(SaslServer server, byte[] response)
-    {
-        try
-        {
-            byte[] challenge = server.evaluateResponse(response != null ? response : new byte[0]);
-
-            if (server.isComplete())
-            {
-                final String userId = server.getAuthorizationID();
-                return new AuthenticationResult(new UsernamePrincipal(userId, this), challenge);
-            }
-            else
-            {
-                return new AuthenticationResult(challenge, AuthenticationResult.AuthenticationStatus.CONTINUE);
-            }
-        }
-        catch (SaslException e)
-        {
-            return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
-        }
+        return _principalDatabase.createSaslNegotiator(mechanism, saslSettings);
     }
 
     /**
@@ -202,12 +176,12 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
             }
             else
             {
-                return new AuthenticationResult(AuthenticationStatus.CONTINUE);
+                return new AuthenticationResult(AuthenticationStatus.ERROR);
             }
         }
         catch (AccountNotFoundException e)
         {
-            return new AuthenticationResult(AuthenticationStatus.CONTINUE);
+            return new AuthenticationResult(AuthenticationStatus.ERROR);
         }
     }
 

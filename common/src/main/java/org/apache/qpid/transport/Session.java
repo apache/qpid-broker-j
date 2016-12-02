@@ -1198,4 +1198,9 @@ public class Session extends SessionInvoker
     {
         return flowControl && credit.availablePermits() == 0;
     }
+
+    protected void sendSessionAttached(final byte[] name, final Option... options)
+    {
+        super.sessionAttached(name, options);
+    }
 }

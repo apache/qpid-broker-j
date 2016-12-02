@@ -20,42 +20,30 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
-import java.io.IOException;
-import java.security.Principal;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.callback.NameCallback;
-import javax.security.auth.callback.PasswordCallback;
-import javax.security.auth.callback.UnsupportedCallbackException;
-import javax.security.sasl.AuthorizeCallback;
-import javax.security.sasl.Sasl;
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
-import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5Initialiser;
-import org.apache.qpid.server.security.auth.sasl.plain.PlainAdapterSaslServer;
-import org.apache.qpid.server.security.auth.sasl.plain.PlainSaslServer;
-import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServer;
+import org.apache.qpid.server.security.auth.sasl.PasswordSource;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
+import org.apache.qpid.server.security.auth.sasl.crammd5.CramMd5Negotiator;
+import org.apache.qpid.server.security.auth.sasl.plain.PlainNegotiator;
+import org.apache.qpid.server.security.auth.sasl.scram.ScramNegotiator;
 import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServerSourceAdapter;
 
-@ManagedObject( category = false, type = "Plain" )
+@ManagedObject(category = false, type = "Plain")
 public class PlainAuthenticationProvider
         extends ConfigModelPasswordManagingAuthenticationProvider<PlainAuthenticationProvider>
 {
-    private final List<String> _mechanisms = Collections.unmodifiableList(Arrays.asList(PlainSaslServer.MECHANISM,
-                                                                                        CRAMMD5Initialiser.MECHANISM,
+    private final List<String> _mechanisms = Collections.unmodifiableList(Arrays.asList(PlainNegotiator.MECHANISM,
+                                                                                        CramMd5Negotiator.MECHANISM,
                                                                                         ScramSHA1AuthenticationManager.MECHANISM,
                                                                                         ScramSHA256AuthenticationManager.MECHANISM));
     private volatile ScramSaslServerSourceAdapter _scramSha1Adapter;
@@ -73,23 +61,18 @@ public class PlainAuthenticationProvider
     {
         super.postResolveChildren();
 
-        ScramSaslServerSourceAdapter.PasswordSource passwordSource =
-                new ScramSaslServerSourceAdapter.PasswordSource()
-                {
-                    @Override
-                    public char[] getPassword(final String username)
-                    {
-                        ManagedUser user = getUser(username);
+        PasswordSource passwordSource = getPasswordSource();
 
-                        return user == null ? null : user.getPassword().toCharArray();
-                    }
-                };
-
-
-        final int scramIterationCount = getContextValue(Integer.class, AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT);
-        _scramSha1Adapter = new ScramSaslServerSourceAdapter(scramIterationCount, "HmacSHA1", "SHA-1", passwordSource);
-        _scramSha256Adapter = new ScramSaslServerSourceAdapter(scramIterationCount, "HmacSHA256", "SHA-256", passwordSource);
-
+        final int scramIterationCount = getContextValue(Integer.class,
+                                                        AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT);
+        _scramSha1Adapter = new ScramSaslServerSourceAdapter(scramIterationCount,
+                                                             ScramSHA1AuthenticationManager.HMAC_NAME,
+                                                             ScramSHA1AuthenticationManager.DIGEST_NAME,
+                                                             passwordSource);
+        _scramSha256Adapter = new ScramSaslServerSourceAdapter(scramIterationCount,
+                                                               ScramSHA256AuthenticationManager.HMAC_NAME,
+                                                               ScramSHA256AuthenticationManager.DIGEST_NAME,
+                                                               passwordSource);
     }
 
     @Override
@@ -111,40 +94,11 @@ public class PlainAuthenticationProvider
     }
 
     @Override
-    public SaslServer createSaslServer(final String mechanism,
-                                       final String localFQDN,
-                                       final Principal externalPrincipal)
-            throws SaslException
-    {
-        if(PlainSaslServer.MECHANISM.equals(mechanism))
-        {
-            return new PlainAdapterSaslServer(this);
-        }
-        else if(CRAMMD5Initialiser.MECHANISM.equals(mechanism))
-        {
-            //simply delegate to the built in CRAM-MD5 SaslServer
-            return Sasl.createSaslServer(mechanism, "AMQP", localFQDN, null, new ServerCallbackHandler());
-        }
-        else if (ScramSHA1AuthenticationManager.MECHANISM.equals(mechanism))
-        {
-            return new ScramSaslServer(_scramSha1Adapter, mechanism, "HmacSHA1", "SHA-1");
-        }
-        else if(ScramSHA256AuthenticationManager.MECHANISM.equals(mechanism))
-        {
-            return new ScramSaslServer(_scramSha256Adapter, mechanism, "HmacSHA256", "SHA-256");
-        }
-        else
-        {
-            throw new SaslException("Unsupported mechanism: " + mechanism);
-        }
-    }
-
-    @Override
     public AuthenticationResult authenticate(final String username, final String password)
     {
         ManagedUser user = getUser(username);
         AuthenticationResult result;
-        if(user != null && user.getPassword().equals(password))
+        if (user != null && user.getPassword().equals(password))
         {
             result = new AuthenticationResult(new UsernamePrincipal(username, this));
         }
@@ -155,60 +109,30 @@ public class PlainAuthenticationProvider
         return result;
     }
 
-    private class ServerCallbackHandler implements CallbackHandler
+    @Override
+    public SaslNegotiator createSaslNegotiator(final String mechanism, final SaslSettings saslSettings)
     {
-        String _username;
-
-        public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException
+        if (PlainNegotiator.MECHANISM.equals(mechanism))
         {
-            List<Callback> callbackList = new ArrayList<>(Arrays.asList(callbacks));
-            Iterator<Callback> iter = callbackList.iterator();
-            while(iter.hasNext())
-            {
-                Callback callback = iter.next();
-                if (callback instanceof NameCallback)
-                {
-                    _username = ((NameCallback) callback).getDefaultName();
-                    iter.remove();
-                    break;
-                }
-            }
-
-            if(_username != null)
-            {
-                iter = callbackList.iterator();
-                while (iter.hasNext())
-                {
-                    Callback callback = iter.next();
-                    if (callback instanceof PasswordCallback)
-                    {
-                        iter.remove();
-                        ManagedUser user = getUser(_username);
-                        if(user != null)
-                        {
-                            ((PasswordCallback) callback).setPassword(user.getPassword().toCharArray());
-                        }
-                        else
-                        {
-                            ((PasswordCallback) callback).setPassword(null);
-                        }
-                        break;
-                    }
-                }
-            }
-
-            for (Callback callback : callbackList)
-            {
-
-                if (callback instanceof AuthorizeCallback)
-                {
-                    ((AuthorizeCallback) callback).setAuthorized(true);
-                }
-                else
-                {
-                    throw new UnsupportedCallbackException(callback);
-                }
-            }
+            return new PlainNegotiator(this);
+        }
+        else if (CramMd5Negotiator.MECHANISM.equals(mechanism))
+        {
+            return new CramMd5Negotiator(this,
+                                         saslSettings.getLocalFQDN(),
+                                         getPasswordSource());
+        }
+        else if (ScramSHA1AuthenticationManager.MECHANISM.equals(mechanism))
+        {
+            return new ScramNegotiator(this, _scramSha1Adapter, ScramSHA1AuthenticationManager.MECHANISM);
+        }
+        else if (ScramSHA256AuthenticationManager.MECHANISM.equals(mechanism))
+        {
+            return new ScramNegotiator(this, _scramSha256Adapter, ScramSHA256AuthenticationManager.MECHANISM);
+        }
+        else
+        {
+            return null;
         }
     }
 }

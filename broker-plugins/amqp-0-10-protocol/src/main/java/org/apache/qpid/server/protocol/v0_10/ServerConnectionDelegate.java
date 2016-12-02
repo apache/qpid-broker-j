@@ -32,9 +32,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,23 +44,45 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
-import org.apache.qpid.transport.*;
+import org.apache.qpid.transport.Binary;
+import org.apache.qpid.transport.Connection;
+import org.apache.qpid.transport.ConnectionClose;
+import org.apache.qpid.transport.ConnectionCloseCode;
+import org.apache.qpid.transport.ConnectionDelegate;
+import org.apache.qpid.transport.ConnectionOpen;
+import org.apache.qpid.transport.ConnectionOpenOk;
+import org.apache.qpid.transport.ConnectionRedirect;
+import org.apache.qpid.transport.ConnectionSecureOk;
+import org.apache.qpid.transport.ConnectionStartOk;
+import org.apache.qpid.transport.ConnectionTuneOk;
+import org.apache.qpid.transport.Constant;
+import org.apache.qpid.transport.ProtocolHeader;
+import org.apache.qpid.transport.Session;
+import org.apache.qpid.transport.SessionAttach;
+import org.apache.qpid.transport.SessionDelegate;
+import org.apache.qpid.transport.SessionDetach;
+import org.apache.qpid.transport.SessionDetachCode;
+import org.apache.qpid.transport.SessionDetached;
 
-public class ServerConnectionDelegate extends ServerDelegate
+public class ServerConnectionDelegate extends ConnectionDelegate
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnectionDelegate.class);
 
+    private List<Object> _locales;
+    private List<Object> _mechanisms;
+
     private final Broker _broker;
-    private final String _localFQDN;
     private int _maxNoOfChannels;
     private Map<String,Object> _clientProperties;
     private final SubjectCreator _subjectCreator;
     private int _maximumFrameSize;
 
     private boolean _compressionSupported;
+    private volatile SaslNegotiator _saslNegotiator;
 
     enum ConnectionState
     {
@@ -79,21 +98,21 @@ public class ServerConnectionDelegate extends ServerDelegate
     private volatile SubjectAuthenticationResult _successfulAuthenticationResult;
 
 
-    public ServerConnectionDelegate(Broker<?> broker, String localFQDN, SubjectCreator subjectCreator)
+    public ServerConnectionDelegate(Broker<?> broker, SubjectCreator subjectCreator)
     {
-        this(createConnectionProperties(broker), Collections.singletonList((Object)"en_US"), broker, localFQDN, subjectCreator);
+        this(createConnectionProperties(broker), Collections.singletonList((Object)"en_US"), broker, subjectCreator);
     }
 
     private ServerConnectionDelegate(Map<String, Object> properties,
                                      List<Object> locales,
                                      Broker<?> broker,
-                                     String localFQDN,
                                      SubjectCreator subjectCreator)
     {
-        super(properties, (List) subjectCreator.getMechanisms(), locales);
+        _clientProperties = properties;
+        _mechanisms = (List) subjectCreator.getMechanisms();
+        _locales = locales;
 
         _broker = broker;
-        _localFQDN = localFQDN;
         _maxNoOfChannels = broker.getConnection_sessionCountLimit();
         _subjectCreator = subjectCreator;
         _maximumFrameSize = Math.min(0xffff, broker.getNetworkBufferSize());
@@ -120,8 +139,10 @@ public class ServerConnectionDelegate extends ServerDelegate
     @Override
     public void init(final Connection conn, final ProtocolHeader hdr)
     {
-        assertState((ServerConnection)conn, ConnectionState.INIT);
-        super.init(conn, hdr);
+        ServerConnection serverConnection = (ServerConnection) conn;
+        assertState(serverConnection, ConnectionState.INIT);
+        serverConnection.send(new ProtocolHeader(1, 0, 10));
+        serverConnection.sendConnectionStart(_clientProperties, _mechanisms, _locales);
         _state = ConnectionState.AWAIT_START_OK;
     }
 
@@ -168,27 +189,21 @@ public class ServerConnectionDelegate extends ServerDelegate
         return ssn;
     }
 
-    protected SaslServer createSaslServer(Connection conn, String mechanism) throws SaslException
-    {
-        return _subjectCreator.createSaslServer(mechanism, _localFQDN, ((ServerConnection) conn).getPeerPrincipal());
-
-    }
-
     @Override
     public void connectionSecureOk(final Connection conn, final ConnectionSecureOk ok)
     {
-        assertState((ServerConnection)conn, ConnectionState.AWAIT_SECURE_OK);
-        super.connectionSecureOk(conn, ok);
+        ServerConnection serverConnection = (ServerConnection) conn;
+        assertState(serverConnection, ConnectionState.AWAIT_SECURE_OK);
+        secure(serverConnection, ok.getResponse());
     }
 
-    protected void secure(final SaslServer ss, final Connection conn, final byte[] response)
+    protected void secure(final ServerConnection sconn, final byte[] response)
     {
-        final ServerConnection sconn = (ServerConnection) conn;
         SubjectAuthenticationResult authResult = _successfulAuthenticationResult;
         byte[] challenge = null;
         if (authResult == null)
         {
-            authResult = _subjectCreator.authenticate(ss, response);
+            authResult = _subjectCreator.authenticate(_saslNegotiator, response);
             challenge = authResult.getChallenge();
         }
 
@@ -197,19 +212,20 @@ public class ServerConnectionDelegate extends ServerDelegate
             _successfulAuthenticationResult = authResult;
             if (challenge == null || challenge.length == 0)
             {
-                tuneAuthorizedConnection(sconn);
+                sconn.sendConnectionTune(getChannelMax(), getFrameMax(), 0, getHeartbeatMax());
                 sconn.setAuthorizedSubject(authResult.getSubject());
                 _state = ConnectionState.AWAIT_TUNE_OK;
+                disposeSaslNegotiator();
             }
             else
             {
-                connectionAuthContinue(sconn, authResult.getChallenge());
+                sconn.sendConnectionSecure(authResult.getChallenge());
                 _state = ConnectionState.AWAIT_SECURE_OK;
             }
         }
         else if (AuthenticationStatus.CONTINUE.equals(authResult.getStatus()))
         {
-            connectionAuthContinue(sconn, authResult.getChallenge());
+            sconn.sendConnectionSecure(authResult.getChallenge());
             _state = ConnectionState.AWAIT_SECURE_OK;
         }
         else
@@ -348,24 +364,19 @@ public class ServerConnectionDelegate extends ServerDelegate
             sconn.getAmqpConnection().initialiseHeartbeating(writerIdle, readerIdle);
         }
 
-        setConnectionTuneOkChannelMax(sconn, okChannelMax);
-        conn.setMaxFrameSize(okMaxFrameSize);
+        //0 means no implied limit, except available server resources
+        //(or that forced by protocol limitations [0xFFFF])
+        sconn.setChannelMax(okChannelMax == 0 ? getChannelMax() : okChannelMax);
+        sconn.setMaxFrameSize(okMaxFrameSize);
         _state = ConnectionState.AWAIT_OPEN;
     }
 
-    @Override
-    public int getChannelMax()
+    private int getChannelMax()
     {
         return _maxNoOfChannels;
     }
 
-    protected void setChannelMax(int channelMax)
-    {
-        _maxNoOfChannels = channelMax;
-    }
-
-    @Override
-    protected int getFrameMax()
+    private int getFrameMax()
     {
         return _maximumFrameSize;
     }
@@ -395,17 +406,21 @@ public class ServerConnectionDelegate extends ServerDelegate
     @Override
     public void sessionAttach(final Connection conn, final SessionAttach atc)
     {
-        assertState((ServerConnection)conn, ConnectionState.OPEN);
+        ServerConnection serverConnection = (ServerConnection) conn;
+        assertState(serverConnection, ConnectionState.OPEN);
 
-        final Session ssn;
+        final ServerSession ssn = getSession(conn, atc);
 
         if(isSessionNameUnique(atc.getName(), conn))
         {
-            super.sessionAttach(conn, atc);
+
+            serverConnection.map(ssn, atc.getChannel());
+            serverConnection.registerSession(ssn);
+            ssn.sendSessionAttached(atc.getName());
+            ssn.setState(Session.State.OPEN);
         }
         else
         {
-            ssn = getSession(conn, atc);
             ssn.invoke(new SessionDetached(atc.getName(), SessionDetachCode.SESSION_BUSY));
             ssn.closed();
         }
@@ -437,7 +452,8 @@ public class ServerConnectionDelegate extends ServerDelegate
     @Override
     public void connectionStartOk(Connection conn, ConnectionStartOk ok)
     {
-        assertState((ServerConnection)conn, ConnectionState.AWAIT_START_OK);
+        ServerConnection serverConnection = (ServerConnection)conn;
+        assertState(serverConnection, ConnectionState.AWAIT_START_OK);
         _clientProperties = ok.getClientProperties();
         if(_clientProperties != null)
         {
@@ -448,13 +464,34 @@ public class ServerConnectionDelegate extends ServerDelegate
                 _compressionSupported = Boolean.parseBoolean(String.valueOf(compressionSupported));
 
             }
-            final AMQPConnection_0_10 protocolEngine = ((ServerConnection) conn).getAmqpConnection();
+            final AMQPConnection_0_10 protocolEngine = serverConnection.getAmqpConnection();
             protocolEngine.setClientId(getStringClientProperty(ConnectionStartProperties.CLIENT_ID_0_10));
             protocolEngine.setClientProduct(getStringClientProperty(ConnectionStartProperties.PRODUCT));
             protocolEngine.setClientVersion(getStringClientProperty(ConnectionStartProperties.VERSION_0_10));
             protocolEngine.setRemoteProcessPid(getStringClientProperty(ConnectionStartProperties.PID));
         }
-        super.connectionStartOk(conn, ok);
+
+
+        serverConnection.setLocale(ok.getLocale());
+        String mechanism = ok.getMechanism();
+
+        if (mechanism == null || mechanism.length() == 0)
+        {
+            serverConnection.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED,
+                                                 "No Sasl mechanism was specified");
+            return;
+        }
+
+        _saslNegotiator = _subjectCreator.createSaslNegotiator(mechanism, serverConnection.getAmqpConnection());
+        if (_saslNegotiator == null)
+        {
+            serverConnection.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED,
+                                                 "No SaslServer could be created for mechanism: " + mechanism);
+        }
+        else
+        {
+            secure(serverConnection, ok.getResponse());
+        }
     }
 
     private String getStringClientProperty(final String name)
@@ -487,15 +524,31 @@ public class ServerConnectionDelegate extends ServerDelegate
         return (_clientProperties == null || _clientProperties.get(ConnectionStartProperties.PID) == null) ? null : String.valueOf(_clientProperties.get(ConnectionStartProperties.PID));
     }
 
-    @Override
     protected int getHeartbeatMax()
     {
         int delay = (Integer)_broker.getAttribute(Broker.CONNECTION_HEART_BEAT_DELAY);
-        return delay == 0 ? super.getHeartbeatMax() : delay;
+        return delay == 0 ? 0xFFFF : delay;
     }
 
     public boolean isCompressionSupported()
     {
         return _compressionSupported && _broker.isMessageCompressionEnabled();
+    }
+
+    private void connectionAuthFailed(final Connection conn, Exception e)
+    {
+        ServerConnection serverConnection = (ServerConnection)conn;
+        if (e != null)
+        {
+            serverConnection.exception(e);
+        }
+        serverConnection.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED, e == null ? "Authentication failed" : e.getMessage());
+        disposeSaslNegotiator();
+    }
+
+    private void disposeSaslNegotiator()
+    {
+        _saslNegotiator.dispose();
+        _saslNegotiator = null;
     }
 }

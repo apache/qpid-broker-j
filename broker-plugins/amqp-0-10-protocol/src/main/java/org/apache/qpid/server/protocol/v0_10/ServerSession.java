@@ -107,6 +107,7 @@ import org.apache.qpid.transport.MessageSetFlowMode;
 import org.apache.qpid.transport.MessageStop;
 import org.apache.qpid.transport.MessageTransfer;
 import org.apache.qpid.transport.Method;
+import org.apache.qpid.transport.Option;
 import org.apache.qpid.transport.Range;
 import org.apache.qpid.transport.RangeSet;
 import org.apache.qpid.transport.RangeSetFactory;
@@ -1255,6 +1256,12 @@ public class ServerSession extends Session
     public int compareTo(AMQSessionModel o)
     {
         return getId().compareTo(o.getId());
+    }
+
+    @Override
+    protected void sendSessionAttached(final byte[] name, final Option... options)
+    {
+        super.sendSessionAttached(name, options);
     }
 
     private class CheckCapacityAction implements Action<MessageInstance>

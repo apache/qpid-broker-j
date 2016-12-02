@@ -21,6 +21,7 @@
 package org.apache.qpid.server.security.auth.manager;
 
 import static org.apache.qpid.server.security.auth.AuthenticatedPrincipalTestHelper.assertOnlyContainsWrapped;
+import static org.mockito.Mockito.mock;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,6 +34,8 @@ import javax.security.sasl.SaslServer;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.model.BrokerTestHelper;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AnonymousAuthenticationManagerTest extends QpidTestCase
@@ -64,27 +67,19 @@ public class AnonymousAuthenticationManagerTest extends QpidTestCase
         assertEquals(Collections.singletonList("ANONYMOUS"), _manager.getMechanisms());
     }
 
-    public void testCreateSaslServer() throws Exception
+    public void testCreateSaslNegotiator() throws Exception
     {
-        SaslServer server = _manager.createSaslServer("ANONYMOUS", "example.example.com", null);
+        SaslNegotiator negotiator = _manager.createSaslNegotiator("ANONYMOUS", null);
+        assertNotNull("Could not create SASL negotiator for mechanism 'ANONYMOUS'", negotiator);
 
-        assertEquals("Sasl Server mechanism name is not as expected", "ANONYMOUS", server.getMechanismName());
-
-        try
-        {
-            server = _manager.createSaslServer("PLAIN", "example.example.com", null);
-            fail("Expected creating SaslServer with incorrect mechanism to throw an exception");
-        }
-        catch (SaslException e)
-        {
-            // pass
-        }
+        negotiator = _manager.createSaslNegotiator("PLAIN", null);
+        assertNull("Should not be able to create SASL negotiator for mechanism 'PLAIN'", negotiator);
     }
 
     public void testAuthenticate() throws Exception
     {
-        SaslServer saslServer = _manager.createSaslServer("ANONYMOUS", "example.example.com", null);
-        AuthenticationResult result = _manager.authenticate(saslServer, new byte[0]);
+        SaslNegotiator negotiator = _manager.createSaslNegotiator("ANONYMOUS", null);
+        AuthenticationResult result = negotiator.handleResponse(new byte[0]);
         assertNotNull(result);
         assertEquals("Expected authentication to be successful",
                      AuthenticationResult.AuthenticationStatus.SUCCESS,

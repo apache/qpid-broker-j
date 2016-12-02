@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Collection;
@@ -84,15 +82,9 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         super(broker, network, port, transport, Protocol.AMQP_0_10, id, aggregateTicker);
 
         _connection = new ServerConnection(id, broker, port, transport, this);
-        SocketAddress address = network.getLocalAddress();
-        String fqdn = null;
 
-        if (address instanceof InetSocketAddress)
-        {
-            fqdn = ((InetSocketAddress) address).getHostName();
-        }
         SubjectCreator subjectCreator = port.getAuthenticationProvider().getSubjectCreator(transport.isSecure());
-        ConnectionDelegate connDelegate = new ServerConnectionDelegate(broker, fqdn, subjectCreator);
+        ConnectionDelegate connDelegate = new ServerConnectionDelegate(broker, subjectCreator);
 
         _connection.setConnectionDelegate(connDelegate);
         _connection.setRemoteAddress(network.getRemoteAddress());

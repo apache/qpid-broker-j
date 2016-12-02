@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -7,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -18,14 +17,20 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.security.auth.sasl.plain;
 
-import org.apache.qpid.server.security.auth.sasl.UsernamePasswordInitialiser;
+package org.apache.qpid.server.security.auth.sasl.crammd5;
 
-public class PlainInitialiser extends UsernamePasswordInitialiser
+import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
+import org.apache.qpid.server.security.auth.sasl.PasswordSource;
+
+public class CramMd5HashedNegotiator extends AbstractCramMd5Negotiator
 {
-    public String getMechanismName()
+    public static final String MECHANISM = "CRAM-MD5-HASHED";
+
+    public CramMd5HashedNegotiator(final PasswordCredentialManagingAuthenticationProvider<?> authenticationProvider,
+                                   final String localFQDN,
+                                   final PasswordSource passwordSource)
     {
-        return "PLAIN";
+        super(authenticationProvider, localFQDN, passwordSource, PLAIN_PASSWORD_TRANSFORMER);
     }
 }

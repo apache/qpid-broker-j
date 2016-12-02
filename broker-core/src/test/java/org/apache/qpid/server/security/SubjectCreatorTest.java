@@ -28,7 +28,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.security.auth.Subject;
-import javax.security.sasl.SaslServer;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.GroupProvider;
@@ -37,6 +36,7 @@ import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class SubjectCreatorTest extends QpidTestCase
@@ -54,7 +54,7 @@ public class SubjectCreatorTest extends QpidTestCase
 
     private SubjectCreator _subjectCreator;
     private AuthenticationResult _authenticationResult;
-    private SaslServer _testSaslServer = mock(SaslServer.class);
+    private SaslNegotiator _testSaslNegotiator = mock(SaslNegotiator.class);
     private byte[] _saslResponseBytes = PASSWORD.getBytes();
 
     @Override
@@ -70,11 +70,9 @@ public class SubjectCreatorTest extends QpidTestCase
 
     public void testSaslAuthenticationSuccessReturnsSubjectWithUserAndGroupPrincipals() throws Exception
     {
-        when(_authenticationProvider.authenticate(_testSaslServer, _saslResponseBytes)).thenReturn(_authenticationResult);
-        when(_testSaslServer.isComplete()).thenReturn(true);
-        when(_testSaslServer.getAuthorizationID()).thenReturn(USERNAME_PRINCIPAL.getName());
+        when(_testSaslNegotiator.handleResponse(_saslResponseBytes)).thenReturn(_authenticationResult);
 
-        SubjectAuthenticationResult result = _subjectCreator.authenticate(_testSaslServer, _saslResponseBytes);
+        SubjectAuthenticationResult result = _subjectCreator.authenticate(_testSaslNegotiator, _saslResponseBytes);
 
         final Subject actualSubject = result.getSubject();
         assertEquals("Should contain one user principal and two groups ", 3, actualSubject.getPrincipals().size());
@@ -96,11 +94,9 @@ public class SubjectCreatorTest extends QpidTestCase
     {
         AuthenticationResult failedAuthenticationResult = new AuthenticationResult(expectedStatus);
 
-        when(_authenticationProvider.authenticate(_testSaslServer, _saslResponseBytes)).thenReturn(
-                failedAuthenticationResult);
-        when(_testSaslServer.isComplete()).thenReturn(false);
+        when(_testSaslNegotiator.handleResponse(_saslResponseBytes)).thenReturn(failedAuthenticationResult);
 
-        SubjectAuthenticationResult subjectAuthenticationResult = _subjectCreator.authenticate(_testSaslServer, _saslResponseBytes);
+        SubjectAuthenticationResult subjectAuthenticationResult = _subjectCreator.authenticate(_testSaslNegotiator, _saslResponseBytes);
 
         assertSame(expectedStatus, subjectAuthenticationResult.getStatus());
         assertNull(subjectAuthenticationResult.getSubject());

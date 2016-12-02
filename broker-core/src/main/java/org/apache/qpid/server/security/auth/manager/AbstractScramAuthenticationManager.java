@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.Principal;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,7 +33,6 @@ import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
 import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.util.concurrent.ListenableFuture;
@@ -47,8 +45,10 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
-import org.apache.qpid.server.security.auth.sasl.plain.PlainAdapterSaslServer;
-import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServer;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
+import org.apache.qpid.server.security.auth.sasl.plain.PlainNegotiator;
+import org.apache.qpid.server.security.auth.sasl.scram.ScramNegotiator;
 import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServerSource;
 import org.apache.qpid.util.Strings;
 
@@ -93,26 +93,21 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
     protected abstract String getMechanismName();
 
     @Override
-    public SaslServer createSaslServer(final String mechanism,
-                                       final String localFQDN,
-                                       final Principal externalPrincipal)
-            throws SaslException
+    public SaslNegotiator createSaslNegotiator(String mechanism, final SaslSettings saslSettings)
     {
         if(getMechanismName().equals(mechanism))
         {
-            return new ScramSaslServer(this, getMechanismName(), getHmacName(), getDigestName());
+            return new ScramNegotiator(this, this, getMechanismName());
         }
         else if(PLAIN.equals(mechanism))
         {
-            return new PlainAdapterSaslServer(this);
+            return new PlainNegotiator(this);
         }
         else
         {
-            throw new SaslException("Unknown mechanism: " + mechanism);
+            return null;
         }
     }
-
-    protected abstract String getDigestName();
 
     @Override
     public AuthenticationResult authenticate(final String username, final String password)
@@ -254,8 +249,6 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
             throw new IllegalArgumentException(e.getMessage(), e);
         }
     }
-
-    protected abstract String getHmacName();
 
     @Override
     protected String createStoredPassword(final String password)

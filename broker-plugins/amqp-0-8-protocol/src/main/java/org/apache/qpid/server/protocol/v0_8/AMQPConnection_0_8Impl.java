@@ -24,11 +24,8 @@ import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.security.AccessControlException;
 import java.security.AccessController;
-import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,9 +40,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
-
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +67,7 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
@@ -122,7 +117,7 @@ public class AMQPConnection_0_8Impl
 
     private final ServerDecoder _decoder;
 
-    private volatile SaslServer _saslServer;
+    private volatile SaslNegotiator _saslNegotiator;
 
     private volatile long _maxNoOfChannels;
 
@@ -583,29 +578,6 @@ public class AMQPConnection_0_8Impl
         getNetwork().close();
     }
 
-    private String getLocalFQDN()
-    {
-        SocketAddress address = getNetwork().getLocalAddress();
-        if (address instanceof InetSocketAddress)
-        {
-            return ((InetSocketAddress) address).getHostName();
-        }
-        else
-        {
-            throw new IllegalArgumentException("Unsupported socket address class: " + address);
-        }
-    }
-
-    private SaslServer getSaslServer()
-    {
-        return _saslServer;
-    }
-
-    private void setSaslServer(SaslServer saslServer)
-    {
-        _saslServer = saslServer;
-    }
-
     public boolean isSendQueueDeleteOkRegardless()
     {
         return _sendQueueDeleteOkRegardless;
@@ -689,11 +661,6 @@ public class AMQPConnection_0_8Impl
     public ProtocolOutputConverter getProtocolOutputConverter()
     {
         return _protocolOutputConverter;
-    }
-
-    public Principal getPeerPrincipal()
-    {
-        return getNetwork().getPeerPrincipal();
     }
 
     public MethodRegistry getMethodRegistry()
@@ -1080,33 +1047,14 @@ public class AMQPConnection_0_8Impl
 
         assertState(ConnectionState.AWAIT_SECURE_OK);
 
-        SubjectCreator subjectCreator = getSubjectCreator();
-
-        SaslServer ss = getSaslServer();
-        if (ss == null)
-        {
-            sendConnectionClose(ErrorCodes.INTERNAL_ERROR, "No SASL context set up in connection", 0);
-        }
-
-        processSaslResponse(response, subjectCreator, ss);
+        processSaslResponse(response, getSubjectCreator());
     }
 
 
-    private void disposeSaslServer()
+    private void disposeSaslNegotiator()
     {
-        SaslServer ss = getSaslServer();
-        if (ss != null)
-        {
-            setSaslServer(null);
-            try
-            {
-                ss.dispose();
-            }
-            catch (SaslException e)
-            {
-                _logger.error("Error disposing of Sasl server: " + e);
-            }
-        }
+        _saslNegotiator.dispose();
+        _saslNegotiator = null;
     }
 
     @Override
@@ -1132,46 +1080,33 @@ public class AMQPConnection_0_8Impl
 
         _logger.debug("SASL Mechanism selected: {} Locale : {}", mechanism, locale);
 
-        SubjectCreator subjectCreator = getSubjectCreator();
-        SaslServer ss;
-        try
+        if (mechanism == null || mechanism.length() == 0)
         {
-            ss = subjectCreator.createSaslServer(String.valueOf(mechanism),
-                                                 getLocalFQDN(),
-                                                 getPeerPrincipal());
-
-            if (ss == null)
-            {
-                sendConnectionClose(ErrorCodes.RESOURCE_ERROR, "Unable to create SASL Server:" + mechanism, 0);
-
-            }
-            else
-            {
-                //save clientProperties
-                setClientProperties(clientProperties);
-
-                setSaslServer(ss);
-
-                processSaslResponse(response, subjectCreator, ss);
-            }
+            sendConnectionClose(ErrorCodes.CONNECTION_FORCED, "No Sasl mechanism was specified", 0);
+            return;
         }
-        catch (SaslException e)
+
+        SubjectCreator subjectCreator = getSubjectCreator();
+        _saslNegotiator = subjectCreator.createSaslNegotiator(String.valueOf(mechanism), this);
+        if (_saslNegotiator == null)
         {
-            disposeSaslServer();
-            sendConnectionClose(ErrorCodes.INTERNAL_ERROR, "SASL error: " + e, 0);
+            sendConnectionClose(ErrorCodes.CONNECTION_FORCED, "No SaslServer could be created for mechanism: " + mechanism, 0);
+        }
+        else
+        {
+            setClientProperties(clientProperties);
+            processSaslResponse(response, subjectCreator);
         }
     }
 
-    private void processSaslResponse(final byte[] response,
-                                     final SubjectCreator subjectCreator,
-                                     final SaslServer ss)
+    private void processSaslResponse(final byte[] response, final SubjectCreator subjectCreator)
     {
         MethodRegistry methodRegistry = getMethodRegistry();
         SubjectAuthenticationResult authResult = _successfulAuthenticationResult;
         byte[] challenge = null;
         if (authResult == null)
         {
-            authResult = subjectCreator.authenticate(ss, response);
+            authResult = subjectCreator.authenticate(_saslNegotiator, response);
             challenge = authResult.getChallenge();
         }
 
@@ -1184,7 +1119,7 @@ public class AMQPConnection_0_8Impl
 
                 sendConnectionClose(ErrorCodes.NOT_ALLOWED, "Authentication failed", 0);
 
-                disposeSaslServer();
+                disposeSaslNegotiator();
                 break;
 
             case SUCCESS:
@@ -1209,7 +1144,7 @@ public class AMQPConnection_0_8Impl
                                                                     broker.getConnection_heartBeatDelay());
                     writeFrame(tuneBody.generateFrame(0));
                     _state = ConnectionState.AWAIT_TUNE_OK;
-                    disposeSaslServer();
+                    disposeSaslNegotiator();
                 }
                 else
                 {

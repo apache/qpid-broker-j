@@ -27,10 +27,10 @@ import java.util.List;
 
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.login.AccountNotFoundException;
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
 
-import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 
 /** Represents a "user database" which is really a way of storing principals (i.e. usernames) and passwords. */
 public interface PrincipalDatabase
@@ -109,7 +109,8 @@ public interface PrincipalDatabase
      */
     public List<String> getMechanisms();
 
-    public SaslServer createSaslServer(String mechanism, String localFQDN, Principal externalPrincipal) throws SaslException;
+    SaslNegotiator createSaslNegotiator(String mechanism, SaslSettings saslSettings);
 
-    AuthenticationProvider<?> getAuthenticationProvider();
+    PasswordCredentialManagingAuthenticationProvider<?> getAuthenticationProvider();
+
 }

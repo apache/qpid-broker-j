@@ -21,6 +21,7 @@
 package org.apache.qpid.systest.rest;
 
 import static org.apache.qpid.server.security.auth.sasl.SaslUtil.generateCramMD5ClientResponse;
+import static org.apache.qpid.server.security.auth.sasl.SaslUtil.generateCramMD5HashedClientResponse;
 import static org.apache.qpid.server.security.auth.sasl.SaslUtil.generateCramMD5HexClientResponse;
 import static org.apache.qpid.server.security.auth.sasl.SaslUtil.generatePlainClientResponse;
 
@@ -291,6 +292,45 @@ public class SaslRestTest extends QpidRestTestCase
         assertEquals("Unexpected response", HttpServletResponse.SC_EXPECTATION_FAILED, responseCode);
     }
 
+    public void testCramMD5HashedSaslAuthenticationForValidCredentials() throws Exception
+    {
+        configureBase64MD5FilePrincipalDatabase();
+        startBrokerNow();
+
+        // request the challenge for CRAM-MD5-HASHED
+        HttpURLConnection connection = requestSasServerChallenge("CRAM-MD5-HASHED");
+        List<String> cookies = connection.getHeaderFields().get("Set-Cookie");
+
+        // authenticate user with correct credentials
+        int code = authenticateUser(connection, "admin", "admin", "CRAM-MD5-HASHED");
+        assertEquals("Unexpected response code", 200, code);
+
+        // request authenticated user details
+        connection = getRestTestHelper().openManagementConnection("/service/sasl", "GET");
+        applyCookiesToConnection(cookies, connection);
+        Map<String, Object> response2 = getRestTestHelper().readJsonResponseAsMap(connection);
+        assertEquals("Unexpected user", "admin", response2.get("user"));
+    }
+
+    public void testCramMD5HashedSaslAuthenticationForInvalidPassword() throws Exception
+    {
+        configureBase64MD5FilePrincipalDatabase();
+        startBrokerNow();
+
+        HttpURLConnection connection = requestSasServerChallenge("CRAM-MD5-HASHED");
+        List<String> cookies = connection.getHeaderFields().get("Set-Cookie");
+
+        // try to authenticate user with incorrect passowrd
+        int code = authenticateUser(connection, "admin", "incorrect", "CRAM-MD5-HASHED");
+        assertEquals("Unexpected response code", 401, code);
+
+        // request authenticated user details
+        connection = getRestTestHelper().openManagementConnection("/service/sasl", "GET");
+        applyCookiesToConnection(cookies, connection);
+        Map<String, Object> response2 = getRestTestHelper().readJsonResponseAsMap(connection);
+        assertNull("Unexpected user", response2.get("user"));
+    }
+
     private HttpURLConnection requestSasServerChallenge(String mechanism) throws IOException
     {
         HttpURLConnection connection = getRestTestHelper().openManagementConnection("/service/sasl", "POST");
@@ -338,6 +378,10 @@ public class SaslRestTest extends QpidRestTestCase
         else if ("CRAM-MD5".equalsIgnoreCase(mechanism))
         {
             responseBytes = generateCramMD5ClientResponse(userName, userPassword, challengeBytes);
+        }
+        else if ("CRAM-MD5-HASHED".equalsIgnoreCase(mechanism))
+        {
+            responseBytes = generateCramMD5HashedClientResponse(userName, userPassword, challengeBytes);
         }
         else
         {

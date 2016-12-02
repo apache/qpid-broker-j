@@ -29,7 +29,6 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 
 import javax.security.auth.Subject;
-import javax.security.sasl.SaslServer;
 
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.FieldTable;
@@ -56,6 +55,8 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
+import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
+import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
@@ -131,11 +132,10 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         SubjectCreator subjectCreator = mock(SubjectCreator.class);
 
         when(subjectCreator.getMechanisms()).thenReturn(Collections.singletonList(SASL_MECH.toString()));
-        SaslServer saslServer = mock(SaslServer.class);
-        when(subjectCreator.createSaslServer(SASL_MECH.toString(),
-                                             "localhost",
-                                             null)).thenReturn(saslServer);
-        when(subjectCreator.authenticate(saslServer, SASL_RESPONSE)).thenReturn(new SubjectAuthenticationResult(
+
+        SaslNegotiator saslNegotiator = mock(SaslNegotiator.class);
+        when(subjectCreator.createSaslNegotiator(eq(SASL_MECH.toString()), any(SaslSettings.class))).thenReturn(saslNegotiator);
+        when(subjectCreator.authenticate(saslNegotiator, SASL_RESPONSE)).thenReturn(new SubjectAuthenticationResult(
                 new AuthenticationResult(new AuthenticatedPrincipal(new UsernamePrincipal("username", null))), new Subject()));
 
         AuthenticationProvider authenticationProvider = mock(AuthenticationProvider.class);

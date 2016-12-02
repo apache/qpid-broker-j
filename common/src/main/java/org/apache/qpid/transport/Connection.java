@@ -166,7 +166,7 @@ public class Connection extends ConnectionInvoker
         }
     }
 
-    void setLocale(String locale)
+    protected void setLocale(String locale)
     {
         this.locale = locale;
     }
@@ -466,7 +466,7 @@ public class Connection extends ConnectionInvoker
         return channelMax;
     }
 
-    void setChannelMax(int max)
+    protected void setChannelMax(int max)
     {
         channelMax = max;
     }
@@ -489,7 +489,7 @@ public class Connection extends ConnectionInvoker
         }
     }
 
-    void map(Session ssn, int channel)
+    protected void map(Session ssn, int channel)
     {
         synchronized (lock)
         {
@@ -873,6 +873,23 @@ public class Connection extends ConnectionInvoker
         {
             return state == CLOSING || state == CLOSED;
         }
+    }
+
+    protected void sendConnectionSecure(byte[] challenge, Option ... options)
+    {
+        super.connectionSecure(challenge, options);
+    }
+
+    protected void sendConnectionTune(int channelMax, int maxFrameSize, int heartbeatMin, int heartbeatMax, Option ... options)
+    {
+        super.connectionTune(channelMax, maxFrameSize, heartbeatMin, heartbeatMax, options);
+    }
+
+    protected void sendConnectionStart(final Map<String, Object> clientProperties,
+                                       final List<Object> mechanisms,
+                                       final List<Object> locales, final Option... options)
+    {
+        super.connectionStart(clientProperties, mechanisms, locales, options);
     }
 
 }
