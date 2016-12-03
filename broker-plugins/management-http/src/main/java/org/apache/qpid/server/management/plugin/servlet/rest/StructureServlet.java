@@ -27,8 +27,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObjectFinder;
 
 public class StructureServlet extends AbstractServlet
 {
@@ -40,23 +40,26 @@ public class StructureServlet extends AbstractServlet
     }
 
     @Override
-    protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    protected void doGetWithSubjectAndActor(HttpServletRequest request,
+                                            HttpServletResponse response,
+                                            final ConfiguredObject<?> managedObject) throws IOException, ServletException
     {
 
         // TODO filtering??? request.getParameter("filter"); // filter=1,2,3   /groups/*/*
 
-        Map<String,Object> structure = generateStructure(getBroker(), Broker.class);
+        Map<String,Object> structure = generateStructure(managedObject, managedObject.getCategoryClass(), true);
 
         sendJsonResponse(structure, request, response);
 
     }
 
-    private Map<String, Object> generateStructure(ConfiguredObject object, Class<? extends ConfiguredObject> clazz)
+    private Map<String, Object> generateStructure(ConfiguredObject object,
+                                                  Class<? extends ConfiguredObject> clazz,
+                                                  final boolean includeAssociated)
     {
         Map<String, Object> structure = new LinkedHashMap<String, Object>();
         structure.put("id", object.getId());
         structure.put("name", object.getName());
-
         for(Class<? extends ConfiguredObject> childClass : object.getModel().getChildTypes(clazz))
         {
             Collection<? extends ConfiguredObject> children = object.getChildren(childClass);
@@ -66,12 +69,35 @@ public class StructureServlet extends AbstractServlet
 
                 for(ConfiguredObject child : children)
                 {
-                    childObjects.add(generateStructure(child, childClass));
+                    childObjects.add(generateStructure(child, childClass, false));
                 }
 
                 if(!childObjects.isEmpty())
                 {
                     structure.put(pluralize(childClass),childObjects);
+                }
+            }
+        }
+        if(includeAssociated)
+        {
+
+            ConfiguredObjectFinder finder = getConfiguredObjectFinder(object);
+            for(Class<? extends ConfiguredObject> childClass : finder.getAssociatedChildCategories())
+            {
+                Collection<? extends ConfiguredObject> children = finder.getAssociatedChildren(childClass);
+                if(children != null)
+                {
+                    List<Map<String, Object>> childObjects = new ArrayList<Map<String, Object>>();
+
+                    for(ConfiguredObject child : children)
+                    {
+                        childObjects.add(generateStructure(child, childClass, false));
+                    }
+
+                    if(!childObjects.isEmpty())
+                    {
+                        structure.put(pluralize(childClass),childObjects);
+                    }
                 }
             }
         }

@@ -346,7 +346,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             root.addFilter(RewriteRequestForUncompressedJavascript.class, "/dojo/dojox/*", EnumSet.of(DispatcherType.REQUEST));
         }
 
-        addRestServlet(root, Broker.class);
+        addRestServlet(root);
 
         ServletHolder queryServlet = new ServletHolder(new BrokerQueryServlet());
         root.addServlet(queryServlet, "/api/latest/querybroker/*");
@@ -357,7 +357,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.addServlet(vhQueryServlet, "/api/v" + BrokerModel.MODEL_VERSION + "/queryvhost/*");
 
 
-        ServletHolder apiDocsServlet = new ServletHolder(new ApiDocsServlet(getModel()));
+        ServletHolder apiDocsServlet = new ServletHolder(new ApiDocsServlet());
         final ServletHolder rewriteSerlvet = new ServletHolder(new RewriteServlet("^(.*)$", "$1/"));
         for(String path : new String[]{"/apidocs", "/apidocs/latest", "/apidocs/"+getLatestSupportedVersion()})
         {
@@ -368,7 +368,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.addServlet(new ServletHolder(new StructureServlet()), "/service/structure");
         root.addServlet(new ServletHolder(new QueueReportServlet()), "/service/queuereport/*");
 
-        root.addServlet(new ServletHolder(new MetaDataServlet(getModel())), "/service/metadata");
+        root.addServlet(new ServletHolder(new MetaDataServlet()), "/service/metadata");
 
         root.addServlet(new ServletHolder(new SaslServlet()), "/service/sasl");
 
@@ -635,55 +635,36 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         return connector;
     }
 
-    private void addRestServlet(ServletContextHandler root, final Class<? extends ConfiguredObject> rootClass)
+    private void addRestServlet(ServletContextHandler root)
     {
-        Set<Class<? extends ConfiguredObject>> categories = new HashSet<>(getModel().getDescendantCategories(rootClass));
-        categories.add(rootClass);
-        for(Class<? extends ConfiguredObject> category : categories)
+        Set<Class<? extends ConfiguredObject>> categories = new HashSet<>(getModel().getSupportedCategories());
+        final RestServlet restServlet = new RestServlet();
+        final ApiDocsServlet apiDocsServlet = new ApiDocsServlet();
+
+        for (Class<? extends ConfiguredObject> category : categories)
         {
-                String name = category.getSimpleName().toLowerCase();
-                List<Class<? extends ConfiguredObject>> hierarchyList = new ArrayList<>();
+            String name = category.getSimpleName().toLowerCase();
 
-                if(category != rootClass)
-                {
-                    Collection<Class<? extends ConfiguredObject>> parentCategories;
+            ServletHolder servletHolder = new ServletHolder(name, restServlet);
+            servletHolder.getRegistration().setMultipartConfig(
+                    new MultipartConfigElement("",
+                                               getContextValue(Long.class, MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME),
+                                               -1l,
+                                               getContextValue(Integer.class,
+                                                               MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME)));
 
-                    hierarchyList.add(category);
+            List<String> paths = Arrays.asList("/api/latest/" + name,
+                                               "/api/v" + BrokerModel.MODEL_VERSION + "/" + name);
 
-                    while (!(parentCategories = getModel().getParentTypes(category)).contains(rootClass))
-                    {
-                        hierarchyList.addAll(parentCategories);
-                        category = parentCategories.iterator().next();
-                    }
-
-                    Collections.reverse(hierarchyList);
-
-                }
-                Class<? extends ConfiguredObject>[] hierarchyArray =
-                        hierarchyList.toArray(new Class[hierarchyList.size()]);
-
-                ServletHolder servletHolder = new ServletHolder(name, new RestServlet(hierarchyArray));
-                servletHolder.getRegistration().setMultipartConfig(
-                        new MultipartConfigElement("",
-                                                   getContextValue(Long.class, MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME),
-                                                   -1l,
-                                                   getContextValue(Integer.class,
-                                                                   MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME)));
-
-                List<String> paths = Arrays.asList("/api/latest/" + name,
-                                                   "/api/v" + BrokerModel.MODEL_VERSION + "/" + name);
-
-                for (String path : paths)
-                {
-                    root.addServlet(servletHolder, path + "/*");
-                }
-                ServletHolder docServletHolder = new ServletHolder(name + "docs", new ApiDocsServlet(getModel(),
-                                                                                                     paths,
-                                                                                                     hierarchyArray));
-                root.addServlet(docServletHolder, "/apidocs/latest/" + name + "/");
-                root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_VERSION + "/" + name + "/");
-                root.addServlet(docServletHolder, "/apidocs/latest/" + name);
-                root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_VERSION + "/" + name);
+            for (String path : paths)
+            {
+                root.addServlet(servletHolder, path + "/*");
+            }
+            ServletHolder docServletHolder = new ServletHolder(name + "docs", apiDocsServlet);
+            root.addServlet(docServletHolder, "/apidocs/latest/" + name + "/");
+            root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_VERSION + "/" + name + "/");
+            root.addServlet(docServletHolder, "/apidocs/latest/" + name);
+            root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_VERSION + "/" + name);
 
 
         }

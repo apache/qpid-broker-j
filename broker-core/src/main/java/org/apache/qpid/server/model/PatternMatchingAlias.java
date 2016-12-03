@@ -31,6 +31,6 @@ public interface PatternMatchingAlias<X extends PatternMatchingAlias<X>> extends
     @ManagedAttribute( defaultValue = "200" )
     int getPriority();
 
-    @ManagedAttribute( mandatory = true)
+    @ManagedAttribute( defaultValue = ".*")
     public String getPattern();
 }

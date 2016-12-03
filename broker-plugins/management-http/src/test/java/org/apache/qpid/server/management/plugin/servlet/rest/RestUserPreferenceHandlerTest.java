@@ -38,21 +38,17 @@ import java.util.UUID;
 import javax.security.auth.Subject;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.model.preferences.GenericPrincipal;
 import org.apache.qpid.server.model.preferences.Preference;
 import org.apache.qpid.server.model.preferences.PreferenceFactory;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.model.preferences.UserPreferencesImpl;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
-import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
-import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.group.GroupPrincipal;
 import org.apache.qpid.server.store.preferences.PreferenceStore;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -104,7 +100,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
 
         final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
                                                                                  Arrays.asList("X-testtype",
-                                                                                               "myprefname"));
+                                                                                               "myprefname")
+                                                                                );
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
@@ -135,7 +132,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
 
         final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
                                                                                  Arrays.asList("X-testtype",
-                                                                                               "myprefname"));
+                                                                                               "myprefname")
+                                                                                );
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
@@ -165,8 +163,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
     {
         final String prefName = "myprefname";
         final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                 Arrays.asList("X-testtype",
-                                                                                               prefName));
+                                                                                 Arrays.asList("X-testtype", prefName)
+                                                                                );
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
@@ -192,8 +190,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
     {
         final String prefName = "myprefname";
         final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                 Arrays.asList("X-testtype",
-                                                                                               prefName));
+                                                                                 Arrays.asList("X-testtype", prefName)
+                                                                                );
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
@@ -266,7 +264,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
     {
         final String prefName = "myprefname";
         final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                 Arrays.asList("X-testtype"));
+                                                                                 Arrays.asList("X-testtype")
+                                                                                );
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.NAME_ATTRIBUTE, prefName);
@@ -329,7 +328,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
         final String pref2Type = "X-testtype2";
 
         final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                 Collections.<String>emptyList());
+                                                                                 Collections.<String>emptyList()
+                                                                                );
 
         final Map<String, Object> pref1 = new HashMap<>();
         pref1.put(Preference.NAME_ATTRIBUTE, pref1Name);
@@ -390,7 +390,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
     public void testPostToTypeWithVisibilityList_ValidGroup() throws Exception
     {
         final RequestInfo typeRequestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                     Arrays.asList("X-testtype"));
+                                                                                     Arrays.asList("X-testtype")
+                                                                                    );
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.NAME_ATTRIBUTE, "testPref");
@@ -420,7 +421,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
     public void testPostToRootWithVisibilityList_ValidGroup() throws Exception
     {
         final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                     Collections.<String>emptyList());
+                                                                                     Collections.<String>emptyList()
+                                                                                    );
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.NAME_ATTRIBUTE, "testPref");
         pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
@@ -452,7 +454,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
     public void testPostToTypeWithVisibilityList_InvalidGroup() throws Exception
     {
         final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                 Arrays.asList("X-testtype"));
+                                                                                 Arrays.asList("X-testtype")
+                                                                                );
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.NAME_ATTRIBUTE, "testPref");
@@ -483,7 +486,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
     public void testPostToRootWithVisibilityList_InvalidGroup() throws Exception
     {
         final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                 Collections.<String>emptyList());
+                                                                                 Collections.<String>emptyList()
+                                                                                );
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.NAME_ATTRIBUTE, "testPref");
@@ -515,7 +519,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
     public void testGetHasCorrectVisibilityList() throws Exception
     {
         final RequestInfo rootRequestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                     Collections.<String>emptyList());
+                                                                                     Collections.<String>emptyList()
+                                                                                    );
         final String type = "X-testtype";
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
@@ -587,7 +592,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
                                                                               Collections.<String>emptyList(),
                                                                               Collections.singletonMap("id",
-                                                                                                       Collections.singletonList(id.toString())));
+                                                                                                       Collections.singletonList(id.toString()))
+                                                                             );
 
                              Map<String, List<Map<String, Object>>> typeToPreferenceListMap =
                                      (Map<String, List<Map<String, Object>>>) _handler.handleGET(_userPreferences, rootRequestInfo);
@@ -639,7 +645,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
                                      RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
                                                                               Collections.<String>emptyList(),
                                                                               Collections.singletonMap("id",
-                                                                                                       Collections.singletonList(id.toString())));
+                                                                                                       Collections.singletonList(id.toString()))
+                                                                             );
 
                              _handler.handleDELETE(_userPreferences, rootRequestInfo);
 
@@ -658,7 +665,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
         final String preferenceName = "myprefname";
         final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
                                                                                  Arrays.asList(preferenceType,
-                                                                                               preferenceName));
+                                                                                               preferenceName)
+                                                                                );
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
@@ -671,7 +679,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
         final String preferenceType = "X-testtype";
         final String preferenceName = "myprefname";
         final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                 Arrays.asList(preferenceType));
+                                                                                 Arrays.asList(preferenceType)
+                                                                                );
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
@@ -684,7 +693,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
         final String preferenceType = "X-testtype";
         final String preferenceName = "myprefname";
         final RequestInfo requestInfo = RequestInfo.createPreferencesRequestInfo(Collections.<String>emptyList(),
-                                                                                 Collections.<String>emptyList());
+                                                                                 Collections.<String>emptyList()
+                                                                                );
 
         final Map<String, Object> pref = new HashMap<>();
         pref.put(Preference.VALUE_ATTRIBUTE, Collections.emptyMap());
@@ -699,7 +709,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
         final RequestInfo rootRequestInfo =
                 RequestInfo.createVisiblePreferencesRequestInfo(Collections.<String>emptyList(),
                                                                 Collections.<String>emptyList(),
-                                                                Collections.<String, List<String>>emptyMap());
+                                                                Collections.<String, List<String>>emptyMap()
+                                                               );
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
                      {
@@ -772,7 +783,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
         final RequestInfo rootRequestInfo =
                 RequestInfo.createVisiblePreferencesRequestInfo(Collections.<String>emptyList(),
                                                                 Arrays.asList(prefType),
-                                                                Collections.<String, List<String>>emptyMap());
+                                                                Collections.<String, List<String>>emptyMap()
+                                                               );
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
                      {
@@ -842,7 +854,8 @@ public class RestUserPreferenceHandlerTest extends QpidTestCase
         final RequestInfo rootRequestInfo =
                 RequestInfo.createVisiblePreferencesRequestInfo(Collections.<String>emptyList(),
                                                                 Arrays.asList(prefType, prefName),
-                                                                Collections.<String, List<String>>emptyMap());
+                                                                Collections.<String, List<String>>emptyMap()
+                                                               );
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
                      {

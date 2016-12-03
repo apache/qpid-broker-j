@@ -92,4 +92,5 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
 
     ListenableFuture<Void> startAsync();
 
+    NamedAddressSpace getAddressSpace(String name);
 }

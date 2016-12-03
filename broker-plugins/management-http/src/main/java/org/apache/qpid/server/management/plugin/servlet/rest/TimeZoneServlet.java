@@ -30,6 +30,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.qpid.server.model.ConfiguredObject;
+
 public class TimeZoneServlet extends AbstractServlet
 {
     private static final long serialVersionUID = 1L;
@@ -43,8 +45,10 @@ public class TimeZoneServlet extends AbstractServlet
     }
 
     @Override
-    protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws ServletException,
-            IOException
+    protected void doGetWithSubjectAndActor(HttpServletRequest request,
+                                            HttpServletResponse response,
+                                            final ConfiguredObject<?> managedObject) throws ServletException,
+                                                                                            IOException
     {
         sendJsonResponse(getTimeZones(), request, response);
     }

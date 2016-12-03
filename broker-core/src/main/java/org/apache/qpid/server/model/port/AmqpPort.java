@@ -143,8 +143,6 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
                                     + " the connection will be aborted.")
     long getProtocolHandshakeTimeout();
 
-    NamedAddressSpace getAddressSpace(String name);
-
     boolean canAcceptNewConnection(final SocketAddress remoteSocketAddress);
 
     int incrementConnectionCount();

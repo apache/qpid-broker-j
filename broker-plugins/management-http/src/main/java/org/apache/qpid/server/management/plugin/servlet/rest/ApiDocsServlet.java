@@ -19,6 +19,8 @@ package org.apache.qpid.server.management.plugin.servlet.rest;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -27,9 +29,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
+import org.apache.qpid.server.model.ConfiguredObjectFinder;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.ConfiguredSettableAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
@@ -42,10 +44,6 @@ public class ApiDocsServlet extends AbstractServlet
     private static final long serialVersionUID = 1L;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ApiDocsServlet.class);
-    private final Model _model;
-    private final List<Class<? extends ConfiguredObject>> _types;
-
-    private Class<? extends ConfiguredObject>[] _hierarchy;
 
     private static final Set<Character> VOWELS = new HashSet<>(Arrays.asList('a','e','i','o','u'));
 
@@ -60,36 +58,53 @@ public class ApiDocsServlet extends AbstractServlet
                 }
 
             };
-    private static final Map<Class<? extends ConfiguredObject>, List<String>> REGISTERED_CLASSES = new TreeMap<>(CLASS_COMPARATOR);
 
+    private transient final ConcurrentMap<Class<? extends ConfiguredObject>, List<Class<? extends ConfiguredObject>>> _typeSpecialisations = new ConcurrentHashMap<>();
 
-    public ApiDocsServlet(final Model model)
+    public ApiDocsServlet()
     {
         super();
-        _model = model;
-        _hierarchy = null;
-        _types = null;
-    }
-
-    public ApiDocsServlet(final Model model, final List<String> registeredPaths, Class<? extends ConfiguredObject>... hierarchy)
-    {
-        super();
-        _model = model;
-        _hierarchy = hierarchy;
-        _types = new ArrayList<>(_model.getTypeRegistry().getTypeSpecialisations(getConfiguredClass()));
-        Collections.sort(_types, CLASS_COMPARATOR);
-        List<String> paths = REGISTERED_CLASSES.get(getConfiguredClass());
-        if (paths == null)
-        {
-            paths = new ArrayList<>();
-            REGISTERED_CLASSES.put(getConfiguredClass(), paths);
-        }
-        paths.addAll(registeredPaths);
     }
 
     @Override
-    protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doGetWithSubjectAndActor(HttpServletRequest request,
+                                            HttpServletResponse response,
+                                            final ConfiguredObject<?> managedObject) throws ServletException, IOException
     {
+        ConfiguredObjectFinder finder = getConfiguredObjectFinder(managedObject);
+
+        final Class<? extends ConfiguredObject> configuredClass;
+
+        final Class<? extends ConfiguredObject>[] hierarchy;
+
+        final String[] servletPathParts = request.getServletPath().split("/");
+        final Model model = managedObject.getModel();
+        if(servletPathParts.length < 4)
+        {
+            configuredClass = null;
+            hierarchy = null;
+        }
+        else
+        {
+            configuredClass = getConfiguredClass(request, managedObject);
+            if (configuredClass == null)
+            {
+                sendError(response, HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
+            hierarchy = finder.getHierarchy(configuredClass);
+            if (hierarchy == null)
+            {
+                sendError(response, HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
+            if(!_typeSpecialisations.containsKey(configuredClass))
+            {
+                List<Class<? extends ConfiguredObject>> types = new ArrayList<>(model
+                                                                                        .getTypeRegistry().getTypeSpecialisations(configuredClass));
+                _typeSpecialisations.putIfAbsent(configuredClass, types);
+            }
+        }
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
 
@@ -97,9 +112,9 @@ public class ApiDocsServlet extends AbstractServlet
         PrintWriter writer = response.getWriter();
 
         writePreamble(writer);
-        writeHead(writer);
+        writeHead(writer, hierarchy, configuredClass);
 
-        if(_hierarchy == null)
+        if(hierarchy == null)
         {
             writer.println("<table class=\"api\">");
             writer.println("<thead>");
@@ -110,23 +125,19 @@ public class ApiDocsServlet extends AbstractServlet
             writer.println("</tr>");
             writer.println("</thead>");
             writer.println("<tbody>");
-            for(Map.Entry<Class<? extends ConfiguredObject>, List<String>> entry : REGISTERED_CLASSES.entrySet())
+            SortedSet<Class<? extends ConfiguredObject>> managedCategories = new TreeSet<>(CLASS_COMPARATOR);
+            managedCategories.addAll(finder.getManagedCategories());
+            String pathStem = "/" + servletPathParts[1] + "/" + (servletPathParts.length == 2 ? "latest" : servletPathParts[2]) + "/";
+            for(Class<? extends ConfiguredObject> category : managedCategories)
             {
-                List<String> paths = entry.getValue();
-                Class<? extends ConfiguredObject> objClass = entry.getKey();
+                Class<? extends ConfiguredObject> objClass = category;
+                String path = pathStem + category.getSimpleName().toLowerCase();
                 writer.println("<tr>");
-                writer.println("<td class=\"type\" rowspan=\""+ paths.size()+"\"><a href=\"latest/"+ objClass.getSimpleName().toLowerCase()+"\">"+objClass.getSimpleName()+"</a></td>");
-                writer.println("<td class=\"path\">" + paths.get(0) + "</td>");
-                writer.println("<td class=\"description\" rowspan=\""+ paths.size()+"\">"+
+                writer.println("<td class=\"type\"><a href=\"latest/"+ objClass.getSimpleName().toLowerCase()+"\">"+objClass.getSimpleName()+"</a></td>");
+                writer.println("<td class=\"path\">" + path + "</td>");
+                writer.println("<td class=\"description\">"+
                                objClass.getAnnotation(ManagedObject.class).description()+"</td>");
                 writer.println("</tr>");
-                for(int i = 1; i < paths.size(); i++)
-                {
-                    writer.println("<tr>");
-                    writer.println("<td class=\"path\">" + paths.get(i) + "</td>");
-                    writer.println("</tr>");
-                }
-
             }
             writer.println("</tbody>");
             writer.println("</table>");
@@ -134,12 +145,13 @@ public class ApiDocsServlet extends AbstractServlet
         }
         else
         {
-            writeCategoryDescription(writer);
-            writeUsage(writer, request);
-            writeTypes(writer);
-            writeAttributes(writer);
-            writeOperations(writer);
-            writeContext(writer);
+            final List<Class<? extends ConfiguredObject>> types = _typeSpecialisations.get(configuredClass);
+            writeCategoryDescription(writer, hierarchy, configuredClass);
+            writeUsage(writer, request, hierarchy, configuredClass);
+            writeTypes(writer, model, types);
+            writeAttributes(writer, configuredClass, model, types);
+            writeOperations(writer, configuredClass, model, types);
+            writeContext(writer, configuredClass, model, types);
         }
 
         writeFoot(writer);
@@ -154,38 +166,47 @@ public class ApiDocsServlet extends AbstractServlet
 
     }
 
-    private void writeHead(final PrintWriter writer)
+    private void writeHead(final PrintWriter writer,
+                           final Class<? extends ConfiguredObject>[] hierarchy,
+                           final Class<? extends ConfiguredObject> configuredClass)
     {
         writer.println("<head>");
         writer.println("<link rel=\"icon\" type=\"image/png\" href=\"/images/qpid-favicon.png\">");
         writer.println("<link rel=\"stylesheet\" type=\"text/css\" href=\"/css/apidocs.css\">");
-        writeTitle(writer);
+        writeTitle(writer, hierarchy, configuredClass);
 
         writer.println("</head>");
         writer.println("<body>");
     }
 
-    private void writeTitle(final PrintWriter writer)
+    private void writeTitle(final PrintWriter writer,
+                            final Class<? extends ConfiguredObject>[] hierarchy,
+                            final Class<? extends ConfiguredObject> configuredClass)
     {
         writer.print("<title>");
-        if(_hierarchy == null)
+        if(hierarchy == null)
         {
             writer.print("Qpid API");
         }
         else
         {
-            writer.print("Qpid API: " + getConfiguredClass().getSimpleName());
+            writer.print("Qpid API: " + configuredClass.getSimpleName());
         }
         writer.println("</title>");
     }
 
-    private void writeCategoryDescription(PrintWriter writer)
+    private void writeCategoryDescription(PrintWriter writer,
+                                          final Class<? extends ConfiguredObject>[] hierarchy,
+                                          final Class<? extends ConfiguredObject> configuredClass)
     {
-        writer.println("<h1>"+getConfiguredClass().getSimpleName()+"</h1>");
-        writer.println(getConfiguredClass().getAnnotation(ManagedObject.class).description());
+        writer.println("<h1>"+configuredClass.getSimpleName()+"</h1>");
+        writer.println(configuredClass.getAnnotation(ManagedObject.class).description());
     }
 
-    private void writeUsage(final PrintWriter writer, final HttpServletRequest request)
+    private void writeUsage(final PrintWriter writer,
+                            final HttpServletRequest request,
+                            final Class<? extends ConfiguredObject>[] hierarchy,
+                            final Class<? extends ConfiguredObject> configuredClass)
     {
         writer.println("<a name=\"usage\"><h2>Usage</h2></a>");
         writer.println("<table class=\"usage\">");
@@ -193,11 +214,11 @@ public class ApiDocsServlet extends AbstractServlet
         writer.print("<tr><th class=\"operation\">Read</th><td class=\"method\">GET</td><td class=\"path\">" + request.getServletPath()
                 .replace("apidocs", "api"));
 
-        for (final Class<? extends ConfiguredObject> category : _hierarchy)
+        for (final Class<? extends ConfiguredObject> category : hierarchy)
         {
             writer.print("[/&lt;" + category.getSimpleName().toLowerCase() + " name or id&gt;");
         }
-        for(int i = 0; i < _hierarchy.length; i++)
+        for(int i = 0; i < hierarchy.length; i++)
         {
             writer.print("] ");
         }
@@ -205,7 +226,7 @@ public class ApiDocsServlet extends AbstractServlet
 
         writer.print("<tr><th class=\"operation\">Update</th><td class=\"method\">PUT or POST</td><td class=\"path\">"
                      + request.getServletPath().replace("apidocs", "api"));
-        for (final Class<? extends ConfiguredObject> category : _hierarchy)
+        for (final Class<? extends ConfiguredObject> category : hierarchy)
         {
             writer.print("/&lt;" + category.getSimpleName().toLowerCase() + " name or id&gt;");
         }
@@ -213,14 +234,14 @@ public class ApiDocsServlet extends AbstractServlet
         writer.print(
                 "<tr><th class=\"operation\">Create</th><td class=\"method\">PUT or POST</td><td class=\"path\">"
                 + request.getServletPath().replace("apidocs", "api"));
-        for (int i = 0; i < _hierarchy.length - 1; i++)
+        for (int i = 0; i < hierarchy.length - 1; i++)
         {
-            writer.print("/&lt;" + _hierarchy[i].getSimpleName().toLowerCase() + " name or id&gt;");
+            writer.print("/&lt;" + hierarchy[i].getSimpleName().toLowerCase() + " name or id&gt;");
         }
 
         writer.print("<tr><th class=\"operation\">Delete</th><td class=\"method\">DELETE</td><td class=\"path\">"
                      + request.getServletPath().replace("apidocs", "api"));
-        for (final Class<? extends ConfiguredObject> category : _hierarchy)
+        for (final Class<? extends ConfiguredObject> category : hierarchy)
         {
             writer.print("/&lt;" + category.getSimpleName().toLowerCase() + " name or id&gt;");
         }
@@ -231,9 +252,11 @@ public class ApiDocsServlet extends AbstractServlet
     }
 
 
-    private void writeTypes(final PrintWriter writer)
+    private void writeTypes(final PrintWriter writer,
+                            final Model model,
+                            final List<Class<? extends ConfiguredObject>> types)
     {
-        if(!_types.isEmpty() && !(_types.size() == 1 && getTypeName(_types.iterator().next()).trim().equals("")))
+        if(!types.isEmpty() && !(types.size() == 1 && getTypeName(types.iterator().next(), model).trim().equals("")))
         {
             writer.println("<a name=\"types\"><h2>Types</h2></a>");
             writer.println("<table class=\"types\">");
@@ -242,10 +265,10 @@ public class ApiDocsServlet extends AbstractServlet
             writer.println("</thead>");
 
             writer.println("<tbody>");
-            for (Class<? extends ConfiguredObject> type : _types)
+            for (Class<? extends ConfiguredObject> type : types)
             {
                 writer.print("<tr><td class=\"type\">");
-                writer.print(getTypeName(type));
+                writer.print(getTypeName(type, model));
                 writer.print("</td><td class=\"description\">");
                 writer.print(type.getAnnotation(ManagedObject.class).description());
                 writer.println("</td></tr>");
@@ -257,25 +280,27 @@ public class ApiDocsServlet extends AbstractServlet
         writer.println("</table>");
     }
 
-    private String getTypeName(final Class<? extends ConfiguredObject> type)
+    private String getTypeName(final Class<? extends ConfiguredObject> type, Model model)
     {
         return type.getAnnotation(ManagedObject.class).type() == null
-                            ? _model.getTypeRegistry().getTypeClass(type).getSimpleName()
+                            ? model.getTypeRegistry().getTypeClass(type).getSimpleName()
                             : type.getAnnotation(ManagedObject.class).type();
     }
 
-    private void writeAttributes(final PrintWriter writer)
+    private void writeAttributes(final PrintWriter writer,
+                                 final Class<? extends ConfiguredObject> configuredClass, final Model model,
+                                 final List<Class<? extends ConfiguredObject>> types)
     {
         writer.println("<a name=\"types\"><h2>Attributes</h2></a>");
         writer.println("<h2>Common Attributes</h2>");
 
-        writeAttributesTable(writer, _model.getTypeRegistry().getAttributeTypes(getConfiguredClass()).values());
+        writeAttributesTable(writer, model.getTypeRegistry().getAttributeTypes(configuredClass).values());
 
-        for(Class<? extends ConfiguredObject> type : _types)
+        for(Class<? extends ConfiguredObject> type : types)
         {
-            String typeName = getTypeName(type);
+            String typeName = getTypeName(type, model);
             Collection<ConfiguredObjectAttribute<?, ?>> typeSpecificAttributes =
-                    _model.getTypeRegistry().getTypeSpecificAttributes(type);
+                    model.getTypeRegistry().getTypeSpecificAttributes(type);
             if(!typeSpecificAttributes.isEmpty())
             {
                 writer.println("<h2><span class=\"type\">"+typeName+"</span> Specific Attributes</h2>");
@@ -331,21 +356,23 @@ public class ApiDocsServlet extends AbstractServlet
 
     }
 
-    private void writeOperations(final PrintWriter writer)
+    private void writeOperations(final PrintWriter writer,
+                                 final Class<? extends ConfiguredObject> configuredClass, final Model model,
+                                 final List<Class<? extends ConfiguredObject>> types)
     {
         writer.println("<a name=\"types\"><h2>Operations</h2></a>");
         writer.println("<h2>Common Operations</h2>");
 
         Collection<ConfiguredObjectOperation<?>> categoryOperations =
-                _model.getTypeRegistry().getOperations(getConfiguredClass()).values();
+                model.getTypeRegistry().getOperations(configuredClass).values();
         writeOperationsTables(writer, categoryOperations);
-        for(Class<? extends ConfiguredObject> type : _types)
+        for(Class<? extends ConfiguredObject> type : types)
         {
-            String typeName = getTypeName(type);
-            Set<ConfiguredObjectOperation<?>> typeSpecificOperations = new HashSet<>(_model.getTypeRegistry().getOperations(type).values());
+            String typeName = getTypeName(type, model);
+            Set<ConfiguredObjectOperation<?>> typeSpecificOperations = new HashSet<>(model.getTypeRegistry().getOperations(type).values());
             typeSpecificOperations.removeAll(categoryOperations);
 
-            if(!typeSpecificOperations.isEmpty() && type != getConfiguredClass())
+            if(!typeSpecificOperations.isEmpty() && type != configuredClass)
             {
                 writer.println("<h2><span class=\"type\">"+typeName+"</span> Specific Operations</h2>");
                 writeOperationsTables(writer, typeSpecificOperations);
@@ -510,20 +537,22 @@ public class ApiDocsServlet extends AbstractServlet
                 operation.getGenericReturnType().toString();
     }
 
-    private void writeContext(final PrintWriter writer)
+    private void writeContext(final PrintWriter writer,
+                              final Class<? extends ConfiguredObject> configuredClass,
+                              final Model model, final List<Class<? extends ConfiguredObject>> types)
     {
         writer.println("<a name=\"types\"><h2>Context Variables</h2></a>");
         writer.println("<h2>Common Context Variables</h2>");
 
         Collection<ManagedContextDefault> defaultContexts =
-                _model.getTypeRegistry().getContextDependencies(getConfiguredClass());
+                model.getTypeRegistry().getContextDependencies(configuredClass);
         writeContextDefaults(writer, defaultContexts);
-        for(Class<? extends ConfiguredObject> type : _types)
+        for(Class<? extends ConfiguredObject> type : types)
         {
-            String typeName = getTypeName(type);
-            Collection<ManagedContextDefault> typeSpecificDefaults = _model.getTypeRegistry().getTypeSpecificContextDependencies(type);
+            String typeName = getTypeName(type, model);
+            Collection<ManagedContextDefault> typeSpecificDefaults = model.getTypeRegistry().getTypeSpecificContextDependencies(type);
 
-            if(!typeSpecificDefaults.isEmpty() && type != getConfiguredClass())
+            if(!typeSpecificDefaults.isEmpty() && type != configuredClass)
             {
                 writer.println("<h2><span class=\"type\">"+typeName+"</span> Specific Context Variables</h2>");
                 writeContextDefaults(writer, typeSpecificDefaults);
@@ -561,8 +590,19 @@ public class ApiDocsServlet extends AbstractServlet
         writer.println("</body>");
         writer.println("</html>");
     }
-    private Class<? extends ConfiguredObject> getConfiguredClass()
+
+    private Class<? extends ConfiguredObject> getConfiguredClass(HttpServletRequest request, ConfiguredObject<?> managedObject)
     {
-        return _hierarchy.length == 0 ? Broker.class : _hierarchy[_hierarchy.length-1];
+        final String[] servletPathElements = request.getServletPath().split("/");
+        String categoryName = servletPathElements[servletPathElements.length-1];
+        Model model = managedObject.getModel();
+        for(Class<? extends ConfiguredObject> category : model.getSupportedCategories())
+        {
+            if(category.getSimpleName().toLowerCase().equals(categoryName))
+            {
+                return category;
+            }
+        }
+        return null;
     }
 }

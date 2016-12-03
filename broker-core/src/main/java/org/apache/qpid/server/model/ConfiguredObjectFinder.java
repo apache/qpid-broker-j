@@ -34,6 +34,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -81,6 +82,12 @@ public class ConfiguredObjectFinder
             }
         }
     }
+
+    public Collection<Class<? extends ConfiguredObject>> getManagedCategories()
+    {
+        return Collections.unmodifiableCollection(_hierarchies.keySet());
+    }
+
     private String[] getPathElements(final String path)
     {
         String[] pathElements = path.split("(?<!\\\\)" + Pattern.quote("/"));
@@ -113,10 +120,27 @@ public class ConfiguredObjectFinder
         }
     }
 
+    public Class<? extends ConfiguredObject>[] getHierarchy(String categoryName)
+    {
+        for(Class<? extends ConfiguredObject> category : _model.getSupportedCategories())
+        {
+            if(category.getSimpleName().toLowerCase().equals(categoryName))
+            {
+                return getHierarchy(category);
+            }
+        }
+        return null;
+    }
+
     public Class<? extends ConfiguredObject>[] getHierarchy(final Class<? extends ConfiguredObject> category)
     {
-        List<Class<? extends ConfiguredObject>> hierarchy = _hierarchies.get(_model.getTypeRegistry().getCategory(category));
-        return hierarchy.toArray(new Class[hierarchy.size()]);
+        List<Class<? extends ConfiguredObject>> hierarchy = _hierarchies.get(ConfiguredObjectTypeRegistry.getCategory(category));
+        return hierarchy == null ? null : hierarchy.toArray(new Class[hierarchy.size()]);
+    }
+
+    public Set<Class<? extends ConfiguredObject>> getAssociatedChildCategories()
+    {
+        return Collections.unmodifiableSet(_associatedChildrenOperations.keySet());
     }
 
     public Collection<ConfiguredObject<?>> findObjectsFromPath(List<String> path,
@@ -476,5 +500,21 @@ public class ConfiguredObjectFinder
             }
         }
         throw new ServerScopedRuntimeException("Unable to process type when constructing configuration model: " + t);
+    }
+
+    public Collection<? extends ConfiguredObject> getAssociatedChildren(final Class<? extends ConfiguredObject> childClass)
+    {
+        final ConfiguredObjectOperation<ConfiguredObject<?>> op =
+                _associatedChildrenOperations.get(childClass);
+        if (op != null)
+        {
+
+            return Collections.unmodifiableCollection((Collection<? extends ConfiguredObject<?>>) op.perform(_root,
+                                                                                                             Collections.<String, Object>emptyMap()));
+        }
+        else
+        {
+            return Collections.emptySet();
+        }
     }
 }

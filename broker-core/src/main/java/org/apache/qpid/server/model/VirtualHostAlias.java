@@ -20,11 +20,36 @@
  */
 package org.apache.qpid.server.model;
 
-@ManagedObject
+import java.util.Comparator;
+
+@ManagedObject( creatable = false )
 public interface VirtualHostAlias<X extends VirtualHostAlias<X>> extends ConfiguredObject<X>
 {
-    String PRIORITY = "priority";
+    Comparator<VirtualHostAlias> COMPARATOR = new Comparator<VirtualHostAlias>()
+    {
+        @Override
+        public int compare(final VirtualHostAlias left, final VirtualHostAlias right)
+        {
+            int comparison = left.getPriority() - right.getPriority();
+            if (comparison == 0)
+            {
+                long leftTime = left.getCreatedTime() == null ? 0 : left.getCreatedTime().getTime();
+                long rightTime = right.getCreatedTime() == null ? 0 : right.getCreatedTime().getTime();
+                long createCompare = leftTime - rightTime;
+                if (createCompare == 0)
+                {
+                    comparison = left.getName().compareTo(right.getName());
+                }
+                else
+                {
+                    comparison = createCompare < 0L ? -1 : 1;
+                }
+            }
+            return comparison;
+        }
+    };
 
+    String PRIORITY = "priority";
     // parents
     Port getPort();
 

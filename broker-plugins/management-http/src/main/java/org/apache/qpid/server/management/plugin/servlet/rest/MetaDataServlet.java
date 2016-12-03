@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -41,6 +43,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
+import org.apache.qpid.server.model.ConfiguredObjectFinder;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.ConfiguredObjectStatistic;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
@@ -54,11 +57,9 @@ public class MetaDataServlet extends AbstractServlet
 {
     private static final long serialVersionUID = 1L;
 
-    private Model _instance;
 
-    public MetaDataServlet(final Model model)
+    public MetaDataServlet()
     {
-        _instance = model;
     }
 
     @Override
@@ -68,18 +69,22 @@ public class MetaDataServlet extends AbstractServlet
     }
 
     @Override
-    protected void doGetWithSubjectAndActor(final HttpServletRequest request, final HttpServletResponse response)
+    protected void doGetWithSubjectAndActor(final HttpServletRequest request,
+                                            final HttpServletResponse response,
+                                            final ConfiguredObject<?> managedObject)
             throws ServletException, IOException
     {
         response.setContentType("application/json");
         sendCachingHeadersOnResponse(response);
         response.setStatus(HttpServletResponse.SC_OK);
+        ConfiguredObjectFinder finder = getConfiguredObjectFinder(managedObject);
+
 
         Map<String, Map> classToDataMap = new TreeMap<>();
 
-        for (Class<? extends ConfiguredObject> clazz : _instance.getSupportedCategories())
+        for (Class<? extends ConfiguredObject> clazz : finder.getManagedCategories())
         {
-            classToDataMap.put(clazz.getSimpleName(), processCategory(clazz));
+            classToDataMap.put(clazz.getSimpleName(), processCategory(clazz, managedObject.getModel()));
         }
 
         final OutputStream stream = getOutputStream(request, response);
@@ -92,27 +97,27 @@ public class MetaDataServlet extends AbstractServlet
 
     }
 
-    private Map<String, Map> processCategory(final Class<? extends ConfiguredObject> clazz)
+    private Map<String, Map> processCategory(final Class<? extends ConfiguredObject> clazz, final Model model)
     {
         Map<String, Map> typeToDataMap = new TreeMap<>();
-        ConfiguredObjectTypeRegistry typeRegistry = _instance.getTypeRegistry();
+        ConfiguredObjectTypeRegistry typeRegistry = model.getTypeRegistry();
         for (Class<? extends ConfiguredObject> type : typeRegistry.getTypeSpecialisations(clazz))
         {
-            typeToDataMap.put(ConfiguredObjectTypeRegistry.getType(type), processType(type));
+            typeToDataMap.put(ConfiguredObjectTypeRegistry.getType(type), processType(type, model));
         }
         return typeToDataMap;
     }
 
-    private Map<String, Object> processType(final Class<? extends ConfiguredObject> type)
+    private Map<String, Object> processType(final Class<? extends ConfiguredObject> type, final Model model)
     {
         Map<String, Object> typeDetails = new LinkedHashMap<>();
-        typeDetails.put("attributes", processAttributes(type));
-        typeDetails.put("statistics", processStatistics(type));
+        typeDetails.put("attributes", processAttributes(type, model));
+        typeDetails.put("statistics", processStatistics(type, model));
 
-        typeDetails.put("operations", processOperations(type));
-        typeDetails.put("managedInterfaces", getManagedInterfaces(type));
-        typeDetails.put("validChildTypes", getValidChildTypes(type));
-        typeDetails.put("contextDependencies", getContextDependencies(type));
+        typeDetails.put("operations", processOperations(type, model));
+        typeDetails.put("managedInterfaces", getManagedInterfaces(type, model));
+        typeDetails.put("validChildTypes", getValidChildTypes(type, model));
+        typeDetails.put("contextDependencies", getContextDependencies(type, model));
         ManagedObject annotation = type.getAnnotation(ManagedObject.class);
         if (annotation != null)
         {
@@ -128,10 +133,10 @@ public class MetaDataServlet extends AbstractServlet
         return typeDetails;
     }
 
-    private Map<String, String> getContextDependencies(final Class<? extends ConfiguredObject> type)
+    private Map<String, String> getContextDependencies(final Class<? extends ConfiguredObject> type, final Model model)
     {
         final Collection<ManagedContextDefault> contextDependencies =
-                _instance.getTypeRegistry().getContextDependencies(type);
+                model.getTypeRegistry().getContextDependencies(type);
         Map<String,String> result = new TreeMap<>();
 
         if(contextDependencies != null)
@@ -144,13 +149,14 @@ public class MetaDataServlet extends AbstractServlet
         return result;
     }
 
-    private Map<String, Collection<String>> getValidChildTypes(final Class<? extends ConfiguredObject> type)
+    private Map<String, Collection<String>> getValidChildTypes(final Class<? extends ConfiguredObject> type,
+                                                               final Model model)
     {
         Map<String, Collection<String>> validChildTypes = new HashMap<>();
-        for (Class<? extends ConfiguredObject> childType : _instance.getChildTypes(ConfiguredObjectTypeRegistry.getCategory(
+        for (Class<? extends ConfiguredObject> childType : model.getChildTypes(ConfiguredObjectTypeRegistry.getCategory(
                 type)))
         {
-            Collection<String> validValues = _instance.getTypeRegistry().getValidChildTypes(type, childType);
+            Collection<String> validValues = model.getTypeRegistry().getValidChildTypes(type, childType);
             if (validValues != null)
             {
                 validChildTypes.put(childType.getSimpleName(), validValues);
@@ -159,20 +165,20 @@ public class MetaDataServlet extends AbstractServlet
         return validChildTypes;
     }
 
-    private Set<String> getManagedInterfaces(Class<? extends ConfiguredObject> type)
+    private Set<String> getManagedInterfaces(Class<? extends ConfiguredObject> type, final Model model)
     {
         Set<String> interfaces = new HashSet<>();
-        for (Class<?> classObject : _instance.getTypeRegistry().getManagedInterfaces(type))
+        for (Class<?> classObject : model.getTypeRegistry().getManagedInterfaces(type))
         {
             interfaces.add(classObject.getSimpleName());
         }
         return interfaces;
     }
 
-    private Map<String, Map> processAttributes(final Class<? extends ConfiguredObject> type)
+    private Map<String, Map> processAttributes(final Class<? extends ConfiguredObject> type, final Model model)
     {
         Collection<ConfiguredObjectAttribute<?, ?>> attributes =
-                _instance.getTypeRegistry().getAttributeTypes(type).values();
+                model.getTypeRegistry().getAttributeTypes(type).values();
 
         Map<String, Map> attributeDetails = new LinkedHashMap<>();
         for (ConfiguredObjectAttribute<?, ?> attribute : attributes)
@@ -232,10 +238,10 @@ public class MetaDataServlet extends AbstractServlet
         return attributeDetails;
     }
 
-    private Map<String, Map> processOperations(final Class<? extends ConfiguredObject> type)
+    private Map<String, Map> processOperations(final Class<? extends ConfiguredObject> type, final Model model)
     {
         Collection<ConfiguredObjectOperation<?>> operations =
-                _instance.getTypeRegistry().getOperations(type).values();
+                model.getTypeRegistry().getOperations(type).values();
 
         Map<String, Map> attributeDetails = new LinkedHashMap<>();
         for (ConfiguredObjectOperation<?> operation : operations)
@@ -273,10 +279,10 @@ public class MetaDataServlet extends AbstractServlet
     }
 
 
-    private Map<String, Map> processStatistics(final Class<? extends ConfiguredObject> type)
+    private Map<String, Map> processStatistics(final Class<? extends ConfiguredObject> type, final Model model)
     {
         Collection<ConfiguredObjectStatistic> statistics =
-                _instance.getTypeRegistry().getStatistics(type);
+                model.getTypeRegistry().getStatistics(type);
 
         Map<String, Map> allStatisticsDetails = new LinkedHashMap<>();
         for (ConfiguredObjectStatistic<?, ?> statistic : statistics)

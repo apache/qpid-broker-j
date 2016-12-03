@@ -30,9 +30,7 @@ import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
 
-@ManagedObject( category = false, type = "HTTP",
-        validChildTypes = "org.apache.qpid.server.model.port.HttpPortImpl#getSupportedChildTypes()",
-        amqpName = "org.apache.qpid.HttpPort")
+@ManagedObject( category = false, type = "HTTP", amqpName = "org.apache.qpid.HttpPort")
 public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X>
 {
     String DEFAULT_HTTP_NEED_CLIENT_AUTH = "false";
@@ -95,4 +93,9 @@ public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X
     @ManagedAttribute( defaultValue = "false", description = "If true allow operations which may return confidential "
                                                              + "information to be executed on insecure connections")
     boolean isAllowConfidentialOperationsOnInsecureChannels();
+
+    @ManagedAttribute( defaultValue = "true", description = "If true then this port will provide HTTP management "
+                                                            + "services for the broker, if no virtualhostalaias "
+                                                            + "matches the HTTP Host in the request")
+    boolean isManageBrokerOnNoAliasMatch();
 }

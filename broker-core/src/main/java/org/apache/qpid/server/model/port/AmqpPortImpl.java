@@ -27,7 +27,6 @@ import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -87,29 +86,6 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     public static final String DEFAULT_BINDING_ADDRESS = "*";
 
 
-    private static final Comparator<VirtualHostAlias> VIRTUAL_HOST_ALIAS_COMPARATOR = new Comparator<VirtualHostAlias>()
-    {
-        @Override
-        public int compare(final VirtualHostAlias left, final VirtualHostAlias right)
-        {
-            int comparison = left.getPriority() - right.getPriority();
-            if (comparison == 0)
-            {
-                long leftTime = left.getCreatedTime() == null ? 0 : left.getCreatedTime().getTime();
-                long rightTime = right.getCreatedTime() == null ? 0 : right.getCreatedTime().getTime();
-                long createCompare = leftTime - rightTime;
-                if (createCompare == 0)
-                {
-                    comparison = left.getName().compareTo(right.getName());
-                }
-                else
-                {
-                    comparison = createCompare < 0l ? -1 : 1;
-                }
-            }
-            return comparison;
-        }
-    };
     @ManagedAttributeField
     private boolean _tcpNoDelay;
 
@@ -220,36 +196,6 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         super.onOpen();
         _protocolHandshakeTimeout = getContextValue(Long.class, AmqpPort.PROTOCOL_HANDSHAKE_TIMEOUT);
         _connectionWarnCount = getContextValue(Integer.class, OPEN_CONNECTIONS_WARN_PERCENT);
-    }
-
-    @Override
-    public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
-                                                                          final Map<String, Object> attributes,
-                                                                          final ConfiguredObject... otherParents)
-    {
-        if (VirtualHostAlias.class.isAssignableFrom(childClass))
-        {
-            return getObjectFactory().createAsync(childClass, attributes, this);
-        }
-        return super.addChildAsync(childClass, attributes, otherParents);
-    }
-
-    @Override
-    public NamedAddressSpace getAddressSpace(String name)
-    {
-        Collection<VirtualHostAlias> aliases = new TreeSet<>(VIRTUAL_HOST_ALIAS_COMPARATOR);
-
-        aliases.addAll(getChildren(VirtualHostAlias.class));
-
-        for(VirtualHostAlias alias : aliases)
-        {
-            NamedAddressSpace addressSpace = alias.getAddressSpace(name);
-            if (addressSpace != null)
-            {
-                return addressSpace;
-            }
-        }
-        return null;
     }
 
     @Override

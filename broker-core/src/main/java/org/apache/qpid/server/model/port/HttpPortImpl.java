@@ -20,17 +20,24 @@
  */
 package org.apache.qpid.server.model.port;
 
+import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import javax.security.auth.Subject;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Container;
+import org.apache.qpid.server.model.HostNameAlias;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.PatternMatchingAlias;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.SystemAddressSpaceAlias;
 import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.util.PortUtil;
 
@@ -49,6 +56,9 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
 
     @ManagedAttributeField
     private boolean _allowConfidentialOperationsOnInsecureChannels;
+
+    @ManagedAttributeField
+    private boolean _manageBrokerOnNoAliasMatch;
 
     @ManagedObjectFactoryConstructor
     public HttpPortImpl(final Map<String, Object> attributes,
@@ -85,6 +95,12 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     public boolean isAllowConfidentialOperationsOnInsecureChannels()
     {
         return _allowConfidentialOperationsOnInsecureChannels;
+    }
+
+    @Override
+    public boolean isManageBrokerOnNoAliasMatch()
+    {
+        return _manageBrokerOnNoAliasMatch;
     }
 
     @Override
@@ -158,8 +174,4 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         }
     }
 
-    public static Map<String, Collection<String>> getSupportedChildTypes()
-    {
-        return Collections.singletonMap(VirtualHostAlias.class.getSimpleName(), (Collection<String>) Collections.<String>emptyList());
-    }
 }

@@ -36,8 +36,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
-import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -54,13 +55,13 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFinder;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
+import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.OperationTimeoutException;
 import org.apache.qpid.server.model.preferences.UserPreferences;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -72,10 +73,6 @@ public class RestServlet extends AbstractServlet
     private static final long serialVersionUID = 1L;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RestServlet.class);
-    /**
-     * An initialization parameter to specify hierarchy
-     */
-    private static final String HIERARCHY_INIT_PARAMETER = "hierarchy";
 
     public static final String DEPTH_PARAM = "depth";
     public static final String OVERSIZE_PARAM = "oversize";
@@ -104,38 +101,20 @@ public class RestServlet extends AbstractServlet
     public static final int DEFAULT_DEPTH = 1;
     public static final int DEFAULT_OVERSIZE = 120;
 
-    private Class<? extends ConfiguredObject>[] _hierarchy;
-
-    private final ConfiguredObjectToMapConverter _objectConverter = new ConfiguredObjectToMapConverter();
-    private final boolean _hierarchyInitializationRequired;
-    private volatile RequestInfoParser _requestInfoParser;
-    private RestUserPreferenceHandler _userPreferenceHandler;
-    private ConfiguredObjectFinder _objectFinder;
+    private transient final ConfiguredObjectToMapConverter _objectConverter = new ConfiguredObjectToMapConverter();
+    private transient RestUserPreferenceHandler _userPreferenceHandler;
 
     @SuppressWarnings("unused")
     public RestServlet()
     {
         super();
-        _hierarchyInitializationRequired = true;
-    }
-
-    public RestServlet(Class<? extends ConfiguredObject>... hierarchy)
-    {
-        super();
-        _hierarchy = hierarchy;
-        _hierarchyInitializationRequired = false;
     }
 
     @Override
     public void init() throws ServletException
     {
         super.init();
-        if (_hierarchyInitializationRequired)
-        {
-            doInitialization();
-        }
-        _objectFinder = new ConfiguredObjectFinder(getBroker());
-        _requestInfoParser = new RequestInfoParser(_hierarchy);
+
         Handler.register();
         Long preferenceOperationTimeout = getManagementConfiguration().getContextValue(Long.class, PREFERENCE_OPERTAION_TIMEOUT_CONTEXT_NAME);
         _userPreferenceHandler = new RestUserPreferenceHandler(preferenceOperationTimeout == null
@@ -143,55 +122,15 @@ public class RestServlet extends AbstractServlet
                                                                        : preferenceOperationTimeout);
     }
 
-    @SuppressWarnings("unchecked")
-    private void doInitialization() throws ServletException
-    {
-        ServletConfig config = getServletConfig();
-        String hierarchy = config.getInitParameter(HIERARCHY_INIT_PARAMETER);
-        if (hierarchy != null && !"".equals(hierarchy))
-        {
-            List<Class<? extends ConfiguredObject>> classes = new ArrayList<Class<? extends ConfiguredObject>>();
-            String[] hierarchyItems = hierarchy.split(",");
-            for (String item : hierarchyItems)
-            {
-                Class<?> itemClass;
-                try
-                {
-                    itemClass = Class.forName(item);
-                }
-                catch (ClassNotFoundException e)
-                {
-                    try
-                    {
-                        itemClass = Class.forName("org.apache.qpid.server.model." + item);
-                    }
-                    catch (ClassNotFoundException e1)
-                    {
-                        throw new ServletException("Unknown configured object class '" + item
-                                + "' is specified in hierarchy for " + config.getServletName());
-                    }
-                }
-                Class<? extends ConfiguredObject> clazz = (Class<? extends ConfiguredObject>)itemClass;
-                classes.add(clazz);
-            }
-            Class<? extends ConfiguredObject>[] hierarchyClasses = (Class<? extends ConfiguredObject>[])new Class[classes.size()];
-            _hierarchy = classes.toArray(hierarchyClasses);
-        }
-        else
-        {
-            _hierarchy = (Class<? extends ConfiguredObject>[])new Class[0];
-        }
-    }
 
-
-    private Collection<ConfiguredObject<?>> getTargetObjects(RequestInfo requestInfo,
+    private Collection<ConfiguredObject<?>> getTargetObjects(final Class<? extends ConfiguredObject> configuredClass,
+                                                             final ConfiguredObjectFinder finder,
+                                                             RequestInfo requestInfo,
                                                              List<Predicate<ConfiguredObject<?>>> filterPredicateList)
     {
         List<String> names = requestInfo.getModelParts();
-        ConfiguredObject<?> root = getBroker();
-        Class<? extends ConfiguredObject>[] hierarchy = _hierarchy;
 
-        Collection<ConfiguredObject<?>> parents = _objectFinder.findObjectsFromPath(names, hierarchy, true);
+        Collection<ConfiguredObject<?>> parents = finder.findObjectsFromPath(names, finder.getHierarchy(configuredClass), true);
 
         if (!(parents == null || filterPredicateList.isEmpty()))
         {
@@ -238,15 +177,33 @@ public class RestServlet extends AbstractServlet
     }
 
     @Override
-    protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response)
+    protected void doGetWithSubjectAndActor(HttpServletRequest request,
+                                            HttpServletResponse response,
+                                            final ConfiguredObject<?> managedObject)
             throws ServletException, IOException
     {
-        RequestInfo requestInfo = _requestInfoParser.parse(request);
+        ConfiguredObjectFinder finder = getConfiguredObjectFinder(managedObject);
+        Class<? extends ConfiguredObject> configuredClass = getConfiguredClass(request, managedObject);
+        if(configuredClass == null)
+        {
+            sendError(response, HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        final Class<? extends ConfiguredObject>[] hierarchy = finder.getHierarchy(configuredClass);
+        if(hierarchy == null)
+        {
+            sendError(response, HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
+        RequestInfoParser requestInfoParser = new RequestInfoParser(hierarchy);
+
+        RequestInfo requestInfo = requestInfoParser.parse(request);
         switch (requestInfo.getType())
         {
             case OPERATION:
             {
-                doOperation(requestInfo, request, response);
+                doOperation(requestInfo, managedObject, configuredClass, finder, request, response);
                 break;
             }
             case MODEL_OBJECT:
@@ -260,9 +217,9 @@ public class RestServlet extends AbstractServlet
                 }
 
                 Collection<ConfiguredObject<?>> allObjects =
-                        getTargetObjects(requestInfo, buildFilterPredicates(request));
+                        getTargetObjects(configuredClass, finder, requestInfo, buildFilterPredicates(request));
 
-                if (allObjects == null || (allObjects.isEmpty() && isSingleObjectRequest(requestInfo)))
+                if (allObjects == null || (allObjects.isEmpty() && isSingleObjectRequest(requestInfo, finder.getHierarchy(configuredClass))))
                 {
                     sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
                     return;
@@ -343,7 +300,7 @@ public class RestServlet extends AbstractServlet
                 for (ConfiguredObject configuredObject : allObjects)
                 {
 
-                    output.add(_objectConverter.convertObjectToMap(configuredObject, getConfiguredClass(),
+                    output.add(_objectConverter.convertObjectToMap(configuredObject, configuredClass,
                                                                    new ConfiguredObjectToMapConverter.ConverterOptions(
                                                                            depth,
                                                                            actuals,
@@ -363,7 +320,7 @@ public class RestServlet extends AbstractServlet
             case VISIBLE_PREFERENCES:
             case USER_PREFERENCES:
             {
-                doGetUserPreferences(requestInfo, request, response);
+                doGetUserPreferences(managedObject, configuredClass, finder, requestInfo, request, response);
                 break;
             }
 
@@ -377,12 +334,13 @@ public class RestServlet extends AbstractServlet
     }
 
 
-    private boolean isSingleObjectRequest(final RequestInfo requestInfo)
+    private boolean isSingleObjectRequest(final RequestInfo requestInfo,
+                                          final Class<? extends ConfiguredObject>[] hierarchy)
     {
-        if (_hierarchy.length > 0)
+        if (hierarchy.length > 0)
         {
             List<String> pathInfoElements = requestInfo.getModelParts();
-            return pathInfoElements.size() == _hierarchy.length;
+            return pathInfoElements.size() == hierarchy.length;
         }
 
         return false;
@@ -405,16 +363,28 @@ public class RestServlet extends AbstractServlet
         }
     }
 
-    private Class<? extends ConfiguredObject> getConfiguredClass()
+    private Class<? extends ConfiguredObject> getConfiguredClass(HttpServletRequest request, ConfiguredObject<?> managedObject)
     {
-        return _hierarchy.length == 0 ? Broker.class : _hierarchy[_hierarchy.length-1];
+        final String[] servletPathElements = request.getServletPath().split("/");
+        String categoryName = servletPathElements[servletPathElements.length-1];
+        Model model = managedObject.getModel();
+        for(Class<? extends ConfiguredObject> category : model.getSupportedCategories())
+        {
+            if(category.getSimpleName().toLowerCase().equals(categoryName))
+            {
+                return category;
+            }
+        }
+        return null;
     }
 
     @Override
-    protected void doPutWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response)
+    protected void doPutWithSubjectAndActor(HttpServletRequest request,
+                                            HttpServletResponse response,
+                                            final ConfiguredObject<?> managedObject)
             throws ServletException, IOException
     {
-        performCreateOrUpdate(request, response);
+        performCreateOrUpdate(request, response, managedObject);
     }
 
     @Override
@@ -433,34 +403,42 @@ public class RestServlet extends AbstractServlet
         }
     }
 
-    private void performCreateOrUpdate(HttpServletRequest request, HttpServletResponse response)
+    private void performCreateOrUpdate(HttpServletRequest request,
+                                       HttpServletResponse response,
+                                       final ConfiguredObject<?> managedObject)
             throws IOException, ServletException
     {
+
+        ConfiguredObjectFinder finder = getConfiguredObjectFinder(managedObject);
+        final Class<? extends ConfiguredObject> configuredClass = getConfiguredClass(request, managedObject);
+        final Class<? extends ConfiguredObject>[] hierarchy = finder.getHierarchy(configuredClass);
+        RequestInfoParser requestInfoParser = new RequestInfoParser(hierarchy);
+
         response.setContentType("application/json");
 
-        RequestInfo requestInfo = _requestInfoParser.parse(request);
+        RequestInfo requestInfo = requestInfoParser.parse(request);
         switch (requestInfo.getType())
         {
             case MODEL_OBJECT:
             {
                 List<String> names = requestInfo.getModelParts();
-                boolean isFullObjectURL = names.size() == _hierarchy.length;
+                boolean isFullObjectURL = names.size() == hierarchy.length;
                 Map<String, Object> providedObject = getRequestProvidedObject(request, requestInfo);
-                if (names.isEmpty() && _hierarchy.length == 0)
+                if (names.isEmpty() && hierarchy.length == 0)
                 {
-                    getBroker().setAttributes(providedObject);
+                    managedObject.setAttributes(providedObject);
                     response.setStatus(HttpServletResponse.SC_OK);
                     return;
                 }
 
-                ConfiguredObject theParent = getBroker();
+                ConfiguredObject theParent = managedObject;
                 ConfiguredObject[] otherParents = null;
-                Class<? extends ConfiguredObject> objClass = getConfiguredClass();
-                if (_hierarchy.length > 1)
+                Class<? extends ConfiguredObject> objClass = configuredClass;
+                if (hierarchy.length > 1)
                 {
 
                     List<ConfiguredObject> parents =
-                            _objectFinder.findObjectParentsFromPath(names, _hierarchy, getConfiguredClass());
+                            finder.findObjectParentsFromPath(names, hierarchy, configuredClass);
                     theParent = parents.remove(0);
                     otherParents = parents.toArray(new ConfiguredObject[parents.size()]);
                 }
@@ -499,12 +477,12 @@ public class RestServlet extends AbstractServlet
             }
             case OPERATION:
             {
-                doOperation(requestInfo, request, response);
+                doOperation(requestInfo, managedObject, configuredClass, finder, request, response);
                 break;
             }
             case USER_PREFERENCES:
             {
-                doPostOrPutUserPreference(requestInfo, request, response);
+                doPostOrPutUserPreference(requestInfo, managedObject, configuredClass, finder, request, response);
                 break;
             }
             default:
@@ -516,14 +494,19 @@ public class RestServlet extends AbstractServlet
         }
     }
 
-    private void doGetUserPreferences(final RequestInfo requestInfo,
+    private void doGetUserPreferences(final ConfiguredObject<?> managedObject,
+                                      final Class<? extends ConfiguredObject> configuredClass,
+                                      final ConfiguredObjectFinder finder, final RequestInfo requestInfo,
                                       final HttpServletRequest request,
                                       final HttpServletResponse response) throws IOException, ServletException
     {
-        Collection<ConfiguredObject<?>> allObjects = getTargetObjects(requestInfo,
+        Collection<ConfiguredObject<?>> allObjects = getTargetObjects(
+                configuredClass,
+                                                                      finder,
+                                                                      requestInfo,
                                                                       Collections.<Predicate<ConfiguredObject<?>>>emptyList());
 
-        if (allObjects == null || (allObjects.isEmpty() && isSingleObjectRequest(requestInfo)))
+        if (allObjects == null || (allObjects.isEmpty() && isSingleObjectRequest(requestInfo, finder.getHierarchy(configuredClass))))
         {
             sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
             return;
@@ -565,10 +548,13 @@ public class RestServlet extends AbstractServlet
     }
 
     private void doPostOrPutUserPreference(final RequestInfo requestInfo,
+                                           final ConfiguredObject<?> managedObject,
+                                           final Class<? extends ConfiguredObject> configuredClass,
+                                           final ConfiguredObjectFinder finder,
                                            final HttpServletRequest request,
                                            final HttpServletResponse response) throws IOException, ServletException
     {
-        ConfiguredObject<?> target = getTarget(requestInfo);
+        ConfiguredObject<?> target = getTarget(requestInfo, managedObject, configuredClass, finder);
 
         final Object providedObject = getRequestProvidedObject(request, requestInfo, Object.class);
         if ("POST".equals(request.getMethod()))
@@ -588,17 +574,21 @@ public class RestServlet extends AbstractServlet
         }
     }
 
-    private void doOperation(final RequestInfo requestInfo, final HttpServletRequest request,
+    private void doOperation(final RequestInfo requestInfo,
+                             final ConfiguredObject<?> managedObject,
+                             final Class<? extends ConfiguredObject> configuredClass,
+                             final ConfiguredObjectFinder finder,
+                             final HttpServletRequest request,
                              final HttpServletResponse response) throws IOException, ServletException
     {
-        ConfiguredObject<?> target = getTarget(requestInfo);
+        ConfiguredObject<?> target = getTarget(requestInfo, managedObject, configuredClass, finder);
         if (target == null)
         {
             return;
         }
         String operationName = requestInfo.getOperationName();
         final Map<String, ConfiguredObjectOperation<?>> availableOperations =
-                getBroker().getModel().getTypeRegistry().getOperations(target.getClass());
+                managedObject.getModel().getTypeRegistry().getOperations(target.getClass());
         ConfiguredObjectOperation operation = availableOperations.get(operationName);
         Map<String, Object> operationArguments;
 
@@ -713,28 +703,31 @@ public class RestServlet extends AbstractServlet
         }
     }
 
-    private ConfiguredObject<?> getTarget(final RequestInfo requestInfo) throws IOException
+    private ConfiguredObject<?> getTarget(final RequestInfo requestInfo,
+                                          final ConfiguredObject<?> managedObject,
+                                          final Class<? extends ConfiguredObject> configuredClass,
+                                          final ConfiguredObjectFinder finder) throws IOException
     {
         final ConfiguredObject<?> target;
         final List<String> names = requestInfo.getModelParts();
-
-        if (names.isEmpty() && _hierarchy.length == 0)
+        final Class<? extends ConfiguredObject>[] hierarchy = finder.getHierarchy(configuredClass);
+        if (names.isEmpty() && hierarchy.length == 0)
         {
-            target = getBroker();
+            target = managedObject;
         }
         else
         {
-            ConfiguredObject theParent = getBroker();
+            ConfiguredObject theParent = managedObject;
             ConfiguredObject[] otherParents = null;
-            if (_hierarchy.length > 1)
+            if (hierarchy.length > 1)
             {
 
                 List<ConfiguredObject> parents =
-                        _objectFinder.findObjectParentsFromPath(names, _hierarchy, getConfiguredClass());
+                        finder.findObjectParentsFromPath(names, hierarchy, configuredClass);
                 theParent = parents.remove(0);
                 otherParents = parents.toArray(new ConfiguredObject[parents.size()]);
             }
-            Class<? extends ConfiguredObject> objClass = getConfiguredClass();
+            Class<? extends ConfiguredObject> objClass = configuredClass;
             Map<String, Object> objectName =
                     Collections.<String, Object>singletonMap("name", names.get(names.size() - 1));
             target = findObjectToUpdateInParent(objClass, objectName, theParent, otherParents);
@@ -742,7 +735,7 @@ public class RestServlet extends AbstractServlet
             {
 
                 final String errorMessage = String.format("%s '%s' not found",
-                                                          getConfiguredClass().getSimpleName(),
+                                                          configuredClass.getSimpleName(),
                                                           Joiner.on("/").join(names));
                 throw new NotFoundException(errorMessage);
             }
@@ -1010,10 +1003,18 @@ public class RestServlet extends AbstractServlet
     }
 
     @Override
-    protected void doDeleteWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doDeleteWithSubjectAndActor(HttpServletRequest request,
+                                               HttpServletResponse response,
+                                               final ConfiguredObject<?> managedObject) throws ServletException, IOException
     {
-        RequestInfo requestInfo = _requestInfoParser.parse(request);
-        Collection<ConfiguredObject<?>> allObjects = getTargetObjects(requestInfo, buildFilterPredicates(request));
+        ConfiguredObjectFinder finder = getConfiguredObjectFinder(managedObject);
+        Class<? extends ConfiguredObject> configuredClass = getConfiguredClass(request, managedObject);
+        final Class<? extends ConfiguredObject>[] hierarchy = finder.getHierarchy(configuredClass);
+        RequestInfoParser requestInfoParser = new RequestInfoParser(hierarchy);
+
+        RequestInfo requestInfo = requestInfoParser.parse(request);
+
+        Collection<ConfiguredObject<?>> allObjects = getTargetObjects(configuredClass, finder, requestInfo, buildFilterPredicates(request));
         if (allObjects == null)
         {
             throw new NotFoundException("Not Found");
@@ -1058,9 +1059,11 @@ public class RestServlet extends AbstractServlet
     }
 
     @Override
-    protected void doPostWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doPostWithSubjectAndActor(HttpServletRequest request,
+                                             HttpServletResponse response,
+                                             final ConfiguredObject<?> managedObject) throws ServletException, IOException
     {
-        performCreateOrUpdate(request, response);
+        performCreateOrUpdate(request, response, managedObject);
     }
 
 

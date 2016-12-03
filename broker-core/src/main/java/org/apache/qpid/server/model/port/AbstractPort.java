@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -42,12 +43,14 @@ import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Container;
 import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.ManagedAttributeField;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.util.ParameterizedTypes;
 
 public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractConfiguredObject<X> implements Port<X>
@@ -273,6 +276,36 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
         return Futures.immediateFuture(null);
     }
 
+
+    @Override
+    public NamedAddressSpace getAddressSpace(String name)
+    {
+        Collection<VirtualHostAlias> aliases = new TreeSet<>(VirtualHostAlias.COMPARATOR);
+
+        aliases.addAll(getChildren(VirtualHostAlias.class));
+
+        for(VirtualHostAlias alias : aliases)
+        {
+            NamedAddressSpace addressSpace = alias.getAddressSpace(name);
+            if (addressSpace != null)
+            {
+                return addressSpace;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
+                                                                          final Map<String, Object> attributes,
+                                                                          final ConfiguredObject... otherParents)
+    {
+        if (VirtualHostAlias.class.isAssignableFrom(childClass))
+        {
+            return getObjectFactory().createAsync(childClass, attributes, this);
+        }
+        return super.addChildAsync(childClass, attributes, otherParents);
+    }
 
     protected State onActivate()
     {

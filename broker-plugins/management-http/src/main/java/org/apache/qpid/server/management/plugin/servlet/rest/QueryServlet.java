@@ -44,26 +44,32 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
 
 
     @Override
-    protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response)
+    protected void doGetWithSubjectAndActor(HttpServletRequest request,
+                                            HttpServletResponse response,
+                                            final ConfiguredObject<?> managedObject)
             throws IOException, ServletException
     {
-        performQuery(request, response);
+        performQuery(request, response, managedObject);
     }
 
 
     @Override
-    protected void doPostWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response)
+    protected void doPostWithSubjectAndActor(HttpServletRequest request,
+                                             HttpServletResponse response,
+                                             final ConfiguredObject<?> managedObject)
             throws IOException, ServletException
     {
-        performQuery(request, response);
+        performQuery(request, response, managedObject);
     }
 
-    private void performQuery(final HttpServletRequest request, final HttpServletResponse response)
+    private void performQuery(final HttpServletRequest request,
+                              final HttpServletResponse response,
+                              final ConfiguredObject<?> managedObject)
             throws IOException, ServletException
     {
         String categoryName;
-        X parent = getParent(request);
-        if (parent != null && ((categoryName = getRequestedCategory(request)) != null))
+        X parent = getParent(request, managedObject);
+        if (parent != null && ((categoryName = getRequestedCategory(request, managedObject)) != null))
         {
             Model model = parent.getModel();
 
@@ -119,12 +125,13 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
 
     }
 
-    abstract protected X getParent(final HttpServletRequest request);
+    abstract protected X getParent(final HttpServletRequest request, final ConfiguredObject<?> managedObject);
 
     abstract protected Class<? extends ConfiguredObject> getSupportedCategory(final String categoryName,
                                                                    final Model brokerModel);
 
-    abstract protected String getRequestedCategory(final HttpServletRequest request);
+    abstract protected String getRequestedCategory(final HttpServletRequest request,
+                                                   final ConfiguredObject<?> managedObject);
 
     abstract protected List<ConfiguredObject<?>> getAllObjects(final X parent,
                                                                final Class<? extends ConfiguredObject> category,

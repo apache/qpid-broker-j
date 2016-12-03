@@ -32,6 +32,8 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.zip.GZIPOutputStream;
 
 import javax.security.auth.Subject;
@@ -48,13 +50,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.management.plugin.GunzipOutputStream;
+import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
+import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObjectFinder;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.CustomRestHeaders;
+import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.RestContentHeader;
+import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public abstract class AbstractServlet extends HttpServlet
@@ -63,8 +73,10 @@ public abstract class AbstractServlet extends HttpServlet
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractServlet.class);
     public static final String CONTENT_DISPOSITION = "Content-disposition";
 
-    private Broker<?> _broker;
-    private HttpManagementConfiguration _managementConfiguration;
+    private transient Broker<?> _broker;
+    private transient HttpManagementConfiguration _managementConfiguration;
+    private transient final ConcurrentMap<ConfiguredObject<?>, ConfiguredObjectFinder> _configuredObjectFinders = new ConcurrentHashMap<>();
+
 
     protected AbstractServlet()
     {
@@ -90,7 +102,11 @@ public abstract class AbstractServlet extends HttpServlet
                 @Override
                 public Void run() throws Exception
                 {
-                    doGetWithSubjectAndActor(request, resp);
+                    ConfiguredObject<?> managedObject = getManagedObject(request, resp);
+                    if(managedObject != null)
+                    {
+                        doGetWithSubjectAndActor(request, resp, managedObject);
+                    }
                     return null;
                 }
             },
@@ -99,11 +115,37 @@ public abstract class AbstractServlet extends HttpServlet
         );
     }
 
+    private ConfiguredObject<?> getManagedObject(final HttpServletRequest request, final HttpServletResponse resp)
+    {
+        HttpPort<?> port =  HttpManagement.getPort(request);
+        final NamedAddressSpace addressSpace = port.getAddressSpace(request.getServerName());
+        if(addressSpace == null)
+        {
+            if(port.isManageBrokerOnNoAliasMatch())
+            {
+                return getBroker();
+            }
+            LOGGER.info("No HTTP Management alias mapping found for host '{}' on port {}", request.getServerName(), port);
+            sendError(resp, HttpServletResponse.SC_NOT_FOUND);
+            return null;
+        }
+        else if(addressSpace instanceof VirtualHost<?>)
+        {
+            return (VirtualHost<?>)addressSpace;
+        }
+        else
+        {
+            return getBroker();
+        }
+    }
+
     /**
      * Performs the GET action as the logged-in {@link Subject}.
      * Subclasses commonly override this method
      */
-    protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException
+    protected void doGetWithSubjectAndActor(HttpServletRequest request,
+                                            HttpServletResponse resp,
+                                            ConfiguredObject<?> managedObject) throws ServletException, IOException
     {
         throw new UnsupportedOperationException("GET not supported by this servlet");
     }
@@ -118,7 +160,11 @@ public abstract class AbstractServlet extends HttpServlet
                 @Override
                 public Void run()  throws Exception
                 {
-                    doPostWithSubjectAndActor(request, resp);
+                    ConfiguredObject<?> managedObject = getManagedObject(request, resp);
+                    if(managedObject != null)
+                    {
+                        doPostWithSubjectAndActor(request, resp, managedObject);
+                    }
                     return null;
                 }
             },
@@ -131,7 +177,9 @@ public abstract class AbstractServlet extends HttpServlet
      * Performs the POST action as the logged-in {@link Subject}.
      * Subclasses commonly override this method
      */
-    protected void doPostWithSubjectAndActor(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    protected void doPostWithSubjectAndActor(HttpServletRequest req,
+                                             HttpServletResponse resp,
+                                             ConfiguredObject<?> managedObject) throws ServletException, IOException
     {
         throw new UnsupportedOperationException("POST not supported by this servlet");
     }
@@ -145,7 +193,11 @@ public abstract class AbstractServlet extends HttpServlet
                 @Override
                 public Void run() throws Exception
                 {
-                    doPutWithSubjectAndActor(request, resp);
+                    ConfiguredObject<?> managedObject = getManagedObject(request, resp);
+                    if(managedObject != null)
+                    {
+                        doPutWithSubjectAndActor(request, resp, managedObject);
+                    }
                     return null;
                 }
             },
@@ -164,7 +216,9 @@ public abstract class AbstractServlet extends HttpServlet
      * Performs the PUT action as the logged-in {@link Subject}.
      * Subclasses commonly override this method
      */
-    protected void doPutWithSubjectAndActor(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    protected void doPutWithSubjectAndActor(HttpServletRequest req,
+                                            HttpServletResponse resp,
+                                            final ConfiguredObject<?> managedObject) throws ServletException, IOException
     {
         throw new UnsupportedOperationException("PUT not supported by this servlet");
     }
@@ -179,7 +233,11 @@ public abstract class AbstractServlet extends HttpServlet
                 @Override
                 public Void run() throws Exception
                 {
-                    doDeleteWithSubjectAndActor(request, resp);
+                    ConfiguredObject<?> managedObject = getManagedObject(request, resp);
+                    if(managedObject != null)
+                    {
+                        doDeleteWithSubjectAndActor(request, resp, managedObject);
+                    }
                     return null;
                 }
             },
@@ -192,7 +250,9 @@ public abstract class AbstractServlet extends HttpServlet
      * Performs the PUT action as the logged-in {@link Subject}.
      * Subclasses commonly override this method
      */
-    protected void doDeleteWithSubjectAndActor(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+    protected void doDeleteWithSubjectAndActor(HttpServletRequest req,
+                                               HttpServletResponse resp,
+                                               ConfiguredObject<?> managedObject) throws ServletException, IOException
     {
         throw new UnsupportedOperationException("DELETE not supported by this servlet");
     }
@@ -436,5 +496,45 @@ public abstract class AbstractServlet extends HttpServlet
         }
         return results;
     }
+
+
+    protected final ConfiguredObjectFinder getConfiguredObjectFinder(final ConfiguredObject<?> root)
+    {
+        ConfiguredObjectFinder finder = _configuredObjectFinders.get(root);
+        if(finder == null)
+        {
+            finder = new ConfiguredObjectFinder(root);
+            final ConfiguredObjectFinder existingValue = _configuredObjectFinders.putIfAbsent(root, finder);
+            if(existingValue != null)
+            {
+                finder = existingValue;
+            }
+            else
+            {
+                final AbstractConfigurationChangeListener deletionListener =
+                        new AbstractConfigurationChangeListener()
+                        {
+                            @Override
+                            public void stateChanged(final ConfiguredObject<?> object,
+                                                     final State oldState,
+                                                     final State newState)
+                            {
+                                if (newState == State.DELETED)
+                                {
+                                    _configuredObjectFinders.remove(root);
+                                }
+                            }
+                        };
+                root.addChangeListener(deletionListener);
+                if(root.getState() == State.DELETED)
+                {
+                    _configuredObjectFinders.remove(root);
+                    root.removeChangeListener(deletionListener);
+                }
+            }
+        }
+        return finder;
+    }
+
 
 }

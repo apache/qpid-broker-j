@@ -25,6 +25,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.qpid.server.model.ConfiguredObject;
+
 public class JsonValueServlet extends AbstractServlet
 {
     private static final long serialVersionUID = 1L;
@@ -37,7 +39,9 @@ public class JsonValueServlet extends AbstractServlet
     }
 
     @Override
-    protected void doGetWithSubjectAndActor(final HttpServletRequest request, final HttpServletResponse resp)
+    protected void doGetWithSubjectAndActor(final HttpServletRequest request,
+                                            final HttpServletResponse resp,
+                                            final ConfiguredObject<?> managedObject)
             throws ServletException, IOException
     {
         sendJsonResponse(_value, request, resp);

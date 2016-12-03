@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -68,7 +69,9 @@ public class SaslServlet extends AbstractServlet
         super();
     }
 
-    protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws
+    protected void doGetWithSubjectAndActor(HttpServletRequest request,
+                                            HttpServletResponse response,
+                                            final ConfiguredObject<?> managedObject) throws
                                                                                    ServletException,
                                                                                    IOException
     {
@@ -114,7 +117,9 @@ public class SaslServlet extends AbstractServlet
 
 
     @Override
-    protected void doPostWithSubjectAndActor(final HttpServletRequest request, final HttpServletResponse response) throws IOException
+    protected void doPostWithSubjectAndActor(final HttpServletRequest request,
+                                             final HttpServletResponse response,
+                                             final ConfiguredObject<?> managedObject) throws IOException
     {
         checkSaslAuthEnabled(request);
 

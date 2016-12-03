@@ -41,17 +41,27 @@ public class VirtualHostQueryServlet extends QueryServlet<VirtualHost<?>>
     private static final long serialVersionUID = 1L;
 
     @Override
-    protected VirtualHost<?> getParent(final HttpServletRequest request)
+    protected VirtualHost<?> getParent(final HttpServletRequest request, final ConfiguredObject<?> managedObject)
     {
         final List<String>
                 path = HttpManagementUtil.getPathInfoElements(request.getServletPath(), request.getPathInfo());
-        final Broker<?> broker = HttpManagementUtil.getBroker(request.getServletContext());
-        if (path.size() == 3)
+        if(managedObject instanceof Broker)
         {
-            VirtualHostNode<?> vhn = broker.getChildByName(VirtualHostNode.class, path.get(0));
-            if (vhn != null)
+            final Broker<?> broker = HttpManagementUtil.getBroker(request.getServletContext());
+            if (path.size() == 3)
             {
-                return vhn.getChildByName(VirtualHost.class, path.get(1));
+                VirtualHostNode<?> vhn = broker.getChildByName(VirtualHostNode.class, path.get(0));
+                if (vhn != null)
+                {
+                    return vhn.getChildByName(VirtualHost.class, path.get(1));
+                }
+            }
+        }
+        else if(managedObject instanceof VirtualHost)
+        {
+            if(path.size() == 1)
+            {
+                return (VirtualHost<?>)managedObject;
             }
         }
         return null;
@@ -84,13 +94,17 @@ public class VirtualHostQueryServlet extends QueryServlet<VirtualHost<?>>
         }
     }
 
-    protected String getRequestedCategory(final HttpServletRequest request)
+    protected String getRequestedCategory(final HttpServletRequest request, final ConfiguredObject<?> managedObject)
     {
         List<String> pathInfoElements =
                 HttpManagementUtil.getPathInfoElements(request.getServletPath(), request.getPathInfo());
-        if (pathInfoElements.size() == 3)
+        if (managedObject instanceof Broker && pathInfoElements.size() == 3)
         {
             return pathInfoElements.get(2);
+        }
+        else if(managedObject instanceof VirtualHost && pathInfoElements.size() == 1)
+        {
+            return pathInfoElements.get(0);
         }
         return null;
     }

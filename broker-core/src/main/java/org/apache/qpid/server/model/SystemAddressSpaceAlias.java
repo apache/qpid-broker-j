@@ -27,11 +27,12 @@ public interface SystemAddressSpaceAlias<X extends SystemAddressSpaceAlias<X>> e
     String TYPE_NAME = "systemAddressAlias";
 
     String PATTERN = "pattern";
+    String SYSTEM_ADDRESS_SPACE = "systemAddressSpace";
 
     @ManagedAttribute( defaultValue = "200" )
     int getPriority();
 
-    @ManagedAttribute( mandatory = true)
+    @ManagedAttribute( defaultValue = ".*")
     String getPattern();
 
     @ManagedAttribute( mandatory = true)

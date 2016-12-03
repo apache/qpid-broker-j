@@ -29,6 +29,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.management.plugin.report.ReportRunner;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 
@@ -37,16 +39,35 @@ public class QueueReportServlet extends AbstractServlet
     private static final long serialVersionUID = 1L;
 
     @Override
-    protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws
-                                                                                                      IOException,
-                                                                                                      ServletException
+    protected void doGetWithSubjectAndActor(HttpServletRequest request,
+                                            HttpServletResponse response,
+                                            final ConfiguredObject<?> managedObject)
+            throws IOException, ServletException
     {
         List<String> pathInfoElements =
                 HttpManagementUtil.getPathInfoElements(request.getServletPath(), request.getPathInfo());
-        if (pathInfoElements.size() == 3)
+        Queue<?> queue;
+        String reportName;
+        if (managedObject instanceof Broker && pathInfoElements.size() == 3)
         {
-            Queue<?> queue = getQueueFromRequest(pathInfoElements);
-            ReportRunner<?> reportRunner = ReportRunner.createRunner(pathInfoElements.get(2),request.getParameterMap());
+            queue = getQueueFromRequest(pathInfoElements);
+            reportName = pathInfoElements.get(2);
+
+        }
+        else if(managedObject instanceof VirtualHost && pathInfoElements.size() == 2)
+        {
+            queue = getQueueFromVirtualHost(pathInfoElements.get(0), (VirtualHost<?>)managedObject);
+            reportName = pathInfoElements.get(1);
+        }
+        else
+        {
+            queue = null;
+            reportName = null;
+        }
+
+        if(queue != null)
+        {
+            ReportRunner<?> reportRunner = ReportRunner.createRunner(reportName,request.getParameterMap());
             Object output = reportRunner.runReport(queue);
             response.setContentType(reportRunner.getContentType());
             if(reportRunner.isBinaryReport())
