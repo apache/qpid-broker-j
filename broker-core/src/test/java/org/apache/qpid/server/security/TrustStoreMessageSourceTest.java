@@ -36,13 +36,14 @@ import java.util.EnumSet;
 import java.util.List;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.consumer.ConsumerImpl;
+import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.queue.AbstractQueue;
+import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TestMemoryMessageStore;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -72,12 +73,12 @@ public class TrustStoreMessageSourceTest extends QpidTestCase
 
     public void testAddConsumer() throws Exception
     {
-        final EnumSet<ConsumerImpl.Option> options = EnumSet.noneOf(ConsumerImpl.Option.class);
+        final EnumSet<ConsumerOption> options = EnumSet.noneOf(ConsumerOption.class);
         final ConsumerTarget target = mock(ConsumerTarget.class);
         when(target.allocateCredit(any(ServerMessage.class))).thenReturn(true);
 
-        ConsumerImpl consumer = _trustStoreMessageSource.addConsumer(target, null, ServerMessage.class, getTestName(), options, 0);
-        final AbstractQueue.MessageContainer messageContainer = consumer.pullMessage();
+        MessageInstanceConsumer consumer = _trustStoreMessageSource.addConsumer(target, null, ServerMessage.class, getTestName(), options, 0);
+        final MessageContainer messageContainer = consumer.pullMessage();
         assertNotNull("Could not pull message of TrustStore", messageContainer);
         final ServerMessage message = messageContainer.getMessageInstance().getMessage();
         assertCertificates(getCertificatesFromMessage(message));

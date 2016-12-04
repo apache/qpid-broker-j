@@ -30,11 +30,11 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDeletedException;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
@@ -55,7 +55,7 @@ public abstract class QueueEntryImpl implements QueueEntry
 
     private final MessageReference _message;
 
-    private Set<Long> _rejectedBy = null;
+    private Set<Object> _rejectedBy = null;
 
     private static final EntryState HELD_STATE = new EntryState()
     {
@@ -263,7 +263,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         boolean acquired = acquire();
         if(!acquired)
         {
-            QueueConsumer consumer = getDeliveredConsumer();
+            QueueConsumer consumer = getAcquiringConsumer();
             acquired = removeAcquisitionFromConsumer(consumer);
             if(acquired)
             {
@@ -304,7 +304,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         return acquired;
     }
 
-    public boolean acquire(ConsumerImpl sub)
+    public boolean acquire(MessageInstanceConsumer sub)
     {
         final boolean acquired = acquire(((QueueConsumer<?>) sub).getOwningState().getUnstealableState());
         if(acquired)
@@ -315,7 +315,7 @@ public abstract class QueueEntryImpl implements QueueEntry
     }
 
     @Override
-    public boolean makeAcquisitionUnstealable(final ConsumerImpl consumer)
+    public boolean makeAcquisitionUnstealable(final MessageInstanceConsumer consumer)
     {
         EntryState state = _state;
         if(state instanceof StealableConsumerAcquiredState
@@ -356,13 +356,13 @@ public abstract class QueueEntryImpl implements QueueEntry
     }
 
     @Override
-    public ConsumerImpl getAcquiringConsumer()
+    public QueueConsumer<?> getAcquiringConsumer()
     {
-        ConsumerImpl consumer;
+        QueueConsumer<?> consumer;
         EntryState state = _state;
         if (state instanceof ConsumerAcquiredState)
         {
-            consumer = ((ConsumerAcquiredState)state).getConsumer();
+            consumer = ((ConsumerAcquiredState<QueueConsumer<?>>)state).getConsumer();
         }
         else
         {
@@ -372,14 +372,14 @@ public abstract class QueueEntryImpl implements QueueEntry
     }
 
     @Override
-    public boolean isAcquiredBy(ConsumerImpl consumer)
+    public boolean isAcquiredBy(MessageInstanceConsumer consumer)
     {
         EntryState state = _state;
         return (state instanceof ConsumerAcquiredState && ((ConsumerAcquiredState)state).getConsumer() == consumer);
     }
 
     @Override
-    public boolean removeAcquisitionFromConsumer(ConsumerImpl consumer)
+    public boolean removeAcquisitionFromConsumer(MessageInstanceConsumer consumer)
     {
         EntryState state = _state;
         if(state instanceof StealableConsumerAcquiredState
@@ -410,7 +410,7 @@ public abstract class QueueEntryImpl implements QueueEntry
     }
 
     @Override
-    public void release(ConsumerImpl consumer)
+    public void release(MessageInstanceConsumer consumer)
     {
         EntryState state = _state;
         if(isAcquiredBy(consumer) && _stateUpdater.compareAndSet(this, state, AVAILABLE_STATE))
@@ -469,24 +469,18 @@ public abstract class QueueEntryImpl implements QueueEntry
         return false;
     }
 
-    @Override
-    public QueueConsumer getDeliveredConsumer()
-    {
-        return (QueueConsumer) getAcquiringConsumer();
-    }
-
     public void reject()
     {
-        QueueConsumer consumer = getDeliveredConsumer();
+        QueueConsumer consumer = getAcquiringConsumer();
 
         if (consumer != null)
         {
             if (_rejectedBy == null)
             {
-                _rejectedBy = new HashSet<Long>();
+                _rejectedBy = new HashSet<>();
             }
 
-            _rejectedBy.add(consumer.getConsumerNumber());
+            _rejectedBy.add(consumer.getIdentifier());
         }
         else
         {
@@ -494,12 +488,13 @@ public abstract class QueueEntryImpl implements QueueEntry
         }
     }
 
-    public boolean isRejectedBy(ConsumerImpl consumer)
+    @Override
+    public boolean isRejectedBy(MessageInstanceConsumer consumer)
     {
 
         if (_rejectedBy != null) // We have consumers that rejected this message
         {
-            return _rejectedBy.contains(consumer.getConsumerNumber());
+            return _rejectedBy.contains(consumer.getIdentifier());
         }
         else // This message hasn't been rejected yet.
         {

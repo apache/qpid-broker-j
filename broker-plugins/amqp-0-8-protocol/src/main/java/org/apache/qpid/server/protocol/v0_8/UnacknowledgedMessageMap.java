@@ -23,8 +23,8 @@ package org.apache.qpid.server.protocol.v0_8;
 import java.util.Collection;
 import java.util.Map;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 
 
 public interface UnacknowledgedMessageMap
@@ -38,7 +38,7 @@ public interface UnacknowledgedMessageMap
 
     void visit(Visitor visitor);
 
-    void add(long deliveryTag, MessageInstance message, final ConsumerImpl target, final boolean usesCredit);
+    void add(long deliveryTag, MessageInstance message, final MessageInstanceConsumer consumer, final boolean usesCredit);
 
     MessageConsumerAssociation remove(long deliveryTag, final boolean restoreCredit);
 

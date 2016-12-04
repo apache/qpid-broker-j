@@ -49,7 +49,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.connection.SessionPrincipal;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.consumer.ScheduledConsumerTargetSet;
 import org.apache.qpid.server.logging.EventLogger;
@@ -58,6 +57,7 @@ import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.logging.subjects.ChannelLogSubject;
 import org.apache.qpid.server.message.MessageDestination;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
@@ -1084,7 +1084,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
 
     private void registerConsumer(final SendingLink_1_0 link)
     {
-        ConsumerImpl consumer = link.getConsumer();
+        MessageInstanceConsumer consumer = link.getConsumer();
         if(consumer instanceof Consumer<?>)
         {
             Consumer<?> modelConsumer = (Consumer<?>) consumer;

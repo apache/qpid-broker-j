@@ -31,12 +31,12 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstance.ConsumerAcquiredState;
 import org.apache.qpid.server.message.MessageInstance.EntryState;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
@@ -186,7 +186,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget
 
     private final AddMessageDispositionListenerAction _postIdSettingAction;
 
-    public void doSend(final ConsumerImpl consumer, final MessageInstance entry, boolean batch)
+    public void doSend(final MessageInstanceConsumer consumer, final MessageInstance entry, boolean batch)
     {
         ServerMessage serverMsg = entry.getMessage();
 
@@ -409,7 +409,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget
                            });
    }
 
-    void reject(final ConsumerImpl consumer, final MessageInstance entry)
+    void reject(final MessageInstanceConsumer consumer, final MessageInstance entry)
     {
         entry.setRedelivered();
         if (entry.makeAcquisitionUnstealable(consumer))
@@ -418,7 +418,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget
         }
     }
 
-    void release(final ConsumerImpl consumer,
+    void release(final MessageInstanceConsumer consumer,
                  final MessageInstance entry,
                  final boolean setRedelivered)
     {
@@ -442,7 +442,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget
         }
     }
 
-    protected void sendToDLQOrDiscard(final ConsumerImpl consumer, MessageInstance entry)
+    protected void sendToDLQOrDiscard(final MessageInstanceConsumer consumer, MessageInstance entry)
     {
         final ServerMessage msg = entry.getMessage();
 

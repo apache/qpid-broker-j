@@ -59,7 +59,7 @@ import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.framing.*;
 import org.apache.qpid.protocol.ErrorCodes;
 import org.apache.qpid.server.connection.SessionPrincipal;
-import org.apache.qpid.server.consumer.ConsumerImpl;
+import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.consumer.ScheduledConsumerTargetSet;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
@@ -78,6 +78,7 @@ import org.apache.qpid.server.logging.subjects.ChannelLogSubject;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
@@ -306,8 +307,8 @@ public class AMQChannel
                 new GetDeliveryMethod(queue);
 
         ConsumerTarget_0_8 target;
-        EnumSet<ConsumerImpl.Option> options = EnumSet.of(ConsumerImpl.Option.TRANSIENT, ConsumerImpl.Option.ACQUIRES,
-                                                          ConsumerImpl.Option.SEES_REQUEUES);
+        EnumSet<ConsumerOption> options = EnumSet.of(ConsumerOption.TRANSIENT, ConsumerOption.ACQUIRES,
+                                                     ConsumerOption.SEES_REQUEUES);
         if (acks)
         {
 
@@ -322,7 +323,7 @@ public class AMQChannel
                                                              INFINITE_CREDIT_CREDIT_MANAGER, getDeliveryMethod);
         }
 
-        ConsumerImpl sub = queue.addConsumer(target, null, AMQMessage.class, "", options, null);
+        MessageInstanceConsumer sub = queue.addConsumer(target, null, AMQMessage.class, "", options, null);
         target.updateNotifyWorkDesired();
         target.sendNextMessage();
         target.close();
@@ -710,7 +711,7 @@ public class AMQChannel
         }
 
         ConsumerTarget_0_8 target;
-        EnumSet<ConsumerImpl.Option> options = EnumSet.noneOf(ConsumerImpl.Option.class);
+        EnumSet<ConsumerOption> options = EnumSet.noneOf(ConsumerOption.class);
         final boolean multiQueue = sources.size()>1;
         if(arguments != null && Boolean.TRUE.equals(arguments.get(AMQPFilterTypes.NO_CONSUME.getValue())))
         {
@@ -720,20 +721,20 @@ public class AMQChannel
         else if(acks)
         {
             target = ConsumerTarget_0_8.createAckTarget(this, tag, arguments, _creditManager, multiQueue);
-            options.add(ConsumerImpl.Option.ACQUIRES);
-            options.add(ConsumerImpl.Option.SEES_REQUEUES);
+            options.add(ConsumerOption.ACQUIRES);
+            options.add(ConsumerOption.SEES_REQUEUES);
         }
         else
         {
             target = ConsumerTarget_0_8.createNoAckTarget(this, tag, arguments,
                                                           INFINITE_CREDIT_CREDIT_MANAGER, multiQueue);
-            options.add(ConsumerImpl.Option.ACQUIRES);
-            options.add(ConsumerImpl.Option.SEES_REQUEUES);
+            options.add(ConsumerOption.ACQUIRES);
+            options.add(ConsumerOption.SEES_REQUEUES);
         }
 
         if(exclusive)
         {
-            options.add(ConsumerImpl.Option.EXCLUSIVE);
+            options.add(ConsumerOption.EXCLUSIVE);
         }
 
 
@@ -817,7 +818,7 @@ public class AMQChannel
 
             for(MessageSource source : sources)
             {
-                ConsumerImpl sub =
+                MessageInstanceConsumer sub =
                         source.addConsumer(target,
                                            filterManager,
                                            AMQMessage.class,
@@ -859,10 +860,10 @@ public class AMQChannel
         }
 
         ConsumerTarget_0_8 target = _tag2SubscriptionTargetMap.remove(consumerTag);
-        Collection<ConsumerImpl> subs = target == null ? null : target.getConsumers();
+        Collection<MessageInstanceConsumer> subs = target == null ? null : target.getConsumers();
         if (subs != null)
         {
-            for(ConsumerImpl sub : subs)
+            for(MessageInstanceConsumer sub : subs)
             {
                 if (sub instanceof Consumer<?>)
                 {
@@ -955,7 +956,7 @@ public class AMQChannel
      */
     public void addUnacknowledgedMessage(MessageInstance entry,
                                          long deliveryTag,
-                                         ConsumerImpl consumer,
+                                         MessageInstanceConsumer consumer,
                                          final boolean usesCredit)
     {
         if (_logger.isDebugEnabled())
@@ -1010,7 +1011,7 @@ public class AMQChannel
         for (Map.Entry<Long, MessageConsumerAssociation> entry : copy.entrySet())
         {
             MessageInstance unacked = entry.getValue().getMessageInstance();
-            ConsumerImpl consumer = entry.getValue().getConsumer();
+            MessageInstanceConsumer consumer = entry.getValue().getConsumer();
             // Mark message redelivered
             unacked.setRedelivered();
             // here we wish to restore credit
@@ -1117,7 +1118,7 @@ public class AMQChannel
         {
             long deliveryTag = entry.getKey();
             MessageInstance message = entry.getValue().getMessageInstance();
-            ConsumerImpl consumer = entry.getValue().getConsumer();
+            MessageInstanceConsumer consumer = entry.getValue().getConsumer();
 
             // Without any details from the client about what has been processed we have to mark
             // all messages in the unacked map as redelivered.
@@ -1142,7 +1143,7 @@ public class AMQChannel
         {
             long deliveryTag = entry.getKey();
             MessageInstance message = entry.getValue().getMessageInstance();
-            ConsumerImpl consumer = entry.getValue().getConsumer();
+            MessageInstanceConsumer consumer = entry.getValue().getConsumer();
 
             //Amend the delivery counter as the client hasn't seen these messages yet.
             message.decrementDeliveryCount();
@@ -1187,7 +1188,7 @@ public class AMQChannel
                 // may need to deliver queued messages
                 for (ConsumerTarget_0_8 s : getConsumerTargets())
                 {
-                    for(ConsumerImpl sub : s.getConsumers())
+                    for(MessageInstanceConsumer sub : s.getConsumers())
                     {
                         sub.externalStateChange();
                     }
@@ -1273,7 +1274,7 @@ public class AMQChannel
         for(MessageConsumerAssociation association : _resendList)
         {
             final MessageInstance messageInstance = association.getMessageInstance();
-            final ConsumerImpl consumer = association.getConsumer();
+            final MessageInstanceConsumer consumer = association.getConsumer();
             if (consumer.isClosed())
             {
                 messageInstance.release(consumer);
@@ -1298,7 +1299,7 @@ public class AMQChannel
             _suspended.set(false);
             for(ConsumerTarget_0_8 target : getConsumerTargets())
             {
-                for(ConsumerImpl sub : target.getConsumers())
+                for(MessageInstanceConsumer sub : target.getConsumers())
                 {
                     sub.externalStateChange();
                 }

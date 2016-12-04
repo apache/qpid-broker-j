@@ -27,8 +27,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
@@ -36,10 +36,10 @@ class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
     private static final class MessageConsumerAssociationImpl implements MessageConsumerAssociation
     {
         private final MessageInstance _messageInstance;
-        private final ConsumerImpl _consumer;
+        private final MessageInstanceConsumer _consumer;
         private final boolean _usesCredit;
 
-        private MessageConsumerAssociationImpl(final MessageInstance messageInstance, final ConsumerImpl consumer, final boolean usesCredit)
+        private MessageConsumerAssociationImpl(final MessageInstance messageInstance, final MessageInstanceConsumer consumer, final boolean usesCredit)
         {
             _messageInstance = messageInstance;
             _consumer = consumer;
@@ -53,7 +53,7 @@ class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
         }
 
         @Override
-        public ConsumerImpl getConsumer()
+        public MessageInstanceConsumer getConsumer()
         {
             return _consumer;
         }
@@ -81,6 +81,7 @@ class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
         _creditRestorer = creditRestorer;
     }
 
+    @Override
     public void collect(long deliveryTag, boolean multiple, Map<Long, MessageConsumerAssociation> msgs)
     {
         if (multiple)
@@ -106,6 +107,7 @@ class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
         }
     }
 
+    @Override
     public MessageConsumerAssociation remove(long deliveryTag, final boolean restoreCredit)
     {
         MessageConsumerAssociationImpl entry = _map.remove(deliveryTag);
@@ -120,6 +122,7 @@ class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
         return entry;
     }
 
+    @Override
     public void visit(Visitor visitor)
     {
         for (Map.Entry<Long, MessageConsumerAssociationImpl> entry : _map.entrySet())
@@ -129,7 +132,8 @@ class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
         visitor.visitComplete();
     }
 
-    public void add(long deliveryTag, MessageInstance message, final ConsumerImpl consumer, final boolean usesCredit)
+    @Override
+    public void add(long deliveryTag, MessageInstance message, final MessageInstanceConsumer consumer, final boolean usesCredit)
     {
         if(_map.put(deliveryTag, new MessageConsumerAssociationImpl(message, consumer, usesCredit)) == null)
         {
@@ -141,17 +145,20 @@ class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
         }
     }
 
+    @Override
     public int size()
     {
         return _size;
     }
 
+    @Override
     public MessageInstance get(long key)
     {
         MessageConsumerAssociation association = _map.get(key);
         return association == null ? null : association.getMessageInstance();
     }
 
+    @Override
     public Collection<MessageConsumerAssociation> acknowledge(long deliveryTag, boolean multiple)
     {
         if(multiple)

@@ -20,10 +20,13 @@
  */
 package org.apache.qpid.server.model;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.qpid.server.message.MessageInstanceConsumer;
+import org.apache.qpid.server.protocol.AMQSessionModel;
 
 @ManagedObject(creatable = false, amqpName = "org.apache.qpid.Consumer")
-public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>, ConsumerImpl
+public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>, MessageInstanceConsumer
 {
     String DISTRIBUTION_MODE = "distributionMode";
     String EXCLUSIVE = "exclusive";
@@ -37,6 +40,8 @@ public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>, Co
 
     @ManagedContextDefault( name = SUSPEND_NOTIFICATION_PERIOD)
     long SUSPEND_NOTIFICATION_PERIOD_DEFAULT = 10000;
+
+    AtomicLong CONSUMER_NUMBER_GENERATOR = new AtomicLong(0);
 
     @DerivedAttribute
     String getLinkName();
@@ -72,5 +77,16 @@ public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>, Co
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Prefetch")
     long getUnacknowledgedMessages();
+
+
+    AMQSessionModel getSessionModel();
+
+    long getConsumerNumber();
+
+    boolean isSuspended();
+
+    boolean seesRequeues();
+
+    boolean isActive();
 
 }

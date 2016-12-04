@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,17 +18,27 @@
  * under the License.
  *
  */
+package org.apache.qpid.server.message;
 
-package org.apache.qpid.server.protocol.v0_8;
+import org.apache.qpid.server.consumer.ConsumerTarget;
 
-import org.apache.qpid.server.message.MessageInstance;
-import org.apache.qpid.server.message.MessageInstanceConsumer;
-
-public interface MessageConsumerAssociation
+public interface MessageInstanceConsumer
 {
-    MessageInstance getMessageInstance();
+    boolean isClosed();
 
-    MessageInstanceConsumer getConsumer();
+    boolean acquires();
 
-    long getSize();
+    String getName();
+
+    void close();
+
+    void externalStateChange();
+
+    Object getIdentifier();
+
+    MessageContainer pullMessage();
+
+    ConsumerTarget getTarget();
+
+    void setNotifyWorkDesired(boolean desired);
 }

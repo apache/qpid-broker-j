@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,17 +18,14 @@
  * under the License.
  *
  */
+package org.apache.qpid.server.consumer;
 
-package org.apache.qpid.server.protocol.v0_8;
-
-import org.apache.qpid.server.message.MessageInstance;
-import org.apache.qpid.server.message.MessageInstanceConsumer;
-
-public interface MessageConsumerAssociation
+public enum ConsumerOption
 {
-    MessageInstance getMessageInstance();
-
-    MessageInstanceConsumer getConsumer();
-
-    long getSize();
+    ACQUIRES,
+    SEES_REQUEUES,
+    TRANSIENT,
+    EXCLUSIVE,
+    NO_LOCAL,
+    DURABLE
 }

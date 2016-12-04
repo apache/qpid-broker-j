@@ -55,7 +55,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.connection.SessionPrincipal;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.consumer.ScheduledConsumerTargetSet;
 import org.apache.qpid.server.logging.LogMessage;
@@ -65,6 +64,7 @@ import org.apache.qpid.server.logging.subjects.ChannelLogSubject;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfigurationChangeListener;
@@ -541,7 +541,7 @@ public class ServerSession extends Session
         // Broker shouldn't block awaiting close - thus do override this method to do nothing
     }
 
-    public void acknowledge(final ConsumerImpl consumer,
+    public void acknowledge(final MessageInstanceConsumer consumer,
                             final ConsumerTarget_0_10 target,
                             final MessageInstance entry)
     {
@@ -578,11 +578,11 @@ public class ServerSession extends Session
     }
 
 
-    public void register(final ConsumerImpl consumerImpl)
+    public void register(final MessageInstanceConsumer messageInstanceConsumer)
     {
-        if(consumerImpl instanceof Consumer<?>)
+        if(messageInstanceConsumer instanceof Consumer<?>)
         {
-            final Consumer<?> consumer = (Consumer<?>) consumerImpl;
+            final Consumer<?> consumer = (Consumer<?>) messageInstanceConsumer;
             _consumers.add(consumer);
             consumer.addChangeListener(_consumerClosedListener);
             consumerAdded(consumer);

@@ -23,7 +23,7 @@ package org.apache.qpid.server.message;
 import java.util.Collection;
 import java.util.EnumSet;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
+import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -31,15 +31,15 @@ import org.apache.qpid.server.store.TransactionLogResource;
 
 public interface MessageSource extends TransactionLogResource, MessageNode
 {
-     ConsumerImpl addConsumer(ConsumerTarget target, FilterManager filters,
-                              Class<? extends ServerMessage> messageClass,
-                              String consumerName,
-                              EnumSet<ConsumerImpl.Option> options,
-                              Integer priority)
+    MessageInstanceConsumer addConsumer(ConsumerTarget target, FilterManager filters,
+                                        Class<? extends ServerMessage> messageClass,
+                                        String consumerName,
+                                        EnumSet<ConsumerOption> options,
+                                        Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
                    ConsumerAccessRefused, QueueDeleted;
 
-    Collection<? extends ConsumerImpl> getConsumers();
+    Collection<? extends MessageInstanceConsumer> getConsumers();
 
     boolean verifySessionAccess(AMQSessionModel<?> session);
 

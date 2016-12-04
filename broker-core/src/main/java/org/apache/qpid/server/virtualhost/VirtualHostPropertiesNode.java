@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
+import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.message.ServerMessage;
@@ -51,7 +51,7 @@ public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
                                 final FilterManager filters,
                                 final Class<? extends ServerMessage> messageClass,
                                 final String consumerName,
-                                final EnumSet<ConsumerImpl.Option> options, final Integer priority)
+                                final EnumSet<ConsumerOption> options, final Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
                    ConsumerAccessRefused, QueueDeleted
     {

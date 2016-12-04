@@ -28,8 +28,8 @@ import java.util.Collection;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -45,7 +45,7 @@ public class UnacknowledgedMessageMapTest extends QpidTestCase
             return input.getMessageInstance();
         }
     };
-    private final ConsumerImpl _consumer = mock(ConsumerImpl.class);
+    private final MessageInstanceConsumer _consumer = mock(MessageInstanceConsumer.class);
 
     public void testDeletedMessagesCantBeAcknowledged()
     {

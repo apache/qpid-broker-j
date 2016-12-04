@@ -23,8 +23,8 @@ package org.apache.qpid.server.protocol.v0_10;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 
 
 class ExplicitAcceptDispositionChangeListener implements ServerSession.MessageDispositionChangeListener
@@ -34,11 +34,11 @@ class ExplicitAcceptDispositionChangeListener implements ServerSession.MessageDi
 
     private final MessageInstance _entry;
     private final ConsumerTarget_0_10 _target;
-    private final ConsumerImpl _consumer;
+    private final MessageInstanceConsumer _consumer;
 
     public ExplicitAcceptDispositionChangeListener(MessageInstance entry,
                                                    ConsumerTarget_0_10 target,
-                                                   final ConsumerImpl consumer)
+                                                   final MessageInstanceConsumer consumer)
     {
         _entry = entry;
         _target = target;

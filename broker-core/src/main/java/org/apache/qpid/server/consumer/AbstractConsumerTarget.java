@@ -35,9 +35,10 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.SubscriptionMessages;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.queue.AbstractQueue;
+import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.queue.SuspendedConsumerLoggingTicker;
 import org.apache.qpid.server.transport.AMQPConnection;
 
@@ -56,9 +57,9 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
 
     private final boolean _isMultiQueue;
     private final SuspendedConsumerLoggingTicker _suspendedConsumerLoggingTicker;
-    private final List<ConsumerImpl> _consumers = new CopyOnWriteArrayList<>();
+    private final List<MessageInstanceConsumer> _consumers = new CopyOnWriteArrayList<>();
 
-    private Iterator<ConsumerImpl> _pullIterator;
+    private Iterator<MessageInstanceConsumer> _pullIterator;
     private boolean _notifyWorkDesired;
     private final AtomicBoolean _scheduled = new AtomicBoolean();
 
@@ -117,7 +118,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
                 }
             }
 
-            for (ConsumerImpl consumer : _consumers)
+            for (MessageInstanceConsumer consumer : _consumers)
             {
                 consumer.setNotifyWorkDesired(desired);
             }
@@ -144,13 +145,13 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
     }
 
     @Override
-    public void consumerAdded(final ConsumerImpl sub)
+    public void consumerAdded(final MessageInstanceConsumer sub)
     {
         _consumers.add(sub);
     }
 
     @Override
-    public ListenableFuture<Void> consumerRemoved(final ConsumerImpl sub)
+    public ListenableFuture<Void> consumerRemoved(final MessageInstanceConsumer sub)
     {
         if(_consumers.contains(sub))
         {
@@ -176,7 +177,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
         return sessionModel.getAMQPConnection().doOnIOThreadAsync(task);
     }
 
-    private void consumerRemovedInternal(final ConsumerImpl sub)
+    private void consumerRemovedInternal(final MessageInstanceConsumer sub)
     {
         _consumers.remove(sub);
         if(_consumers.isEmpty())
@@ -185,7 +186,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
         }
     }
 
-    public List<ConsumerImpl> getConsumers()
+    public List<MessageInstanceConsumer> getConsumers()
     {
         return _consumers;
     }
@@ -203,7 +204,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
     }
 
     @Override
-    public final long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
+    public final long send(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
     {
         doSend(consumer, entry, batch);
 
@@ -214,14 +215,14 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
         return entry.getMessage().getSize();
     }
 
-    protected abstract void doSend(final ConsumerImpl consumer, MessageInstance entry, boolean batch);
+    protected abstract void doSend(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch);
 
 
     @Override
     public boolean sendNextMessage()
     {
-        AbstractQueue.MessageContainer messageContainer = null;
-        ConsumerImpl consumer = null;
+        MessageContainer messageContainer = null;
+        MessageInstanceConsumer consumer = null;
         boolean iteratedCompleteList = false;
         while (messageContainer == null)
         {
@@ -270,12 +271,12 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
     {
         if (_state.compareAndSet(State.OPEN, State.CLOSED))
         {
-            List<ConsumerImpl> consumers = new ArrayList<>(_consumers);
+            List<MessageInstanceConsumer> consumers = new ArrayList<>(_consumers);
             _consumers.clear();
 
             setNotifyWorkDesired(false);
 
-            for (ConsumerImpl consumer : consumers)
+            for (MessageInstanceConsumer consumer : consumers)
             {
                 consumer.close();
             }

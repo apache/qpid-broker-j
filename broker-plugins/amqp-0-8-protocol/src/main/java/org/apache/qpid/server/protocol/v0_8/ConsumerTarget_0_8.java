@@ -27,11 +27,11 @@ import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.flow.FlowCreditManager;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstance.EntryState;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
@@ -96,7 +96,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
          * @throws QpidException
          */
         @Override
-        public void doSend(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
+        public void doSend(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
         {
             // We don't decrement the reference here as we don't want to consume the message
             // but we do want to send it to the client.
@@ -142,7 +142,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
          * @param batch
          */
         @Override
-        public void doSend(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
+        public void doSend(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
         {
             // if we do not need to wait for client acknowledgements
             // we can decrement the reference count immediately.
@@ -245,7 +245,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
          * @param batch
          */
         @Override
-        public void doSend(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
+        public void doSend(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
         {
 
             // put queue entry on a list and then notify the connection to read list.
@@ -397,7 +397,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
         updateNotifyWorkDesired();
     }
 
-    protected long sendToClient(final ConsumerImpl consumer, final ServerMessage message,
+    protected long sendToClient(final MessageInstanceConsumer consumer, final ServerMessage message,
                                 final InstanceProperties props,
                                 final long deliveryTag)
     {

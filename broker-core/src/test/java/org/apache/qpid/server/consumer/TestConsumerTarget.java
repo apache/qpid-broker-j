@@ -35,6 +35,7 @@ import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
@@ -44,7 +45,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
-import org.apache.qpid.server.queue.AbstractQueue;
+import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.network.Ticker;
@@ -59,7 +60,7 @@ public class TestConsumerTarget implements ConsumerTarget
     private ArrayList<MessageInstance> _messages = new ArrayList<MessageInstance>();
 
     private boolean _isActive = true;
-    private ConsumerImpl _consumer;
+    private MessageInstanceConsumer _consumer;
     private MockSessionModel _sessionModel = new MockSessionModel();
     private boolean _notifyDesired;
 
@@ -118,7 +119,7 @@ public class TestConsumerTarget implements ConsumerTarget
     {
     }
 
-    public long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
+    public long send(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
     {
         long size = entry.getMessage().getSize();
         if (_messages.contains(entry))
@@ -158,13 +159,13 @@ public class TestConsumerTarget implements ConsumerTarget
     }
 
     @Override
-    public void consumerAdded(final ConsumerImpl sub)
+    public void consumerAdded(final MessageInstanceConsumer sub)
     {
         _consumer = sub;
     }
 
     @Override
-    public ListenableFuture<Void> consumerRemoved(final ConsumerImpl sub)
+    public ListenableFuture<Void> consumerRemoved(final MessageInstanceConsumer sub)
     {
        close();
         return Futures.immediateFuture(null);
@@ -179,7 +180,7 @@ public class TestConsumerTarget implements ConsumerTarget
     @Override
     public boolean processPending()
     {
-        AbstractQueue.MessageContainer messageContainer = _consumer.pullMessage();
+        MessageContainer messageContainer = _consumer.pullMessage();
         if (messageContainer == null)
         {
             return false;

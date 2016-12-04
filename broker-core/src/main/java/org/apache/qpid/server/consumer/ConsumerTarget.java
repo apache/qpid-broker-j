@@ -23,6 +23,7 @@ package org.apache.qpid.server.consumer;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 
@@ -49,9 +50,9 @@ public interface ConsumerTarget
 
     State getState();
 
-    void consumerAdded(ConsumerImpl sub);
+    void consumerAdded(MessageInstanceConsumer sub);
 
-    ListenableFuture<Void> consumerRemoved(ConsumerImpl sub);
+    ListenableFuture<Void> consumerRemoved(MessageInstanceConsumer sub);
 
     long getUnacknowledgedBytes();
 
@@ -59,7 +60,7 @@ public interface ConsumerTarget
 
     AMQSessionModel<?> getSessionModel();
 
-    long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch);
+    long send(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch);
 
     boolean sendNextMessage();
 

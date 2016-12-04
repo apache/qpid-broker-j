@@ -28,8 +28,8 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
@@ -100,7 +100,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
     }
 
-    public void doSend(final ConsumerImpl consumer, final MessageInstance entry, boolean batch)
+    public void doSend(final MessageInstanceConsumer consumer, final MessageInstance entry, boolean batch)
     {
         // TODO
         ServerMessage serverMessage = entry.getMessage();
@@ -330,16 +330,16 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
         private final MessageInstance _queueEntry;
         private final Binary _deliveryTag;
-        private final ConsumerImpl _consumer;
+        private final MessageInstanceConsumer _consumer;
 
-        public DispositionAction(Binary tag, MessageInstance queueEntry, final ConsumerImpl consumer)
+        public DispositionAction(Binary tag, MessageInstance queueEntry, final MessageInstanceConsumer consumer)
         {
             _deliveryTag = tag;
             _queueEntry = queueEntry;
             _consumer = consumer;
         }
 
-        public ConsumerImpl getConsumer()
+        public MessageInstanceConsumer getConsumer()
         {
             return _consumer;
         }

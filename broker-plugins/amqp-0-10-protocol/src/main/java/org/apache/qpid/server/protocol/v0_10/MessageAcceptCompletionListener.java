@@ -21,8 +21,8 @@
 
 package org.apache.qpid.server.protocol.v0_10;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.transport.Method;
 
 public class MessageAcceptCompletionListener implements Method.CompletionListener
@@ -30,12 +30,12 @@ public class MessageAcceptCompletionListener implements Method.CompletionListene
     private final ConsumerTarget_0_10 _sub;
     private final MessageInstance _entry;
     private final ServerSession _session;
-    private final ConsumerImpl _consumer;
+    private final MessageInstanceConsumer _consumer;
     private long _messageSize;
     private boolean _restoreCredit;
 
     public MessageAcceptCompletionListener(ConsumerTarget_0_10 sub,
-                                           final ConsumerImpl consumer,
+                                           final MessageInstanceConsumer consumer,
                                            ServerSession session,
                                            MessageInstance entry,
                                            boolean restoreCredit)

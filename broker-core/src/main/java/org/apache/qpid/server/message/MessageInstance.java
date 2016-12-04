@@ -21,7 +21,6 @@
 package org.apache.qpid.server.message;
 
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -50,27 +49,25 @@ public interface MessageInstance
 
     boolean acquiredByConsumer();
 
-    boolean isAcquiredBy(ConsumerImpl consumer);
+    boolean isAcquiredBy(MessageInstanceConsumer consumer);
 
-    boolean removeAcquisitionFromConsumer(ConsumerImpl consumer);
+    boolean removeAcquisitionFromConsumer(MessageInstanceConsumer consumer);
 
     void setRedelivered();
 
     boolean isRedelivered();
 
-    ConsumerImpl getDeliveredConsumer();
-
     void reject();
 
-    boolean isRejectedBy(ConsumerImpl consumer);
+    boolean isRejectedBy(MessageInstanceConsumer consumer);
 
     boolean getDeliveredToConsumer();
 
     boolean expired();
 
-    boolean acquire(ConsumerImpl sub);
+    boolean acquire(MessageInstanceConsumer sub);
 
-    boolean makeAcquisitionUnstealable(final ConsumerImpl consumer);
+    boolean makeAcquisitionUnstealable(final MessageInstanceConsumer consumer);
 
     boolean makeAcquisitionStealable();
 
@@ -80,7 +77,7 @@ public interface MessageInstance
 
     Filterable asFilterable();
 
-    ConsumerImpl getAcquiringConsumer();
+    MessageInstanceConsumer getAcquiringConsumer();
 
     MessageEnqueueRecord getEnqueueRecord();
 
@@ -171,7 +168,7 @@ public interface MessageInstance
         }
     }
 
-    abstract class ConsumerAcquiredState<C extends ConsumerImpl> extends EntryState
+    abstract class ConsumerAcquiredState<C extends MessageInstanceConsumer> extends EntryState
     {
         public abstract C getConsumer();
 
@@ -188,7 +185,7 @@ public interface MessageInstance
         }
     }
 
-    final class StealableConsumerAcquiredState<C extends ConsumerImpl> extends ConsumerAcquiredState
+    final class StealableConsumerAcquiredState<C extends MessageInstanceConsumer> extends ConsumerAcquiredState
     {
         private final C _consumer;
         private final UnstealableConsumerAcquiredState<C> _unstealableState;
@@ -211,7 +208,7 @@ public interface MessageInstance
         }
     }
 
-    final class UnstealableConsumerAcquiredState<C extends ConsumerImpl> extends ConsumerAcquiredState
+    final class UnstealableConsumerAcquiredState<C extends MessageInstanceConsumer> extends ConsumerAcquiredState
     {
         private final StealableConsumerAcquiredState<C> _stealableState;
 
@@ -246,7 +243,7 @@ public interface MessageInstance
 
     void release();
 
-    void release(ConsumerImpl release);
+    void release(MessageInstanceConsumer release);
 
     void delete();
 

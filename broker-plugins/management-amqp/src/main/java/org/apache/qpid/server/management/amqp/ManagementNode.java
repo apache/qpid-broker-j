@@ -50,7 +50,7 @@ import javax.security.auth.Subject;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.connection.SessionPrincipal;
-import org.apache.qpid.server.consumer.ConsumerImpl;
+import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.Filterable;
@@ -58,6 +58,7 @@ import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
@@ -1434,7 +1435,7 @@ class ManagementNode implements MessageSource, MessageDestination
                                                             final FilterManager filters,
                                                             final Class<? extends ServerMessage> messageClass,
                                                             final String consumerName,
-                                                            final EnumSet<ConsumerImpl.Option> options,
+                                                            final EnumSet<ConsumerOption> options,
                                                             final Integer priority)
     {
 
@@ -1543,7 +1544,7 @@ class ManagementNode implements MessageSource, MessageDestination
         }
 
         @Override
-        public ConsumerImpl getAcquiringConsumer()
+        public MessageInstanceConsumer getAcquiringConsumer()
         {
             return null;
         }
@@ -1555,13 +1556,13 @@ class ManagementNode implements MessageSource, MessageDestination
         }
 
         @Override
-        public boolean isAcquiredBy(final ConsumerImpl consumer)
+        public boolean isAcquiredBy(final MessageInstanceConsumer consumer)
         {
             return false;
         }
 
         @Override
-        public boolean removeAcquisitionFromConsumer(final ConsumerImpl consumer)
+        public boolean removeAcquisitionFromConsumer(final MessageInstanceConsumer consumer)
         {
             return false;
         }
@@ -1579,19 +1580,13 @@ class ManagementNode implements MessageSource, MessageDestination
         }
 
         @Override
-        public ConsumerImpl getDeliveredConsumer()
-        {
-            return null;
-        }
-
-        @Override
         public void reject()
         {
 
         }
 
         @Override
-        public boolean isRejectedBy(final ConsumerImpl consumer)
+        public boolean isRejectedBy(final MessageInstanceConsumer consumer)
         {
             return false;
         }
@@ -1609,13 +1604,13 @@ class ManagementNode implements MessageSource, MessageDestination
         }
 
         @Override
-        public boolean acquire(final ConsumerImpl sub)
+        public boolean acquire(final MessageInstanceConsumer sub)
         {
             return false;
         }
 
         @Override
-        public boolean makeAcquisitionUnstealable(final ConsumerImpl consumer)
+        public boolean makeAcquisitionUnstealable(final MessageInstanceConsumer consumer)
         {
             return false;
         }
@@ -1671,7 +1666,7 @@ class ManagementNode implements MessageSource, MessageDestination
         }
 
         @Override
-        public void release(final ConsumerImpl release)
+        public void release(final MessageInstanceConsumer release)
         {
 
         }

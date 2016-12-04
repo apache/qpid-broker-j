@@ -26,29 +26,28 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
-import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.queue.AbstractQueue;
+import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 
-class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
+class ManagementNodeConsumer implements MessageInstanceConsumer, MessageDestination
 {
-    private final long _id = ConsumerImpl.CONSUMER_NUMBER_GENERATOR.getAndIncrement();
     private final ManagementNode _managementNode;
     private final List<ManagementResponse> _queue = Collections.synchronizedList(new ArrayList<ManagementResponse>());
     private final ConsumerTarget _target;
     private final String _name;
+    private final Object _identifier = new Object();
 
 
     public ManagementNodeConsumer(final String consumerName, final ManagementNode managementNode, ConsumerTarget target)
@@ -68,7 +67,13 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
     }
 
     @Override
-    public AbstractQueue.MessageContainer pullMessage()
+    public Object getIdentifier()
+    {
+        return _identifier;
+    }
+
+    @Override
+    public MessageContainer pullMessage()
     {
         if (!_queue.isEmpty())
         {
@@ -77,7 +82,7 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
             if (!_target.isSuspended() && _target.allocateCredit(managementResponse.getMessage()))
             {
                 _queue.remove(0);
-                return new AbstractQueue.MessageContainer(managementResponse, null, false);
+                return new MessageContainer(managementResponse, null, false);
             }
         }
         return null;
@@ -92,52 +97,9 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
         }
     }
 
-    @Override
-    public long getBytesOut()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getMessagesOut()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getUnacknowledgedBytes()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getUnacknowledgedMessages()
-    {
-        return 0;
-    }
-
-    @Override
-    public AMQSessionModel getSessionModel()
+    AMQSessionModel getSessionModel()
     {
         return _target.getSessionModel();
-    }
-
-    @Override
-    public MessageSource getMessageSource()
-    {
-        return _managementNode;
-    }
-
-    @Override
-    public long getConsumerNumber()
-    {
-        return _id;
-    }
-
-    @Override
-    public boolean isSuspended()
-    {
-        return false;
     }
 
     @Override
@@ -153,22 +115,9 @@ class ManagementNodeConsumer implements ConsumerImpl, MessageDestination
     }
 
     @Override
-    public boolean seesRequeues()
-    {
-        return false;
-    }
-
-    @Override
     public void close()
     {
         _managementNode.unregisterConsumer(this);
-    }
-
-
-    @Override
-    public boolean isActive()
-    {
-        return false;
     }
 
     @Override

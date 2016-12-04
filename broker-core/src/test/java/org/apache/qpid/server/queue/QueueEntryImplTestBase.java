@@ -145,7 +145,9 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
         StealableConsumerAcquiredState
                 owningState = new StealableConsumerAcquiredState(consumer);
         when(consumer.getOwningState()).thenReturn(owningState);
-        when(consumer.getConsumerNumber()).thenReturn(_consumerId++);
+        final Long consumerNum = _consumerId++;
+        when(consumer.getConsumerNumber()).thenReturn(consumerNum);
+        when(consumer.getIdentifier()).thenReturn(consumerNum);
         return consumer;
     }
 

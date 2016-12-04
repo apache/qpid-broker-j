@@ -74,7 +74,7 @@ import org.apache.qpid.filter.selector.TokenMgrError;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.connection.SessionPrincipal;
-import org.apache.qpid.server.consumer.ConsumerImpl;
+import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.JMSSelectorFilter;
@@ -85,6 +85,7 @@ import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.QueueMessages;
 import org.apache.qpid.server.logging.subjects.QueueLogSubject;
 import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.message.MessageDeletedException;
 import org.apache.qpid.server.message.MessageInfo;
 import org.apache.qpid.server.message.MessageInfoImpl;
@@ -695,7 +696,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                          final FilterManager filters,
                                          final Class<? extends ServerMessage> messageClass,
                                          final String consumerName,
-                                         final EnumSet<ConsumerImpl.Option> optionSet,
+                                         final EnumSet<ConsumerOption> optionSet,
                                          final Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
                    ConsumerAccessRefused, QueueDeleted
@@ -758,7 +759,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                   FilterManager filters,
                                                   final Class<? extends ServerMessage> messageClass,
                                                   final String consumerName,
-                                                  EnumSet<ConsumerImpl.Option> optionSet,
+                                                  EnumSet<ConsumerOption> optionSet,
                                                   final Integer priority)
             throws ExistingExclusiveConsumer, ConsumerAccessRefused,
                    ExistingConsumerPreventsExclusive, QueueDeleted
@@ -843,13 +844,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 throw new ServerScopedRuntimeException("Unknown exclusivity policy " + _exclusive);
         }
 
-        boolean exclusive =  optionSet.contains(ConsumerImpl.Option.EXCLUSIVE);
-        boolean isTransient =  optionSet.contains(ConsumerImpl.Option.TRANSIENT);
+        boolean exclusive =  optionSet.contains(ConsumerOption.EXCLUSIVE);
+        boolean isTransient =  optionSet.contains(ConsumerOption.TRANSIENT);
 
-        if(_noLocal && !optionSet.contains(ConsumerImpl.Option.NO_LOCAL))
+        if(_noLocal && !optionSet.contains(ConsumerOption.NO_LOCAL))
         {
             optionSet = EnumSet.copyOf(optionSet);
-            optionSet.add(ConsumerImpl.Option.NO_LOCAL);
+            optionSet.add(ConsumerOption.NO_LOCAL);
         }
 
         if(exclusive && getConsumerCount() != 0)
@@ -891,7 +892,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         if(_ensureNondestructiveConsumers)
         {
             optionSet = EnumSet.copyOf(optionSet);
-            optionSet.removeAll(EnumSet.of(ConsumerImpl.Option.SEES_REQUEUES, ConsumerImpl.Option.ACQUIRES));
+            optionSet.removeAll(EnumSet.of(ConsumerOption.SEES_REQUEUES, ConsumerOption.ACQUIRES));
         }
 
         QueueConsumerImpl consumer = new QueueConsumerImpl(this,
@@ -1915,41 +1916,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private boolean hasAvailableMessages()
     {
         return _queueStatistics.getAvailableCount() != 0;
-    }
-
-    public static final class MessageContainer
-    {
-        private final MessageInstance _messageInstance;
-        private final MessageReference<?> _messageReference;
-        private final boolean _hasNoAvailableMessages;
-
-        public MessageContainer(final boolean hasNoAvailableMessages)
-        {
-            this(null, null, hasNoAvailableMessages);
-        }
-
-        public MessageContainer(final MessageInstance messageInstance,
-                                final MessageReference<?> messageReference, final boolean hasNoAvailableMessages)
-        {
-            _messageInstance = messageInstance;
-            _messageReference = messageReference;
-            _hasNoAvailableMessages = hasNoAvailableMessages;
-        }
-
-        public MessageInstance getMessageInstance()
-        {
-            return _messageInstance;
-        }
-
-        public MessageReference<?> getMessageReference()
-        {
-            return _messageReference;
-        }
-
-        public boolean hasNoAvailableMessages()
-        {
-            return _hasNoAvailableMessages;
-        }
     }
 
     private static final MessageContainer NO_MESSAGES = new MessageContainer(true);

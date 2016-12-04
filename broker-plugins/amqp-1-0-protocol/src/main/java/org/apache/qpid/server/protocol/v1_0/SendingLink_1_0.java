@@ -39,10 +39,11 @@ import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.filter.selector.ParseException;
 import org.apache.qpid.filter.selector.TokenMgrError;
-import org.apache.qpid.server.consumer.ConsumerImpl;
+import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.JMSSelectorFilter;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Binding;
@@ -84,7 +85,7 @@ public class SendingLink_1_0 implements Link_1_0
     private NamedAddressSpace _addressSpace;
     private SendingDestination _destination;
 
-    private ConsumerImpl _consumer;
+    private MessageInstanceConsumer _consumer;
     private ConsumerTarget_1_0 _target;
 
     private boolean _draining;
@@ -113,7 +114,7 @@ public class SendingLink_1_0 implements Link_1_0
         _durability = source.getDurable();
         QueueDestination qd = null;
 
-        EnumSet<ConsumerImpl.Option> options = EnumSet.noneOf(ConsumerImpl.Option.class);
+        EnumSet<ConsumerOption> options = EnumSet.noneOf(ConsumerOption.class);
 
 
         boolean noLocal = false;
@@ -169,8 +170,8 @@ public class SendingLink_1_0 implements Link_1_0
             _target = new ConsumerTarget_1_0(this, source.getDistributionMode() != StdDistMode.COPY);
             if(source.getDistributionMode() != StdDistMode.COPY)
             {
-                options.add(ConsumerImpl.Option.ACQUIRES);
-                options.add(ConsumerImpl.Option.SEES_REQUEUES);
+                options.add(ConsumerOption.ACQUIRES);
+                options.add(ConsumerOption.SEES_REQUEUES);
             }
 
         }
@@ -329,8 +330,8 @@ public class SendingLink_1_0 implements Link_1_0
 
 
             _target = new ConsumerTarget_1_0(this, true);
-            options.add(ConsumerImpl.Option.ACQUIRES);
-            options.add(ConsumerImpl.Option.SEES_REQUEUES);
+            options.add(ConsumerOption.ACQUIRES);
+            options.add(ConsumerOption.SEES_REQUEUES);
 
         }
         else
@@ -342,13 +343,13 @@ public class SendingLink_1_0 implements Link_1_0
         {
             if(noLocal)
             {
-                options.add(ConsumerImpl.Option.NO_LOCAL);
+                options.add(ConsumerOption.NO_LOCAL);
             }
 
             if(_durability == TerminusDurability.CONFIGURATION ||
                _durability == TerminusDurability.UNSETTLED_STATE )
             {
-                options.add(ConsumerImpl.Option.DURABLE);
+                options.add(ConsumerOption.DURABLE);
             }
 
             try
@@ -692,7 +693,7 @@ public class SendingLink_1_0 implements Link_1_0
         return _addressSpace;
     }
 
-    public ConsumerImpl getConsumer()
+    public MessageInstanceConsumer getConsumer()
     {
         return _consumer;
     }

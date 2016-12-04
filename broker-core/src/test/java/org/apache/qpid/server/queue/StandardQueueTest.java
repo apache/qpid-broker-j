@@ -28,10 +28,10 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
-import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.consumer.ConsumerOption;
 import org.apache.qpid.server.consumer.TestConsumerTarget;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
@@ -56,8 +56,8 @@ public class StandardQueueTest extends AbstractQueueTestBase
         ServerMessage message = createMessage(25l);
         QueueConsumer consumer =
                 (QueueConsumer) getQueue().addConsumer(getConsumerTarget(), null, message.getClass(), "test",
-                                                       EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                                  ConsumerImpl.Option.SEES_REQUEUES), 0);
+                                                       EnumSet.of(ConsumerOption.ACQUIRES,
+                                                                  ConsumerOption.SEES_REQUEUES), 0);
 
         getQueue().enqueue(message, null, null);
         consumer.close();
@@ -82,8 +82,8 @@ public class StandardQueueTest extends AbstractQueueTestBase
                           null,
                           createMessage(-1l).getClass(),
                           "test",
-                          EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                     ConsumerImpl.Option.SEES_REQUEUES), 0);
+                          EnumSet.of(ConsumerOption.ACQUIRES,
+                                     ConsumerOption.SEES_REQUEUES), 0);
 
         // put test messages into a queue
         putGivenNumberOfMessages(queue, 4);
@@ -139,7 +139,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
              * @param entry
              * @param batch
              */
-            public long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
+            public long send(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch)
             {
                 long size = super.send(consumer, entry, batch);
                 latch.countDown();
@@ -152,8 +152,8 @@ public class StandardQueueTest extends AbstractQueueTestBase
                               null,
                               entries.get(0).getMessage().getClass(),
                               "test",
-                              EnumSet.of(ConsumerImpl.Option.ACQUIRES,
-                                         ConsumerImpl.Option.SEES_REQUEUES), 0);
+                              EnumSet.of(ConsumerOption.ACQUIRES,
+                                         ConsumerOption.SEES_REQUEUES), 0);
 
 
         // wait up to 1 minute for message receipt
@@ -271,7 +271,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
         }
 
         @Override
-        public boolean acquire(ConsumerImpl sub)
+        public boolean acquire(MessageInstanceConsumer sub)
         {
             if(_message.getMessageNumber() % 2 == 0)
             {
@@ -284,7 +284,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
         }
 
         @Override
-        public boolean makeAcquisitionUnstealable(final ConsumerImpl consumer)
+        public boolean makeAcquisitionUnstealable(final MessageInstanceConsumer consumer)
         {
             return true;
         }
