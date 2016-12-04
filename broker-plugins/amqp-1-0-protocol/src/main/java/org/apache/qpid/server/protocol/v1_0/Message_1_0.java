@@ -24,12 +24,14 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.store.StoredMessage;
+import org.apache.qpid.server.store.TransactionLogResource;
 
 public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageMetaData_1_0>
 {
@@ -95,6 +97,19 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
     {
         return _arrivalTime;
     }
+
+
+    @Override
+    public boolean isResourceAcceptable(final TransactionLogResource resource)
+    {
+        return getMessageHeader().getNotValidBefore() != 0L && !resourceSupportsDeliveryDelay(resource);
+    }
+
+    private boolean resourceSupportsDeliveryDelay(final TransactionLogResource resource)
+    {
+        return resource instanceof Queue && ((Queue<?>)resource).isHoldOnPublishEnabled();
+    }
+
 
     public Collection<QpidByteBuffer> getFragments()
     {

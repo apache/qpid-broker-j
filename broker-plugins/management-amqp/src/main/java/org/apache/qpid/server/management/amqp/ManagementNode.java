@@ -332,31 +332,37 @@ class ManagementNode implements MessageSource, MessageDestination
                                                                                   final ServerTransaction txn,
                                                                                   final Action<? super MessageInstance> postEnqueueAction)
     {
-
-        @SuppressWarnings("unchecked")
-        MessageConverter<M, InternalMessage> converter =
-                MessageConverterRegistry.getConverter(((Class<M>)message.getClass()), InternalMessage.class);
-
-
-        if(converter != null)
+        if(message.isResourceAcceptable(this))
         {
-            final InternalMessage msg = converter.convert(message, _addressSpace);
-            txn.addPostTransactionAction(new ServerTransaction.Action()
+            @SuppressWarnings("unchecked")
+            MessageConverter<M, InternalMessage> converter =
+                    MessageConverterRegistry.getConverter(((Class<M>) message.getClass()), InternalMessage.class);
+
+
+            if (converter != null)
             {
-                @Override
-                public void postCommit()
+                final InternalMessage msg = converter.convert(message, _addressSpace);
+                txn.addPostTransactionAction(new ServerTransaction.Action()
                 {
-                    enqueue(msg, instanceProperties, postEnqueueAction);
-                }
+                    @Override
+                    public void postCommit()
+                    {
+                        enqueue(msg, instanceProperties, postEnqueueAction);
+                    }
 
-                @Override
-                public void onRollback()
-                {
+                    @Override
+                    public void onRollback()
+                    {
 
-                }
-            });
+                    }
+                });
 
-            return 1;
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
         }
         else
         {

@@ -38,6 +38,7 @@ import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
+import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.util.ByteBufferInputStream;
 import org.apache.qpid.util.ByteBufferUtils;
@@ -102,6 +103,12 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
     public long getArrivalTime()
     {
         return _header.getArrivalTime();
+    }
+
+    @Override
+    public boolean isResourceAcceptable(final TransactionLogResource resource)
+    {
+        return true;
     }
 
     public Object getMessageBody()

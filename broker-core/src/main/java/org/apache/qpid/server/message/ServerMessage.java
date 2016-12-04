@@ -49,4 +49,6 @@ public interface ServerMessage<T extends StorableMessageMetaData> extends Enqueu
     long getArrivalTime();
 
     Object getConnectionReference();
+
+    boolean isResourceAcceptable(TransactionLogResource resource);
 }

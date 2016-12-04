@@ -121,6 +121,12 @@ class MockServerMessage implements ServerMessage
     }
 
     @Override
+    public boolean isResourceAcceptable(final TransactionLogResource resource)
+    {
+        return true;
+    }
+
+    @Override
     public long getArrivalTime()
     {
         throw new UnsupportedOperationException();

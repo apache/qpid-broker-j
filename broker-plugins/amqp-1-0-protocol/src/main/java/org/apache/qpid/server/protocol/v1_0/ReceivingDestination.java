@@ -31,6 +31,8 @@ public interface ReceivingDestination extends Destination
 
     Symbol REJECT_UNROUTABLE = Symbol.valueOf("REJECT_UNROUTABLE");
     Symbol DISCARD_UNROUTABLE = Symbol.valueOf("DISCARD_UNROUTABLE");
+    Symbol DELAYED_DELIVERY = Symbol.valueOf("DELAYED_DELIVERY");
+
 
     Outcome[] getOutcomes();
 

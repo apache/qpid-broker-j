@@ -59,10 +59,13 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 public class MessageMetaData_1_0 implements StorableMessageMetaData
 {
     private static final Logger _logger = LoggerFactory.getLogger(MessageMetaData_1_0.class);
-    // TODO move to somewhere more useful
-    public static final Symbol JMS_TYPE = Symbol.valueOf("x-opt-jms-type");
-    public static final MessageMetaDataType.Factory<MessageMetaData_1_0> FACTORY = new MetaDataFactory();
     private static final MessageMetaDataType_1_0 TYPE = new MessageMetaDataType_1_0();
+    public static final MessageMetaDataType.Factory<MessageMetaData_1_0> FACTORY = new MetaDataFactory();
+
+    // TODO move to somewhere more useful
+    private static final Symbol JMS_TYPE = Symbol.valueOf("x-opt-jms-type");
+    private static final Symbol DELIVERY_TIME = Symbol.valueOf("x-opt-delivery-time");
+    private static final Symbol NOT_VALID_BEFORE = Symbol.valueOf("x-qpid-not-valid-before");
 
 
     private Header _header;
@@ -529,7 +532,12 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         {
             long notValidBefore;
             Object annotation;
-            if(_messageAnnotations != null && (annotation = _messageAnnotations.get(Symbol.valueOf("x-qpid-not-valid-before"))) instanceof Number)
+
+            if(_messageAnnotations != null && (annotation = _messageAnnotations.get(DELIVERY_TIME)) instanceof Number)
+            {
+                notValidBefore = ((Number)annotation).longValue();
+            }
+            else if(_messageAnnotations != null && (annotation = _messageAnnotations.get(NOT_VALID_BEFORE)) instanceof Number)
             {
                 notValidBefore = ((Number)annotation).longValue();
             }

@@ -461,6 +461,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         }
 
         List<? extends BaseQueue> queues = route(message, routingAddress, instanceProperties);
+
         if(queues == null || queues.isEmpty())
         {
             Exchange altExchange = getAlternateExchange();
@@ -475,6 +476,13 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         }
         else
         {
+            for(BaseQueue q : queues)
+            {
+                if(!message.isResourceAcceptable(q))
+                {
+                    return 0;
+                }
+            }
             final BaseQueue[] baseQueues;
 
             if(message.isReferenced())

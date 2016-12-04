@@ -2604,8 +2604,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             throw new VirtualHostUnavailableException(this._virtualHost);
         }
-
-        if(!message.isReferenced(this))
+        if(message.isResourceAcceptable(this) && !message.isReferenced(this))
         {
             txn.enqueue(this, message, new ServerTransaction.EnqueueAction()
             {

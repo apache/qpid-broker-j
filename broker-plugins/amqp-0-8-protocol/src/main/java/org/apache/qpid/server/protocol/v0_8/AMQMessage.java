@@ -27,6 +27,7 @@ import org.apache.qpid.framing.MessagePublishInfo;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.store.StoredMessage;
+import org.apache.qpid.server.store.TransactionLogResource;
 
 /**
  * A deliverable message.
@@ -84,6 +85,12 @@ public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMet
     public long getArrivalTime()
     {
         return getMessageMetaData().getArrivalTime();
+    }
+
+    @Override
+    public boolean isResourceAcceptable(final TransactionLogResource resource)
+    {
+        return true;
     }
 
     public boolean isImmediate()

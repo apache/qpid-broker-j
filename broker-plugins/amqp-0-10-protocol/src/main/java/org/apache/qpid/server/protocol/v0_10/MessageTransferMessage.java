@@ -26,6 +26,7 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.store.StoredMessage;
+import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.transport.Header;
 
 
@@ -70,6 +71,12 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
     public long getArrivalTime()
     {
         return getMetaData().getArrivalTime();
+    }
+
+    @Override
+    public boolean isResourceAcceptable(final TransactionLogResource resource)
+    {
+        return true;
     }
 
     public Header getHeader()

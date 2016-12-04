@@ -112,6 +112,12 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         }
 
         @Override
+        public boolean isResourceAcceptable(final TransactionLogResource resource)
+        {
+            return true;
+        }
+
+        @Override
         public long getExpiration()
         {
             return 0;
