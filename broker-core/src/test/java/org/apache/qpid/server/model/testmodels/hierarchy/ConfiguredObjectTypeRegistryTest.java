@@ -125,7 +125,7 @@ public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
         }
     }
 
-    public void testOperationsRejectsNullParameter()
+    public void testOperationWithMandatoryParameter_RejectsNullParameter()
     {
         final String objectName = "testKitCar";
         Map<String, Object> attributes = new HashMap<>();

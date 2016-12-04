@@ -49,5 +49,5 @@ public interface TestCar<X extends TestCar<X>> extends ConfiguredObject<X>
     Door openDoor(@Param(name = "door") Door door);
 
     @ManagedOperation(changesConfiguredObjectState = false)
-    void startEngine(@Param(name = "keyCode", nullable = false) String keyCode);
+    void startEngine(@Param(name = "keyCode", mandatory = true) String keyCode);
 }

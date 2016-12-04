@@ -75,9 +75,9 @@ public class OperationParameterFromAnnotation implements OperationParameter
     }
 
     @Override
-    public boolean isNullable()
+    public boolean isMandatory()
     {
-        return _param.nullable() && !_type.isPrimitive();
+        return _param.mandatory() || _type.isPrimitive();
     }
 
     @Override

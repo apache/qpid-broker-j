@@ -196,9 +196,9 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject<?>> im
         {
             providedVal = null;
         }
-        if (providedVal == null && !param.isNullable())
+        if (providedVal == null && param.isMandatory())
         {
-            throw new IllegalArgumentException(String.format("Parameter %s of operation %s in %s requires a non-null value",
+            throw new IllegalArgumentException(String.format("Parameter '%s' of operation %s in %s requires a non-null value",
                                                              param.getName(),
                                                              _operation.getName(),
                                                              _operation.getDeclaringClass().getSimpleName()));

@@ -31,8 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -263,7 +261,7 @@ public class MetaDataServlet extends AbstractServlet
                     Map<String, Object> paramAttrs = new LinkedHashMap<>();
 
                     paramAttrs.put("type", param.getType().getSimpleName());
-                    paramAttrs.put("nullable", param.isNullable());
+                    paramAttrs.put("mandatory", param.isMandatory());
                     if (!"".equals(param.getDefaultValue()))
                     {
                         paramAttrs.put("defaultValue", param.getDefaultValue());

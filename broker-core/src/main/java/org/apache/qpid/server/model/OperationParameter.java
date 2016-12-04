@@ -39,5 +39,5 @@ public interface OperationParameter
 
     boolean isCompatible(OperationParameter that);
 
-    boolean isNullable();
+    boolean isMandatory();
 }

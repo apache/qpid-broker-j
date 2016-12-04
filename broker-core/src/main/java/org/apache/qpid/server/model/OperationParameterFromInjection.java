@@ -33,7 +33,7 @@ public class OperationParameterFromInjection implements OperationParameter
     private final String _defaultValue;
     private final String _description;
     private final List<String> _validValues;
-    private final boolean _nullable;
+    private final boolean _mandatory;
 
     public OperationParameterFromInjection(final String name,
                                            final Class<?> type,
@@ -41,14 +41,14 @@ public class OperationParameterFromInjection implements OperationParameter
                                            final String defaultValue,
                                            final String description,
                                            final String[] validValues,
-                                           final boolean nullable)
+                                           final boolean mandatory)
     {
         _type = type;
         _genericType = genericType;
         _name = name;
         _defaultValue = defaultValue;
         _description = description;
-        _nullable = nullable;
+        _mandatory = mandatory;
         _validValues = validValues == null ? Collections.<String>emptyList() : Collections.unmodifiableList(Arrays.asList(validValues));
     }
 
@@ -89,9 +89,9 @@ public class OperationParameterFromInjection implements OperationParameter
     }
 
     @Override
-    public boolean isNullable()
+    public boolean isMandatory()
     {
-        return _nullable && !_type.isPrimitive();
+        return _mandatory || _type.isPrimitive();
     }
 
     @Override

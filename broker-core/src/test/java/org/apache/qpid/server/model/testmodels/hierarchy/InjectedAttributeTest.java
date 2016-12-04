@@ -40,6 +40,16 @@ import org.apache.qpid.test.utils.QpidTestCase;
 public class InjectedAttributeTest extends QpidTestCase
 {
 
+    private static final InjectedAttributeStatisticOrOperation.TypeValidator TYPE_VALIDATOR =
+            new InjectedAttributeOrStatistic.TypeValidator()
+            {
+                @Override
+                public boolean appliesToType(final Class<? extends ConfiguredObject<?>> type)
+                {
+                    return TestCar.class.isAssignableFrom(type);
+                }
+            };
+
     private static class TestInjector implements ConfiguredObjectAttributeInjector
     {
 
@@ -104,16 +114,6 @@ public class InjectedAttributeTest extends QpidTestCase
 
     public void testInjectedSettableAttributeWithDefault()
     {
-        InjectedAttributeOrStatistic.TypeValidator validator =
-                new InjectedAttributeOrStatistic.TypeValidator()
-                {
-                    @Override
-                    public boolean appliesToType(final Class<? extends ConfiguredObject<?>> type)
-                    {
-                        return TestCar.class.isAssignableFrom(type);
-                    }
-                };
-
         final ConfiguredSettableInjectedAttribute<?, ?> attrInjector =
                 new ConfiguredSettableInjectedAttribute<TestCar<?>, Integer>("meaningOfLife",
                                                                              Integer.class,
@@ -127,7 +127,7 @@ public class InjectedAttributeTest extends QpidTestCase
                                                                              "",
                                                                              "",
                                                                              null,
-                                                                             "", validator, Initialization.none);
+                                                                             "", TYPE_VALIDATOR, Initialization.none);
 
         TestModel model = new TestModel(null, new TestInjector(attrInjector));
 
@@ -151,17 +151,6 @@ public class InjectedAttributeTest extends QpidTestCase
 
     public void testInjectedSettableAttributeValidValues()
     {
-
-        InjectedAttributeOrStatistic.TypeValidator validator =
-                new InjectedAttributeOrStatistic.TypeValidator()
-                {
-                    @Override
-                    public boolean appliesToType(final Class<? extends ConfiguredObject<?>> type)
-                    {
-                        return TestCar.class.isAssignableFrom(type);
-                    }
-                };
-
         final ConfiguredSettableInjectedAttribute<?, ?> attrInjector =
                 new ConfiguredSettableInjectedAttribute<TestCar<?>, Integer>("meaningOfLife",
                                                                              Integer.class,
@@ -175,7 +164,7 @@ public class InjectedAttributeTest extends QpidTestCase
                                                                              "",
                                                                              "",
                                                                              new String[] { "42", "49" },
-                                                                             "", validator, Initialization.none);
+                                                                             "", TYPE_VALIDATOR, Initialization.none);
 
         TestModel model = new TestModel(null, new TestInjector(attrInjector));
 
@@ -248,15 +237,6 @@ public class InjectedAttributeTest extends QpidTestCase
     public void testInjectedDerivedAttribute() throws Exception
     {
         Method method = InjectedAttributeTest.class.getDeclaredMethod("getMeaningOfLife", TestCar.class);
-        InjectedAttributeOrStatistic.TypeValidator validator =
-                new InjectedAttributeOrStatistic.TypeValidator()
-                {
-                    @Override
-                    public boolean appliesToType(final Class<? extends ConfiguredObject<?>> type)
-                    {
-                        return TestCar.class.isAssignableFrom(type);
-                    }
-                };
 
         final ConfiguredDerivedInjectedAttribute<?, ?> attrInjector =
                 new ConfiguredDerivedInjectedAttribute<TestCar<?>, Integer>("meaningOfLife",
@@ -267,7 +247,7 @@ public class InjectedAttributeTest extends QpidTestCase
                                                                             false,
                                                                             "",
                                                                             "",
-                                                                            validator);
+                                                                            TYPE_VALIDATOR);
 
         TestModel model = new TestModel(null, new TestInjector(attrInjector));
 
@@ -283,21 +263,12 @@ public class InjectedAttributeTest extends QpidTestCase
     {
 
         Method method = InjectedAttributeTest.class.getDeclaredMethod("getMeaningOfLife", TestCar.class);
-        InjectedAttributeOrStatistic.TypeValidator validator =
-                new InjectedAttributeOrStatistic.TypeValidator()
-                {
-                    @Override
-                    public boolean appliesToType(final Class<? extends ConfiguredObject<?>> type)
-                    {
-                        return TestCar.class.isAssignableFrom(type);
-                    }
-                };
 
         final ConfiguredObjectInjectedStatistic<?, ?> statInjector =
                 new ConfiguredObjectInjectedStatistic<TestCar<?>, Integer>("meaningOfLife",
                                                                            method,
                                                                            null, "",
-                                                                           validator,
+                                                                           TYPE_VALIDATOR,
                                                                            StatisticUnit.COUNT,
                                                                            StatisticType.POINT_IN_TIME,
                                                                            "What is 6 x 9?");
@@ -316,21 +287,12 @@ public class InjectedAttributeTest extends QpidTestCase
     {
 
         Method method = InjectedAttributeTest.class.getDeclaredMethod("getWhatISent", TestCar.class, Integer.TYPE);
-        InjectedAttributeOrStatistic.TypeValidator validator =
-                new InjectedAttributeOrStatistic.TypeValidator()
-                {
-                    @Override
-                    public boolean appliesToType(final Class<? extends ConfiguredObject<?>> type)
-                    {
-                        return TestCar.class.isAssignableFrom(type);
-                    }
-                };
 
         final ConfiguredObjectInjectedStatistic<?, ?> statInjector1 =
                 new ConfiguredObjectInjectedStatistic<TestCar<?>, Integer>("whatISent1",
                                                                            method,
                                                                            new Object[] { 1 }, "",
-                                                                           validator,
+                                                                           TYPE_VALIDATOR,
                                                                            StatisticUnit.COUNT,
                                                                            StatisticType.POINT_IN_TIME,
                                                                            "One");
@@ -338,7 +300,7 @@ public class InjectedAttributeTest extends QpidTestCase
                 new ConfiguredObjectInjectedStatistic<TestCar<?>, Integer>("whatISent2",
                                                                            method,
                                                                            new Object[] { 2 }, "",
-                                                                           validator,
+                                                                           TYPE_VALIDATOR,
                                                                            StatisticUnit.COUNT,
                                                                            StatisticType.POINT_IN_TIME,
                                                                            "Two");
@@ -355,25 +317,15 @@ public class InjectedAttributeTest extends QpidTestCase
 
     public void testInjectedOperation() throws Exception
     {
-
         Method method = InjectedAttributeTest.class.getDeclaredMethod("fly", TestCar.class, Integer.TYPE);
-        InjectedAttributeOrStatistic.TypeValidator validator =
-                new InjectedAttributeOrStatistic.TypeValidator()
-                {
-                    @Override
-                    public boolean appliesToType(final Class<? extends ConfiguredObject<?>> type)
-                    {
-                        return TestCar.class.isAssignableFrom(type);
-                    }
-                };
 
         final OperationParameter[] params = new OperationParameter[1];
         params[0] = new OperationParameterFromInjection("height", Integer.TYPE, Integer.TYPE, "", "", new String[0],
-                                                        true);
+                                                        false);
         final ConfiguredObjectInjectedOperation<?> operationInjector =
                 new ConfiguredObjectInjectedOperation<TestCar<?>>("fly", "", true,
                                                                   false,
-                                                                  "", params, method, null, validator);
+                                                                  "", params, method, null, TYPE_VALIDATOR);
 
         TestModel model = new TestModel(null, new TestInjector(operationInjector));
 
@@ -399,30 +351,23 @@ public class InjectedAttributeTest extends QpidTestCase
     {
 
         Method method = InjectedAttributeTest.class.getDeclaredMethod("saySomething", TestCar.class, String.class, Integer.TYPE);
-        InjectedAttributeOrStatistic.TypeValidator validator =
-                new InjectedAttributeOrStatistic.TypeValidator()
-                {
-                    @Override
-                    public boolean appliesToType(final Class<? extends ConfiguredObject<?>> type)
-                    {
-                        return TestCar.class.isAssignableFrom(type);
-                    }
-                };
 
         final OperationParameter[] params = new OperationParameter[1];
         params[0] = new OperationParameterFromInjection("count", Integer.TYPE, Integer.TYPE, "", "", new String[0],
-                                                        true);
+                                                        false);
 
         final ConfiguredObjectInjectedOperation<?> hello =
                 new ConfiguredObjectInjectedOperation<TestCar<?>>("sayHello", "", true,
                                                                   false,
-                                                                  "", params, method, new String[] { "Hello"}, validator
+                                                                  "", params, method, new String[] { "Hello"},
+                                                                  TYPE_VALIDATOR
                 );
         final ConfiguredObjectInjectedOperation<?> goodbye =
                 new ConfiguredObjectInjectedOperation<TestCar<?>>("sayGoodbye", "", true,
                                                                   false,
                                                                   "",
-                                                                  params, method, new String[] { "Goodbye"}, validator
+                                                                  params, method, new String[] { "Goodbye"},
+                                                                  TYPE_VALIDATOR
                 );
 
         TestModel model = new TestModel(null, new TestInjector(hello, goodbye));
@@ -447,6 +392,52 @@ public class InjectedAttributeTest extends QpidTestCase
         assertEquals("Car say 'Goodbye' once", Collections.singletonList("Goodbye"), result);
     }
 
+    public void testOperationWithMandatoryParameter_RejectsNullParameter() throws Exception
+    {
+        Method method = InjectedAttributeTest.class.getDeclaredMethod("ping", TestCar.class, String.class);
+
+        final OperationParameter[] params = new OperationParameter[1];
+        params[0] = new OperationParameterFromInjection("arg", String.class, String.class, "", "", new String[0], true);
+        final ConfiguredObjectInjectedOperation<?> operationInjector =
+                new ConfiguredObjectInjectedOperation<TestCar<?>>(method.getName(), "", true,
+                                                                  false,
+                                                                  "", params, method, null, TYPE_VALIDATOR);
+
+        TestModel model = new TestModel(null, new TestInjector(operationInjector));
+        TestCar testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
+
+        final Map<String, ConfiguredObjectOperation<?>> allOperations =
+                model.getTypeRegistry().getOperations(testCar.getClass());
+
+        final ConfiguredObjectOperation operation = allOperations.get(method.getName());
+
+        try
+        {
+            operation.perform(testCar, Collections.<String, Object>emptyMap());
+            fail("Exception not thrown");
+        }
+        catch (IllegalArgumentException iae)
+        {
+            // PASS
+        }
+
+        try
+        {
+            operation.perform(testCar, Collections.<String, Object>singletonMap("arg", null));
+            fail("Exception not thrown");
+        }
+        catch (IllegalArgumentException iae)
+        {
+            // PASS
+        }
+
+    }
+
+    @SuppressWarnings("unused")
+    public static String ping(TestCar<?> car, String arg)
+    {
+        return arg;
+    }
 
     public static int getMeaningOfLife(TestCar<?> car)
     {
@@ -473,4 +464,5 @@ public class InjectedAttributeTest extends QpidTestCase
         }
         return list;
     }
+
 }

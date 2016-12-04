@@ -72,7 +72,7 @@ table.parameters td.default {
     width: 20em;
 }
 
-table.parameters td.nullable {
+table.parameters td.mandatory {
     width: 15em;
 }
 
