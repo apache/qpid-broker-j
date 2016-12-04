@@ -27,7 +27,7 @@ import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 
-public interface ConsumerTarget
+public interface ConsumerTarget<T extends ConsumerTarget<T>>
 {
     void acquisitionRemoved(MessageInstance node);
 
@@ -50,17 +50,17 @@ public interface ConsumerTarget
 
     State getState();
 
-    void consumerAdded(MessageInstanceConsumer sub);
+    void consumerAdded(MessageInstanceConsumer<T> sub);
 
-    ListenableFuture<Void> consumerRemoved(MessageInstanceConsumer sub);
+    ListenableFuture<Void> consumerRemoved(MessageInstanceConsumer<T> sub);
 
     long getUnacknowledgedBytes();
 
     long getUnacknowledgedMessages();
 
-    AMQSessionModel<?> getSessionModel();
+    AMQSessionModel<?,T> getSessionModel();
 
-    long send(final MessageInstanceConsumer consumer, MessageInstance entry, boolean batch);
+    long send(final MessageInstanceConsumer<T> consumer, MessageInstance entry, boolean batch);
 
     boolean sendNextMessage();
 

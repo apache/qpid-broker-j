@@ -27,7 +27,7 @@ import org.apache.qpid.server.transport.AMQPConnection;
 
 public class ChannelLogSubject extends AbstractLogSubject
 {
-    private final AMQSessionModel<?> _sessionModel;
+    private final AMQSessionModel<?,?> _sessionModel;
     public ChannelLogSubject(AMQSessionModel session)
     {
         _sessionModel = session;

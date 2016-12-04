@@ -550,7 +550,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
         return _subject;
     }
 
-    public void sessionAdded(final AMQSessionModel<?> session)
+    public void sessionAdded(final AMQSessionModel<?,?> session)
     {
         SessionAdapter adapter = new SessionAdapter(this, session);
         adapter.create();
@@ -558,7 +558,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
 
     }
 
-    public void sessionRemoved(final AMQSessionModel<?> session)
+    public void sessionRemoved(final AMQSessionModel<?,?> session)
     {
     }
 

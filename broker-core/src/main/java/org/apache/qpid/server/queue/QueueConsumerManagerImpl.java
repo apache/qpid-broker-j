@@ -71,7 +71,7 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
 
     // Always in the config thread
     @Override
-    public void addConsumer(final QueueConsumer<?> consumer)
+    public void addConsumer(final QueueConsumer<?,?> consumer)
     {
         QueueConsumerNode node = new QueueConsumerNode(this, consumer);
         addToAll(node);
@@ -97,7 +97,7 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
 
     // Always in the config thread
     @Override
-    public boolean removeConsumer(final QueueConsumer<?> consumer)
+    public boolean removeConsumer(final QueueConsumer<?,?> consumer)
     {
         removeFromAll(consumer);
         QueueConsumerNode node = consumer.getQueueConsumerNode();
@@ -112,7 +112,7 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
 
     // Set by the consumer always in the IO thread
     @Override
-    public boolean setInterest(final QueueConsumer consumer, final boolean interested)
+    public boolean setInterest(final QueueConsumer<?,?> consumer, final boolean interested)
     {
         QueueConsumerNode node = consumer.getQueueConsumerNode();
         if (interested)
@@ -141,7 +141,7 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
 
     // Set by the Queue any IO thread
     @Override
-    public boolean setNotified(final QueueConsumer consumer, final boolean notified)
+    public boolean setNotified(final QueueConsumer<?,?> consumer, final boolean notified)
     {
         QueueConsumerNode node = consumer.getQueueConsumerNode();
         if (consumer.acquires())
@@ -162,19 +162,19 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
     }
 
     @Override
-    public Iterator<QueueConsumer<?>> getInterestedIterator()
+    public Iterator<QueueConsumer<?,?>> getInterestedIterator()
     {
         return new QueueConsumerIterator(new PrioritisedQueueConsumerNodeIterator(_interested));
     }
 
     @Override
-    public Iterator<QueueConsumer<?>> getAllIterator()
+    public Iterator<QueueConsumer<?,?>> getAllIterator()
     {
         return new QueueConsumerIterator(new PrioritisedQueueConsumerNodeIterator(_allConsumers));
     }
 
     @Override
-    public Iterator<QueueConsumer<?>> getNonAcquiringIterator()
+    public Iterator<QueueConsumer<?,?>> getNonAcquiringIterator()
     {
         return new QueueConsumerIterator(_nonAcquiring.iterator());
     }
@@ -241,7 +241,7 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
         return newListEntry;
     }
 
-    private static class QueueConsumerIterator implements Iterator<QueueConsumer<?>>
+    private static class QueueConsumerIterator implements Iterator<QueueConsumer<?,?>>
     {
         private final Iterator<QueueConsumerNode> _underlying;
 
@@ -257,7 +257,7 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
         }
 
         @Override
-        public QueueConsumer<?> next()
+        public QueueConsumer<?,?> next()
         {
             return _underlying.next().getQueueConsumer();
         }
@@ -296,7 +296,7 @@ public class QueueConsumerManagerImpl implements QueueConsumerManager
         _interested.add(i, new PriorityConsumerListPair(consumerPriority));
     }
 
-    private void removeFromAll(final QueueConsumer<?> consumer)
+    private void removeFromAll(final QueueConsumer<?,?> consumer)
     {
         final QueueConsumerNode node = consumer.getQueueConsumerNode();
         int consumerPriority = consumer.getPriority();

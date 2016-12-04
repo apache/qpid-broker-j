@@ -44,7 +44,7 @@ import org.apache.qpid.server.util.StateChangeListener;
  * Ties together the protocol session of a subscriber, the consumer tag
  * that was given out by the broker and the channel id.
  */
-public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget
+public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget<ConsumerTarget_0_8>
 {
 
     private final ClientDeliveryMethod _deliveryMethod;

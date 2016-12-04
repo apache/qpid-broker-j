@@ -22,5 +22,5 @@ package org.apache.qpid.server.protocol;
 
 public interface CapacityChecker
 {
-    void checkCapacity(AMQSessionModel<?> channel);
+    void checkCapacity(AMQSessionModel<?,?> channel);
 }

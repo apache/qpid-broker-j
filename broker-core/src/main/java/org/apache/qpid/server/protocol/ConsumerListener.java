@@ -24,7 +24,7 @@ import org.apache.qpid.server.model.Consumer;
 
 public interface ConsumerListener
 {
-    void consumerAdded(Consumer<?> consumer);
+    void consumerAdded(Consumer<?,?> consumer);
 
-    void consumerRemoved(Consumer<?> consumer);
+    void consumerRemoved(Consumer<?,?> consumer);
 }

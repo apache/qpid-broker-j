@@ -29,8 +29,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.SubscriptionMessages;
@@ -42,9 +40,8 @@ import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.queue.SuspendedConsumerLoggingTicker;
 import org.apache.qpid.server.transport.AMQPConnection;
 
-public abstract class AbstractConsumerTarget implements ConsumerTarget
+public abstract class AbstractConsumerTarget<T extends AbstractConsumerTarget<T>> implements ConsumerTarget<T>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractConsumerTarget.class);
     private static final LogSubject MULTI_QUEUE_LOG_SUBJECT = new LogSubject()
     {
         @Override
@@ -98,7 +95,9 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
     @Override
     public void notifyWork()
     {
-        getSessionModel().notifyWork(this);
+        @SuppressWarnings("unchecked")
+        final T target = (T) this;
+        getSessionModel().notifyWork(target);
     }
 
     protected final void setNotifyWorkDesired(final boolean desired)
@@ -173,7 +172,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
 
     private ListenableFuture<Void> doOnIoThreadAsync(final Runnable task)
     {
-        AMQSessionModel<?> sessionModel = getSessionModel();
+        AMQSessionModel<?,T> sessionModel = getSessionModel();
         return sessionModel.getAMQPConnection().doOnIOThreadAsync(task);
     }
 

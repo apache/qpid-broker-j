@@ -61,7 +61,7 @@ import org.apache.qpid.transport.Option;
 import org.apache.qpid.util.ByteBufferUtils;
 import org.apache.qpid.util.GZIPUtils;
 
-public class ConsumerTarget_0_10 extends AbstractConsumerTarget
+public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0_10>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerTarget_0_10.class);
 

@@ -236,8 +236,8 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     private boolean _closedOnOpen;
 
-    private final Set<AMQSessionModel<?>> _sessionsWithWork =
-            Collections.newSetFromMap(new ConcurrentHashMap<AMQSessionModel<?>, Boolean>());
+    private final Set<AMQSessionModel<?,?>> _sessionsWithWork =
+            Collections.newSetFromMap(new ConcurrentHashMap<AMQSessionModel<?,?>, Boolean>());
 
     AMQPConnection_1_0(final Broker<?> broker,
                        final ServerNetworkConnection network,
@@ -1357,7 +1357,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     }
 
     @Override
-    public void notifyWork(final AMQSessionModel<?> sessionModel)
+    public void notifyWork(final AMQSessionModel<?,?> sessionModel)
     {
         _sessionsWithWork.add(sessionModel);
         notifyWork();
@@ -1409,7 +1409,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         addAsyncTask(action);
     }
 
-    public void closeSessionAsync(final AMQSessionModel<?> session,
+    public void closeSessionAsync(final AMQSessionModel<?,?> session,
                                   final CloseReason reason, final String message)
     {
         final ErrorCondition cause;
@@ -1603,7 +1603,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     private class ProcessPendingIterator implements Iterator<Runnable>
     {
-        private Iterator<? extends AMQSessionModel<?>> _sessionIterator;
+        private Iterator<? extends AMQSessionModel<?,?>> _sessionIterator;
         private ProcessPendingIterator()
         {
             _sessionIterator = _sessionsWithWork.iterator();
@@ -1653,7 +1653,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                     {
                         _sessionIterator = _sessionsWithWork.iterator();
                     }
-                    final AMQSessionModel<?> session = _sessionIterator.next();
+                    final AMQSessionModel<?,?> session = _sessionIterator.next();
                     return new Runnable()
                     {
                         @Override

@@ -226,7 +226,7 @@ public class BrokerTestHelper
         return createVirtualHost(attributes, broker, defaultVHN, accessControl);
     }
 
-    public static AMQSessionModel<?> createSession(int channelId, AMQPConnection<?> connection)
+    public static AMQSessionModel<?,?> createSession(int channelId, AMQPConnection<?> connection)
     {
         @SuppressWarnings("rawtypes")
         AMQSessionModel session = mock(AMQSessionModel.class);
@@ -235,13 +235,13 @@ public class BrokerTestHelper
         return session;
     }
 
-    public static AMQSessionModel<?> createSession(int channelId) throws Exception
+    public static AMQSessionModel<?,?> createSession(int channelId) throws Exception
     {
         AMQPConnection<?> session = createConnection();
         return createSession(channelId, session);
     }
 
-    public static AMQSessionModel<?> createSession() throws Exception
+    public static AMQSessionModel<?,?> createSession() throws Exception
     {
         return createSession(1);
     }

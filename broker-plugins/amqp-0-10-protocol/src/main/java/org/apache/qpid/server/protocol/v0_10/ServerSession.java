@@ -117,7 +117,7 @@ import org.apache.qpid.transport.Xid;
 import org.apache.qpid.transport.network.Ticker;
 
 public class ServerSession extends Session
-        implements AMQSessionModel<ServerSession>, LogSubject, AsyncAutoCommitTransaction.FutureRecorder,
+        implements AMQSessionModel<ServerSession, ConsumerTarget_0_10>, LogSubject, AsyncAutoCommitTransaction.FutureRecorder,
                    Deletable<ServerSession>
 
 {
@@ -175,7 +175,7 @@ public class ServerSession extends Session
     private final AtomicLong _txnCount = new AtomicLong(0);
 
     private Map<String, ConsumerTarget_0_10> _subscriptions = new ConcurrentHashMap<String, ConsumerTarget_0_10>();
-    private final CopyOnWriteArrayList<Consumer<?>> _consumers = new CopyOnWriteArrayList<Consumer<?>>();
+    private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_0_10>> _consumers = new CopyOnWriteArrayList<>();
 
     private final List<Action<? super ServerSession>> _taskList = new CopyOnWriteArrayList<Action<? super ServerSession>>();
 
@@ -578,11 +578,11 @@ public class ServerSession extends Session
     }
 
 
-    public void register(final MessageInstanceConsumer messageInstanceConsumer)
+    public void register(final MessageInstanceConsumer<ConsumerTarget_0_10> messageInstanceConsumer)
     {
-        if(messageInstanceConsumer instanceof Consumer<?>)
+        if(messageInstanceConsumer instanceof Consumer<?,?>)
         {
-            final Consumer<?> consumer = (Consumer<?>) messageInstanceConsumer;
+            final Consumer<?,ConsumerTarget_0_10> consumer = (Consumer<?,ConsumerTarget_0_10>) messageInstanceConsumer;
             _consumers.add(consumer);
             consumer.addChangeListener(_consumerClosedListener);
             consumerAdded(consumer);
@@ -1098,7 +1098,7 @@ public class ServerSession extends Session
     }
 
     @Override
-    public Collection<Consumer<?>> getConsumers()
+    public Collection<Consumer<?, ConsumerTarget_0_10>> getConsumers()
     {
 
         return Collections.unmodifiableCollection(_consumers);
@@ -1156,7 +1156,7 @@ public class ServerSession extends Session
         }
     }
 
-    private void consumerAdded(Consumer<?> consumer)
+    private void consumerAdded(Consumer<?, ConsumerTarget_0_10> consumer)
     {
         for(ConsumerListener l : _consumerListeners)
         {
@@ -1164,7 +1164,7 @@ public class ServerSession extends Session
         }
     }
 
-    private void consumerRemoved(Consumer<?> consumer)
+    private void consumerRemoved(Consumer<?, ConsumerTarget_0_10> consumer)
     {
         for(ConsumerListener l : _consumerListeners)
         {
@@ -1232,9 +1232,9 @@ public class ServerSession extends Session
     }
 
     @Override
-    public void notifyWork(final ConsumerTarget target)
+    public void notifyWork(final ConsumerTarget_0_10 target)
     {
-        if(_consumersWithPendingWork.add((ConsumerTarget_0_10) target))
+        if(_consumersWithPendingWork.add(target))
         {
             getAMQPConnection().notifyWork(this);
         }
@@ -1284,7 +1284,7 @@ public class ServerSession extends Session
         {
             if(newState == org.apache.qpid.server.model.State.DELETED)
             {
-                consumerRemoved((Consumer<?>)object);
+                consumerRemoved((Consumer<?, ConsumerTarget_0_10>)object);
             }
         }
     }

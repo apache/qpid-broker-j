@@ -41,16 +41,16 @@ import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 
-class ManagementNodeConsumer implements MessageInstanceConsumer, MessageDestination
+class ManagementNodeConsumer<T extends ConsumerTarget> implements MessageInstanceConsumer<T>, MessageDestination
 {
     private final ManagementNode _managementNode;
     private final List<ManagementResponse> _queue = Collections.synchronizedList(new ArrayList<ManagementResponse>());
-    private final ConsumerTarget _target;
+    private final T _target;
     private final String _name;
     private final Object _identifier = new Object();
 
 
-    public ManagementNodeConsumer(final String consumerName, final ManagementNode managementNode, ConsumerTarget target)
+    public ManagementNodeConsumer(final String consumerName, final ManagementNode managementNode, T target)
     {
         _name = consumerName;
         _managementNode = managementNode;
@@ -151,7 +151,7 @@ class ManagementNodeConsumer implements MessageInstanceConsumer, MessageDestinat
     }
 
     @Override
-    public ConsumerTarget getTarget()
+    public T getTarget()
     {
         return _target;
     }

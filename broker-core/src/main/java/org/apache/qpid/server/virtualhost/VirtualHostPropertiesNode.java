@@ -47,7 +47,7 @@ public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
     }
 
     @Override
-    public Consumer addConsumer(final ConsumerTarget target,
+    public <T extends ConsumerTarget<T>> Consumer<T> addConsumer(final T target,
                                 final FilterManager filters,
                                 final Class<? extends ServerMessage> messageClass,
                                 final String consumerName,
@@ -55,7 +55,7 @@ public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
                    ConsumerAccessRefused, QueueDeleted
     {
-        final Consumer consumer = super.addConsumer(target, filters, messageClass, consumerName, options, priority);
+        final Consumer<T> consumer = super.addConsumer(target, filters, messageClass, consumerName, options, priority);
         consumer.send(createMessage());
         target.queueEmpty();
         return consumer;

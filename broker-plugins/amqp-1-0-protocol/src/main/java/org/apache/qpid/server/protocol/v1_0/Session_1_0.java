@@ -109,7 +109,7 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.transport.network.Ticker;
 
-public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
+public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_1_0>, LogSubject
 {
     private static final Logger _logger = LoggerFactory.getLogger(Session_1_0.class);
     private static final Symbol LIFETIME_POLICY = Symbol.valueOf("lifetime-policy");
@@ -131,7 +131,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     private AtomicBoolean _closed = new AtomicBoolean();
     private final Subject _subject = new Subject();
 
-    private final CopyOnWriteArrayList<Consumer<?>> _consumers = new CopyOnWriteArrayList<Consumer<?>>();
+    private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_1_0>> _consumers = new CopyOnWriteArrayList<>();
 
     private final ConfigurationChangeListener _consumerClosedListener = new ConsumerClosedListener();
     private final CopyOnWriteArrayList<ConsumerListener> _consumerListeners = new CopyOnWriteArrayList<ConsumerListener>();
@@ -1085,9 +1085,9 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     private void registerConsumer(final SendingLink_1_0 link)
     {
         MessageInstanceConsumer consumer = link.getConsumer();
-        if(consumer instanceof Consumer<?>)
+        if(consumer instanceof Consumer<?,?>)
         {
-            Consumer<?> modelConsumer = (Consumer<?>) consumer;
+            Consumer<?,ConsumerTarget_1_0> modelConsumer = (Consumer<?,ConsumerTarget_1_0>) consumer;
             _consumers.add(modelConsumer);
             modelConsumer.addChangeListener(_consumerClosedListener);
             consumerAdded(modelConsumer);
@@ -1552,7 +1552,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     }
 
     @Override
-    public Collection<Consumer<?>> getConsumers()
+    public Collection<Consumer<?, ConsumerTarget_1_0>> getConsumers()
     {
         return Collections.unmodifiableCollection(_consumers);
     }
@@ -1638,9 +1638,9 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
     }
 
     @Override
-    public void notifyWork(final ConsumerTarget target)
+    public void notifyWork(final ConsumerTarget_1_0 target)
     {
-        if(_consumersWithPendingWork.add((ConsumerTarget_1_0) target))
+        if(_consumersWithPendingWork.add(target))
         {
             getAMQPConnection().notifyWork(this);
         }
@@ -1652,7 +1652,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         getAMQPConnection().closeSessionAsync(this, AMQPConnection.CloseReason.TRANSACTION_TIMEOUT, reason);
     }
 
-    private void consumerAdded(Consumer<?> consumer)
+    private void consumerAdded(Consumer<?, ConsumerTarget_1_0> consumer)
     {
         for(ConsumerListener l : _consumerListeners)
         {
@@ -1660,7 +1660,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         }
     }
 
-    private void consumerRemoved(Consumer<?> consumer)
+    private void consumerRemoved(Consumer<?, ConsumerTarget_1_0> consumer)
     {
         for(ConsumerListener l : _consumerListeners)
         {
@@ -1675,7 +1675,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0>, LogSubject
         {
             if(newState == org.apache.qpid.server.model.State.DELETED)
             {
-                consumerRemoved((Consumer<?>)object);
+                consumerRemoved((Consumer<?, ConsumerTarget_1_0>)object);
             }
         }
     }

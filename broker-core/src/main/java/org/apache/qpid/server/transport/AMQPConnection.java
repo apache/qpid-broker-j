@@ -57,7 +57,7 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
 
     void registerMessageDelivered(long size);
 
-    void closeSessionAsync(AMQSessionModel<?> session, CloseReason reason, String message);
+    void closeSessionAsync(AMQSessionModel<?,?> session, CloseReason reason, String message);
 
     SocketAddress getRemoteSocketAddress();
 
@@ -91,11 +91,11 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
      *
      * @return list of sessions
      */
-    Collection<? extends AMQSessionModel<?>> getSessionModels();
+    Collection<? extends AMQSessionModel<?,?>> getSessionModels();
 
     void resetStatistics();
 
-    void notifyWork(AMQSessionModel<?> sessionModel);
+    void notifyWork(AMQSessionModel<?,?> sessionModel);
 
     boolean isTransportBlockedForWriting();
 }

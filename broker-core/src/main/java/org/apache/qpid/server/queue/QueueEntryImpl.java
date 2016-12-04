@@ -81,6 +81,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         (QueueEntryImpl.class, EntryState.class, "_state");
 
 
+    @SuppressWarnings("unused")
     private volatile StateChangeListenerEntry<? super QueueEntry, EntryState> _stateChangeListeners;
 
     private static final
@@ -97,12 +98,13 @@ public abstract class QueueEntryImpl implements QueueEntry
         (QueueEntryImpl.class, "_entryId");
 
 
+    @SuppressWarnings("unused")
     private volatile long _entryId;
 
-    private static int REDELIVERED_FLAG = 1;
-    private static int PERSISTENT_FLAG = 2;
-    private static int MANDATORY_FLAG = 4;
-    private static int IMMEDIATE_FLAG = 8;
+    private static final int REDELIVERED_FLAG = 1;
+    private static final int PERSISTENT_FLAG = 2;
+    private static final int MANDATORY_FLAG = 4;
+    private static final int IMMEDIATE_FLAG = 8;
     private int _flags;
     private long _expiration;
 
@@ -114,17 +116,17 @@ public abstract class QueueEntryImpl implements QueueEntry
     private final MessageEnqueueRecord _enqueueRecord;
 
 
-    public QueueEntryImpl(QueueEntryList queueEntryList)
+    QueueEntryImpl(QueueEntryList queueEntryList)
     {
         this(queueEntryList, null, Long.MIN_VALUE, null);
         _state = DELETED_STATE;
     }
 
 
-    public QueueEntryImpl(QueueEntryList queueEntryList,
-                          ServerMessage message,
-                          final long entryId,
-                          final MessageEnqueueRecord enqueueRecord)
+    QueueEntryImpl(QueueEntryList queueEntryList,
+                   ServerMessage message,
+                   final long entryId,
+                   final MessageEnqueueRecord enqueueRecord)
     {
         _queueEntryList = queueEntryList;
 
@@ -135,9 +137,9 @@ public abstract class QueueEntryImpl implements QueueEntry
         _enqueueRecord = enqueueRecord;
     }
 
-    public QueueEntryImpl(QueueEntryList queueEntryList,
-                          ServerMessage message,
-                          final MessageEnqueueRecord enqueueRecord)
+    QueueEntryImpl(QueueEntryList queueEntryList,
+                   ServerMessage message,
+                   final MessageEnqueueRecord enqueueRecord)
     {
         _queueEntryList = queueEntryList;
         _message = message == null ? null :  message.newReference(queueEntryList.getQueue());
@@ -167,12 +169,12 @@ public abstract class QueueEntryImpl implements QueueEntry
         return new EntryInstanceProperties();
     }
 
-    protected void setEntryId(long entryId)
+    void setEntryId(long entryId)
     {
         _entryIdUpdater.set(this, entryId);
     }
 
-    protected long getEntryId()
+    long getEntryId()
     {
         return _entryId;
     }
@@ -263,7 +265,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         boolean acquired = acquire();
         if(!acquired)
         {
-            QueueConsumer consumer = getAcquiringConsumer();
+            QueueConsumer<?,?> consumer = getAcquiringConsumer();
             acquired = removeAcquisitionFromConsumer(consumer);
             if(acquired)
             {
@@ -306,7 +308,7 @@ public abstract class QueueEntryImpl implements QueueEntry
 
     public boolean acquire(MessageInstanceConsumer sub)
     {
-        final boolean acquired = acquire(((QueueConsumer<?>) sub).getOwningState().getUnstealableState());
+        final boolean acquired = acquire(((QueueConsumer<?,?>) sub).getOwningState().getUnstealableState());
         if(acquired)
         {
             _deliveryCountUpdater.compareAndSet(this,-1,0);
@@ -356,13 +358,13 @@ public abstract class QueueEntryImpl implements QueueEntry
     }
 
     @Override
-    public QueueConsumer<?> getAcquiringConsumer()
+    public QueueConsumer<?,?> getAcquiringConsumer()
     {
-        QueueConsumer<?> consumer;
+        QueueConsumer<?,?> consumer;
         EntryState state = _state;
         if (state instanceof ConsumerAcquiredState)
         {
-            consumer = ((ConsumerAcquiredState<QueueConsumer<?>>)state).getConsumer();
+            consumer = ((ConsumerAcquiredState<QueueConsumer<?,?>>)state).getConsumer();
         }
         else
         {
@@ -471,7 +473,7 @@ public abstract class QueueEntryImpl implements QueueEntry
 
     public void reject()
     {
-        QueueConsumer consumer = getAcquiringConsumer();
+        QueueConsumer<?,?> consumer = getAcquiringConsumer();
 
         if (consumer != null)
         {
@@ -491,15 +493,7 @@ public abstract class QueueEntryImpl implements QueueEntry
     @Override
     public boolean isRejectedBy(MessageInstanceConsumer consumer)
     {
-
-        if (_rejectedBy != null) // We have consumers that rejected this message
-        {
-            return _rejectedBy.contains(consumer.getIdentifier());
-        }
-        else // This message hasn't been rejected yet.
-        {
-            return false;
-        }
+        return _rejectedBy != null && _rejectedBy.contains(consumer.getIdentifier());
     }
 
     private boolean dequeue()
@@ -633,11 +627,7 @@ public abstract class QueueEntryImpl implements QueueEntry
     public boolean removeStateChangeListener(StateChangeListener<? super MessageInstance, EntryState> listener)
     {
         StateChangeListenerEntry entry = _listenersUpdater.get(this);
-        if(entry != null)
-        {
-            return entry.remove(listener);
-        }
-        return false;
+        return entry != null && entry.remove(listener);
     }
 
     @Override

@@ -107,7 +107,7 @@ import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
 import org.apache.qpid.transport.network.Ticker;
 
 public class AMQChannel
-        implements AMQSessionModel<AMQChannel>,
+        implements AMQSessionModel<AMQChannel, ConsumerTarget_0_8>,
                    AsyncAutoCommitTransaction.FutureRecorder,
                    ServerChannelMethodProcessor,
                    EventLoggerProvider, CreditRestorer
@@ -206,7 +206,7 @@ public class AMQChannel
     private final CapacityCheckAction _capacityCheckAction = new CapacityCheckAction();
     private final ImmediateAction _immediateAction = new ImmediateAction();
     private final Subject _subject;
-    private final CopyOnWriteArrayList<Consumer<?>> _consumers = new CopyOnWriteArrayList<Consumer<?>>();
+    private final CopyOnWriteArrayList<Consumer<?, ConsumerTarget_0_8>> _consumers = new CopyOnWriteArrayList<>();
     private final ConfigurationChangeListener _consumerClosedListener = new ConsumerClosedListener();
     private final CopyOnWriteArrayList<ConsumerListener> _consumerListeners = new CopyOnWriteArrayList<ConsumerListener>();
     private Session<?> _modelObject;
@@ -323,7 +323,7 @@ public class AMQChannel
                                                              INFINITE_CREDIT_CREDIT_MANAGER, getDeliveryMethod);
         }
 
-        MessageInstanceConsumer sub = queue.addConsumer(target, null, AMQMessage.class, "", options, null);
+        MessageInstanceConsumer<ConsumerTarget_0_8> sub = queue.addConsumer(target, null, AMQMessage.class, "", options, null);
         target.updateNotifyWorkDesired();
         target.sendNextMessage();
         target.close();
@@ -675,11 +675,6 @@ public class AMQChannel
     }
 
 
-    public ConsumerTarget getSubscription(AMQShortString tag)
-    {
-        return _tag2SubscriptionTargetMap.get(tag);
-    }
-
     /**
      * Subscribe to a queue. We register all subscriptions in the channel so that if the channel is closed we can clean
      * up all subscriptions, even if the client does not explicitly unsubscribe from all queues.
@@ -818,15 +813,15 @@ public class AMQChannel
 
             for(MessageSource source : sources)
             {
-                MessageInstanceConsumer sub =
+                MessageInstanceConsumer<ConsumerTarget_0_8> sub =
                         source.addConsumer(target,
                                            filterManager,
                                            AMQMessage.class,
                                            AMQShortString.toString(tag),
                                            options, priority);
-                if (sub instanceof Consumer<?>)
+                if (sub instanceof Consumer<?, ?>)
                 {
-                    final Consumer<?> modelConsumer = (Consumer<?>) sub;
+                    final Consumer<?,ConsumerTarget_0_8> modelConsumer = (Consumer<?,ConsumerTarget_0_8>) sub;
                     consumerAdded(modelConsumer);
                     modelConsumer.addChangeListener(_consumerClosedListener);
                     _consumers.add(modelConsumer);
@@ -865,7 +860,7 @@ public class AMQChannel
         {
             for(MessageInstanceConsumer sub : subs)
             {
-                if (sub instanceof Consumer<?>)
+                if (sub instanceof Consumer<?,?>)
                 {
                     _consumers.remove(sub);
                 }
@@ -1907,7 +1902,7 @@ public class AMQChannel
     }
 
     @Override
-    public Collection<Consumer<?>> getConsumers()
+    public Collection<Consumer<?,ConsumerTarget_0_8>> getConsumers()
     {
         return Collections.unmodifiableCollection(_consumers);
     }
@@ -1919,12 +1914,12 @@ public class AMQChannel
         {
             if(newState == State.DELETED)
             {
-                consumerRemoved((Consumer<?>)object);
+                consumerRemoved((Consumer<?,?>)object);
             }
         }
     }
 
-    private void consumerAdded(final Consumer<?> consumer)
+    private void consumerAdded(final Consumer<?,?> consumer)
     {
         for(ConsumerListener l : _consumerListeners)
         {
@@ -1932,7 +1927,7 @@ public class AMQChannel
         }
     }
 
-    private void consumerRemoved(final Consumer<?> consumer)
+    private void consumerRemoved(final Consumer<?,?> consumer)
     {
         for(ConsumerListener l : _consumerListeners)
         {
@@ -3771,9 +3766,9 @@ public class AMQChannel
     }
 
     @Override
-    public void notifyWork(final ConsumerTarget target)
+    public void notifyWork(final ConsumerTarget_0_8 target)
     {
-        if(_consumersWithPendingWork.add((ConsumerTarget_0_8) target))
+        if(_consumersWithPendingWork.add(target))
         {
             getAMQPConnection().notifyWork(this);
         }

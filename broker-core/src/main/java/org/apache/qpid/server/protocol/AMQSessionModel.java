@@ -38,7 +38,7 @@ import org.apache.qpid.transport.network.Ticker;
  * Extends {@link Comparable} to allow objects to be inserted into a {@link ConcurrentSkipListSet}
  * when monitoring the blocking and blocking of queues/sessions in {@link Queue}.
  */
-public interface AMQSessionModel<T extends AMQSessionModel<T>> extends Comparable<AMQSessionModel>, Deletable<T>
+public interface AMQSessionModel<T extends AMQSessionModel<T,X>, X extends ConsumerTarget<X>> extends Comparable<AMQSessionModel>, Deletable<T>
 {
     UUID getId();
 
@@ -72,7 +72,7 @@ public interface AMQSessionModel<T extends AMQSessionModel<T>> extends Comparabl
 
     int getConsumerCount();
 
-    Collection<Consumer<?>> getConsumers();
+    Collection<Consumer<?,X>> getConsumers();
 
     void addConsumerListener(ConsumerListener listener);
 
@@ -103,5 +103,5 @@ public interface AMQSessionModel<T extends AMQSessionModel<T>> extends Comparabl
     void addTicker(Ticker ticker);
     void removeTicker(Ticker ticker);
 
-    void notifyWork(ConsumerTarget target);
+    void notifyWork(X target);
 }

@@ -245,7 +245,7 @@ class LegacyAccessControlAdapter
         }
         else if (configuredObject instanceof QueueConsumer)
         {
-            Queue<?> queue = (Queue<?>)((QueueConsumer)configuredObject).getParent(Queue.class);
+            Queue<?> queue = (Queue<?>)((QueueConsumer<?,?>)configuredObject).getParent(Queue.class);
             setQueueProperties(queue, properties);
         }
         else if (isBrokerType(configuredObjectType))

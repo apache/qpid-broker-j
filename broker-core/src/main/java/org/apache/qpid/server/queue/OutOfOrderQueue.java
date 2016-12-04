@@ -28,7 +28,7 @@ import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 public abstract class OutOfOrderQueue<X extends OutOfOrderQueue<X>> extends AbstractQueue<X>
 {
 
-    protected OutOfOrderQueue(Map<String, Object> attributes, QueueManagingVirtualHost<?> virtualHost)
+    OutOfOrderQueue(Map<String, Object> attributes, QueueManagingVirtualHost<?> virtualHost)
     {
         super(attributes, virtualHost);
     }
@@ -37,11 +37,11 @@ public abstract class OutOfOrderQueue<X extends OutOfOrderQueue<X>> extends Abst
     protected void checkConsumersNotAheadOfDelivery(final QueueEntry entry)
     {
         // check that all consumers are not in advance of the entry
-        Iterator<QueueConsumer<?>> consumerIterator = getQueueConsumerManager().getAllIterator();
+        Iterator<QueueConsumer<?,?>> consumerIterator = getQueueConsumerManager().getAllIterator();
 
         while (consumerIterator.hasNext() && !entry.isAcquired())
         {
-            QueueConsumer<?> consumer = consumerIterator.next();
+            QueueConsumer<?,?> consumer = consumerIterator.next();
 
             if(!consumer.isClosed())
             {

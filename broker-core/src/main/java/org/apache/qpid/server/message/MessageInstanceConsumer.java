@@ -22,7 +22,7 @@ package org.apache.qpid.server.message;
 
 import org.apache.qpid.server.consumer.ConsumerTarget;
 
-public interface MessageInstanceConsumer
+public interface MessageInstanceConsumer<T extends ConsumerTarget>
 {
     boolean isClosed();
 
@@ -38,7 +38,7 @@ public interface MessageInstanceConsumer
 
     MessageContainer pullMessage();
 
-    ConsumerTarget getTarget();
+    T getTarget();
 
     void setNotifyWorkDesired(boolean desired);
 }

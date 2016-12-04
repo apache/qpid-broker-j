@@ -24,14 +24,14 @@ import java.util.Iterator;
 
 public interface QueueConsumerManager
 {
-    void addConsumer(QueueConsumer<?> consumer);
-    boolean removeConsumer(QueueConsumer<?> consumer);
-    boolean setInterest(QueueConsumer<?> consumer, boolean interested);
-    boolean setNotified(QueueConsumer<?> consumer, boolean notified);
+    void addConsumer(QueueConsumer<?,?> consumer);
+    boolean removeConsumer(QueueConsumer<?,?> consumer);
+    boolean setInterest(QueueConsumer<?,?> consumer, boolean interested);
+    boolean setNotified(QueueConsumer<?,?> consumer, boolean notified);
 
-    Iterator<QueueConsumer<?>> getInterestedIterator();
-    Iterator<QueueConsumer<?>> getAllIterator();
-    Iterator<QueueConsumer<?>> getNonAcquiringIterator();
+    Iterator<QueueConsumer<?,?>> getInterestedIterator();
+    Iterator<QueueConsumer<?,?>> getAllIterator();
+    Iterator<QueueConsumer<?,?>> getNonAcquiringIterator();
 
     int getAllSize();
     int getHighestNotifiedPriority();

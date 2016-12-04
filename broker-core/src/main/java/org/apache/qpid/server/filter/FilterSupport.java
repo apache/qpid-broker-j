@@ -134,8 +134,8 @@ public class FilterSupport
         public boolean matches(Filterable message)
         {
 
-            final Collection<QueueConsumer<?>> consumers = _queue.getConsumers();
-            for(QueueConsumer<?> c : consumers)
+            final Collection<QueueConsumer<?,?>> consumers = _queue.getConsumers();
+            for(QueueConsumer<?,?> c : consumers)
             {
                 if(c.getSessionModel().getConnectionReference() == message.getConnectionReference())
                 {

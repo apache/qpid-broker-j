@@ -68,8 +68,8 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
     private ServerDisassembler _disassembler;
 
-    private final Set<AMQSessionModel<?>> _sessionsWithWork =
-            Collections.newSetFromMap(new ConcurrentHashMap<AMQSessionModel<?>, Boolean>());
+    private final Set<AMQSessionModel<?,?>> _sessionsWithWork =
+            Collections.newSetFromMap(new ConcurrentHashMap<AMQSessionModel<?,?>, Boolean>());
 
 
     public AMQPConnection_0_10(final Broker<?> broker,
@@ -275,7 +275,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     }
 
     @Override
-    public void notifyWork(final AMQSessionModel<?> sessionModel)
+    public void notifyWork(final AMQSessionModel<?,?> sessionModel)
     {
         _sessionsWithWork.add(sessionModel);
         notifyWork();
@@ -306,7 +306,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     }
 
     @Override
-    public void closeSessionAsync(final AMQSessionModel<?> session,
+    public void closeSessionAsync(final AMQSessionModel<?,?> session,
                                   final CloseReason reason, final String message)
     {
         _connection.closeSessionAsync((ServerSession) session, reason, message);
@@ -329,7 +329,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         return _connection.getRemoteContainerName();
     }
 
-    public Collection<? extends AMQSessionModel<?>> getSessionModels()
+    public Collection<? extends ServerSession> getSessionModels()
     {
         return _connection.getSessionModels();
     }

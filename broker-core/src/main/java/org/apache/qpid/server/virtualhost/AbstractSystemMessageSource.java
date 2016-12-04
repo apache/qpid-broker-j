@@ -54,7 +54,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
     protected final UUID _id;
     protected final String _name;
     protected final NamedAddressSpace _addressSpace;
-    private List<Consumer> _consumers = new CopyOnWriteArrayList<>();
+    private List<Consumer<?>> _consumers = new CopyOnWriteArrayList<>();
 
     public AbstractSystemMessageSource(String name, final NamedAddressSpace addressSpace)
     {
@@ -83,7 +83,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
     }
 
     @Override
-    public Consumer addConsumer(final ConsumerTarget target,
+    public <T extends ConsumerTarget<T>> Consumer<T> addConsumer(final T target,
                                 final FilterManager filters,
                                 final Class<? extends ServerMessage> messageClass,
                                 final String consumerName,
@@ -98,28 +98,28 @@ public abstract class AbstractSystemMessageSource implements MessageSource
     }
 
     @Override
-    public Collection<Consumer> getConsumers()
+    public Collection<Consumer<?>> getConsumers()
     {
         return new ArrayList<>(_consumers);
     }
 
     @Override
-    public boolean verifySessionAccess(final AMQSessionModel<?> session)
+    public boolean verifySessionAccess(final AMQSessionModel<?,?> session)
     {
         return true;
     }
 
-    protected class Consumer implements MessageInstanceConsumer
+    protected class Consumer<T extends ConsumerTarget> implements MessageInstanceConsumer<T>
     {
 
         private final List<PropertiesMessageInstance> _queue =
                 Collections.synchronizedList(new ArrayList<PropertiesMessageInstance>());
-        private final ConsumerTarget _target;
+        private final T _target;
         private final String _name;
         private final Object _identifier = new Object();
 
 
-        public Consumer(final String consumerName, ConsumerTarget target)
+        public Consumer(final String consumerName, T target)
         {
             _name = consumerName;
             _target = target;
@@ -141,7 +141,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public ConsumerTarget getTarget()
+        public T getTarget()
         {
             return _target;
         }

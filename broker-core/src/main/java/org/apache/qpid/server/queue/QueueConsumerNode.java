@@ -25,18 +25,18 @@ import java.util.Collection;
 final class QueueConsumerNode
 {
     private final QueueConsumerManagerImpl _queueConsumerManager;
-    private final QueueConsumer<?> _queueConsumer;
+    private final QueueConsumer<?,?> _queueConsumer;
     private QueueConsumerNodeListEntry _listEntry;
     private QueueConsumerManagerImpl.NodeState _state = QueueConsumerManagerImpl.NodeState.REMOVED;
     private QueueConsumerNodeListEntry _allEntry;
 
-    QueueConsumerNode(final QueueConsumerManagerImpl queueConsumerManager, final QueueConsumer<?> queueConsumer)
+    QueueConsumerNode(final QueueConsumerManagerImpl queueConsumerManager, final QueueConsumer<?,?> queueConsumer)
     {
         _queueConsumerManager = queueConsumerManager;
         _queueConsumer = queueConsumer;
     }
 
-    public QueueConsumer<?> getQueueConsumer()
+    public QueueConsumer<?,?> getQueueConsumer()
     {
         return _queueConsumer;
     }

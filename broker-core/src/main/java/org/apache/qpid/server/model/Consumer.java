@@ -22,11 +22,12 @@ package org.apache.qpid.server.model;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 
 @ManagedObject(creatable = false, amqpName = "org.apache.qpid.Consumer")
-public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>, MessageInstanceConsumer
+public interface Consumer<X extends Consumer<X,T>, T extends ConsumerTarget> extends ConfiguredObject<X>, MessageInstanceConsumer<T>
 {
     String DISTRIBUTION_MODE = "distributionMode";
     String EXCLUSIVE = "exclusive";

@@ -50,7 +50,7 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.network.Ticker;
 
-public class TestConsumerTarget implements ConsumerTarget
+public class TestConsumerTarget implements ConsumerTarget<TestConsumerTarget>
 {
 
     private boolean _closed = false;
@@ -240,7 +240,7 @@ public class TestConsumerTarget implements ConsumerTarget
         }
     }
 
-    private static class MockSessionModel implements AMQSessionModel<MockSessionModel>
+    private static class MockSessionModel implements AMQSessionModel<MockSessionModel, TestConsumerTarget>
     {
         private final UUID _id = UUID.randomUUID();
         private Session _modelObject;
@@ -355,7 +355,7 @@ public class TestConsumerTarget implements ConsumerTarget
         }
 
         @Override
-        public Collection<Consumer<?>> getConsumers()
+        public Collection<Consumer<?,TestConsumerTarget>> getConsumers()
         {
             return null;
         }
@@ -434,7 +434,7 @@ public class TestConsumerTarget implements ConsumerTarget
         }
 
         @Override
-        public void notifyWork(final ConsumerTarget target)
+        public void notifyWork(final TestConsumerTarget target)
         {
             _connection.notifyWork(this);
         }

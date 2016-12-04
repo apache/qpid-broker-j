@@ -677,7 +677,7 @@ class ManagementNode implements MessageSource, MessageDestination
             {
                 return createFailureResponse(message, STATUS_CODE_BAD_REQUEST, "The '"+ConfiguredObject.ID+"' cannot be set when creating an object");
             }
-            if(!attributes.containsKey(QPID_TYPE) && _model.getTypeRegistry().getCategory(clazz) != clazz)
+            if(!attributes.containsKey(QPID_TYPE) && ConfiguredObjectTypeRegistry.getCategory(clazz) != clazz)
             {
                 Class<? extends ConfiguredObject> typeClass = _model.getTypeRegistry().getTypeClass(clazz);
                 String type = typeClass.getAnnotation(ManagedObject.class).type();
@@ -699,7 +699,7 @@ class ManagementNode implements MessageSource, MessageDestination
                 {
 
                     List<ConfiguredObject> parents =
-                            _configuredObjectFinder.findObjectParentsFromPath(Arrays.asList(getPathElements(path)), hierarchy, _model.getTypeRegistry().getCategory(clazz));
+                            _configuredObjectFinder.findObjectParentsFromPath(Arrays.asList(getPathElements(path)), hierarchy, ConfiguredObjectTypeRegistry.getCategory(clazz));
                     if(parents.isEmpty())
                     {
                         return createFailureResponse(message, STATUS_CODE_NOT_FOUND, "The '"+OBJECT_PATH+"' "+path+" does not identify a valid parent");
@@ -748,7 +748,7 @@ class ManagementNode implements MessageSource, MessageDestination
                 }
 
 
-                final ConfiguredObject object = primaryParent.createChild(_model.getTypeRegistry().getCategory(clazz), attributes, otherParents);
+                final ConfiguredObject object = primaryParent.createChild(ConfiguredObjectTypeRegistry.getCategory(clazz), attributes, otherParents);
                 return InternalMessage.createMapMessage(_addressSpace.getMessageStore(), responseHeader,
                                                         _managementOutputConverter.convertToOutput(object, true));
             }
@@ -1052,8 +1052,8 @@ class ManagementNode implements MessageSource, MessageDestination
 
     private Map<?, ?> performQuery(final Map<String, Object> headerMap, final Map messageBody)
     {
-
-        List<Object> attributeNameObjects = _managementInputConverter.convert(List.class, messageBody.get(ATTRIBUTE_NAMES));
+        @SuppressWarnings("unchecked")
+        List<Object> attributeNameObjects = (List<Object>)_managementInputConverter.convert(List.class, messageBody.get(ATTRIBUTE_NAMES));
         List<String> attributeNames;
         if(attributeNameObjects == null)
         {
@@ -1213,8 +1213,10 @@ class ManagementNode implements MessageSource, MessageDestination
                 {
                     if(ancestorCategories.contains(entry.getKey()))
                     {
-                        ConfiguredObjectOperation op = entry.getValue();
-                        for(ConfiguredObject<?> parent : (Collection<ConfiguredObject<?>>) op.perform(_managedObject, Collections.<String,Object>emptyMap()))
+                        @SuppressWarnings("unchecked")
+                        final Collection<ConfiguredObject<?>> parents = getAssociatedChildren(entry.getValue(), _managedObject);
+
+                        for(ConfiguredObject<?> parent : parents)
                         {
                             foundObjects.addAll(getChildrenOfType(parent, type));
                         }
@@ -1241,8 +1243,11 @@ class ManagementNode implements MessageSource, MessageDestination
         parents.add(_managedObject);
         for(ConfiguredObjectOperation op : _associatedChildrenOperations.values())
         {
-            parents.addAll(
-                    (Collection<ConfiguredObject<?>>) op.perform(_managedObject, Collections.<String,Object>emptyMap()));
+
+            @SuppressWarnings("unchecked")
+            final Collection<ConfiguredObject<?>> associated = getAssociatedChildren(op, _managedObject);
+
+            parents.addAll(associated);
         }
         foundObjects.addAll(parents);
         do
@@ -1261,6 +1266,13 @@ class ManagementNode implements MessageSource, MessageDestination
         }
         while(foundObjects.addAll(parents));
         return foundObjects;
+    }
+
+    private static <C extends ConfiguredObject<?>> Collection<ConfiguredObject<?>> getAssociatedChildren(final ConfiguredObjectOperation<C> op, final ConfiguredObject<?> managedObject)
+    {
+        @SuppressWarnings("unchecked")
+        final Collection<ConfiguredObject<?>> associated = (Collection<ConfiguredObject<?>>) op.perform((C)managedObject, Collections.<String, Object>emptyMap());
+        return associated;
     }
 
     private List<String> generateAttributeNames(String entityType)
@@ -1431,7 +1443,7 @@ class ManagementNode implements MessageSource, MessageDestination
 
 
     @Override
-    public synchronized  ManagementNodeConsumer addConsumer(final ConsumerTarget target,
+    public synchronized <T extends ConsumerTarget<T>> ManagementNodeConsumer<T> addConsumer(final T target,
                                                             final FilterManager filters,
                                                             final Class<? extends ServerMessage> messageClass,
                                                             final String consumerName,
@@ -1439,7 +1451,7 @@ class ManagementNode implements MessageSource, MessageDestination
                                                             final Integer priority)
     {
 
-        final ManagementNodeConsumer managementNodeConsumer = new ManagementNodeConsumer(consumerName,this, target);
+        final ManagementNodeConsumer<T> managementNodeConsumer = new ManagementNodeConsumer<>(consumerName,this, target);
         target.consumerAdded(managementNodeConsumer);
         _consumers.add(managementNodeConsumer);
         return managementNodeConsumer;
@@ -1452,7 +1464,7 @@ class ManagementNode implements MessageSource, MessageDestination
     }
 
     @Override
-    public boolean verifySessionAccess(final AMQSessionModel<?> session)
+    public boolean verifySessionAccess(final AMQSessionModel<?,?> session)
     {
         return true;
     }

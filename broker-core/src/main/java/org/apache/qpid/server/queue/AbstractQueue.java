@@ -153,7 +153,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @ManagedAttributeField( beforeSet = "preSetAlternateExchange", afterSet = "postSetAlternateExchange")
     private Exchange _alternateExchange;
 
-    private volatile QueueConsumer<?> _exclusiveSubscriber;
+    private volatile QueueConsumer<?,?> _exclusiveSubscriber;
 
     private final AtomicLong _targetQueueSize = new AtomicLong(INITIAL_TARGET_QUEUE_SIZE);
 
@@ -206,7 +206,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private AtomicBoolean _stopped = new AtomicBoolean(false);
 
-    private final Set<AMQSessionModel> _blockedChannels = new ConcurrentSkipListSet<AMQSessionModel>();
+    private final Set<AMQSessionModel<?,?>> _blockedChannels = new ConcurrentSkipListSet<>();
 
     private final AtomicBoolean _deleted = new AtomicBoolean(false);
     private final SettableFuture<Integer> _deleteFuture = SettableFuture.create();
@@ -347,7 +347,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         _queueHouseKeepingTask = new AdvanceConsumersTask();
         Subject activeSubject = Subject.getSubject(AccessController.getContext());
         Set<SessionPrincipal> sessionPrincipals = activeSubject == null ? Collections.<SessionPrincipal>emptySet() : activeSubject.getPrincipals(SessionPrincipal.class);
-        AMQSessionModel<?> sessionModel;
+        AMQSessionModel<?,?> sessionModel;
         if(sessionPrincipals.isEmpty())
         {
             sessionModel = null;
@@ -692,7 +692,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
 
     @Override
-    public QueueConsumerImpl addConsumer(final ConsumerTarget target,
+    public <T extends ConsumerTarget<T>> QueueConsumerImpl<T> addConsumer(final T target,
                                          final FilterManager filters,
                                          final Class<? extends ServerMessage> messageClass,
                                          final String consumerName,
@@ -704,10 +704,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         try
         {
-            final QueueConsumerImpl queueConsumer = getTaskExecutor().run(new Task<QueueConsumerImpl, Exception>()
+            final QueueConsumerImpl<T> queueConsumer = getTaskExecutor().run(new Task<QueueConsumerImpl<T>, Exception>()
             {
                 @Override
-                public QueueConsumerImpl execute() throws Exception
+                public QueueConsumerImpl<T> execute() throws Exception
                 {
                     return addConsumerInternal(target, filters, messageClass, consumerName, optionSet, priority);
                 }
@@ -755,7 +755,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     }
 
-    private QueueConsumerImpl addConsumerInternal(final ConsumerTarget target,
+    private <T extends ConsumerTarget<T>> QueueConsumerImpl<T> addConsumerInternal(final T target,
                                                   FilterManager filters,
                                                   final Class<? extends ServerMessage> messageClass,
                                                   final String consumerName,
@@ -895,7 +895,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             optionSet.removeAll(EnumSet.of(ConsumerOption.SEES_REQUEUES, ConsumerOption.ACQUIRES));
         }
 
-        QueueConsumerImpl consumer = new QueueConsumerImpl(this,
+        QueueConsumerImpl<T> consumer = new QueueConsumerImpl<>(this,
                                                            target,
                                                            consumerName,
                                                            filters,
@@ -1001,18 +1001,18 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public Collection<QueueConsumer<?>> getConsumers()
+    public Collection<QueueConsumer<?,?>> getConsumers()
     {
         return getConsumersImpl();
     }
 
-    private Collection<QueueConsumer<?>> getConsumersImpl()
+    private Collection<QueueConsumer<?,?>> getConsumersImpl()
     {
         return Lists.newArrayList(_queueConsumerManager.getAllIterator());
     }
 
 
-    public void resetSubPointersForGroups(QueueConsumer<?> consumer)
+    public void resetSubPointersForGroups(QueueConsumer<?,?> consumer)
     {
         QueueEntry entry = _messageGroupManager.findEarliestAssignedAvailableEntry(consumer);
         _messageGroupManager.clearAssignments(consumer);
@@ -1194,7 +1194,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    private boolean assign(final QueueConsumer<?> sub, final QueueEntry entry)
+    private boolean assign(final QueueConsumer<?,?> sub, final QueueEntry entry)
     {
         if(_messageGroupManager == null)
         {
@@ -1238,7 +1238,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _queueStatistics.getEnqueueCount();
     }
 
-    private void setLastSeenEntry(final QueueConsumer<?> sub, final QueueEntry entry)
+    private void setLastSeenEntry(final QueueConsumer<?,?> sub, final QueueEntry entry)
     {
         QueueContext subContext = sub.getQueueContext();
         if (subContext != null)
@@ -1253,7 +1253,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    private void updateSubRequeueEntry(final QueueConsumer<?> sub, final QueueEntry entry)
+    private void updateSubRequeueEntry(final QueueConsumer<?,?> sub, final QueueEntry entry)
     {
         QueueContext subContext = sub.getQueueContext();
         if(subContext != null)
@@ -1286,11 +1286,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private void resetSubPointers(final QueueEntry entry, final boolean ignoreAvailable)
     {
-        Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getAllIterator();
+        Iterator<QueueConsumer<?,?>> consumerIterator = _queueConsumerManager.getAllIterator();
         // iterate over all the subscribers, and if they are in advance of this queue entry then move them backwards
         while (consumerIterator.hasNext() && (ignoreAvailable || entry.isAvailable()))
         {
-            QueueConsumer<?> sub = consumerIterator.next();
+            QueueConsumer<?,?> sub = consumerIterator.next();
 
             // we don't make browsers send the same stuff twice
             if (sub.seesRequeues())
@@ -1454,7 +1454,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _exclusiveSubscriber != null;
     }
 
-    private void setExclusiveSubscriber(QueueConsumer<?> exclusiveSubscriber)
+    private void setExclusiveSubscriber(QueueConsumer<?,?> exclusiveSubscriber)
     {
         _exclusiveSubscriber = exclusiveSubscriber;
     }
@@ -1664,11 +1664,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     try
                     {
 
-                        Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getAllIterator();
+                        Iterator<QueueConsumer<?,?>> consumerIterator = _queueConsumerManager.getAllIterator();
 
                         while (consumerIterator.hasNext())
                         {
-                            QueueConsumer<?> consumer = consumerIterator.next();
+                            QueueConsumer<?,?> consumer = consumerIterator.next();
 
                             if (consumer != null)
                             {
@@ -1750,7 +1750,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public void checkCapacity(AMQSessionModel<?> channel)
+    public void checkCapacity(AMQSessionModel<?,?> channel)
     {
         if(_queueFlowControlSizeBytes != 0L)
         {
@@ -1799,7 +1799,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                                                          _queueFlowResumeSizeBytes));
                     }
 
-                    for (final AMQSessionModel<?> blockedChannel : _blockedChannels)
+                    for (final AMQSessionModel<?,?> blockedChannel : _blockedChannels)
                     {
                         blockedChannel.unblock(this);
                         _blockedChannels.remove(blockedChannel);
@@ -1812,20 +1812,20 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     void notifyConsumers(QueueEntry entry)
     {
 
-        Iterator<QueueConsumer<?>> nonAcquiringIterator = _queueConsumerManager.getNonAcquiringIterator();
+        Iterator<QueueConsumer<?,?>> nonAcquiringIterator = _queueConsumerManager.getNonAcquiringIterator();
         while (nonAcquiringIterator.hasNext())
         {
-            QueueConsumer<?> consumer = nonAcquiringIterator.next();
+            QueueConsumer<?,?> consumer = nonAcquiringIterator.next();
             if(consumer.hasInterest(entry))
             {
                 notifyConsumer(consumer);
             }
         }
 
-        final Iterator<QueueConsumer<?>> interestedIterator = _queueConsumerManager.getInterestedIterator();
+        final Iterator<QueueConsumer<?,?>> interestedIterator = _queueConsumerManager.getInterestedIterator();
         while (entry.isAvailable() && interestedIterator.hasNext())
         {
-            QueueConsumer<?> consumer = interestedIterator.next();
+            QueueConsumer<?,?> consumer = interestedIterator.next();
             if(consumer.hasInterest(entry))
             {
                 if(notifyConsumer(consumer))
@@ -1842,12 +1842,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    void notifyOtherConsumers(final QueueConsumer<?> excludedConsumer)
+    void notifyOtherConsumers(final QueueConsumer<?,?> excludedConsumer)
     {
-        final Iterator<QueueConsumer<?>> interestedIterator = _queueConsumerManager.getInterestedIterator();
+        final Iterator<QueueConsumer<?,?>> interestedIterator = _queueConsumerManager.getInterestedIterator();
         while (hasAvailableMessages() && interestedIterator.hasNext())
         {
-            QueueConsumer<?> consumer = interestedIterator.next();
+            QueueConsumer<?,?> consumer = interestedIterator.next();
 
             if (excludedConsumer != consumer)
             {
@@ -1860,7 +1860,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
 
-    MessageContainer deliverSingleMessage(QueueConsumer<?> consumer)
+    MessageContainer deliverSingleMessage(QueueConsumer<?,?> consumer)
     {
         boolean queueEmpty = false;
         MessageContainer messageContainer = null;
@@ -1930,7 +1930,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
      * @param sub the consumer
      * @return true if we have completed all possible deliveries for this sub.
      */
-    private MessageContainer attemptDelivery(QueueConsumer<?> sub)
+    private MessageContainer attemptDelivery(QueueConsumer<?,?> sub)
     {
         MessageContainer messageContainer;
         // avoid referring old deleted queue entry in sub._queueContext._lastSeen
@@ -1992,13 +1992,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return messageContainer;
     }
 
-    private boolean noHigherPriorityWithCredit(final QueueConsumer<?> sub, final QueueEntry queueEntry)
+    private boolean noHigherPriorityWithCredit(final QueueConsumer<?,?> sub, final QueueEntry queueEntry)
     {
-        Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getAllIterator();
+        Iterator<QueueConsumer<?,?>> consumerIterator = _queueConsumerManager.getAllIterator();
 
         while (consumerIterator.hasNext())
         {
-            QueueConsumer<?> consumer = consumerIterator.next();
+            QueueConsumer<?,?> consumer = consumerIterator.next();
             if(consumer.getPriority() > sub.getPriority())
             {
                 if(consumer.isNotifyWorkDesired()
@@ -2018,7 +2018,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
 
-    QueueEntry getNextAvailableEntry(final QueueConsumer sub)
+    private QueueEntry getNextAvailableEntry(final QueueConsumer<?, ?> sub)
     {
         QueueContext context = sub.getQueueContext();
         if(context != null)
@@ -2060,7 +2060,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    public boolean isEntryAheadOfConsumer(QueueEntry entry, QueueConsumer<?> sub)
+    public boolean isEntryAheadOfConsumer(QueueEntry entry, QueueConsumer<?,?> sub)
     {
         QueueContext context = sub.getQueueContext();
         if(context != null)
@@ -2178,11 +2178,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 _activeSubscriberCount.decrementAndGet();
 
                 // iterate over interested and notify one as long as its priority is higher than any notified
-                final Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getInterestedIterator();
+                final Iterator<QueueConsumer<?,?>> consumerIterator = _queueConsumerManager.getInterestedIterator();
                 final int highestNotifiedPriority = _queueConsumerManager.getHighestNotifiedPriority();
                 while (consumerIterator.hasNext())
                 {
-                    QueueConsumer<?> queueConsumer = consumerIterator.next();
+                    QueueConsumer<?,?> queueConsumer = consumerIterator.next();
                     if (queueConsumer.getPriority() < highestNotifiedPriority || notifyConsumer(queueConsumer))
                     {
                         break;
@@ -2192,7 +2192,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    private boolean notifyConsumer(final QueueConsumer<?> consumer)
+    private boolean notifyConsumer(final QueueConsumer<?,?> consumer)
     {
         if(consumerHasAvailableMessages(consumer) && _queueConsumerManager.setNotified(consumer, true))
         {
@@ -2638,7 +2638,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public boolean verifySessionAccess(final AMQSessionModel<?> session)
+    public boolean verifySessionAccess(final AMQSessionModel<?,?> session)
     {
         boolean allowed;
         switch(_exclusive)
@@ -2708,7 +2708,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         switch (getConsumerCount())
         {
             case 1:
-                Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getAllIterator();
+                Iterator<QueueConsumer<?,?>> consumerIterator = _queueConsumerManager.getAllIterator();
 
                 if (consumerIterator.hasNext())
                 {
@@ -2734,10 +2734,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case CONTAINER:
             case CONNECTION:
                 AMQSessionModel session = null;
-                Iterator<QueueConsumer<?>> queueConsumerIterator = _queueConsumerManager.getAllIterator();
+                Iterator<QueueConsumer<?,?>> queueConsumerIterator = _queueConsumerManager.getAllIterator();
                 while(queueConsumerIterator.hasNext())
                 {
-                    QueueConsumer<?> c = queueConsumerIterator.next();
+                    QueueConsumer<?,?> c = queueConsumerIterator.next();
 
                     if(session == null)
                     {
@@ -2763,10 +2763,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case CONTAINER:
             case PRINCIPAL:
                 AMQPConnection con = null;
-                Iterator<QueueConsumer<?>> queueConsumerIterator = _queueConsumerManager.getAllIterator();
+                Iterator<QueueConsumer<?,?>> queueConsumerIterator = _queueConsumerManager.getAllIterator();
                 while(queueConsumerIterator.hasNext())
                 {
-                    QueueConsumer<?> c = queueConsumerIterator.next();
+                    QueueConsumer<?,?> c = queueConsumerIterator.next();
                     if(con == null)
                     {
                         con = c.getSessionModel().getAMQPConnection();
@@ -2793,10 +2793,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case NONE:
             case PRINCIPAL:
                 String containerID = null;
-                Iterator<QueueConsumer<?>> queueConsumerIterator = _queueConsumerManager.getAllIterator();
+                Iterator<QueueConsumer<?,?>> queueConsumerIterator = _queueConsumerManager.getAllIterator();
                 while(queueConsumerIterator.hasNext())
                 {
-                    QueueConsumer<?> c = queueConsumerIterator.next();
+                    QueueConsumer<?,?> c = queueConsumerIterator.next();
                     if(containerID == null)
                     {
                         containerID = c.getSessionModel().getAMQPConnection().getRemoteContainerName();
@@ -2826,10 +2826,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case NONE:
             case CONTAINER:
                 Principal principal = null;
-                Iterator<QueueConsumer<?>> queueConsumerIterator = _queueConsumerManager.getAllIterator();
+                Iterator<QueueConsumer<?,?>> queueConsumerIterator = _queueConsumerManager.getAllIterator();
                 while(queueConsumerIterator.hasNext())
                 {
-                    QueueConsumer<?> c = queueConsumerIterator.next();
+                    QueueConsumer<?,?> c = queueConsumerIterator.next();
                     if(principal == null)
                     {
                         principal = c.getSessionModel().getAMQPConnection().getAuthorizedPrincipal();
@@ -3437,11 +3437,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             // next entry they are interested in yet.  This would lead to holding on to references to expired messages, etc
             // which would give us memory "leak".
 
-            Iterator<QueueConsumer<?>> consumerIterator = _queueConsumerManager.getAllIterator();
+            Iterator<QueueConsumer<?,?>> consumerIterator = _queueConsumerManager.getAllIterator();
 
             while (consumerIterator.hasNext() && !isDeleted())
             {
-                QueueConsumer<?> sub = consumerIterator.next();
+                QueueConsumer<?,?> sub = consumerIterator.next();
                 if(sub.acquires())
                 {
                     getNextAvailableEntry(sub);

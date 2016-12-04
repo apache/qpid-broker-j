@@ -34,10 +34,10 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
 
 
     private final String _groupId;
-    private final ConcurrentMap<Integer, QueueConsumer<?>> _groupMap = new ConcurrentHashMap<Integer, QueueConsumer<?>>();
+    private final ConcurrentMap<Integer, QueueConsumer<?,?>> _groupMap = new ConcurrentHashMap<>();
     private final int _groupMask;
 
-    public AssignedConsumerMessageGroupManager(final String groupId, final int maxGroups)
+    AssignedConsumerMessageGroupManager(final String groupId, final int maxGroups)
     {
         _groupId = groupId;
         _groupMask = pow2(maxGroups)-1;
@@ -63,17 +63,17 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
         }
         else
         {
-            QueueConsumer assignedSub = _groupMap.get(groupVal.hashCode() & _groupMask);
+            QueueConsumer<?,?> assignedSub = _groupMap.get(groupVal.hashCode() & _groupMask);
             return assignedSub == null || assignedSub == sub;
         }
     }
 
-    public boolean acceptMessage(QueueConsumer<?> sub, QueueEntry entry)
+    public boolean acceptMessage(QueueConsumer<?,?> sub, QueueEntry entry)
     {
         return assignMessage(sub, entry) && entry.acquire(sub);
     }
 
-    private boolean assignMessage(QueueConsumer<?> sub, QueueEntry entry)
+    private boolean assignMessage(QueueConsumer<?,?> sub, QueueEntry entry)
     {
         Object groupVal = entry.getMessage().getMessageHeader().getHeader(_groupId);
         if(groupVal == null)
@@ -83,7 +83,7 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
         else
         {
             Integer group = groupVal.hashCode() & _groupMask;
-            QueueConsumer assignedSub = _groupMap.get(group);
+            QueueConsumer<?,?> assignedSub = _groupMap.get(group);
             if(assignedSub == sub)
             {
                 return true;
@@ -104,7 +104,7 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
         }
     }
     
-    public QueueEntry findEarliestAssignedAvailableEntry(QueueConsumer<?> sub)
+    public QueueEntry findEarliestAssignedAvailableEntry(QueueConsumer<?,?> sub)
     {
         EntryFinder visitor = new EntryFinder(sub);
         sub.getQueue().visit(visitor);
@@ -114,9 +114,9 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
     private class EntryFinder implements QueueEntryVisitor
     {
         private QueueEntry _entry;
-        private QueueConsumer<?> _sub;
+        private QueueConsumer<?,?> _sub;
 
-        public EntryFinder(final QueueConsumer<?> sub)
+        EntryFinder(final QueueConsumer<?, ?> sub)
         {
             _sub = sub;
         }
@@ -135,7 +135,7 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
             }
 
             Integer group = groupId.hashCode() & _groupMask;
-            QueueConsumer<?> assignedSub = _groupMap.get(group);
+            QueueConsumer<?,?> assignedSub = _groupMap.get(group);
             if(assignedSub == _sub)
             {
                 _entry = entry;
@@ -153,9 +153,9 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
         }
     }
 
-    public void clearAssignments(QueueConsumer<?> sub)
+    public void clearAssignments(QueueConsumer<?,?> sub)
     {
-        Iterator<QueueConsumer<?>> subIter = _groupMap.values().iterator();
+        Iterator<QueueConsumer<?,?>> subIter = _groupMap.values().iterator();
         while(subIter.hasNext())
         {
             if(subIter.next() == sub)

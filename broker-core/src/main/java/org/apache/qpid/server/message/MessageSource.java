@@ -31,17 +31,17 @@ import org.apache.qpid.server.store.TransactionLogResource;
 
 public interface MessageSource extends TransactionLogResource, MessageNode
 {
-    MessageInstanceConsumer addConsumer(ConsumerTarget target, FilterManager filters,
-                                        Class<? extends ServerMessage> messageClass,
-                                        String consumerName,
-                                        EnumSet<ConsumerOption> options,
-                                        Integer priority)
+    <T extends ConsumerTarget<T>> MessageInstanceConsumer<T> addConsumer(T target, FilterManager filters,
+                                                                      Class<? extends ServerMessage> messageClass,
+                                                                      String consumerName,
+                                                                      EnumSet<ConsumerOption> options,
+                                                                      Integer priority)
             throws ExistingExclusiveConsumer, ExistingConsumerPreventsExclusive,
                    ConsumerAccessRefused, QueueDeleted;
 
     Collection<? extends MessageInstanceConsumer> getConsumers();
 
-    boolean verifySessionAccess(AMQSessionModel<?> session);
+    boolean verifySessionAccess(AMQSessionModel<?,?> session);
 
     /**
      * ExistingExclusiveConsumer signals a failure to create a consumer, because an exclusive consumer

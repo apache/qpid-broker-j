@@ -24,8 +24,6 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstance.ConsumerAcquiredState;
 import org.apache.qpid.server.message.MessageInstance.EntryState;
 import org.apache.qpid.server.util.StateChangeListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.ServerMessage;
@@ -37,21 +35,19 @@ import java.util.TreeSet;
 
 public class DefinedGroupMessageGroupManager implements MessageGroupManager
 {
-    private static final Logger _logger = LoggerFactory.getLogger(DefinedGroupMessageGroupManager.class);
-
     private final String _groupId;
     private final String _defaultGroup;
-    private final Map<Object, Group> _groupMap = new HashMap<Object, Group>();
+    private final Map<Object, Group> _groupMap = new HashMap<>();
     private final ConsumerResetHelper _resetHelper;
 
     private final class Group
     {
         private final Object _group;
         private final SortedSet<QueueEntry> _skippedEntries = new TreeSet<>();
-        private QueueConsumer<?> _consumer;
+        private QueueConsumer<?,?> _consumer;
         private int _activeCount;
 
-        private Group(final Object key, final QueueConsumer<?> consumer)
+        private Group(final Object key, final QueueConsumer<?,?> consumer)
         {
             _group = key;
             _consumer = consumer;
@@ -70,7 +66,7 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
             }
         }
         
-        public void subtract(final QueueEntry entry, final boolean released)
+        void subtract(final QueueEntry entry, final boolean released)
         {
             if(!released)
             {
@@ -116,7 +112,7 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
             return !(_consumer == null || (_activeCount == 0 && _consumer.isClosed()));
         }
 
-        public QueueConsumer<?> getConsumer()
+        public QueueConsumer<?,?> getConsumer()
         {
             return _consumer;
         }
@@ -131,13 +127,13 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
                     '}';
         }
 
-        public void addSkippedEntry(final QueueEntry entry)
+        void addSkippedEntry(final QueueEntry entry)
         {
             _skippedEntries.add(entry);
         }
     }
 
-    public DefinedGroupMessageGroupManager(final String groupId, String defaultGroup, ConsumerResetHelper resetHelper)
+    DefinedGroupMessageGroupManager(final String groupId, String defaultGroup, ConsumerResetHelper resetHelper)
     {
         _groupId = groupId;
         _defaultGroup = defaultGroup;
@@ -157,12 +153,12 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
         return possibleAssignment;
     }
 
-    public synchronized boolean acceptMessage(final QueueConsumer<?> sub, final QueueEntry entry)
+    public synchronized boolean acceptMessage(final QueueConsumer<?,?> sub, final QueueEntry entry)
     {
         return assignMessage(sub, entry) && entry.acquire(sub);
     }
 
-    private boolean assignMessage(final QueueConsumer<?> sub, final QueueEntry entry)
+    private boolean assignMessage(final QueueConsumer<?,?> sub, final QueueEntry entry)
     {
         Object groupId = getKey(entry);
         Group group = _groupMap.get(groupId);
@@ -182,7 +178,7 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
             }
         }
 
-        QueueConsumer<?> assignedSub = group.getConsumer();
+        QueueConsumer<?,?> assignedSub = group.getConsumer();
 
         if(assignedSub == sub)
         {
@@ -196,7 +192,7 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
         }
     }
 
-    public synchronized QueueEntry findEarliestAssignedAvailableEntry(final QueueConsumer<?> sub)
+    public synchronized QueueEntry findEarliestAssignedAvailableEntry(final QueueConsumer<?,?> sub)
     {
         EntryFinder visitor = new EntryFinder(sub);
         sub.getQueue().visit(visitor);
@@ -206,9 +202,9 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
     private class EntryFinder implements QueueEntryVisitor
     {
         private QueueEntry _entry;
-        private QueueConsumer _sub;
+        private QueueConsumer<?,?> _sub;
 
-        public EntryFinder(final QueueConsumer<?> sub)
+        EntryFinder(final QueueConsumer<?, ?> sub)
         {
             _sub = sub;
         }
@@ -241,7 +237,7 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
     }
 
     
-    public void clearAssignments(final QueueConsumer<?> sub)
+    public void clearAssignments(final QueueConsumer<?,?> sub)
     {
     }
     
@@ -261,7 +257,7 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
     {
         private final Group _group;
 
-        public GroupStateChangeListener(final Group group)
+        GroupStateChangeListener(final Group group)
         {
             _group = group;
         }

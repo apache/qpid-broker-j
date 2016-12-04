@@ -264,7 +264,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
 
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
-    Collection<QueueConsumer<?>> getConsumers();
+    Collection<QueueConsumer<?,?>> getConsumers();
 
     //operations
 

@@ -77,7 +77,7 @@ public interface MessageInstance
 
     Filterable asFilterable();
 
-    MessageInstanceConsumer getAcquiringConsumer();
+    MessageInstanceConsumer<?> getAcquiringConsumer();
 
     MessageEnqueueRecord getEnqueueRecord();
 

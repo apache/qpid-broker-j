@@ -26,14 +26,14 @@ public interface MessageGroupManager
     {
         void resetSubPointersForGroups(QueueEntry entry);
 
-        boolean isEntryAheadOfConsumer(QueueEntry entry, QueueConsumer<?> sub);
+        boolean isEntryAheadOfConsumer(QueueEntry entry, QueueConsumer<?,?> sub);
     }
 
     boolean mightAssign(QueueEntry entry, final QueueConsumer sub);
 
-    boolean acceptMessage(QueueConsumer<?> sub, QueueEntry entry);
+    boolean acceptMessage(QueueConsumer<?,?> sub, QueueEntry entry);
 
-    QueueEntry findEarliestAssignedAvailableEntry(QueueConsumer<?> sub);
+    QueueEntry findEarliestAssignedAvailableEntry(QueueConsumer<?,?> sub);
 
-    void clearAssignments(QueueConsumer<?> sub);
+    void clearAssignments(QueueConsumer<?,?> sub);
 }

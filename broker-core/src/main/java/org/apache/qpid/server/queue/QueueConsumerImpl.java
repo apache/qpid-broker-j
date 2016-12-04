@@ -61,15 +61,15 @@ import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.util.StateChangeListener;
 
-class QueueConsumerImpl
-    extends AbstractConfiguredObject<QueueConsumerImpl>
-        implements QueueConsumer<QueueConsumerImpl>, LogSubject
+class QueueConsumerImpl<T extends ConsumerTarget>
+    extends AbstractConfiguredObject<QueueConsumerImpl<T>>
+        implements QueueConsumer<QueueConsumerImpl<T>,T>, LogSubject
 {
     private final static Logger LOGGER = LoggerFactory.getLogger(QueueConsumerImpl.class);
     private final AtomicBoolean _closed = new AtomicBoolean(false);
     private final long _consumerNumber;
     private final long _createTime = System.currentTimeMillis();
-    private final MessageInstance.StealableConsumerAcquiredState<QueueConsumerImpl>
+    private final MessageInstance.StealableConsumerAcquiredState<QueueConsumerImpl<T>>
             _owningState = new MessageInstance.StealableConsumerAcquiredState<>(this);
     private final WaitingOnCreditMessageListener _waitingOnCreditMessageListener = new WaitingOnCreditMessageListener();
     private final boolean _acquires;
@@ -82,7 +82,7 @@ class QueueConsumerImpl
     private final Object _sessionReference;
     private final AbstractQueue _queue;
 
-    private final ConsumerTarget _target;
+    private final T _target;
     private volatile QueueContext _queueContext;
 
 
@@ -104,7 +104,7 @@ class QueueConsumerImpl
     private QueueConsumerNode _queueConsumerNode;
 
     QueueConsumerImpl(final AbstractQueue<?> queue,
-                      ConsumerTarget target,
+                      T target,
                       final String consumerName,
                       final FilterManager filters,
                       final Class<? extends ServerMessage> messageClass,
@@ -173,7 +173,7 @@ class QueueConsumerImpl
     }
 
     @Override
-    public ConsumerTarget getTarget()
+    public T getTarget()
     {
         return _target;
     }
@@ -470,7 +470,7 @@ class QueueConsumerImpl
         return _createTime;
     }
 
-    public final MessageInstance.StealableConsumerAcquiredState<QueueConsumerImpl> getOwningState()
+    public final MessageInstance.StealableConsumerAcquiredState<QueueConsumerImpl<T>> getOwningState()
     {
         return _owningState;
     }
