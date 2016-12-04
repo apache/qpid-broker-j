@@ -64,6 +64,12 @@ public class AbstractServerMessageTest extends QpidTestCase
         {
             return 0;
         }
+
+        @Override
+        public boolean isResourceAcceptable(final TransactionLogResource resource)
+        {
+            return true;
+        }
     }
 
     private TransactionLogResource createQueue(String name)
