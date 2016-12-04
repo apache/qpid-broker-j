@@ -263,6 +263,7 @@ public class MetaDataServlet extends AbstractServlet
                     Map<String, Object> paramAttrs = new LinkedHashMap<>();
 
                     paramAttrs.put("type", param.getType().getSimpleName());
+                    paramAttrs.put("nullable", param.isNullable());
                     if (!"".equals(param.getDefaultValue()))
                     {
                         paramAttrs.put("defaultValue", param.getDefaultValue());

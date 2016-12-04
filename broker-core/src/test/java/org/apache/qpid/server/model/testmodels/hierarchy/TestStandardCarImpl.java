@@ -103,6 +103,11 @@ public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCa
     }
 
     @Override
+    public void startEngine(final String keyCode)
+    {
+    }
+
+    @Override
     public Colour getBodyColour()
     {
         return _bodyColour;

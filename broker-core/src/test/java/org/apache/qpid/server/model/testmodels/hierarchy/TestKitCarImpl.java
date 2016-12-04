@@ -82,6 +82,11 @@ public class TestKitCarImpl extends AbstractConfiguredObject<TestKitCarImpl>
     }
 
     @Override
+    public void startEngine(final String keyCode)
+    {
+    }
+
+    @Override
     public Map<String, Object> getParameters()
     {
         return _parameters;

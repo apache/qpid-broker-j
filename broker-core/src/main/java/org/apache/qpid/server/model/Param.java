@@ -32,4 +32,5 @@ public @interface Param
     String defaultValue() default "";
     String description() default "";
     String[] validValues() default {};
+    boolean nullable() default true;
 }

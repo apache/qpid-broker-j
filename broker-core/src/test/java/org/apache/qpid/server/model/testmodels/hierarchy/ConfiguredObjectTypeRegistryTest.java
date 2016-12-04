@@ -69,12 +69,12 @@ public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
 
     public void testManagedInterfaces()
     {
-        // The electric engine is recharable
+        // The electric engine is rechargable
         Set<Class<? extends ManagedInterface>> elecEngIntfcs = _typeRegistry.getManagedInterfaces(TestElecEngine.class);
         assertThat(elecEngIntfcs, hasItem(TestRechargeable.class));
         assertThat(elecEngIntfcs.size(), is(1));
 
-        // The pertrol engine implements no additional interfaces
+        // The petrol engine implements no additional interfaces
         Set<Class<? extends ManagedInterface>> stdCarIntfcs = _typeRegistry.getManagedInterfaces(TestPetrolEngine.class);
         assertThat(stdCarIntfcs.size(), is(0));
     }
@@ -92,7 +92,6 @@ public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
 
         final Map<String, ConfiguredObjectOperation<?>> kitCarOperations =
                 _typeRegistry.getOperations(object.getClass());
-        assertEquals(2, kitCarOperations.size());
         assertTrue(kitCarOperations.containsKey("openDoor"));
         final ConfiguredObjectOperation<TestCar<?>> operation =
                 (ConfiguredObjectOperation<TestCar<?>>) kitCarOperations.get("openDoor");
@@ -123,6 +122,39 @@ public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
         catch(IllegalArgumentException e)
         {
             // pass
+        }
+    }
+
+    public void testOperationsRejectsNullParameter()
+    {
+        final String objectName = "testKitCar";
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(ConfiguredObject.NAME, objectName);
+        attributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+
+        TestCar object = TestModel.getInstance().getObjectFactory().create(TestCar.class, attributes);
+        Map<String, ConfiguredObjectOperation<?>> operations = _typeRegistry.getOperations(object.getClass());
+
+        ConfiguredObjectOperation<TestCar<?>> operation = (ConfiguredObjectOperation<TestCar<?>>) operations.get("startEngine");
+
+        try
+        {
+            operation.perform(object, Collections.<String, Object>emptyMap());
+            fail("Exception not thrown");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // PASS
+        }
+
+        try
+        {
+            operation.perform(object, Collections.singletonMap("keyCode", null));
+            fail("Exception not thrown");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // PASS
         }
     }
 

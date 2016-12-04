@@ -38,4 +38,6 @@ public interface OperationParameter
     Type getGenericType();
 
     boolean isCompatible(OperationParameter that);
+
+    boolean isNullable();
 }

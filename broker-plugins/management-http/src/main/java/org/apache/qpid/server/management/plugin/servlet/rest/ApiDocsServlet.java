@@ -418,7 +418,7 @@ public class ApiDocsServlet extends AbstractServlet
         writer.append("<table class=\"parameters\">");
         writer.append("<thead>");
         writer.append(
-                "<tr><th class=\"name\">Parameter Name</th><th class=\"type\">Type</th><th class=\"description\">Description</th></tr>");
+                "<tr><th class=\"name\">Parameter Name</th><th>Type</th><th>Default</th><th>Nullable?</th><th>Description</th></tr>");
         writer.append("</thead>");
         writer.append("<tbody>");
 
@@ -428,6 +428,10 @@ public class ApiDocsServlet extends AbstractServlet
                           + param.getName()
                           + "</td><td class=\"type\">"
                           + renderType(param)
+                          + "</td><td class=\"default\">"
+                          + param.getDefaultValue()
+                          + "</td><td class=\"nullable\">"
+                          + param.isNullable()
                           + "</td><td class=\"description\">"
                           + param.getDescription()
                           + "</td></tr>");

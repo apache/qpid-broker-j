@@ -167,6 +167,14 @@ public class ConfiguredObjectMethodOperation<C extends ConfiguredObject<?>> impl
         {
             providedVal = null;
         }
+        if (providedVal == null && !param.isNullable())
+        {
+            throw new IllegalArgumentException(String.format("Parameter %s of operation %s in %s requires a non-null value",
+                                                             param.getName(),
+                                                             _operation.getName(),
+                                                             _objectType));
+        }
+
         final AttributeValueConverter<?> converter =
                 AttributeValueConverter.getConverter(AttributeValueConverter.convertPrimitiveToBoxed(param.getType()),
                                                      param.getGenericType());

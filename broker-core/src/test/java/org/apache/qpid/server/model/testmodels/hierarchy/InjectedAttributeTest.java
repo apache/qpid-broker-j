@@ -368,7 +368,8 @@ public class InjectedAttributeTest extends QpidTestCase
                 };
 
         final OperationParameter[] params = new OperationParameter[1];
-        params[0] = new OperationParameterFromInjection("height", Integer.TYPE, Integer.TYPE, "", "", new String[0]);
+        params[0] = new OperationParameterFromInjection("height", Integer.TYPE, Integer.TYPE, "", "", new String[0],
+                                                        true);
         final ConfiguredObjectInjectedOperation<?> operationInjector =
                 new ConfiguredObjectInjectedOperation<TestCar<?>>("fly", "", true,
                                                                   false,
@@ -409,7 +410,8 @@ public class InjectedAttributeTest extends QpidTestCase
                 };
 
         final OperationParameter[] params = new OperationParameter[1];
-        params[0] = new OperationParameterFromInjection("count", Integer.TYPE, Integer.TYPE, "", "", new String[0]);
+        params[0] = new OperationParameterFromInjection("count", Integer.TYPE, Integer.TYPE, "", "", new String[0],
+                                                        true);
 
         final ConfiguredObjectInjectedOperation<?> hello =
                 new ConfiguredObjectInjectedOperation<TestCar<?>>("sayHello", "", true,

@@ -248,13 +248,14 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                                                             String.class,
                                                             "",
                                                             "the system-dependent filename",
-                                                            new String[0]);
+                                                            new String[0], true);
             params[1] = new OperationParameterFromInjection("live",
                                                             boolean.class,
                                                             boolean.class,
                                                             "true",
                                                             "if true dump only live objects i.e. objects that are reachable from others",
-                                                            new String[]{Boolean.TRUE.toString(), Boolean.FALSE.toString()});
+                                                            new String[]{Boolean.TRUE.toString(), Boolean.FALSE.toString()},
+                                                            true);
             ConfiguredObjectInjectedOperation<?> setVMOptionOperation = new ConfiguredObjectInjectedOperation(
                     "dumpHeap",
                     "Dumps the heap to the outputFile file in the same format as the hprof heap dump.",
@@ -286,7 +287,7 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                                                                                  ParameterizedTypes.MAP_OF_STRING_STRING,
                                                                                  "",
                                                                                  "JVM options map",
-                                                                                 new String[0])};
+                                                                                 new String[0], true)};
             ConfiguredObjectInjectedOperation<?> setVMOptionOperation = new ConfiguredObjectInjectedOperation(
                     "setJVMOptions",
                     "Sets given JVM options",

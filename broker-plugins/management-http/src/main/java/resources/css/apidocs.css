@@ -68,6 +68,14 @@ table.parameters td.type {
     width: 20em;
 }
 
+table.parameters td.default {
+    width: 20em;
+}
+
+table.parameters td.nullable {
+    width: 15em;
+}
+
 table.api td,th {
     vertical-align: top;
 }

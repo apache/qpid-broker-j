@@ -74,6 +74,11 @@ public class OperationParameterFromAnnotation implements OperationParameter
         return _genericType;
     }
 
+    @Override
+    public boolean isNullable()
+    {
+        return _param.nullable() && !_type.isPrimitive();
+    }
 
     @Override
     public boolean isCompatible(final OperationParameter that)

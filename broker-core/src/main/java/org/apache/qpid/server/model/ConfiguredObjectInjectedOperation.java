@@ -196,6 +196,14 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject<?>> im
         {
             providedVal = null;
         }
+        if (providedVal == null && !param.isNullable())
+        {
+            throw new IllegalArgumentException(String.format("Parameter %s of operation %s in %s requires a non-null value",
+                                                             param.getName(),
+                                                             _operation.getName(),
+                                                             _operation.getDeclaringClass().getSimpleName()));
+        }
+
         final AttributeValueConverter<?> converter =
                 AttributeValueConverter.getConverter(AttributeValueConverter.convertPrimitiveToBoxed(param.getType()),
                                                      param.getGenericType());
