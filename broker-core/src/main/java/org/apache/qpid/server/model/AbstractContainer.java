@@ -391,7 +391,7 @@ public abstract class AbstractContainer<X extends AbstractContainer<X>> extends 
                 threadNameFindExpression);
         for (ThreadInfo threadInfo : threadInfos)
         {
-            if (pattern== null || pattern.matcher(threadInfo.getThreadName()).find())
+            if (pattern == null || pattern.matcher(threadInfo.getThreadName()).find())
             {
                 threadDump.append(getThreadStackTraces(threadInfo));
             }

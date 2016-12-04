@@ -255,7 +255,7 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                                                             "true",
                                                             "if true dump only live objects i.e. objects that are reachable from others",
                                                             new String[]{Boolean.TRUE.toString(), Boolean.FALSE.toString()},
-                                                            true);
+                                                            false);
             ConfiguredObjectInjectedOperation<?> setVMOptionOperation = new ConfiguredObjectInjectedOperation(
                     "dumpHeap",
                     "Dumps the heap to the outputFile file in the same format as the hprof heap dump.",

@@ -69,10 +69,10 @@ public interface BrokerFileLogger<X extends BrokerFileLogger<X>> extends BrokerL
     List<LogFileDetails> getLogFiles();
 
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
-    Content getFile(@Param(name = "fileName") String fileName);
+    Content getFile(@Param(name = "fileName", mandatory = true) String fileName);
 
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
-    Content getFiles(@Param(name = "fileName") Set<String> fileName);
+    Content getFiles(@Param(name = "fileName", mandatory = true) Set<String> fileName);
 
     @ManagedOperation(nonModifying = true,
             changesConfiguredObjectState = false)

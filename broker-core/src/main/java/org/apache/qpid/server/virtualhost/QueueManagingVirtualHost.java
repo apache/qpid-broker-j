@@ -206,14 +206,14 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     Collection<? extends Connection<?>> getConnections();
 
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
-    Connection<?> getConnection(@Param(name="name") String name);
+    Connection<?> getConnection(@Param(name="name", mandatory = true) String name);
 
     @ManagedOperation(secure = true,
             description = "Publishes a message to a specified address. "
                           + "Returns the number of queues onto which it has been placed, "
                           + " or zero, if the address routes to no queues.",
             changesConfiguredObjectState = false)
-    int publishMessage(@Param(name = "message")ManageableMessage message);
+    int publishMessage(@Param(name = "message", mandatory = true)ManageableMessage message);
 
     @ManagedOperation(nonModifying = true,
             description = "Extract configuration",
@@ -232,7 +232,7 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     @ManagedOperation(description = "Import message store content",
             secure = true,
             changesConfiguredObjectState = false)
-    void importMessageStore(@Param(name="source", description = "Extract file")String source);
+    void importMessageStore(@Param(name="source", description = "Extract file", mandatory = true)String source);
 
     @ManagedOperation(description = "Resets statistics on this object and all child objects", changesConfiguredObjectState = false, nonModifying = true)
     void resetStatistics();

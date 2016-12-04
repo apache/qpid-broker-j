@@ -51,5 +51,5 @@ public interface BDBEnvironmentContainer<X extends ConfiguredObject<X>> extends 
 
     @ManagedOperation(description = "Get the BDB database statistics", nonModifying = true,
             changesConfiguredObjectState = false)
-    Map<String, Object> databaseStatistics(@Param(name="database", description = "database table for which to retrieve statistics")String database, @Param(name="reset", defaultValue = "false", description = "If true, reset the statistics") boolean reset);
+    Map<String, Object> databaseStatistics(@Param(name="database", description = "database table for which to retrieve statistics", mandatory = true)String database, @Param(name="reset", defaultValue = "false", description = "If true, reset the statistics") boolean reset);
 }

@@ -46,7 +46,7 @@ public interface RuleBasedAccessControlProvider<X extends RuleBasedAccessControl
 
     @ManagedOperation(description = "Load access control rules from a file in the legacy access control rule format",
             changesConfiguredObjectState = true)
-    void loadFromFile(@Param(name = "path")String path);
+    void loadFromFile(@Param(name = "path", mandatory = true)String path);
 
     @ManagedOperation(nonModifying = true,
             description = "Extract the access control rules in the legacy access control rule format",

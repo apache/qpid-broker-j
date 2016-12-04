@@ -54,6 +54,6 @@ public interface ManagedPeerCertificateTrustStore<X extends ManagedPeerCertifica
 
     @ManagedOperation(description = "Remove given certificates from the Trust Store.",
             changesConfiguredObjectState = true)
-    void removeCertificates(@Param(name = "certificates", description = "List of certificate details to be removed. The details should take the form given by the certificateDetails attribute")
+    void removeCertificates(@Param(name = "certificates", description = "List of certificate details to be removed. The details should take the form given by the certificateDetails attribute", mandatory = true)
                             List<CertificateDetails> certificates);
 }
