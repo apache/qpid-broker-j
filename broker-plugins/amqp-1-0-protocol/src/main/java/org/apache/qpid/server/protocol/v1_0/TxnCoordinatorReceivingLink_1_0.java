@@ -74,7 +74,6 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
 
     public void messageTransfer(Transfer xfr)
     {
-        // TODO - cope with fragmented messages
 
         QpidByteBuffer payload = null;
 
@@ -115,7 +114,7 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
             xfr.dispose();
         }
 
-        // Only interested int he amqp-value section that holds the message to the coordinator
+        // Only interested int the amqp-value section that holds the message to the coordinator
         try
         {
             List<Section> sections = _sectionDecoder.parseAll(payload);
@@ -141,7 +140,7 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
 
                         Declared state = new Declared();
 
-
+                        _session.incrementStartedTransactions();
 
                         state.setTxnId(_session.integerToBinary(txnId));
                         _endpoint.updateDisposition(deliveryTag, state, true);
@@ -176,7 +175,6 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
 
     public void remoteDetached(LinkEndpoint endpoint, Detach detach)
     {
-        //TODO
         endpoint.detach();
     }
 
@@ -195,10 +193,12 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
             if(fail)
             {
                 txn.rollback();
+                _session.incrementRolledBackTransactions();
             }
             else
             {
                 txn.commit();
+                _session.incrementCommittedTransactions();
             }
             _openTransactions.remove(transactionId);
         }

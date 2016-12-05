@@ -49,7 +49,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.connection.SessionPrincipal;
-import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.consumer.ScheduledConsumerTargetSet;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
@@ -176,6 +175,10 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
                       "Force detach the link because the session is remotely ended.");
 
     private final Set<Object> _blockingEntities = Collections.newSetFromMap(new ConcurrentHashMap<Object,Boolean>());
+    private volatile long _startedTransactions;
+    private volatile long _committedTransactions;
+    private volatile long _rolledBackTransactions;
+    private volatile int _unacknowledgedMessages;
 
 
     public Session_1_0(final AMQPConnection_1_0 connection)
@@ -1213,7 +1216,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
         for(int i = 0; i < txnId.getLength(); i++)
         {
             id <<= 8;
-            id += ((int)data[i+txnId.getArrayOffset()] & 0xff);
+            id |= ((int)data[i+txnId.getArrayOffset()] & 0xff);
         }
 
         return id;
@@ -1456,29 +1459,25 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
     @Override
     public int getUnacknowledgedMessageCount()
     {
-        // TODO
-        return 0;
+        return _unacknowledgedMessages;
     }
 
     @Override
     public long getTxnStart()
     {
-        // TODO
-        return 0l;
+        return _startedTransactions;
     }
 
     @Override
     public long getTxnCommits()
     {
-        // TODO
-        return 0l;
+        return _committedTransactions;
     }
 
     @Override
     public long getTxnRejects()
     {
-        // TODO
-        return 0L;
+        return _rolledBackTransactions;
     }
 
     @Override
@@ -1666,6 +1665,31 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
         {
             l.consumerRemoved(consumer);
         }
+    }
+
+    void incrementStartedTransactions()
+    {
+        _startedTransactions++;
+    }
+
+    void incrementCommittedTransactions()
+    {
+        _committedTransactions++;
+    }
+
+    void incrementRolledBackTransactions()
+    {
+        _rolledBackTransactions++;
+    }
+
+    void incrementUnacknowledged()
+    {
+        _unacknowledgedMessages++;
+    }
+
+    void decrementUnacknowledged()
+    {
+        _unacknowledgedMessages--;
     }
 
     private class ConsumerClosedListener extends AbstractConfigurationChangeListener
