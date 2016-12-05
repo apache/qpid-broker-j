@@ -52,4 +52,10 @@ public class ScramNegotiator extends AbstractSaslServerNegotiator implements Sas
     {
         return _saslServer;
     }
+
+    @Override
+    public String getAttemptedAuthenticationId()
+    {
+        return _saslServer.getAuthorizationID();
+    }
 }

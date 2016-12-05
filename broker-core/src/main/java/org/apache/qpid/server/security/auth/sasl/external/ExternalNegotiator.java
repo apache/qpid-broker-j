@@ -38,13 +38,13 @@ public class ExternalNegotiator implements SaslNegotiator
 {
     private final static Logger LOGGER = LoggerFactory.getLogger(ExternalNegotiator.class);
     private final AuthenticationResult _result;
+    private final Principal _principal;
     private volatile boolean _isComplete;
 
     public ExternalNegotiator(final ExternalAuthenticationManager externalAuthenticationManager,
                               final Principal externalPrincipal)
     {
         boolean useFullDN = externalAuthenticationManager.getUseFullDN();
-        final Principal principal;
         if (externalPrincipal instanceof X500Principal && !useFullDN)
         {
             // Construct username as <CN>@<DC1>.<DC2>.<DC3>....<DCN>
@@ -59,29 +59,29 @@ public class ExternalNegotiator implements SaslNegotiator
                 // CN is empty => Cannot construct username => Authentication failed => return null
                 LOGGER.debug("CN value was empty in Principal name, unable to construct username");
 
-                principal =  null;
+                _principal =  null;
             }
             else
             {
                 LOGGER.debug("Constructing Principal with username: {}", username);
 
-                principal = new UsernamePrincipal(username, externalAuthenticationManager);
+                _principal = new UsernamePrincipal(username, externalAuthenticationManager);
             }
         }
         else
         {
             LOGGER.debug("Using external Principal: {}", externalPrincipal);
 
-            principal = externalPrincipal;
+            _principal = externalPrincipal;
         }
 
-        if (principal == null)
+        if (_principal == null)
         {
             _result = new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, new IllegalArgumentException("CN value was empty in Principal name, unable to construct username"));
         }
         else
         {
-            _result = new AuthenticationResult(principal);
+            _result = new AuthenticationResult(_principal);
         }
     }
 
@@ -105,5 +105,11 @@ public class ExternalNegotiator implements SaslNegotiator
     public void dispose()
     {
 
+    }
+
+    @Override
+    public String getAttemptedAuthenticationId()
+    {
+        return (_principal == null ? null : _principal.getName());
     }
 }

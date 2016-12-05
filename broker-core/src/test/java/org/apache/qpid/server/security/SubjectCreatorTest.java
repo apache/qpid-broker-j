@@ -19,6 +19,7 @@
 package org.apache.qpid.server.security;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.security.Principal;
@@ -29,6 +30,10 @@ import java.util.Set;
 
 import javax.security.auth.Subject;
 
+import org.mockito.ArgumentCaptor;
+
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
@@ -56,6 +61,7 @@ public class SubjectCreatorTest extends QpidTestCase
     private AuthenticationResult _authenticationResult;
     private SaslNegotiator _testSaslNegotiator = mock(SaslNegotiator.class);
     private byte[] _saslResponseBytes = PASSWORD.getBytes();
+    private EventLogger _eventLogger;
 
     @Override
     public void setUp()
@@ -65,6 +71,8 @@ public class SubjectCreatorTest extends QpidTestCase
 
         _subjectCreator = new SubjectCreator(_authenticationProvider, new HashSet<GroupProvider<?>>(Arrays.asList(_groupManager1, _groupManager2)),
                                              false);
+        _eventLogger = mock(EventLogger.class);
+        when(_authenticationProvider.getEventLogger()).thenReturn(_eventLogger);
         _authenticationResult = new AuthenticationResult(USERNAME_PRINCIPAL);
     }
 
@@ -84,22 +92,30 @@ public class SubjectCreatorTest extends QpidTestCase
         assertTrue(actualSubject.isReadOnly());
     }
 
-    public void testAuthenticateUnsuccessfulWithSaslServerReturnsNullSubjectAndCorrectStatus()
+    public void testAuthenticateUnsuccessfulReturnsNullSubjectAndCorrectStatus()
     {
-        testUnsuccessfulAuthenticationWithSaslServer(AuthenticationResult.AuthenticationStatus.CONTINUE);
-        testUnsuccessfulAuthenticationWithSaslServer(AuthenticationResult.AuthenticationStatus.ERROR);
+        testUnsuccessfulAuthentication(AuthenticationResult.AuthenticationStatus.CONTINUE);
+        testUnsuccessfulAuthentication(AuthenticationResult.AuthenticationStatus.ERROR);
     }
 
-    private void testUnsuccessfulAuthenticationWithSaslServer(AuthenticationStatus expectedStatus)
+    private void testUnsuccessfulAuthentication(AuthenticationStatus expectedStatus)
     {
         AuthenticationResult failedAuthenticationResult = new AuthenticationResult(expectedStatus);
 
         when(_testSaslNegotiator.handleResponse(_saslResponseBytes)).thenReturn(failedAuthenticationResult);
 
-        SubjectAuthenticationResult subjectAuthenticationResult = _subjectCreator.authenticate(_testSaslNegotiator, _saslResponseBytes);
+        SubjectAuthenticationResult subjectAuthenticationResult =
+                _subjectCreator.authenticate(_testSaslNegotiator, _saslResponseBytes);
 
         assertSame(expectedStatus, subjectAuthenticationResult.getStatus());
         assertNull(subjectAuthenticationResult.getSubject());
+
+        if (expectedStatus == AuthenticationStatus.ERROR)
+        {
+            ArgumentCaptor<LogMessage> argument = ArgumentCaptor.forClass(LogMessage.class);
+            verify(_eventLogger).message(argument.capture());
+            assertTrue("Unexpected operational log message", argument.getValue().toString().startsWith("ATH-1010"));
+        }
     }
 
     public void testGetGroupPrincipals()

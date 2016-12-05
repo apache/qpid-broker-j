@@ -54,4 +54,10 @@ public class AnonymousNegotiator implements SaslNegotiator
     {
 
     }
+
+    @Override
+    public String getAttemptedAuthenticationId()
+    {
+        return _anonymousAuthenticationResult.getMainPrincipal().getName();
+    }
 }

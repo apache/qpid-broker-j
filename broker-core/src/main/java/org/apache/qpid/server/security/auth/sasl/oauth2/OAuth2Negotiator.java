@@ -80,6 +80,12 @@ public class OAuth2Negotiator implements SaslNegotiator
 
     }
 
+    @Override
+    public String getAttemptedAuthenticationId()
+    {
+        return null;
+    }
+
     private Map<String, String> splitResponse(final byte[] response)
     {
         String[] splitResponse = new String(response, StandardCharsets.US_ASCII).split("\1");

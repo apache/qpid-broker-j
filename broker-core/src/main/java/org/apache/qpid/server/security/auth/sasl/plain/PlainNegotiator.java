@@ -34,6 +34,7 @@ public class PlainNegotiator implements SaslNegotiator
 
     private UsernamePasswordAuthenticationProvider _usernamePasswordAuthenticationProvider;
     private volatile boolean _isComplete;
+    private volatile String _username;
 
     public PlainNegotiator(final UsernamePasswordAuthenticationProvider usernamePasswordAuthenticationProvider)
     {
@@ -68,11 +69,10 @@ public class PlainNegotiator implements SaslNegotiator
                                                     "Invalid PLAIN encoding, authcid null terminator not found"));
         }
 
-        String username;
         String password;
         try
         {
-            username = new String(response, authzidNullPosition + 1, authcidNullPosition - authzidNullPosition - 1, UTF8);
+            _username = new String(response, authzidNullPosition + 1, authcidNullPosition - authzidNullPosition - 1, UTF8);
             // TODO: should not get pwd as a String but as a char array...
             int passwordLen = response.length - authcidNullPosition - 1;
             password = new String(response, authcidNullPosition + 1, passwordLen, UTF8);
@@ -81,13 +81,19 @@ public class PlainNegotiator implements SaslNegotiator
         {
             throw new RuntimeException("JVM does not support UTF8", e);
         }
-        return _usernamePasswordAuthenticationProvider.authenticate(username, password);
+        return _usernamePasswordAuthenticationProvider.authenticate(_username, password);
     }
 
     @Override
     public void dispose()
     {
 
+    }
+
+    @Override
+    public String getAttemptedAuthenticationId()
+    {
+        return _username;
     }
 
     private int findNullPosition(byte[] response, int startPosition)

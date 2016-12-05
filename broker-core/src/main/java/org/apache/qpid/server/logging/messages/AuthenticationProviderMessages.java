@@ -64,18 +64,20 @@ public class AuthenticationProviderMessages
 
     public static final String AUTHENTICATIONPROVIDER_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider";
     public static final String DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.delete";
-    public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.close";
     public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.create";
     public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.operation";
+    public static final String AUTHENTICATION_FAILED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.authentication_failed";
+    public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.close";
     public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "authenticationprovider.open";
 
     static
     {
         LoggerFactory.getLogger(AUTHENTICATIONPROVIDER_LOG_HIERARCHY);
         LoggerFactory.getLogger(DELETE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
         LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
         LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
+        LoggerFactory.getLogger(AUTHENTICATION_FAILED_LOG_HIERARCHY);
+        LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
         LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.AuthenticationProvider_logmessages", _currentLocale);
@@ -109,59 +111,6 @@ public class AuthenticationProviderMessages
             public String getLogHierarchy()
             {
                 return DELETE_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a AuthenticationProvider message of the Format:
-     * <pre>ATH-1003 : Close</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage CLOSE()
-    {
-        String rawMessage = _messages.getString("CLOSE");
-
-        final String message = rawMessage;
-
-        return new LogMessage()
-        {
-            public String toString()
-            {
-                return message;
-            }
-
-            public String getLogHierarchy()
-            {
-                return CLOSE_LOG_HIERARCHY;
             }
 
             @Override
@@ -278,6 +227,140 @@ public class AuthenticationProviderMessages
             public String getLogHierarchy()
             {
                 return OPERATION_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a AuthenticationProvider message of the Format:
+     * <pre>ATH-1010 : Authentication Failed[ : "{0}"]</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage AUTHENTICATION_FAILED(String param1, boolean opt1)
+    {
+        String rawMessage = _messages.getString("AUTHENTICATION_FAILED");
+        StringBuffer msg = new StringBuffer();
+
+        // Split the formatted message up on the option values so we can
+        // rebuild the message based on the configured options.
+        String[] parts = rawMessage.split("\\[");
+        msg.append(parts[0]);
+
+        int end;
+        if (parts.length > 1)
+        {
+
+            // Add Option : : "{0}".
+            end = parts[1].indexOf(']');
+            if (opt1)
+            {
+                msg.append(parts[1].substring(0, end));
+            }
+
+            // Use 'end + 1' to remove the ']' from the output
+            msg.append(parts[1].substring(end + 1));
+        }
+
+        rawMessage = msg.toString();
+
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return AUTHENTICATION_FAILED_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a AuthenticationProvider message of the Format:
+     * <pre>ATH-1003 : Close</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage CLOSE()
+    {
+        String rawMessage = _messages.getString("CLOSE");
+
+        final String message = rawMessage;
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return CLOSE_LOG_HIERARCHY;
             }
 
             @Override

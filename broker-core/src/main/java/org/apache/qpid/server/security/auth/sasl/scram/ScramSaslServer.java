@@ -36,26 +36,25 @@ import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.util.Strings;
 
-public class ScramSaslServer implements SaslServer
+class ScramSaslServer implements SaslServer
 {
-    public final String _mechanism;
-    public final String _hmacName;
-    public final String _digestName;
-
     private static final Charset ASCII = Charset.forName("ASCII");
 
+    private final String _mechanism;
+    private final String _hmacName;
+    private final String _digestName;
     private final ScramSaslServerSource _authManager;
-    private State _state = State.INITIAL;
-    private String _nonce;
-    private String _username;
-    private byte[] _gs2Header;
-    private String _serverFirstMessage;
-    private String _clientFirstMessageBare;
-    private byte[] _serverSignature;
-    private ScramSaslServerSource.SaltAndPasswordKeys _saltAndPassword;
+    private volatile State _state = State.INITIAL;
+    private volatile String _nonce;
+    private volatile String _username;
+    private volatile byte[] _gs2Header;
+    private volatile String _serverFirstMessage;
+    private volatile String _clientFirstMessageBare;
+    private volatile byte[] _serverSignature;
+    private volatile ScramSaslServerSource.SaltAndPasswordKeys _saltAndPassword;
 
-    public ScramSaslServer(final ScramSaslServerSource authenticationManager,
-                           final String mechanism)
+    ScramSaslServer(final ScramSaslServerSource authenticationManager,
+                    final String mechanism)
     {
         _authManager = authenticationManager;
         _mechanism = mechanism;
@@ -207,11 +206,7 @@ public class ScramSaslServer implements SaslServer
 
             return finalResponse.getBytes(ASCII);
         }
-        catch (NoSuchAlgorithmException e)
-        {
-            throw new SaslException(e.getMessage(), e);
-        }
-        catch (UnsupportedEncodingException e)
+        catch (NoSuchAlgorithmException | UnsupportedEncodingException e)
         {
             throw new SaslException(e.getMessage(), e);
         }
@@ -272,11 +267,7 @@ public class ScramSaslServer implements SaslServer
             mac.init(key);
             return mac;
         }
-        catch (NoSuchAlgorithmException e)
-        {
-            throw new SaslException(e.getMessage(), e);
-        }
-        catch (InvalidKeyException e)
+        catch (NoSuchAlgorithmException | InvalidKeyException e)
         {
             throw new SaslException(e.getMessage(), e);
         }

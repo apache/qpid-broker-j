@@ -83,6 +83,12 @@ public class KerberosNegotiator extends AbstractSaslServerNegotiator implements 
         return _authenticationProvider;
     }
 
+    @Override
+    public String getAttemptedAuthenticationId()
+    {
+        return null;
+    }
+
     private static class GssApiCallbackHandler implements CallbackHandler
     {
         @Override

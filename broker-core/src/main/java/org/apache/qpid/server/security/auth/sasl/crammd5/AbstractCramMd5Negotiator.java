@@ -62,6 +62,7 @@ public class AbstractCramMd5Negotiator extends AbstractSaslServerNegotiator impl
     private final SaslServer _saslServer;
     private final SaslException _exception;
     private final PasswordCredentialManagingAuthenticationProvider<?> _authenticationProvider;
+    private volatile String _username;
 
     AbstractCramMd5Negotiator(final PasswordCredentialManagingAuthenticationProvider<?> authenticationProvider,
                               String localFQDN,
@@ -106,12 +107,16 @@ public class AbstractCramMd5Negotiator extends AbstractSaslServerNegotiator impl
         return _authenticationProvider;
     }
 
-    private static class ServerCallbackHandler implements CallbackHandler
+    @Override
+    public String getAttemptedAuthenticationId()
+    {
+        return _username;
+    }
+
+    private class ServerCallbackHandler implements CallbackHandler
     {
         private final PasswordSource _passwordSource;
         private final PasswordTransformer _passwordTransformer;
-
-        private String _username;
 
         private ServerCallbackHandler(PasswordSource passwordSource, PasswordTransformer passwordTransformer)
         {

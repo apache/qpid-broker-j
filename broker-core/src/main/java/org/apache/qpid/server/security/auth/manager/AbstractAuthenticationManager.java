@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.messages.AuthenticationProviderMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AuthenticationProvider;
@@ -197,5 +198,11 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     protected void logOperation(final String operation)
     {
         _container.getEventLogger().message(AuthenticationProviderMessages.OPERATION(operation));
+    }
+
+    @Override
+    public EventLogger getEventLogger()
+    {
+        return _eventLogger;
     }
 }

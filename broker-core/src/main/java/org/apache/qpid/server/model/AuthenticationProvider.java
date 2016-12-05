@@ -26,13 +26,15 @@ import java.util.List;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 
+import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.sasl.SaslNegotiator;
 import org.apache.qpid.server.security.auth.sasl.SaslSettings;
 
 @ManagedObject
-public interface AuthenticationProvider<X extends AuthenticationProvider<X>> extends ConfiguredObject<X>
+public interface AuthenticationProvider<X extends AuthenticationProvider<X>> extends ConfiguredObject<X>,
+                                                                                     EventLoggerProvider
 {
 
     /**

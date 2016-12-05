@@ -27,4 +27,6 @@ public interface SaslNegotiator
     AuthenticationResult handleResponse(byte[] response);
 
     void dispose();
+
+    String getAttemptedAuthenticationId();
 }
