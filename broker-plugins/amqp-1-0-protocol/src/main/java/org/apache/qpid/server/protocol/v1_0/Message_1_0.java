@@ -102,7 +102,7 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
     @Override
     public boolean isResourceAcceptable(final TransactionLogResource resource)
     {
-        return getMessageHeader().getNotValidBefore() != 0L && !resourceSupportsDeliveryDelay(resource);
+        return getMessageHeader().getNotValidBefore() == 0L || resourceSupportsDeliveryDelay(resource);
     }
 
     private boolean resourceSupportsDeliveryDelay(final TransactionLogResource resource)
