@@ -24,11 +24,10 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 import java.util.Date;
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-public class Properties implements Section<Properties>
+public class Properties implements NonEncodingRetainingSection<Properties>
 {
     private Object _messageId;
 

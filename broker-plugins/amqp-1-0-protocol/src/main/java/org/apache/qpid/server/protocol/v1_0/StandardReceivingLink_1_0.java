@@ -35,7 +35,7 @@ import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
@@ -146,14 +146,14 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
         else
         {
             MessageMetaData_1_0 mmd = null;
-            List<AbstractSection<?>> dataSections = new ArrayList<>();
+            List<EncodingRetainingSection<?>> dataSections = new ArrayList<>();
             mmd = new MessageMetaData_1_0(fragments.toArray(new QpidByteBuffer[fragments.size()]),
                                           _sectionDecoder,
                                           dataSections,
                                           System.currentTimeMillis());
             MessageHandle<MessageMetaData_1_0> handle = _addressSpace.getMessageStore().addMessage(mmd);
 
-            for(AbstractSection<?> dataSection : dataSections)
+            for(EncodingRetainingSection<?> dataSection : dataSections)
             {
                 for (QpidByteBuffer buf : dataSection.getEncodedForm())
                 {

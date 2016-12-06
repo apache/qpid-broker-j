@@ -23,32 +23,31 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.qpid.server.message.internal.InternalMessage;
+import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.NonEncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
-import org.apache.qpid.server.message.internal.InternalMessage;
-import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 @PluggableService
 public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<InternalMessage>
 {
-    private static final Charset UTF_8 = Charset.forName("UTF-8");
 
 
     public Class<InternalMessage> getInputClass()
@@ -59,11 +58,11 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
 
     @Override
     protected MessageMetaData_1_0 convertMetaData(final InternalMessage serverMessage,
-                                                  final Section bodySection,
+                                                  final NonEncodingRetainingSection<?> bodySection,
                                                   final SectionEncoder sectionEncoder,
-                                                  final ArrayList<AbstractSection<?>> bodySections)
+                                                  final List<EncodingRetainingSection<?>> bodySections)
     {
-        List<Section> sections = new ArrayList<Section>(3);
+        List<NonEncodingRetainingSection<?>> sections = new ArrayList<>(3);
         Header header = new Header();
 
         header.setDurable(serverMessage.isPersistent());
@@ -86,7 +85,7 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
         final String userId = serverMessage.getMessageHeader().getUserId();
         if(userId != null)
         {
-            properties.setUserId(new Binary(userId.getBytes(UTF_8)));
+            properties.setUserId(new Binary(userId.getBytes(StandardCharsets.UTF_8)));
         }
         properties.setReplyTo(serverMessage.getMessageHeader().getReplyTo());
 
@@ -105,7 +104,7 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
 
     }
 
-    protected Section getBodySection(final InternalMessage serverMessage)
+    protected NonEncodingRetainingSection<?> getBodySection(final InternalMessage serverMessage)
     {
         return convertToBody(serverMessage.getMessageBody());
     }
@@ -118,7 +117,7 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
     }
 
 
-    public Section convertToBody(Object object)
+    public NonEncodingRetainingSection<?> convertToBody(Object object)
     {
         if(object instanceof String)
         {

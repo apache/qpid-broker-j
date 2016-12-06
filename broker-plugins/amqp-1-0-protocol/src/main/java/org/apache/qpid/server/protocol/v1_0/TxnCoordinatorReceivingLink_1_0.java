@@ -37,9 +37,9 @@ import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declare;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declared;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Discharge;
@@ -116,8 +116,8 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
         // Only interested in the amqp-value section that holds the message to the coordinator
         try
         {
-            List<AbstractSection<?>> sections = _sectionDecoder.parseAll(payload);
-            for(AbstractSection section : sections)
+            List<EncodingRetainingSection<?>> sections = _sectionDecoder.parseAll(payload);
+            for(EncodingRetainingSection section : sections)
             {
                 if(section instanceof AmqpValueSection)
                 {

@@ -22,9 +22,8 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.Section;
 
-public class Data implements Section<Binary>
+public class Data implements NonEncodingRetainingSection<Binary>
 {
 
     private final Binary _value;

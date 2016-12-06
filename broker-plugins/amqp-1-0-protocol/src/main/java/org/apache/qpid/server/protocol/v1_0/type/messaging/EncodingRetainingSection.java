@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,21 +16,13 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
+package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
-package org.apache.qpid.server.protocol.v1_0.messaging;
+import org.apache.qpid.server.protocol.v1_0.type.Section;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.EncodingRetaining;
 
-import java.util.List;
-
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
-
-
-public interface SectionDecoder
+public interface EncodingRetainingSection<T> extends Section<T>, EncodingRetaining
 {
-
-    List<EncodingRetainingSection<?>> parseAll(List<QpidByteBuffer> buf) throws AmqpErrorException;
-
-    EncodingRetainingSection<?> readSection(List<QpidByteBuffer> buf) throws AmqpErrorException;
 }

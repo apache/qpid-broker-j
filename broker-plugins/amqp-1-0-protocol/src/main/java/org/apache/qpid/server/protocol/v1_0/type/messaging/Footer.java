@@ -23,10 +23,9 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import java.util.Map;
 
-import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-public class Footer implements Section<Map<Symbol,Object>>
+public class Footer implements NonEncodingRetainingSection<Map<Symbol,Object>>
 {
 
     private final Map<Symbol,Object> _value;

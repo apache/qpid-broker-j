@@ -26,9 +26,7 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import java.util.List;
 
-import org.apache.qpid.server.protocol.v1_0.type.Section;
-
-public class AmqpSequence implements Section<List>
+public class AmqpSequence implements NonEncodingRetainingSection<List>
 {
 
     private final List _value;

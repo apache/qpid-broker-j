@@ -36,12 +36,12 @@ import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.NonEncodingRetainingSection;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.transport.codec.BBDecoder;
@@ -74,20 +74,20 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
 
     private StoredMessage<MessageMetaData_1_0> convertToStoredMessage(final M serverMessage, SectionEncoder sectionEncoder)
     {
-        Section bodySection = getBodySection(serverMessage);
-        final ArrayList<AbstractSection<?>> bodySections = new ArrayList<>();
+        NonEncodingRetainingSection<?> bodySection = getBodySection(serverMessage);
+        final ArrayList<EncodingRetainingSection<?>> bodySections = new ArrayList<>();
 
         final MessageMetaData_1_0 metaData = convertMetaData(serverMessage, bodySection, sectionEncoder, bodySections);
         return convertServerMessage(metaData, serverMessage, bodySections);
     }
 
     abstract protected MessageMetaData_1_0 convertMetaData(final M serverMessage,
-                                                           final Section bodySection,
+                                                           final NonEncodingRetainingSection<?> bodySection,
                                                            SectionEncoder sectionEncoder,
-                                                           final ArrayList<AbstractSection<?>> bodySections);
+                                                           final List<EncodingRetainingSection<?>> bodySections);
 
 
-    private static Section convertMessageBody(String mimeType, byte[] data)
+    private static NonEncodingRetainingSection<?> convertMessageBody(String mimeType, byte[] data)
     {
         if("text/plain".equals(mimeType) || "text/xml".equals(mimeType))
         {
@@ -109,15 +109,10 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
 
                     map.put(propName, value);
                 }
-                catch (EOFException e)
+                catch (EOFException | TypedBytesFormatException e)
                 {
                     throw new IllegalArgumentException(e);
                 }
-                catch (TypedBytesFormatException e)
-                {
-                    throw new IllegalArgumentException(e);
-                }
-
             }
 
             return new AmqpValue(fixMapValues(map));
@@ -149,11 +144,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                 {
                     list.add(fixValue(reader.readObject()));
                 }
-                catch (TypedBytesFormatException e)
-                {
-                    throw new ConnectionScopedRuntimeException(e);
-                }
-                catch (EOFException e)
+                catch (TypedBytesFormatException | EOFException e)
                 {
                     throw new ConnectionScopedRuntimeException(e);
                 }
@@ -212,7 +203,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
 
     private StoredMessage<MessageMetaData_1_0> convertServerMessage(final MessageMetaData_1_0 metaData,
                                                                     final M serverMessage,
-                                                                    final ArrayList<AbstractSection<?>> bodySections)
+                                                                    final ArrayList<EncodingRetainingSection<?>> bodySections)
     {
 
         return new StoredMessage<MessageMetaData_1_0>()
@@ -234,7 +225,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                         {
                             int position = 0;
                             List<QpidByteBuffer> content = new ArrayList<>();
-                            for(AbstractSection<?> section : bodySections)
+                            for(EncodingRetainingSection<?> section : bodySections)
                             {
                                 for(QpidByteBuffer buf : section.getEncodedForm())
                                 {
@@ -284,7 +275,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         };
     }
 
-    protected Section getBodySection(final M serverMessage)
+    protected NonEncodingRetainingSection<?> getBodySection(final M serverMessage)
     {
         final String mimeType = serverMessage.getMessageHeader().getMimeType();
         byte[] data = new byte[(int) serverMessage.getSize()];

@@ -27,7 +27,7 @@ import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 
 public class SectionDecoderImpl implements SectionDecoder
 {
@@ -41,13 +41,13 @@ public class SectionDecoderImpl implements SectionDecoder
     }
 
     @Override
-    public List<AbstractSection<?>> parseAll(List<QpidByteBuffer> buf) throws AmqpErrorException
+    public List<EncodingRetainingSection<?>> parseAll(List<QpidByteBuffer> buf) throws AmqpErrorException
     {
 
-        List<AbstractSection<?>> obj = new ArrayList<>();
+        List<EncodingRetainingSection<?>> obj = new ArrayList<>();
         while(QpidByteBufferUtils.hasRemaining(buf))
         {
-            AbstractSection<?> section = (AbstractSection<?>) _valueHandler.parse(buf);
+            EncodingRetainingSection<?> section = (EncodingRetainingSection<?>) _valueHandler.parse(buf);
             obj.add(section);
         }
 
@@ -56,9 +56,9 @@ public class SectionDecoderImpl implements SectionDecoder
 
 
     @Override
-    public AbstractSection<?> readSection(List<QpidByteBuffer> buf) throws AmqpErrorException
+    public EncodingRetainingSection<?> readSection(List<QpidByteBuffer> buf) throws AmqpErrorException
     {
-        return (AbstractSection<?>) _valueHandler.parse(buf);
+        return (EncodingRetainingSection<?>) _valueHandler.parse(buf);
     }
 
 }

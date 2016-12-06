@@ -26,21 +26,21 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
-import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.Section;
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
-import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
-import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.v0_10.MessageTransferMessage;
 import org.apache.qpid.server.protocol.v1_0.MessageConverter_to_1_0;
 import org.apache.qpid.server.protocol.v1_0.MessageMetaData_1_0;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.NonEncodingRetainingSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.transport.DeliveryProperties;
 import org.apache.qpid.transport.MessageDeliveryMode;
 import org.apache.qpid.transport.MessageProperties;
@@ -58,11 +58,11 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
 
     @Override
     protected MessageMetaData_1_0 convertMetaData(MessageTransferMessage serverMessage,
-                                                  final Section bodySection,
+                                                  final NonEncodingRetainingSection<?> bodySection,
                                                   SectionEncoder sectionEncoder,
-                                                  final ArrayList<AbstractSection<?>> bodySections)
+                                                  final List<EncodingRetainingSection<?>> bodySections)
     {
-        List<Section> sections = new ArrayList<Section>(3);
+        List<NonEncodingRetainingSection<?>> sections = new ArrayList<>(3);
         final MessageProperties msgProps = serverMessage.getHeader().getMessageProperties();
         final DeliveryProperties deliveryProps = serverMessage.getHeader().getDeliveryProperties();
 

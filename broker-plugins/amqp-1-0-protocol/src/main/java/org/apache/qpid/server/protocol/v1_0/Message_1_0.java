@@ -35,17 +35,17 @@ import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequenceSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationPropertiesSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DeliveryAnnotationsSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.FooterSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.HeaderSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.NonEncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.PropertiesSection;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -59,8 +59,8 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
             .registerMessagingLayer()
             .registerTransactionLayer()
             .registerSecurityLayer();
-    public static final MessageMetaData_1_0 DELETED_MESSAGE_METADATA = new MessageMetaData_1_0(Collections.<Section>emptyList(), new SectionEncoderImpl(DESCRIBED_TYPE_REGISTRY),
-                                                                                               new ArrayList<AbstractSection<?>>(), 0L);
+    public static final MessageMetaData_1_0 DELETED_MESSAGE_METADATA = new MessageMetaData_1_0(Collections.<NonEncodingRetainingSection<?>>emptyList(), new SectionEncoderImpl(DESCRIBED_TYPE_REGISTRY),
+                                                                                               new ArrayList<EncodingRetainingSection<?>>(), 0L);
 
     public Message_1_0(final StoredMessage<MessageMetaData_1_0> storedMessage)
     {
@@ -167,18 +167,18 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
             {
                 final Collection<QpidByteBuffer> allSectionsContent = super.getContent(0, Integer.MAX_VALUE);
 
-                List<AbstractSection<?>> sections = sectionDecoder.parseAll(new ArrayList<>(allSectionsContent));
+                List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(new ArrayList<>(allSectionsContent));
 
                 List<QpidByteBuffer> bodySectionContent = new ArrayList<>();
                 for(QpidByteBuffer buf : allSectionsContent)
                 {
                     buf.dispose();
                 }
-                Iterator<AbstractSection<?>> iter = sections.iterator();
+                Iterator<EncodingRetainingSection<?>> iter = sections.iterator();
 
                 while (iter.hasNext())
                 {
-                    final AbstractSection<?> section = iter.next();
+                    final EncodingRetainingSection<?> section = iter.next();
                     if (section instanceof DataSection
                         || section instanceof AmqpValueSection
                         || section instanceof AmqpSequenceSection)

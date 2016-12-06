@@ -24,11 +24,10 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
-import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-public class Header implements Section<Header>
+public class Header implements NonEncodingRetainingSection<Header>
 {
 
     private Boolean _durable;

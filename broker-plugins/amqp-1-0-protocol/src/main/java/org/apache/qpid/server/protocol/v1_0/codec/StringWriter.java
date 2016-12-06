@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -42,7 +43,7 @@ public class StringWriter extends SimpleVariableWidthWriter<String>
         }
         else
         {
-            ENCODING_CHARSET = Charset.forName("UTF-8");
+            ENCODING_CHARSET = StandardCharsets.UTF_8;
             ONE_BYTE_CODE = (byte) 0xa1;
             FOUR_BYTE_CODE = (byte) 0xb1;
         }

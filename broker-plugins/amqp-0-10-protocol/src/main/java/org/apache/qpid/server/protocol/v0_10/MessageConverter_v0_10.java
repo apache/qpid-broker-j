@@ -24,7 +24,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -46,8 +46,6 @@ import org.apache.qpid.transport.codec.BBEncoder;
 @PluggableService
 public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, MessageTransferMessage>
 {
-
-    public static final Charset UTF_8 = Charset.forName("UTF-8");
 
     @Override
     public Class<ServerMessage> getInputClass()
@@ -140,7 +138,7 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
     {
         if(object instanceof String)
         {
-            return ((String)object).getBytes(UTF_8);
+            return ((String)object).getBytes(StandardCharsets.UTF_8);
         }
         else if(object instanceof byte[])
         {

@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,17 +43,16 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequenceSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.transport.codec.BBEncoder;
 import org.apache.qpid.typedmessage.TypedBytesContentWriter;
@@ -60,7 +60,7 @@ import org.apache.qpid.typedmessage.TypedBytesFormatException;
 
 public class MessageConverter_from_1_0
 {
-    private static final Charset UTF_8 = Charset.forName("UTF-8");
+    private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
     public static Object convertBodyToObject(final Message_1_0 serverMessage)
     {
@@ -70,17 +70,17 @@ public class MessageConverter_from_1_0
         Object bodyObject;
         try
         {
-            List<AbstractSection<?>> sections = sectionDecoder.parseAll(new ArrayList<>(allData));
+            List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(new ArrayList<>(allData));
             for(QpidByteBuffer buf : allData)
             {
                 buf.dispose();
             }
 
-            ListIterator<AbstractSection<?>> iterator = sections.listIterator();
-            Section previousSection = null;
+            ListIterator<EncodingRetainingSection<?>> iterator = sections.listIterator();
+            EncodingRetainingSection<?> previousSection = null;
             while(iterator.hasNext())
             {
-                Section section = iterator.next();
+                EncodingRetainingSection<?> section = iterator.next();
                 if(!(section instanceof AmqpValueSection || section instanceof DataSection || section instanceof AmqpSequenceSection))
                 {
                     iterator.remove();
@@ -106,7 +106,7 @@ public class MessageConverter_from_1_0
             }
             else
             {
-                Section firstBodySection = sections.get(0);
+                EncodingRetainingSection<?> firstBodySection = sections.get(0);
                 if(firstBodySection instanceof AmqpValueSection)
                 {
                     bodyObject = convertValue(firstBodySection.getValue());
@@ -114,13 +114,13 @@ public class MessageConverter_from_1_0
                 else if(firstBodySection instanceof DataSection)
                 {
                     int totalSize = 0;
-                    for(Section section : sections)
+                    for(EncodingRetainingSection<?> section : sections)
                     {
                         totalSize += ((DataSection)section).getValue().getLength();
                     }
                     byte[] bodyData = new byte[totalSize];
                     ByteBuffer buf = ByteBuffer.wrap(bodyData);
-                    for(Section section : sections)
+                    for(EncodingRetainingSection<?> section : sections)
                     {
                         buf.put(((Data)section).getValue().asByteBuffer());
                     }
@@ -129,7 +129,7 @@ public class MessageConverter_from_1_0
                 else
                 {
                     ArrayList<Object> totalSequence = new ArrayList<>();
-                    for(Section section : sections)
+                    for(EncodingRetainingSection<?> section : sections)
                     {
                         totalSequence.addAll(((AmqpSequenceSection)section).getValue());
                     }

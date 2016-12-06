@@ -42,7 +42,6 @@ import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
@@ -76,15 +75,15 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     private final int _version;
     private final long _arrivalTime;
 
-    public MessageMetaData_1_0(List<Section> sections,
+    public MessageMetaData_1_0(List<NonEncodingRetainingSection<?>> sections,
                                SectionEncoder encoder,
-                               final List<AbstractSection<?>> bodySections,
+                               final List<EncodingRetainingSection<?>> bodySections,
                                final long arrivalTime)
     {
         _version = VERSION_BYTE;
         _arrivalTime = arrivalTime;
-        Iterator<Section> iter = sections.iterator();
-        Section s = iter.hasNext() ? iter.next() : null;
+        Iterator<NonEncodingRetainingSection<?>> iter = sections.iterator();
+        NonEncodingRetainingSection<?> s = iter.hasNext() ? iter.next() : null;
         long contentSize = 0L;
         if(s instanceof Header)
         {
@@ -201,7 +200,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         return _propertiesSection;
     }
 
-    public MessageMetaData_1_0(QpidByteBuffer[] fragments, SectionDecoder decoder, List<AbstractSection<?>> dataSections, long arrivalTime)
+    public MessageMetaData_1_0(QpidByteBuffer[] fragments, SectionDecoder decoder, List<EncodingRetainingSection<?>> dataSections, long arrivalTime)
     {
         _version = VERSION_BYTE;
         _arrivalTime = arrivalTime;
@@ -213,7 +212,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         try
         {
-            AbstractSection<?> s = decoder.readSection(src);
+            EncodingRetainingSection<?> s = decoder.readSection(src);
             long contentSize = 0L;
             if(s instanceof HeaderSection)
             {
@@ -295,15 +294,15 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
     }
 
-    private MessageMetaData_1_0(List<AbstractSection<?>> sections, long contentSize, int version, long arrivalTime)
+    private MessageMetaData_1_0(List<EncodingRetainingSection<?>> sections, long contentSize, int version, long arrivalTime)
     {
         _contentSize = contentSize;
         _version = version;
         _arrivalTime = arrivalTime;
 
-        Iterator<AbstractSection<?>> sectIter = sections.iterator();
+        Iterator<EncodingRetainingSection<?>> sectIter = sections.iterator();
 
-        Section section = sectIter.hasNext() ? sectIter.next() : null;
+        EncodingRetainingSection<?> section = sectIter.hasNext() ? sectIter.next() : null;
         if(section instanceof HeaderSection)
         {
             _headerSection = (HeaderSection) section;
@@ -536,14 +535,14 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
                 SectionDecoder sectionDecoder = new SectionDecoderImpl(_typeRegistry.getSectionDecoderRegistry());
 
-                List<AbstractSection<?>> sections = sectionDecoder.parseAll(Collections.singletonList(buf));
+                List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(Collections.singletonList(buf));
 
                 if(versionByte == 0)
                 {
-                    Iterator<AbstractSection<?>> iter = sections.iterator();
+                    Iterator<EncodingRetainingSection<?>> iter = sections.iterator();
                     while(iter.hasNext())
                     {
-                        final AbstractSection<?> section = iter.next();
+                        final EncodingRetainingSection<?> section = iter.next();
                         if(section instanceof DataSection || section instanceof AmqpValueSection || section instanceof AmqpSequenceSection)
                         {
                             contentSize += section.getEncodedSize();

@@ -25,10 +25,8 @@ import java.util.List;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
-import org.apache.qpid.server.protocol.v1_0.type.Section;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.EncodingRetaining;
 
-public abstract class AbstractSection<T> implements Section<T>, EncodingRetaining
+public abstract class AbstractSection<T> implements EncodingRetainingSection<T>
 {
     private List<QpidByteBuffer> _encodedForm;
 

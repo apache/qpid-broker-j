@@ -26,9 +26,7 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import java.util.Map;
 
-import org.apache.qpid.server.protocol.v1_0.type.Section;
-
-public class ApplicationProperties implements Section<Map<String,Object>>
+public class ApplicationProperties implements NonEncodingRetainingSection<Map<String,Object>>
 {
 
     private final Map<String,Object> _value;
