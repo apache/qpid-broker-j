@@ -30,7 +30,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -72,11 +71,11 @@ import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManag
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManagerFactory;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
 import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.transport.AggregateTicker;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.server.transport.AggregateTicker;
 
 public class ProtocolEngine_1_0_0Test extends QpidTestCase
 {
@@ -99,6 +98,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         when(_networkConnection.getLocalAddress()).thenReturn(new InetSocketAddress(0));
         _broker = mock(Broker.class);
         when(_broker.getModel()).thenReturn(BrokerModel.getInstance());
+        when(_broker.getNetworkBufferSize()).thenReturn(256*1026);
         final TaskExecutor taskExecutor = new TaskExecutorImpl();
         taskExecutor.start();
         when(_broker.getChildExecutor()).thenReturn(taskExecutor);
