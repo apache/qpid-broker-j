@@ -43,6 +43,7 @@ public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
     protected Queue _queue;
     protected static final String MESSAGE_ID_PROPERTY = "MessageIDProperty";
 
+    @Override
     public void setUp() throws Exception
     {
         super.setUp();
@@ -55,8 +56,6 @@ public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
 
         _queue = createTestQueue(_clientSession);
 
-        _clientSession.createConsumer(_queue).close();
-
         //Ensure there are no messages on the queue to start with.
         checkQueueDepth(0);
     }
@@ -66,6 +65,7 @@ public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
         _clientSession = _clientConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
     }
 
+    @Override
     public void tearDown() throws Exception
     {
         if (_clientConnection != null)
@@ -242,8 +242,8 @@ public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
 
     protected void checkOverlappingMultipleGetEnum(int expectedMessages, int browserEnumerationCount, String selector) throws JMSException
     {
-        QueueBrowser queueBrowser = selector == null ?
-                                _clientSession.createBrowser(_queue) : _clientSession.createBrowser(_queue, selector);
+        QueueBrowser[] queueBrowsers = new QueueBrowser[browserEnumerationCount];
+
 
         Enumeration[] msgs = new Enumeration[browserEnumerationCount];
         int[] msgCount = new int[browserEnumerationCount];
@@ -251,6 +251,9 @@ public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
         //create Enums
         for (int count = 0; count < browserEnumerationCount; count++)
         {
+            final QueueBrowser queueBrowser = selector == null ?
+                    _clientSession.createBrowser(_queue) : _clientSession.createBrowser(_queue, selector);
+            queueBrowsers[count] = queueBrowser;
             msgs[count] = queueBrowser.getEnumeration();
         }
 
@@ -275,7 +278,10 @@ public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
 
         try
         {
-            queueBrowser.close();
+            for(QueueBrowser queueBrowser : queueBrowsers)
+            {
+                queueBrowser.close();
+            }
         }
         catch (JMSException e)
         {
