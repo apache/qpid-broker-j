@@ -23,7 +23,7 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.transport.codec;
 
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
+import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.*;
 import org.apache.qpid.server.protocol.v1_0.type.transport.*;
@@ -32,7 +32,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.*;
 import java.util.List;
 import java.util.Map;
 
-public class AttachConstructor extends DescribedTypeConstructor<Attach>
+public class AttachConstructor extends AbstractDescribedTypeConstructor<Attach>
 {
     private static final Object[] DESCRIPTORS =
     {

@@ -18,10 +18,8 @@
  */
 package org.apache.qpid.server.protocol.v1_0.type;
 
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
-
-public interface Section
+public interface Section<T>
 {
+    T getValue();
 
-    Binary encode(SectionEncoder encoder);
 }

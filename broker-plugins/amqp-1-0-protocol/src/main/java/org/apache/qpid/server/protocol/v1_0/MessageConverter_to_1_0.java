@@ -24,24 +24,24 @@ import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.transport.codec.BBDecoder;
@@ -75,14 +75,16 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
     private StoredMessage<MessageMetaData_1_0> convertToStoredMessage(final M serverMessage, SectionEncoder sectionEncoder)
     {
         Section bodySection = getBodySection(serverMessage);
+        final ArrayList<AbstractSection<?>> bodySections = new ArrayList<>();
 
-        final MessageMetaData_1_0 metaData = convertMetaData(serverMessage, bodySection, sectionEncoder);
-        return convertServerMessage(metaData, serverMessage);
+        final MessageMetaData_1_0 metaData = convertMetaData(serverMessage, bodySection, sectionEncoder, bodySections);
+        return convertServerMessage(metaData, serverMessage, bodySections);
     }
 
     abstract protected MessageMetaData_1_0 convertMetaData(final M serverMessage,
                                                            final Section bodySection,
-                                                           SectionEncoder sectionEncoder);
+                                                           SectionEncoder sectionEncoder,
+                                                           final ArrayList<AbstractSection<?>> bodySections);
 
 
     private static Section convertMessageBody(String mimeType, byte[] data)
@@ -209,17 +211,9 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
     }
 
     private StoredMessage<MessageMetaData_1_0> convertServerMessage(final MessageMetaData_1_0 metaData,
-                                                                    final M serverMessage)
+                                                                    final M serverMessage,
+                                                                    final ArrayList<AbstractSection<?>> bodySections)
     {
-        final QpidByteBuffer allData = QpidByteBuffer.allocateDirect(metaData.getStorableSize());
-        metaData.writeToBuffer(allData);
-        allData.rewind();
-
-        if(metaData.getPropertiesSection() != null)
-        {
-            metaData.getPropertiesSection().setContentEncoding(null);
-        }
-
 
         return new StoredMessage<MessageMetaData_1_0>()
                     {
@@ -238,7 +232,36 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                         @Override
                         public Collection<QpidByteBuffer> getContent(int offset, int length)
                         {
-                            return Collections.singleton(allData.view(offset, length));
+                            int position = 0;
+                            List<QpidByteBuffer> content = new ArrayList<>();
+                            for(AbstractSection<?> section : bodySections)
+                            {
+                                for(QpidByteBuffer buf : section.getEncodedForm())
+                                {
+                                    if(position < offset)
+                                    {
+                                        if(offset - position < buf.remaining())
+                                        {
+                                            QpidByteBuffer view = buf.view(offset - position, Math.min(length, buf.remaining() - (offset-position)));
+                                            content.add(view);
+                                            position += view.remaining();
+                                        }
+                                        else
+                                        {
+                                            position += buf.remaining();
+                                        }
+                                    }
+                                    else if(position <= offset+length)
+                                    {
+                                        QpidByteBuffer view = buf.view(0, Math.min(length - (position-offset), buf.remaining()));
+                                        content.add(view);
+                                        position += view.remaining();
+                                    }
+
+                                    buf.dispose();
+                                }
+                            }
+                            return content;
                         }
 
                         @Override

@@ -492,6 +492,7 @@ public class SendingLink_1_0 implements Link_1_0
             xfr.setState(accepted);
             xfr.setResume(Boolean.TRUE);
             getEndpoint().transfer(xfr, true);
+            xfr.dispose();
         }
         if(_resumeAcceptedTransfers.isEmpty())
         {

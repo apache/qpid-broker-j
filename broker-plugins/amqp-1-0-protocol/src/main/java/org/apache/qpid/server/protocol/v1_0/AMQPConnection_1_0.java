@@ -43,9 +43,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.security.sasl.SaslException;
-import javax.security.sasl.SaslServer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +62,7 @@ import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.FrameWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ProtocolHandler;
+import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
 import org.apache.qpid.server.protocol.v1_0.framing.FrameHandler;
@@ -79,6 +77,7 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslChallenge;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslCode;
 import org.apache.qpid.server.protocol.v1_0.type.security.SaslInit;
@@ -181,7 +180,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     private static final QpidByteBuffer EMPTY_BYTE_BUFFER = QpidByteBuffer.wrap(new byte[0]);
 
     private static final int DEFAULT_CHANNEL_MAX = Math.min(Integer.getInteger("amqp.channel_max", 255), 0xFFFF);
-    private static final int DEFAULT_MAX_FRAME = Integer.getInteger("amqp.max_frame_size", 1 << 15);
 
     private AmqpPort<?> _port;
     private SubjectCreator _subjectCreator;
@@ -418,6 +416,13 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         return _describedTypeRegistry;
     }
 
+    public SectionDecoderRegistry getSectionDecoderRegistry()
+    {
+        return _describedTypeRegistry.getSectionDecoderRegistry();
+    }
+
+
+
 
     private boolean closedForOutput()
     {
@@ -442,11 +447,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
             _sessions.remove(session);
             sessionRemoved(session);
         }
-    }
-
-    public int send(final short channel, final FrameBody body, final QpidByteBuffer payload)
-    {
-        return sendFrame(channel, body, payload);
     }
 
     private void inputClosed()
@@ -705,7 +705,9 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
             _receivingSessions = new Session_1_0[_channelMax + 1];
             _sendingSessions = new Session_1_0[_channelMax + 1];
         }
-        _maxFrameSize = open.getMaxFrameSize() == null ? DEFAULT_MAX_FRAME : open.getMaxFrameSize().intValue();
+        _maxFrameSize = open.getMaxFrameSize() == null
+                ? getBroker().getNetworkBufferSize()
+                : Math.min(open.getMaxFrameSize().intValue(), getBroker().getNetworkBufferSize());
         _remoteContainerId = open.getContainerId();
         _localHostname = open.getHostname();
         if (open.getIdleTimeOut() != null)
@@ -1027,44 +1029,62 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         }
     }
 
-    int sendFrame(final short channel, final FrameBody body, final QpidByteBuffer payload)
+    int sendFrame(final short channel, final FrameBody body, final List<QpidByteBuffer> payload)
     {
         if (!_closedForOutput)
         {
             ValueWriter<FrameBody> writer = _describedTypeRegistry.getValueWriter(body);
-            int size = writer.writeToBuffer(EMPTY_BYTE_BUFFER);
-            QpidByteBuffer payloadDup = payload == null ? null : payload.duplicate();
-            int payloadSent = _maxFrameSize - (size + 9);
-            try
+            if (payload == null)
             {
-                if (payload != null && payloadSent < payload.remaining())
+                send(AMQFrame.createAMQFrame(channel, body));
+                return 0;
+            }
+            else
+            {
+                int size = writer.writeToBuffer(EMPTY_BYTE_BUFFER);
+                int maxPayloadSize = _maxFrameSize - (size + 9);
+                long payloadLength = QpidByteBufferUtils.remaining(payload);
+                if(payloadLength <= maxPayloadSize)
                 {
-
-                    if (body instanceof Transfer)
-                    {
-                        ((Transfer) body).setMore(Boolean.TRUE);
-                    }
-
-                    writer = _describedTypeRegistry.getValueWriter(body);
-                    size = writer.writeToBuffer(EMPTY_BYTE_BUFFER);
-                    payloadSent = _maxFrameSize - (size + 9);
-
-                    payloadDup.limit(payloadDup.position() + payloadSent);
+                    send(AMQFrame.createAMQFrame(channel, body, payload));
+                    return (int)payloadLength;
                 }
                 else
                 {
-                    payloadSent = payload == null ? 0 : payload.remaining();
+                    ((Transfer) body).setMore(Boolean.TRUE);
+
+                    writer = _describedTypeRegistry.getValueWriter(body);
+                    size = writer.writeToBuffer(EMPTY_BYTE_BUFFER);
+                    maxPayloadSize = _maxFrameSize - (size + 9);
+
+                    List<QpidByteBuffer> payloadDup = new ArrayList<>(payload.size());
+                    int payloadSize = 0;
+                    for(QpidByteBuffer buf : payload)
+                    {
+                        if(payloadSize + buf.remaining() < maxPayloadSize)
+                        {
+                            payloadSize += buf.remaining();
+                            payloadDup.add(buf.duplicate());
+                        }
+                        else
+                        {
+                            QpidByteBuffer dup = buf.slice();
+                            dup.limit(maxPayloadSize-payloadSize);
+                            payloadDup.add(dup);
+                            break;
+                        }
+                    }
+
+                    QpidByteBufferUtils.skip(payload, maxPayloadSize);
+                    send(AMQFrame.createAMQFrame(channel, body, payloadDup));
+                    for(QpidByteBuffer buf : payloadDup)
+                    {
+                        buf.dispose();
+                    }
+
+                    return maxPayloadSize;
                 }
-                send(AMQFrame.createAMQFrame(channel, body, payloadDup));
             }
-            finally
-            {
-                if (payloadDup != null)
-                {
-                    payloadDup.dispose();
-                }
-            }
-            return payloadSent;
         }
         else
         {

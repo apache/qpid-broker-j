@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.protocol.v1_0.messaging;
 
+import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 
 
@@ -31,4 +32,6 @@ public interface SectionEncoder
     void encodeObject(Object obj);
 
     void encodeRaw(byte[] data);
+
+    DescribedTypeConstructorRegistry getRegistry();
 }

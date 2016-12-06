@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,51 +19,33 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
-
-
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
-
 
 import java.util.Map;
 
+import org.apache.qpid.server.protocol.v1_0.type.Section;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
+public class Footer implements Section<Map<Symbol,Object>>
+{
 
-public class Footer
-  implements Section
+    private final Map<Symbol,Object> _value;
+
+    public Footer(Map<Symbol,Object> value)
   {
+    _value = value;
+  }
 
-
-
-    private final Map _value;
-
-    public Footer(Map value)
-    {
-        _value = value;
-    }
-
-    public Map getValue()
+    @Override
+    public Map<Symbol,Object> getValue()
     {
         return _value;
     }
 
+    @Override
+    public String toString()
+    {
+        return "Footer{" + _value + '}';
+    }
 
-
-
-      public Binary encode(final SectionEncoder encoder)
-      {
-        encoder.reset();
-        encoder.encodeObject(this);
-        return encoder.getEncoding();
-      }
-
-
-      @Override
-      public String toString()
-      {
-          return "Footer{" + _value +
-                  '}';
-      }
-  }
+}

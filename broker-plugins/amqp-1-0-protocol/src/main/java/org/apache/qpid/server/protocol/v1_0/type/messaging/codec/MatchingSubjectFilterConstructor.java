@@ -23,13 +23,13 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
+import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.MatchingSubjectFilter;
 
-public class MatchingSubjectFilterConstructor extends DescribedTypeConstructor<MatchingSubjectFilter>
+public class MatchingSubjectFilterConstructor extends AbstractDescribedTypeConstructor<MatchingSubjectFilter>
 {
     private static final Object[] DESCRIPTORS =
     {

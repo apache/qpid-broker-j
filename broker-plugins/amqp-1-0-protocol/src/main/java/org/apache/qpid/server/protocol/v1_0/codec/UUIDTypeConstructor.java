@@ -20,14 +20,15 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
-import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
+import java.util.List;
 import java.util.UUID;
 
-public class UUIDTypeConstructor implements TypeConstructor
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
+
+public class UUIDTypeConstructor implements TypeConstructor<UUID>
 {
     private static final UUIDTypeConstructor INSTANCE = new UUIDTypeConstructor();
 
@@ -41,12 +42,13 @@ public class UUIDTypeConstructor implements TypeConstructor
     {
     }
 
-    public Object construct(final QpidByteBuffer in, ValueHandler handler) throws AmqpErrorException
+    @Override
+    public UUID construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
     {
-        if(in.remaining()>=16)
+        if(QpidByteBufferUtils.hasRemaining(in, 16))
         {
-            long msb = in.getLong();
-            long lsb = in.getLong();
+            long msb = QpidByteBufferUtils.getLong(in);
+            long lsb = QpidByteBufferUtils.getLong(in);
             return new UUID(msb, lsb);
         }
         else
@@ -58,5 +60,4 @@ public class UUIDTypeConstructor implements TypeConstructor
 
         }
     }
-
 }

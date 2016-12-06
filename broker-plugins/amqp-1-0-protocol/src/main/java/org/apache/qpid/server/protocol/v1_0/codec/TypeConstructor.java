@@ -20,12 +20,14 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import java.util.List;
+
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 
 public interface TypeConstructor<T>
 {
 
-    public T construct(final QpidByteBuffer in, ValueHandler handler) throws AmqpErrorException;
+    T construct(final List<QpidByteBuffer> in, ValueHandler handler) throws AmqpErrorException;
 
 }

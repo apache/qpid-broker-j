@@ -23,16 +23,18 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.transport.codec;
 
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.*;
-import org.apache.qpid.server.protocol.v1_0.type.transport.*;
-
-
 import java.util.List;
 import java.util.Map;
 
-public class OpenConstructor extends DescribedTypeConstructor<Open>
+import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
+import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
+
+public class OpenConstructor extends AbstractDescribedTypeConstructor<Open>
 {
     private static final Object[] DESCRIPTORS =
     {

@@ -20,13 +20,15 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.util.List;
 
-public class StringTypeConstructor extends VariableWidthTypeConstructor
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
+
+public class StringTypeConstructor extends VariableWidthTypeConstructor<String>
 {
     private Charset _charSet;
 
@@ -43,20 +45,8 @@ public class StringTypeConstructor extends VariableWidthTypeConstructor
         _charSet = c;
     }
 
-    @Override
-    public Object construct(final QpidByteBuffer in, boolean isCopy, ValueHandler handler) throws AmqpErrorException
+    private String constructFromSingleBuffer(final QpidByteBuffer in, final int size)
     {
-        int size;
-
-        if(getSize() == 1)
-        {
-            size = in.get() & 0xFF;
-        }
-        else
-        {
-            size = in.getInt();
-        }
-
         int origPosition = in.position();
 
         QpidByteBuffer dup = in.duplicate();
@@ -81,4 +71,44 @@ public class StringTypeConstructor extends VariableWidthTypeConstructor
         }
     }
 
+    @Override
+    public String construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+    {
+        int size;
+
+        if(getSize() == 1)
+        {
+            size = QpidByteBufferUtils.get(in) & 0xFF;
+        }
+        else
+        {
+            size = QpidByteBufferUtils.getInt(in);
+        }
+
+        if(!QpidByteBufferUtils.hasRemaining(in, size))
+        {
+            org.apache.qpid.server.protocol.v1_0.type.transport.Error error = new org.apache.qpid.server.protocol.v1_0.type.transport.Error();
+            error.setCondition(ConnectionError.FRAMING_ERROR);
+            error.setDescription("Cannot construct string: insufficient input data");
+            throw new AmqpErrorException(error);
+        }
+
+        for(int i = 0; i<in.size(); i++)
+        {
+            QpidByteBuffer buf = in.get(i);
+            if(buf.hasRemaining())
+            {
+                if(buf.remaining() >= size)
+                {
+                    return constructFromSingleBuffer(buf, size);
+                }
+                break;
+            }
+        }
+
+        byte[] data = new byte[size];
+        QpidByteBufferUtils.get(in, data);
+
+        return new String(data, _charSet);
+    }
 }

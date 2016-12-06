@@ -21,7 +21,10 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,15 +39,16 @@ import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
-import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Target;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.HeaderSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Modified;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Released;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
@@ -53,7 +57,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.txn.ServerTransaction;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 {
@@ -118,58 +121,19 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
         Transfer transfer = new Transfer();
         try
         {
-            QpidByteBuffer payload = null;
             //TODO
-            Collection<QpidByteBuffer> fragments = message.getFragments();
-            if (fragments.size() == 1)
-            {
-                payload = fragments.iterator().next();
-            }
-            else
-            {
-                int size = 0;
-                for (QpidByteBuffer fragment : fragments)
-                {
-                    size += fragment.remaining();
-                }
-
-                payload = QpidByteBuffer.allocateDirect(size);
-
-                for (QpidByteBuffer fragment : fragments)
-                {
-                    payload.put(fragment);
-                    fragment.dispose();
-                }
-
-                payload.flip();
-            }
+            Collection<QpidByteBuffer> bodyContent = message.getContent(0, (int) message.getSize());
+            HeaderSection headerSection = message.getHeaderSection();
 
             if (entry.getDeliveryCount() != 0)
             {
                 ValueHandler valueHandler = new ValueHandler(_typeRegistry);
 
-                Header oldHeader = null;
-                try
-                {
-                    Object value = valueHandler.parse(payload);
-                    if (value instanceof Header)
-                    {
-                        oldHeader = (Header) value;
-                    }
-                    else
-                    {
-                        payload.position(0);
-                    }
-                }
-                catch (AmqpErrorException e)
-                {
-                    //TODO
-                    throw new ConnectionScopedRuntimeException(e);
-                }
 
                 Header header = new Header();
-                if (oldHeader != null)
+                if (headerSection != null)
                 {
+                    final Header oldHeader = headerSection.getValue();
                     header.setDurable(oldHeader.getDurable());
                     header.setPriority(oldHeader.getPriority());
                     header.setTtl(oldHeader.getTtl());
@@ -179,15 +143,52 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                 _sectionEncoder.encodeObject(header);
                 Binary encodedHeader = _sectionEncoder.getEncoding();
 
-                QpidByteBuffer oldPayload = payload;
-                payload = QpidByteBuffer.allocateDirect(oldPayload.remaining() + encodedHeader.getLength());
-                payload.put(encodedHeader.getArray(), encodedHeader.getArrayOffset(), encodedHeader.getLength());
-                payload.put(oldPayload);
-                oldPayload.dispose();
-                payload.flip();
+                QpidByteBuffer headerPayload = QpidByteBuffer.wrap(encodedHeader.getArray(), encodedHeader.getArrayOffset(), encodedHeader.getLength());
+
+                headerSection = new HeaderSection(_typeRegistry);
+                headerSection.setEncodedForm(Collections.singletonList(headerPayload));
+            }
+            List<QpidByteBuffer> payload = new ArrayList<>();
+            if(headerSection != null)
+            {
+                payload.addAll(headerSection.getEncodedForm());
+            }
+            AbstractSection<?> section;
+            if((section = message.getDeliveryAnnotationsSection()) != null)
+            {
+                payload.addAll(section.getEncodedForm());
             }
 
+            if((section = message.getMessageAnnotationsSection()) != null)
+            {
+                payload.addAll(section.getEncodedForm());
+            }
+
+            if((section = message.getPropertiesSection()) != null)
+            {
+                payload.addAll(section.getEncodedForm());
+            }
+
+            if((section = message.getApplicationPropertiesSection()) != null)
+            {
+                payload.addAll(section.getEncodedForm());
+            }
+
+            payload.addAll(bodyContent);
+
+            if((section = message.getFooterSection()) != null)
+            {
+                payload.addAll(section.getEncodedForm());
+            }
+
+
             transfer.setPayload(payload);
+
+            for(QpidByteBuffer buf : payload)
+            {
+                buf.dispose();
+            }
+
             byte[] data = new byte[8];
             ByteBuffer.wrap(data).putLong(_deliveryTag++);
             final Binary tag = new Binary(data);

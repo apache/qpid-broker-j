@@ -18,52 +18,50 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 
 public abstract class ArrayTypeConstructor implements TypeConstructor<Object[]>
 {
 
 
-
-    public Object[] construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+    public Object[] construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
     {
         int size = read(in);
-        if(in.remaining() < size)
+        long remaining = QpidByteBufferUtils.remaining(in);
+        if(remaining < (long) size)
         {
             throw new AmqpErrorException(AmqpError.DECODE_ERROR,
                                          "Insufficient data to decode array - requires %d octects, only %d remaining.",
-                                         size, in.remaining());
+                                         size, remaining);
         }
-        QpidByteBuffer dup = in.slice();
 
         List rval;
-        try
+        int count = read(in);
+        TypeConstructor t = handler.readConstructor(in);
+        rval = new ArrayList(count);
+        for(int i = 0; i < count; i++)
         {
-            dup.limit(size);
-            in.position(in.position()+size);
-            int count = read(dup);
-            TypeConstructor t = handler.readConstructor(dup);
-            rval = new ArrayList(count);
-            for(int i = 0; i < count; i++)
-            {
-                rval.add(t.construct(dup, handler));
-            }
-            if(dup.hasRemaining())
-            {
-                throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                             "Array incorrectly encoded, %d bytes remaining after decoding %d elements",
-                                             dup.remaining(), count);
-            }
+            rval.add(t.construct(in, handler));
         }
-        finally
+        long unconsumedBytes = remaining - (QpidByteBufferUtils.remaining(in) + (long) size);
+
+        if(unconsumedBytes > 0)
         {
-            dup.dispose();
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR,
+                                         "Array incorrectly encoded, %d bytes remaining after decoding %d elements",
+                                         unconsumedBytes, count);
+        }
+        else if (unconsumedBytes < 0)
+        {
+            throw new AmqpErrorException(AmqpError.DECODE_ERROR,
+                                         "Array incorrectly encoded, %d bytes beyond provided size consumed after decoding %d elements",
+                                         -unconsumedBytes, count);
         }
         if(rval.size() == 0)
         {
@@ -71,14 +69,13 @@ public abstract class ArrayTypeConstructor implements TypeConstructor<Object[]>
         }
         else
         {
-
-
             return rval.toArray((Object[])Array.newInstance(rval.get(0).getClass(), rval.size()));
         }
     }
 
 
     abstract int read(QpidByteBuffer in) throws AmqpErrorException;
+    abstract int read(List<QpidByteBuffer> in) throws AmqpErrorException;
 
 
     private static final ArrayTypeConstructor ONE_BYTE_SIZE_ARRAY = new ArrayTypeConstructor()
@@ -93,6 +90,15 @@ public abstract class ArrayTypeConstructor implements TypeConstructor<Object[]>
             return ((int)in.get()) & 0xff;
         }
 
+        @Override
+        int read(final List<QpidByteBuffer> in) throws AmqpErrorException
+        {
+            if(!QpidByteBufferUtils.hasRemaining(in))
+            {
+                throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode array");
+            }
+            return ((int)QpidByteBufferUtils.get(in)) & 0xff;
+        }
     };
 
     private static final ArrayTypeConstructor FOUR_BYTE_SIZE_ARRAY = new ArrayTypeConstructor()
@@ -106,7 +112,15 @@ public abstract class ArrayTypeConstructor implements TypeConstructor<Object[]>
             }
             return in.getInt();
         }
-
+        @Override
+        int read(final List<QpidByteBuffer> in) throws AmqpErrorException
+        {
+            if(!QpidByteBufferUtils.hasRemaining(in,4))
+            {
+                throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data to decode array");
+            }
+            return QpidByteBufferUtils.getInt(in);
+        }
     };
 
     public static ArrayTypeConstructor getOneByteSizeTypeConstructor()

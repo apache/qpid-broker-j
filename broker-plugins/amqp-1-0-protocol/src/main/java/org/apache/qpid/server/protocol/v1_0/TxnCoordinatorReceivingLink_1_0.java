@@ -28,16 +28,18 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
-import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declare;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Declared;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.Discharge;
@@ -45,7 +47,6 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 
@@ -68,14 +69,13 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
         _namedAddressSpace = namedAddressSpace;
         _session = session_1_0;
         _endpoint  = endpoint;
-        _sectionDecoder = new SectionDecoderImpl(endpoint.getSession().getConnection().getDescribedTypeRegistry());
+        _sectionDecoder = new SectionDecoderImpl(endpoint.getSession().getConnection().getDescribedTypeRegistry().getSectionDecoderRegistry());
         _openTransactions = openTransactions;
     }
 
     public void messageTransfer(Transfer xfr)
     {
-
-        QpidByteBuffer payload = null;
+        List<QpidByteBuffer> payload = new ArrayList<>();
 
         final Binary deliveryTag = xfr.getDeliveryTag();
 
@@ -96,34 +96,32 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
             int size = 0;
             for(Transfer t : _incompleteMessage)
             {
-                size += t.getPayload().limit();
-            }
-            payload = QpidByteBuffer.allocateDirect(size);
-            for(Transfer t : _incompleteMessage)
-            {
-                payload.put(t.getPayload().duplicate());
+                final List<QpidByteBuffer> bufs = t.getPayload();
+                if(bufs != null)
+                {
+                    size += QpidByteBufferUtils.remaining(bufs);
+                    payload.addAll(bufs);
+                }
                 t.dispose();
             }
-            payload.flip();
             _incompleteMessage=null;
 
         }
         else
         {
-            payload = xfr.getPayload().duplicate();
+            payload.addAll(xfr.getPayload());
             xfr.dispose();
         }
 
-        // Only interested int the amqp-value section that holds the message to the coordinator
+        // Only interested in the amqp-value section that holds the message to the coordinator
         try
         {
-            List<Section> sections = _sectionDecoder.parseAll(payload);
-
-            for(Section section : sections)
+            List<AbstractSection<?>> sections = _sectionDecoder.parseAll(payload);
+            for(AbstractSection section : sections)
             {
-                if(section instanceof AmqpValue)
+                if(section instanceof AmqpValueSection)
                 {
-                    Object command = ((AmqpValue) section).getValue();
+                    Object command = section.getValue();
 
 
                     if(command instanceof Declare)
@@ -154,6 +152,12 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
                         _endpoint.updateDisposition(deliveryTag, new Accepted(), true);
 
                     }
+                    else
+                    {
+                        // TODO error handling
+
+                        // also should panic if we receive more than one AmqpValue, or no AmqpValue section
+                    }
                 }
             }
 
@@ -165,9 +169,9 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
         }
         finally
         {
-            if (payload != null)
+            for(QpidByteBuffer buf : payload)
             {
-                payload.dispose();
+                buf.dispose();
             }
         }
 

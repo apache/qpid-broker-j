@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,45 +19,26 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
-
-
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
-
 
 import java.util.Map;
 
+import org.apache.qpid.server.protocol.v1_0.type.Section;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
+public class DeliveryAnnotations implements Section<Map<Symbol,Object>>
+{
+    private final Map<Symbol,Object> _value;
 
-public class DeliveryAnnotations
-  implements Section
-  {
-
-
-
-    private final Map _value;
-
-    public DeliveryAnnotations(Map value)
+    public DeliveryAnnotations(Map<Symbol,Object> value)
     {
         _value = value;
     }
 
-    public Map getValue()
+    @Override
+    public Map<Symbol, Object> getValue()
     {
         return _value;
     }
 
-
-
-
-      public Binary encode(final SectionEncoder encoder)
-      {
-        encoder.reset();
-        encoder.encodeObject(this);
-        return encoder.getEncoding();
-      }
-
-
-  }
+}

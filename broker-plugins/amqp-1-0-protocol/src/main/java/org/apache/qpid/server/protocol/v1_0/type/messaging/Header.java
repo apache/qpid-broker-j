@@ -24,15 +24,12 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
+import org.apache.qpid.server.protocol.v1_0.type.Section;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class Header
-  implements Section
-  {
-
+public class Header implements Section<Header>
+{
 
     private Boolean _durable;
 
@@ -100,45 +97,45 @@ public class Header
         StringBuilder builder = new StringBuilder("Header{");
         final int origLength = builder.length();
 
-        if(_durable != null)
+        if (_durable != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("durable=").append(_durable);
         }
 
-        if(_priority != null)
+        if (_priority != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("priority=").append(_priority);
         }
 
-        if(_ttl != null)
+        if (_ttl != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("ttl=").append(_ttl);
         }
 
-        if(_firstAcquirer != null)
+        if (_firstAcquirer != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("firstAcquirer=").append(_firstAcquirer);
         }
 
-        if(_deliveryCount != null)
+        if (_deliveryCount != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -149,13 +146,10 @@ public class Header
         return builder.toString();
     }
 
+    @Override
+    public Header getValue()
+    {
+        return this;
+    }
 
-      public Binary encode(final SectionEncoder encoder)
-      {
-        encoder.reset();
-        encoder.encodeObject(this);
-        return encoder.getEncoding();
-      }
-
-
-  }
+}

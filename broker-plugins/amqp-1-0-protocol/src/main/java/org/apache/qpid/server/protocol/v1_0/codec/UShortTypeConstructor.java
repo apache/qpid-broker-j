@@ -20,12 +20,14 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
+import java.util.List;
+
 import org.apache.qpid.server.protocol.v1_0.type.*;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
-public class UShortTypeConstructor implements TypeConstructor
+public class UShortTypeConstructor implements TypeConstructor<UnsignedShort>
 {
     private static final UShortTypeConstructor INSTANCE = new UShortTypeConstructor();
 
@@ -39,11 +41,12 @@ public class UShortTypeConstructor implements TypeConstructor
     {
     }
 
-    public Object construct(final QpidByteBuffer in, ValueHandler handler) throws AmqpErrorException
+    @Override
+    public UnsignedShort construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
     {
-        if(in.remaining()>=2)
+        if(QpidByteBufferUtils.hasRemaining(in, 2))
         {
-            short s = in.getShort();
+            short s = QpidByteBufferUtils.getShort(in);
             return UnsignedShort.valueOf(s);
         }
         else
@@ -55,5 +58,4 @@ public class UShortTypeConstructor implements TypeConstructor
 
         }
     }
-
 }

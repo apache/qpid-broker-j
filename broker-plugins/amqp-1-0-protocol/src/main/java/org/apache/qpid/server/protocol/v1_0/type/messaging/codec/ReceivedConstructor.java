@@ -23,7 +23,7 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
+import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.*;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.*;
@@ -31,7 +31,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.*;
 
 import java.util.List;
 
-public class ReceivedConstructor extends DescribedTypeConstructor<Received>
+public class ReceivedConstructor extends AbstractDescribedTypeConstructor<Received>
 {
     private static final Object[] DESCRIPTORS =
     {

@@ -19,15 +19,15 @@
 
 package org.apache.qpid.server.protocol.v1_0.messaging;
 
-import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
-
-import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.Section;
-import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
+import org.apache.qpid.server.protocol.v1_0.codec.SectionDecoderRegistry;
+import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
 
 public class SectionDecoderImpl implements SectionDecoder
 {
@@ -35,28 +35,30 @@ public class SectionDecoderImpl implements SectionDecoder
     private ValueHandler _valueHandler;
 
 
-    public SectionDecoderImpl(final AMQPDescribedTypeRegistry describedTypeRegistry)
+    public SectionDecoderImpl(final SectionDecoderRegistry describedTypeRegistry)
     {
         _valueHandler = new ValueHandler(describedTypeRegistry);
     }
 
-    public List<Section> parseAll(QpidByteBuffer buf) throws AmqpErrorException
+    @Override
+    public List<AbstractSection<?>> parseAll(List<QpidByteBuffer> buf) throws AmqpErrorException
     {
 
-        List<Section> obj = new ArrayList<Section>();
-        while(buf.hasRemaining())
+        List<AbstractSection<?>> obj = new ArrayList<>();
+        while(QpidByteBufferUtils.hasRemaining(buf))
         {
-            Section section = (Section) _valueHandler.parse(buf);
+            AbstractSection<?> section = (AbstractSection<?>) _valueHandler.parse(buf);
             obj.add(section);
         }
 
         return obj;
     }
 
-    public Section readSection(QpidByteBuffer buf) throws AmqpErrorException
-    {
-        return (Section) _valueHandler.parse(buf);
-    }
 
+    @Override
+    public AbstractSection<?> readSection(List<QpidByteBuffer> buf) throws AmqpErrorException
+    {
+        return (AbstractSection<?>) _valueHandler.parse(buf);
+    }
 
 }

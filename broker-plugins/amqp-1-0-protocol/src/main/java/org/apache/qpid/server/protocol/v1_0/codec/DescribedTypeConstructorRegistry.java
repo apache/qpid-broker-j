@@ -23,9 +23,9 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 public interface DescribedTypeConstructorRegistry
 {
-    public static interface Source
+    interface Source
     {
-        public DescribedTypeConstructorRegistry getDescribedTypeRegistry();
+        DescribedTypeConstructorRegistry getDescribedTypeRegistry();
     }
 
     void register(Object descriptor, DescribedTypeConstructor constructor);

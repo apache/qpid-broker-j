@@ -29,6 +29,12 @@ final class BinaryString
     private int _size;
     private int _hashCode;
 
+    BinaryString(final byte[] data)
+    {
+
+        this(data, 0, data.length);
+    }
+
     BinaryString(final byte[] data, final int offset, final int size)
     {
 

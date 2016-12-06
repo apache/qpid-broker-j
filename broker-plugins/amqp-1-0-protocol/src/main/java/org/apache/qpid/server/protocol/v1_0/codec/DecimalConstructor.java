@@ -19,11 +19,12 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
+import java.math.BigDecimal;
+import java.util.List;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
-import java.math.BigDecimal;
 
 public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
 {
@@ -31,36 +32,37 @@ public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
     private static final DecimalConstructor DECIMAL_32 = new DecimalConstructor()
     {
 
-        public BigDecimal construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+        @Override
+        public BigDecimal construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
         {
-
-
             int val;
 
-            if(in.remaining()>=4)
+            if(QpidByteBufferUtils.hasRemaining(in, 4))
             {
-                val = in.getInt();
+                val = QpidByteBufferUtils.getInt(in);
             }
             else
             {
                 throw new AmqpErrorException(ConnectionError.FRAMING_ERROR, "Cannot construct decimal32: insufficient input data");
             }
 
-            return constructFrom32(val);}
+            return constructFrom32(val);
 
+        }
     };
 
 
     private static final DecimalConstructor DECIMAL_64 = new DecimalConstructor()
     {
 
-        public BigDecimal construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+        @Override
+        public BigDecimal construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
         {
             long val;
 
-            if(in.remaining()>=8)
+            if(QpidByteBufferUtils.hasRemaining(in, 8))
             {
-                val = in.getLong();
+                val = QpidByteBufferUtils.getLong(in);
             }
             else
             {
@@ -70,22 +72,23 @@ public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
             return constructFrom64(val);
 
         }
-
     };
 
 
     private static final DecimalConstructor DECIMAL_128 = new DecimalConstructor()
     {
 
-        public BigDecimal construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+        @Override
+        public BigDecimal construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
         {
+
             long high;
             long low;
 
-            if(in.remaining()>=16)
+            if(QpidByteBufferUtils.hasRemaining(in, 16))
             {
-                high = in.getLong();
-                low = in.getLong();
+                high = QpidByteBufferUtils.getLong(in);
+                low = QpidByteBufferUtils.getLong(in);
             }
             else
             {
@@ -93,9 +96,7 @@ public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
             }
 
             return constructFrom128(high, low);
-
         }
-
     };
 
     private static final BigDecimal TWO_TO_THE_SIXTY_FOUR = new BigDecimal(2).pow(64);

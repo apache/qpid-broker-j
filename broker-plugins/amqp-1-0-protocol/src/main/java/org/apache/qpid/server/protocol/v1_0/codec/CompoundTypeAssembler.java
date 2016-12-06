@@ -22,15 +22,15 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 
-public interface CompoundTypeAssembler
+public interface CompoundTypeAssembler<X>
 {
 
-    public static interface Factory
+    interface Factory<X>
     {
-        CompoundTypeAssembler newInstance();
+        CompoundTypeAssembler<X> newInstance();
     }
 
     void init(int count) throws AmqpErrorException;
     void addItem(Object obj) throws AmqpErrorException;
-    Object complete()  throws AmqpErrorException;
+    X complete()  throws AmqpErrorException;
 }

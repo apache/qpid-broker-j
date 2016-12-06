@@ -20,20 +20,20 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-import org.apache.qpid.server.protocol.v1_0.type.transport.*;
-import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
 import java.util.ArrayList;
 import java.util.Formatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CompoundTypeConstructor extends VariableWidthTypeConstructor
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
+
+public class CompoundTypeConstructor<T> extends VariableWidthTypeConstructor<T>
 {
-    private final CompoundTypeAssembler.Factory _assemblerFactory;
+    private final CompoundTypeAssembler.Factory<T> _assemblerFactory;
 
     public static final CompoundTypeAssembler.Factory LIST_ASSEMBLER_FACTORY =
             new CompoundTypeAssembler.Factory()
@@ -47,7 +47,7 @@ public class CompoundTypeConstructor extends VariableWidthTypeConstructor
 
 
 
-    private static class ListAssembler implements CompoundTypeAssembler
+    private static class ListAssembler implements CompoundTypeAssembler<List>
     {
         private List _list;
 
@@ -61,7 +61,7 @@ public class CompoundTypeConstructor extends VariableWidthTypeConstructor
             _list.add(obj);
         }
 
-        public Object complete() throws AmqpErrorException
+        public List complete() throws AmqpErrorException
         {
             return _list;
         }
@@ -77,16 +77,16 @@ public class CompoundTypeConstructor extends VariableWidthTypeConstructor
 
 
     public static final CompoundTypeAssembler.Factory MAP_ASSEMBLER_FACTORY =
-            new CompoundTypeAssembler.Factory()
+            new CompoundTypeAssembler.Factory<Map>()
             {
 
-                public CompoundTypeAssembler newInstance()
+                public CompoundTypeAssembler<Map> newInstance()
                 {
                     return new MapAssembler();
                 }
             };
 
-    private static class MapAssembler implements CompoundTypeAssembler
+    private static class MapAssembler implements CompoundTypeAssembler<Map>
     {
         private Map _map;
         private Object _lastKey;
@@ -132,56 +132,53 @@ public class CompoundTypeConstructor extends VariableWidthTypeConstructor
 
         }
 
-        public Object complete() throws AmqpErrorException
+        public Map complete() throws AmqpErrorException
         {
             return _map;
         }
     }
 
 
-    public static CompoundTypeConstructor getInstance(int i,
-                                                      CompoundTypeAssembler.Factory assemblerFactory)
+    public static <X> CompoundTypeConstructor<X> getInstance(int i,
+                                                      CompoundTypeAssembler.Factory<X> assemblerFactory)
     {
-        return new CompoundTypeConstructor(i, assemblerFactory);
+        return new CompoundTypeConstructor<>(i, assemblerFactory);
     }
 
 
     private CompoundTypeConstructor(int size,
-                                    final CompoundTypeAssembler.Factory assemblerFactory)
+                                    final CompoundTypeAssembler.Factory<T> assemblerFactory)
     {
         super(size);
         _assemblerFactory = assemblerFactory;
     }
 
     @Override
-    public Object construct(final QpidByteBuffer in, boolean isCopy, ValueHandler delegate) throws AmqpErrorException
+    public T construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
     {
         int size;
         int count;
 
         if(getSize() == 1)
         {
-            size = in.get() & 0xFF;
-            count = in.get() & 0xFF;
+            size = QpidByteBufferUtils.get(in) & 0xFF;
+            count = QpidByteBufferUtils.get(in) & 0xFF;
         }
         else
         {
-            size = in.getInt();
-            count = in.getInt();
+            size = QpidByteBufferUtils.getInt(in);
+            count = QpidByteBufferUtils.getInt(in);
         }
 
-        CompoundTypeAssembler assembler = _assemblerFactory.newInstance();
+        CompoundTypeAssembler<T> assembler = _assemblerFactory.newInstance();
 
         assembler.init(count);
 
         for(int i = 0; i < count; i++)
         {
-            assembler.addItem(delegate.parse(in));
+            assembler.addItem(handler.parse(in));
         }
 
         return assembler.complete();
-
     }
-
-
 }

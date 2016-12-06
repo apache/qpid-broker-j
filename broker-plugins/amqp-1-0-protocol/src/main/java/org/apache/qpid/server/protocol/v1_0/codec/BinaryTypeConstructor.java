@@ -20,9 +20,11 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
+import java.util.List;
+
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 
 public class BinaryTypeConstructor extends VariableWidthTypeConstructor
 {
@@ -41,22 +43,30 @@ public class BinaryTypeConstructor extends VariableWidthTypeConstructor
     }
 
     @Override
-    public Object construct(final QpidByteBuffer in, boolean isCopy, ValueHandler handler) throws AmqpErrorException
+    public Object construct(final List in, final ValueHandler handler) throws AmqpErrorException
     {
+
         int size;
 
         if(getSize() == 1)
         {
-            size = in.get() & 0xFF;
+            size = QpidByteBufferUtils.get(in) & 0xFF;
         }
         else
         {
-            size = in.getInt();
+            size = QpidByteBufferUtils.getInt(in);
         }
 
-        byte[] buf = new byte[size];
-        in.get(buf);
-        return new Binary(buf);
-    }
+        if(!QpidByteBufferUtils.hasRemaining(in, size))
+        {
+            org.apache.qpid.server.protocol.v1_0.type.transport.Error error = new org.apache.qpid.server.protocol.v1_0.type.transport.Error();
+            error.setCondition(ConnectionError.FRAMING_ERROR);
+            error.setDescription("Cannot construct binary: insufficient input data");
+            throw new AmqpErrorException(error);
+        }
 
+        byte[] data = new byte[size];
+        QpidByteBufferUtils.get(in,data);
+        return new Binary(data);
+    }
 }

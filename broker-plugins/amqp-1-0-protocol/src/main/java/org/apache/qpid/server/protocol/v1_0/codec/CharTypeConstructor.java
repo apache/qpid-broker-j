@@ -20,11 +20,13 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
+import java.util.List;
+
 import org.apache.qpid.server.protocol.v1_0.type.*;
 import org.apache.qpid.server.protocol.v1_0.type.transport.*;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
-public class CharTypeConstructor implements TypeConstructor
+public class CharTypeConstructor implements TypeConstructor<String>
 {
     private static final CharTypeConstructor INSTANCE = new CharTypeConstructor();
 
@@ -38,20 +40,14 @@ public class CharTypeConstructor implements TypeConstructor
     {
     }
 
-    public Object construct(final QpidByteBuffer in, ValueHandler handler) throws AmqpErrorException
+    @Override
+    public String construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
     {
-        if(in.remaining()>=4)
+        if(QpidByteBufferUtils.hasRemaining(in,4))
         {
-            int codePoint = in.getInt();
+            int codePoint = QpidByteBufferUtils.getInt(in);
             char[] chars = Character.toChars(codePoint);
-            if(chars.length == 1)
-            {
-                return chars[0];
-            }
-            else
-            {
-                return chars;
-            }
+            return new String(chars);
         }
         else
         {
@@ -62,5 +58,4 @@ public class CharTypeConstructor implements TypeConstructor
 
         }
     }
-
 }

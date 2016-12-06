@@ -19,6 +19,8 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
+import java.util.List;
+
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
@@ -30,7 +32,8 @@ class NullTypeConstructor implements TypeConstructor<Void>
     {
     }
 
-    public Void construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+    @Override
+    public Void construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
     {
         return null;
     }

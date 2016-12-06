@@ -19,19 +19,19 @@
 
 package org.apache.qpid.server.protocol.v1_0.messaging;
 
-import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
-
-import org.apache.qpid.server.protocol.v1_0.type.Binary;
-import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 
 public class SectionEncoderImpl implements SectionEncoder
 {
     private static final QpidByteBuffer EMPTY_BYTE_BUFFER = QpidByteBuffer.wrap(new byte[0]);
-    private ValueWriter.Registry _registry;
+    private AMQPDescribedTypeRegistry _registry;
 
     private int _totalSize = 0;
 
@@ -108,4 +108,9 @@ public class SectionEncoderImpl implements SectionEncoder
         _totalSize += data.length;
     }
 
+    @Override
+    public DescribedTypeConstructorRegistry getRegistry()
+    {
+        return _registry;
+    }
 }

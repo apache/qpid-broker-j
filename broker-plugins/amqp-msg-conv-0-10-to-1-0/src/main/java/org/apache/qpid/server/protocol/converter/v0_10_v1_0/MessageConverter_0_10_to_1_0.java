@@ -32,7 +32,9 @@ import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.server.plugin.PluggableService;
@@ -42,6 +44,7 @@ import org.apache.qpid.server.protocol.v1_0.MessageMetaData_1_0;
 import org.apache.qpid.transport.DeliveryProperties;
 import org.apache.qpid.transport.MessageDeliveryMode;
 import org.apache.qpid.transport.MessageProperties;
+import org.apache.qpid.util.GZIPUtils;
 
 @PluggableService
 public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<MessageTransferMessage>
@@ -55,7 +58,9 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
 
     @Override
     protected MessageMetaData_1_0 convertMetaData(MessageTransferMessage serverMessage,
-                                                  final Section bodySection, SectionEncoder sectionEncoder)
+                                                  final Section bodySection,
+                                                  SectionEncoder sectionEncoder,
+                                                  final ArrayList<AbstractSection<?>> bodySections)
     {
         List<Section> sections = new ArrayList<Section>(3);
         final MessageProperties msgProps = serverMessage.getHeader().getMessageProperties();
@@ -91,7 +96,9 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
 
         if(msgProps != null)
         {
-            if(msgProps.hasContentEncoding())
+            if(msgProps.hasContentEncoding()
+               && !GZIPUtils.GZIP_CONTENT_ENCODING.equals(msgProps.getContentEncoding())
+               && bodySection instanceof Data)
             {
                 props.setContentEncoding(Symbol.valueOf(msgProps.getContentEncoding()));
             }
@@ -139,7 +146,7 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
                     applicationProperties = new LinkedHashMap<>(applicationProperties);
                     applicationProperties.remove("qpid.subject");
                 }
-                sections.add(new ApplicationProperties(applicationProperties));
+                sections.add(new ApplicationProperties((Map)applicationProperties));
 
             }
         }
@@ -147,7 +154,7 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
         {
             sections.add(bodySection);
         }
-        return new MessageMetaData_1_0(sections, sectionEncoder);
+        return new MessageMetaData_1_0(sections, sectionEncoder, bodySections);
     }
 
     @Override

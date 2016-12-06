@@ -21,15 +21,23 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.message.AbstractServerMessageImpl;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationPropertiesSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.DeliveryAnnotationsSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.FooterSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.HeaderSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.PropertiesSection;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
 
@@ -41,7 +49,8 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
             .registerMessagingLayer()
             .registerTransactionLayer()
             .registerSecurityLayer();
-    public static final MessageMetaData_1_0 DELETED_MESSAGE_METADATA = new MessageMetaData_1_0(Collections.<Section>emptyList(), new SectionEncoderImpl(DESCRIBED_TYPE_REGISTRY));
+    public static final MessageMetaData_1_0 DELETED_MESSAGE_METADATA = new MessageMetaData_1_0(Collections.<Section>emptyList(), new SectionEncoderImpl(DESCRIBED_TYPE_REGISTRY),
+                                                                                               new ArrayList<AbstractSection<?>>());
 
     private long _arrivalTime;
 
@@ -110,4 +119,33 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
         return getContent(0, (int) getSize());
     }
 
+    public HeaderSection getHeaderSection()
+    {
+        return getMessageMetaData().getHeaderSection();
+    }
+
+    public PropertiesSection getPropertiesSection()
+    {
+        return getMessageMetaData().getPropertiesSection();
+    }
+
+    public DeliveryAnnotationsSection getDeliveryAnnotationsSection()
+    {
+        return getMessageMetaData().getDeliveryAnnotationsSection();
+    }
+
+    public MessageAnnotationsSection getMessageAnnotationsSection()
+    {
+        return getMessageMetaData().getMessageAnnotationsSection();
+    }
+
+    public ApplicationPropertiesSection getApplicationPropertiesSection()
+    {
+        return getMessageMetaData().getApplicationPropertiesSection();
+    }
+
+    public FooterSection getFooterSection()
+    {
+        return getMessageMetaData().getFooterSection();
+    }
 }

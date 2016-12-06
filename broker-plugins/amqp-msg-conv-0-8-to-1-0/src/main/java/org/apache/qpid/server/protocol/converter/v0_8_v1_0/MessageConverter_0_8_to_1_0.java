@@ -32,7 +32,9 @@ import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.framing.AMQShortString;
@@ -43,6 +45,7 @@ import org.apache.qpid.server.protocol.v0_8.AMQMessage;
 import org.apache.qpid.server.protocol.v1_0.MessageConverter_to_1_0;
 import org.apache.qpid.server.protocol.v1_0.MessageMetaData_1_0;
 import org.apache.qpid.url.AMQBindingURL;
+import org.apache.qpid.util.GZIPUtils;
 
 @PluggableService
 public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMessage>
@@ -55,7 +58,8 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
 
     protected MessageMetaData_1_0 convertMetaData(final AMQMessage serverMessage,
                                                   final Section bodySection,
-                                                  SectionEncoder sectionEncoder)
+                                                  SectionEncoder sectionEncoder,
+                                                  final ArrayList<AbstractSection<?>> bodySections)
     {
 
         List<Section> sections = new ArrayList<>(3);
@@ -90,7 +94,10 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
             to
         */
 
-        props.setContentEncoding(Symbol.valueOf(contentHeader.getEncodingAsString()));
+        if(!GZIPUtils.GZIP_CONTENT_ENCODING.equals(contentHeader.getEncodingAsString()) && bodySection instanceof Data)
+        {
+            props.setContentEncoding(Symbol.valueOf(contentHeader.getEncodingAsString()));
+        }
 
         props.setContentType(Symbol.valueOf(contentHeader.getContentTypeAsString()));
 
@@ -168,12 +175,12 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
         // TODO: http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-application
         // Adhere to "the values are restricted to be of simple types only, that is, excluding map, list, and array types".
         // 0-8..0-91 for instance suppoorted field tables with maps as values.
-        sections.add(new ApplicationProperties(applicationProperties));
+        sections.add(new ApplicationProperties((Map)applicationProperties));
         if(bodySection != null)
         {
             sections.add(bodySection);
         }
-        return new MessageMetaData_1_0(sections, sectionEncoder);
+        return new MessageMetaData_1_0(sections, sectionEncoder, bodySections);
     }
 
     @Override

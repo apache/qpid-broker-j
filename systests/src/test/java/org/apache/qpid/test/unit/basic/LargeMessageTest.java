@@ -58,65 +58,61 @@ public class LargeMessageTest extends QpidBrokerTestCase
         super.tearDown();
     }
 
-    // Test boundary of 1 packet to 2 packets
-    public void test64kminus9()
+    public void test64kminus9() throws JMSException
     {
         checkLargeMessage((64 * 1024) - 9);
     }
 
-    public void test64kminus8()
+    public void test64kminus8() throws JMSException
     {
         checkLargeMessage((64 * 1024)-8);
     }
 
-    public void test64kminus7()
+    public void test64kminus7() throws JMSException
     {
         checkLargeMessage((64 * 1024)-7);
     }
 
 
-    public void test64kplus1()
+    public void test64kplus1() throws JMSException
     {
         checkLargeMessage((64 * 1024) + 1);
     }
 
-    // Test packet boundary of 3 packtes
-    public void test128kminus1()
+    public void test128kminus1() throws JMSException
     {
         checkLargeMessage((128 * 1024) - 1);
     }
 
-    public void test128k()
+    public void test128k() throws JMSException
     {
         checkLargeMessage(128 * 1024);
     }
 
-    public void test128kplus1()
+    public void test128kplus1() throws JMSException
     {
         checkLargeMessage((128 * 1024) + 1);
     }
 
     // Testing larger messages
 
-    public void test256k()
+    public void test256k() throws JMSException
     {
         checkLargeMessage(256 * 1024);
     }
 
-    public void test512k()
+    public void test512k() throws JMSException
     {
         checkLargeMessage(512 * 1024);
     }
 
-    public void test1024k()
+    public void test1024k() throws JMSException
     {
         checkLargeMessage(1024 * 1024);
     }
 
-    protected void checkLargeMessage(int messageSize)
+    protected void checkLargeMessage(int messageSize) throws JMSException
     {
-        try
-        {
             MessageConsumer consumer = _session.createConsumer(_destination);
             MessageProducer producer = _session.createProducer(_destination);
             _logger.info("Testing message of size:" + messageSize);
@@ -132,12 +128,7 @@ public class LargeMessageTest extends QpidBrokerTestCase
             assertNotNull("Null message received", result);
             assertEquals("Message Size", _messageText.length(), result.getText().length());
             assertEquals("Message content differs", _messageText, result.getText());
-        }
-        catch (JMSException e)
-        {
-            _logger.error("Exception occurred", e);
-            fail("Exception occurred:" + e.getCause());
-        }
+
     }
 
     private String buildLargeMessage(int size)

@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -47,10 +48,11 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequence;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequenceSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.transport.codec.BBEncoder;
 import org.apache.qpid.typedmessage.TypedBytesContentWriter;
@@ -62,34 +64,30 @@ public class MessageConverter_from_1_0
 
     public static Object convertBodyToObject(final Message_1_0 serverMessage)
     {
-        byte[] data = new byte[(int) serverMessage.getSize()];
         final Collection<QpidByteBuffer> allData = serverMessage.getContent(0, (int) serverMessage.getSize());
-        int offset = 0;
-        for(QpidByteBuffer buf : allData)
-        {
-            int len = buf.remaining();
-            buf.get(data, offset, len);
-            offset+=len;
-            buf.dispose();
-        }
-        SectionDecoderImpl sectionDecoder = new SectionDecoderImpl(MessageConverter_v1_0_to_Internal.TYPE_REGISTRY);
+        SectionDecoderImpl sectionDecoder = new SectionDecoderImpl(MessageConverter_v1_0_to_Internal.TYPE_REGISTRY.getSectionDecoderRegistry());
 
         Object bodyObject;
         try
         {
-            List<Section> sections = sectionDecoder.parseAll(QpidByteBuffer.wrap(data));
-            ListIterator<Section> iterator = sections.listIterator();
+            List<AbstractSection<?>> sections = sectionDecoder.parseAll(new ArrayList<>(allData));
+            for(QpidByteBuffer buf : allData)
+            {
+                buf.dispose();
+            }
+
+            ListIterator<AbstractSection<?>> iterator = sections.listIterator();
             Section previousSection = null;
             while(iterator.hasNext())
             {
                 Section section = iterator.next();
-                if(!(section instanceof AmqpValue || section instanceof Data || section instanceof AmqpSequence))
+                if(!(section instanceof AmqpValueSection || section instanceof DataSection || section instanceof AmqpSequenceSection))
                 {
                     iterator.remove();
                 }
                 else
                 {
-                    if(previousSection != null && (previousSection.getClass() != section.getClass() || section instanceof AmqpValue))
+                    if(previousSection != null && (previousSection.getClass() != section.getClass() || section instanceof AmqpValueSection))
                     {
                         throw new ConnectionScopedRuntimeException("Message is badly formed and has multiple body section which are not all Data or not all AmqpSequence");
                     }
@@ -109,16 +107,16 @@ public class MessageConverter_from_1_0
             else
             {
                 Section firstBodySection = sections.get(0);
-                if(firstBodySection instanceof AmqpValue)
+                if(firstBodySection instanceof AmqpValueSection)
                 {
-                    bodyObject = convertValue(((AmqpValue)firstBodySection).getValue());
+                    bodyObject = convertValue(firstBodySection.getValue());
                 }
-                else if(firstBodySection instanceof Data)
+                else if(firstBodySection instanceof DataSection)
                 {
                     int totalSize = 0;
                     for(Section section : sections)
                     {
-                        totalSize += ((Data)section).getValue().getLength();
+                        totalSize += ((DataSection)section).getValue().getLength();
                     }
                     byte[] bodyData = new byte[totalSize];
                     ByteBuffer buf = ByteBuffer.wrap(bodyData);
@@ -130,10 +128,10 @@ public class MessageConverter_from_1_0
                 }
                 else
                 {
-                    ArrayList totalSequence = new ArrayList();
+                    ArrayList<Object> totalSequence = new ArrayList<>();
                     for(Section section : sections)
                     {
-                        totalSequence.addAll(((AmqpSequence)section).getValue());
+                        totalSequence.addAll(((AmqpSequenceSection)section).getValue());
                     }
                     bodyObject = convertValue(totalSequence);
                 }

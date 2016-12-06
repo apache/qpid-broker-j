@@ -24,16 +24,22 @@
 package org.apache.qpid.server.protocol.v1_0.type.transport;
 
 
-import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
-import org.apache.qpid.server.protocol.v1_0.type.*;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.ConnectionHandler;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
+import org.apache.qpid.server.protocol.v1_0.type.FrameBody;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
 public class Transfer
   implements FrameBody
   {
 
 
-    private volatile QpidByteBuffer _payload;
+    private volatile List<QpidByteBuffer> _payload;
 
     private UnsignedInteger _handle;
 
@@ -281,21 +287,47 @@ public class Transfer
         conn.receiveTransfer(channel, this);
     }
 
-    public void setPayload(QpidByteBuffer payload)
+    public void setPayload(List<QpidByteBuffer> payload)
     {
-        _payload = payload;
+        if(payload == null)
+        {
+            _payload = null;
+        }
+        else
+        {
+            _payload = new ArrayList<>(payload.size());
+            for(QpidByteBuffer buf : payload)
+            {
+                _payload.add(buf.duplicate());
+            }
+        }
     }
 
-    public QpidByteBuffer getPayload()
+    public List<QpidByteBuffer> getPayload()
     {
-        return _payload;
+        if(_payload == null)
+        {
+            return null;
+        }
+        else
+        {
+            List<QpidByteBuffer> payloadDup = new ArrayList<>(_payload.size());
+            for(QpidByteBuffer buf : _payload)
+            {
+                payloadDup.add(buf.duplicate());
+            }
+            return payloadDup;
+        }
     }
 
     public void dispose()
     {
         if (_payload != null)
         {
-            _payload.dispose();
+            for(QpidByteBuffer buf : _payload)
+            {
+                buf.dispose();
+            }
             _payload = null;
         }
     }

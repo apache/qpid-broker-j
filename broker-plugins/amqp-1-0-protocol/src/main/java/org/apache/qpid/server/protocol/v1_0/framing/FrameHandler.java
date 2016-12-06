@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v1_0.framing;
 
+import java.util.Collections;
 import java.util.Formatter;
 
 import org.slf4j.Logger;
@@ -153,7 +154,9 @@ public class FrameHandler implements ProtocolHandler
                     {
                         if (val instanceof Transfer)
                         {
-                            ((Transfer) val).setPayload(dup.slice());
+                            final QpidByteBuffer payload = dup.slice();
+                            ((Transfer) val).setPayload(Collections.singletonList(payload));
+                            payload.dispose();
                         }
                         else
                         {

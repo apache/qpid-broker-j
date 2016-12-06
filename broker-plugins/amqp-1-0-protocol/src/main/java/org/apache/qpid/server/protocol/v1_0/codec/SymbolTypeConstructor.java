@@ -22,14 +22,16 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 
-public class SymbolTypeConstructor extends VariableWidthTypeConstructor
+public class SymbolTypeConstructor extends VariableWidthTypeConstructor<Symbol>
 {
     private static final Charset ASCII = Charset.forName("US-ASCII");
 
@@ -47,20 +49,8 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor
         super(size);
     }
 
-    @Override
-    public Object construct(final QpidByteBuffer in, boolean isCopy, ValueHandler handler) throws AmqpErrorException
+    private Symbol constructFromSingleBuffer(final QpidByteBuffer in, final int size)
     {
-        int size;
-
-        if(getSize() == 1)
-        {
-            size = in.get() & 0xFF;
-        }
-        else
-        {
-            size = in.getInt();
-        }
-
         BinaryString binaryStr;
         if (in.hasArray())
         {
@@ -96,7 +86,55 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor
         }
 
         return symbolVal;
-
     }
 
+    @Override
+    public Symbol construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
+    {
+
+        int size;
+
+        if(getSize() == 1)
+        {
+            size = QpidByteBufferUtils.get(in) & 0xFF;
+        }
+        else
+        {
+            size = QpidByteBufferUtils.getInt(in);
+        }
+
+        if(!QpidByteBufferUtils.hasRemaining(in, size))
+        {
+            org.apache.qpid.server.protocol.v1_0.type.transport.Error error = new org.apache.qpid.server.protocol.v1_0.type.transport.Error();
+            error.setCondition(ConnectionError.FRAMING_ERROR);
+            error.setDescription("Cannot construct symbol: insufficient input data");
+            throw new AmqpErrorException(error);
+        }
+
+        for(int i = 0; i<in.size(); i++)
+        {
+            QpidByteBuffer buf = in.get(i);
+            if(buf.hasRemaining())
+            {
+                if(buf.remaining() >= size)
+                {
+                    return constructFromSingleBuffer(buf, size);
+                }
+                break;
+            }
+        }
+
+        byte[] data = new byte[size];
+        QpidByteBufferUtils.get(in, data);
+        final BinaryString binaryStr = new BinaryString(data);
+
+        Symbol symbolVal = SYMBOL_MAP.get(binaryStr);
+        if(symbolVal == null)
+        {
+            symbolVal = Symbol.valueOf(new String(data, ASCII));
+            SYMBOL_MAP.putIfAbsent(binaryStr, symbolVal);
+        }
+
+        return symbolVal;
+    }
 }

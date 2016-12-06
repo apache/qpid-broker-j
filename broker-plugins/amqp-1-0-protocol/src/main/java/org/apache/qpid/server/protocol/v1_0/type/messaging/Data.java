@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,20 +19,13 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.Section;
 
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
-
-
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class Data
-  implements Section
-  {
-
-
+public class Data implements Section<Binary>
+{
 
     private final Binary _value;
 
@@ -48,21 +40,9 @@ public class Data
     }
 
 
-
-
-      public Binary encode(final SectionEncoder encoder)
-      {
-        encoder.reset();
-        encoder.encodeObject(this);
-        return encoder.getEncoding();
-      }
-
-
-      @Override
-      public String toString()
-      {
-          return "Data{" +
-                 _value +
-                 '}';
-      }
-  }
+    @Override
+    public String toString()
+    {
+        return "Data{" + _value + '}';
+    }
+}

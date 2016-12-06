@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-public class DefaultDescribedTypeConstructor extends DescribedTypeConstructor
+public class DefaultDescribedTypeConstructor extends AbstractDescribedTypeConstructor
 {
     private Object _descriptor;
 

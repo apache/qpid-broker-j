@@ -23,13 +23,13 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
+import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.NoLocalFilter;
 
-public class NoLocalFilterConstructor extends DescribedTypeConstructor<NoLocalFilter>
+public class NoLocalFilterConstructor extends AbstractDescribedTypeConstructor<NoLocalFilter>
 {
     private static final Object[] DESCRIPTORS =
     {

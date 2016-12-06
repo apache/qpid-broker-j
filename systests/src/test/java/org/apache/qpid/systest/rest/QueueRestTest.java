@@ -256,15 +256,15 @@ public class QueueRestTest extends QpidRestTestCase
                 statistics.get("persistentDequeuedMessages"));
         assertEquals("Unexpected queue statistics attribute " + "totalDequeuedMessages", DEQUEUED_MESSAGES,
                 statistics.get("totalDequeuedMessages"));
-        assertEquals("Unexpected queue statistics attribute " + "totalDequeuedBytes", isBroker10() ? 164 : MESSAGE_PAYLOAD_SIZE,
+        assertEquals("Unexpected queue statistics attribute " + "totalDequeuedBytes", isBroker10() ? 11 : MESSAGE_PAYLOAD_SIZE,
                 statistics.get("totalDequeuedBytes"));
-        assertEquals("Unexpected queue statistics attribute " + "persistentDequeuedBytes", isBroker10() ? 164 : MESSAGE_PAYLOAD_SIZE,
+        assertEquals("Unexpected queue statistics attribute " + "persistentDequeuedBytes", isBroker10() ? 11 : MESSAGE_PAYLOAD_SIZE,
                 statistics.get("totalDequeuedBytes"));
-        assertEquals("Unexpected queue statistics attribute " + "persistentEnqueuedBytes", isBroker10() ? 328 : 2*MESSAGE_PAYLOAD_SIZE,
+        assertEquals("Unexpected queue statistics attribute " + "persistentEnqueuedBytes", isBroker10() ? 22 : 2*MESSAGE_PAYLOAD_SIZE,
                      statistics.get("persistentEnqueuedBytes"));
-        assertEquals("Unexpected queue statistics attribute " + "totalEnqueuedBytes", isBroker10() ? 328 : 2*MESSAGE_PAYLOAD_SIZE,
+        assertEquals("Unexpected queue statistics attribute " + "totalEnqueuedBytes", isBroker10() ? 22 : 2*MESSAGE_PAYLOAD_SIZE,
                 statistics.get("totalEnqueuedBytes"));
-        assertEquals("Unexpected queue statistics attribute " + "queueDepthBytes", isBroker10() ? 164 : MESSAGE_PAYLOAD_SIZE,
+        assertEquals("Unexpected queue statistics attribute " + "queueDepthBytes", isBroker10() ? 11 : MESSAGE_PAYLOAD_SIZE,
                 statistics.get("queueDepthBytes"));
     }
 }

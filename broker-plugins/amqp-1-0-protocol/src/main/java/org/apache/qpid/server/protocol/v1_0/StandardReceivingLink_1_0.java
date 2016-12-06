@@ -27,12 +27,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
@@ -41,12 +44,11 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
 {
@@ -75,7 +77,7 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
         _receivingSettlementMode = receivingLinkAttachment.getEndpoint().getReceivingSettlementMode();
         _durability = ((Target)receivingLinkAttachment.getTarget()).getDurable();
 
-        _sectionDecoder = new SectionDecoderImpl(receivingLinkAttachment.getEndpoint().getSession().getConnection().getDescribedTypeRegistry());
+        _sectionDecoder = new SectionDecoderImpl(receivingLinkAttachment.getEndpoint().getSession().getConnection().getSectionDecoderRegistry());
 
 
     }
@@ -106,11 +108,11 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
                 return;
             }
 
-            fragments = new ArrayList<QpidByteBuffer>(_incompleteMessage.size());
+            fragments = new ArrayList<>(_incompleteMessage.size());
 
             for(Transfer t : _incompleteMessage)
             {
-                fragments.add(t.getPayload().duplicate());
+                fragments.addAll(t.getPayload());
                 t.dispose();
             }
             _incompleteMessage=null;
@@ -120,7 +122,7 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
         {
             _resumedMessage = Boolean.TRUE.equals(xfr.getResume());
             _messageDeliveryTag = deliveryTag;
-            fragments = Collections.singletonList(xfr.getPayload().duplicate());
+            fragments = xfr.getPayload();
             xfr.dispose();
         }
 
@@ -138,24 +140,26 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
             }
             else
             {
-                System.err.println("UNEXPECTED!!");
-                System.err.println("Delivery Tag: " + _messageDeliveryTag);
-                System.err.println("_unsettledMap: " + _unsettledMap);
-
+                throw new ServerScopedRuntimeException("Unexpected delivery Tag: " + _messageDeliveryTag + "_unsettledMap: " + _unsettledMap);
             }
         }
         else
         {
             MessageMetaData_1_0 mmd = null;
-            List<QpidByteBuffer> immutableSections = new ArrayList<>(3);
+            List<AbstractSection<?>> dataSections = new ArrayList<>();
             mmd = new MessageMetaData_1_0(fragments.toArray(new QpidByteBuffer[fragments.size()]),
-                    _sectionDecoder,
-                    immutableSections);
+                                          _sectionDecoder,
+                                          dataSections);
             MessageHandle<MessageMetaData_1_0> handle = _addressSpace.getMessageStore().addMessage(mmd);
 
-            for(QpidByteBuffer bareMessageBuf : immutableSections)
+            for(AbstractSection<?> dataSection : dataSections)
             {
-                handle.addContent(bareMessageBuf);
+                for (QpidByteBuffer buf : dataSection.getEncodedForm())
+                {
+                    handle.addContent(buf);
+                    buf.dispose();
+                }
+
             }
             final StoredMessage<MessageMetaData_1_0> storedMessage = handle.allContentAdded();
             Message_1_0 message = new Message_1_0(storedMessage, getSession().getConnection().getReference());

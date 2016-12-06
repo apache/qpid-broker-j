@@ -69,13 +69,12 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
 {
 
     private final Map<Object, DescribedTypeConstructor> _constructorRegistry = new HashMap<Object, DescribedTypeConstructor>();
+    private final Map<Object, DescribedTypeConstructor> _sectionDecoderRegistryMap = new HashMap<Object, DescribedTypeConstructor>();
+
+
+
 
     public void register(Object descriptor, DescribedTypeConstructor constructor)
-    {
-        _constructorRegistry.put(descriptor, constructor);
-    }
-
-    public void register(Object descriptor, DescribedTypeConstructor constructor, TypeConstructor describedConstructor)
     {
         _constructorRegistry.put(descriptor, constructor);
     }
@@ -87,6 +86,17 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
 
     private AMQPDescribedTypeRegistry()
     {
+        PropertiesSectionConstructor.register(_sectionDecoderRegistry);
+        HeaderSectionConstructor.register(_sectionDecoderRegistry);
+        DeliveryAnnotationsSectionConstructor.register(_sectionDecoderRegistry);
+        MessageAnnotationsSectionConstructor.register(_sectionDecoderRegistry);
+        ApplicationPropertiesSectionConstructor.register(_sectionDecoderRegistry);
+
+        DataSectionConstructor.register(_sectionDecoderRegistry);
+        AmqpValueSectionConstructor.register(_sectionDecoderRegistry);
+        AmqpSequenceSectionConstructor.register(_sectionDecoderRegistry);
+
+        FooterSectionConstructor.register(_sectionDecoderRegistry);
     }
 
     public AMQPDescribedTypeRegistry registerTransportLayer()
@@ -370,5 +380,30 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
         return (ValueWriter<V>) _writerMap.put(clazz, writer);
     }
 
+    private final SectionDecoderRegistry _sectionDecoderRegistry = new SectionDecoderRegistry()
+    {
+        @Override
+        public DescribedTypeConstructorRegistry getUnderlyingRegistry()
+        {
+            return AMQPDescribedTypeRegistry.this;
+        }
+
+        @Override
+        public void register(final Object descriptor, final DescribedTypeConstructor constructor)
+        {
+            _sectionDecoderRegistryMap.put(descriptor, constructor);
+        }
+
+        @Override
+        public DescribedTypeConstructor getConstructor(final Object descriptor)
+        {
+            return _sectionDecoderRegistryMap.get(descriptor);
+        }
+    };
+
+    public SectionDecoderRegistry getSectionDecoderRegistry()
+    {
+        return _sectionDecoderRegistry;
+    }
 }
 

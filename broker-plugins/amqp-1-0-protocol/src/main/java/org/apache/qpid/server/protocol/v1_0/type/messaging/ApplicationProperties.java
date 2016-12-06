@@ -24,41 +24,23 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
-
-
 import java.util.Map;
 
+import org.apache.qpid.server.protocol.v1_0.type.Section;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
+public class ApplicationProperties implements Section<Map<String,Object>>
+{
 
-public class ApplicationProperties
-  implements Section
-  {
+    private final Map<String,Object> _value;
 
-
-
-    private final Map _value;
-
-    public ApplicationProperties(Map value)
+    public ApplicationProperties(Map<String,Object> value)
     {
         _value = value;
     }
 
-    public Map getValue()
+    public Map<String,Object> getValue()
     {
         return _value;
     }
 
-
-
-
-      public Binary encode(final SectionEncoder encoder)
-      {
-        encoder.reset();
-        encoder.encodeObject(this);
-        return encoder.getEncoding();
-      }
-
-
-  }
+}

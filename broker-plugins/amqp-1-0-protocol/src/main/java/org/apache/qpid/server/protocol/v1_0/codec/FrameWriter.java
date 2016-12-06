@@ -21,8 +21,10 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
+import java.util.List;
+
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.framing.AMQFrame;
 import org.apache.qpid.transport.ByteBufferSender;
 
 public class FrameWriter
@@ -39,9 +41,9 @@ public class FrameWriter
 
     public <T> int send(AMQFrame<T> frame)
     {
-        final QpidByteBuffer payload = frame.getPayload() == null ? null : frame.getPayload().duplicate();
+        final List<QpidByteBuffer> payload = frame.getPayload();
 
-        final int payloadLength = payload == null ? 0 : payload.remaining();
+        final int payloadLength = payload == null ? 0 : (int) QpidByteBufferUtils.remaining(payload);
         final T frameBody = frame.getFrameBody();
 
         final ValueWriter<T> typeWriter = frameBody == null ? null : _registry.getValueWriter(frameBody);
@@ -73,8 +75,10 @@ public class FrameWriter
         body.dispose();
         if(payload != null)
         {
-            _sender.send(payload);
-            payload.dispose();
+            for(QpidByteBuffer buf : payload)
+            {
+                _sender.send(buf);
+            }
         }
         return totalSize;
     }

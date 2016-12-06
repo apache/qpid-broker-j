@@ -20,12 +20,15 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
-import java.nio.charset.Charset;
 
 public class ValueHandler implements DescribedTypeConstructorRegistry.Source
 {
@@ -85,32 +88,60 @@ public class ValueHandler implements DescribedTypeConstructorRegistry.Source
         _describedTypeConstructorRegistry = registry;
     }
 
-    public Object parse(final QpidByteBuffer in) throws AmqpErrorException
+
+    public Object parse(QpidByteBuffer in) throws AmqpErrorException
+    {
+        return parse(new ArrayList<>(Arrays.asList(in)));
+    }
+    public Object parse(final List<QpidByteBuffer> in) throws AmqpErrorException
     {
         TypeConstructor constructor = readConstructor(in);
         return constructor.construct(in, this);
     }
 
 
-    public TypeConstructor readConstructor(QpidByteBuffer in) throws AmqpErrorException
+    public TypeConstructor readConstructor(List<QpidByteBuffer> in) throws AmqpErrorException
     {
-        if(!in.hasRemaining())
+        if(!QpidByteBufferUtils.hasRemaining(in))
         {
             throw new AmqpErrorException(AmqpError.DECODE_ERROR, "Insufficient data - expected type, no data remaining");
         }
-        byte formatCode = in.get();
+        int firstBufferWithAvailable = 0;
+        if(in.size() > 1)
+        {
+            for(int i = 0; i < in.size(); i++)
+            {
+                if(in.get(i).hasRemaining())
+                {
+                    firstBufferWithAvailable = i;
+                    break;
+                }
+            }
+        }
+        byte formatCode = QpidByteBufferUtils.get(in);
 
         if(formatCode == DESCRIBED_TYPE)
         {
+            int[] originalPositions = new int[in.size()-firstBufferWithAvailable];
+
+            for(int i = firstBufferWithAvailable; i < in.size(); i++)
+            {
+                int position = in.get(i).position();
+                if(i==firstBufferWithAvailable)
+                {
+                    position--;
+                }
+                originalPositions[i] = position;
+            }
+
             Object descriptor = parse(in);
             DescribedTypeConstructor describedTypeConstructor = _describedTypeConstructorRegistry.getConstructor(descriptor);
             if(describedTypeConstructor==null)
             {
                 describedTypeConstructor=new DefaultDescribedTypeConstructor(descriptor);
             }
-            TypeConstructor typeConstructor = readConstructor(in);
 
-            return describedTypeConstructor.construct(typeConstructor);
+            return describedTypeConstructor.construct(descriptor, in, originalPositions, this);
 
         }
         else
@@ -136,9 +167,6 @@ public class ValueHandler implements DescribedTypeConstructorRegistry.Source
             return tc;
         }
     }
-
-
-
 
 
     @Override

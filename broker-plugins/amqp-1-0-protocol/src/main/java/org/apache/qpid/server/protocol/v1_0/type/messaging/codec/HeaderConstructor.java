@@ -23,15 +23,17 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.*;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.*;
-
-
 import java.util.List;
 
-public class HeaderConstructor extends DescribedTypeConstructor<Header>
+import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
+import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
+
+public class HeaderConstructor extends AbstractDescribedTypeConstructor<Header>
 {
     private static final Object[] DESCRIPTORS =
     {

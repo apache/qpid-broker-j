@@ -203,6 +203,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
 
     private volatile long _estimatedAverageMessageHeaderSize;
+    private volatile long _estimatedMessageMemoryOverhead;
+    private volatile long _estimatedMinimumMemoryFootprint;
 
     private AtomicBoolean _stopped = new AtomicBoolean(false);
 
@@ -275,6 +277,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     protected AbstractQueue(Map<String, Object> attributes, QueueManagingVirtualHost<?> virtualHost)
     {
         super(parentsMap(virtualHost), attributes);
+        _queueConsumerManager = new QueueConsumerManagerImpl(this);
 
         _virtualHost = virtualHost;
     }
@@ -342,8 +345,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         _arguments = Collections.synchronizedMap(arguments);
 
-        _queueConsumerManager = new QueueConsumerManagerImpl(this);
         _logSubject = new QueueLogSubject(this);
+
+        _estimatedMinimumMemoryFootprint = getContextValue(Long.class, QUEUE_MINIMUM_ESTIMATED_MEMORY_FOOTPRINT);
+        _estimatedMessageMemoryOverhead = getContextValue(Long.class, QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD);
+
         _queueHouseKeepingTask = new AdvanceConsumersTask();
         Subject activeSubject = Subject.getSubject(AccessController.getContext());
         Set<SessionPrincipal> sessionPrincipals = activeSubject == null ? Collections.<SessionPrincipal>emptySet() : activeSubject.getPrincipals(SessionPrincipal.class);
@@ -2208,8 +2214,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public long getPotentialMemoryFootprint()
     {
-        return Math.max(getContextValue(Long.class,QUEUE_MINIMUM_ESTIMATED_MEMORY_FOOTPRINT),
-                        getQueueDepthBytes() + getContextValue(Long.class, QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD) * getQueueDepthMessages());
+
+        return Math.max(_estimatedMinimumMemoryFootprint,
+                        getQueueDepthBytes() + _estimatedMessageMemoryOverhead * getQueueDepthMessages());
     }
 
     public long getAlertRepeatGap()

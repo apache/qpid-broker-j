@@ -24,15 +24,10 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
+import org.apache.qpid.server.protocol.v1_0.type.Section;
 
-
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class AmqpValue
-  implements Section
-  {
-
+public class AmqpValue implements Section<Object>
+{
 
 
     private final Object _value;
@@ -42,25 +37,18 @@ public class AmqpValue
         _value = value;
     }
 
+    @Override
     public Object getValue()
     {
         return _value;
     }
 
 
+    @Override
+    public String toString()
+    {
+        return "AmqpValue{(" + _value.getClass().getName() + ')' + _value + '}';
+    }
 
 
-      public Binary encode(final SectionEncoder encoder)
-      {
-        encoder.reset();
-        encoder.encodeObject(this);
-        return encoder.getEncoding();
-      }
-
-
-      @Override
-      public String toString()
-      {
-          return "AmqpValue{(" + _value.getClass().getName() + ')' + _value + '}';
-      }
-  }
+}

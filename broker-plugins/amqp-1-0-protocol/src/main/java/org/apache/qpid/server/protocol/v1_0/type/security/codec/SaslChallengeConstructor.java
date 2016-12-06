@@ -23,7 +23,7 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.security.codec;
 
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
+import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.*;
 import org.apache.qpid.server.protocol.v1_0.type.security.*;
@@ -31,7 +31,7 @@ import org.apache.qpid.server.protocol.v1_0.type.security.*;
 
 import java.util.List;
 
-public class SaslChallengeConstructor extends DescribedTypeConstructor<SaslChallenge>
+public class SaslChallengeConstructor extends AbstractDescribedTypeConstructor<SaslChallenge>
 {
     private static final Object[] DESCRIPTORS =
     {

@@ -19,6 +19,8 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
+import java.util.List;
+
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
@@ -31,7 +33,9 @@ class ZeroUIntConstructor implements TypeConstructor<UnsignedInteger>
     {
     }
 
-    public UnsignedInteger construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+    @Override
+    public UnsignedInteger construct(final List<QpidByteBuffer> in, final ValueHandler handler)
+            throws AmqpErrorException
     {
         return UnsignedInteger.ZERO;
     }

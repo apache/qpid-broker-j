@@ -20,13 +20,14 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
 import java.util.Date;
+import java.util.List;
 
-public class TimestampTypeConstructor implements TypeConstructor
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
+
+public class TimestampTypeConstructor implements TypeConstructor<Date>
 {
     private static final TimestampTypeConstructor INSTANCE = new TimestampTypeConstructor();
 
@@ -40,11 +41,12 @@ public class TimestampTypeConstructor implements TypeConstructor
     {
     }
 
-    public Object construct(final QpidByteBuffer in, ValueHandler handler) throws AmqpErrorException
+    @Override
+    public Date construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
     {
-        if(in.remaining()>=8)
+        if(QpidByteBufferUtils.hasRemaining(in, 8))
         {
-            long l = in.getLong();
+            long l = QpidByteBufferUtils.getLong(in);
             return new Date(l);
         }
         else
@@ -56,5 +58,4 @@ public class TimestampTypeConstructor implements TypeConstructor
 
         }
     }
-
 }

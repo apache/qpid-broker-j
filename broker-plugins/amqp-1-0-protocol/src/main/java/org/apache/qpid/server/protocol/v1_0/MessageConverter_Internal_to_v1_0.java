@@ -35,6 +35,7 @@ import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
@@ -58,7 +59,9 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
 
     @Override
     protected MessageMetaData_1_0 convertMetaData(final InternalMessage serverMessage,
-                                                  final Section bodySection, final SectionEncoder sectionEncoder)
+                                                  final Section bodySection,
+                                                  final SectionEncoder sectionEncoder,
+                                                  final ArrayList<AbstractSection<?>> bodySections)
     {
         List<Section> sections = new ArrayList<Section>(3);
         Header header = new Header();
@@ -91,14 +94,14 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
 
         if(!serverMessage.getMessageHeader().getHeaderNames().isEmpty())
         {
-            ApplicationProperties applicationProperties = new ApplicationProperties(serverMessage.getMessageHeader().getHeaderMap() );
+            ApplicationProperties applicationProperties = new ApplicationProperties((Map)serverMessage.getMessageHeader().getHeaderMap() );
             sections.add(applicationProperties);
         }
         if(bodySection != null)
         {
             sections.add(bodySection);
         }
-        return new MessageMetaData_1_0(sections, sectionEncoder);
+        return new MessageMetaData_1_0(sections, sectionEncoder, bodySections);
 
     }
 

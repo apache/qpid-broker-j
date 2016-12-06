@@ -23,15 +23,15 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.*;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.*;
-
-
 import java.util.Map;
 
-public class ApplicationPropertiesConstructor extends DescribedTypeConstructor<ApplicationProperties>
+import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
+import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties;
+
+public class ApplicationPropertiesConstructor extends AbstractDescribedTypeConstructor<ApplicationProperties>
 {
     private static final Object[] DESCRIPTORS =
     {

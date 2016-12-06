@@ -20,12 +20,14 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
+import java.util.List;
+
 import org.apache.qpid.server.protocol.v1_0.type.*;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
-public class FloatTypeConstructor implements TypeConstructor
+public class FloatTypeConstructor implements TypeConstructor<Float>
 {
     private static final FloatTypeConstructor INSTANCE = new FloatTypeConstructor();
 
@@ -39,11 +41,12 @@ public class FloatTypeConstructor implements TypeConstructor
     {
     }
 
-    public Object construct(final QpidByteBuffer in, ValueHandler handler) throws AmqpErrorException
+    @Override
+    public Float construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
     {
-        if(in.remaining()>=4)
+        if(QpidByteBufferUtils.hasRemaining(in, 4))
         {
-            return in.getFloat();
+            return QpidByteBufferUtils.getFloat(in);
         }
         else
         {
@@ -53,5 +56,4 @@ public class FloatTypeConstructor implements TypeConstructor
             throw new AmqpErrorException(error);
         }
     }
-
 }

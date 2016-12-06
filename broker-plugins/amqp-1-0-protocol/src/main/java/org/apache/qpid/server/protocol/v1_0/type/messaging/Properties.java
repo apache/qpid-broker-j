@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,24 +19,17 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
-
-
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
-
 
 import java.util.Date;
 
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.Section;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class Properties
-  implements Section
-  {
-
-
+public class Properties implements Section<Properties>
+{
     private Object _messageId;
 
     private Binary _userId;
@@ -200,117 +192,117 @@ public class Properties
         StringBuilder builder = new StringBuilder("Properties{");
         final int origLength = builder.length();
 
-        if(_messageId != null)
+        if (_messageId != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("messageId=").append(_messageId);
         }
 
-        if(_userId != null)
+        if (_userId != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("userId=").append(_userId);
         }
 
-        if(_to != null)
+        if (_to != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("to=").append(_to);
         }
 
-        if(_subject != null)
+        if (_subject != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("subject=").append(_subject);
         }
 
-        if(_replyTo != null)
+        if (_replyTo != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("replyTo=").append(_replyTo);
         }
 
-        if(_correlationId != null)
+        if (_correlationId != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("correlationId=").append(_correlationId);
         }
 
-        if(_contentType != null)
+        if (_contentType != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("contentType=").append(_contentType);
         }
 
-        if(_contentEncoding != null)
+        if (_contentEncoding != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("contentEncoding=").append(_contentEncoding);
         }
 
-        if(_absoluteExpiryTime != null)
+        if (_absoluteExpiryTime != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("absoluteExpiryTime=").append(_absoluteExpiryTime);
         }
 
-        if(_creationTime != null)
+        if (_creationTime != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("creationTime=").append(_creationTime);
         }
 
-        if(_groupId != null)
+        if (_groupId != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("groupId=").append(_groupId);
         }
 
-        if(_groupSequence != null)
+        if (_groupSequence != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
             builder.append("groupSequence=").append(_groupSequence);
         }
 
-        if(_replyToGroupId != null)
+        if (_replyToGroupId != null)
         {
-            if(builder.length() != origLength)
+            if (builder.length() != origLength)
             {
                 builder.append(',');
             }
@@ -321,13 +313,10 @@ public class Properties
         return builder.toString();
     }
 
+    @Override
+    public Properties getValue()
+    {
+        return this;
+    }
 
-      public Binary encode(final SectionEncoder encoder)
-      {
-        encoder.reset();
-        encoder.encodeObject(this);
-        return encoder.getEncoding();
-      }
-
-
-  }
+}

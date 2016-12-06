@@ -70,6 +70,7 @@ import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.LinkRegistry;
+import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.framing.OversizeFrameException;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -376,17 +377,17 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
 
         }
 
+
         try
         {
-            QpidByteBuffer payload = xfr.getPayload();
+            List<QpidByteBuffer> payload = xfr.getPayload();
+            final long remaining = QpidByteBufferUtils.remaining(payload);
             int payloadSent = _connection.sendFrame(_sendingChannel, xfr, payload);
 
-            if(payload != null && payloadSent < payload.remaining() && payloadSent >= 0)
+            if(payload != null && payloadSent < remaining && payloadSent >= 0)
             {
-                payload = payload.duplicate();
-                try
-                {
-                    payload.position(payload.position()+payloadSent);
+                // TODO - should make this iterative and not recursive
+
 
                     Transfer secondTransfer = new Transfer();
 
@@ -398,12 +399,17 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
                     secondTransfer.setPayload(payload);
 
                     sendTransfer(secondTransfer, endpoint, false);
-                }
-                finally
-                {
-                    payload.dispose();
-                }
 
+                    secondTransfer.dispose();
+
+            }
+
+            if(payload != null)
+            {
+                for(QpidByteBuffer buf : payload)
+                {
+                    buf.dispose();
+                }
             }
         }
         catch(OversizeFrameException e)

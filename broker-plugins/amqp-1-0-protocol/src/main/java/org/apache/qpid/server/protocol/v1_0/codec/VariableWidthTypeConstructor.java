@@ -20,10 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
-public abstract class VariableWidthTypeConstructor implements TypeConstructor
+public abstract class VariableWidthTypeConstructor<T> implements TypeConstructor<T>
 {
     protected int _size;
 
@@ -32,16 +29,10 @@ public abstract class VariableWidthTypeConstructor implements TypeConstructor
         _size = size;
     }
 
-    public Object construct(final QpidByteBuffer in, ValueHandler handler) throws AmqpErrorException
-    {
-        return construct(in, false, handler);
-    }
-
     public int getSize()
     {
         return _size;
     }
 
-    public abstract Object construct(QpidByteBuffer in, boolean isCopy, ValueHandler handler) throws AmqpErrorException;
 
 }

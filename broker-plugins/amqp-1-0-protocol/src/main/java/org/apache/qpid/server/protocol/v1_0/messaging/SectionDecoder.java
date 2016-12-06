@@ -19,17 +19,17 @@
 
 package org.apache.qpid.server.protocol.v1_0.messaging;
 
-import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.Section;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
 import java.util.List;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
 
 
 public interface SectionDecoder
 {
 
-    List<Section> parseAll(QpidByteBuffer buf) throws AmqpErrorException;
-    Section readSection(QpidByteBuffer buf) throws AmqpErrorException;
-    
+    List<AbstractSection<?>> parseAll(List<QpidByteBuffer> buf) throws AmqpErrorException;
+
+    AbstractSection<?> readSection(List<QpidByteBuffer> buf) throws AmqpErrorException;
 }

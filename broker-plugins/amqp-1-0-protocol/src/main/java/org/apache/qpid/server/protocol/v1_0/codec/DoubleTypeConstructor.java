@@ -20,12 +20,14 @@
  */
 package org.apache.qpid.server.protocol.v1_0.codec;
 
+import java.util.List;
+
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
-public class DoubleTypeConstructor implements TypeConstructor
+public class DoubleTypeConstructor implements TypeConstructor<Double>
 {
     private static final DoubleTypeConstructor INSTANCE = new DoubleTypeConstructor();
 
@@ -39,11 +41,12 @@ public class DoubleTypeConstructor implements TypeConstructor
     {
     }
 
-    public Object construct(final QpidByteBuffer in, ValueHandler handler) throws AmqpErrorException
+    @Override
+    public Double construct(final List<QpidByteBuffer> in, final ValueHandler handler) throws AmqpErrorException
     {
-        if(in.remaining()>=8)
+        if(QpidByteBufferUtils.hasRemaining(in, 8))
         {
-            return in.getDouble();
+            return QpidByteBufferUtils.getDouble(in);
         }
         else
         {
@@ -53,5 +56,4 @@ public class DoubleTypeConstructor implements TypeConstructor
             throw new AmqpErrorException(error);
         }
     }
-
 }

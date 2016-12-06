@@ -23,7 +23,7 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.transaction.codec;
 
-import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructor;
+import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.*;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.*;
@@ -31,7 +31,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transaction.*;
 
 import java.util.List;
 
-public class DeclaredConstructor extends DescribedTypeConstructor<Declared>
+public class DeclaredConstructor extends AbstractDescribedTypeConstructor<Declared>
 {
     private static final Object[] DESCRIPTORS =
     {

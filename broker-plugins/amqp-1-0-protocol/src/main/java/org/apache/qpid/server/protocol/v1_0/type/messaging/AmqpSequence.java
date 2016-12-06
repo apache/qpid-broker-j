@@ -24,19 +24,12 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
-
-
 import java.util.List;
 
+import org.apache.qpid.server.protocol.v1_0.type.Section;
 
-import org.apache.qpid.server.protocol.v1_0.type.*;
-
-public class AmqpSequence
-  implements Section
-  {
-
-
+public class AmqpSequence implements Section<List>
+{
 
     private final List _value;
 
@@ -51,20 +44,10 @@ public class AmqpSequence
     }
 
 
+    @Override
+    public String toString()
+    {
+        return "AmqpSequence{" + _value + '}';
+    }
 
-
-      public Binary encode(final SectionEncoder encoder)
-      {
-        encoder.reset();
-        encoder.encodeObject(this);
-        return encoder.getEncoding();
-      }
-
-      @Override
-      public String toString()
-      {
-          return "AmqpSequence{" +
-                   _value +
-                  '}';
-      }
-  }
+}
