@@ -149,7 +149,8 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
             List<AbstractSection<?>> dataSections = new ArrayList<>();
             mmd = new MessageMetaData_1_0(fragments.toArray(new QpidByteBuffer[fragments.size()]),
                                           _sectionDecoder,
-                                          dataSections);
+                                          dataSections,
+                                          System.currentTimeMillis());
             MessageHandle<MessageMetaData_1_0> handle = _addressSpace.getMessageStore().addMessage(mmd);
 
             for(AbstractSection<?> dataSection : dataSections)

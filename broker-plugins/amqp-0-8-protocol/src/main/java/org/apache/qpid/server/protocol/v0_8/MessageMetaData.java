@@ -102,10 +102,8 @@ public class MessageMetaData implements StorableMessageMetaData
     }
 
 
-    public int writeToBuffer(final QpidByteBuffer dest)
+    public void writeToBuffer(final QpidByteBuffer dest)
     {
-        int oldPosition = dest.position();
-
         dest.putInt(_contentHeaderBody.getSize());
         _contentHeaderBody.writePayload(dest);
 
@@ -123,8 +121,6 @@ public class MessageMetaData implements StorableMessageMetaData
         dest.put(flags);
         dest.putLong(_arrivalTime);
 
-
-        return dest.position()-oldPosition;
     }
 
     public int getContentSize()

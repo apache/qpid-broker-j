@@ -140,18 +140,16 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
         return buf;
     }
 
-    public synchronized int writeToBuffer(QpidByteBuffer dest)
+    public synchronized void writeToBuffer(QpidByteBuffer dest)
     {
         if (_encoded == null)
         {
             _encoded = encodeAsBuffer();
         }
         dest.put(_encoded);
-        final int bytesWritten = _encoded.limit();
         // We have special knowledge that we no longer need the encoded form after this call
         // to reduce memory usage associated with the metadata free the encoded form here (QPID-7465)
         clearEncodedForm();
-        return bytesWritten;
     }
 
     public int getContentSize()

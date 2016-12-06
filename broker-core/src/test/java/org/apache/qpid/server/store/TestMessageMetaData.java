@@ -85,13 +85,10 @@ public class TestMessageMetaData implements StorableMessageMetaData
     }
 
     @Override
-    public int writeToBuffer(QpidByteBuffer dest)
+    public void writeToBuffer(QpidByteBuffer dest)
     {
-        int oldPosition = dest.position();
         dest.putLong(_messageId);
         dest.putInt(_contentSize);
-
-        return dest.position() - oldPosition;
     };
 
 }

@@ -29,7 +29,7 @@ public interface StorableMessageMetaData
 
     int getStorableSize();
 
-    int writeToBuffer(QpidByteBuffer dest);
+    void writeToBuffer(QpidByteBuffer dest);
 
     int getContentSize();
 

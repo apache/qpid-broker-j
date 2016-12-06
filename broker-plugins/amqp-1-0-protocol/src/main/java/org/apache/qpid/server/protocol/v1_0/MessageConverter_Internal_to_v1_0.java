@@ -101,7 +101,7 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
         {
             sections.add(bodySection);
         }
-        return new MessageMetaData_1_0(sections, sectionEncoder, bodySections);
+        return new MessageMetaData_1_0(sections, sectionEncoder, bodySections, serverMessage.getArrivalTime());
 
     }
 

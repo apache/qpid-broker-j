@@ -176,7 +176,7 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
     }
 
     @Override
-    final public Collection<QpidByteBuffer> getContent(int offset, int length)
+    public Collection<QpidByteBuffer> getContent(int offset, int length)
     {
         StoredMessage<T> storedMessage = getStoredMessage();
         boolean wasInMemory = storedMessage.isInMemory();

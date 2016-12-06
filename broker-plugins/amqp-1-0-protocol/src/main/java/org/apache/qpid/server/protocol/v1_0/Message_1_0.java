@@ -24,15 +24,24 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Section;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AbstractSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequenceSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationPropertiesSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DeliveryAnnotationsSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.FooterSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.HeaderSection;
@@ -40,6 +49,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSec
 import org.apache.qpid.server.protocol.v1_0.type.messaging.PropertiesSection;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageMetaData_1_0>
 {
@@ -50,9 +60,7 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
             .registerTransactionLayer()
             .registerSecurityLayer();
     public static final MessageMetaData_1_0 DELETED_MESSAGE_METADATA = new MessageMetaData_1_0(Collections.<Section>emptyList(), new SectionEncoderImpl(DESCRIBED_TYPE_REGISTRY),
-                                                                                               new ArrayList<AbstractSection<?>>());
-
-    private long _arrivalTime;
+                                                                                               new ArrayList<AbstractSection<?>>(), 0L);
 
     public Message_1_0(final StoredMessage<MessageMetaData_1_0> storedMessage)
     {
@@ -63,7 +71,6 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
                        final Object connectionReference)
     {
         super(storedMessage, connectionReference, storedMessage.getMetaData().getContentSize());
-        _arrivalTime = System.currentTimeMillis();
     }
 
     public String getInitialRoutingAddress()
@@ -98,7 +105,7 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
 
     public long getArrivalTime()
     {
-        return _arrivalTime;
+        return getMessageMetaData().getArrivalTime();
     }
 
 
@@ -147,5 +154,83 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
     public FooterSection getFooterSection()
     {
         return getMessageMetaData().getFooterSection();
+    }
+
+    @Override
+    public Collection<QpidByteBuffer> getContent(final int offset, final int length)
+    {
+        if(getMessageMetaData().getVersion() == 0)
+        {
+            SectionDecoder sectionDecoder = new SectionDecoderImpl(DESCRIBED_TYPE_REGISTRY.getSectionDecoderRegistry());
+
+            try
+            {
+                final Collection<QpidByteBuffer> allSectionsContent = super.getContent(0, Integer.MAX_VALUE);
+
+                List<AbstractSection<?>> sections = sectionDecoder.parseAll(new ArrayList<>(allSectionsContent));
+
+                List<QpidByteBuffer> bodySectionContent = new ArrayList<>();
+                for(QpidByteBuffer buf : allSectionsContent)
+                {
+                    buf.dispose();
+                }
+                Iterator<AbstractSection<?>> iter = sections.iterator();
+
+                while (iter.hasNext())
+                {
+                    final AbstractSection<?> section = iter.next();
+                    if (section instanceof DataSection
+                        || section instanceof AmqpValueSection
+                        || section instanceof AmqpSequenceSection)
+                    {
+                        bodySectionContent.addAll(section.getEncodedForm());
+                    }
+                    section.dispose();
+                }
+                if(offset == 0 && length >= QpidByteBufferUtils.remaining(bodySectionContent))
+                {
+                    return bodySectionContent;
+                }
+                else
+                {
+                    final Collection<QpidByteBuffer> contentView = new ArrayList<>();
+                    int position = 0;
+                    for(QpidByteBuffer buf :bodySectionContent)
+                    {
+                        if (position < offset)
+                        {
+                            if (offset - position < buf.remaining())
+                            {
+                                QpidByteBuffer view = buf.view(offset - position,
+                                                               Math.min(length, buf.remaining() - (offset - position)));
+                                contentView.add(view);
+                                position += view.remaining();
+                            }
+                            else
+                            {
+                                position += buf.remaining();
+                            }
+                        }
+                        else if (position <= offset + length)
+                        {
+                            QpidByteBuffer view = buf.view(0, Math.min(length - (position - offset), buf.remaining()));
+                            contentView.add(view);
+                            position += view.remaining();
+                        }
+
+                        buf.dispose();
+                    }
+                    return contentView;
+                }
+            }
+            catch (AmqpErrorException e)
+            {
+                throw new ConnectionScopedRuntimeException(e);
+            }
+        }
+        else
+        {
+            return super.getContent(offset, length);
+        }
     }
 }
