@@ -255,9 +255,6 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         {
             _configurationStore = new ManagementModeStoreHandler(_configurationStore, this);
         }
-
-        _configurationStore.init(this);
-        _configurationStore.upgradeStoreStructure();
     }
 
 
@@ -270,15 +267,6 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
             public void run()
             {
                 _configurationStore.closeConfigurationStore();
-                _configurationStore = createStoreObject();
-
-                if (isManagementMode())
-                {
-                    _configurationStore = new ManagementModeStoreHandler(_configurationStore, AbstractSystemConfig.this);
-                }
-
-                _configurationStore.init(AbstractSystemConfig.this);
-                _configurationStore.upgradeStoreStructure();
                 AbstractSystemConfig.super.setState(State.STOPPED);
             }
         });
@@ -354,6 +342,8 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     {
         ConfiguredObjectRecord[] initialRecords = convertToConfigurationRecords(getInitialConfigurationLocation());
         final DurableConfigurationStore store = getConfigurationStore();
+        store.init(AbstractSystemConfig.this);
+        store.upgradeStoreStructure();
         final List<ConfiguredObjectRecord> records = new ArrayList<>();
 
         boolean isNew = store.openConfigurationStore(new ConfiguredObjectRecordHandler()
