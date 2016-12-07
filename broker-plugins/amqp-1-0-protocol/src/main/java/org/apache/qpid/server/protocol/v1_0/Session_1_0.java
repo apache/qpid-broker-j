@@ -180,6 +180,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
             new Error(LinkError.DETACH_FORCED,
                       "Force detach the link because the session is remotely ended.");
 
+    private final String _primaryDomain;
     private final Set<Object> _blockingEntities = Collections.newSetFromMap(new ConcurrentHashMap<Object,Boolean>());
     private volatile long _startedTransactions;
     private volatile long _committedTransactions;
@@ -211,6 +212,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
                 ? ((ConfiguredObject)connection.getAddressSpace()).newToken(_subject)
                 : connection.getBroker().newToken(_subject);
         _logSubject = new ChannelLogSubject(this);
+        _primaryDomain = getPrimaryDomain();
     }
 
     public void setReceivingChannel(final short receivingChannel)
@@ -1111,7 +1113,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
 
     private Queue<?> createTemporaryQueue(Map properties)
     {
-        final String queueName = UUID.randomUUID().toString();
+        final String queueName = _primaryDomain + "TempQueue" + UUID.randomUUID().toString();
         Queue<?> queue = null;
         try
         {
@@ -1834,6 +1836,26 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
         MessageSource source = getAddressSpace().getAttainedMessageSource(name);
         return source instanceof Queue ? (Queue<?>) source : null;
     }
+
+    private String getPrimaryDomain()
+    {
+        String primaryDomain = "";
+        final List<String> globalAddressDomains = getAddressSpace().getGlobalAddressDomains();
+        if (globalAddressDomains != null && !globalAddressDomains.isEmpty())
+        {
+            primaryDomain = globalAddressDomains.get(0);
+            if(primaryDomain != null)
+            {
+                primaryDomain = primaryDomain.trim();
+                if(!primaryDomain.endsWith("/"))
+                {
+                    primaryDomain += "/";
+                }
+            }
+        }
+        return primaryDomain;
+    }
+
     private final class CapacityCheckAction implements Action<MessageInstance>
     {
         @Override

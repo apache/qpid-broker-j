@@ -29,6 +29,14 @@ import javax.jms.TemporaryQueue;
 public class TemporaryQueuePrefixTest extends QpidBrokerTestCase
 {
     @Override
+    protected void setUp() throws Exception
+    {
+        super.setUp();
+        // FIXME: This seems to be necessary to run this test from IntelliJ. Otherwise the context var ${qpid.globalAddressDomains} in the blueprint will be expanded. Not sure why.
+        setTestSystemProperty("virtualhostnode.context.blueprint", "{\"type\":\"ProvidedStore\",\"globalAddressDomains\":\"${qpid.globalAddressDomains}\"}");
+    }
+
+    @Override
     public void startDefaultBroker() throws Exception
     {
         // deliberately don't start broker

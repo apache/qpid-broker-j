@@ -23,8 +23,6 @@
 
 // Broker side defect - not creating temp queues with prefixes
 
-org.apache.qpid.client.TemporaryQueuePrefixTest#*
-
 // AMQP 1.0 allows more than one txn per session, so our mechanism of installing transaction timeout tickers will need to change
 org.apache.qpid.test.unit.transacted.TransactionTimeoutTest#*
 org.apache.qpid.test.unit.transacted.TransactionTimeoutDisabledTest#*
