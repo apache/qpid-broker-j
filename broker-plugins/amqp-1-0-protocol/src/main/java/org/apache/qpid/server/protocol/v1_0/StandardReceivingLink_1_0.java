@@ -231,8 +231,7 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
                     }
 
 
-                    boolean settled = transaction instanceof AutoCommitTransaction && ReceiverSettleMode.FIRST.equals(
-                            getReceivingSettlementMode()                                                             );
+                    boolean settled = ReceiverSettleMode.FIRST.equals(getReceivingSettlementMode()                                                             );
 
                     if (!settled)
                     {
