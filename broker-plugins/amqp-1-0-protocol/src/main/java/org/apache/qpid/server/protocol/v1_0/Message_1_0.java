@@ -59,8 +59,7 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
             .registerMessagingLayer()
             .registerTransactionLayer()
             .registerSecurityLayer();
-    public static final MessageMetaData_1_0 DELETED_MESSAGE_METADATA = new MessageMetaData_1_0(Collections.<NonEncodingRetainingSection<?>>emptyList(), new SectionEncoderImpl(DESCRIBED_TYPE_REGISTRY),
-                                                                                               new ArrayList<EncodingRetainingSection<?>>(), 0L);
+    public static final MessageMetaData_1_0 DELETED_MESSAGE_METADATA = new MessageMetaData_1_0(null, null, null, null, null, null, 0L, 0L);
 
     public Message_1_0(final StoredMessage<MessageMetaData_1_0> storedMessage)
     {

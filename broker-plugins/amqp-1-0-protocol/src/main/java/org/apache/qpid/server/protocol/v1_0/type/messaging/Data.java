@@ -21,6 +21,10 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
+import java.util.Collections;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 
 public class Data implements NonEncodingRetainingSection<Binary>
@@ -43,5 +47,15 @@ public class Data implements NonEncodingRetainingSection<Binary>
     public String toString()
     {
         return "Data{" + _value + '}';
+    }
+
+    @Override
+    public DataSection createEncodingRetainingSection(final SectionEncoder encoder)
+    {
+        encoder.reset();
+        encoder.encodeObject(this);
+        Binary encodedOutput = encoder.getEncoding();
+        final QpidByteBuffer buf = QpidByteBuffer.wrap(encodedOutput.asByteBuffer());
+        return new DataSection(this, Collections.singletonList(buf), encoder.getRegistry());
     }
 }

@@ -24,7 +24,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -58,11 +57,9 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
 
     @Override
     protected MessageMetaData_1_0 convertMetaData(final InternalMessage serverMessage,
-                                                  final NonEncodingRetainingSection<?> bodySection,
-                                                  final SectionEncoder sectionEncoder,
-                                                  final List<EncodingRetainingSection<?>> bodySections)
+                                                  final EncodingRetainingSection<?> bodySection,
+                                                  final SectionEncoder sectionEncoder)
     {
-        List<NonEncodingRetainingSection<?>> sections = new ArrayList<>(3);
         Header header = new Header();
 
         header.setDurable(serverMessage.isPersistent());
@@ -71,8 +68,6 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
         {
             header.setTtl(UnsignedInteger.valueOf(serverMessage.getExpiration()-serverMessage.getArrivalTime()));
         }
-
-        sections.add(header);
 
         Properties properties = new Properties();
         properties.setCorrelationId(serverMessage.getMessageHeader().getCorrelationId());
@@ -89,24 +84,27 @@ public class MessageConverter_Internal_to_v1_0 extends MessageConverter_to_1_0<I
         }
         properties.setReplyTo(serverMessage.getMessageHeader().getReplyTo());
 
-        sections.add(properties);
-
+        ApplicationProperties applicationProperties = null;
         if(!serverMessage.getMessageHeader().getHeaderNames().isEmpty())
         {
-            ApplicationProperties applicationProperties = new ApplicationProperties((Map)serverMessage.getMessageHeader().getHeaderMap() );
-            sections.add(applicationProperties);
+            applicationProperties = new ApplicationProperties(serverMessage.getMessageHeader().getHeaderMap() );
         }
-        if(bodySection != null)
-        {
-            sections.add(bodySection);
-        }
-        return new MessageMetaData_1_0(sections, sectionEncoder, bodySections, serverMessage.getArrivalTime());
+
+        return new MessageMetaData_1_0(header.createEncodingRetainingSection(sectionEncoder),
+                                       null,
+                                       null,
+                                       properties.createEncodingRetainingSection(sectionEncoder),
+                                       applicationProperties == null ? null : applicationProperties.createEncodingRetainingSection(sectionEncoder),
+                                       null,
+                                       serverMessage.getArrivalTime(),
+                                       bodySection.getEncodedSize());
 
     }
 
-    protected NonEncodingRetainingSection<?> getBodySection(final InternalMessage serverMessage)
+    protected EncodingRetainingSection<?> getBodySection(final InternalMessage serverMessage,
+                                                         final SectionEncoder encoder)
     {
-        return convertToBody(serverMessage.getMessageBody());
+        return convertToBody(serverMessage.getMessageBody()).createEncodingRetainingSection(encoder);
     }
 
 

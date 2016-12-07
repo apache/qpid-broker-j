@@ -21,9 +21,7 @@
 
 package org.apache.qpid.server.protocol.converter.v0_10_v1_0;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.plugin.PluggableService;
@@ -39,7 +37,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.NonEncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.transport.DeliveryProperties;
 import org.apache.qpid.transport.MessageDeliveryMode;
@@ -58,11 +55,9 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
 
     @Override
     protected MessageMetaData_1_0 convertMetaData(MessageTransferMessage serverMessage,
-                                                  final NonEncodingRetainingSection<?> bodySection,
-                                                  SectionEncoder sectionEncoder,
-                                                  final List<EncodingRetainingSection<?>> bodySections)
+                                                  final EncodingRetainingSection<?> bodySection,
+                                                  SectionEncoder sectionEncoder)
     {
-        List<NonEncodingRetainingSection<?>> sections = new ArrayList<>(3);
         final MessageProperties msgProps = serverMessage.getHeader().getMessageProperties();
         final DeliveryProperties deliveryProps = serverMessage.getHeader().getDeliveryProperties();
 
@@ -78,10 +73,11 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
             {
                 header.setTtl(UnsignedInteger.valueOf(deliveryProps.getTtl()));
             }
-            sections.add(header);
         }
 
         Properties props = new Properties();
+        ApplicationProperties applicationProperties = null;
+
 
         /*
             TODO: the current properties are not currently set:
@@ -134,27 +130,27 @@ public class MessageConverter_0_10_to_1_0  extends MessageConverter_to_1_0<Messa
                 props.setUserId(new Binary(msgProps.getUserId()));
             }
 
-            sections.add(props);
-
-            Map<String, Object> applicationProperties = msgProps.getApplicationHeaders();
-
-            if(applicationProperties != null)
+            Map<String, Object> applicationPropertiesMap = msgProps.getApplicationHeaders();
+            if(applicationPropertiesMap != null)
             {
-                if(applicationProperties.containsKey("qpid.subject"))
+                if(applicationPropertiesMap.containsKey("qpid.subject"))
                 {
-                    props.setSubject(String.valueOf(applicationProperties.get("qpid.subject")));
-                    applicationProperties = new LinkedHashMap<>(applicationProperties);
-                    applicationProperties.remove("qpid.subject");
+                    props.setSubject(String.valueOf(applicationPropertiesMap.get("qpid.subject")));
+                    applicationPropertiesMap = new LinkedHashMap<>(applicationPropertiesMap);
+                    applicationPropertiesMap.remove("qpid.subject");
                 }
-                sections.add(new ApplicationProperties((Map)applicationProperties));
+                applicationProperties = new ApplicationProperties(applicationPropertiesMap);
 
             }
         }
-        if(bodySection != null)
-        {
-            sections.add(bodySection);
-        }
-        return new MessageMetaData_1_0(sections, sectionEncoder, bodySections, serverMessage.getArrivalTime());
+        return new MessageMetaData_1_0(header.createEncodingRetainingSection(sectionEncoder),
+                                       null,
+                                       null,
+                                       props.createEncodingRetainingSection(sectionEncoder),
+                                       applicationProperties == null ? null : applicationProperties.createEncodingRetainingSection(sectionEncoder),
+                                       null,
+                                       serverMessage.getArrivalTime(),
+                                       bodySection.getEncodedSize());
     }
 
     @Override

@@ -20,8 +20,10 @@
  */
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.Section;
 
 public interface NonEncodingRetainingSection<T> extends Section<T>
 {
+    EncodingRetainingSection<T> createEncodingRetainingSection(SectionEncoder encoder);
 }

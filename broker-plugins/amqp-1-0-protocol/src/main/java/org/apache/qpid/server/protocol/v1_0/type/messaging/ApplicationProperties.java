@@ -24,7 +24,12 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
+import java.util.Collections;
 import java.util.Map;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
 
 public class ApplicationProperties implements NonEncodingRetainingSection<Map<String,Object>>
 {
@@ -41,4 +46,13 @@ public class ApplicationProperties implements NonEncodingRetainingSection<Map<St
         return _value;
     }
 
+    @Override
+    public ApplicationPropertiesSection createEncodingRetainingSection(final SectionEncoder encoder)
+    {
+        encoder.reset();
+        encoder.encodeObject(this);
+        Binary encodedOutput = encoder.getEncoding();
+        final QpidByteBuffer buf = QpidByteBuffer.wrap(encodedOutput.asByteBuffer());
+        return new ApplicationPropertiesSection(this, Collections.singletonList(buf), encoder.getRegistry());
+    }
 }

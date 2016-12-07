@@ -21,9 +21,7 @@
 package org.apache.qpid.server.protocol.converter.v0_8_v1_0;
 
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.framing.AMQShortString;
@@ -42,7 +40,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.NonEncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 import org.apache.qpid.url.AMQBindingURL;
 import org.apache.qpid.util.GZIPUtils;
@@ -57,13 +54,9 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
     }
 
     protected MessageMetaData_1_0 convertMetaData(final AMQMessage serverMessage,
-                                                  final NonEncodingRetainingSection<?> bodySection,
-                                                  SectionEncoder sectionEncoder,
-                                                  final List<EncodingRetainingSection<?>> bodySections)
+                                                  final EncodingRetainingSection<?> bodySection,
+                                                  SectionEncoder sectionEncoder)
     {
-
-        List<NonEncodingRetainingSection<?>> sections = new ArrayList<>(3);
-
         Header header = new Header();
 
         header.setDurable(serverMessage.isPersistent());
@@ -79,7 +72,6 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
         {
             header.setTtl(UnsignedInteger.valueOf(expiration - arrivalTime));
         }
-        sections.add(header);
 
 
         Properties props = new Properties();
@@ -162,25 +154,27 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
             props.setUserId(new Binary(contentHeader.getUserId().getBytes()));
         }
 
-        sections.add(props);
+        Map<String, Object> applicationPropertiesMap = FieldTable.convertToMap(contentHeader.getHeaders());
 
-        Map<String, Object> applicationProperties = FieldTable.convertToMap(contentHeader.getHeaders());
-
-        if(applicationProperties.containsKey("qpid.subject"))
+        if(applicationPropertiesMap.containsKey("qpid.subject"))
         {
-            props.setSubject(String.valueOf(applicationProperties.get("qpid.subject")));
-            applicationProperties = new LinkedHashMap<>(applicationProperties);
-            applicationProperties.remove("qpid.subject");
+            props.setSubject(String.valueOf(applicationPropertiesMap.get("qpid.subject")));
+            applicationPropertiesMap = new LinkedHashMap<>(applicationPropertiesMap);
+            applicationPropertiesMap.remove("qpid.subject");
         }
         // TODO: http://docs.oasis-open.org/amqp/core/v1.0/os/amqp-core-messaging-v1.0-os.html#type-application
         // Adhere to "the values are restricted to be of simple types only, that is, excluding map, list, and array types".
-        // 0-8..0-91 for instance suppoorted field tables with maps as values.
-        sections.add(new ApplicationProperties((Map)applicationProperties));
-        if(bodySection != null)
-        {
-            sections.add(bodySection);
-        }
-        return new MessageMetaData_1_0(sections, sectionEncoder, bodySections, serverMessage.getArrivalTime());
+        // 0-8..0-91 for instance supported field tables with maps as values.
+        final ApplicationProperties applicationProperties = new ApplicationProperties(applicationPropertiesMap);
+
+        return new MessageMetaData_1_0(header.createEncodingRetainingSection(sectionEncoder),
+                                       null,
+                                       null,
+                                       props.createEncodingRetainingSection(sectionEncoder),
+                                       applicationProperties.createEncodingRetainingSection(sectionEncoder),
+                                       null,
+                                       serverMessage.getArrivalTime(),
+                                       bodySection.getEncodedSize());
     }
 
     @Override

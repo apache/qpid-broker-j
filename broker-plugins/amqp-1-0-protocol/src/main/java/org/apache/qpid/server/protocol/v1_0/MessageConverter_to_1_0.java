@@ -24,6 +24,7 @@ import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -74,17 +75,15 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
 
     private StoredMessage<MessageMetaData_1_0> convertToStoredMessage(final M serverMessage, SectionEncoder sectionEncoder)
     {
-        NonEncodingRetainingSection<?> bodySection = getBodySection(serverMessage);
-        final ArrayList<EncodingRetainingSection<?>> bodySections = new ArrayList<>();
+        EncodingRetainingSection<?> bodySection = getBodySection(serverMessage, sectionEncoder);
 
-        final MessageMetaData_1_0 metaData = convertMetaData(serverMessage, bodySection, sectionEncoder, bodySections);
-        return convertServerMessage(metaData, serverMessage, bodySections);
+        final MessageMetaData_1_0 metaData = convertMetaData(serverMessage, bodySection, sectionEncoder);
+        return convertServerMessage(metaData, serverMessage, bodySection);
     }
 
     abstract protected MessageMetaData_1_0 convertMetaData(final M serverMessage,
-                                                           final NonEncodingRetainingSection<?> bodySection,
-                                                           SectionEncoder sectionEncoder,
-                                                           final List<EncodingRetainingSection<?>> bodySections);
+                                                           final EncodingRetainingSection<?> bodySection,
+                                                           SectionEncoder sectionEncoder);
 
 
     private static NonEncodingRetainingSection<?> convertMessageBody(String mimeType, byte[] data)
@@ -203,7 +202,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
 
     private StoredMessage<MessageMetaData_1_0> convertServerMessage(final MessageMetaData_1_0 metaData,
                                                                     final M serverMessage,
-                                                                    final ArrayList<EncodingRetainingSection<?>> bodySections)
+                                                                    final EncodingRetainingSection<?> section)
     {
 
         return new StoredMessage<MessageMetaData_1_0>()
@@ -225,32 +224,29 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                         {
                             int position = 0;
                             List<QpidByteBuffer> content = new ArrayList<>();
-                            for(EncodingRetainingSection<?> section : bodySections)
+                            for(QpidByteBuffer buf : section.getEncodedForm())
                             {
-                                for(QpidByteBuffer buf : section.getEncodedForm())
+                                if(position < offset)
                                 {
-                                    if(position < offset)
+                                    if(offset - position < buf.remaining())
                                     {
-                                        if(offset - position < buf.remaining())
-                                        {
-                                            QpidByteBuffer view = buf.view(offset - position, Math.min(length, buf.remaining() - (offset-position)));
-                                            content.add(view);
-                                            position += view.remaining();
-                                        }
-                                        else
-                                        {
-                                            position += buf.remaining();
-                                        }
-                                    }
-                                    else if(position <= offset+length)
-                                    {
-                                        QpidByteBuffer view = buf.view(0, Math.min(length - (position-offset), buf.remaining()));
+                                        QpidByteBuffer view = buf.view(offset - position, Math.min(length, buf.remaining() - (offset-position)));
                                         content.add(view);
                                         position += view.remaining();
                                     }
-
-                                    buf.dispose();
+                                    else
+                                    {
+                                        position += buf.remaining();
+                                    }
                                 }
+                                else if(position <= offset+length)
+                                {
+                                    QpidByteBuffer view = buf.view(0, Math.min(length - (position-offset), buf.remaining()));
+                                    content.add(view);
+                                    position += view.remaining();
+                                }
+
+                                buf.dispose();
                             }
                             return content;
                         }
@@ -275,7 +271,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         };
     }
 
-    protected NonEncodingRetainingSection<?> getBodySection(final M serverMessage)
+    protected EncodingRetainingSection<?> getBodySection(final M serverMessage, final SectionEncoder encoder)
     {
         final String mimeType = serverMessage.getMessageHeader().getMimeType();
         byte[] data = new byte[(int) serverMessage.getSize()];
@@ -295,7 +291,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
             data = uncompressed;
         }
 
-        return convertMessageBody(mimeType, data);
+        return convertMessageBody(mimeType, data).createEncodingRetainingSection(encoder);
     }
 
 }

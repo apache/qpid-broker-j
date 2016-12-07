@@ -24,7 +24,12 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 
+import java.util.Collections;
 import java.util.List;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
 
 public class AmqpSequence implements NonEncodingRetainingSection<List>
 {
@@ -48,4 +53,13 @@ public class AmqpSequence implements NonEncodingRetainingSection<List>
         return "AmqpSequence{" + _value + '}';
     }
 
+    @Override
+    public AmqpSequenceSection createEncodingRetainingSection(final SectionEncoder encoder)
+    {
+        encoder.reset();
+        encoder.encodeObject(this);
+        Binary encodedOutput = encoder.getEncoding();
+        final QpidByteBuffer buf = QpidByteBuffer.wrap(encodedOutput.asByteBuffer());
+        return new AmqpSequenceSection(this, Collections.singletonList(buf), encoder.getRegistry());
+    }
 }

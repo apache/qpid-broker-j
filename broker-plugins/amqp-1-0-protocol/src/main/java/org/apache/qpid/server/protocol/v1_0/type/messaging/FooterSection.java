@@ -22,19 +22,21 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.codec.FooterConstructor;
 
-public class FooterSection extends AbstractSection<Footer>
+public class FooterSection extends AbstractSection<Map<Symbol,Object>>
 {
 
     private final DescribedTypeConstructorRegistry _typeRegistry;
-    private Footer _footer;
+    private Map<Symbol,Object> _value;
 
     public FooterSection(final DescribedTypeConstructorRegistry describedTypeRegistry)
     {
@@ -45,7 +47,7 @@ public class FooterSection extends AbstractSection<Footer>
                          final List<QpidByteBuffer> encodedForm,
                          final DescribedTypeConstructorRegistry registry)
     {
-        _footer = footer;
+        _value = footer.getValue();
         _typeRegistry = registry;
         setEncodedForm(encodedForm);
     }
@@ -57,13 +59,13 @@ public class FooterSection extends AbstractSection<Footer>
     }
 
     @Override
-    public synchronized Footer getValue()
+    public synchronized Map<Symbol,Object> getValue()
     {
-        if(_footer == null)
+        if(_value == null)
         {
             decode();
         }
-        return _footer;
+        return _value;
     }
 
     private void decode()
@@ -81,7 +83,7 @@ public class FooterSection extends AbstractSection<Footer>
             ValueHandler handler = new ValueHandler(_typeRegistry);
             Object descriptor = handler.parse(input);
             FooterConstructor constructor = new FooterConstructor();
-            _footer = constructor.construct(descriptor, input, originalPositions, handler).construct(input, handler);
+            _value = constructor.construct(descriptor, input, originalPositions, handler).construct(input, handler).getValue();
             for(int i = 0; i < input.size(); i++)
             {
                 input.get(i).dispose();

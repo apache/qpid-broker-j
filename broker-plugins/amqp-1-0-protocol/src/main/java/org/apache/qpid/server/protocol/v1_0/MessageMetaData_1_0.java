@@ -20,7 +20,6 @@
 */
 package org.apache.qpid.server.protocol.v1_0;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -36,16 +35,23 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
-import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
-import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.*;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequenceSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationPropertiesSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.DeliveryAnnotationsSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.FooterSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.HeaderSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.PropertiesSection;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
@@ -71,230 +77,55 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     private FooterSection _footerSection;
 
 
-    private MessageHeader_1_0 _messageHeader;
+    private final MessageHeader_1_0 _messageHeader = new MessageHeader_1_0();
     private final int _version;
     private final long _arrivalTime;
 
-    public MessageMetaData_1_0(List<NonEncodingRetainingSection<?>> sections,
-                               SectionEncoder encoder,
-                               final List<EncodingRetainingSection<?>> bodySections,
-                               final long arrivalTime)
+    public MessageMetaData_1_0(final HeaderSection headerSection,
+                               final DeliveryAnnotationsSection deliveryAnnotationsSection,
+                               final MessageAnnotationsSection messageAnnotationsSection,
+                               final PropertiesSection propertiesSection,
+                               final ApplicationPropertiesSection applicationPropertiesSection,
+                               final FooterSection footerSection,
+                               final long arrivalTime,
+                               final long contentSize)
     {
-        _version = VERSION_BYTE;
+        this(headerSection,
+             deliveryAnnotationsSection,
+             messageAnnotationsSection,
+             propertiesSection,
+             applicationPropertiesSection,
+             footerSection,
+             arrivalTime,
+             contentSize,
+             VERSION_BYTE);
+    }
+
+    public MessageMetaData_1_0(final HeaderSection headerSection,
+                               final DeliveryAnnotationsSection deliveryAnnotationsSection,
+                               final MessageAnnotationsSection messageAnnotationsSection,
+                               final PropertiesSection propertiesSection,
+                               final ApplicationPropertiesSection applicationPropertiesSection,
+                               final FooterSection footerSection,
+                               final long arrivalTime,
+                               final long contentSize,
+                               final int version)
+    {
+        _headerSection = headerSection;
+        _deliveryAnnotationsSection = deliveryAnnotationsSection;
+        _messageAnnotationsSection = messageAnnotationsSection;
+        _propertiesSection = propertiesSection;
+        _applicationPropertiesSection = applicationPropertiesSection;
+        _footerSection = footerSection;
         _arrivalTime = arrivalTime;
-        Iterator<NonEncodingRetainingSection<?>> iter = sections.iterator();
-        NonEncodingRetainingSection<?> s = iter.hasNext() ? iter.next() : null;
-        long contentSize = 0L;
-        if(s instanceof Header)
-        {
-            encoder.reset();
-            encoder.encodeObject(s);
-            Binary encodedOutput = encoder.getEncoding();
-            final QpidByteBuffer buf = QpidByteBuffer.wrap(encodedOutput.asByteBuffer());
-            _headerSection = new HeaderSection((Header)s, Collections.singletonList(buf), encoder.getRegistry());
-            s = iter.hasNext() ? iter.next() : null;
-        }
-
-        if(s instanceof DeliveryAnnotations)
-        {
-            encoder.reset();
-            encoder.encodeObject(s);
-            Binary encodedOutput = encoder.getEncoding();
-            final QpidByteBuffer buf = QpidByteBuffer.wrap(encodedOutput.asByteBuffer());
-            _deliveryAnnotationsSection = new DeliveryAnnotationsSection((DeliveryAnnotations)s, Collections.singletonList(buf), encoder.getRegistry());
-            s = iter.hasNext() ? iter.next() : null;
-        }
-
-        if(s instanceof MessageAnnotations)
-        {
-            encoder.reset();
-            encoder.encodeObject(s);
-            Binary encodedOutput = encoder.getEncoding();
-            final QpidByteBuffer buf = QpidByteBuffer.wrap(encodedOutput.asByteBuffer());
-            _messageAnnotationsSection = new MessageAnnotationsSection((MessageAnnotations)s, Collections.singletonList(buf), encoder.getRegistry());
-            s = iter.hasNext() ? iter.next() : null;
-        }
-
-        if(s instanceof Properties)
-        {
-            encoder.reset();
-            encoder.encodeObject(s);
-            Binary encodedOutput = encoder.getEncoding();
-            final QpidByteBuffer buf = QpidByteBuffer.wrap(encodedOutput.asByteBuffer());
-            _propertiesSection = new PropertiesSection((Properties)s, Collections.singletonList(buf), encoder.getRegistry());
-            s = iter.hasNext() ? iter.next() : null;
-        }
-
-        if(s instanceof ApplicationProperties)
-        {
-            encoder.reset();
-            encoder.encodeObject(s);
-            Binary encodedOutput = encoder.getEncoding();
-            final QpidByteBuffer buf = QpidByteBuffer.wrap(encodedOutput.asByteBuffer());
-            _applicationPropertiesSection = new ApplicationPropertiesSection((ApplicationProperties)s, Collections.singletonList(buf), encoder.getRegistry());
-            s = iter.hasNext() ? iter.next() : null;
-        }
-
-        if(s instanceof AmqpValue)
-        {
-            encoder.reset();
-            encoder.encodeObject(s);
-            Binary encodedOutput = encoder.getEncoding();
-            final QpidByteBuffer buf = QpidByteBuffer.wrap(encodedOutput.asByteBuffer());
-            bodySections.add(new AmqpValueSection((AmqpValue)s, Collections.singletonList(buf), encoder.getRegistry()));
-
-            contentSize = buf.remaining();
-            s = iter.hasNext() ? iter.next() : null;
-        }
-        else if(s instanceof Data)
-        {
-            do
-            {
-                encoder.reset();
-                encoder.encodeObject(s);
-                Binary encodedOutput = encoder.getEncoding();
-                final QpidByteBuffer buf = QpidByteBuffer.wrap(encodedOutput.asByteBuffer());
-                bodySections.add(new DataSection((Data)s, Collections.singletonList(buf), encoder.getRegistry()));
-
-                contentSize += buf.remaining();
-
-                s = iter.hasNext() ? iter.next() : null;
-            } while(s instanceof Data);
-        }
-        else if(s instanceof AmqpSequence)
-        {
-            do
-            {
-                encoder.reset();
-                encoder.encodeObject(s);
-                Binary encodedOutput = encoder.getEncoding();
-                final QpidByteBuffer buf = QpidByteBuffer.wrap(encodedOutput.asByteBuffer());
-                bodySections.add(new AmqpSequenceSection((AmqpSequence)s, Collections.singletonList(buf), encoder.getRegistry()));
-
-                contentSize += buf.remaining();
-                s = iter.hasNext() ? iter.next() : null;
-            }
-            while(s instanceof AmqpSequence);
-        }
-
-        if(s instanceof Footer)
-        {
-            encoder.reset();
-            encoder.encodeObject(s);
-            Binary encodedOutput = encoder.getEncoding();
-            final QpidByteBuffer buf = QpidByteBuffer.wrap(encodedOutput.asByteBuffer());
-            _footerSection = new FooterSection((Footer)s, Collections.singletonList(buf), encoder.getRegistry());
-        }
         _contentSize = contentSize;
-
+        _version = version;
     }
 
-    public Properties getProperties()
-    {
-        return _propertiesSection == null ? null : _propertiesSection.getValue();
-    }
-
-
-    public PropertiesSection getPropertiesSection()
-    {
-        return _propertiesSection;
-    }
-
-    public MessageMetaData_1_0(QpidByteBuffer[] fragments, SectionDecoder decoder, List<EncodingRetainingSection<?>> dataSections, long arrivalTime)
-    {
-        _version = VERSION_BYTE;
-        _arrivalTime = arrivalTime;
-        List<QpidByteBuffer> src = new ArrayList<>(fragments.length);
-        for(QpidByteBuffer buf : fragments)
-        {
-            src.add(buf.duplicate());
-        }
-
-        try
-        {
-            EncodingRetainingSection<?> s = decoder.readSection(src);
-            long contentSize = 0L;
-            if(s instanceof HeaderSection)
-            {
-                _headerSection = (HeaderSection) s;
-                s = QpidByteBufferUtils.hasRemaining(src) ? decoder.readSection(src) : null;
-            }
-
-            if(s instanceof DeliveryAnnotationsSection)
-            {
-                _deliveryAnnotationsSection = (DeliveryAnnotationsSection) s;
-                s = QpidByteBufferUtils.hasRemaining(src) ? decoder.readSection(src) : null;
-            }
-
-            if(s instanceof MessageAnnotationsSection)
-            {
-                _messageAnnotationsSection = (MessageAnnotationsSection) s;
-                s = QpidByteBufferUtils.hasRemaining(src) ? decoder.readSection(src) : null;
-            }
-
-            if(s instanceof PropertiesSection)
-            {
-                _propertiesSection = (PropertiesSection) s;
-                s = QpidByteBufferUtils.hasRemaining(src) ? decoder.readSection(src) : null;
-            }
-
-            if(s instanceof ApplicationPropertiesSection)
-            {
-                _applicationPropertiesSection = (ApplicationPropertiesSection) s;
-                s = QpidByteBufferUtils.hasRemaining(src) ? decoder.readSection(src) : null;
-            }
-
-            if(s instanceof AmqpValueSection)
-            {
-                contentSize = s.getEncodedSize();
-                dataSections.add(s);
-                s = QpidByteBufferUtils.hasRemaining(src) ? decoder.readSection(src) : null;
-            }
-            else if(s instanceof DataSection)
-            {
-                do
-                {
-                    contentSize += s.getEncodedSize();
-                    dataSections.add(s);
-                    s = QpidByteBufferUtils.hasRemaining(src) ? decoder.readSection(src) : null;
-                } while(s instanceof DataSection);
-            }
-            else if(s instanceof AmqpSequenceSection)
-            {
-                do
-                {
-                    contentSize += s.getEncodedSize();
-                    dataSections.add(s);
-                    s = QpidByteBufferUtils.hasRemaining(src) ? decoder.readSection(src) : null;
-                }
-                while(s instanceof AmqpSequenceSection);
-            }
-
-            if(s instanceof FooterSection)
-            {
-                _footerSection = (FooterSection) s;
-            }
-            _contentSize = contentSize;
-        }
-        catch (AmqpErrorException e)
-        {
-            _logger.error("Decoding read section error", e);
-            // TODO - fix error handling
-            throw new IllegalArgumentException(e);
-        }
-        finally
-        {
-            for(QpidByteBuffer buf : src)
-            {
-                buf.dispose();
-            }
-        }
-
-        _messageHeader = new MessageHeader_1_0();
-
-    }
-
-    private MessageMetaData_1_0(List<EncodingRetainingSection<?>> sections, long contentSize, int version, long arrivalTime)
+    private MessageMetaData_1_0(List<EncodingRetainingSection<?>> sections,
+                                long contentSize,
+                                int version,
+                                long arrivalTime)
     {
         _contentSize = contentSize;
         _version = version;
@@ -303,44 +134,52 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         Iterator<EncodingRetainingSection<?>> sectIter = sections.iterator();
 
         EncodingRetainingSection<?> section = sectIter.hasNext() ? sectIter.next() : null;
-        if(section instanceof HeaderSection)
+        if (section instanceof HeaderSection)
         {
             _headerSection = (HeaderSection) section;
             section = sectIter.hasNext() ? sectIter.next() : null;
         }
 
-        if(section instanceof DeliveryAnnotationsSection)
+        if (section instanceof DeliveryAnnotationsSection)
         {
             _deliveryAnnotationsSection = (DeliveryAnnotationsSection) section;
             section = sectIter.hasNext() ? sectIter.next() : null;
         }
 
-        if(section instanceof MessageAnnotationsSection)
+        if (section instanceof MessageAnnotationsSection)
         {
             _messageAnnotationsSection = (MessageAnnotationsSection) section;
             section = sectIter.hasNext() ? sectIter.next() : null;
         }
 
-        if(section instanceof PropertiesSection)
+        if (section instanceof PropertiesSection)
         {
             _propertiesSection = ((PropertiesSection) section);
             section = sectIter.hasNext() ? sectIter.next() : null;
         }
 
-        if(section instanceof ApplicationPropertiesSection)
+        if (section instanceof ApplicationPropertiesSection)
         {
             _applicationPropertiesSection = (ApplicationPropertiesSection) section;
             section = sectIter.hasNext() ? sectIter.next() : null;
         }
 
-        if(section instanceof FooterSection)
+        if (section instanceof FooterSection)
         {
             _footerSection = (FooterSection) section;
             section = sectIter.hasNext() ? sectIter.next() : null;
         }
+    }
 
-        _messageHeader = new MessageHeader_1_0();
 
+    public Properties getProperties()
+    {
+        return _propertiesSection == null ? null : _propertiesSection.getValue();
+    }
+
+    public PropertiesSection getPropertiesSection()
+    {
+        return _propertiesSection;
     }
 
 
@@ -354,27 +193,27 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     {
 
         long size = 17L;
-        if(_headerSection != null)
+        if (_headerSection != null)
         {
             size += _headerSection.getEncodedSize();
         }
-        if(_deliveryAnnotationsSection != null)
+        if (_deliveryAnnotationsSection != null)
         {
             size += _deliveryAnnotationsSection.getEncodedSize();
         }
-        if(_messageAnnotationsSection != null)
+        if (_messageAnnotationsSection != null)
         {
             size += _messageAnnotationsSection.getEncodedSize();
         }
-        if(_propertiesSection != null)
+        if (_propertiesSection != null)
         {
             size += _propertiesSection.getEncodedSize();
         }
-        if(_applicationPropertiesSection != null)
+        if (_applicationPropertiesSection != null)
         {
             size += _applicationPropertiesSection.getEncodedSize();
         }
-        if(_footerSection != null)
+        if (_footerSection != null)
         {
             size += _footerSection.getEncodedSize();
         }
@@ -387,31 +226,30 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         dest.put(VERSION_BYTE);
         dest.putLong(_arrivalTime);
         dest.putLong(_contentSize);
-        if(_headerSection != null)
+        if (_headerSection != null)
         {
             _headerSection.writeTo(dest);
         }
-        if(_deliveryAnnotationsSection != null)
+        if (_deliveryAnnotationsSection != null)
         {
             _deliveryAnnotationsSection.writeTo(dest);
         }
-        if(_messageAnnotationsSection != null)
+        if (_messageAnnotationsSection != null)
         {
             _messageAnnotationsSection.writeTo(dest);
         }
-        if(_propertiesSection != null)
+        if (_propertiesSection != null)
         {
             _propertiesSection.writeTo(dest);
         }
-        if(_applicationPropertiesSection != null)
+        if (_applicationPropertiesSection != null)
         {
             _applicationPropertiesSection.writeTo(dest);
         }
-        if(_footerSection != null)
+        if (_footerSection != null)
         {
             _footerSection.writeTo(dest);
         }
-
     }
 
     public int getContentSize()
@@ -430,34 +268,38 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     }
 
     @Override
-    public synchronized void  dispose()
+    public synchronized void dispose()
     {
-        if(_headerSection != null)
+        if (_headerSection != null)
         {
             _headerSection.dispose();
             _headerSection = null;
         }
-        if(_deliveryAnnotationsSection != null)
+        if (_deliveryAnnotationsSection != null)
         {
             _deliveryAnnotationsSection.dispose();
             _deliveryAnnotationsSection = null;
         }
-        if(_messageAnnotationsSection != null)
+        if (_messageAnnotationsSection != null)
         {
             _messageAnnotationsSection.dispose();
             _deliveryAnnotationsSection = null;
         }
-        if(_propertiesSection != null)
+        if (_propertiesSection != null)
         {
             _propertiesSection.dispose();
             _propertiesSection = null;
         }
-        if(_applicationPropertiesSection != null)
+        if (_applicationPropertiesSection != null)
         {
             _applicationPropertiesSection.dispose();
             _applicationPropertiesSection = null;
         }
-
+        if (_footerSection != null)
+        {
+            _footerSection.dispose();
+            _footerSection = null;
+        }
     }
 
     @Override
@@ -526,7 +368,6 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
                     buf.get();
                     arrivalTime = buf.getLong();
                     contentSize = buf.getLong();
-
                 }
                 else
                 {
@@ -537,31 +378,30 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
                 List<EncodingRetainingSection<?>> sections = sectionDecoder.parseAll(Collections.singletonList(buf));
 
-                if(versionByte == 0)
+                if (versionByte == 0)
                 {
                     Iterator<EncodingRetainingSection<?>> iter = sections.iterator();
-                    while(iter.hasNext())
+                    while (iter.hasNext())
                     {
                         final EncodingRetainingSection<?> section = iter.next();
-                        if(section instanceof DataSection || section instanceof AmqpValueSection || section instanceof AmqpSequenceSection)
+                        if (section instanceof DataSection
+                            || section instanceof AmqpValueSection
+                            || section instanceof AmqpSequenceSection)
                         {
                             contentSize += section.getEncodedSize();
                             iter.remove();
                             section.dispose();
                         }
                     }
-
                 }
 
                 return new MessageMetaData_1_0(sections, contentSize, (int) versionByte & 0xff, arrivalTime);
-
             }
             catch (AmqpErrorException e)
             {
                 //TODO
                 throw new ConnectionScopedRuntimeException(e);
             }
-
         }
     }
 
@@ -570,7 +410,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         public String getCorrelationId()
         {
-            if(_propertiesSection == null || _propertiesSection.getValue().getCorrelationId() == null)
+            if (_propertiesSection == null || _propertiesSection.getValue().getCorrelationId() == null)
             {
                 return null;
             }
@@ -583,14 +423,16 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         @Override
         public long getExpiration()
         {
-            final Date absoluteExpiryTime = _propertiesSection == null ? null : _propertiesSection.getValue().getAbsoluteExpiryTime();
-            if(absoluteExpiryTime != null)
+            final Date absoluteExpiryTime =
+                    _propertiesSection == null ? null : _propertiesSection.getValue().getAbsoluteExpiryTime();
+            if (absoluteExpiryTime != null)
             {
                 return absoluteExpiryTime.getTime();
             }
             else
             {
-                final Date creationTime = _propertiesSection == null ? null : _propertiesSection.getValue().getCreationTime();
+                final Date creationTime =
+                        _propertiesSection == null ? null : _propertiesSection.getValue().getCreationTime();
                 final UnsignedInteger ttl = _headerSection == null ? null : _headerSection.getValue().getTtl();
                 return ttl == null || creationTime == null ? 0L : ttl.longValue() + creationTime.getTime();
             }
@@ -598,7 +440,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         public String getMessageId()
         {
-            if(_propertiesSection == null || _propertiesSection.getValue().getMessageId() == null)
+            if (_propertiesSection == null || _propertiesSection.getValue().getMessageId() == null)
             {
                 return null;
             }
@@ -611,7 +453,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         public String getMimeType()
         {
 
-            if(_propertiesSection == null || _propertiesSection.getValue().getContentType() == null)
+            if (_propertiesSection == null || _propertiesSection.getValue().getContentType() == null)
             {
                 return null;
             }
@@ -628,7 +470,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         public byte getPriority()
         {
-            if(_headerSection == null || _headerSection.getValue().getPriority() == null)
+            if (_headerSection == null || _headerSection.getValue().getPriority() == null)
             {
                 return 4; //javax.jms.Message.DEFAULT_PRIORITY;
             }
@@ -640,7 +482,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         public long getTimestamp()
         {
-            if(_propertiesSection == null || _propertiesSection.getValue().getCreationTime() == null)
+            if (_propertiesSection == null || _propertiesSection.getValue().getCreationTime() == null)
             {
                 return 0L;
             }
@@ -648,7 +490,6 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             {
                 return _propertiesSection.getValue().getCreationTime().getTime();
             }
-
         }
 
 
@@ -658,13 +499,15 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             long notValidBefore;
             Object annotation;
 
-            if(_messageAnnotationsSection != null && (annotation = _messageAnnotationsSection.getValue().get(DELIVERY_TIME)) instanceof Number)
+            if (_messageAnnotationsSection != null && (annotation =
+                    _messageAnnotationsSection.getValue().get(DELIVERY_TIME)) instanceof Number)
             {
-                notValidBefore = ((Number)annotation).longValue();
+                notValidBefore = ((Number) annotation).longValue();
             }
-            else if(_messageAnnotationsSection != null && (annotation = _messageAnnotationsSection.getValue().get(NOT_VALID_BEFORE)) instanceof Number)
+            else if (_messageAnnotationsSection != null && (annotation =
+                    _messageAnnotationsSection.getValue().get(NOT_VALID_BEFORE)) instanceof Number)
             {
-                notValidBefore = ((Number)annotation).longValue();
+                notValidBefore = ((Number) annotation).longValue();
             }
             else
             {
@@ -676,13 +519,13 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         public String getType()
         {
             String subject = getSubject();
-            if(subject != null)
+            if (subject != null)
             {
                 return subject;
             }
 
             // Use legacy annotation if present and there was no subject
-            if(_messageAnnotationsSection == null || _messageAnnotationsSection.getValue().get(JMS_TYPE) == null)
+            if (_messageAnnotationsSection == null || _messageAnnotationsSection.getValue().get(JMS_TYPE) == null)
             {
                 return null;
             }
@@ -694,7 +537,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         public String getReplyTo()
         {
-            if(_propertiesSection == null || _propertiesSection.getValue().getReplyTo() == null)
+            if (_propertiesSection == null || _propertiesSection.getValue().getReplyTo() == null)
             {
                 return null;
             }
@@ -723,14 +566,14 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         public boolean containsHeaders(final Set<String> names)
         {
-            if(_applicationPropertiesSection == null)
+            if (_applicationPropertiesSection == null)
             {
                 return false;
             }
 
-            for(String key : names)
+            for (String key : names)
             {
-                if(!_applicationPropertiesSection.getValue().containsKey(key))
+                if (!_applicationPropertiesSection.getValue().containsKey(key))
                 {
                     return false;
                 }
@@ -741,7 +584,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         @Override
         public Collection<String> getHeaderNames()
         {
-            if(_applicationPropertiesSection == null)
+            if (_applicationPropertiesSection == null)
             {
                 return Collections.emptySet();
             }
@@ -765,9 +608,8 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         public Map<String, Object> getHeadersAsMap()
         {
-            return _applicationPropertiesSection == null ? new HashMap<String,Object>() : new HashMap<>(
+            return _applicationPropertiesSection == null ? new HashMap<String, Object>() : new HashMap<>(
                     _applicationPropertiesSection.getValue());
         }
     }
-
 }
