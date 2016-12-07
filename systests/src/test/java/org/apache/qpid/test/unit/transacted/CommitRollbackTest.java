@@ -528,6 +528,8 @@ public class CommitRollbackTest extends QpidBrokerTestCase
     public void testRollbackSoak() throws Exception
     {
         newConnection();
+        _consumer.close();
+
         final int rollbackTime = 2000;
         final int numberOfMessages = 1000;
         final int numberOfConsumers = 2;
