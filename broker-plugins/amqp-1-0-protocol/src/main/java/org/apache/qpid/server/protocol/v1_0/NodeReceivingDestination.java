@@ -27,6 +27,7 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
+import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -38,6 +39,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.util.Action;
 
 public class NodeReceivingDestination implements ReceivingDestination
 {
@@ -74,7 +76,9 @@ public class NodeReceivingDestination implements ReceivingDestination
         return OUTCOMES;
     }
 
-    public Outcome send(final Message_1_0 message, ServerTransaction txn)
+    public Outcome send(final Message_1_0 message,
+                        ServerTransaction txn,
+                        final Action<MessageInstance> action)
     {
         final InstanceProperties instanceProperties =
             new InstanceProperties()
@@ -102,7 +106,7 @@ public class NodeReceivingDestination implements ReceivingDestination
         String routingAddress;
         routingAddress = getRoutingAddress(message);
 
-        int enqueues = _destination.send(message, routingAddress, instanceProperties, txn, null);
+        int enqueues = _destination.send(message, routingAddress, instanceProperties, txn, action);
 
         if(enqueues == 0)
         {

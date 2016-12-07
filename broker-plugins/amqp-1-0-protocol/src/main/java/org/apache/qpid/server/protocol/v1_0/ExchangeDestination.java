@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -39,6 +40,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.util.Action;
 
 public class ExchangeDestination implements ReceivingDestination, SendingDestination
 {
@@ -74,7 +76,9 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
         return OUTCOMES;
     }
 
-    public Outcome send(final Message_1_0 message, ServerTransaction txn)
+    public Outcome send(final Message_1_0 message,
+                        ServerTransaction txn,
+                        final Action<MessageInstance> action)
     {
         final InstanceProperties instanceProperties =
             new InstanceProperties()
@@ -104,7 +108,7 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
                                       routingAddress,
                                       instanceProperties,
                                       txn,
-                                      null);
+                                      action);
 
         if(enqueues == 0)
         {

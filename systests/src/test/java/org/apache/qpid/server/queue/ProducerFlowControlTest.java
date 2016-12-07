@@ -44,6 +44,8 @@ import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.server.logging.AbstractTestLogging;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
@@ -336,9 +338,12 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         _consumerConnection.start();
         
         _consumer.receive();
-        
-        //perform a synchronous op on the connection
-        ((AMQSession<?,?>) _consumerSession).sync();
+
+        if(!isBroker10())
+        {
+            //perform a synchronous op on the connection
+            ((AMQSession<?, ?>) _consumerSession).sync();
+        }
 
         assertFalse("Queue should not be overfull", isFlowStopped(queueUrl));
 
@@ -386,10 +391,18 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         // close blocked producer session and connection
         _producerConnection.close();
 
-        // delete queue with a consumer session
-        ((AMQSession<?,?>) _consumerSession).sendQueueDelete(queueName);
+        if(!isBroker10())
+        {
+            // delete queue with a consumer session
+            ((AMQSession<?, ?>) _consumerSession).sendQueueDelete(queueName);
 
-        _consumer = _consumerSession.createConsumer(_queue);
+            _consumer = _consumerSession.createConsumer(_queue);
+        }
+        else
+        {
+            deleteEntityUsingAmqpManagement(getTestQueueName(), _consumerSession, "org.apache.qpid.Queue");
+            createTestQueue(_consumerSession);
+        }
         _consumerConnection.start();
 
         Message message = _consumer.receive(1000l);
@@ -403,12 +416,33 @@ public class ProducerFlowControlTest extends AbstractTestLogging
 
     private void createAndBindQueueWithFlowControlEnabled(Session session, String queueName, int capacity, int resumeCapacity, boolean durable, boolean autoDelete) throws Exception
     {
-        final Map<String,Object> arguments = new HashMap<String, Object>();
-        arguments.put("x-qpid-capacity",capacity);
-        arguments.put("x-qpid-flow-resume-capacity",resumeCapacity);
-        ((AMQSession<?,?>) session).createQueue(queueName, autoDelete, durable, false, arguments);
-        _queue = session.createQueue("direct://amq.direct/" + queueName + "/" + queueName + "?durable='" + durable + "'&autodelete='" + autoDelete + "'");
-        ((AMQSession<?,?>) session).declareAndBind((AMQDestination) _queue);
+        if(isBroker10())
+        {
+            final Map<String, Object> attributes = new HashMap<>();
+            attributes.put(org.apache.qpid.server.model.Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES, capacity);
+            attributes.put(org.apache.qpid.server.model.Queue.QUEUE_FLOW_RESUME_SIZE_BYTES, resumeCapacity);
+            attributes.put(org.apache.qpid.server.model.Queue.DURABLE, durable);
+            attributes.put(ConfiguredObject.LIFETIME_POLICY, autoDelete ? LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS.name() : LifetimePolicy.PERMANENT.name());
+            createEntityUsingAmqpManagement(getTestQueueName(), session, "org.apache.qpid.Queue", attributes);
+            _queue = session.createQueue(queueName);
+        }
+        else
+        {
+            final Map<String, Object> arguments = new HashMap<String, Object>();
+            arguments.put("x-qpid-capacity", capacity);
+            arguments.put("x-qpid-flow-resume-capacity", resumeCapacity);
+            ((AMQSession<?, ?>) session).createQueue(queueName, autoDelete, durable, false, arguments);
+            _queue = session.createQueue("direct://amq.direct/"
+                                         + queueName
+                                         + "/"
+                                         + queueName
+                                         + "?durable='"
+                                         + durable
+                                         + "'&autodelete='"
+                                         + autoDelete
+                                         + "'");
+            ((AMQSession<?, ?>) session).declareAndBind((AMQDestination) _queue);
+        }
     }
 
     private MessageSender sendMessagesAsync(final MessageProducer producer,
@@ -433,13 +467,20 @@ public class ProducerFlowControlTest extends AbstractTestLogging
 
             try
             {
-                ((AMQSession<?,?>)producerSession).sync();
-                // TODO: sync a second time in order to ensure that the client has received the flow command
-                // before continuing with the next message.  This is required because the Broker may legally
-                // send the flow command after the sync response. By sync'ing a second time we ensure that
-                // the client will has seen/acted on the flow command.  The test really ought not have this
-                // level of information.
-                ((AMQSession<?,?>)producerSession).sync();
+                if(!isBroker10())
+                {
+                    ((AMQSession<?,?>)producerSession).sync();
+                    // TODO: sync a second time in order to ensure that the client has received the flow command
+                    // before continuing with the next message.  This is required because the Broker may legally
+                    // send the flow command after the sync response. By sync'ing a second time we ensure that
+                    // the client will has seen/acted on the flow command.  The test really ought not have this
+                    // level of information.
+                    ((AMQSession<?,?>)producerSession).sync();
+                }
+                else
+                {
+                    producerSession.createTemporaryQueue().delete();
+                }
             }
             catch (QpidException e)
             {

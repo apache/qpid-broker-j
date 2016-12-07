@@ -438,15 +438,16 @@ public abstract class LinkEndpoint<T extends Link_1_0>
             if(_stopped)
             {
                 flow.setLinkCredit(UnsignedInteger.ZERO);
+                flow.setDrain(true);
                 _lastSentCreditLimit = _deliveryCount;
             }
             else
             {
                 flow.setLinkCredit(_linkCredit);
                 _lastSentCreditLimit = _linkCredit.add(_deliveryCount);
+                flow.setDrain(_drain);
             }
             flow.setAvailable(_available);
-            flow.setDrain(_drain);
             if(setTransactionId)
             {
                 flow.setProperties(Collections.singletonMap(Symbol.valueOf("txn-id"), _flowTransactionId));

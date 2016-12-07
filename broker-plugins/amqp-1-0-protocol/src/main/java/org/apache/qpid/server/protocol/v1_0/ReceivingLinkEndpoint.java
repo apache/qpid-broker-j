@@ -158,6 +158,10 @@ public class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLink_1_0>
         _remoteDrain = Boolean.TRUE.equals((Boolean) flow.getDrain());
         setAvailable(flow.getAvailable());
         setDeliveryCount(flow.getDeliveryCount());
+        if(isDrained())
+        {
+
+        }
     }
 
 

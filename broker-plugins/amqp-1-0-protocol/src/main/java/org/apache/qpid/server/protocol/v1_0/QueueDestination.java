@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
@@ -33,6 +34,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 import org.apache.qpid.server.security.SecurityToken;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.txn.ServerTransaction;
+import org.apache.qpid.server.util.Action;
 
 public class QueueDestination extends MessageSourceDestination implements SendingDestination, ReceivingDestination
 {
@@ -54,7 +56,9 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
         return OUTCOMES;
     }
 
-    public Outcome send(final Message_1_0 message, ServerTransaction txn)
+    public Outcome send(final Message_1_0 message,
+                        ServerTransaction txn,
+                        final Action<MessageInstance> action)
     {
 
         txn.enqueue(getQueue(),message, new ServerTransaction.EnqueueAction()
@@ -66,7 +70,7 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
             {
                 try
                 {
-                    getQueue().enqueue(message, null, records[0]);
+                    getQueue().enqueue(message, action, records[0]);
                 }
                 finally
                 {

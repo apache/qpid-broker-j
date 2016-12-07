@@ -205,7 +205,7 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
                             .checkAuthorizedMessagePrincipal(message.getMessageHeader().getUserId());
                     _destination.authorizePublish(session.getSecurityToken(), message);
 
-                    Outcome outcome = _destination.send(message, transaction);
+                    Outcome outcome = _destination.send(message, transaction, session.getCapacityCheckAction());
 
                     DeliveryState resultantState;
 

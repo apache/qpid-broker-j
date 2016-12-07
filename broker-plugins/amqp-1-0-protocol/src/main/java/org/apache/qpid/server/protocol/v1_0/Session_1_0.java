@@ -56,6 +56,7 @@ import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.logging.subjects.ChannelLogSubject;
 import org.apache.qpid.server.message.MessageDestination;
+import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.AbstractConfigurationChangeListener;
@@ -68,6 +69,7 @@ import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
@@ -102,6 +104,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.security.SecurityToken;
+import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -149,6 +152,8 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
 
     private short _receivingChannel;
     private short _sendingChannel = -1;
+
+    private final CapacityCheckAction _capacityCheckAction = new CapacityCheckAction();
 
 
     // has to be a power of two
@@ -1336,13 +1341,21 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
             for (ReceivingLinkEndpoint endpoint : _receivingLinkMap.values())
             {
                 StandardReceivingLink_1_0 link = (StandardReceivingLink_1_0) endpoint.getLink();
-                if (queue == link.getDestination())
+
+                if (isQueueDestinationForLink(queue, link.getDestination()))
                 {
                     endpoint.setStopped(true);
                 }
             }
 
         }
+    }
+
+    private boolean isQueueDestinationForLink(final Queue<?> queue, final ReceivingDestination recvDest)
+    {
+        return (recvDest instanceof NodeReceivingDestination && queue == ((NodeReceivingDestination) recvDest).getDestination())
+                || recvDest instanceof QueueDestination && queue == ((QueueDestination) recvDest).getQueue();
+
     }
 
     @Override
@@ -1370,7 +1383,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
             for (ReceivingLinkEndpoint endpoint : _receivingLinkMap.values())
             {
                 StandardReceivingLink_1_0 link = (StandardReceivingLink_1_0) endpoint.getLink();
-                if (queue == link.getDestination())
+                if (isQueueDestinationForLink(queue, link.getDestination()))
                 {
                     endpoint.setStopped(false);
                 }
@@ -1698,6 +1711,11 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
         _unacknowledgedMessages--;
     }
 
+    public CapacityCheckAction getCapacityCheckAction()
+    {
+        return _capacityCheckAction;
+    }
+
     private class ConsumerClosedListener extends AbstractConfigurationChangeListener
     {
         @Override
@@ -1816,5 +1834,16 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
         MessageSource source = getAddressSpace().getAttainedMessageSource(name);
         return source instanceof Queue ? (Queue<?>) source : null;
     }
-
+    private final class CapacityCheckAction implements Action<MessageInstance>
+    {
+        @Override
+        public void performAction(final MessageInstance entry)
+        {
+            TransactionLogResource queue = entry.getOwningResource();
+            if(queue instanceof CapacityChecker)
+            {
+                ((CapacityChecker)queue).checkCapacity(Session_1_0.this);
+            }
+        }
+    }
 }
