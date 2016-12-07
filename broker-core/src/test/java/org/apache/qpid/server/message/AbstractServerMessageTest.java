@@ -60,6 +60,12 @@ public class AbstractServerMessageTest extends QpidTestCase
         }
 
         @Override
+        public String getMessageType()
+        {
+            return "test";
+        }
+
+        @Override
         public long getArrivalTime()
         {
             return 0;

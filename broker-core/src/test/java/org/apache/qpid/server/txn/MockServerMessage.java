@@ -109,6 +109,12 @@ class MockServerMessage implements ServerMessage
     }
 
     @Override
+    public String getMessageType()
+    {
+        return "mock";
+    }
+
+    @Override
     public Collection<QpidByteBuffer> getContent(int offset, int length)
     {
         throw new UnsupportedOperationException();

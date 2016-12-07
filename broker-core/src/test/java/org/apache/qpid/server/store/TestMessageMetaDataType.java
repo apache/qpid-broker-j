@@ -124,6 +124,12 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         }
 
         @Override
+        public String getMessageType()
+        {
+            return "test";
+        }
+
+        @Override
         public AMQMessageHeader getMessageHeader()
         {
             return null;

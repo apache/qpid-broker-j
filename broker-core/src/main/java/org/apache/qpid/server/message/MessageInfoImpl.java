@@ -48,6 +48,7 @@ public class MessageInfoImpl implements MessageInfo
     private final Map<String, Object> _headers;
     private final String _initialRoutingAddress;
     private final Date _notValidBefore;
+    private final String _messageType;
 
     public MessageInfoImpl(final MessageInstance instance, final boolean includeHeaders)
     {
@@ -57,6 +58,7 @@ public class MessageInfoImpl implements MessageInfo
         _deliveredTo = instance.getAcquiringConsumer() == null ? null : String.valueOf(instance.getAcquiringConsumer()
                                                                                                 .getIdentifier());
         _arrivalTime = message.getArrivalTime() == 0L ? null : new Date(message.getArrivalTime());
+        _messageType = message.getMessageType();
         _persistent = message.isPersistent();
         _messageId = messageHeader.getMessageId();
         _expirationTime = messageHeader.getExpiration() == 0L ? null : new Date(messageHeader.getExpiration());
@@ -109,6 +111,12 @@ public class MessageInfoImpl implements MessageInfo
     public long getSize()
     {
         return _size;
+    }
+
+    @Override
+    public String getMessageType()
+    {
+        return _messageType;
     }
 
     @Override

@@ -45,6 +45,7 @@ import org.apache.qpid.util.ByteBufferUtils;
 
 public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, InternalMessageMetaData>
 {
+    private static final String NON_AMQP_MESSAGE = "Non-AMQP Message";
     private final Object _messageBody;
     private InternalMessageHeader _header;
     private String _initialRoutingAddress;
@@ -97,6 +98,12 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
     public long getExpiration()
     {
         return _header.getExpiration();
+    }
+
+    @Override
+    public String getMessageType()
+    {
+        return NON_AMQP_MESSAGE;
     }
 
     @Override

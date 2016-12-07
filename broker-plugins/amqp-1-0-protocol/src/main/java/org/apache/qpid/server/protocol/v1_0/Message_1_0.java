@@ -23,7 +23,6 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -33,7 +32,6 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v1_0.codec.QpidByteBufferUtils;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
-import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequenceSection;
@@ -45,7 +43,6 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSect
 import org.apache.qpid.server.protocol.v1_0.type.messaging.FooterSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.HeaderSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.NonEncodingRetainingSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.PropertiesSection;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -55,11 +52,12 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
 {
 
     private static final AMQPDescribedTypeRegistry DESCRIBED_TYPE_REGISTRY = AMQPDescribedTypeRegistry.newInstance()
-            .registerTransportLayer()
-            .registerMessagingLayer()
-            .registerTransactionLayer()
-            .registerSecurityLayer();
-    public static final MessageMetaData_1_0 DELETED_MESSAGE_METADATA = new MessageMetaData_1_0(null, null, null, null, null, null, 0L, 0L);
+                                                                                                      .registerTransportLayer()
+                                                                                                      .registerMessagingLayer()
+                                                                                                      .registerTransactionLayer()
+                                                                                                      .registerSecurityLayer();
+    private static final MessageMetaData_1_0 DELETED_MESSAGE_METADATA = new MessageMetaData_1_0(null, null, null, null, null, null, 0L, 0L);
+    private static final String AMQP_1_0 = "AMQP 1.0";
 
     public Message_1_0(final StoredMessage<MessageMetaData_1_0> storedMessage)
     {
@@ -100,6 +98,12 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
     public long getExpiration()
     {
         return getMessageMetaData().getMessageHeader().getExpiration();
+    }
+
+    @Override
+    public String getMessageType()
+    {
+        return AMQP_1_0;
     }
 
     public long getArrivalTime()

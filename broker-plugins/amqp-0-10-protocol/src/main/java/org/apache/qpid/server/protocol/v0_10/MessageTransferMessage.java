@@ -34,6 +34,7 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
 {
 
     private final static MessageMetaData_0_10 DELETED_MESSAGE_METADATA = new MessageMetaData_0_10(null, 0, 0);
+    private static final String AMQP_0_10 = "AMQP 0-10";
 
     public MessageTransferMessage(StoredMessage<MessageMetaData_0_10> storeMessage, Object connectionRef)
     {
@@ -66,6 +67,12 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
     public long getExpiration()
     {
         return getMetaData().getExpiration();
+    }
+
+    @Override
+    public String getMessageType()
+    {
+        return AMQP_0_10;
     }
 
     public long getArrivalTime()

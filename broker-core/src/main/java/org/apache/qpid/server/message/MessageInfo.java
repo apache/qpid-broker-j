@@ -30,6 +30,7 @@ public interface MessageInfo
 {
     long getId();
     long getSize();
+    String getMessageType();
     int getDeliveryCount();
     String getState();
     String getDeliveredTo();

@@ -35,6 +35,7 @@ import org.apache.qpid.server.store.TransactionLogResource;
 public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMetaData>
 {
     private static final MessageMetaData DELETED_MESSAGE_METADATA = new MessageMetaData(new MessagePublishInfo(), new ContentHeaderBody(new BasicContentHeaderProperties()), 0);
+    private static final String AMQP_0_9_1 = "AMQP 0-9-1";
 
     public AMQMessage(StoredMessage<MessageMetaData> handle)
     {
@@ -108,5 +109,9 @@ public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMet
         return getMessageHeader().getExpiration();
     }
 
-
+    @Override
+    public String getMessageType()
+    {
+        return AMQP_0_9_1;
+    }
 }

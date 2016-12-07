@@ -26,6 +26,8 @@ import org.apache.qpid.server.store.TransactionLogResource;
 
 public interface ServerMessage<T extends StorableMessageMetaData> extends EnqueueableMessage, MessageContentSource
 {
+    String getMessageType();
+
     String getInitialRoutingAddress();
 
     AMQMessageHeader getMessageHeader();
