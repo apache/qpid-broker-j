@@ -122,7 +122,7 @@ public class MessageConverter_from_1_0
                     ByteBuffer buf = ByteBuffer.wrap(bodyData);
                     for(EncodingRetainingSection<?> section : sections)
                     {
-                        buf.put(((Data)section).getValue().asByteBuffer());
+                        buf.put(((DataSection) section).getValue().asByteBuffer());
                     }
                     bodyObject = bodyData;
                 }
