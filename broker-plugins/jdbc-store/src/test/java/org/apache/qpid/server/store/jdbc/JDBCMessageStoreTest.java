@@ -45,7 +45,10 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
     {
         try
         {
-            shutdownDerby();
+            if (_connectionURL != null)
+            {
+                shutdownDerby(_connectionURL);
+            }
         }
         finally
         {
@@ -128,13 +131,12 @@ public class JDBCMessageStoreTest extends MessageStoreTestCase
         return DriverManager.getConnection(_connectionURL);
     }
 
-
-    private void shutdownDerby() throws SQLException
+    public static void shutdownDerby(String connectionURL) throws SQLException
     {
         Connection connection = null;
         try
         {
-            connection = DriverManager.getConnection("jdbc:derby:memory:/" + getTestName() + ";shutdown=true");
+            connection = DriverManager.getConnection(connectionURL);
         }
         catch(SQLException e)
         {

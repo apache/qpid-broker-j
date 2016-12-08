@@ -19,8 +19,8 @@
 package org.apache.qpid.server.store.jdbc;
 
 
+import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.CLOSED;
 import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.CONFIGURED;
-import static org.apache.qpid.server.store.AbstractJDBCConfigurationStore.State.OPEN;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -77,7 +77,7 @@ public class GenericJDBCConfigurationStore extends AbstractJDBCConfigurationStor
     public void init(ConfiguredObject<?> parent)
             throws StoreException
     {
-        changeState(CONFIGURED, OPEN);
+        changeState(CLOSED, CONFIGURED);
 
         _parent = parent;
 
