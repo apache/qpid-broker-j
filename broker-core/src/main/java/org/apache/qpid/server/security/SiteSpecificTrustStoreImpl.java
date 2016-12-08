@@ -227,7 +227,8 @@ public class SiteSpecificTrustStoreImpl
             SSLContext sslContext = SSLUtil.tryGetSSLContext();
             sslContext.init(new KeyManager[0], new TrustManager[] {new AlwaysTrustManager()}, null);
 
-            try(SSLSocket socket = (SSLSocket) sslContext.getSocketFactory().createSocket(url.getHost(), url.getPort()))
+            final int port = url.getPort() == -1 ? url.getDefaultPort() : url.getPort();
+            try(SSLSocket socket = (SSLSocket) sslContext.getSocketFactory().createSocket(url.getHost(), port))
             {
                 socket.startHandshake();
                 final Certificate[] certificateChain = socket.getSession().getPeerCertificates();
