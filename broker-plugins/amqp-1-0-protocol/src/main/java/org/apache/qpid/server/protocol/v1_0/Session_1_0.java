@@ -550,7 +550,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
             }
             deliveryId = deliveryId.add(UnsignedInteger.ONE);
         }
-        if(disposition.getSettled())
+        if(Boolean.TRUE.equals(disposition.getSettled()))
         {
             //TODO - check send flow
         }

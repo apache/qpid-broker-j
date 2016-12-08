@@ -208,7 +208,7 @@ public abstract class LinkEndpoint<T extends Link_1_0>
             _link.handle(unsettled.getDeliveryTag(), state, settled);
         }
 
-        if (settled)
+        if (Boolean.TRUE.equals(settled))
         {
             settle(unsettled.getDeliveryTag());
         }

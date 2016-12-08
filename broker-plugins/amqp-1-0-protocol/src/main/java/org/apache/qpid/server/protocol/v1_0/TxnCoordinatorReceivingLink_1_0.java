@@ -148,7 +148,7 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
                     {
                         Discharge discharge = (Discharge) command;
 
-                        discharge(_session.binaryToInteger(discharge.getTxnId()), discharge.getFail());
+                        discharge(_session.binaryToInteger(discharge.getTxnId()), Boolean.TRUE.equals(discharge.getFail()));
                         _endpoint.updateDisposition(deliveryTag, new Accepted(), true);
 
                     }
