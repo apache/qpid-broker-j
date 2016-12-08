@@ -51,9 +51,9 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
     private Session producerSession;
     private Queue queue;
     private Connection consumerConnection;
-    
-    
-    protected void setUp() throws Exception
+
+    @Override
+    public void setUp() throws Exception
     {
         super.setUp();
 
@@ -62,11 +62,12 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
 
         producerConnection.start();
 
-        consumerConnection = getConnectionWithPrefetch(1);
+        consumerConnection = getConnectionWithPrefetch(0);
 
     }
 
-    protected void tearDown() throws Exception
+    @Override
+    public void tearDown() throws Exception
     {
         producerConnection.close();
         consumerConnection.close();
@@ -134,24 +135,25 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         MessageConsumer consumer1 = cs1.createConsumer(queue);
         MessageConsumer consumer2 = cs2.createConsumer(queue);
 
+
         consumerConnection.start();
-        Message cs1Received = consumer1.receive(1000);
+        Message cs1Received = consumer1.receive(getReceiveTimeout());
         assertNotNull("Consumer 1 should have received first message", cs1Received);
 
-        Message cs2Received = consumer2.receive(1000);
+        Message cs2Received = consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 2 should have received first message", cs2Received);
 
         cs2Received.acknowledge();
 
-        Message cs2Received2 = consumer2.receive(1000);
+        Message cs2Received2 = consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 2 should have received second message", cs2Received2);
         assertEquals("Differing groups", cs2Received2.getStringProperty("group"),
                      cs2Received.getStringProperty("group"));
 
         cs1Received.acknowledge();
-        Message cs1Received2 = consumer1.receive(1000);
+        Message cs1Received2 = consumer1.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 1 should have received second message", cs1Received2);
         assertEquals("Differing groups", cs1Received2.getStringProperty("group"),
@@ -160,8 +162,8 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         cs1Received2.acknowledge();
         cs2Received2.acknowledge();
 
-        assertNull(consumer1.receive(1000));
-        assertNull(consumer2.receive(1000));
+        assertNull(consumer1.receive(getShortReceiveTimeout()));
+        assertNull(consumer2.receive(getShortReceiveTimeout()));
     }
 
     private void createQueueAndProducer(final boolean sharedGroups) throws QpidException, JMSException
@@ -249,11 +251,11 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         consumerConnection.start();
         MessageConsumer consumer2 = cs2.createConsumer(queue);
 
-        Message cs1Received = consumer1.receive(1000);
+        Message cs1Received = consumer1.receive(getReceiveTimeout());
         assertNotNull("Consumer 1 should have received first message", cs1Received);
         assertEquals("incorrect message received", 1, cs1Received.getIntProperty("msg"));
 
-        Message cs2Received = consumer2.receive(1000);
+        Message cs2Received = consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 2 should have received first message", cs2Received);
         assertEquals("incorrect message received", 3, cs2Received.getIntProperty("msg"));
@@ -266,7 +268,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
             cs2.commit();
         }
 
-        Message cs2Received2 = consumer2.receive(1000);
+        Message cs2Received2 = consumer2.receive(getShortReceiveTimeout());
 
         assertNull("Consumer 2 should not yet have received a second message", cs2Received2);
 
@@ -280,7 +282,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         {
             cs1.commit();
         }
-        Message cs2Received3 = consumer2.receive(1000);
+        Message cs2Received3 = consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 2 should have received second message", cs2Received3);
         assertEquals("Unexpected group", "ONE", cs2Received3.getStringProperty("group"));
@@ -296,7 +298,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         }
 
 
-        Message cs2Received4 = consumer2.receive(1000);
+        Message cs2Received4 = consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 2 should have received third message", cs2Received4);
         assertEquals("Unexpected group", "ONE", cs2Received4.getStringProperty("group"));
@@ -310,7 +312,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
             cs2.commit();
         }
 
-        assertNull(consumer2.receive(1000));
+        assertNull(consumer2.receive(getShortReceiveTimeout()));
     }
 
 
@@ -369,16 +371,16 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
 
         MessageConsumer consumer2 = cs2.createConsumer(queue);
 
-        Message cs1Received = consumer1.receive(1000);
+        Message cs1Received = consumer1.receive(getReceiveTimeout());
         assertNotNull("Consumer 1 should have received its first message", cs1Received);
         assertEquals("incorrect message received", 1, cs1Received.getIntProperty("msg"));
 
-        Message received = consumer2.receive(1000);
+        Message received = consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 2 should have received its first message", received);
         assertEquals("incorrect message received", 3, received.getIntProperty("msg"));
 
-        Message received2 = consumer2.receive(1000);
+        Message received2 = consumer2.receive(getShortReceiveTimeout());
 
         assertNull("Consumer 2 should not yet have received second message", received2);
 
@@ -393,7 +395,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
             cs2.commit();
         }
 
-        received = consumer2.receive(1000);
+        received = consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 2 should now have received second message", received);
         assertEquals("Unexpected group", "ONE", received.getStringProperty("group"));
@@ -410,7 +412,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
             cs2.commit();
         }
 
-        received = consumer2.receive(1000);
+        received = consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 2 should have received a third message", received);
         assertEquals("Unexpected group", "ONE", received.getStringProperty("group"));
@@ -425,7 +427,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
             cs2.commit();
         }
 
-        received = consumer2.receive(1000);
+        received = consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 2 should have received a fourth message", received);
         assertEquals("Unexpected group", "ONE", received.getStringProperty("group"));
@@ -440,7 +442,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
             cs2.commit();
         }
 
-        assertNull(consumer2.receive(1000));
+        assertNull(consumer2.receive(getShortReceiveTimeout()));
     }
 
     public void testGroupAssignmentSurvivesEmpty() throws JMSException, QpidException
@@ -478,11 +480,11 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
 
         MessageConsumer consumer2 = cs2.createConsumer(queue);
 
-        Message cs1Received = consumer1.receive(1000);
+        Message cs1Received = consumer1.receive(getReceiveTimeout());
         assertNotNull("Consumer 1 should have received its first message", cs1Received);
         assertEquals("incorrect message received", 1, cs1Received.getIntProperty("msg"));
 
-        Message cs2Received = consumer2.receive(1000);
+        Message cs2Received = consumer2.receive(getReceiveTimeout());
 
         assertNotNull("Consumer 2 should have received its first message", cs2Received);
         assertEquals("incorrect message received", 2, cs2Received.getIntProperty("msg"));
@@ -496,7 +498,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
             cs1.commit();
         }
 
-        cs1Received = consumer1.receive(1000);
+        cs1Received = consumer1.receive(getReceiveTimeout());
         assertNotNull("Consumer 1 should have received its second message", cs1Received);
         assertEquals("incorrect message received", 3, cs1Received.getIntProperty("msg"));
 
@@ -514,7 +516,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
             {
                 cs2.commit();
             }
-            cs2Received = consumer2.receive(1000);
+            cs2Received = consumer2.receive(getReceiveTimeout());
 
             assertNotNull("Consumer 2 should have received its second message", cs2Received);
             assertEquals("incorrect message received", 4, cs2Received.getIntProperty("msg"));
@@ -538,7 +540,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
             {
                 cs2.commit();
             }
-            cs2Received = consumer2.receive(1000);
+            cs2Received = consumer2.receive(getShortReceiveTimeout());
 
             assertNull("Consumer 2 should not have received a second message", cs2Received);
 
@@ -551,7 +553,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
                 cs1.commit();
             }
 
-            cs1Received = consumer1.receive(1000);
+            cs1Received = consumer1.receive(getReceiveTimeout());
             assertNotNull("Consumer 1 should have received its third message", cs1Received);
             assertEquals("incorrect message received", 4, cs1Received.getIntProperty("msg"));
 
@@ -575,6 +577,9 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
      */
     public void testSingleSharedGroupWithMultipleConsumers() throws Exception
     {
+
+        consumerConnection = getConnectionWithPrefetch(1);
+
         createQueueAndProducer(true);
 
         int numMessages = 100;
@@ -604,9 +609,9 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         producerSession.close();
         producerConnection.close();
 
-        assertTrue("Mesages not all recieved in the allowed timeframe", groupingTestMessageListener.waitForLatch(30));
+        assertTrue("Mesages not all received in the allowed timeframe", groupingTestMessageListener.waitForLatch(30));
         assertEquals("Unexpected concurrent processing of messages for the group", 0, groupingTestMessageListener.getConcurrentProcessingCases());
-        assertNull("Unexpecte throwable in message listeners", groupingTestMessageListener.getThrowable());
+        assertNull("Unexpected throwable in message listeners", groupingTestMessageListener.getThrowable());
     }
 
     public static class SharedGroupTestMessageListener implements MessageListener
