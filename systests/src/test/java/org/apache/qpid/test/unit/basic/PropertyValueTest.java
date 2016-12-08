@@ -407,9 +407,10 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
 
     void check() throws JMSException, URISyntaxException
     {
-        List<String> actual = new ArrayList<String>();
+        List<String> actual = new ArrayList<>();
         for (TextMessage m : received)
         {
+            getLogger().debug("Checking : message : {} text payload: {}", m, m.getText());
             actual.add(m.getText());
 
             // Check Properties
@@ -429,7 +430,7 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
 
             // Queue
             String replyToIndex = m.getStringProperty("ReplyToIndex");
-            Assert.assertEquals("Check ReplyTo properties are correctly transported", _replyToDestinations.get(replyToIndex), m.getJMSReplyTo());
+            Assert.assertEquals("Check ReplyTo properties are correctly transported :" + replyToIndex + " : " + _replyToDestinations, _replyToDestinations.get(replyToIndex), m.getJMSReplyTo());
 
             Assert.assertEquals("Check Type properties are correctly transported", "Test", m.getJMSType());
 
