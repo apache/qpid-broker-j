@@ -75,12 +75,11 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
     private void init(Connection connection) throws Exception
     {
         _connection = connection;
-        _session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        _session = connection.createSession(true, Session.SESSION_TRANSACTED);
         _destination = createTestQueue(_session);
 
         // set up a slow consumer
-        connection.start()
-        ;
+        connection.start();
         _session.createConsumer(_destination).setMessageListener(this);
     }
 
@@ -325,7 +324,7 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
                 }
 
                 int count = _count;
-                send(count);
+                send(count, run);
                 waitFor(count);
                 check();
                 _logger.info("Completed without failure");
@@ -341,13 +340,13 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
         }
     }
 
-    void send(int count) throws JMSException
+    void send( int count, final int iteration) throws JMSException
     {
         // create a publisher
         MessageProducer producer = _session.createProducer(_destination);
         for (int i = 0; i < count; i++)
         {
-            String text = "Message " + i;
+            String text = "Message " + iteration;
             messages.add(text);
             Message m = _session.createTextMessage(text);
 
@@ -391,10 +390,11 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
 
             _logger.debug("Sending Msg:" + m);
             producer.send(m);
+            _session.commit();
         }
     }
 
-    void waitFor(int count) throws InterruptedException
+    void waitFor(int count) throws Exception
     {
         synchronized (received)
         {
@@ -403,6 +403,7 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
                 received.wait();
             }
         }
+        _session.commit();
     }
 
     void check() throws JMSException, URISyntaxException
