@@ -103,6 +103,7 @@ public abstract class LinkEndpoint<T extends Link_1_0>
         {
             _stopped = stopped;
             _stoppedUpdated = true;
+            sendFlowConditional();
         }
     }
 
