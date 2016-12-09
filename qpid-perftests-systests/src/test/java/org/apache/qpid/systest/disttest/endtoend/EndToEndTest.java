@@ -29,20 +29,26 @@ import static org.apache.qpid.disttest.ControllerRunner.OUTPUT_DIR_PROP;
 import static org.apache.qpid.disttest.ControllerRunner.TEST_CONFIG_PROP;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.qpid.disttest.ControllerRunner;
 import org.apache.qpid.disttest.DistributedTestException;
+import org.apache.qpid.disttest.controller.config.QueueConfig;
 import org.apache.qpid.disttest.jms.QpidQueueCreatorFactory;
 import org.apache.qpid.disttest.jms.QpidRestAPIQueueCreator;
 import org.apache.qpid.disttest.message.ParticipantAttribute;
 import org.apache.qpid.disttest.results.aggregation.TestResultAggregator;
-import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.util.FileUtils;
 
 public class EndToEndTest extends QpidBrokerTestCase
@@ -56,6 +62,7 @@ public class EndToEndTest extends QpidBrokerTestCase
     private static final int NUMBER_OF_SUMMARIES = 3;
 
     private File _outputDir;
+    private File _jndiConfigFile;
 
     @Override
     public void setUp() throws Exception
@@ -68,6 +75,10 @@ public class EndToEndTest extends QpidBrokerTestCase
         setSystemProperty(QpidQueueCreatorFactory.QUEUE_CREATOR_CLASS_NAME_SYSTEM_PROPERTY, QpidRestAPIQueueCreator.class.getName());
         _outputDir = createTemporaryOutputDirectory();
         assertTrue("Output dir must not exist", _outputDir.isDirectory());
+        _jndiConfigFile = getJNDIPropertiesFile();
+        QpidRestAPIQueueCreator queueCreator = new QpidRestAPIQueueCreator();
+        QueueConfig queueConfig = new QueueConfig("controllerqueue", true, Collections.<String, Object>emptyMap());
+        queueCreator.createQueues(null, null, Collections.<QueueConfig>singletonList(queueConfig));
     }
 
     @Override
@@ -78,6 +89,10 @@ public class EndToEndTest extends QpidBrokerTestCase
             if (_outputDir != null && _outputDir.exists())
             {
                FileUtils.delete(_outputDir, true);
+            }
+            if (_jndiConfigFile != null && !new File(JNDI_CONFIG_FILE).equals(_jndiConfigFile))
+            {
+                FileUtils.delete(_jndiConfigFile, true);
             }
         }
         finally
@@ -90,7 +105,7 @@ public class EndToEndTest extends QpidBrokerTestCase
     {
         Map<String, String> arguments = new HashMap<>();
         arguments.put(TEST_CONFIG_PROP, TEST_CONFIG_ITERATIONS);
-        arguments.put(JNDI_CONFIG_PROP, JNDI_CONFIG_FILE);
+        arguments.put(JNDI_CONFIG_PROP, _jndiConfigFile.getAbsolutePath());
         arguments.put(OUTPUT_DIR_PROP, _outputDir.getAbsolutePath());
         arguments.put(HILL_CLIMB, "false");
 
@@ -116,7 +131,7 @@ public class EndToEndTest extends QpidBrokerTestCase
     {
         Map<String, String> arguments = new HashMap<>();
         arguments.put(TEST_CONFIG_PROP, TEST_CONFIG_MANYPARTICIPANTS);
-        arguments.put(JNDI_CONFIG_PROP, JNDI_CONFIG_FILE);
+        arguments.put(JNDI_CONFIG_PROP, _jndiConfigFile.getAbsolutePath());
         arguments.put(OUTPUT_DIR_PROP, _outputDir.getAbsolutePath());
         arguments.put(HILL_CLIMB, "false");
 
@@ -176,7 +191,7 @@ public class EndToEndTest extends QpidBrokerTestCase
     {
         Map<String, String> arguments = new HashMap<>();
         arguments.put(TEST_CONFIG_PROP, TEST_CONFIG_HILLCLIMBING);
-        arguments.put(JNDI_CONFIG_PROP, JNDI_CONFIG_FILE);
+        arguments.put(JNDI_CONFIG_PROP, _jndiConfigFile.getAbsolutePath());
         arguments.put(OUTPUT_DIR_PROP, _outputDir.getAbsolutePath());
         arguments.put(HILL_CLIMB, "true");
 
@@ -216,7 +231,7 @@ public class EndToEndTest extends QpidBrokerTestCase
     {
         Map<String, String> arguments = new HashMap<>();
         arguments.put(TEST_CONFIG_PROP, TEST_CONFIG_ERROR);
-        arguments.put(JNDI_CONFIG_PROP, JNDI_CONFIG_FILE);
+        arguments.put(JNDI_CONFIG_PROP, _jndiConfigFile.getAbsolutePath());
         arguments.put(OUTPUT_DIR_PROP, _outputDir.getAbsolutePath());
 
         try
@@ -327,4 +342,34 @@ public class EndToEndTest extends QpidBrokerTestCase
         return csvDir;
     }
 
+    private File getJNDIPropertiesFile() throws Exception
+    {
+        if (isBroker10())
+        {
+            Map<String,String> options = new LinkedHashMap<>();
+            options.put("amqp.vhost", "test");
+            options.put("jms.clientID", "clientid");
+            options.put("jms.username", GUEST_USERNAME);
+            options.put("jms.password", GUEST_PASSWORD);
+
+            StringBuilder stem = new StringBuilder("amqp://localhost:").append(System.getProperty("test.port"));
+            appendOptions(options, stem);
+
+            Properties properties = new Properties();
+            properties.put("connectionfactory.connectionfactory", stem.toString());
+            properties.put("java.naming.factory.initial", "org.apache.qpid.jms.jndi.JmsInitialContextFactory");
+            properties.put("queue.controllerqueue", "controllerqueue");
+
+            File propertiesFile = TestFileUtils.createTempFile(this, ".jndi.properties");
+            try(OutputStream os = new FileOutputStream(propertiesFile))
+            {
+                properties.store(os, null);
+            }
+            return propertiesFile;
+        }
+        else
+        {
+            return new File(JNDI_CONFIG_FILE);
+        }
+    }
 }

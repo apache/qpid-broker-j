@@ -309,7 +309,7 @@ public class QpidBrokerTestCase extends QpidTestCase
         return (ConnectionFactory) getInitialContext().lookup(factoryName);
     }
 
-    private void appendOptions(final Map<String, String> actualOptions, final StringBuilder stem)
+    protected void appendOptions(final Map<String, String> actualOptions, final StringBuilder stem)
     {
         boolean first = true;
         for(Map.Entry<String, String> option : actualOptions.entrySet())
