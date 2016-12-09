@@ -40,9 +40,6 @@ org.apache.qpid.systest.rest.PublishMessageRestTest#testPublishMessageWithProper
 // the received message is being treated as an object message (because it lacks the necessary JMS annotation?)
 org.apache.qpid.systest.rest.PublishMessageRestTest#testPublishMapMessage
 
-// Tests failing waiting for messages - needs investigation
-org.apache.qpid.test.unit.transacted.CommitRollbackTest#testSend2ThenCloseAfter1andTryAgain
-
 // this test fails - likely a client bug with the modification racing the send
 org.apache.qpid.test.unit.basic.BytesMessageTest#testModificationAfterSend
 
