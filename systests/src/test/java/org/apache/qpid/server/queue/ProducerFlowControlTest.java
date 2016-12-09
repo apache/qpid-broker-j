@@ -53,8 +53,6 @@ public class ProducerFlowControlTest extends AbstractTestLogging
 {
     private static final Logger _logger = LoggerFactory.getLogger(ProducerFlowControlTest.class);
 
-    private static final int TIMEOUT = 10000;
-
     private Connection _producerConnection;
     private Connection _consumerConnection;
     private Session _producerSession;
@@ -163,32 +161,6 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         assertEquals("Did not find correct number of UNDERFULL queue underfull messages", 1, results.size());
     }
 
-
-    public void testClientLogMessages() throws Exception
-    {
-        String queueName = getTestQueueName();
-
-        setTestClientSystemProperty("qpid.flow_control_wait_failure","3000");
-        setTestClientSystemProperty("qpid.flow_control_wait_notify_period","1000");
-
-        Session session = _producerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
-        createAndBindQueueWithFlowControlEnabled(session, queueName, 1000, 800);
-        _producer = session.createProducer(_queue);
-
-        // try to send 5 messages (should block after 4)
-        MessageSender sender = sendMessagesAsync(_producer, session, 5, 50L);
-
-        List<String> results = waitAndFindMatches("Message send delayed by", TIMEOUT);
-        assertTrue("No delay messages logged by client",results.size()!=0);
-
-        List<String> failedMessages = waitAndFindMatches("Message send failed due to timeout waiting on broker enforced"
-                                                  + " flow control", TIMEOUT);
-        assertEquals("Incorrect number of send failure messages logged by client (got " + results.size() + " delay "
-                     + "messages)",1,failedMessages.size());
-    }
-
-
     public void testFlowControlOnCapacityResumeEqual() throws Exception
     {
         String queueName = getTestQueueName();
@@ -266,30 +238,6 @@ public class ProducerFlowControlTest extends AbstractTestLogging
 
     }
 
-    public void testSendTimeout() throws Exception
-    {
-        String queueName = getTestQueueName();
-        final String expectedMsg = isBroker010() ? "Exception when sending message:timed out waiting for message credit"
-                : "Unable to send message for 3 seconds due to broker enforced flow control";
-
-        setTestClientSystemProperty("qpid.flow_control_wait_failure","3000");
-        Session session = _producerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
-        createAndBindQueueWithFlowControlEnabled(_producerSession, queueName, 1000, 800);
-        _producer = session.createProducer(_queue);
-
-        // try to send 5 messages (should block after 4)
-        MessageSender sender = sendMessagesAsync(_producer, session, 5, 100L);
-
-        Exception e = sender.awaitSenderException(10000);
-
-        assertNotNull("No timeout exception on sending", e);
-
-
-        assertEquals("Unexpected exception reason", expectedMsg, e.getMessage());
-
-    }
-
     public void testFlowControlAttributeModificationViaREST() throws Exception
     {
         String queueName = getTestQueueName();
@@ -305,11 +253,11 @@ public class ProducerFlowControlTest extends AbstractTestLogging
                      ((Number) queueAttributes.get(org.apache.qpid.server.model.Queue.QUEUE_FLOW_CONTROL_SIZE_BYTES)).intValue());
         assertEquals("FlowResumeCapacity was not the expected value", 0,
                      ((Number) queueAttributes.get(org.apache.qpid.server.model.Queue.QUEUE_FLOW_RESUME_SIZE_BYTES)).intValue());
-        
+
         //set new values that will cause flow control to be active, and the queue to become overfull after 1 message is sent
         setFlowLimits(queueUrl, 250, 250);
         assertFalse("Queue should not be overfull", isFlowStopped(queueUrl));
-        
+
         // try to send 2 messages (should block after 1)
         sendMessagesAsync(_producer, _producerSession, 2, 50L);
 
@@ -318,9 +266,10 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         //check only 1 message was sent, and queue is overfull
         assertEquals("Incorrect number of message sent before blocking", 1, _sentMessages.get());
         assertTrue("Queue should be overfull", isFlowStopped(queueUrl));
-        
+
+        int queueDepthBytes = getQueueDepthBytes(queueName);
         //raise the attribute values, causing the queue to become underfull and allow the second message to be sent.
-        setFlowLimits(queueUrl, 300, 300);
+        setFlowLimits(queueUrl, queueDepthBytes + 200, queueDepthBytes);
 
         waitForFlowControlAndMessageCount(queueUrl, 2, 2000);
 
@@ -329,7 +278,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         assertTrue("Queue should be overfull", isFlowStopped(queueUrl));
 
         //raise capacity above queue depth, check queue remains overfull as FlowResumeCapacity still exceeded
-        setFlowLimits(queueUrl, 700, 300);
+        setFlowLimits(queueUrl, 2 * queueDepthBytes + 100, queueDepthBytes);
         assertTrue("Queue should be overfull", isFlowStopped(queueUrl));
 
         //receive a message, check queue becomes underfull
@@ -337,7 +286,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         _consumer = _consumerSession.createConsumer(_queue);
         _consumerConnection.start();
         
-        _consumer.receive();
+        assertNotNull("Should have received first message", _consumer.receive(RECEIVE_TIMEOUT));
 
         if(!isBroker10())
         {
@@ -345,9 +294,17 @@ public class ProducerFlowControlTest extends AbstractTestLogging
             ((AMQSession<?, ?>) _consumerSession).sync();
         }
 
-        assertFalse("Queue should not be overfull", isFlowStopped(queueUrl));
+        _restTestHelper.waitForAttributeChanged(queueUrl, org.apache.qpid.server.model.Queue.QUEUE_FLOW_STOPPED, false);
 
-        _consumer.receive();
+        assertNotNull("Should have received second message", _consumer.receive(RECEIVE_TIMEOUT));
+    }
+
+    private int getQueueDepthBytes(final String queueName) throws IOException
+    {
+        // On AMQP 1.0 the size of the message on the broker is not necessarily the size of the message we sent. Therefore, get the actual size from the broker
+        final String requestUrl = String.format("queue/%1$s/%1$s/%2$s/getStatistics?statistics=[\"queueDepthBytes\"]", TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, queueName);
+        final Map<String, Object> queueAttributes = _restTestHelper.getJsonAsMap(requestUrl);
+        return ((Number) queueAttributes.get("queueDepthBytes")).intValue();
     }
 
     private void waitForFlowControlAndMessageCount(final String queueUrl, final int messageCount, final int timeout) throws InterruptedException, IOException
@@ -395,14 +352,13 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         {
             // delete queue with a consumer session
             ((AMQSession<?, ?>) _consumerSession).sendQueueDelete(queueName);
-
-            _consumer = _consumerSession.createConsumer(_queue);
         }
         else
         {
             deleteEntityUsingAmqpManagement(getTestQueueName(), _consumerSession, "org.apache.qpid.Queue");
             createTestQueue(_consumerSession);
         }
+        _consumer = _consumerSession.createConsumer(_queue);
         _consumerConnection.start();
 
         Message message = _consumer.receive(1000l);
@@ -455,60 +411,6 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         return sender;
     }
 
-    private void sendMessages(MessageProducer producer, Session producerSession, int numMessages, long sleepPeriod)
-            throws JMSException
-    {
-
-        for (int msg = 0; msg < numMessages; msg++)
-        {
-            producer.send(nextMessage(msg, producerSession));
-            _sentMessages.incrementAndGet();
-
-
-            try
-            {
-                if(!isBroker10())
-                {
-                    ((AMQSession<?,?>)producerSession).sync();
-                    // TODO: sync a second time in order to ensure that the client has received the flow command
-                    // before continuing with the next message.  This is required because the Broker may legally
-                    // send the flow command after the sync response. By sync'ing a second time we ensure that
-                    // the client will has seen/acted on the flow command.  The test really ought not have this
-                    // level of information.
-                    ((AMQSession<?,?>)producerSession).sync();
-                }
-                else
-                {
-                    producerSession.createTemporaryQueue().delete();
-                }
-            }
-            catch (QpidException e)
-            {
-                _logger.error("Error performing sync", e);
-                throw new RuntimeException(e);
-            }
-
-            try
-            {
-                Thread.sleep(sleepPeriod);
-            }
-            catch (InterruptedException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    private static final byte[] BYTE_300 = new byte[300];
-
-    private Message nextMessage(int msg, Session producerSession) throws JMSException
-    {
-        BytesMessage send = producerSession.createBytesMessage();
-        send.writeBytes(BYTE_300);
-        send.setIntProperty("msg", msg);
-
-        return send;
-    }
 
     private class MessageSender implements Runnable
     {
@@ -540,10 +442,59 @@ public class ProducerFlowControlTest extends AbstractTestLogging
             }
         }
 
-        public Exception awaitSenderException(long timeout) throws InterruptedException
+        private void sendMessages(MessageProducer producer, Session producerSession, int numMessages, long sleepPeriod)
+                throws JMSException
         {
-            _exceptionThrownLatch.await(timeout, TimeUnit.MILLISECONDS);
-            return _exception;
+
+            for (int msg = 0; msg < numMessages; msg++)
+            {
+                producer.send(nextMessage(msg, producerSession));
+                _sentMessages.incrementAndGet();
+
+
+                try
+                {
+                    if(!isBroker10())
+                    {
+                        ((AMQSession<?,?>)producerSession).sync();
+                        // TODO: sync a second time in order to ensure that the client has received the flow command
+                        // before continuing with the next message.  This is required because the Broker may legally
+                        // send the flow command after the sync response. By sync'ing a second time we ensure that
+                        // the client will has seen/acted on the flow command.  The test really ought not have this
+                        // level of information.
+                        ((AMQSession<?,?>)producerSession).sync();
+                    }
+                    else
+                    {
+                        producerSession.createTemporaryQueue().delete();
+                    }
+                }
+                catch (QpidException e)
+                {
+                    _logger.error("Error performing sync", e);
+                    throw new RuntimeException(e);
+                }
+
+                try
+                {
+                    Thread.sleep(sleepPeriod);
+                }
+                catch (InterruptedException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        private final byte[] BYTE_300 = new byte[300];
+
+        private Message nextMessage(int msg, Session producerSession) throws JMSException
+        {
+            BytesMessage send = producerSession.createBytesMessage();
+            send.writeBytes(BYTE_300);
+            send.setIntProperty("msg", msg);
+
+            return send;
         }
     }
 }

@@ -35,9 +35,9 @@ import org.apache.qpid.client.AMQSession_0_8;
 import org.apache.qpid.client.message.AbstractJMSMessage;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
-public class FlowControlTest extends QpidBrokerTestCase
+public class ConsumerFlowControlTest extends QpidBrokerTestCase
 {
-    private static final Logger _logger = LoggerFactory.getLogger(FlowControlTest.class);
+    private static final Logger _logger = LoggerFactory.getLogger(ConsumerFlowControlTest.class);
 
     private Connection _clientConnection;
     private Session _clientSession;
@@ -168,7 +168,7 @@ public class FlowControlTest extends QpidBrokerTestCase
         assertEquals("Messages in wrong order", 3, r3.getIntProperty("msg"));
 
         r2.acknowledge();
-        r3.acknowledge();                                                                 
+        r3.acknowledge();
         recv1.close();
         recv2.close();
         consumerSession1.close();
