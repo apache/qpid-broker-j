@@ -64,6 +64,12 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
         return new AMQMessage(convertToStoredMessage(serverMsg), null);
     }
 
+    @Override
+    public void dispose(final AMQMessage message)
+    {
+
+    }
+
     private StoredMessage<MessageMetaData> convertToStoredMessage(final Message_1_0 serverMsg)
     {
         Object bodyObject = MessageConverter_from_1_0.convertBodyToObject(serverMsg);

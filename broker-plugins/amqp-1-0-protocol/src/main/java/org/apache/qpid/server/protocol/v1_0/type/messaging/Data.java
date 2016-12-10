@@ -52,10 +52,7 @@ public class Data implements NonEncodingRetainingSection<Binary>
     @Override
     public DataSection createEncodingRetainingSection(final SectionEncoder encoder)
     {
-        encoder.reset();
-        encoder.encodeObject(this);
-        Binary encodedOutput = encoder.getEncoding();
-        final QpidByteBuffer buf = QpidByteBuffer.wrap(encodedOutput.asByteBuffer());
+        final QpidByteBuffer buf = encoder.encodeObject(this);
         return new DataSection(this, Collections.singletonList(buf), encoder.getRegistry());
     }
 }

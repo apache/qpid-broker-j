@@ -68,6 +68,12 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
         return new AMQMessage(convertToStoredMessage(serverMsg), null);
     }
 
+    @Override
+    public void dispose(final AMQMessage message)
+    {
+
+    }
+
     private StoredMessage<MessageMetaData> convertToStoredMessage(final InternalMessage serverMsg)
     {
         final byte[] messageContent = convertToBody(serverMsg.getMessageBody());

@@ -28,7 +28,6 @@ import java.util.Collections;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
-import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedByte;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
@@ -159,10 +158,7 @@ public class Header implements NonEncodingRetainingSection<Header>
     @Override
     public HeaderSection createEncodingRetainingSection(final SectionEncoder encoder)
     {
-        encoder.reset();
-        encoder.encodeObject(this);
-        Binary encodedOutput = encoder.getEncoding();
-        final QpidByteBuffer buf = QpidByteBuffer.wrap(encodedOutput.asByteBuffer());
+        final QpidByteBuffer buf = encoder.encodeObject(this);
         return new HeaderSection(this, Collections.singletonList(buf), encoder.getRegistry());
     }
 }

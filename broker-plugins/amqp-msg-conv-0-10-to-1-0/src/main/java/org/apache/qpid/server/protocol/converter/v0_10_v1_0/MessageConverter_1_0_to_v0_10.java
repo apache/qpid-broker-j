@@ -63,6 +63,12 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
         return new MessageTransferMessage(convertToStoredMessage(serverMsg, addressSpace), null);
     }
 
+    @Override
+    public void dispose(final MessageTransferMessage message)
+    {
+
+    }
+
     private StoredMessage<MessageMetaData_0_10> convertToStoredMessage(final Message_1_0 serverMsg,
                                                                        final NamedAddressSpace addressSpace)
     {

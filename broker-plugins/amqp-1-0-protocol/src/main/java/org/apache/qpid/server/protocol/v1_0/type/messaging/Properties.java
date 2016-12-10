@@ -324,10 +324,7 @@ public class Properties implements NonEncodingRetainingSection<Properties>
     @Override
     public PropertiesSection createEncodingRetainingSection(final SectionEncoder encoder)
     {
-        encoder.reset();
-        encoder.encodeObject(this);
-        Binary encodedOutput = encoder.getEncoding();
-        final QpidByteBuffer buf = QpidByteBuffer.wrap(encodedOutput.asByteBuffer());
+        final QpidByteBuffer buf = encoder.encodeObject(this);
         return new PropertiesSection(this, Collections.singletonList(buf), encoder.getRegistry());
     }
 }

@@ -87,6 +87,12 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
         return InternalMessage.convert(serverMessage.getMessageNumber(), serverMessage.isPersistent(), fixedHeader, body);
     }
 
+    @Override
+    public void dispose(final InternalMessage message)
+    {
+
+    }
+
     private static class DelegatingMessageHeader implements AMQMessageHeader
     {
         private final AMQMessageHeader _delegate;

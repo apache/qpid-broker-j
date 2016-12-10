@@ -19,13 +19,9 @@
 
 package org.apache.qpid.server.protocol.v1_0.messaging;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
-import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 
 public class SectionEncoderImpl implements SectionEncoder
@@ -33,79 +29,20 @@ public class SectionEncoderImpl implements SectionEncoder
     private static final QpidByteBuffer EMPTY_BYTE_BUFFER = QpidByteBuffer.wrap(new byte[0]);
     private AMQPDescribedTypeRegistry _registry;
 
-    private int _totalSize = 0;
-
-    private List<byte[]> _output = new ArrayList<byte[]>();
-    private static final int DEFAULT_BUFFER_SIZE = 64 * 1024;
-    private QpidByteBuffer _current;
-
     public SectionEncoderImpl(final AMQPDescribedTypeRegistry describedTypeRegistry)
     {
         _registry = describedTypeRegistry;
-        reset();
     }
 
-    public void reset()
-    {
-        _totalSize = 0;
-        _output.clear();
-        _current = null;
-
-    }
-
-    public Binary getEncoding()
-    {
-        byte[] data = new byte[_totalSize];
-        int offset = 0;
-        for(byte[] src : _output)
-        {
-            int length = src.length;
-            System.arraycopy(src, 0, data, offset, _totalSize - offset < length ? _totalSize - offset : length);
-            offset+= length;
-        }
-        return new Binary(data);
-    }
-
-    public void encodeObject(Object obj)
+    public QpidByteBuffer encodeObject(Object obj)
     {
         final ValueWriter<Object> valueWriter = _registry.getValueWriter(obj);
         valueWriter.setValue(obj);
         int size = valueWriter.writeToBuffer(EMPTY_BYTE_BUFFER);
-
-        byte[] data = new byte[size];
-        _current = QpidByteBuffer.wrap(data);
-        valueWriter.writeToBuffer(_current);
-        _output.add(data);
-
-
-        _totalSize += size;
-
-
-    }
-
-    public void encodeRaw(byte[] data)
-    {
-        if(_current == null)
-        {
-            byte[] buf = new byte[data.length];
-            _current = QpidByteBuffer.wrap(buf);
-            _output.add(buf);
-        }
-        int remaining = _current.remaining();
-        int length = data.length;
-
-        if(remaining < length)
-        {
-            _current.put(data,0,remaining);
-            byte[] dst = new byte[length-remaining];
-            _output.add(dst);
-            _current = QpidByteBuffer.wrap(dst).put(data,remaining,length-remaining);
-        }
-        else
-        {
-            _current.put(data);
-        }
-        _totalSize += data.length;
+        final QpidByteBuffer buf = QpidByteBuffer.allocateDirect(size);
+        valueWriter.writeToBuffer(buf);
+        buf.flip();
+        return buf;
     }
 
     @Override

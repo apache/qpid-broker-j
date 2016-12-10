@@ -36,7 +36,6 @@ import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
-import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -105,30 +104,29 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
 
     public void doSend(final MessageInstanceConsumer consumer, final MessageInstance entry, boolean batch)
     {
-        // TODO
         ServerMessage serverMessage = entry.getMessage();
         Message_1_0 message;
+        final MessageConverter<? super ServerMessage, Message_1_0> converter;
         if(serverMessage instanceof Message_1_0)
         {
+            converter = null;
             message = (Message_1_0) serverMessage;
         }
         else
         {
-            final MessageConverter converter = MessageConverterRegistry.getConverter(serverMessage.getClass(), Message_1_0.class);
-            message = (Message_1_0) converter.convert(serverMessage, _link.getAddressSpace());
+            converter =
+                    (MessageConverter<? super ServerMessage, Message_1_0>) MessageConverterRegistry.getConverter(serverMessage.getClass(), Message_1_0.class);
+            message = converter.convert(serverMessage, _link.getAddressSpace());
         }
 
         Transfer transfer = new Transfer();
         try
         {
-            //TODO
             Collection<QpidByteBuffer> bodyContent = message.getContent(0, (int) message.getSize());
             HeaderSection headerSection = message.getHeaderSection();
 
             if (entry.getDeliveryCount() != 0)
             {
-                ValueHandler valueHandler = new ValueHandler(_typeRegistry);
-
 
                 Header header = new Header();
                 if (headerSection != null)
@@ -139,11 +137,8 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
                     header.setTtl(oldHeader.getTtl());
                 }
                 header.setDeliveryCount(UnsignedInteger.valueOf(entry.getDeliveryCount()));
-                _sectionEncoder.reset();
-                _sectionEncoder.encodeObject(header);
-                Binary encodedHeader = _sectionEncoder.getEncoding();
 
-                QpidByteBuffer headerPayload = QpidByteBuffer.wrap(encodedHeader.getArray(), encodedHeader.getArrayOffset(), encodedHeader.getLength());
+                QpidByteBuffer headerPayload = _sectionEncoder.encodeObject(header);
 
                 headerSection = new HeaderSection(_typeRegistry);
                 headerSection.setEncodedForm(Collections.singletonList(headerPayload));
@@ -250,6 +245,10 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget<ConsumerTarget_1_0>
         finally
         {
             transfer.dispose();
+            if(converter != null)
+            {
+                converter.dispose(message);
+            }
         }
     }
 

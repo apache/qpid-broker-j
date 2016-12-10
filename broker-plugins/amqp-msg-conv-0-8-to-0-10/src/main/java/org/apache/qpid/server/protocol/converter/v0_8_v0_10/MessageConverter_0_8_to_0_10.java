@@ -64,6 +64,12 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
         return new MessageTransferMessage(convertToStoredMessage(message_0_8), null);
     }
 
+    @Override
+    public void dispose(final MessageTransferMessage message)
+    {
+
+    }
+
     private StoredMessage<MessageMetaData_0_10> convertToStoredMessage(final AMQMessage message_0_8)
     {
         final MessageMetaData_0_10 messageMetaData_0_10 = convertMetaData(message_0_8);

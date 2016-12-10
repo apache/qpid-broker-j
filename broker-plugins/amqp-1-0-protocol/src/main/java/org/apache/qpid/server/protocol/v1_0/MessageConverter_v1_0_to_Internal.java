@@ -60,6 +60,12 @@ public class MessageConverter_v1_0_to_Internal implements MessageConverter<Messa
     }
 
     @Override
+    public void dispose(final InternalMessage message)
+    {
+
+    }
+
+    @Override
     public String getType()
     {
         return "v1-0 to Internal";

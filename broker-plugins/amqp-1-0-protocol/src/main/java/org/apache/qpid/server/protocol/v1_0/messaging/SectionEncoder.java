@@ -19,19 +19,14 @@
 
 package org.apache.qpid.server.protocol.v1_0.messaging;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.Binary;
 
 
 public interface SectionEncoder
 {
-    void reset();
 
-    Binary getEncoding();
-
-    void encodeObject(Object obj);
-
-    void encodeRaw(byte[] data);
+    QpidByteBuffer encodeObject(Object obj);
 
     DescribedTypeConstructorRegistry getRegistry();
 }

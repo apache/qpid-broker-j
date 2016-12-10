@@ -24,7 +24,6 @@ import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -72,8 +71,16 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         return new Message_1_0(convertToStoredMessage(message, sectionEncoder));
     }
 
+    @Override
+    public void dispose(final Message_1_0 message)
+    {
+        if(message.getStoredMessage() instanceof ConvertedMessage)
+        {
+            ((ConvertedMessage<?>)message.getStoredMessage()).dispose();
+        }
+    }
 
-    private StoredMessage<MessageMetaData_1_0> convertToStoredMessage(final M serverMessage, SectionEncoder sectionEncoder)
+    private ConvertedMessage<M> convertToStoredMessage(final M serverMessage, SectionEncoder sectionEncoder)
     {
         EncodingRetainingSection<?> bodySection = getBodySection(serverMessage, sectionEncoder);
 
@@ -187,10 +194,10 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         }
     }
 
-    static List fixListValues(List list)
+    static List fixListValues(List<Object> list)
     {
-        list = new ArrayList(list);
-        ListIterator iterator = list.listIterator();
+        list = new ArrayList<>(list);
+        ListIterator<Object> iterator = list.listIterator();
         while(iterator.hasNext())
         {
             Object value = iterator.next();
@@ -200,75 +207,12 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         return list;
     }
 
-    private StoredMessage<MessageMetaData_1_0> convertServerMessage(final MessageMetaData_1_0 metaData,
-                                                                    final M serverMessage,
-                                                                    final EncodingRetainingSection<?> section)
+    private ConvertedMessage<M> convertServerMessage(final MessageMetaData_1_0 metaData,
+                                                  final M serverMessage,
+                                                  final EncodingRetainingSection<?> section)
     {
 
-        return new StoredMessage<MessageMetaData_1_0>()
-                    {
-                        @Override
-                        public MessageMetaData_1_0 getMetaData()
-                        {
-                            return metaData;
-                        }
-
-                        @Override
-                        public long getMessageNumber()
-                        {
-                            return serverMessage.getMessageNumber();
-                        }
-
-                        @Override
-                        public Collection<QpidByteBuffer> getContent(int offset, int length)
-                        {
-                            int position = 0;
-                            List<QpidByteBuffer> content = new ArrayList<>();
-                            for(QpidByteBuffer buf : section.getEncodedForm())
-                            {
-                                if(position < offset)
-                                {
-                                    if(offset - position < buf.remaining())
-                                    {
-                                        QpidByteBuffer view = buf.view(offset - position, Math.min(length, buf.remaining() - (offset-position)));
-                                        content.add(view);
-                                        position += view.remaining();
-                                    }
-                                    else
-                                    {
-                                        position += buf.remaining();
-                                    }
-                                }
-                                else if(position <= offset+length)
-                                {
-                                    QpidByteBuffer view = buf.view(0, Math.min(length - (position-offset), buf.remaining()));
-                                    content.add(view);
-                                    position += view.remaining();
-                                }
-
-                                buf.dispose();
-                            }
-                            return content;
-                        }
-
-                        @Override
-                        public void remove()
-                        {
-                            throw new UnsupportedOperationException();
-                        }
-
-                        @Override
-                        public boolean isInMemory()
-                        {
-                            return true;
-                        }
-
-                        @Override
-                        public boolean flowToDisk()
-                        {
-                            return false;
-                        }
-        };
+        return new ConvertedMessage<>(metaData, serverMessage, section);
     }
 
     protected EncodingRetainingSection<?> getBodySection(final M serverMessage, final SectionEncoder encoder)
@@ -294,4 +238,86 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         return convertMessageBody(mimeType, data).createEncodingRetainingSection(encoder);
     }
 
+    private static class ConvertedMessage<M extends ServerMessage> implements StoredMessage<MessageMetaData_1_0>
+    {
+        private final MessageMetaData_1_0 _metaData;
+        private final M _serverMessage;
+        private final EncodingRetainingSection<?> _section;
+
+        public ConvertedMessage(final MessageMetaData_1_0 metaData,
+                                final M serverMessage,
+                                final EncodingRetainingSection<?> section)
+        {
+            _metaData = metaData;
+            _serverMessage = serverMessage;
+            _section = section;
+        }
+
+        @Override
+        public MessageMetaData_1_0 getMetaData()
+        {
+            return _metaData;
+        }
+
+        @Override
+        public long getMessageNumber()
+        {
+            return _serverMessage.getMessageNumber();
+        }
+
+        @Override
+        public Collection<QpidByteBuffer> getContent(int offset, int length)
+        {
+            int position = 0;
+            List<QpidByteBuffer> content = new ArrayList<>();
+            for(QpidByteBuffer buf : _section.getEncodedForm())
+            {
+                if(position < offset)
+                {
+                    if(offset - position < buf.remaining())
+                    {
+                        QpidByteBuffer view = buf.view(offset - position, Math.min(length, buf.remaining() - (offset-position)));
+                        content.add(view);
+                        position += view.remaining();
+                    }
+                    else
+                    {
+                        position += buf.remaining();
+                    }
+                }
+                else if(position <= offset+length)
+                {
+                    QpidByteBuffer view = buf.view(0, Math.min(length - (position-offset), buf.remaining()));
+                    content.add(view);
+                    position += view.remaining();
+                }
+
+                buf.dispose();
+            }
+            return content;
+        }
+
+        @Override
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isInMemory()
+        {
+            return true;
+        }
+
+        @Override
+        public boolean flowToDisk()
+        {
+            return false;
+        }
+
+        private void dispose()
+        {
+            _section.dispose();
+        }
+    }
 }

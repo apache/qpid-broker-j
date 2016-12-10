@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
-import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
 public class DeliveryAnnotations implements NonEncodingRetainingSection<Map<Symbol,Object>>
@@ -47,10 +46,7 @@ public class DeliveryAnnotations implements NonEncodingRetainingSection<Map<Symb
     @Override
     public DeliveryAnnotationsSection createEncodingRetainingSection(final SectionEncoder encoder)
     {
-        encoder.reset();
-        encoder.encodeObject(this);
-        Binary encodedOutput = encoder.getEncoding();
-        final QpidByteBuffer buf = QpidByteBuffer.wrap(encodedOutput.asByteBuffer());
+        final QpidByteBuffer buf = encoder.encodeObject(this);
         return new DeliveryAnnotationsSection(this, Collections.singletonList(buf), encoder.getRegistry());
     }
 }

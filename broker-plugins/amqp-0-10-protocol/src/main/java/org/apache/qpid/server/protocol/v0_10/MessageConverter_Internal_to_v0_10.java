@@ -56,6 +56,12 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
         return new MessageTransferMessage(convertToStoredMessage(serverMsg), null);
     }
 
+    @Override
+    public void dispose(final MessageTransferMessage message)
+    {
+
+    }
+
     private StoredMessage<MessageMetaData_0_10> convertToStoredMessage(final InternalMessage serverMsg)
     {
         final byte[] messageContent = MessageConverter_v0_10.convertToBody(serverMsg.getMessageBody());

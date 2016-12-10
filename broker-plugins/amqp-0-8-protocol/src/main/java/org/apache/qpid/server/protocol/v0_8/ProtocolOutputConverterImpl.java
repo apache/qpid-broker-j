@@ -66,22 +66,25 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
                              long deliveryTag,
                              AMQShortString consumerTag)
     {
-        final AMQMessage msg = convertToAMQMessage(m);
-        final boolean isRedelivered = Boolean.TRUE.equals(props.getProperty(InstanceProperties.Property.REDELIVERED));
-        AMQBody deliverBody = createEncodedDeliverBody(msg, isRedelivered, deliveryTag, consumerTag);
-        return writeMessageDelivery(msg, channelId, deliverBody);
-    }
-
-    private AMQMessage convertToAMQMessage(ServerMessage serverMessage)
-    {
-        if(serverMessage instanceof AMQMessage)
+        MessageConverter<ServerMessage, AMQMessage> messageConverter = null;
+        final AMQMessage msg;
+        if(m instanceof AMQMessage)
         {
-            return (AMQMessage) serverMessage;
+            msg = (AMQMessage) m;
         }
         else
         {
-            return getMessageConverter(serverMessage).convert(serverMessage, _connection.getAddressSpace());
+            messageConverter = getMessageConverter(m);
+            msg = messageConverter.convert(m, _connection.getAddressSpace());
         }
+        final boolean isRedelivered = Boolean.TRUE.equals(props.getProperty(InstanceProperties.Property.REDELIVERED));
+        AMQBody deliverBody = createEncodedDeliverBody(msg, isRedelivered, deliveryTag, consumerTag);
+        final long result = writeMessageDelivery(msg, channelId, deliverBody);
+        if(messageConverter != null)
+        {
+            messageConverter.dispose(msg);
+        }
+        return result;
     }
 
     private <M extends ServerMessage> MessageConverter<M, AMQMessage> getMessageConverter(M message)
@@ -303,8 +306,24 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
                            long deliveryTag,
                            int queueSize)
     {
-        AMQBody deliver = createEncodedGetOkBody(msg, props, deliveryTag, queueSize);
-        return writeMessageDelivery(convertToAMQMessage(msg), channelId, deliver);
+        final AMQMessage amqMessage;
+        MessageConverter<ServerMessage, AMQMessage> messageConverter = null;
+        if(msg instanceof AMQMessage)
+        {
+            amqMessage = (AMQMessage) msg;
+        }
+        else
+        {
+            messageConverter = getMessageConverter(msg);
+            amqMessage = messageConverter.convert(msg, _connection.getAddressSpace());
+        }
+        AMQBody deliver = createEncodedGetOkBody(amqMessage, props, deliveryTag, queueSize);
+        final long result = writeMessageDelivery(amqMessage, channelId, deliver);
+        if(messageConverter != null)
+        {
+            messageConverter.dispose(amqMessage);
+        }
+        return result;
     }
 
 
@@ -387,12 +406,11 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         }
     }
 
-    private AMQBody createEncodedGetOkBody(ServerMessage msg, InstanceProperties props, long deliveryTag, int queueSize)
+    private AMQBody createEncodedGetOkBody(AMQMessage message, InstanceProperties props, long deliveryTag, int queueSize)
     {
         final AMQShortString exchangeName;
         final AMQShortString routingKey;
 
-        final AMQMessage message = convertToAMQMessage(msg);
         final MessagePublishInfo pb = message.getMessagePublishInfo();
         exchangeName = pb.getExchange();
         routingKey = pb.getRoutingKey();

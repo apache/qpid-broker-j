@@ -29,4 +29,5 @@ public interface MessageConverter<M extends ServerMessage, N extends ServerMessa
     Class<N> getOutputClass();
 
     N convert(M message, NamedAddressSpace addressSpace);
+    void dispose(N message);
 }

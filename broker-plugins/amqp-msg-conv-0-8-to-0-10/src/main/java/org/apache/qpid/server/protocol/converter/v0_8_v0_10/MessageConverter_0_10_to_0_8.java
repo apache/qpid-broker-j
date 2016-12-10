@@ -177,6 +177,12 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
         return new AMQMessage(convertToStoredMessage(message, addressSpace));
     }
 
+    @Override
+    public void dispose(final AMQMessage message)
+    {
+
+    }
+
     private StoredMessage<MessageMetaData> convertToStoredMessage(final MessageTransferMessage message,
                                                                   NamedAddressSpace addressSpace)
     {

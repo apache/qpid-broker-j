@@ -197,6 +197,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         MessageProperties messageProps = null;
 
         MessageTransferMessage msg;
+        MessageConverter<? super ServerMessage, MessageTransferMessage> converter = null;
 
         if(serverMsg instanceof MessageTransferMessage)
         {
@@ -206,12 +207,10 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
         }
         else
         {
-            MessageConverter converter =
-                    MessageConverterRegistry.getConverter(serverMsg.getClass(), MessageTransferMessage.class);
-
-
-            msg = (MessageTransferMessage) converter.convert(serverMsg, _session.getAddressSpace());
+            converter = (MessageConverter<? super ServerMessage, MessageTransferMessage>) MessageConverterRegistry.getConverter(serverMsg.getClass(), MessageTransferMessage.class);
+            msg = converter.convert(serverMsg, _session.getAddressSpace());
         }
+
         DeliveryProperties origDeliveryProps = msg.getHeader() == null ? null : msg.getHeader().getDeliveryProperties();
         messageProps = msg.getHeader() == null ? null : msg.getHeader().getMessageProperties();
 
@@ -334,7 +333,10 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget<ConsumerTarget_0
 
         _session.sendMessage(xfr, _postIdSettingAction);
         xfr.dispose();
-
+        if(converter != null)
+        {
+            converter.dispose(msg);
+        }
         _postIdSettingAction.setAction(null);
         _postIdSettingAction.setXfr(null);
 

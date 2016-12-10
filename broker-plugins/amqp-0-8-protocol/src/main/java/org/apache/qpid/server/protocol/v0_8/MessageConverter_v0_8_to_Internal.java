@@ -20,9 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -87,6 +85,12 @@ public class MessageConverter_v0_8_to_Internal implements MessageConverter<AMQMe
 
         return InternalMessage.convert(serverMessage.getMessageNumber(), serverMessage.isPersistent(),
                 new DelegatingMessageHeader(serverMessage.getMessageHeader(), encoding), body);
+    }
+
+    @Override
+    public void dispose(final InternalMessage message)
+    {
+
     }
 
     private static class ReplyToComponents
