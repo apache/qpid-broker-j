@@ -27,9 +27,9 @@ import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
-import org.apache.qpid.server.protocol.v1_0.type.Source;
+import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
-import org.apache.qpid.server.protocol.v1_0.type.Target;
+import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
@@ -70,8 +70,8 @@ public abstract class LinkEndpoint<T extends Link_1_0>
 
     private volatile State _state = State.DETACHED;
 
-    private Source _source;
-    private Target _target;
+    private BaseSource _source;
+    private BaseTarget _target;
     private UnsignedInteger _deliveryCount;
     private UnsignedInteger _linkCredit;
     private UnsignedInteger _available;
@@ -116,22 +116,22 @@ public abstract class LinkEndpoint<T extends Link_1_0>
 
     public abstract Role getRole();
 
-    public Source getSource()
+    public BaseSource getSource()
     {
         return _source;
     }
 
-    public void setSource(final Source source)
+    public void setSource(final BaseSource source)
     {
         _source = source;
     }
 
-    public Target getTarget()
+    public BaseTarget getTarget()
     {
         return _target;
     }
 
-    public void setTarget(final Target target)
+    public void setTarget(final BaseTarget target)
     {
         _target = target;
     }

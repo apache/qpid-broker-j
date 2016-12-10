@@ -203,7 +203,7 @@ public class AttachConstructor extends AbstractDescribedTypeConstructor<Attach>
 
                     try
                     {
-                        obj.setSource( (Source) val );
+                        obj.setSource( (BaseSource) val);
                     }
                     catch(ClassCastException e)
                     {
@@ -230,7 +230,7 @@ public class AttachConstructor extends AbstractDescribedTypeConstructor<Attach>
 
                     try
                     {
-                        obj.setTarget( (Target) val );
+                        obj.setTarget( (BaseTarget) val);
                     }
                     catch(ClassCastException e)
                     {

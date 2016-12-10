@@ -56,6 +56,7 @@ public class LocalTransaction implements ServerTransaction
     private volatile long _txnStartTime = 0L;
     private volatile long _txnUpdateTime = 0l;
     private ListenableFuture<Runnable> _asyncTran;
+    private volatile boolean _isRollbackOnly;
 
     public LocalTransaction(MessageStore transactionLog)
     {
@@ -335,12 +336,17 @@ public class LocalTransaction implements ServerTransaction
 
     public void commit()
     {
-        sync();
         commit(null);
     }
 
     public void commit(Runnable immediateAction)
     {
+        if(_isRollbackOnly)
+        {
+            throw new IllegalStateException("Transaction has been marked as rollback only");
+        }
+
+
         sync();
         try
         {
@@ -372,6 +378,10 @@ public class LocalTransaction implements ServerTransaction
 
     public void commitAsync(final Runnable deferred)
     {
+        if(_isRollbackOnly)
+        {
+            throw new IllegalStateException("Transaction has been marked as rollback only");
+        }
         sync();
         if(_transaction != null)
         {
@@ -508,6 +518,7 @@ public class LocalTransaction implements ServerTransaction
         _postTransactionActions.clear();
         _txnStartTime = 0L;
         _txnUpdateTime = 0;
+        _isRollbackOnly = false;
     }
 
     public boolean isTransactional()
@@ -520,4 +531,13 @@ public class LocalTransaction implements ServerTransaction
         long getActivityTime();
     }
 
+    public void setRollbackOnly()
+    {
+        _isRollbackOnly = true;
+    }
+
+    public boolean isRollbackOnly()
+    {
+        return _isRollbackOnly;
+    }
 }

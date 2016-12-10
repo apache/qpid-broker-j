@@ -23,4 +23,5 @@ package org.apache.qpid.server.protocol.v1_0.type;
 
 public interface Outcome
 {
+    Symbol getSymbol();
 }

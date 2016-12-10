@@ -31,8 +31,15 @@ public class Accepted
   implements org.apache.qpid.server.protocol.v1_0.type.DeliveryState, Outcome
   {
 
+      public static final Symbol ACCEPTED_SYMBOL = Symbol.valueOf("amqp:accepted:list");
 
-    @Override
+      @Override
+      public Symbol getSymbol()
+      {
+          return ACCEPTED_SYMBOL;
+      }
+
+      @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder("Accepted{");

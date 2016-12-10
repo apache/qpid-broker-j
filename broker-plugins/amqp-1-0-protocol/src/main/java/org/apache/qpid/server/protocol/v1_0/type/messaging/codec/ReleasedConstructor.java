@@ -23,19 +23,18 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
+import java.util.List;
+
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.*;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.*;
-
-
-import java.util.List;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Released;
 
 public class ReleasedConstructor extends AbstractDescribedTypeConstructor<Released>
 {
     private static final Object[] DESCRIPTORS =
     {
-            Symbol.valueOf("amqp:released:list"),UnsignedLong.valueOf(0x0000000000000026L),
+            Released.RELEASED_SYMBOL,UnsignedLong.valueOf(0x0000000000000026L),
     };
 
     private static final ReleasedConstructor INSTANCE = new ReleasedConstructor();

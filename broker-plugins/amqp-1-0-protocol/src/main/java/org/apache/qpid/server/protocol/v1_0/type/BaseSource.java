@@ -21,6 +21,6 @@
 
 package org.apache.qpid.server.protocol.v1_0.type;
 
-public interface Target
+public interface BaseSource
 {
 }

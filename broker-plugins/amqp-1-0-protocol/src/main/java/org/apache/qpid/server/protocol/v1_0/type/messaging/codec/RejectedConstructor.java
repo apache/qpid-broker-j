@@ -23,20 +23,18 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
+import java.util.List;
+
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.*;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.*;
-
-
-import java.util.List;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 
 public class RejectedConstructor extends AbstractDescribedTypeConstructor<Rejected>
 {
-    public static final Symbol SYMBOL_CONSTRUCTOR = Symbol.valueOf("amqp:rejected:list");
     private static final Object[] DESCRIPTORS =
     {
-            SYMBOL_CONSTRUCTOR,UnsignedLong.valueOf(0x0000000000000025L),
+            Rejected.REJECTED_SYMBOL,UnsignedLong.valueOf(0x0000000000000025L),
     };
 
     private static final RejectedConstructor INSTANCE = new RejectedConstructor();

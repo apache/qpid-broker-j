@@ -33,10 +33,9 @@ import java.util.List;
 
 public class AcceptedConstructor extends AbstractDescribedTypeConstructor<Accepted>
 {
-    public static final Symbol SYMBOL_CONSTRUCTOR = Symbol.valueOf("amqp:accepted:list");
     private static final Object[] DESCRIPTORS =
     {
-            SYMBOL_CONSTRUCTOR,UnsignedLong.valueOf(0x0000000000000024L),
+            Accepted.ACCEPTED_SYMBOL,UnsignedLong.valueOf(0x0000000000000024L),
     };
 
     private static final AcceptedConstructor INSTANCE = new AcceptedConstructor();

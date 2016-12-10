@@ -23,19 +23,19 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.transaction.codec;
 
+import java.util.List;
+
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.*;
-import org.apache.qpid.server.protocol.v1_0.type.transaction.*;
-
-
-import java.util.List;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.Declared;
 
 public class DeclaredConstructor extends AbstractDescribedTypeConstructor<Declared>
 {
     private static final Object[] DESCRIPTORS =
     {
-            Symbol.valueOf("amqp:declared:list"),UnsignedLong.valueOf(0x0000000000000033L),
+            Declared.DECLARED_SYMBOL,UnsignedLong.valueOf(0x0000000000000033L),
     };
 
     private static final DeclaredConstructor INSTANCE = new DeclaredConstructor();

@@ -37,6 +37,7 @@ import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Attach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
@@ -113,43 +114,49 @@ public class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLink_1_0>
         return Role.RECEIVER;
     }
 
-    void receiveTransfer(final Transfer transfer, final Delivery delivery)
+    Error receiveTransfer(final Transfer transfer, final Delivery delivery)
     {
-        TransientState transientState;
-        final Binary deliveryTag = delivery.getDeliveryTag();
-        boolean existingState = _unsettledMap.containsKey(deliveryTag);
-        if (!existingState || transfer.getState() != null)
+        if(isAttached())
         {
-            _unsettledMap.put(deliveryTag, transfer.getState());
-        }
-        if (!existingState)
-        {
-            transientState = new TransientState(transfer.getDeliveryId());
-            if (delivery.isSettled())
+            TransientState transientState;
+            final Binary deliveryTag = delivery.getDeliveryTag();
+            boolean existingState = _unsettledMap.containsKey(deliveryTag);
+            if (!existingState || transfer.getState() != null)
             {
-                transientState.setSettled(true);
+                _unsettledMap.put(deliveryTag, transfer.getState());
             }
-            _unsettledIds.put(deliveryTag, transientState);
-            setLinkCredit(getLinkCredit().subtract(UnsignedInteger.ONE));
-            setDeliveryCount(getDeliveryCount().add(UnsignedInteger.ONE));
+            if (!existingState)
+            {
+                transientState = new TransientState(transfer.getDeliveryId());
+                if (delivery.isSettled())
+                {
+                    transientState.setSettled(true);
+                }
+                _unsettledIds.put(deliveryTag, transientState);
+                setLinkCredit(getLinkCredit().subtract(UnsignedInteger.ONE));
+                setDeliveryCount(getDeliveryCount().add(UnsignedInteger.ONE));
+            }
+            else
+            {
+                transientState = _unsettledIds.get(deliveryTag);
+                transientState.incrementCredit();
+                if (delivery.isSettled())
+                {
+                    transientState.setSettled(true);
+                }
+            }
 
+            if (transientState.isSettled() && delivery.isComplete())
+            {
+                _unsettledMap.remove(deliveryTag);
+            }
+            return getLink().messageTransfer(transfer);
         }
         else
         {
-            transientState = _unsettledIds.get(deliveryTag);
-            transientState.incrementCredit();
-            if (delivery.isSettled())
-            {
-                transientState.setSettled(true);
-            }
+            getSession().updateDisposition(Role.RECEIVER, transfer.getDeliveryId(), transfer.getDeliveryId(),null, true);
+            return null;
         }
-
-        if (transientState.isSettled() && delivery.isComplete())
-        {
-            _unsettledMap.remove(deliveryTag);
-        }
-        getLink().messageTransfer(transfer);
-
     }
 
     @Override public void receiveFlow(final Flow flow)

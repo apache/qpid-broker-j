@@ -32,7 +32,15 @@ public class Released
   {
 
 
-    @Override
+      public static final Symbol RELEASED_SYMBOL = Symbol.valueOf("amqp:released:list");
+
+      @Override
+      public Symbol getSymbol()
+      {
+          return RELEASED_SYMBOL;
+      }
+
+      @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder("Released{");

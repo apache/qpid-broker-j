@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import org.apache.qpid.server.protocol.v1_0.type.Source;
-import org.apache.qpid.server.protocol.v1_0.type.Target;
+import org.apache.qpid.server.protocol.v1_0.type.BaseSource;
+import org.apache.qpid.server.protocol.v1_0.type.BaseTarget;
 
 public class ReceivingLinkAttachment
 {
@@ -44,12 +44,12 @@ public class ReceivingLinkAttachment
         return _endpoint;
     }
 
-    public Source getSource()
+    public BaseSource getSource()
     {
         return getEndpoint().getSource();
     }
 
-    public Target getTarget()
+    public BaseTarget getTarget()
     {
         return getEndpoint().getTarget();
     }

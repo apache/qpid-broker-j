@@ -35,7 +35,8 @@ public class Rejected
   {
 
 
-    private Error _error;
+      public static final Symbol REJECTED_SYMBOL = Symbol.valueOf("amqp:rejected:list");
+      private Error _error;
 
     public Error getError()
     {
@@ -47,7 +48,13 @@ public class Rejected
         _error = error;
     }
 
-    @Override
+      @Override
+      public Symbol getSymbol()
+      {
+          return REJECTED_SYMBOL;
+      }
+
+      @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder("Rejected{");

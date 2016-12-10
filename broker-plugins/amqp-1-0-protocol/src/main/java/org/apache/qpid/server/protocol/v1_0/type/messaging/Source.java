@@ -31,8 +31,7 @@ import java.util.Map;
 
 import org.apache.qpid.server.protocol.v1_0.type.*;
 
-public class Source
-  implements org.apache.qpid.server.protocol.v1_0.type.Source
+public class Source implements BaseSource
   {
 
 

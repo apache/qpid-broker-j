@@ -31,7 +31,7 @@ import java.util.Arrays;
 import org.apache.qpid.server.protocol.v1_0.type.*;
 
 public class Coordinator
-  implements Target
+        implements BaseTarget
   {
 
 

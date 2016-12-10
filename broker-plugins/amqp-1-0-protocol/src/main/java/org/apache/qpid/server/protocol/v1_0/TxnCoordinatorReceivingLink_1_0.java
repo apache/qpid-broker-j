@@ -46,6 +46,7 @@ import org.apache.qpid.server.protocol.v1_0.type.transaction.Discharge;
 import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
+import org.apache.qpid.server.protocol.v1_0.type.transport.LinkError;
 import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -73,7 +74,7 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
         _openTransactions = openTransactions;
     }
 
-    public void messageTransfer(Transfer xfr)
+    public Error messageTransfer(Transfer xfr)
     {
         List<QpidByteBuffer> payload = new ArrayList<>();
 
@@ -83,14 +84,14 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
         {
             _incompleteMessage = new ArrayList<Transfer>();
             _incompleteMessage.add(xfr);
-            return;
+            return null;
         }
         else if(_incompleteMessage != null)
         {
             _incompleteMessage.add(xfr);
             if(Boolean.TRUE.equals(xfr.getMore()))
             {
-                return;
+                return null;
             }
 
             int size = 0;
@@ -148,9 +149,10 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
                     {
                         Discharge discharge = (Discharge) command;
 
-                        discharge(_session.binaryToInteger(discharge.getTxnId()), Boolean.TRUE.equals(discharge.getFail()));
-                        _endpoint.updateDisposition(deliveryTag, new Accepted(), true);
-
+                        final Error error = discharge(_session.binaryToInteger(discharge.getTxnId()),
+                                                      Boolean.TRUE.equals(discharge.getFail()));
+                        _endpoint.updateDisposition(deliveryTag, error == null ? new Accepted() : null, true);
+                        return error;
                     }
                     else
                     {
@@ -164,8 +166,7 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
         }
         catch (AmqpErrorException e)
         {
-            //TODO
-            _logger.error("AMQP error", e);
+            return e.getError();
         }
         finally
         {
@@ -174,7 +175,7 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
                 buf.dispose();
             }
         }
-
+        return null;
     }
 
     public void remoteDetached(LinkEndpoint endpoint, Detach detach)
@@ -199,10 +200,21 @@ public class TxnCoordinatorReceivingLink_1_0 implements ReceivingLink_1_0
                 txn.rollback();
                 _session.incrementRolledBackTransactions();
             }
-            else
+            else if(!(txn instanceof LocalTransaction && ((LocalTransaction)txn).isRollbackOnly()))
             {
                 txn.commit();
                 _session.incrementCommittedTransactions();
+            }
+            else
+            {
+                txn.rollback();
+                _session.incrementRolledBackTransactions();
+                error = new Error();
+                error.setCondition(LinkError.DETACH_FORCED);
+                error.setDescription("The transaction was marked as rollback only due to an earlier issue (e.g. a published message was sent settled but could not be enqueued)");
+                _openTransactions.remove(transactionId);
+
+                return error;
             }
             _openTransactions.remove(transactionId);
         }

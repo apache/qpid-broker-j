@@ -741,8 +741,11 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
                 }
             }
 
-            endpoint.receiveTransfer(transfer, delivery);
-
+            Error error = endpoint.receiveTransfer(transfer, delivery);
+            if(error != null)
+            {
+                endpoint.close(error);
+            }
             if ((delivery.isComplete() && delivery.isSettled() || Boolean.TRUE.equals(transfer.getAborted())))
             {
                 _incomingUnsettled.remove(deliveryId);
@@ -1175,9 +1178,9 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
 
     ServerTransaction getTransaction(Binary transactionId)
     {
-        // TODO should treat invalid id differently to null
+
         ServerTransaction transaction = _openTransactions.get(binaryToInteger(transactionId));
-        if(transaction == null)
+        if(transactionId == null)
         {
             if(_transaction == null)
             {

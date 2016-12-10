@@ -22,6 +22,7 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import java.security.AccessControlException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -50,6 +51,7 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.FooterSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.HeaderSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotationsSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.PropertiesSection;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
@@ -61,8 +63,9 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
+import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
 {
@@ -97,7 +100,7 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
 
     }
 
-    public void messageTransfer(Transfer xfr)
+    public Error messageTransfer(Transfer xfr)
     {
         List<QpidByteBuffer> fragments = null;
 
@@ -110,7 +113,7 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
             _incompleteMessage.add(xfr);
             _resumedMessage = Boolean.TRUE.equals(xfr.getResume());
             _messageDeliveryTag = deliveryTag;
-            return;
+            return null;
         }
         else if(_incompleteMessage != null)
         {
@@ -118,7 +121,7 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
 
             if(Boolean.TRUE.equals(xfr.getMore()))
             {
-                return;
+                return null;
             }
 
             fragments = new ArrayList<>(_incompleteMessage.size());
@@ -153,7 +156,7 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
             }
             else
             {
-                throw new ServerScopedRuntimeException("Unexpected delivery Tag: " + _messageDeliveryTag + "_unsettledMap: " + _unsettledMap);
+                throw new ConnectionScopedRuntimeException("Unexpected delivery Tag: " + _messageDeliveryTag + "_unsettledMap: " + _unsettledMap);
             }
         }
         else
@@ -214,20 +217,37 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
                     _destination.authorizePublish(session.getSecurityToken(), message);
 
                     Outcome outcome = _destination.send(message, transaction, session.getCapacityCheckAction());
+                    Source source = (Source) getEndpoint().getSource();
 
                     DeliveryState resultantState;
 
-                    if (transactionId == null)
+                    if(source.getOutcomes() == null || Arrays.asList(source.getOutcomes()).contains(outcome.getSymbol()))
                     {
-                        resultantState = (DeliveryState) outcome;
+                        if (transactionId == null)
+                        {
+                            resultantState = (DeliveryState) outcome;
+                        }
+                        else
+                        {
+                            TransactionalState transactionalState = new TransactionalState();
+                            transactionalState.setOutcome(outcome);
+                            transactionalState.setTxnId(transactionId);
+                            resultantState = transactionalState;
+                        }
+                    }
+                    else if(transactionId != null)
+                    {
+                        // cause the txn to fail
+                        if(transaction instanceof LocalTransaction)
+                        {
+                            ((LocalTransaction) transaction).setRollbackOnly();
+                        }
+                        resultantState = null;
                     }
                     else
                     {
-                        TransactionalState transactionalState = new TransactionalState();
-                        transactionalState.setOutcome(outcome);
-                        transactionalState.setTxnId(transactionId);
-                        resultantState = transactionalState;
-
+                        // we should just use the default outcome
+                        resultantState = null;
                     }
 
 
@@ -274,6 +294,7 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
                 reference.release();
             }
         }
+        return null;
     }
 
     private MessageMetaData_1_0 createMessageMetaData(final List<QpidByteBuffer> fragments,

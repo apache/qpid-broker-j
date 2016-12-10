@@ -23,13 +23,14 @@
 
 package org.apache.qpid.server.protocol.v1_0.type.transaction.codec;
 
+import java.util.List;
+
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeConstructor;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
-import org.apache.qpid.server.protocol.v1_0.type.*;
-import org.apache.qpid.server.protocol.v1_0.type.transaction.*;
-
-
-import java.util.List;
+import org.apache.qpid.server.protocol.v1_0.type.GlobalTxId;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.Declare;
 
 public class DeclareConstructor extends AbstractDescribedTypeConstructor<Declare>
 {

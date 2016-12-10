@@ -32,7 +32,7 @@ import java.util.Map;
 import org.apache.qpid.server.protocol.v1_0.type.*;
 
 public class Target
-  implements org.apache.qpid.server.protocol.v1_0.type.Target
+        implements BaseTarget
   {
 
 

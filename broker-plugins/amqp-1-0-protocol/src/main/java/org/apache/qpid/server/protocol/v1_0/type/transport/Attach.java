@@ -51,9 +51,9 @@ public class Attach
 
     private ReceiverSettleMode _rcvSettleMode;
 
-    private Source _source;
+    private BaseSource _source;
 
-    private Target _target;
+    private BaseTarget _target;
 
     private Map _unsettled;
 
@@ -119,22 +119,22 @@ public class Attach
         _rcvSettleMode = rcvSettleMode;
     }
 
-    public Source getSource()
+    public BaseSource getSource()
     {
         return _source;
     }
 
-    public void setSource(Source source)
+    public void setSource(BaseSource source)
     {
         _source = source;
     }
 
-    public Target getTarget()
+    public BaseTarget getTarget()
     {
         return _target;
     }
 
-    public void setTarget(Target target)
+    public void setTarget(BaseTarget target)
     {
         _target = target;
     }

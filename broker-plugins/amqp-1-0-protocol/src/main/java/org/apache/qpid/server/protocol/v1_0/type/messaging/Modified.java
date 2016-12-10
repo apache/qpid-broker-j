@@ -35,7 +35,8 @@ public class Modified
   {
 
 
-    private Boolean _deliveryFailed;
+      public static final Symbol MODIFIED_SYMBOL = Symbol.valueOf("amqp:modified:list");
+      private Boolean _deliveryFailed;
 
     private Boolean _undeliverableHere;
 
@@ -71,7 +72,13 @@ public class Modified
         _messageAnnotations = messageAnnotations;
     }
 
-    @Override
+      @Override
+      public Symbol getSymbol()
+      {
+          return MODIFIED_SYMBOL;
+      }
+
+      @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder("Modified{");
