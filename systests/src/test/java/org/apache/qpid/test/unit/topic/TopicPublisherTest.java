@@ -22,13 +22,13 @@ package org.apache.qpid.test.unit.topic;
 
 import javax.jms.Connection;
 import javax.jms.MessageConsumer;
+import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
 import javax.jms.TopicConnection;
 import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 
-import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 /**
@@ -36,27 +36,16 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
  */
 public class TopicPublisherTest extends QpidBrokerTestCase
 {
-    protected void setUp() throws Exception
-    {
-        super.setUp();
-    }
-
-    protected void tearDown() throws Exception
-    {
-        super.tearDown();
-    }
-
     public void testUnidentifiedProducer() throws Exception
     {
-
-        Connection con =  getConnection("guest", "guest");
+        Connection con =  getConnection();
         Topic topic = createTopic(con, "MyTopic");
-        TopicSession session1 = ((TopicConnection)con).createTopicSession(false, AMQSession.NO_ACKNOWLEDGE);
+        TopicSession session1 = ((TopicConnection)con).createTopicSession(false, Session.AUTO_ACKNOWLEDGE);
         TopicPublisher publisher = session1.createPublisher(null);
         MessageConsumer consumer1 = session1.createConsumer(topic);
         con.start();
         publisher.publish(topic, session1.createTextMessage("Hello"));
-        TextMessage m = (TextMessage) consumer1.receive(2000);
+        TextMessage m = (TextMessage) consumer1.receive(getReceiveTimeout());
         assertNotNull(m);
         try
         {
@@ -67,11 +56,5 @@ public class TopicPublisherTest extends QpidBrokerTestCase
         {
             // PASS
         }
-        con.close();
-    }
-
-    public static junit.framework.Test suite()
-    {
-        return new junit.framework.TestSuite(TopicPublisherTest.class);
     }
 }

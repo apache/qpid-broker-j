@@ -36,8 +36,6 @@ org.apache.qpid.test.unit.client.MaxDeliveryCountTest#*
 org.apache.qpid.test.client.queue.LVQTest#*
 org.apache.qpid.systest.rest.ConnectionRestTest#*
 org.apache.qpid.systest.rest.MessagesRestTest#*
-org.apache.qpid.test.unit.topic.TopicPublisherTest#*
-
 
 
 
