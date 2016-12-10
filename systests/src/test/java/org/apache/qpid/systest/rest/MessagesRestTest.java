@@ -41,7 +41,6 @@ import javax.jms.Session;
 import javax.jms.StreamMessage;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.jms.ListMessage;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -130,8 +129,10 @@ public class MessagesRestTest extends QpidRestTestCase
         _producer.send(textMessage);
         _session.commit();
 
-        // get message IDs
-        Long lastMessageId = getLastMessageIdAndVerifyMimeType(queueName, "text/plain");
+        final Map<String, Object> messageSummary = getLastMessage(queueName);
+        int lastMessageId = (int) messageSummary.get("id");
+        assertMessageAttributes(messageSummary);
+        assertEquals("Unexpected mimeType", isBroker10() ? null : "text/plain", messageSummary.get("mimeType"));
 
         Map<String, Object> message = getRestTestHelper().getJsonAsMap(String.format(GET_MESSAGE_INFO_BY_ID,
                                                                                      queueName,
@@ -147,7 +148,7 @@ public class MessagesRestTest extends QpidRestTestCase
                                                                  false,
                                                                  lastMessageId));
         assertTrue("Unexpected message for id " + lastMessageId + ":" + data.length,
-                   Arrays.equals(STRING_VALUE.getBytes(StandardCharsets.UTF_8), data));
+                   isBroker10() || Arrays.equals(STRING_VALUE.getBytes(StandardCharsets.UTF_8), data));
     }
 
     public void testGetMapMessageContentAsJson() throws Exception
@@ -159,7 +160,10 @@ public class MessagesRestTest extends QpidRestTestCase
         _producer.send(mapMessage);
         _session.commit();
 
-        Long lastMessageId = getLastMessageIdAndVerifyMimeType(queueName, "amqp/map");
+        final Map<String, Object> message = getLastMessage(queueName);
+        int lastMessageId = (int) message.get("id");
+        assertMessageAttributes(message);
+        assertEquals("Unexpected mimeType", isBroker10() ? null : "amqp/map", message.get("mimeType"));
 
         Map<String, Object> jsonMessageData = getRestTestHelper().getJsonAsMap(String.format(
                 GET_MESSAGE_CONTENT_BY_ID,
@@ -181,7 +185,10 @@ public class MessagesRestTest extends QpidRestTestCase
         _producer.send(streamMessage);
         _session.commit();
 
-        Long lastMessageId = getLastMessageIdAndVerifyMimeType(queueName, "jms/stream-message");
+        final Map<String, Object> message = getLastMessage(queueName);
+        int lastMessageId = (int) message.get("id");
+        assertMessageAttributes(message);
+        assertEquals("Unexpected mimeType", isBroker10() ? null : "jms/stream-message", message.get("mimeType"));
 
         List<Object> jsonMessageData = getRestTestHelper().getJsonAsSimpleList(String.format(
                 GET_MESSAGE_CONTENT_BY_ID,
@@ -203,7 +210,10 @@ public class MessagesRestTest extends QpidRestTestCase
         _producer.send(bytesMessage);
         _session.commit();
 
-        Long lastMessageId = getLastMessageIdAndVerifyMimeType(queueName, "application/octet-stream");
+        final Map<String, Object> message = getLastMessage(queueName);
+        int lastMessageId = (int) message.get("id");
+        assertMessageAttributes(message);
+        assertEquals("Unexpected mimeType", "application/octet-stream", message.get("mimeType"));
 
         List<Object> jsonMessageData = getRestTestHelper().getJsonAsSimpleList(String.format(
                 GET_MESSAGE_CONTENT_BY_ID,
@@ -220,13 +230,16 @@ public class MessagesRestTest extends QpidRestTestCase
     public void testGetListMessageContentAsJson() throws Exception
     {
         String queueName = getTestQueueName();
-        ListMessage listMessage = ((org.apache.qpid.jms.Session) _session).createListMessage();
-        listMessage.add(999999);
-        listMessage.add("My String");
+        StreamMessage listMessage = _session.createStreamMessage();
+        listMessage.writeInt(999999);
+        listMessage.writeString("My String");
         _producer.send(listMessage);
         _session.commit();
 
-        Long lastMessageId = getLastMessageIdAndVerifyMimeType(queueName, "amqp/list");
+        final Map<String, Object> message = getLastMessage(queueName);
+        int lastMessageId = (int) message.get("id");
+        assertMessageAttributes(message);
+        assertEquals("Unexpected mimeType", isBroker10() ? null : "jms/stream-message", message.get("mimeType"));
 
         List<Object> jsonMessageData = getRestTestHelper().getJsonAsSimpleList(String.format(
                 GET_MESSAGE_CONTENT_BY_ID,
@@ -349,8 +362,6 @@ public class MessagesRestTest extends QpidRestTestCase
         String queueName2 = queueName + "_2";
         createTestQueue(_session, queueName2);
         _session.commit();
-        // get message IDs
-        List<Long> ids = getMesssageIds(queueName);
 
         // move messages
 
@@ -517,9 +528,6 @@ public class MessagesRestTest extends QpidRestTestCase
     {
         String queueName = getTestQueueName();
 
-        // get message IDs
-        List<Long> ids = getMesssageIds(queueName);
-
         // delete half of the messages
         int deleteNumber = MESSAGE_NUMBER / 2;
 
@@ -571,7 +579,8 @@ public class MessagesRestTest extends QpidRestTestCase
     {
         assertMessageAttributes(message);
 
-        assertEquals("Unexpected message attribute size", position < 10 ? 6 : 7, message.get("size"));
+        final int size = (int) message.get("size");
+        assertTrue("Unexpected message attribute size", size > 0);
         boolean even = position % 2 == 0;
         assertMessageAttributeValues(message, even);
     }
@@ -591,7 +600,10 @@ public class MessagesRestTest extends QpidRestTestCase
             assertEquals("Unexpected message attribute priority", 5, message.get("priority"));
             assertEquals("Unexpected message attribute persistent", Boolean.FALSE, message.get("persistent"));
         }
-        assertEquals("Unexpected message attribute mimeType", "text/plain", message.get("mimeType"));
+        if (!isBroker10())
+        {
+            assertEquals("Unexpected message attribute mimeType", "text/plain", message.get("mimeType"));
+        }
         assertEquals("Unexpected message attribute userId", "guest", message.get("userId"));
         assertEquals("Unexpected message attribute deliveryCount", 0, message.get("deliveryCount"));
         assertEquals("Unexpected message attribute state", "Available", message.get("state"));
@@ -608,14 +620,16 @@ public class MessagesRestTest extends QpidRestTestCase
         assertTrue("Message arrivalTime cannot be null",
                    ((Number) message.get("arrivalTime")).longValue() > _startTime);
         assertNotNull("Message messageId cannot be null", message.get("messageId"));
-        assertNotNull("Unexpected message attribute mimeType", message.get("mimeType"));
+        if (!isBroker10())
+        {
+            assertNotNull("Unexpected message attribute mimeType", message.get("mimeType"));
+        }
         assertNotNull("Unexpected message attribute userId", message.get("userId"));
         assertNotNull("Message priority cannot be null", message.get("priority"));
         assertNotNull("Message persistent cannot be null", message.get("persistent"));
     }
 
-
-    private Long getLastMessageIdAndVerifyMimeType(final String queueName, final String mimeType) throws IOException
+    private Map<String, Object> getLastMessage(final String queueName) throws Exception
     {
         List<Long> ids = getMesssageIds(queueName);
         int lastMessageIndex = ids.size() - 1;
@@ -626,10 +640,7 @@ public class MessagesRestTest extends QpidRestTestCase
                                                                                + "&last="
                                                                                + lastMessageIndex);
         assertEquals("Unexpected message number returned", 1, messages.size());
-        Map<String, Object> message = messages.get(0);
-        assertEquals("Unexpected message attribute mimeType", mimeType, message.get("mimeType"));
-        assertMessageAttributes(message);
-
-        return ids.get(lastMessageIndex);
+        return messages.get(0);
     }
+
 }

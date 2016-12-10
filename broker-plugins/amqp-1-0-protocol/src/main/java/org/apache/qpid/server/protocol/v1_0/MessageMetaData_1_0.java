@@ -20,6 +20,7 @@
 */
 package org.apache.qpid.server.protocol.v1_0;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -28,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +40,7 @@ import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoder;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
@@ -408,6 +411,8 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     public class MessageHeader_1_0 implements AMQMessageHeader
     {
 
+        private final AtomicReference<String> _decodedUserId = new AtomicReference<>();
+
         public String getCorrelationId()
         {
             if (_propertiesSection == null || _propertiesSection.getValue().getCorrelationId() == null)
@@ -452,7 +457,6 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         public String getMimeType()
         {
-
             if (_propertiesSection == null || _propertiesSection.getValue().getContentType() == null)
             {
                 return null;
@@ -465,7 +469,14 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         public String getEncoding()
         {
-            return null;  //TODO
+            if (_propertiesSection == null || _propertiesSection.getValue().getContentEncoding() == null)
+            {
+                return null;
+            }
+            else
+            {
+                return _propertiesSection.getValue().getContentEncoding().toString();
+            }
         }
 
         public byte getPriority()
@@ -555,8 +566,21 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         public String getUserId()
         {
-            // TODO
-            return null;
+            if (_propertiesSection == null || _propertiesSection.getValue().getUserId() == null)
+            {
+                return null;
+            }
+            else
+            {
+                if (_decodedUserId.get() == null)
+                {
+                    Binary encodededUserId = _propertiesSection.getValue().getUserId();
+                    // TODO the specification does not state the encoding of the binary.
+                    // Trying to convert to UTF-8 is guaranteed not to throw an exception.
+                    _decodedUserId.set(new String(encodededUserId.getArray(), StandardCharsets.UTF_8));
+                }
+                return _decodedUserId.get();
+            }
         }
 
         public Object getHeader(final String name)

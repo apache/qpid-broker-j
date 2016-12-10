@@ -277,6 +277,7 @@ public class QpidBrokerTestCase extends QpidTestCase
             actualOptions.put("amqp.vhost", vhost);
             actualOptions.put("jms.clientID", clientId);
             actualOptions.put("jms.forceSyncSend", "true");
+            actualOptions.put("jms.populateJMSXUserID", "true");
             actualOptions.putAll(options);
             if("failover".equals(factoryName))
             {
