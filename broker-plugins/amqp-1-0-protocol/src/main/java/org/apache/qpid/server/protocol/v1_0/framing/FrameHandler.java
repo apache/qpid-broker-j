@@ -46,13 +46,21 @@ public class FrameHandler implements ProtocolHandler
     private ValueHandler _typeHandler;
     private boolean _errored = false;
 
+    public FrameHandler(final ValueHandler typeHandler, final ConnectionHandler connection, final boolean isSasl)
+    {
+        _typeHandler = typeHandler;
+        _connection = connection;
+        _isSasl = isSasl;
+    }
+
     public FrameHandler(final AMQPConnection_1_0 connection, final boolean sasl)
     {
-        _connection = connection;
-        _typeHandler = new ValueHandler(connection.getDescribedTypeRegistry());
-        _isSasl = sasl;
+        this(new ValueHandler(connection.getDescribedTypeRegistry()), connection, sasl);
 
     }
+
+
+
 
     public ProtocolHandler parse(QpidByteBuffer in)
     {

@@ -27,6 +27,11 @@ public abstract class AbstractListWriter<V> extends CompoundWriter<V>
         super(registry);
     }
 
+    public AbstractListWriter(final Registry registry, final V object)
+    {
+        super(registry, object);
+    }
+
     @Override
     protected byte getFourOctetEncodingCode()
     {

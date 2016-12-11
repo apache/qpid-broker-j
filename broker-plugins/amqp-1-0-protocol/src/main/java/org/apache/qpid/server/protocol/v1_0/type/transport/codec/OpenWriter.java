@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.transport.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,113 +33,82 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Open;
 
 public class OpenWriter extends AbstractDescribedTypeWriter<Open>
 {
-    private Open _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x10);
 
-    public OpenWriter(final Registry registry)
+    private OpenWriter(final Registry registry, final Open object)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
     }
 
-    @Override
-    protected void onSetValue(final Open value)
+    private static class Writer extends AbstractListWriter<Open>
     {
-        _value = value;
-        _count = calculateCount();
-    }
+        private final Open _value;
+        private final int _count;
 
-    private int calculateCount()
-    {
-
-
-        if( _value.getProperties() != null)
-        {
-            return 10;
-        }
-
-        if( _value.getDesiredCapabilities() != null)
-        {
-            return 9;
-        }
-
-        if( _value.getOfferedCapabilities() != null)
-        {
-            return 8;
-        }
-
-        if( _value.getIncomingLocales() != null)
-        {
-            return 7;
-        }
-
-        if( _value.getOutgoingLocales() != null)
-        {
-            return 6;
-        }
-
-        if( _value.getIdleTimeOut() != null)
-        {
-            return 5;
-        }
-
-        if( _value.getChannelMax() != null)
-        {
-            return 4;
-        }
-
-        if( _value.getMaxFrameSize() != null)
-        {
-            return 3;
-        }
-
-        if( _value.getHostname() != null)
-        {
-            return 2;
-        }
-
-        if( _value.getContainerId() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000010L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<Open>
-    {
         private int _field;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, final Open object)
         {
             super(registry);
+            _value = object;
+            _count = calculateCount();
         }
 
-        @Override
-        protected void onSetValue(final Open value)
+        private int calculateCount()
         {
-            reset();
+            if( _value.getProperties() != null)
+            {
+                return 10;
+            }
+
+            if( _value.getDesiredCapabilities() != null)
+            {
+                return 9;
+            }
+
+            if( _value.getOfferedCapabilities() != null)
+            {
+                return 8;
+            }
+
+            if( _value.getIncomingLocales() != null)
+            {
+                return 7;
+            }
+
+            if( _value.getOutgoingLocales() != null)
+            {
+                return 6;
+            }
+
+            if( _value.getIdleTimeOut() != null)
+            {
+                return 5;
+            }
+
+            if( _value.getChannelMax() != null)
+            {
+                return 4;
+            }
+
+            if( _value.getMaxFrameSize() != null)
+            {
+                return 3;
+            }
+
+            if( _value.getHostname() != null)
+            {
+                return 2;
+            }
+
+            if( _value.getContainerId() != null)
+            {
+                return 1;
+            }
+
+            return 0;
         }
+
 
         @Override
         protected int getCount()
@@ -194,11 +164,6 @@ public class OpenWriter extends AbstractDescribedTypeWriter<Open>
         }
 
         @Override
-        protected void clear()
-        {
-        }
-
-        @Override
         protected void reset()
         {
             _field = 0;
@@ -208,9 +173,10 @@ public class OpenWriter extends AbstractDescribedTypeWriter<Open>
     private static Factory<Open> FACTORY = new Factory<Open>()
     {
 
-        public ValueWriter<Open> newInstance(Registry registry)
+        @Override
+        public ValueWriter<Open> newInstance(final Registry registry, final Open object)
         {
-            return new OpenWriter(registry);
+            return new OpenWriter(registry, object);
         }
     };
 

@@ -24,6 +24,11 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 public class ByteArrayWriter extends SimpleVariableWidthWriter<byte[]>
 {
 
+    public ByteArrayWriter(final byte[] object)
+    {
+        super(object);
+    }
+
     @Override
     protected byte getFourOctetEncodingCode()
     {
@@ -36,25 +41,14 @@ public class ByteArrayWriter extends SimpleVariableWidthWriter<byte[]>
         return (byte)0xa0;
     }
 
-    @Override
-    protected byte[] getByteArray(byte[] value)
-    {
-        return value;
-    }
-
-
-    @Override
-    protected int getOffset()
-    {
-        return 0;
-    }
-
     private static Factory<byte[]> FACTORY = new Factory<byte[]>()
                                             {
 
-                                                public ValueWriter<byte[]> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<byte[]> newInstance(final Registry registry,
+                                                                                       final byte[] object)
                                                 {
-                                                    return new ByteArrayWriter();
+                                                    return new ByteArrayWriter(object);
                                                 }
                                             };
 

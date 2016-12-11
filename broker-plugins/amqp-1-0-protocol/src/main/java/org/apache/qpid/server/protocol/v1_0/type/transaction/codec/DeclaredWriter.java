@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.transaction.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,67 +33,37 @@ import org.apache.qpid.server.protocol.v1_0.type.transaction.Declared;
 
 public class DeclaredWriter extends AbstractDescribedTypeWriter<Declared>
 {
-    private Declared _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x33);
 
-    public DeclaredWriter(final Registry registry)
+
+    private DeclaredWriter(final Registry registry, final Declared object)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
     }
 
-    @Override
-    protected void onSetValue(final Declared value)
+    private static class Writer extends AbstractListWriter<Declared>
     {
-        _value = value;
-        _count = calculateCount();
-    }
+        private final Declared _value;
+        private final int _count;
 
-    private int calculateCount()
-    {
-
-
-        if( _value.getTxnId() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000033L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<Declared>
-    {
         private int _field;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, final Declared object)
         {
             super(registry);
+            _value = object;
+            _count = calculateCount();
+
         }
 
-        @Override
-        protected void onSetValue(final Declared value)
+        private int calculateCount()
         {
-            reset();
+            if( _value.getTxnId() != null)
+            {
+                return 1;
+            }
+
+            return 0;
         }
 
         @Override
@@ -122,11 +93,6 @@ public class DeclaredWriter extends AbstractDescribedTypeWriter<Declared>
         }
 
         @Override
-        protected void clear()
-        {
-        }
-
-        @Override
         protected void reset()
         {
             _field = 0;
@@ -136,9 +102,10 @@ public class DeclaredWriter extends AbstractDescribedTypeWriter<Declared>
     private static Factory<Declared> FACTORY = new Factory<Declared>()
     {
 
-        public ValueWriter<Declared> newInstance(Registry registry)
+        @Override
+        public ValueWriter<Declared> newInstance(final Registry registry, final Declared object)
         {
-            return new DeclaredWriter(registry);
+            return new DeclaredWriter(registry, object);
         }
     };
 

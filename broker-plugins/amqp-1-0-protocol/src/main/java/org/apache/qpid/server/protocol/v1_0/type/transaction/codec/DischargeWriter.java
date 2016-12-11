@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.transaction.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,72 +33,41 @@ import org.apache.qpid.server.protocol.v1_0.type.transaction.Discharge;
 
 public class DischargeWriter extends AbstractDescribedTypeWriter<Discharge>
 {
-    private Discharge _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x32);
 
-    public DischargeWriter(final Registry registry)
+    private DischargeWriter(final Registry registry, final Discharge object)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
     }
 
-    @Override
-    protected void onSetValue(final Discharge value)
+    private static class Writer extends AbstractListWriter<Discharge>
     {
-        _value = value;
-        _count = calculateCount();
-    }
+        private Discharge _value;
+        private int _count = -1;
 
-    private int calculateCount()
-    {
-
-
-        if( _value.getFail() != null)
-        {
-            return 2;
-        }
-
-        if( _value.getTxnId() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000032L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<Discharge>
-    {
         private int _field;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, final Discharge object)
         {
             super(registry);
+
+            _value = object;
+            _count = calculateCount();
         }
 
-        @Override
-        protected void onSetValue(final Discharge value)
+        private int calculateCount()
         {
-            reset();
+            if( _value.getFail() != null)
+            {
+                return 2;
+            }
+
+            if( _value.getTxnId() != null)
+            {
+                return 1;
+            }
+
+            return 0;
         }
 
         @Override
@@ -130,11 +100,6 @@ public class DischargeWriter extends AbstractDescribedTypeWriter<Discharge>
         }
 
         @Override
-        protected void clear()
-        {
-        }
-
-        @Override
         protected void reset()
         {
             _field = 0;
@@ -144,9 +109,10 @@ public class DischargeWriter extends AbstractDescribedTypeWriter<Discharge>
     private static Factory<Discharge> FACTORY = new Factory<Discharge>()
     {
 
-        public ValueWriter<Discharge> newInstance(Registry registry)
+        @Override
+        public ValueWriter<Discharge> newInstance(final Registry registry, final Discharge object)
         {
-            return new DischargeWriter(registry);
+            return new DischargeWriter(registry, object);
         }
     };
 

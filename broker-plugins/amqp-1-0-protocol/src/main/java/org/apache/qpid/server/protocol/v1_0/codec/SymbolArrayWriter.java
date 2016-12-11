@@ -19,75 +19,52 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
 import java.nio.ByteBuffer;
 
-public class SymbolArrayWriter extends VariableWidthWriter<Symbol[]>
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+
+public class SymbolArrayWriter extends SimpleVariableWidthWriter<Symbol[]>
 {
-
-    private int _length;
-    private byte[] _encodedVal;
-
-    @Override protected void clearValue()
+    private SymbolArrayWriter(final Symbol[] object)
     {
-        _encodedVal = null;
+        super(getEncodedValue(object));
     }
 
-    @Override protected boolean hasValue()
-    {
-        return _encodedVal != null;
-    }
-
-    @Override protected byte getFourOctetEncodingCode()
+    @Override
+    protected byte getFourOctetEncodingCode()
     {
         return (byte) 0xf0;
     }
 
-    @Override protected byte getSingleOctetEncodingCode()
+    @Override
+    protected byte getSingleOctetEncodingCode()
     {
         return (byte) 0xe0;
     }
 
-    @Override protected int getLength()
+    private static byte[] getEncodedValue(final Symbol[] value)
     {
-        return _length;
-    }
-
-    @Override protected void writeBytes(final QpidByteBuffer buf, final int offset, final int length)
-    {
-        buf.put(_encodedVal,offset,length);
-    }
-
-    public boolean isCacheable()
-    {
-        return false;
-    }
-
-    public void setValue(final Symbol[] value)
-    {
-
+        byte[] encodedVal;
+        int length;
         boolean useSmallConstructor = useSmallConstructor(value);
         boolean isSmall = useSmallConstructor && canFitInSmall(value);
         if(isSmall)
         {
-            _length = 2;
+            length = 2;
         }
         else
         {
-            _length = 5;
+            length = 5;
         }
         for(Symbol symbol : value)
         {
-            _length += symbol.length() ;
+            length += symbol.length() ;
         }
-        _length += value.length * (useSmallConstructor ? 1 : 4);
+        length += value.length * (useSmallConstructor ? 1 : 4);
 
+        encodedVal = new byte[length];
 
-        _encodedVal = new byte[_length];
-
-        ByteBuffer buf = ByteBuffer.wrap(_encodedVal);
+        ByteBuffer buf = ByteBuffer.wrap(encodedVal);
         if(isSmall)
         {
             buf.put((byte)value.length);
@@ -116,13 +93,10 @@ public class SymbolArrayWriter extends VariableWidthWriter<Symbol[]>
                 buf.put((byte)symbol.charAt(i));
             }
         }
-
-
-
-        super.setValue(value);
+        return encodedVal;
     }
 
-    private boolean useSmallConstructor(final Symbol[] value)
+    private static boolean useSmallConstructor(final Symbol[] value)
     {
         for(Symbol sym : value)
         {
@@ -134,7 +108,7 @@ public class SymbolArrayWriter extends VariableWidthWriter<Symbol[]>
         return true;
     }
 
-    private boolean canFitInSmall(final Symbol[] value)
+    private static boolean canFitInSmall(final Symbol[] value)
     {
         if(value.length>=127)
         {
@@ -158,9 +132,11 @@ public class SymbolArrayWriter extends VariableWidthWriter<Symbol[]>
     private static Factory<Symbol[]> FACTORY = new Factory<Symbol[]>()
                                             {
 
-                                                public ValueWriter<Symbol[]> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<Symbol[]> newInstance(final Registry registry,
+                                                                                         final Symbol[] object)
                                                 {
-                                                    return new SymbolArrayWriter();
+                                                    return new SymbolArrayWriter(object);
                                                 }
                                             };
 

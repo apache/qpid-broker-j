@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,87 +33,57 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
 
 public class HeaderWriter extends AbstractDescribedTypeWriter<Header>
 {
-    private Header _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x70);
 
-    public HeaderWriter(final Registry registry)
+    public HeaderWriter(final Registry registry, final Header object)
     {
-        super(registry);
-    }
-
-    @Override
-    protected void onSetValue(final Header value)
-    {
-        _value = value;
-        _count = calculateCount();
-    }
-
-    private int calculateCount()
-    {
-
-
-        if( _value.getDeliveryCount() != null)
-        {
-            return 5;
-        }
-
-        if( _value.getFirstAcquirer() != null)
-        {
-            return 4;
-        }
-
-        if( _value.getTtl() != null)
-        {
-            return 3;
-        }
-
-        if( _value.getPriority() != null)
-        {
-            return 2;
-        }
-
-        if( _value.getDurable() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
     }
 
 
-    protected Object getDescriptor()
+    private static class Writer extends AbstractListWriter<Header>
     {
-        return UnsignedLong.valueOf(0x0000000000000070L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<Header>
-    {
+        private final int _count;
+        private final Header _value;
         private int _field;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, Header value)
         {
             super(registry);
+            _value = value;
+            _count = calculateCount();
         }
 
-        @Override
-        protected void onSetValue(final Header value)
+        private int calculateCount()
         {
-            reset();
+
+
+            if( _value.getDeliveryCount() != null)
+            {
+                return 5;
+            }
+
+            if( _value.getFirstAcquirer() != null)
+            {
+                return 4;
+            }
+
+            if( _value.getTtl() != null)
+            {
+                return 3;
+            }
+
+            if( _value.getPriority() != null)
+            {
+                return 2;
+            }
+
+            if( _value.getDurable() != null)
+            {
+                return 1;
+            }
+
+            return 0;
         }
 
         @Override
@@ -154,11 +125,6 @@ public class HeaderWriter extends AbstractDescribedTypeWriter<Header>
         }
 
         @Override
-        protected void clear()
-        {
-        }
-
-        @Override
         protected void reset()
         {
             _field = 0;
@@ -168,9 +134,10 @@ public class HeaderWriter extends AbstractDescribedTypeWriter<Header>
     private static Factory<Header> FACTORY = new Factory<Header>()
     {
 
-        public ValueWriter<Header> newInstance(Registry registry)
+        @Override
+        public ValueWriter<Header> newInstance(final Registry registry, final Header object)
         {
-            return new HeaderWriter(registry);
+            return new HeaderWriter(registry, object);
         }
     };
 

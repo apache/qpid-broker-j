@@ -25,57 +25,25 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.NoLocalFilter;
 
 public class NoLocalFilterWriter extends AbstractDescribedTypeWriter<NoLocalFilter>
 {
-    private NoLocalFilter _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter(0x0000468C00000003L);
 
     public NoLocalFilterWriter(final Registry registry)
     {
-        super(registry);
-    }
-
-    @Override
-    protected void onSetValue(final NoLocalFilter value)
-    {
-        _value = value;
-        _count = calculateCount();
-    }
-
-    private int calculateCount()
-    {
-
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000468C00000003L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        return new ListWriter.EmptyListValueWriter();
+        super(DESCRIPTOR_WRITER, ListWriter.EMPTY_LIST_WRITER);
     }
 
     private static Factory<NoLocalFilter> FACTORY = new Factory<NoLocalFilter>()
     {
 
-        public ValueWriter<NoLocalFilter> newInstance(Registry registry)
+        @Override
+        public ValueWriter<NoLocalFilter> newInstance(final Registry registry, final NoLocalFilter object)
         {
             return new NoLocalFilterWriter(registry);
         }

@@ -24,6 +24,7 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -31,44 +32,21 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.ApplicationProperties
 
 public class ApplicationPropertiesWriter extends AbstractDescribedTypeWriter<ApplicationProperties>
 {
-    private ApplicationProperties _value;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x74);
 
-
-
-    public ApplicationPropertiesWriter(final Registry registry)
+    private ApplicationPropertiesWriter(final Registry registry, final ApplicationProperties object)
     {
-        super(registry);
-    }
-
-    @Override
-    protected void onSetValue(final ApplicationProperties value)
-    {
-        _value = value;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-    }
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000074L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        return getRegistry().getValueWriter(_value.getValue());
+        super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
     private static Factory<ApplicationProperties> FACTORY = new Factory<ApplicationProperties>()
     {
 
-        public ValueWriter<ApplicationProperties> newInstance(Registry registry)
+        @Override
+        public ValueWriter<ApplicationProperties> newInstance(final Registry registry,
+                                                              final ApplicationProperties object)
         {
-            return new ApplicationPropertiesWriter(registry);
+            return new ApplicationPropertiesWriter(registry, object);
         }
     };
 

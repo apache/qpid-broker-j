@@ -27,42 +27,15 @@ public abstract class SimpleVariableWidthWriter<V> extends VariableWidthWriter<V
 {
     private byte[] _buf;
 
-
-    public void setValue(V value)
+    public SimpleVariableWidthWriter(byte[] value)
     {
-        _buf = getByteArray(value);
-        super.setValue(value);
+        super(value.length);
+        _buf = value;
     }
 
-    protected int getLength()
+    protected final void writeBytes(QpidByteBuffer buf, int offset, int length)
     {
-        return _buf.length;
+        buf.put(_buf, offset, length);
     }
-
-    protected void writeBytes(QpidByteBuffer buf, int offset, int length)
-    {
-        buf.put(_buf, getOffset()+offset, length);
-    }
-
-    @Override
-    protected void clearValue()
-    {
-        _buf = null;
-    }
-
-    @Override
-    protected boolean hasValue()
-    {
-        return _buf != null;
-    }
-
-    public boolean isCacheable()
-    {
-        return true;
-    }
-
-    protected abstract byte[] getByteArray(V value);
-
-    protected abstract int getOffset();
 
 }

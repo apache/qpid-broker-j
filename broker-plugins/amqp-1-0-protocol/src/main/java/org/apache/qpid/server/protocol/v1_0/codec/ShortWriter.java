@@ -26,6 +26,15 @@ public class ShortWriter extends FixedTwoWriter<Short>
 
     private static final byte FORMAT_CODE = (byte)0x61;
 
+    public ShortWriter()
+    {
+    }
+
+    public ShortWriter(Short object)
+    {
+        setValue(object);
+    }
+
 
     @Override
     short convertValueToShort(Short value)
@@ -42,9 +51,11 @@ public class ShortWriter extends FixedTwoWriter<Short>
     private static Factory<Short> FACTORY = new Factory<Short>()
                                             {
 
-                                                public ValueWriter<Short> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<Short> newInstance(final Registry registry,
+                                                                                      final Short object)
                                                 {
-                                                    return new ShortWriter();
+                                                    return new ShortWriter(object);
                                                 }
                                             };
 

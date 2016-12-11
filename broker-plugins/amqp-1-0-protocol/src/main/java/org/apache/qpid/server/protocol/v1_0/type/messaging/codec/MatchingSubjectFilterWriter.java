@@ -24,50 +24,29 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.MatchingSubjectFilter;
 
 public class MatchingSubjectFilterWriter extends AbstractDescribedTypeWriter<MatchingSubjectFilter>
 {
-    private MatchingSubjectFilter _value;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter(0x0000468C00000001L);
 
-
-
-    public MatchingSubjectFilterWriter(final Registry registry)
+    public MatchingSubjectFilterWriter(final Registry registry,
+                                       final MatchingSubjectFilter object)
     {
-        super(registry);
-    }
-
-    @Override
-    protected void onSetValue(final MatchingSubjectFilter value)
-    {
-        _value = value;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-    }
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000468C00000001L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        return getRegistry().getValueWriter(_value.getValue());
+        super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
     private static Factory<MatchingSubjectFilter> FACTORY = new Factory<MatchingSubjectFilter>()
     {
 
-        public ValueWriter<MatchingSubjectFilter> newInstance(Registry registry)
+        @Override
+        public ValueWriter<MatchingSubjectFilter> newInstance(final Registry registry,
+                                                              final MatchingSubjectFilter object)
         {
-            return new MatchingSubjectFilterWriter(registry);
+            return new MatchingSubjectFilterWriter(registry, object);
         }
     };
 

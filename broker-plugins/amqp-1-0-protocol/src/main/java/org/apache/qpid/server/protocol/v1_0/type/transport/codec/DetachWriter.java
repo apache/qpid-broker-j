@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.transport.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,78 +33,47 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
 
 public class DetachWriter extends AbstractDescribedTypeWriter<Detach>
 {
-    private Detach _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x16);
 
-    public DetachWriter(final Registry registry)
+    private DetachWriter(final Registry registry, final Detach object)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
     }
 
-    @Override
-    protected void onSetValue(final Detach value)
+    private static class Writer extends AbstractListWriter<Detach>
     {
-        _value = value;
-        _count = calculateCount();
-    }
-
-    private int calculateCount()
-    {
-
-
-        if( _value.getError() != null)
-        {
-            return 3;
-        }
-
-        if( _value.getClosed() != null)
-        {
-            return 2;
-        }
-
-        if( _value.getHandle() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000016L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<Detach>
-    {
+        private final Detach _value;
+        private final int _count;
         private int _field;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, final Detach object)
         {
             super(registry);
+
+            _value = object;
+            _count = calculateCount();
         }
 
-        @Override
-        protected void onSetValue(final Detach value)
+        private int calculateCount()
         {
-            reset();
+            if( _value.getError() != null)
+            {
+                return 3;
+            }
+
+            if( _value.getClosed() != null)
+            {
+                return 2;
+            }
+
+            if( _value.getHandle() != null)
+            {
+                return 1;
+            }
+
+            return 0;
         }
+
 
         @Override
         protected int getCount()
@@ -138,11 +108,6 @@ public class DetachWriter extends AbstractDescribedTypeWriter<Detach>
         }
 
         @Override
-        protected void clear()
-        {
-        }
-
-        @Override
         protected void reset()
         {
             _field = 0;
@@ -152,9 +117,10 @@ public class DetachWriter extends AbstractDescribedTypeWriter<Detach>
     private static Factory<Detach> FACTORY = new Factory<Detach>()
     {
 
-        public ValueWriter<Detach> newInstance(Registry registry)
+        @Override
+        public ValueWriter<Detach> newInstance(final Registry registry, final Detach object)
         {
-            return new DetachWriter(registry);
+            return new DetachWriter(registry, object);
         }
     };
 

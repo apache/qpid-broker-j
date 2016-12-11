@@ -21,11 +21,8 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 public class StringWriter extends SimpleVariableWidthWriter<String>
 {
@@ -49,29 +46,10 @@ public class StringWriter extends SimpleVariableWidthWriter<String>
         }
     }
 
-    private static final class ValueCache<K,V> extends LinkedHashMap<K,V>
+    public StringWriter(final String value)
     {
-        private final int _cacheSize;
-
-        public ValueCache(int cacheSize)
-        {
-            _cacheSize = cacheSize;
-        }
-
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<K, V> eldest)
-        {
-            return size() > _cacheSize;
-        }
-
-        public boolean isFull()
-        {
-            return size() == _cacheSize;
-        }
+        super(value.getBytes(ENCODING_CHARSET));
     }
-
-    private final ValueCache<String, byte[]> _cachedEncodings = new ValueCache<String, byte[]>(10);
-
 
     @Override
     protected byte getFourOctetEncodingCode()
@@ -85,58 +63,15 @@ public class StringWriter extends SimpleVariableWidthWriter<String>
         return ONE_BYTE_CODE;
     }
 
-    @Override
-    protected byte[] getByteArray(String value)
-    {
-
-        byte[] encoding;
-        boolean isFull = _cachedEncodings.isFull();
-        if(isFull)
-        {
-            encoding = _cachedEncodings.remove(value);
-        }
-        else
-        {
-            encoding = _cachedEncodings.get(value);
-        }
-
-
-        if(encoding == null)
-        {
-            ByteBuffer buf = ENCODING_CHARSET.encode(value);
-            if(buf.hasArray() && buf.arrayOffset() == 0 && buf.limit()==buf.capacity())
-            {
-                encoding = buf.array();
-            }
-            else
-            {
-                byte[] bufArray = new byte[buf.limit()-buf.position()];
-                buf.get(bufArray);
-                encoding = bufArray;
-            }
-            _cachedEncodings.put(value,encoding);
-
-        }
-        else if(isFull)
-        {
-            _cachedEncodings.put(value,encoding);
-        }
-
-        return encoding;
-    }
-
-    @Override
-    protected int getOffset()
-    {
-        return 0;
-    }
 
     private static Factory<String> FACTORY = new Factory<String>()
                                             {
 
-                                                public ValueWriter<String> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<String> newInstance(final Registry registry,
+                                                                                       final String object)
                                                 {
-                                                    return new StringWriter();
+                                                    return new StringWriter(object);
                                                 }
                                             };
 

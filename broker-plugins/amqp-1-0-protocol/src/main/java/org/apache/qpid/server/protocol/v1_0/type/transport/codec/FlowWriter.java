@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.transport.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,118 +33,88 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Flow;
 
 public class FlowWriter extends AbstractDescribedTypeWriter<Flow>
 {
-    private Flow _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x13);
 
-    public FlowWriter(final Registry registry)
+    private FlowWriter(final Registry registry, final Flow object)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
+
     }
 
-    @Override
-    protected void onSetValue(final Flow value)
+    private static class Writer extends AbstractListWriter<Flow>
     {
-        _value = value;
-        _count = calculateCount();
-    }
-
-    private int calculateCount()
-    {
-
-
-        if( _value.getProperties() != null)
-        {
-            return 11;
-        }
-
-        if( _value.getEcho() != null)
-        {
-            return 10;
-        }
-
-        if( _value.getDrain() != null)
-        {
-            return 9;
-        }
-
-        if( _value.getAvailable() != null)
-        {
-            return 8;
-        }
-
-        if( _value.getLinkCredit() != null)
-        {
-            return 7;
-        }
-
-        if( _value.getDeliveryCount() != null)
-        {
-            return 6;
-        }
-
-        if( _value.getHandle() != null)
-        {
-            return 5;
-        }
-
-        if( _value.getOutgoingWindow() != null)
-        {
-            return 4;
-        }
-
-        if( _value.getNextOutgoingId() != null)
-        {
-            return 3;
-        }
-
-        if( _value.getIncomingWindow() != null)
-        {
-            return 2;
-        }
-
-        if( _value.getNextIncomingId() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000013L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<Flow>
-    {
+        private final Flow _value;
+        private final int _count;
         private int _field;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, final Flow object)
         {
             super(registry);
+
+            _value = object;
+            _count = calculateCount();
         }
 
-        @Override
-        protected void onSetValue(final Flow value)
+        private int calculateCount()
         {
-            reset();
+            if( _value.getProperties() != null)
+            {
+                return 11;
+            }
+
+            if( _value.getEcho() != null)
+            {
+                return 10;
+            }
+
+            if( _value.getDrain() != null)
+            {
+                return 9;
+            }
+
+            if( _value.getAvailable() != null)
+            {
+                return 8;
+            }
+
+            if( _value.getLinkCredit() != null)
+            {
+                return 7;
+            }
+
+            if( _value.getDeliveryCount() != null)
+            {
+                return 6;
+            }
+
+            if( _value.getHandle() != null)
+            {
+                return 5;
+            }
+
+            if( _value.getOutgoingWindow() != null)
+            {
+                return 4;
+            }
+
+            if( _value.getNextOutgoingId() != null)
+            {
+                return 3;
+            }
+
+            if( _value.getIncomingWindow() != null)
+            {
+                return 2;
+            }
+
+            if( _value.getNextIncomingId() != null)
+            {
+                return 1;
+            }
+
+            return 0;
         }
+
 
         @Override
         protected int getCount()
@@ -202,11 +173,6 @@ public class FlowWriter extends AbstractDescribedTypeWriter<Flow>
         }
 
         @Override
-        protected void clear()
-        {
-        }
-
-        @Override
         protected void reset()
         {
             _field = 0;
@@ -216,9 +182,10 @@ public class FlowWriter extends AbstractDescribedTypeWriter<Flow>
     private static Factory<Flow> FACTORY = new Factory<Flow>()
     {
 
-        public ValueWriter<Flow> newInstance(Registry registry)
+        @Override
+        public ValueWriter<Flow> newInstance(final Registry registry, final Flow object)
         {
-            return new FlowWriter(registry);
+            return new FlowWriter(registry, object);
         }
     };
 

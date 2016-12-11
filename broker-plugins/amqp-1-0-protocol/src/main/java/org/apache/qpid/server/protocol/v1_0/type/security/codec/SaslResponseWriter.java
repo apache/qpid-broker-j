@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.security.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,67 +33,36 @@ import org.apache.qpid.server.protocol.v1_0.type.security.SaslResponse;
 
 public class SaslResponseWriter extends AbstractDescribedTypeWriter<SaslResponse>
 {
-    private SaslResponse _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x43);
 
-    public SaslResponseWriter(final Registry registry)
+
+    private SaslResponseWriter(final Registry registry, final SaslResponse object)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
     }
 
-    @Override
-    protected void onSetValue(final SaslResponse value)
+    private static class Writer extends AbstractListWriter<SaslResponse>
     {
-        _value = value;
-        _count = calculateCount();
-    }
-
-    private int calculateCount()
-    {
-
-
-        if( _value.getResponse() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000043L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<SaslResponse>
-    {
+        private SaslResponse _value;
+        private int _count;
         private int _field;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, final SaslResponse object)
         {
             super(registry);
+
+            _value = object;
+            _count = calculateCount();
         }
 
-        @Override
-        protected void onSetValue(final SaslResponse value)
+        private int calculateCount()
         {
-            reset();
+            if( _value.getResponse() != null)
+            {
+                return 1;
+            }
+
+            return 0;
         }
 
         @Override
@@ -122,11 +92,6 @@ public class SaslResponseWriter extends AbstractDescribedTypeWriter<SaslResponse
         }
 
         @Override
-        protected void clear()
-        {
-        }
-
-        @Override
         protected void reset()
         {
             _field = 0;
@@ -136,9 +101,10 @@ public class SaslResponseWriter extends AbstractDescribedTypeWriter<SaslResponse
     private static Factory<SaslResponse> FACTORY = new Factory<SaslResponse>()
     {
 
-        public ValueWriter<SaslResponse> newInstance(Registry registry)
+        @Override
+        public ValueWriter<SaslResponse> newInstance(final Registry registry, final SaslResponse object)
         {
-            return new SaslResponseWriter(registry);
+            return new SaslResponseWriter(registry, object);
         }
     };
 

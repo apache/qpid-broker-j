@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,69 +33,38 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Rejected;
 
 public class RejectedWriter extends AbstractDescribedTypeWriter<Rejected>
 {
-    private Rejected _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x25);
 
-    public RejectedWriter(final Registry registry)
+    private RejectedWriter(final Registry registry, final Rejected object)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
     }
 
-    @Override
-    protected void onSetValue(final Rejected value)
+    private static class Writer extends AbstractListWriter<Rejected>
     {
-        _value = value;
-        _count = calculateCount();
-    }
-
-    private int calculateCount()
-    {
-
-
-        if( _value.getError() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000025L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<Rejected>
-    {
+        private final Rejected _value;
+        private final int _count;
         private int _field;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, Rejected value)
         {
             super(registry);
+            _value = value;
+            _count = calculateCount();
+
         }
 
-        @Override
-        protected void onSetValue(final Rejected value)
+        private int calculateCount()
         {
-            reset();
-        }
 
+
+            if( _value.getError() != null)
+            {
+                return 1;
+            }
+
+            return 0;
+        }
         @Override
         protected int getCount()
         {
@@ -122,11 +92,6 @@ public class RejectedWriter extends AbstractDescribedTypeWriter<Rejected>
         }
 
         @Override
-        protected void clear()
-        {
-        }
-
-        @Override
         protected void reset()
         {
             _field = 0;
@@ -136,9 +101,10 @@ public class RejectedWriter extends AbstractDescribedTypeWriter<Rejected>
     private static Factory<Rejected> FACTORY = new Factory<Rejected>()
     {
 
-        public ValueWriter<Rejected> newInstance(Registry registry)
+        @Override
+        public ValueWriter<Rejected> newInstance(final Registry registry, final Rejected object)
         {
-            return new RejectedWriter(registry);
+            return new RejectedWriter(registry, object);
         }
     };
 

@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,118 +33,86 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
 
 public class SourceWriter extends AbstractDescribedTypeWriter<Source>
 {
-    private Source _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x28);
 
-    public SourceWriter(final Registry registry)
+    private SourceWriter(final Registry registry, final Source object)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
     }
 
-    @Override
-    protected void onSetValue(final Source value)
-    {
-        _value = value;
-        _count = calculateCount();
-    }
-
-    private int calculateCount()
-    {
-
-
-        if( _value.getCapabilities() != null)
-        {
-            return 11;
-        }
-
-        if( _value.getOutcomes() != null)
-        {
-            return 10;
-        }
-
-        if( _value.getDefaultOutcome() != null)
-        {
-            return 9;
-        }
-
-        if( _value.getFilter() != null)
-        {
-            return 8;
-        }
-
-        if( _value.getDistributionMode() != null)
-        {
-            return 7;
-        }
-
-        if( _value.getDynamicNodeProperties() != null)
-        {
-            return 6;
-        }
-
-        if( _value.getDynamic() != null)
-        {
-            return 5;
-        }
-
-        if( _value.getTimeout() != null)
-        {
-            return 4;
-        }
-
-        if( _value.getExpiryPolicy() != null)
-        {
-            return 3;
-        }
-
-        if( _value.getDurable() != null)
-        {
-            return 2;
-        }
-
-        if( _value.getAddress() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000028L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<Source>
+    private static class Writer extends AbstractListWriter<Source>
     {
         private int _field;
+        private final Source _value;
+        private final int _count;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, Source value)
         {
             super(registry);
+            _value = value;
+            _count = calculateCount();
         }
 
-        @Override
-        protected void onSetValue(final Source value)
+        private int calculateCount()
         {
-            reset();
+            if( _value.getCapabilities() != null)
+            {
+                return 11;
+            }
+
+            if( _value.getOutcomes() != null)
+            {
+                return 10;
+            }
+
+            if( _value.getDefaultOutcome() != null)
+            {
+                return 9;
+            }
+
+            if( _value.getFilter() != null)
+            {
+                return 8;
+            }
+
+            if( _value.getDistributionMode() != null)
+            {
+                return 7;
+            }
+
+            if( _value.getDynamicNodeProperties() != null)
+            {
+                return 6;
+            }
+
+            if( _value.getDynamic() != null)
+            {
+                return 5;
+            }
+
+            if( _value.getTimeout() != null)
+            {
+                return 4;
+            }
+
+            if( _value.getExpiryPolicy() != null)
+            {
+                return 3;
+            }
+
+            if( _value.getDurable() != null)
+            {
+                return 2;
+            }
+
+            if( _value.getAddress() != null)
+            {
+                return 1;
+            }
+
+            return 0;
         }
+
 
         @Override
         protected int getCount()
@@ -202,11 +171,6 @@ public class SourceWriter extends AbstractDescribedTypeWriter<Source>
         }
 
         @Override
-        protected void clear()
-        {
-        }
-
-        @Override
         protected void reset()
         {
             _field = 0;
@@ -216,9 +180,10 @@ public class SourceWriter extends AbstractDescribedTypeWriter<Source>
     private static Factory<Source> FACTORY = new Factory<Source>()
     {
 
-        public ValueWriter<Source> newInstance(Registry registry)
+        @Override
+        public ValueWriter<Source> newInstance(final Registry registry, final Source object)
         {
-            return new SourceWriter(registry);
+            return new SourceWriter(registry, object);
         }
     };
 

@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.transport.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,117 +33,87 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
 public class TransferWriter extends AbstractDescribedTypeWriter<Transfer>
 {
-    private Transfer _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x14);
 
-    public TransferWriter(final Registry registry)
+
+    private TransferWriter(final Registry registry, final Transfer object)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
     }
 
-    @Override
-    protected void onSetValue(final Transfer value)
+    private static class Writer extends AbstractListWriter<Transfer>
     {
-        _value = value;
-        _count = calculateCount();
-    }
+        private final Transfer _value;
+        private final int _count;
 
-    private int calculateCount()
-    {
-
-
-        if( _value.getBatchable() != null)
-        {
-            return 11;
-        }
-
-        if( _value.getAborted() != null)
-        {
-            return 10;
-        }
-
-        if( _value.getResume() != null)
-        {
-            return 9;
-        }
-
-        if( _value.getState() != null)
-        {
-            return 8;
-        }
-
-        if( _value.getRcvSettleMode() != null)
-        {
-            return 7;
-        }
-
-        if( _value.getMore() != null)
-        {
-            return 6;
-        }
-
-        if( _value.getSettled() != null)
-        {
-            return 5;
-        }
-
-        if( _value.getMessageFormat() != null)
-        {
-            return 4;
-        }
-
-        if( _value.getDeliveryTag() != null)
-        {
-            return 3;
-        }
-
-        if( _value.getDeliveryId() != null)
-        {
-            return 2;
-        }
-
-        if( _value.getHandle() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000014L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<Transfer>
-    {
         private int _field;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, final Transfer object)
         {
             super(registry);
+
+            _value = object;
+            _count = calculateCount();
         }
 
-        @Override
-        protected void onSetValue(final Transfer value)
+        private int calculateCount()
         {
-            reset();
+            if( _value.getBatchable() != null)
+            {
+                return 11;
+            }
+
+            if( _value.getAborted() != null)
+            {
+                return 10;
+            }
+
+            if( _value.getResume() != null)
+            {
+                return 9;
+            }
+
+            if( _value.getState() != null)
+            {
+                return 8;
+            }
+
+            if( _value.getRcvSettleMode() != null)
+            {
+                return 7;
+            }
+
+            if( _value.getMore() != null)
+            {
+                return 6;
+            }
+
+            if( _value.getSettled() != null)
+            {
+                return 5;
+            }
+
+            if( _value.getMessageFormat() != null)
+            {
+                return 4;
+            }
+
+            if( _value.getDeliveryTag() != null)
+            {
+                return 3;
+            }
+
+            if( _value.getDeliveryId() != null)
+            {
+                return 2;
+            }
+
+            if( _value.getHandle() != null)
+            {
+                return 1;
+            }
+
+            return 0;
         }
 
         @Override
@@ -202,11 +173,6 @@ public class TransferWriter extends AbstractDescribedTypeWriter<Transfer>
         }
 
         @Override
-        protected void clear()
-        {
-        }
-
-        @Override
         protected void reset()
         {
             _field = 0;
@@ -216,9 +182,10 @@ public class TransferWriter extends AbstractDescribedTypeWriter<Transfer>
     private static Factory<Transfer> FACTORY = new Factory<Transfer>()
     {
 
-        public ValueWriter<Transfer> newInstance(Registry registry)
+        @Override
+        public ValueWriter<Transfer> newInstance(final Registry registry, final Transfer object)
         {
-            return new TransferWriter(registry);
+            return new TransferWriter(registry, object);
         }
     };
 

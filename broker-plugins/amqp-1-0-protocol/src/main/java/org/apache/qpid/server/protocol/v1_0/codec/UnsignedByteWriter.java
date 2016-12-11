@@ -26,61 +26,44 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class UnsignedByteWriter implements ValueWriter<UnsignedByte>
 {
-    private int _written;
     private byte _value;
 
-    public int writeToBuffer(QpidByteBuffer buffer)
+    public UnsignedByteWriter()
     {
+    }
 
-        switch(_written)
-        {
-            case 0:
-                if(buffer.hasRemaining())
-                {
-                    buffer.put((byte)0x50);
-                }
-                else
-                {
-                    break;
-                }
-            case 1:
-                if(buffer.hasRemaining())
-                {
-                    buffer.put(_value);
-                    _written = 2;
-                }
-                else
-                {
-                    _written = 1;
-                }
 
-        }
+    public UnsignedByteWriter(UnsignedByte value)
+    {
+        setValue(value);
+    }
 
+
+    @Override
+    public int getEncodedSize()
+    {
         return 2;
+    }
+
+    public void writeToBuffer(QpidByteBuffer buffer)
+    {
+        buffer.put((byte)0x50);
+        buffer.put(_value);
     }
 
     public void setValue(UnsignedByte value)
     {
-        _written = 0;
         _value = value.byteValue();
-    }
-
-    public boolean isComplete()
-    {
-        return _written == 2;
-    }
-
-    public boolean isCacheable()
-    {
-        return true;
     }
 
     private static Factory<UnsignedByte> FACTORY = new Factory<UnsignedByte>()
                                             {
 
-                                                public ValueWriter<UnsignedByte> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<UnsignedByte> newInstance(final Registry registry,
+                                                                                             final UnsignedByte object)
                                                 {
-                                                    return new UnsignedByteWriter();
+                                                    return new UnsignedByteWriter(object);
                                                 }
                                             };
 

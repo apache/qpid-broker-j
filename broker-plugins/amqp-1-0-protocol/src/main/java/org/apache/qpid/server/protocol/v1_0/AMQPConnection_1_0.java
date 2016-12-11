@@ -1041,7 +1041,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
             }
             else
             {
-                int size = writer.writeToBuffer(EMPTY_BYTE_BUFFER);
+                int size = writer.getEncodedSize();
                 int maxPayloadSize = _maxFrameSize - (size + 9);
                 long payloadLength = QpidByteBufferUtils.remaining(payload);
                 if(payloadLength <= maxPayloadSize)
@@ -1054,7 +1054,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                     ((Transfer) body).setMore(Boolean.TRUE);
 
                     writer = _describedTypeRegistry.getValueWriter(body);
-                    size = writer.writeToBuffer(EMPTY_BYTE_BUFFER);
+                    size = writer.getEncodedSize();
                     maxPayloadSize = _maxFrameSize - (size + 9);
 
                     List<QpidByteBuffer> payloadDup = new ArrayList<>(payload.size());

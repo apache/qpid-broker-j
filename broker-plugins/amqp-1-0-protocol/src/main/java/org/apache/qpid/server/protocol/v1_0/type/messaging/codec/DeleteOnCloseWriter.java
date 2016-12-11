@@ -24,111 +24,27 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
-import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.ListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
-
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnClose;
 
 public class DeleteOnCloseWriter extends AbstractDescribedTypeWriter<DeleteOnClose>
 {
-    private DeleteOnClose _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x2B);
 
     public DeleteOnCloseWriter(final Registry registry)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, ListWriter.EMPTY_LIST_WRITER);
     }
 
-    @Override
-    protected void onSetValue(final DeleteOnClose value)
-    {
-        _value = value;
-        _count = calculateCount();
-    }
-
-    private int calculateCount()
-    {
-
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x000000000000002bL);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<DeleteOnClose>
-    {
-        private int _field;
-
-        public Writer(final Registry registry)
-        {
-            super(registry);
-        }
-
-        @Override
-        protected void onSetValue(final DeleteOnClose value)
-        {
-            reset();
-        }
-
-        @Override
-        protected int getCount()
-        {
-            return _count;
-        }
-
-        @Override
-        protected boolean hasNext()
-        {
-            return _field < _count;
-        }
-
-        @Override
-        protected Object next()
-        {
-            switch(_field++)
-            {
-
-                default:
-                    return null;
-            }
-        }
-
-        @Override
-        protected void clear()
-        {
-        }
-
-        @Override
-        protected void reset()
-        {
-            _field = 0;
-        }
-    }
 
     private static Factory<DeleteOnClose> FACTORY = new Factory<DeleteOnClose>()
     {
 
-        public ValueWriter<DeleteOnClose> newInstance(Registry registry)
+        @Override
+        public ValueWriter<DeleteOnClose> newInstance(final Registry registry, final DeleteOnClose object)
         {
             return new DeleteOnCloseWriter(registry);
         }

@@ -24,49 +24,28 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.ExactSubjectFilter;
 
 public class ExactSubjectFilterWriter extends AbstractDescribedTypeWriter<ExactSubjectFilter>
 {
-    private ExactSubjectFilter _value;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter(0x0000468C00000000L);
 
-
-
-    public ExactSubjectFilterWriter(final Registry registry)
+    public ExactSubjectFilterWriter(final Registry registry,
+                                    final ExactSubjectFilter object)
     {
-        super(registry);
-    }
-
-    @Override
-    protected void onSetValue(final ExactSubjectFilter value)
-    {
-        _value = value;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-    }
-
-    protected Object getDescriptor()
-    {
-        return 0x0000468C00000000L;
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        return getRegistry().getValueWriter(_value.getValue());
+        super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
     private static Factory<ExactSubjectFilter> FACTORY = new Factory<ExactSubjectFilter>()
     {
 
-        public ValueWriter<ExactSubjectFilter> newInstance(Registry registry)
+        @Override
+        public ValueWriter<ExactSubjectFilter> newInstance(final Registry registry, final ExactSubjectFilter object)
         {
-            return new ExactSubjectFilterWriter(registry);
+            return new ExactSubjectFilterWriter(registry, object);
         }
     };
 

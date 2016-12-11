@@ -1224,15 +1224,15 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
             return null;
         }
 
-        if(txnId.getLength() > 4)
+        byte[] data = txnId.getArray();
+        if(data.length > 4)
             throw new IllegalArgumentException();
 
         int id = 0;
-        byte[] data = txnId.getArray();
-        for(int i = 0; i < txnId.getLength(); i++)
+        for(int i = 0; i < data.length; i++)
         {
             id <<= 8;
-            id |= ((int)data[i+txnId.getArrayOffset()] & 0xff);
+            id |= ((int)data[i] & 0xff);
         }
 
         return id;

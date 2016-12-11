@@ -30,17 +30,14 @@ public class MapWriter extends AbstractMapWriter<Map>
     private Object _value;
     private Iterator<Map.Entry> _iterator;
 
-    public MapWriter(final Registry registry)
+
+    private MapWriter(final Registry registry, final Map object)
     {
-        super(registry);
+        super(registry, object);
+        _map = object;
+        _iterator = object.entrySet().iterator();
     }
 
-    @Override
-    protected void onSetValue(final Map value)
-    {
-        _map = value;
-        _iterator = value.entrySet().iterator();
-    }
 
     @Override
     protected int getMapCount()
@@ -71,14 +68,6 @@ public class MapWriter extends AbstractMapWriter<Map>
 
 
     @Override
-    protected void onClear()
-    {
-        _map = null;
-        _iterator = null;
-        _value = null;
-    }
-
-    @Override
     protected void onReset()
     {
         _iterator = _map.entrySet().iterator();
@@ -89,9 +78,11 @@ public class MapWriter extends AbstractMapWriter<Map>
     private static Factory<Map> FACTORY = new Factory<Map>()
                                             {
 
-                                                public ValueWriter<Map> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<Map> newInstance(final Registry registry,
+                                                                                    final Map object)
                                                 {
-                                                    return new MapWriter(registry);
+                                                    return new MapWriter(registry, object);
                                                 }
                                             };
 

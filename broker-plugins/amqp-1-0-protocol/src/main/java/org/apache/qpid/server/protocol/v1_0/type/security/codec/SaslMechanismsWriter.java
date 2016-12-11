@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.security.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,67 +33,35 @@ import org.apache.qpid.server.protocol.v1_0.type.security.SaslMechanisms;
 
 public class SaslMechanismsWriter extends AbstractDescribedTypeWriter<SaslMechanisms>
 {
-    private SaslMechanisms _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x40);
 
-    public SaslMechanismsWriter(final Registry registry)
+    private SaslMechanismsWriter(final Registry registry,
+                                 final SaslMechanisms object)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
+
     }
 
-    @Override
-    protected void onSetValue(final SaslMechanisms value)
+    private static class Writer extends AbstractListWriter<SaslMechanisms>
     {
-        _value = value;
-        _count = calculateCount();
-    }
-
-    private int calculateCount()
-    {
-
-
-        if( _value.getSaslServerMechanisms() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000040L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<SaslMechanisms>
-    {
+        private final SaslMechanisms _value;
+        private final int _count;
         private int _field;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, SaslMechanisms object)
         {
             super(registry);
+            _value = object;
+            _count = calculateCount();
         }
 
-        @Override
-        protected void onSetValue(final SaslMechanisms value)
+        private int calculateCount()
         {
-            reset();
+            if( _value.getSaslServerMechanisms() != null)
+            {
+                return 1;
+            }
+            return 0;
         }
 
         @Override
@@ -122,11 +91,6 @@ public class SaslMechanismsWriter extends AbstractDescribedTypeWriter<SaslMechan
         }
 
         @Override
-        protected void clear()
-        {
-        }
-
-        @Override
         protected void reset()
         {
             _field = 0;
@@ -136,9 +100,10 @@ public class SaslMechanismsWriter extends AbstractDescribedTypeWriter<SaslMechan
     private static Factory<SaslMechanisms> FACTORY = new Factory<SaslMechanisms>()
     {
 
-        public ValueWriter<SaslMechanisms> newInstance(Registry registry)
+        @Override
+        public ValueWriter<SaslMechanisms> newInstance(final Registry registry, final SaslMechanisms object)
         {
-            return new SaslMechanismsWriter(registry);
+            return new SaslMechanismsWriter(registry, object);
         }
     };
 

@@ -27,6 +27,14 @@ public class UUIDWriter extends FixedSixteenWriter<UUID>
 {
     private static final byte FORMAT_CODE = (byte) 0x98;
 
+    public UUIDWriter()
+    {
+    }
+
+    public UUIDWriter(final UUID object)
+    {
+        super(object);
+    }
 
     @Override
     byte getFormatCode()
@@ -49,9 +57,11 @@ public class UUIDWriter extends FixedSixteenWriter<UUID>
     private static Factory<UUID> FACTORY = new Factory<UUID>()
                                             {
 
-                                                public ValueWriter<UUID> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<UUID> newInstance(final Registry registry,
+                                                                                     final UUID object)
                                                 {
-                                                    return new UUIDWriter();
+                                                    return new UUIDWriter(object);
                                                 }
                                             };
 

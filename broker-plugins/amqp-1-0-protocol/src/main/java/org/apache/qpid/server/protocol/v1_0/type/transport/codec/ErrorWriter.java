@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.transport.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,79 +33,46 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
 
 public class ErrorWriter extends AbstractDescribedTypeWriter<Error>
 {
-    private Error _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x1D);
 
-    public ErrorWriter(final Registry registry)
+    private ErrorWriter(final Registry registry, final Error object)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
     }
 
-    @Override
-    protected void onSetValue(final Error value)
+    private static class Writer extends AbstractListWriter<Error>
     {
-        _value = value;
-        _count = calculateCount();
-    }
-
-    private int calculateCount()
-    {
-
-
-        if( _value.getInfo() != null)
-        {
-            return 3;
-        }
-
-        if( _value.getDescription() != null)
-        {
-            return 2;
-        }
-
-        if( _value.getCondition() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x000000000000001dL);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<Error>
-    {
+        private final Error _value;
+        private final int _count;
         private int _field;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, final Error object)
         {
             super(registry);
+
+            _value = object;
+            _count = calculateCount();
         }
 
-        @Override
-        protected void onSetValue(final Error value)
+        private int calculateCount()
         {
-            reset();
-        }
+            if( _value.getInfo() != null)
+            {
+                return 3;
+            }
 
+            if( _value.getDescription() != null)
+            {
+                return 2;
+            }
+
+            if( _value.getCondition() != null)
+            {
+                return 1;
+            }
+
+            return 0;
+        }
         @Override
         protected int getCount()
         {
@@ -138,11 +106,6 @@ public class ErrorWriter extends AbstractDescribedTypeWriter<Error>
         }
 
         @Override
-        protected void clear()
-        {
-        }
-
-        @Override
         protected void reset()
         {
             _field = 0;
@@ -152,9 +115,10 @@ public class ErrorWriter extends AbstractDescribedTypeWriter<Error>
     private static Factory<Error> FACTORY = new Factory<Error>()
     {
 
-        public ValueWriter<Error> newInstance(Registry registry)
+        @Override
+        public ValueWriter<Error> newInstance(final Registry registry, final Error object)
         {
-            return new ErrorWriter(registry);
+            return new ErrorWriter(registry, object);
         }
     };
 

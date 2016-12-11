@@ -24,6 +24,7 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -31,44 +32,20 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValue;
 
 public class AmqpValueWriter extends AbstractDescribedTypeWriter<AmqpValue>
 {
-    private AmqpValue _value;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x77);
 
-
-
-    public AmqpValueWriter(final Registry registry)
+    private AmqpValueWriter(final Registry registry, final AmqpValue object)
     {
-        super(registry);
-    }
-
-    @Override
-    protected void onSetValue(final AmqpValue value)
-    {
-        _value = value;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-    }
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000077L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        return getRegistry().getValueWriter(_value.getValue());
+        super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
     private static Factory<AmqpValue> FACTORY = new Factory<AmqpValue>()
     {
 
-        public ValueWriter<AmqpValue> newInstance(Registry registry)
+        @Override
+        public ValueWriter<AmqpValue> newInstance(final Registry registry, final AmqpValue object)
         {
-            return new AmqpValueWriter(registry);
+            return new AmqpValueWriter(registry, object);
         }
     };
 

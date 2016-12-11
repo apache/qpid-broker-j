@@ -24,6 +24,7 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -31,44 +32,22 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.DeliveryAnnotations;
 
 public class DeliveryAnnotationsWriter extends AbstractDescribedTypeWriter<DeliveryAnnotations>
 {
-    private DeliveryAnnotations _value;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x71);
 
 
-
-    public DeliveryAnnotationsWriter(final Registry registry)
+    public DeliveryAnnotationsWriter(final Registry registry,
+                                     final DeliveryAnnotations object)
     {
-        super(registry);
-    }
-
-    @Override
-    protected void onSetValue(final DeliveryAnnotations value)
-    {
-        _value = value;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-    }
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000071L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        return getRegistry().getValueWriter(_value.getValue());
+        super(DESCRIPTOR_WRITER, registry.getValueWriter(object));
     }
 
     private static Factory<DeliveryAnnotations> FACTORY = new Factory<DeliveryAnnotations>()
     {
 
-        public ValueWriter<DeliveryAnnotations> newInstance(Registry registry)
+        @Override
+        public ValueWriter<DeliveryAnnotations> newInstance(final Registry registry, final DeliveryAnnotations object)
         {
-            return new DeliveryAnnotationsWriter(registry);
+            return new DeliveryAnnotationsWriter(registry, object);
         }
     };
 

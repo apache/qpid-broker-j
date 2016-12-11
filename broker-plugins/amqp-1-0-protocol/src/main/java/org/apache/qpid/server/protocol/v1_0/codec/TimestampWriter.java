@@ -27,6 +27,10 @@ public class TimestampWriter extends FixedEightWriter<Date>
 {
     private static final byte FORMAT_CODE = (byte) 0x83;
 
+    public TimestampWriter(final Date object)
+    {
+        super(object.getTime());
+    }
 
     @Override
     byte getFormatCode()
@@ -34,18 +38,14 @@ public class TimestampWriter extends FixedEightWriter<Date>
         return FORMAT_CODE;
     }
 
-    @Override
-    long convertValueToLong(Date value)
-    {
-        return value.getTime();
-    }
-
     private static Factory<Date> FACTORY = new Factory<Date>()
                                             {
 
-                                                public ValueWriter<Date> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<Date> newInstance(final Registry registry,
+                                                                                     final Date object)
                                                 {
-                                                    return new TimestampWriter();
+                                                    return new TimestampWriter(object);
                                                 }
                                             };
 

@@ -27,6 +27,14 @@ public class UnsignedShortWriter extends FixedTwoWriter<UnsignedShort>
 {
     private static final byte FORMAT_CODE = (byte)0x60;
 
+    public UnsignedShortWriter()
+    {
+    }
+
+    public UnsignedShortWriter(final UnsignedShort object)
+    {
+        super(object);
+    }
 
     @Override
     short convertValueToShort(UnsignedShort value)
@@ -43,9 +51,11 @@ public class UnsignedShortWriter extends FixedTwoWriter<UnsignedShort>
     private static Factory<UnsignedShort> FACTORY = new Factory<UnsignedShort>()
                                             {
 
-                                                public ValueWriter<UnsignedShort> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<UnsignedShort> newInstance(final Registry registry,
+                                                                                              final UnsignedShort object)
                                                 {
-                                                    return new UnsignedShortWriter();
+                                                    return new UnsignedShortWriter(object);
                                                 }
                                             };
 

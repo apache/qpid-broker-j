@@ -33,9 +33,21 @@ public abstract class DelegatingValueWriter<V> implements ValueWriter<V>
         _registry = registry;
     }
 
-    public int writeToBuffer(final QpidByteBuffer buffer)
+    protected DelegatingValueWriter(final Registry registry, V object)
     {
-        return _delegate.writeToBuffer(buffer);
+        _registry = registry;
+        setValue(object);
+    }
+
+    public void writeToBuffer(final QpidByteBuffer buffer)
+    {
+        _delegate.writeToBuffer(buffer);
+    }
+
+    @Override
+    public int getEncodedSize()
+    {
+        return _delegate.getEncodedSize();
     }
 
     public void setValue(final V frameBody)
@@ -44,9 +56,4 @@ public abstract class DelegatingValueWriter<V> implements ValueWriter<V>
     }
 
     protected abstract Object getUnderlyingValue(final V frameBody);
-
-    public boolean isComplete()
-    {
-        return _delegate.isComplete();
-    }
 }

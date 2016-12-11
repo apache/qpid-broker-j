@@ -25,98 +25,25 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public abstract class FixedFourWriter<T extends Object> implements ValueWriter<T>
 {
-    private int _written = 5;
     private int _value;
 
-    public final int writeToBuffer(QpidByteBuffer buffer)
+
+    public FixedFourWriter(int object)
     {
-        int remaining = buffer.remaining();
-        int written = _written;
-        switch(written)
-        {
-            case 0:
-                if(remaining-- != 0)
-                {
-                    buffer.put(getFormatCode());
-                    written = 1;
-                }
-                else
-                {
-                    break;
-                }
-            case 1:
-                if(remaining>=4)
-                {
-                    buffer.putInt(_value);
-                    written = 5;
-                    break;
-                }
-                else if(remaining-- != 0)
-                {
-                    buffer.put((byte)((_value >> 24)&0xFF));
-                    written = 2;
-                }
-                else
-                {
-                    break;
-                }
-            case 2:
-                if(remaining-- != 0)
-                {
-                    buffer.put((byte)((_value >> 16)&0xFF));
-                    written = 3;
-                }
-                else
-                {
-                    break;
-                }
-            case 3:
-                if(remaining-- != 0)
-                {
-                    buffer.put((byte)((_value >> 8)&0xFF));
-                    written = 4;
-                }
-                else
-                {
-                    break;
-                }
-            case 4:
-                if(remaining-- != 0)
-                {
-                    buffer.put((byte)(_value&0xFF));
-                    written = 5;
-                }
+        _value = object;
+    }
 
-        }
-        _written = written;
+    public final void writeToBuffer(QpidByteBuffer buffer)
+    {
+        buffer.put(getFormatCode());
+        buffer.putInt(_value);
+    }
 
+    @Override
+    public int getEncodedSize()
+    {
         return 5;
     }
 
     abstract byte getFormatCode();
-
-    public final void setValue(T value)
-    {
-        if(_written==1)
-        {
-            // TODO - remove
-            System.out.println("Remove");
-        }
-        _written = 0;
-        _value = convertValueToInt(value);
-    }
-
-    abstract int convertValueToInt(T value);
-
-    public boolean isCacheable()
-    {
-        return true;
-    }
-
-    public final boolean isComplete()
-    {
-        return _written == 5;
-    }
-
-
 }

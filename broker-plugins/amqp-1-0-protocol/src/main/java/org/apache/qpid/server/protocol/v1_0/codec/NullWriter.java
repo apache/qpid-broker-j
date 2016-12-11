@@ -25,41 +25,28 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class NullWriter implements ValueWriter<Void>
 {
-    private boolean _complete = true;
+    private static final NullWriter INSTANCE = new NullWriter();
 
-    public int writeToBuffer(QpidByteBuffer buffer)
+    @Override
+    public int getEncodedSize()
     {
-
-        if(!_complete && buffer.hasRemaining())
-        {
-            buffer.put((byte)0x40);
-            _complete = true;
-        }
-
         return 1;
     }
 
-    public void setValue(Void frameBody)
+    public void writeToBuffer(QpidByteBuffer buffer)
     {
-        _complete = false;
-    }
 
-    public boolean isCacheable()
-    {
-        return true;
-    }
-
-    public boolean isComplete()
-    {
-        return _complete;
+        buffer.put((byte)0x40);
     }
 
     private static Factory<Void> FACTORY = new Factory<Void>()
                                             {
 
-                                                public ValueWriter<Void> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<Void> newInstance(final Registry registry,
+                                                                                     final Void object)
                                                 {
-                                                    return new NullWriter();
+                                                    return INSTANCE;
                                                 }
                                             };
 

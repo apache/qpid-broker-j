@@ -21,19 +21,69 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
 
-public class UnsignedIntegerWriter implements ValueWriter<UnsignedInteger>
+public class UnsignedIntegerWriter
 {
     private static final byte EIGHT_BYTE_FORMAT_CODE = (byte)0x70;
     private static final byte ONE_BYTE_FORMAT_CODE = (byte) 0x52;
     private static final byte ZERO_BYTE_FORMAT_CODE = (byte) 0x43;
 
-    private ValueWriter<UnsignedInteger> _delegate;
 
-    private final FixedFourWriter<UnsignedInteger> _eightByteWriter = new FixedFourWriter<UnsignedInteger>()
+    private static final ValueWriter<UnsignedInteger> ZERO_BYTE_WRITER = new ValueWriter<UnsignedInteger>()
+        {
+
+            @Override
+            public int getEncodedSize()
+            {
+                return 1;
+            }
+
+            public void writeToBuffer(QpidByteBuffer buffer)
+            {
+                buffer.put(ZERO_BYTE_FORMAT_CODE);
+            }
+        };
+
+
+
+
+
+    private static ValueWriter.Factory<UnsignedInteger> FACTORY = new ValueWriter.Factory<UnsignedInteger>()
+                                            {
+
+                                                @Override
+                                                public ValueWriter<UnsignedInteger> newInstance(final ValueWriter.Registry registry,
+                                                                                                final UnsignedInteger uint)
+                                                {
+                                                    if(uint.equals(UnsignedInteger.ZERO))
+                                                    {
+                                                        return ZERO_BYTE_WRITER;
+                                                    }
+                                                    else if(uint.compareTo(UnsignedInteger.valueOf(256))<0)
+                                                    {
+                                                        return new UnsignedIntegerFixedOneWriter(uint);
+                                                    }
+                                                    else
+                                                    {
+                                                        return new UnsignedIntegerFixedFourWriter(uint);
+                                                    }
+                                                }
+                                            };
+
+    public static void register(ValueWriter.Registry registry)
     {
+        registry.register(UnsignedInteger.class, FACTORY);
+    }
+
+    private static class UnsignedIntegerFixedFourWriter extends FixedFourWriter<UnsignedInteger>
+    {
+
+        UnsignedIntegerFixedFourWriter(final UnsignedInteger object)
+        {
+            super(object.intValue());
+        }
 
         @Override
         byte getFormatCode()
@@ -41,107 +91,19 @@ public class UnsignedIntegerWriter implements ValueWriter<UnsignedInteger>
             return EIGHT_BYTE_FORMAT_CODE;
         }
 
-        @Override
-        int convertValueToInt(UnsignedInteger value)
-        {
-            return value.intValue();
-        }
-    };
+    }
 
-    private final ValueWriter<UnsignedInteger> _oneByteWriter = new FixedOneWriter<UnsignedInteger>()
+    private static class UnsignedIntegerFixedOneWriter extends FixedOneWriter<UnsignedInteger>
     {
+
+        UnsignedIntegerFixedOneWriter(final UnsignedInteger value)
+        {
+            super(value.byteValue());
+        }
 
         @Override protected byte getFormatCode()
         {
             return ONE_BYTE_FORMAT_CODE;
         }
-
-        @Override protected byte convertToByte(final UnsignedInteger value)
-        {
-            return value.byteValue();
-        }
-    };
-
-    private final ValueWriter<UnsignedInteger> _zeroByteWriter = new ValueWriter<UnsignedInteger>()
-        {
-            private boolean _complete;
-
-
-            public int writeToBuffer(QpidByteBuffer buffer)
-            {
-
-                if(!_complete && buffer.hasRemaining())
-                {
-                    buffer.put(ZERO_BYTE_FORMAT_CODE);
-                    _complete = true;
-                }
-
-                return 1;
-            }
-
-            public void setValue(UnsignedInteger uint)
-            {
-                _complete = false;
-            }
-
-            public boolean isCacheable()
-            {
-                return true;
-            }
-
-            public boolean isComplete()
-            {
-                return _complete;
-            }
-
-        };
-
-
-
-    public int writeToBuffer(final QpidByteBuffer buffer)
-    {
-        return _delegate.writeToBuffer(buffer);
-    }
-
-    public void setValue(final UnsignedInteger uint)
-    {
-        if(uint.equals(UnsignedInteger.ZERO))
-        {
-            _delegate = _zeroByteWriter;
-        }
-        else if(uint.compareTo(UnsignedInteger.valueOf(256))<0)
-        {
-            _delegate = _oneByteWriter;
-        }
-        else
-        {
-            _delegate = _eightByteWriter;
-        }
-        _delegate.setValue(uint);
-    }
-
-    public boolean isComplete()
-    {
-        return _delegate.isComplete();
-    }
-
-    public boolean isCacheable()
-    {
-        return false;
-    }
-
-
-    private static Factory<UnsignedInteger> FACTORY = new Factory<UnsignedInteger>()
-                                            {
-
-                                                public ValueWriter<UnsignedInteger> newInstance(Registry registry)
-                                                {
-                                                    return new UnsignedIntegerWriter();
-                                                }
-                                            };
-
-    public static void register(ValueWriter.Registry registry)
-    {
-        registry.register(UnsignedInteger.class, FACTORY);
     }
 }

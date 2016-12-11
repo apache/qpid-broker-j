@@ -25,145 +25,48 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public abstract class VariableWidthWriter<V> implements ValueWriter<V>
 {
-    private int _written;
-    private int _size;
+    private final int _length;
+    private final int _size;
 
-    public int writeToBuffer(QpidByteBuffer buffer)
+    public VariableWidthWriter(int length)
+    {
+        _length = length;
+        _size = (_length & 0xFFFFFF00) == 0 ? 1 : 4;
+    }
+
+    public void writeToBuffer(QpidByteBuffer buffer)
     {
 
-        int written = _written;
         final int length = getLength();
         boolean singleOctetSize = _size == 1;
         if(singleOctetSize)
         {
-            switch(written)
-            {
-                case 0:
-                    if(buffer.hasRemaining())
-                    {
-                        buffer.put(getSingleOctetEncodingCode());
-                    }
-                    else
-                    {
-                        break;
-                    }
-                case 1:
-                    if(buffer.hasRemaining())
-                    {
-                        buffer.put((byte)length);
-                        written = 2;
-                    }
-                    else
-                    {
-                        written = 1;
-                        break;
-                    }
-                default:
-
-                    final int toWrite = 2 + length - written;
-                    if(buffer.remaining() >= toWrite)
-                    {
-                        writeBytes(buffer, written-2,toWrite);
-                        written = length + 2;
-                        clearValue();
-                    }
-                    else
-                    {
-                        final int remaining = buffer.remaining();
-
-                        writeBytes(buffer, written-2, remaining);
-                        written += remaining;
-                    }
-
-            }
+            buffer.put(getSingleOctetEncodingCode());
+            buffer.put((byte)length);
         }
         else
         {
 
-            int remaining = buffer.remaining();
-
-            switch(written)
-            {
-
-                case 0:
-                    if(buffer.hasRemaining())
-                    {
-                        buffer.put(getFourOctetEncodingCode());
-                        remaining--;
-                        written = 1;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                case 1:
-                    if(remaining >= 4)
-                    {
-                        buffer.putInt(length);
-                        remaining-=4;
-                        written+=4;
-                    }
-                case 2:
-                case 3:
-                    if(remaining >= 2 && written <= 3)
-                    {
-                        buffer.putShort((short)((length >> ((3-written)<<3)) & 0xFFFF ));
-                        remaining -= 2;
-                        written += 2;
-                    }
-                case 4:
-                    if(remaining >=1 && written <=4)
-                    {
-                        buffer.put((byte)((length>> ((4-written)<<3)) & 0xFF ));
-                        written++;
-                    }
-
-                default:
-
-                    final int toWrite = 5 + length - written;
-                    if(buffer.remaining() >= toWrite)
-                    {
-                        writeBytes(buffer, written-5,toWrite);
-                        written = length + 5;
-                        clearValue();
-                    }
-                    else if(buffer.hasRemaining())
-                    {
-                        written += buffer.remaining();
-                        writeBytes(buffer, written-5, buffer.remaining());
-                    }
-
-            }
-
+            buffer.put(getFourOctetEncodingCode());
+            buffer.putInt(length);
         }
-
-        _written = written;
-        return 1 + _size + length;
+        writeBytes(buffer, 0,length);
     }
 
-    protected abstract void clearValue();
-
-    protected abstract boolean hasValue();
+    @Override
+    public int getEncodedSize()
+    {
+        return 1 + _size + getLength();
+    }
 
     protected abstract byte getFourOctetEncodingCode();
 
     protected abstract byte getSingleOctetEncodingCode();
 
-    public void setValue(V value)
+    protected final int getLength()
     {
-        _written = 0;
-        _size = (getLength() & 0xFFFFFF00) == 0 ? 1 : 4;
+        return _length;
     }
-
-    protected abstract int getLength();
 
     protected abstract void writeBytes(QpidByteBuffer buf, int offset, int length);
-
-
-    public boolean isComplete()
-    {
-        return !hasValue() || _written == getLength() + _size + 1;
-    }
-
-
 }

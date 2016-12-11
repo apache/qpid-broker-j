@@ -50,7 +50,6 @@ import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedShort;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpSequenceSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.AmqpValueSection;
-import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.DataSection;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.EncodingRetainingSection;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
@@ -116,7 +115,7 @@ public class MessageConverter_from_1_0
                     int totalSize = 0;
                     for(EncodingRetainingSection<?> section : sections)
                     {
-                        totalSize += ((DataSection)section).getValue().getLength();
+                        totalSize += ((DataSection)section).getValue().getArray().length;
                     }
                     byte[] bodyData = new byte[totalSize];
                     ByteBuffer buf = ByteBuffer.wrap(bodyData);
@@ -208,10 +207,7 @@ public class MessageConverter_from_1_0
             }
             else if(value instanceof Binary)
             {
-                Binary binary = (Binary)value;
-                byte[] data = new byte[binary.getLength()];
-                binary.asByteBuffer().get(data);
-                return data;
+                return ((Binary)value).getArray();
             }
             else
             {

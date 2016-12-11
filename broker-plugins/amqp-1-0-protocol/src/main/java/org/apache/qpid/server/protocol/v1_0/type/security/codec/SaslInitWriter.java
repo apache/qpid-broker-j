@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.security.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,79 +33,45 @@ import org.apache.qpid.server.protocol.v1_0.type.security.SaslInit;
 
 public class SaslInitWriter extends AbstractDescribedTypeWriter<SaslInit>
 {
-    private SaslInit _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x41);
 
-    public SaslInitWriter(final Registry registry)
+    private SaslInitWriter(final Registry registry, final SaslInit object)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
     }
 
-    @Override
-    protected void onSetValue(final SaslInit value)
+    private static class Writer extends AbstractListWriter<SaslInit>
     {
-        _value = value;
-        _count = calculateCount();
-    }
-
-    private int calculateCount()
-    {
-
-
-        if( _value.getHostname() != null)
-        {
-            return 3;
-        }
-
-        if( _value.getInitialResponse() != null)
-        {
-            return 2;
-        }
-
-        if( _value.getMechanism() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000041L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<SaslInit>
-    {
+        private final SaslInit _value;
+        private final int _count;
         private int _field;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, SaslInit value)
         {
             super(registry);
+            _value = value;
+            _count = calculateCount();
         }
 
-        @Override
-        protected void onSetValue(final SaslInit value)
+        private int calculateCount()
         {
-            reset();
-        }
+            if( _value.getHostname() != null)
+            {
+                return 3;
+            }
 
+            if( _value.getInitialResponse() != null)
+            {
+                return 2;
+            }
+
+            if( _value.getMechanism() != null)
+            {
+                return 1;
+            }
+
+            return 0;
+        }
         @Override
         protected int getCount()
         {
@@ -138,11 +105,6 @@ public class SaslInitWriter extends AbstractDescribedTypeWriter<SaslInit>
         }
 
         @Override
-        protected void clear()
-        {
-        }
-
-        @Override
         protected void reset()
         {
             _field = 0;
@@ -152,9 +114,10 @@ public class SaslInitWriter extends AbstractDescribedTypeWriter<SaslInit>
     private static Factory<SaslInit> FACTORY = new Factory<SaslInit>()
     {
 
-        public ValueWriter<SaslInit> newInstance(Registry registry)
+        @Override
+        public ValueWriter<SaslInit> newInstance(final Registry registry, final SaslInit object)
         {
-            return new SaslInitWriter(registry);
+            return new SaslInitWriter(registry, object);
         }
     };
 

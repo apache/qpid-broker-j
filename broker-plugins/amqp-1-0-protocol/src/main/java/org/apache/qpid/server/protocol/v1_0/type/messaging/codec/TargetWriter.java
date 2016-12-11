@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,98 +33,66 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
 
 public class TargetWriter extends AbstractDescribedTypeWriter<Target>
 {
-    private Target _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x29);
 
-    public TargetWriter(final Registry registry)
+    public TargetWriter(final Registry registry, final Target object)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
     }
 
-    @Override
-    protected void onSetValue(final Target value)
+    private static class Writer extends AbstractListWriter<Target>
     {
-        _value = value;
-        _count = calculateCount();
-    }
-
-    private int calculateCount()
-    {
-
-
-        if( _value.getCapabilities() != null)
-        {
-            return 7;
-        }
-
-        if( _value.getDynamicNodeProperties() != null)
-        {
-            return 6;
-        }
-
-        if( _value.getDynamic() != null)
-        {
-            return 5;
-        }
-
-        if( _value.getTimeout() != null)
-        {
-            return 4;
-        }
-
-        if( _value.getExpiryPolicy() != null)
-        {
-            return 3;
-        }
-
-        if( _value.getDurable() != null)
-        {
-            return 2;
-        }
-
-        if( _value.getAddress() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000029L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<Target>
-    {
+        private final Target _value;
+        private final int _count;
         private int _field;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, Target value)
         {
             super(registry);
+            _value = value;
+            _count = calculateCount();
         }
 
-        @Override
-        protected void onSetValue(final Target value)
+        private int calculateCount()
         {
-            reset();
+            if( _value.getCapabilities() != null)
+            {
+                return 7;
+            }
+
+            if( _value.getDynamicNodeProperties() != null)
+            {
+                return 6;
+            }
+
+            if( _value.getDynamic() != null)
+            {
+                return 5;
+            }
+
+            if( _value.getTimeout() != null)
+            {
+                return 4;
+            }
+
+            if( _value.getExpiryPolicy() != null)
+            {
+                return 3;
+            }
+
+            if( _value.getDurable() != null)
+            {
+                return 2;
+            }
+
+            if( _value.getAddress() != null)
+            {
+                return 1;
+            }
+
+            return 0;
         }
+
 
         @Override
         protected int getCount()
@@ -170,11 +139,6 @@ public class TargetWriter extends AbstractDescribedTypeWriter<Target>
         }
 
         @Override
-        protected void clear()
-        {
-        }
-
-        @Override
         protected void reset()
         {
             _field = 0;
@@ -184,9 +148,10 @@ public class TargetWriter extends AbstractDescribedTypeWriter<Target>
     private static Factory<Target> FACTORY = new Factory<Target>()
     {
 
-        public ValueWriter<Target> newInstance(Registry registry)
+        @Override
+        public ValueWriter<Target> newInstance(final Registry registry, final Target object)
         {
-            return new TargetWriter(registry);
+            return new TargetWriter(registry, object);
         }
     };
 

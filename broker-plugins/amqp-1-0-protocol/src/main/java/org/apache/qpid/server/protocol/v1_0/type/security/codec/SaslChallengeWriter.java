@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.security.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,67 +33,36 @@ import org.apache.qpid.server.protocol.v1_0.type.security.SaslChallenge;
 
 public class SaslChallengeWriter extends AbstractDescribedTypeWriter<SaslChallenge>
 {
-    private SaslChallenge _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x42);
 
-    public SaslChallengeWriter(final Registry registry)
+    private SaslChallengeWriter(final Registry registry,
+                                final SaslChallenge object)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
     }
 
-    @Override
-    protected void onSetValue(final SaslChallenge value)
+    private static class Writer extends AbstractListWriter<SaslChallenge>
     {
-        _value = value;
-        _count = calculateCount();
-    }
-
-    private int calculateCount()
-    {
-
-
-        if( _value.getChallenge() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000042L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<SaslChallenge>
-    {
+        private SaslChallenge _value;
+        private int _count = -1;
         private int _field;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, SaslChallenge value)
         {
             super(registry);
+            _value = value;
+            _count = calculateCount();
+
         }
 
-        @Override
-        protected void onSetValue(final SaslChallenge value)
+        private int calculateCount()
         {
-            reset();
+            if( _value.getChallenge() != null)
+            {
+                return 1;
+            }
+
+            return 0;
         }
 
         @Override
@@ -112,18 +82,12 @@ public class SaslChallengeWriter extends AbstractDescribedTypeWriter<SaslChallen
         {
             switch(_field++)
             {
-
                 case 0:
                     return _value.getChallenge();
 
                 default:
                     return null;
             }
-        }
-
-        @Override
-        protected void clear()
-        {
         }
 
         @Override
@@ -136,9 +100,10 @@ public class SaslChallengeWriter extends AbstractDescribedTypeWriter<SaslChallen
     private static Factory<SaslChallenge> FACTORY = new Factory<SaslChallenge>()
     {
 
-        public ValueWriter<SaslChallenge> newInstance(Registry registry)
+        @Override
+        public ValueWriter<SaslChallenge> newInstance(final Registry registry, final SaslChallenge object)
         {
-            return new SaslChallengeWriter(registry);
+            return new SaslChallengeWriter(registry, object);
         }
     };
 

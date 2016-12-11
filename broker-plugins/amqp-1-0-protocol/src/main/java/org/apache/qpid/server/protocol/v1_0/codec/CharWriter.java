@@ -25,24 +25,25 @@ public class CharWriter extends FixedFourWriter<Character>
 {
     private static final byte FORMAT_CODE = (byte)0x73;
 
+    public CharWriter(final Character object)
+    {
+        super((int)object.charValue());
+    }
+
     @Override
     byte getFormatCode()
     {
         return FORMAT_CODE;
     }
 
-    @Override
-    int convertValueToInt(Character value)
-    {
-        return (int) value.charValue();
-    }
-
     private static Factory<Character> FACTORY = new Factory<Character>()
                                             {
 
-                                                public ValueWriter<Character> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<Character> newInstance(final Registry registry,
+                                                                                          final Character object)
                                                 {
-                                                    return new CharWriter();
+                                                    return new CharWriter(object);
                                                 }
                                             };
 

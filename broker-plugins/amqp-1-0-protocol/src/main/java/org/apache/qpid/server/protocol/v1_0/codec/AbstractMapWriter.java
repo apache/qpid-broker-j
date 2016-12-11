@@ -23,11 +23,11 @@ package org.apache.qpid.server.protocol.v1_0.codec;
 
 public abstract class AbstractMapWriter<V> extends CompoundWriter<V>
 {
-    private boolean onKey;
+    private boolean _onKey;
 
-    public AbstractMapWriter(Registry registry)
+    AbstractMapWriter(final Registry registry, final V object)
     {
-        super(registry);
+        super(registry, object);
     }
 
     @Override
@@ -53,7 +53,7 @@ public abstract class AbstractMapWriter<V> extends CompoundWriter<V>
     @Override
     protected final boolean hasNext()
     {
-        return onKey || hasMapNext();
+        return _onKey || hasMapNext();
     }
 
     protected abstract boolean hasMapNext();
@@ -61,7 +61,7 @@ public abstract class AbstractMapWriter<V> extends CompoundWriter<V>
     @Override
     protected final Object next()
     {
-        if(onKey = !onKey)
+        if(_onKey = !_onKey)
         {
             return nextKey();
         }
@@ -76,18 +76,9 @@ public abstract class AbstractMapWriter<V> extends CompoundWriter<V>
     protected abstract Object nextKey();
 
     @Override
-    protected final void clear()
-    {
-        onKey = false;
-        onClear();
-    }
-
-    protected abstract void onClear();
-
-    @Override
     protected final void reset()
     {
-        onKey = false;
+        _onKey = false;
         onReset();
     }
 

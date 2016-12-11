@@ -25,41 +25,41 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class BooleanWriter implements ValueWriter<Boolean>
 {
-    private boolean _complete = true;
     private boolean _value;
 
-    public int writeToBuffer(QpidByteBuffer buffer)
+    public BooleanWriter()
     {
-        if(!_complete && buffer.hasRemaining())
-        {
-            buffer.put(_value ? (byte)0x41 : (byte)0x42);
-            _complete = true;
-        }
+    }
+
+    public BooleanWriter(final Boolean object)
+    {
+        setValue(object);
+    }
+
+    @Override
+    public int getEncodedSize()
+    {
         return 1;
+    }
+
+    public void writeToBuffer(QpidByteBuffer buffer)
+    {
+        buffer.put(_value ? (byte)0x41 : (byte)0x42);
     }
 
     public void setValue(Boolean value)
     {
-        _complete = false;
         _value = value.booleanValue();
-    }
-
-    public boolean isCacheable()
-    {
-        return true;
-    }
-
-    public boolean isComplete()
-    {
-        return _complete;
     }
 
     private static Factory<Boolean> FACTORY = new Factory<Boolean>()
                                             {
 
-                                                public ValueWriter<Boolean> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<Boolean> newInstance(final Registry registry,
+                                                                                        final Boolean object)
                                                 {
-                                                    return new BooleanWriter();
+                                                    return new BooleanWriter(object);
                                                 }
                                             };
 

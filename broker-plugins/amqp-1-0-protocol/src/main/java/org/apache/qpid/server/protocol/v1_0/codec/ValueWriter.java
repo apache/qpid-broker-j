@@ -21,8 +21,6 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import java.util.Map;
-
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public interface ValueWriter<T extends Object>
@@ -30,30 +28,25 @@ public interface ValueWriter<T extends Object>
 
 
 
-    public static interface Factory<V extends Object>
+    interface Factory<V extends Object>
     {
-        ValueWriter<V> newInstance(Registry registry);
+        ValueWriter<V> newInstance(Registry registry, V object);
     }
 
-    public static interface Registry
+    interface Registry
     {
-        public static interface Source
+        interface Source
         {
-            public Registry getDescribedTypeRegistry();
+            Registry getDescribedTypeRegistry();
         }
 
         <V extends Object> ValueWriter<V> getValueWriter(V value);
-        <V extends Object> ValueWriter<V> getValueWriter(V value, Map<Class, ValueWriter> localCache);
+
         <V extends Object> ValueWriter<V> register(Class<V> clazz, ValueWriter.Factory<V> writer);
 
     }
 
+    int getEncodedSize();
 
-    int writeToBuffer(QpidByteBuffer buffer);
-
-    void setValue(T frameBody);
-
-    boolean isComplete();
-
-    boolean isCacheable();
+    void writeToBuffer(QpidByteBuffer buffer);
 }

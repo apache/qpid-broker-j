@@ -21,131 +21,104 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 
-public class UnsignedLongWriter implements ValueWriter<UnsignedLong>
+public class UnsignedLongWriter
 {
-
-
     private static final byte EIGHT_BYTE_FORMAT_CODE = (byte) 0x80;
     private static final byte ONE_BYTE_FORMAT_CODE = (byte) 0x53;
     private static final byte ZERO_BYTE_FORMAT_CODE = (byte) 0x44;
 
-    private ValueWriter<UnsignedLong> _delegate;
 
-    private final FixedEightWriter<UnsignedLong> _eightByteWriter = new FixedEightWriter<UnsignedLong>()
+    private static final ValueWriter<UnsignedLong> ZERO_BYTE_WRITER = new ValueWriter<UnsignedLong>()
     {
-
         @Override
-        byte getFormatCode()
+        public int getEncodedSize()
         {
-            return EIGHT_BYTE_FORMAT_CODE;
-        }
-
-        @Override
-        long convertValueToLong(UnsignedLong value)
-        {
-            return value.longValue();
-        }
-
-    };
-
-    private final ValueWriter<UnsignedLong> _oneByteWriter = new FixedOneWriter<UnsignedLong>()
-    {
-
-        @Override protected byte getFormatCode()
-        {
-            return ONE_BYTE_FORMAT_CODE;
-        }
-
-        @Override protected byte convertToByte(final UnsignedLong value)
-        {
-            return value.byteValue();
-        }
-    };
-
-    private final ValueWriter<UnsignedLong> _zeroByteWriter = new ValueWriter<UnsignedLong>()
-    {
-        private boolean _complete;
-
-
-        public int writeToBuffer(QpidByteBuffer buffer)
-        {
-
-            if(!_complete && buffer.hasRemaining())
-            {
-                buffer.put(ZERO_BYTE_FORMAT_CODE);
-                _complete = true;
-            }
-
             return 1;
         }
 
-        public void setValue(UnsignedLong ulong)
+        public void writeToBuffer(QpidByteBuffer buffer)
         {
-            _complete = false;
+            buffer.put(ZERO_BYTE_FORMAT_CODE);
         }
-
-        public boolean isCacheable()
-        {
-            return true;
-        }
-
-        public boolean isComplete()
-        {
-            return _complete;
-        }
-
     };
 
 
 
-    private static Factory<UnsignedLong> FACTORY = new Factory<UnsignedLong>()
-                                            {
+    private static ValueWriter.Factory<UnsignedLong> FACTORY =
+            new ValueWriter.Factory<UnsignedLong>()
+            {
 
-                                                public ValueWriter<UnsignedLong> newInstance(Registry registry)
-                                                {
-                                                    return new UnsignedLongWriter();
-                                                }
-                                            };
+                @Override
+                public ValueWriter<UnsignedLong> newInstance(final ValueWriter.Registry registry,
+                                                             final UnsignedLong object)
+                {
+                    if (object.equals(UnsignedLong.ZERO))
+                    {
+                        return ZERO_BYTE_WRITER;
+                    }
+                    else if ((object.longValue() & 0xffL) == object.longValue())
+                    {
+                        return new UnsignedLongFixedOneWriter(object);
+                    }
+                    else
+                    {
+                        return new UnsignedLongFixedEightWriter(object);
+                    }
+                }
+            };
 
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(UnsignedLong.class, FACTORY);
     }
 
-    public int writeToBuffer(final QpidByteBuffer buffer)
+    private static class UnsignedLongFixedOneWriter extends FixedOneWriter<UnsignedLong>
     {
-        return _delegate.writeToBuffer(buffer);
-    }
-
-    public void setValue(final UnsignedLong ulong)
-    {
-        if(ulong.equals(UnsignedLong.ZERO))
+        UnsignedLongFixedOneWriter(final UnsignedLong value)
         {
-            _delegate = _zeroByteWriter;
-        }
-        else if((ulong.longValue() & 0xffL) == ulong.longValue())
-        {
-            _delegate = _oneByteWriter;
-        }
-        else
-        {
-            _delegate = _eightByteWriter;
+            super(value.byteValue());
         }
 
-        _delegate.setValue(ulong);
+        UnsignedLongFixedOneWriter(byte value)
+        {
+            super(value);
+        }
+
+        @Override protected byte getFormatCode()
+        {
+            return ONE_BYTE_FORMAT_CODE;
+        }
     }
 
-    public boolean isComplete()
+    private static class UnsignedLongFixedEightWriter extends FixedEightWriter<UnsignedLong>
     {
-        return _delegate.isComplete();
+        public UnsignedLongFixedEightWriter(final UnsignedLong object)
+        {
+            super(object.longValue());
+        }
+        public UnsignedLongFixedEightWriter(final long value)
+        {
+            super(value);
+        }
+
+        @Override
+        byte getFormatCode()
+        {
+            return EIGHT_BYTE_FORMAT_CODE;
+        }
     }
 
-    public boolean isCacheable()
+    public static ValueWriter<UnsignedLong> getWriter(byte value)
     {
-        return false;
+        return new UnsignedLongFixedOneWriter(value);
     }
 
+
+    public static ValueWriter<UnsignedLong> getWriter(long value)
+    {
+        return new UnsignedLongFixedEightWriter(value);
+    }
 }

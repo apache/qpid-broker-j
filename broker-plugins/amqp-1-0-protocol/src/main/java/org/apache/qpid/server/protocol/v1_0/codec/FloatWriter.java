@@ -26,24 +26,25 @@ public class FloatWriter extends FixedFourWriter<Float>
     private static final byte FORMAT_CODE = (byte)0x72;
 
 
+    public FloatWriter(final Float object)
+    {
+        super(Float.floatToIntBits(object));
+    }
+
     @Override
     byte getFormatCode()
     {
         return FORMAT_CODE;
     }
 
-    @Override
-    int convertValueToInt(Float value)
-    {
-        return Float.floatToIntBits(value.floatValue());
-    }
-
     private static Factory<Float> FACTORY = new Factory<Float>()
                                             {
 
-                                                public ValueWriter<Float> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<Float> newInstance(final Registry registry,
+                                                                                      final Float object)
                                                 {
-                                                    return new FloatWriter();
+                                                    return new FloatWriter(object);
                                                 }
                                             };
 

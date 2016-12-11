@@ -25,6 +25,7 @@ package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,127 +33,96 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Properties;
 
 public class PropertiesWriter extends AbstractDescribedTypeWriter<Properties>
 {
-    private Properties _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x73);
 
-    public PropertiesWriter(final Registry registry)
+    public PropertiesWriter(final Registry registry, final Properties object)
     {
-        super(registry);
-    }
-
-    @Override
-    protected void onSetValue(final Properties value)
-    {
-        _value = value;
-        _count = calculateCount();
-    }
-
-    private int calculateCount()
-    {
-
-
-        if( _value.getReplyToGroupId() != null)
-        {
-            return 13;
-        }
-
-        if( _value.getGroupSequence() != null)
-        {
-            return 12;
-        }
-
-        if( _value.getGroupId() != null)
-        {
-            return 11;
-        }
-
-        if( _value.getCreationTime() != null)
-        {
-            return 10;
-        }
-
-        if( _value.getAbsoluteExpiryTime() != null)
-        {
-            return 9;
-        }
-
-        if( _value.getContentEncoding() != null)
-        {
-            return 8;
-        }
-
-        if( _value.getContentType() != null)
-        {
-            return 7;
-        }
-
-        if( _value.getCorrelationId() != null)
-        {
-            return 6;
-        }
-
-        if( _value.getReplyTo() != null)
-        {
-            return 5;
-        }
-
-        if( _value.getSubject() != null)
-        {
-            return 4;
-        }
-
-        if( _value.getTo() != null)
-        {
-            return 3;
-        }
-
-        if( _value.getUserId() != null)
-        {
-            return 2;
-        }
-
-        if( _value.getMessageId() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
     }
 
 
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000073L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<Properties>
+    private static class Writer extends AbstractListWriter<Properties>
     {
         private int _field;
+        private final Properties _value;
+        private final int _count;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, Properties value)
         {
             super(registry);
+            _value = value;
+            _count = calculateCount();
+
         }
 
-        @Override
-        protected void onSetValue(final Properties value)
+        private int calculateCount()
         {
-            reset();
+            if( _value.getReplyToGroupId() != null)
+            {
+                return 13;
+            }
+
+            if( _value.getGroupSequence() != null)
+            {
+                return 12;
+            }
+
+            if( _value.getGroupId() != null)
+            {
+                return 11;
+            }
+
+            if( _value.getCreationTime() != null)
+            {
+                return 10;
+            }
+
+            if( _value.getAbsoluteExpiryTime() != null)
+            {
+                return 9;
+            }
+
+            if( _value.getContentEncoding() != null)
+            {
+                return 8;
+            }
+
+            if( _value.getContentType() != null)
+            {
+                return 7;
+            }
+
+            if( _value.getCorrelationId() != null)
+            {
+                return 6;
+            }
+
+            if( _value.getReplyTo() != null)
+            {
+                return 5;
+            }
+
+            if( _value.getSubject() != null)
+            {
+                return 4;
+            }
+
+            if( _value.getTo() != null)
+            {
+                return 3;
+            }
+
+            if( _value.getUserId() != null)
+            {
+                return 2;
+            }
+
+            if( _value.getMessageId() != null)
+            {
+                return 1;
+            }
+
+            return 0;
         }
 
         @Override
@@ -218,11 +188,6 @@ public class PropertiesWriter extends AbstractDescribedTypeWriter<Properties>
         }
 
         @Override
-        protected void clear()
-        {
-        }
-
-        @Override
         protected void reset()
         {
             _field = 0;
@@ -232,9 +197,10 @@ public class PropertiesWriter extends AbstractDescribedTypeWriter<Properties>
     private static Factory<Properties> FACTORY = new Factory<Properties>()
     {
 
-        public ValueWriter<Properties> newInstance(Registry registry)
+        @Override
+        public ValueWriter<Properties> newInstance(final Registry registry, final Properties object)
         {
-            return new PropertiesWriter(registry);
+            return new PropertiesWriter(registry, object);
         }
     };
 

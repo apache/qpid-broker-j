@@ -24,6 +24,7 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -31,44 +32,21 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Footer;
 
 public class FooterWriter extends AbstractDescribedTypeWriter<Footer>
 {
-    private Footer _value;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x78);
 
-
-
-    public FooterWriter(final Registry registry)
+    public FooterWriter(final Registry registry,
+                        final Footer object)
     {
-        super(registry);
-    }
-
-    @Override
-    protected void onSetValue(final Footer value)
-    {
-        _value = value;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-    }
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000078L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        return getRegistry().getValueWriter(_value.getValue());
+        super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
     private static Factory<Footer> FACTORY = new Factory<Footer>()
     {
 
-        public ValueWriter<Footer> newInstance(Registry registry)
+        @Override
+        public ValueWriter<Footer> newInstance(final Registry registry, final Footer object)
         {
-            return new FooterWriter(registry);
+            return new FooterWriter(registry, object);
         }
     };
 

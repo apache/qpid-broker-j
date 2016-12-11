@@ -25,70 +25,35 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public abstract class FixedTwoWriter <T extends Object> implements ValueWriter<T>
 {
-    private int _written = 3;
     private short _value;
 
-    public int writeToBuffer(QpidByteBuffer buffer)
+    public FixedTwoWriter()
     {
+    }
 
-        switch(_written)
-        {
-            case 0:
-                if(buffer.hasRemaining())
-                {
-                    buffer.put(getFormatCode());
-                }
-                else
-                {
-                    break;
-                }
-            case 1:
+    public FixedTwoWriter(T object)
+    {
+        setValue(object);
+    }
 
-                if(buffer.remaining()>1)
-                {
-                    buffer.putShort(_value);
-                    _written = 3;
-                }
-                else if(buffer.hasRemaining())
-                {
-                    buffer.put((byte) (0xFF & (_value >> 8)));
-                    _written = 2;
-                }
-                else
-                {
-                    _written = 1;
-                }
-                break;
-            case 2:
-                if(buffer.hasRemaining())
-                {
-                    buffer.put((byte)(0xFF & _value));
-                }
+    public void writeToBuffer(QpidByteBuffer buffer)
+    {
+        buffer.put(getFormatCode());
+        buffer.putShort(_value);
+    }
 
-
-        }
-
+    @Override
+    public int getEncodedSize()
+    {
         return 3;
     }
 
-
     public final void setValue(T value)
     {
-        _written = 0;
         _value = convertValueToShort(value);
     }
 
     abstract short convertValueToShort(T value);
-
-    public boolean isCacheable()
-    {
-        return true;
-    }
-
-    public boolean isComplete()
-    {
-        return _written == 3;
-    }
 
     abstract byte getFormatCode();
 

@@ -24,120 +24,26 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
-import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
-
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
 
 public class AcceptedWriter extends AbstractDescribedTypeWriter<Accepted>
 {
-    private Accepted _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x24);
 
     public AcceptedWriter(final Registry registry)
     {
-        super(registry);
-    }
-
-    @Override
-    protected void onSetValue(final Accepted value)
-    {
-        _value = value;
-        _count = calculateCount();
-    }
-
-    private int calculateCount()
-    {
-
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000024L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        if(_count != 0)
-        {
-            final Writer writer = new Writer(getRegistry());
-            writer.setValue(_value);
-            return writer;
-        }
-        else
-        {
-            return new ListWriter.EmptyListValueWriter();
-        }
-
-    }
-
-    private class Writer extends AbstractListWriter<Accepted>
-    {
-        private int _field;
-
-        public Writer(final Registry registry)
-        {
-            super(registry);
-        }
-
-        @Override
-        protected void onSetValue(final Accepted value)
-        {
-            reset();
-        }
-
-        @Override
-        protected int getCount()
-        {
-            return _count;
-        }
-
-        @Override
-        protected boolean hasNext()
-        {
-            return _field < _count;
-        }
-
-        @Override
-        protected Object next()
-        {
-            switch(_field++)
-            {
-
-                default:
-                    return null;
-            }
-        }
-
-        @Override
-        protected void clear()
-        {
-        }
-
-        @Override
-        protected void reset()
-        {
-            _field = 0;
-        }
+        super(DESCRIPTOR_WRITER, ListWriter.EMPTY_LIST_WRITER);
     }
 
     private static Factory<Accepted> FACTORY = new Factory<Accepted>()
     {
 
-        public ValueWriter<Accepted> newInstance(Registry registry)
+        @Override
+        public ValueWriter<Accepted> newInstance(final Registry registry, final Accepted object)
         {
             return new AcceptedWriter(registry);
         }

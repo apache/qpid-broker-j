@@ -29,6 +29,12 @@ public class RestrictedTypeValueWriter<V> extends DelegatingValueWriter<Restrict
         super(registry);
     }
 
+    public RestrictedTypeValueWriter(final Registry registry,
+                                     final RestrictedType<V> object)
+    {
+        super(registry, object);
+    }
+
     @Override
     protected Object getUnderlyingValue(final RestrictedType<V> restrictedType)
     {
@@ -38,16 +44,12 @@ public class RestrictedTypeValueWriter<V> extends DelegatingValueWriter<Restrict
     private static Factory FACTORY = new Factory()
     {
 
-        public ValueWriter newInstance(Registry registry)
+        @Override
+        public ValueWriter newInstance(final Registry registry, final Object object)
         {
-            return new RestrictedTypeValueWriter(registry);
+            return new RestrictedTypeValueWriter(registry, (RestrictedType) object);
         }
     };
-
-    public boolean isCacheable()
-    {
-        return true;
-    }
 
     public static void register(ValueWriter.Registry registry, Class clazz)
     {

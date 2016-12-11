@@ -25,6 +25,10 @@ public class DoubleWriter extends FixedEightWriter<Double>
 {
     private static final byte FORMAT_CODE = (byte) 0x82;
 
+    public DoubleWriter(final Double object)
+    {
+        super(Double.doubleToLongBits(object.doubleValue()));
+    }
 
     @Override
     byte getFormatCode()
@@ -32,18 +36,14 @@ public class DoubleWriter extends FixedEightWriter<Double>
         return FORMAT_CODE;
     }
 
-    @Override
-    long convertValueToLong(Double value)
-    {
-        return Double.doubleToLongBits(value.doubleValue());
-    }
-
     private static Factory<Double> FACTORY = new Factory<Double>()
                                             {
 
-                                                public ValueWriter<Double> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<Double> newInstance(final Registry registry,
+                                                                                       final Double object)
                                                 {
-                                                    return new DoubleWriter();
+                                                    return new DoubleWriter(object);
                                                 }
                                             };
 

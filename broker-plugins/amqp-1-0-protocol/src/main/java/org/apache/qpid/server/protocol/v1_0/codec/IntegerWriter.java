@@ -21,17 +21,40 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
-public class IntegerWriter implements ValueWriter<Integer>
+public class IntegerWriter
 {
     private static final byte EIGHT_BYTE_FORMAT_CODE = (byte)0x71;
     private static final byte ONE_BYTE_FORMAT_CODE = (byte) 0x54;
 
-    private ValueWriter<Integer> _delegate;
+    private static ValueWriter.Factory<Integer> FACTORY = new ValueWriter.Factory<Integer>()
+                                            {
 
-    private final FixedFourWriter<Integer> _eightByteWriter = new FixedFourWriter<Integer>()
+                                                @Override
+                                                public ValueWriter<Integer> newInstance(final ValueWriter.Registry registry,
+                                                                                        final Integer i)
+                                                {
+                                                    if(i >= -128 && i <= 127)
+                                                    {
+                                                        return new IntegerFixedOneWriter(i);
+                                                    }
+                                                    else
+                                                    {
+                                                        return new IntegerFixedFourWriter(i);
+                                                    }
+                                                }
+                                            };
+
+    public static void register(ValueWriter.Registry registry)
     {
+        registry.register(Integer.class, FACTORY);
+    }
+
+    private static class IntegerFixedFourWriter extends FixedFourWriter<Integer>
+    {
+        public IntegerFixedFourWriter(final Integer object)
+        {
+            super(object);
+        }
 
         @Override
         byte getFormatCode()
@@ -39,68 +62,19 @@ public class IntegerWriter implements ValueWriter<Integer>
             return EIGHT_BYTE_FORMAT_CODE;
         }
 
-        @Override
-        int convertValueToInt(Integer value)
-        {
-            return value.intValue();
-        }
-    };
+    }
 
-    private final ValueWriter<Integer> _oneByteWriter = new FixedOneWriter<Integer>()
+    private static class IntegerFixedOneWriter extends FixedOneWriter<Integer>
     {
+
+        public IntegerFixedOneWriter(final Integer value)
+        {
+            super(value.byteValue());
+        }
 
         @Override protected byte getFormatCode()
         {
             return ONE_BYTE_FORMAT_CODE;
         }
-
-        @Override protected byte convertToByte(final Integer value)
-        {
-            return value.byteValue();
-        }
-    };
-
-
-    public int writeToBuffer(final QpidByteBuffer buffer)
-    {
-        return _delegate.writeToBuffer(buffer);
-    }
-
-    public void setValue(final Integer i)
-    {
-        if(i >= -128 && i <= 127)
-        {
-            _delegate = _oneByteWriter;
-        }
-        else
-        {
-            _delegate = _eightByteWriter;
-        }
-        _delegate.setValue(i);
-    }
-
-    public boolean isComplete()
-    {
-        return _delegate.isComplete();
-    }
-
-    public boolean isCacheable()
-    {
-        return false;
-    }
-
-
-    private static Factory<Integer> FACTORY = new Factory<Integer>()
-                                            {
-
-                                                public ValueWriter<Integer> newInstance(Registry registry)
-                                                {
-                                                    return new IntegerWriter();
-                                                }
-                                            };
-
-    public static void register(ValueWriter.Registry registry)
-    {
-        registry.register(Integer.class, FACTORY);
     }
 }

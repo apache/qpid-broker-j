@@ -24,56 +24,24 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public abstract class FixedOneWriter<T> implements ValueWriter<T>
 {
-    protected int _written = 2;
-    protected byte _value;
+    protected final byte _value;
 
-    public int writeToBuffer(QpidByteBuffer buffer)
+    public FixedOneWriter(final byte value)
     {
+        _value = value;
+    }
 
-        switch(_written)
-        {
-            case 0:
-                if(buffer.hasRemaining())
-                {
-                    buffer.put(getFormatCode());
-                }
-                else
-                {
-                    break;
-                }
-            case 1:
-                if(buffer.hasRemaining())
-                {
-                    buffer.put(_value);
-                    _written = 2;
-                }
-                else
-                {
-                    _written = 1;
-                }
+    public void writeToBuffer(QpidByteBuffer buffer)
+    {
+        buffer.put(getFormatCode());
+        buffer.put(_value);
+    }
 
-        }
-
+    @Override
+    public int getEncodedSize()
+    {
         return 2;
     }
 
     protected abstract byte getFormatCode();
-
-    public boolean isComplete()
-    {
-        return _written == 2;
-    }
-
-    public boolean isCacheable()
-    {
-        return true;
-    }
-
-    public void setValue(final T value)
-    {
-        _written = 0;
-        _value = convertToByte(value);
-    }
-
-    protected abstract byte convertToByte(final T value);
 }

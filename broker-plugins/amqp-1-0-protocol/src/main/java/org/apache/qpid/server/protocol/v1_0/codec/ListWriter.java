@@ -25,24 +25,17 @@ import java.util.List;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
-public class ListWriter implements ValueWriter<List>
+public class ListWriter
 {
     private static class NonEmptyListWriter extends AbstractListWriter<List>
     {
         private List _list;
         private int _position = 0;
 
-        public NonEmptyListWriter(final Registry registry)
+        public NonEmptyListWriter(final Registry registry, final List object)
         {
-            super(registry);
-        }
-
-        @Override
-        protected void onSetValue(final List value)
-        {
-            _list = value;
-            _position = 0;
-
+            super(registry, object);
+            _list = object;
         }
 
         @Override
@@ -64,13 +57,6 @@ public class ListWriter implements ValueWriter<List>
         }
 
         @Override
-        protected void clear()
-        {
-            _list = null;
-            _position = 0;
-        }
-
-        @Override
         protected void reset()
         {
             _position = 0;
@@ -78,96 +64,40 @@ public class ListWriter implements ValueWriter<List>
 
     }
 
-    private final NonEmptyListWriter _nonEmptyListWriter;
     private static final byte ZERO_BYTE_FORMAT_CODE = (byte) 0x45;
 
-    private final ValueWriter<List> _emptyListWriter = new EmptyListValueWriter();
+    public static final ValueWriter<List> EMPTY_LIST_WRITER = new EmptyListValueWriter();
 
-
-    private ValueWriter<List> _delegate;
-
-    public ListWriter(final Registry registry)
+    public static class EmptyListValueWriter implements ValueWriter<List>
     {
-        _nonEmptyListWriter = new NonEmptyListWriter(registry);
 
-    }
-
-
-    public int writeToBuffer(QpidByteBuffer buffer)
-    {
-        return _delegate.writeToBuffer(buffer);
-    }
-
-    public void setValue(List frameBody)
-    {
-        if(frameBody.isEmpty())
+        @Override
+        public int getEncodedSize()
         {
-            _delegate = _emptyListWriter;
+            return 1;
         }
-        else
+
+        public void writeToBuffer(QpidByteBuffer buffer)
         {
-            _delegate = _nonEmptyListWriter;
+            buffer.put(ZERO_BYTE_FORMAT_CODE);
         }
-        _delegate.setValue(frameBody);
     }
 
-    public boolean isComplete()
-    {
-        return _delegate.isComplete();
-    }
+    private static ValueWriter.Factory<List> FACTORY =
+            new ValueWriter.Factory<List>()
+            {
 
-    public boolean isCacheable()
-    {
-        return false;
-    }
-
-
-
-    private static Factory<List> FACTORY = new Factory<List>()
-                                            {
-
-                                                public ValueWriter<List> newInstance(Registry registry)
-                                                {
-                                                    return new ListWriter(registry);
-                                                }
-                                            };
+                @Override
+                public ValueWriter<List> newInstance(final ValueWriter.Registry registry,
+                                                     final List object)
+                {
+                    return object.isEmpty() ? EMPTY_LIST_WRITER : new NonEmptyListWriter(registry, object);
+                }
+            };
 
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(List.class, FACTORY);
     }
 
-    public static class EmptyListValueWriter implements ValueWriter<List>
-    {
-        private boolean _complete;
-
-
-        public int writeToBuffer(QpidByteBuffer buffer)
-        {
-
-            if(!_complete && buffer.hasRemaining())
-            {
-                buffer.put(ZERO_BYTE_FORMAT_CODE);
-                _complete = true;
-            }
-
-            return 1;
-        }
-
-        public void setValue(List list)
-        {
-            _complete = false;
-        }
-
-        public boolean isCacheable()
-        {
-            return true;
-        }
-
-        public boolean isComplete()
-        {
-            return _complete;
-        }
-
-    }
 }

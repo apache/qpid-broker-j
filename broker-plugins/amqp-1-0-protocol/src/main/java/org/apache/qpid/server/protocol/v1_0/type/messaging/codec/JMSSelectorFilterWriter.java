@@ -24,50 +24,29 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
 import org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter;
 
 public class JMSSelectorFilterWriter extends AbstractDescribedTypeWriter<JMSSelectorFilter>
 {
-    private JMSSelectorFilter _value;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter(0x0000468C00000004L);
 
-
-
-    public JMSSelectorFilterWriter(final Registry registry)
+    public JMSSelectorFilterWriter(final Registry registry,
+                                   final JMSSelectorFilter object)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
-    @Override
-    protected void onSetValue(final JMSSelectorFilter value)
-    {
-        _value = value;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-    }
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000468C00000004L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        return getRegistry().getValueWriter(_value.getValue());
-    }
 
     private static Factory<JMSSelectorFilter> FACTORY = new Factory<JMSSelectorFilter>()
     {
 
-        public ValueWriter<JMSSelectorFilter> newInstance(Registry registry)
+        @Override
+        public ValueWriter<JMSSelectorFilter> newInstance(final Registry registry, final JMSSelectorFilter object)
         {
-            return new JMSSelectorFilterWriter(registry);
+            return new JMSSelectorFilterWriter(registry, object);
         }
     };
 

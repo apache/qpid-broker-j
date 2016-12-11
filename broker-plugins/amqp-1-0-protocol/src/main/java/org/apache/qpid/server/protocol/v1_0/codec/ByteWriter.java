@@ -25,61 +25,43 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class ByteWriter implements ValueWriter<Byte>
 {
-    private int _written = 2;
     private byte _value;
 
-    public int writeToBuffer(QpidByteBuffer buffer)
+    public ByteWriter()
+    {
+    }
+
+    public ByteWriter(final Byte object)
+    {
+        setValue(object);
+    }
+
+    @Override
+    public int getEncodedSize()
+    {
+        return 2;
+    }
+
+    public void writeToBuffer(QpidByteBuffer buffer)
     {
 
-        switch(_written)
-        {
-            case 0:
-                if(buffer.hasRemaining())
-                {
-                    buffer.put((byte)0x51);
-                }
-                else
-                {
-                    break;
-                }
-            case 1:
-                if(buffer.hasRemaining())
-                {
-                    buffer.put(_value);
-                    _written = 2;
-                }
-                else
-                {
-                    _written = 1;
-                }
-
-        }
-
-        return 2;
+        buffer.put((byte)0x51);
+        buffer.put(_value);
     }
 
     public void setValue(Byte value)
     {
-        _written = 0;
         _value = value.byteValue();
-    }
-
-    public boolean isComplete()
-    {
-        return _written == 2;
-    }
-
-    public boolean isCacheable()
-    {
-        return true;
     }
 
     private static Factory<Byte> FACTORY = new Factory<Byte>()
                                             {
 
-                                                public ValueWriter<Byte> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<Byte> newInstance(final Registry registry,
+                                                                                     final Byte object)
                                                 {
-                                                    return new ByteWriter();
+                                                    return new ByteWriter(object);
                                                 }
                                             };
 

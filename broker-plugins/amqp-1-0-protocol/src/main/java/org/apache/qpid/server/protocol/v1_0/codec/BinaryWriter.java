@@ -25,8 +25,11 @@ import org.apache.qpid.server.protocol.v1_0.type.Binary;
 
 public class BinaryWriter extends SimpleVariableWidthWriter<Binary>
 {
-    private int _offset;
-    private int _length;
+
+    public BinaryWriter(final Binary object)
+    {
+        super(object.getArray());
+    }
 
     @Override
     protected byte getFourOctetEncodingCode()
@@ -40,31 +43,15 @@ public class BinaryWriter extends SimpleVariableWidthWriter<Binary>
         return (byte)0xa0;
     }
 
-    @Override
-    protected byte[] getByteArray(Binary value)
-    {
-        _offset = value.getArrayOffset();
-        _length = value.getLength();
-        return value.getArray();
-    }
-
-    @Override
-    protected int getOffset()
-    {
-        return _offset;
-    }
-
-    @Override protected int getLength()
-    {
-        return _length;
-    }
 
     private static Factory<Binary> FACTORY = new Factory<Binary>()
                                             {
 
-                                                public ValueWriter<Binary> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<Binary> newInstance(final Registry registry,
+                                                                                       final Binary object)
                                                 {
-                                                    return new BinaryWriter();
+                                                    return new BinaryWriter(object);
                                                 }
                                             };
 

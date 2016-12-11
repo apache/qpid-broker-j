@@ -21,10 +21,10 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import org.apache.qpid.server.protocol.v1_0.type.Symbol;
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
 import java.nio.charset.Charset;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
 
 public class SymbolWriter extends VariableWidthWriter<Symbol>
 {
@@ -33,6 +33,11 @@ public class SymbolWriter extends VariableWidthWriter<Symbol>
     public static final byte SMALL_ENCODING_CODE = (byte) 0xa3;
     private Symbol _value;
 
+    public SymbolWriter(final Symbol object)
+    {
+        super(object.length());
+        _value = object;
+    }
 
     @Override
     protected byte getFourOctetEncodingCode()
@@ -44,36 +49,6 @@ public class SymbolWriter extends VariableWidthWriter<Symbol>
     protected byte getSingleOctetEncodingCode()
     {
         return SMALL_ENCODING_CODE;
-    }
-
-    @Override
-    public void setValue(Symbol value)
-    {
-        _value = value;
-        super.setValue(value);
-    }
-
-    public boolean isCacheable()
-    {
-        return true;
-    }
-
-    @Override
-    protected void clearValue()
-    {
-        _value = null;
-    }
-
-    @Override
-    protected boolean hasValue()
-    {
-        return _value != null;
-    }
-
-    @Override
-    protected int getLength()
-    {
-        return _value.length();
     }
 
     @Override
@@ -89,9 +64,11 @@ public class SymbolWriter extends VariableWidthWriter<Symbol>
     private static Factory<Symbol> FACTORY = new Factory<Symbol>()
                                             {
 
-                                                public ValueWriter<Symbol> newInstance(Registry registry)
+                                                @Override
+                                                public ValueWriter<Symbol> newInstance(final Registry registry,
+                                                                                       final Symbol object)
                                                 {
-                                                    return new SymbolWriter();
+                                                    return new SymbolWriter(object);
                                                 }
                                             };
 

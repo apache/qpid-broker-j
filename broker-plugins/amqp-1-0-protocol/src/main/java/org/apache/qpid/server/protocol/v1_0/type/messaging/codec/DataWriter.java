@@ -24,6 +24,7 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -31,44 +32,20 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.Data;
 
 public class DataWriter extends AbstractDescribedTypeWriter<Data>
 {
-    private Data _value;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x75);
 
-
-
-    public DataWriter(final Registry registry)
+    public DataWriter(final Registry registry, final Data object)
     {
-        super(registry);
-    }
-
-    @Override
-    protected void onSetValue(final Data value)
-    {
-        _value = value;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-    }
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000075L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        return getRegistry().getValueWriter(_value.getValue());
+        super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
     private static Factory<Data> FACTORY = new Factory<Data>()
     {
 
-        public ValueWriter<Data> newInstance(Registry registry)
+        @Override
+        public ValueWriter<Data> newInstance(final Registry registry, final Data object)
         {
-            return new DataWriter(registry);
+            return new DataWriter(registry, object);
         }
     };
 

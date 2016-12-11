@@ -1,4 +1,3 @@
-
 /*
 *
 * Licensed to the Apache Software Foundation (ASF) under one
@@ -20,11 +19,11 @@
 *
 */
 
-
 package org.apache.qpid.server.protocol.v1_0.type.transaction.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractListWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -32,72 +31,41 @@ import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
 
 public class TransactionalStateWriter extends AbstractDescribedTypeWriter<TransactionalState>
 {
-    private TransactionalState _value;
-    private int _count = -1;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x34);
 
-    public TransactionalStateWriter(final Registry registry)
+    private TransactionalStateWriter(final Registry registry, final TransactionalState object)
     {
-        super(registry);
+        super(DESCRIPTOR_WRITER, new Writer(registry, object));
     }
 
-    @Override
-    protected void onSetValue(final TransactionalState value)
+    private static class Writer extends AbstractListWriter<TransactionalState>
     {
-        _value = value;
-        _count = calculateCount();
-    }
+        private final TransactionalState _value;
+        private final int _count;
 
-    private int calculateCount()
-    {
-
-
-        if( _value.getOutcome() != null)
-        {
-            return 2;
-        }
-
-        if( _value.getTxnId() != null)
-        {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-        _count = -1;
-    }
-
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000034L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        final Writer writer = new Writer(getRegistry());
-        writer.setValue(_value);
-        return writer;
-    }
-
-    private class Writer extends AbstractListWriter<TransactionalState>
-    {
         private int _field;
 
-        public Writer(final Registry registry)
+        public Writer(final Registry registry, final TransactionalState object)
         {
             super(registry);
+
+            _value = object;
+            _count = calculateCount();
         }
 
-        @Override
-        protected void onSetValue(final TransactionalState value)
+        private int calculateCount()
         {
-            reset();
+            if( _value.getOutcome() != null)
+            {
+                return 2;
+            }
+
+            if( _value.getTxnId() != null)
+            {
+                return 1;
+            }
+
+            return 0;
         }
 
         @Override
@@ -130,11 +98,6 @@ public class TransactionalStateWriter extends AbstractDescribedTypeWriter<Transa
         }
 
         @Override
-        protected void clear()
-        {
-        }
-
-        @Override
         protected void reset()
         {
             _field = 0;
@@ -144,9 +107,10 @@ public class TransactionalStateWriter extends AbstractDescribedTypeWriter<Transa
     private static Factory<TransactionalState> FACTORY = new Factory<TransactionalState>()
     {
 
-        public ValueWriter<TransactionalState> newInstance(Registry registry)
+        @Override
+        public ValueWriter<TransactionalState> newInstance(final Registry registry, final TransactionalState object)
         {
-            return new TransactionalStateWriter(registry);
+            return new TransactionalStateWriter(registry, object);
         }
     };
 

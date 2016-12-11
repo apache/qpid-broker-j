@@ -24,6 +24,7 @@
 package org.apache.qpid.server.protocol.v1_0.type.messaging.codec;
 
 import org.apache.qpid.server.protocol.v1_0.codec.AbstractDescribedTypeWriter;
+import org.apache.qpid.server.protocol.v1_0.codec.UnsignedLongWriter;
 import org.apache.qpid.server.protocol.v1_0.codec.ValueWriter;
 
 import org.apache.qpid.server.protocol.v1_0.type.UnsignedLong;
@@ -31,44 +32,21 @@ import org.apache.qpid.server.protocol.v1_0.type.messaging.MessageAnnotations;
 
 public class MessageAnnotationsWriter extends AbstractDescribedTypeWriter<MessageAnnotations>
 {
-    private MessageAnnotations _value;
+    private static final ValueWriter<UnsignedLong> DESCRIPTOR_WRITER = UnsignedLongWriter.getWriter((byte) 0x72);
 
-
-
-    public MessageAnnotationsWriter(final Registry registry)
+    public MessageAnnotationsWriter(final Registry registry,
+                                    final MessageAnnotations object)
     {
-        super(registry);
-    }
-
-    @Override
-    protected void onSetValue(final MessageAnnotations value)
-    {
-        _value = value;
-    }
-
-    @Override
-    protected void clear()
-    {
-        _value = null;
-    }
-
-    protected Object getDescriptor()
-    {
-        return UnsignedLong.valueOf(0x0000000000000072L);
-    }
-
-    @Override
-    protected ValueWriter createDescribedWriter()
-    {
-        return getRegistry().getValueWriter(_value.getValue());
+        super(DESCRIPTOR_WRITER, registry.getValueWriter(object.getValue()));
     }
 
     private static Factory<MessageAnnotations> FACTORY = new Factory<MessageAnnotations>()
     {
 
-        public ValueWriter<MessageAnnotations> newInstance(Registry registry)
+        @Override
+        public ValueWriter<MessageAnnotations> newInstance(final Registry registry, final MessageAnnotations object)
         {
-            return new MessageAnnotationsWriter(registry);
+            return new MessageAnnotationsWriter(registry, object);
         }
     };
 

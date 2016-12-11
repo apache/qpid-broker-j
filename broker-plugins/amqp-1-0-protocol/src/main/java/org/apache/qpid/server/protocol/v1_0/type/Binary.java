@@ -21,38 +21,28 @@
 package org.apache.qpid.server.protocol.v1_0.type;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
+import java.util.Arrays;
 
 public class Binary
 {
 
     private final byte[] _data;
-    private final int _offset;
-    private final int _length;
     private final int _hashCode;
 
     public Binary(final byte[] data)
     {
-        this(data, 0, data.length);
-    }
-
-    public Binary(final byte[] data, final int offset, final int length)
-    {
-
         _data = data;
-        _offset = offset;
-        _length = length;
         int hc = 0;
-        for (int i = 0; i < length; i++)
+        for (int i = 0; i < _data.length; i++)
         {
-            hc = 31*hc + (0xFF & data[offset + i]);
+            hc = 31*hc + (0xFF & data[i]);
         }
         _hashCode = hc;
     }
 
     public ByteBuffer asByteBuffer()
     {
-        return ByteBuffer.wrap(_data, _offset, _length);
+        return ByteBuffer.wrap(_data);
     }
 
     public final int hashCode()
@@ -65,53 +55,26 @@ public class Binary
         if(o instanceof Binary)
         {
             Binary buf = (Binary) o;
-
-            final int size = _length;
-            if (size == buf._length)
-            {
-                final byte[] myData = _data;
-                final byte[] theirData = buf._data;
-                int myOffset = _offset;
-                int theirOffset = buf._offset;
-                final int myLimit = myOffset + size;
-
-                while (myOffset < myLimit)
-                {
-                    if (myData[myOffset++] != theirData[theirOffset++])
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
+            return Arrays.equals(_data, buf._data);
         }
 
         return false;
     }
 
 
-    public int getArrayOffset()
-    {
-        return _offset;
-    }
 
     public byte[] getArray()
     {
         return _data;
     }
 
-    public int getLength()
-    {
-        return _length;
-    }
 
     public String toString()
     {
         StringBuilder str = new StringBuilder();
 
 
-        for (int i = _offset; i < _length; i++)
+        for (int i = 0; i < _data.length; i++)
         {
             byte c = _data[i];
 
@@ -127,33 +90,5 @@ public class Binary
 
         return str.toString();
 
-    }
-
-    public static Binary combine(final Collection<Binary> binaries)
-    {
-
-        if(binaries.size() == 1)
-        {
-            return binaries.iterator().next();
-        }
-
-        int size = 0;
-        for(Binary binary : binaries)
-        {
-            size += binary.getLength();
-        }
-        byte[] data = new byte[size];
-        int offset = 0;
-        for(Binary binary : binaries)
-        {
-            System.arraycopy(binary._data, binary._offset, data, offset, binary._length);
-            offset += binary._length;
-        }
-        return new Binary(data);
-    }
-
-    public Binary subBinary(final int offset, final int length)
-    {
-        return new Binary(_data, _offset+offset, length);
     }
 }

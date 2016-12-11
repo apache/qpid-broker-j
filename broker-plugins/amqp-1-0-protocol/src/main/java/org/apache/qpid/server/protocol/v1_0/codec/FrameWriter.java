@@ -54,9 +54,7 @@ public class FrameWriter
         }
         else
         {
-            typeWriter.setValue(frame.getFrameBody());
-            QpidByteBuffer qpidByteBuffer = QpidByteBuffer.wrap(EMPTY_BYTE_ARRAY);
-            bodySize = typeWriter.writeToBuffer(qpidByteBuffer) + 8;
+            bodySize = 8 + typeWriter.getEncodedSize();
         }
 
         QpidByteBuffer body = QpidByteBuffer.allocate(_sender.isDirectBufferPreferred(), bodySize);

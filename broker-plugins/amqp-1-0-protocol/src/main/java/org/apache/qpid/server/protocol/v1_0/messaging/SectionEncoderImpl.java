@@ -26,7 +26,6 @@ import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry
 
 public class SectionEncoderImpl implements SectionEncoder
 {
-    private static final QpidByteBuffer EMPTY_BYTE_BUFFER = QpidByteBuffer.wrap(new byte[0]);
     private AMQPDescribedTypeRegistry _registry;
 
     public SectionEncoderImpl(final AMQPDescribedTypeRegistry describedTypeRegistry)
@@ -37,8 +36,7 @@ public class SectionEncoderImpl implements SectionEncoder
     public QpidByteBuffer encodeObject(Object obj)
     {
         final ValueWriter<Object> valueWriter = _registry.getValueWriter(obj);
-        valueWriter.setValue(obj);
-        int size = valueWriter.writeToBuffer(EMPTY_BYTE_BUFFER);
+        int size = valueWriter.getEncodedSize();
         final QpidByteBuffer buf = QpidByteBuffer.allocateDirect(size);
         valueWriter.writeToBuffer(buf);
         buf.flip();

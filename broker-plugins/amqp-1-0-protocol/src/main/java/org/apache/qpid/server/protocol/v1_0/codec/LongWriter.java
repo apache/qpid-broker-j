@@ -21,91 +21,60 @@
 
 package org.apache.qpid.server.protocol.v1_0.codec;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-
-public class LongWriter implements ValueWriter<Long>
+public class LongWriter
 {
     private static final byte EIGHT_BYTE_FORMAT_CODE = (byte) 0x81;
 
 
     private static final byte ONE_BYTE_FORMAT_CODE = (byte) 0x55;
 
-    private ValueWriter<Long> _delegate;
-
-    private final FixedEightWriter<Long> _eightByteWriter = new FixedEightWriter<Long>()
-    {
-
-        @Override
-        byte getFormatCode()
-        {
-            return EIGHT_BYTE_FORMAT_CODE;
-        }
-
-        @Override
-        long convertValueToLong(Long value)
-        {
-            return value;
-        }
-
-    };
-
-    private final ValueWriter<Long> _oneByteWriter = new FixedOneWriter<Long>()
-    {
-
-        @Override protected byte getFormatCode()
-        {
-            return ONE_BYTE_FORMAT_CODE;
-        }
-
-        @Override protected byte convertToByte(final Long value)
-        {
-            return value.byteValue();
-        }
-    };
-
-    public int writeToBuffer(final QpidByteBuffer buffer)
-    {
-        return _delegate.writeToBuffer(buffer);
-    }
-
-    public void setValue(final Long l)
-    {
-        if(l >= -128 && l <= 127)
-        {
-            _delegate = _oneByteWriter;
-        }
-        else
-        {
-            _delegate = _eightByteWriter;
-        }
-        _delegate.setValue(l);
-    }
-
-    public boolean isComplete()
-    {
-        return _delegate.isComplete();
-    }
-
-    public boolean isCacheable()
-    {
-        return false;
-    }
-
-
-
-
-    private static Factory<Long> FACTORY = new Factory<Long>()
-                                            {
-
-                                                public ValueWriter<Long> newInstance(Registry registry)
-                                                {
-                                                    return new LongWriter();
-                                                }
-                                            };
+    private static ValueWriter.Factory<Long> FACTORY =
+            new ValueWriter.Factory<Long>()
+            {
+                @Override
+                public ValueWriter<Long> newInstance(final ValueWriter.Registry registry,
+                                                     final Long l)
+                {
+                    if (l >= -128 && l <= 127)
+                    {
+                        return new LongFixedOneWriter(l);
+                    }
+                    else
+                    {
+                        return new LongFixedEightWriter(l);
+                    }
+                }
+            };
 
     public static void register(ValueWriter.Registry registry)
     {
         registry.register(Long.class, FACTORY);
     }
 
+    private static class LongFixedEightWriter extends FixedEightWriter<Long>
+    {
+        public LongFixedEightWriter(final Long object)
+        {
+            super(object);
+        }
+
+        @Override
+        byte getFormatCode()
+        {
+            return EIGHT_BYTE_FORMAT_CODE;
+        }
+    }
+
+    private static class LongFixedOneWriter extends FixedOneWriter<Long>
+    {
+        public LongFixedOneWriter(final Long value)
+        {
+            super(value.byteValue());
+        }
+
+        @Override protected byte getFormatCode()
+        {
+            return ONE_BYTE_FORMAT_CODE;
+        }
+    }
 }

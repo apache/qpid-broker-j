@@ -307,12 +307,6 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
 
     private final Map<Class, ValueWriter.Factory> _writerMap = new HashMap<Class, ValueWriter.Factory>();
 
-    public <V extends Object> ValueWriter<V> getValueWriter(V value, Map<Class, ValueWriter> localCache)
-    {
-        return getValueWriter(value);
-
-    }
-
 
     public <V extends Object> ValueWriter<V> getValueWriter(V value)
     {
@@ -328,16 +322,14 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
             {
                 factory = _writerMap.get(List.class);
                 _writerMap.put(value.getClass(), factory);
-                writer = factory.newInstance(this);
-                writer.setValue(value);
+                writer = factory.newInstance(this, value);
 
             }
             else if(value instanceof Map)
             {
                 factory = _writerMap.get(Map.class);
                 _writerMap.put(value.getClass(), factory);
-                writer = factory.newInstance(this);
-                writer.setValue(value);
+                writer = factory.newInstance(this, value);
 
             }
             else if(value.getClass().isArray())
@@ -355,8 +347,7 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
                 }
                 // TODO primitive array types
                 factory = _writerMap.get(List.class);
-                writer = factory.newInstance(this);
-                writer.setValue(Arrays.asList((Object[])value));
+                writer = factory.newInstance(this, (V)Arrays.asList((Object[])value));
 
             }
             else
@@ -366,8 +357,7 @@ public class AMQPDescribedTypeRegistry implements DescribedTypeConstructorRegist
         }
         else
         {
-            writer = factory.newInstance(this);
-            writer.setValue(value);
+            writer = factory.newInstance(this, value);
         }
 
 
