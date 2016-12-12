@@ -55,9 +55,9 @@ public final class MessagePublishInfo
         return _immediate;
     }
 
-    public void setImmediate(boolean immedate)
+    public void setImmediate(boolean immediate)
     {
-        _immediate = immedate;
+        _immediate = immediate;
     }
 
     public boolean isMandatory()

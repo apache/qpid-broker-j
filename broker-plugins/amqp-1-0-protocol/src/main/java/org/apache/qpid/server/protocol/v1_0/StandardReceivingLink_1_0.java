@@ -34,7 +34,10 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.MessageReference;
+import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
+import org.apache.qpid.server.plugin.MessageFormat;
+import org.apache.qpid.server.protocol.MessageFormatRegistry;
 import org.apache.qpid.server.protocol.v1_0.messaging.SectionDecoderImpl;
 import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
@@ -106,10 +109,10 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
 
         org.apache.qpid.server.protocol.v1_0.type.DeliveryState xfrState = xfr.getState();
         final Binary deliveryTag = xfr.getDeliveryTag();
-
+        UnsignedInteger messageFormat = null;
         if(Boolean.TRUE.equals(xfr.getMore()) && _incompleteMessage == null)
         {
-            _incompleteMessage = new ArrayList<Transfer>();
+            _incompleteMessage = new ArrayList<>();
             _incompleteMessage.add(xfr);
             _resumedMessage = Boolean.TRUE.equals(xfr.getResume());
             _messageDeliveryTag = deliveryTag;
@@ -128,6 +131,10 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
 
             for(Transfer t : _incompleteMessage)
             {
+                if(t.getMessageFormat() != null && messageFormat == null)
+                {
+                    messageFormat = t.getMessageFormat();
+                }
                 fragments.addAll(t.getPayload());
                 t.dispose();
             }
@@ -139,6 +146,8 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
             _resumedMessage = Boolean.TRUE.equals(xfr.getResume());
             _messageDeliveryTag = deliveryTag;
             fragments = xfr.getPayload();
+            messageFormat = xfr.getMessageFormat();
+
             xfr.dispose();
         }
 
@@ -161,21 +170,45 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
         }
         else
         {
-            List<EncodingRetainingSection<?>> dataSections = new ArrayList<>();
-            MessageMetaData_1_0 mmd = createMessageMetaData(fragments, dataSections);
-            MessageHandle<MessageMetaData_1_0> handle = _addressSpace.getMessageStore().addMessage(mmd);
+            ServerMessage<?> serverMessage;
+            String routingAddress;
 
-            for(EncodingRetainingSection<?> dataSection : dataSections)
+            if(messageFormat == null || UnsignedInteger.ZERO.equals(messageFormat))
             {
-                for (QpidByteBuffer buf : dataSection.getEncodedForm())
+                List<EncodingRetainingSection<?>> dataSections = new ArrayList<>();
+
+                MessageMetaData_1_0 mmd = createMessageMetaData(fragments, dataSections);
+                MessageHandle<MessageMetaData_1_0> handle = _addressSpace.getMessageStore().addMessage(mmd);
+
+                for (EncodingRetainingSection<?> dataSection : dataSections)
                 {
-                    handle.addContent(buf);
-                    buf.dispose();
+                    for (QpidByteBuffer buf : dataSection.getEncodedForm())
+                    {
+                        handle.addContent(buf);
+                        buf.dispose();
+                    }
+                }
+                final StoredMessage<MessageMetaData_1_0> storedMessage = handle.allContentAdded();
+                Message_1_0 message = new Message_1_0(storedMessage, getSession().getConnection().getReference());
+                routingAddress = _destination.getRoutingAddress(message);
+                serverMessage = message;
+            }
+            else
+            {
+                MessageFormat format = MessageFormatRegistry.getFormat(messageFormat.intValue());
+                if(format != null)
+                {
+                    serverMessage = format.createMessage(fragments, _addressSpace.getMessageStore(), getSession().getConnection().getReference());
+                    routingAddress = format.getRoutingAddress(serverMessage, _destination.getAddress());
+                }
+                else
+                {
+                    final Error err = new Error();
+                    err.setCondition(AmqpError.NOT_IMPLEMENTED);
+                    err.setDescription("Unknown message format: " + messageFormat);
+                    return err;
                 }
             }
-            final StoredMessage<MessageMetaData_1_0> storedMessage = handle.allContentAdded();
-            Message_1_0 message = new Message_1_0(storedMessage, getSession().getConnection().getReference());
-
 
             for(QpidByteBuffer fragment: fragments)
             {
@@ -183,7 +216,7 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
             }
             fragments = null;
 
-            MessageReference<Message_1_0> reference = message.newReference();
+            MessageReference<?> reference = serverMessage.newReference();
             try
             {
                 Binary transactionId = null;
@@ -213,10 +246,10 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
                     Session_1_0 session = getSession();
 
                     session.getAMQPConnection()
-                            .checkAuthorizedMessagePrincipal(message.getMessageHeader().getUserId());
-                    _destination.authorizePublish(session.getSecurityToken(), message);
+                            .checkAuthorizedMessagePrincipal(serverMessage.getMessageHeader().getUserId());
+                    _destination.authorizePublish(session.getSecurityToken(), routingAddress);
 
-                    Outcome outcome = _destination.send(message, transaction, session.getCapacityCheckAction());
+                    Outcome outcome = _destination.send(serverMessage, routingAddress, transaction, session.getCapacityCheckAction());
                     Source source = (Source) getEndpoint().getSource();
 
                     DeliveryState resultantState;
@@ -261,7 +294,7 @@ public class StandardReceivingLink_1_0 implements ReceivingLink_1_0
                     getEndpoint().updateDisposition(deliveryTag, resultantState, settled);
 
                     getSession().getAMQPConnection()
-                            .registerMessageReceived(message.getSize(), message.getArrivalTime());
+                            .registerMessageReceived(serverMessage.getSize(), serverMessage.getArrivalTime());
 
                     if (!(transaction instanceof AutoCommitTransaction))
                     {

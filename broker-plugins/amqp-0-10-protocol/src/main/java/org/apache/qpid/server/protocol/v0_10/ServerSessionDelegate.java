@@ -1007,6 +1007,37 @@ public class ServerSessionDelegate extends SessionDelegate
             {
                 destination = addressSpace.getDefaultDestination();
             }
+            else
+            {
+                Header header = xfr.getHeader();
+                DeliveryProperties delvProps;
+                if(header == null)
+                {
+                    delvProps = new DeliveryProperties();
+                    header = new Header(delvProps, null, null);
+                    xfr.setHeader(header);
+                }
+                else if(header.getDeliveryProperties() == null)
+                {
+                    delvProps = new DeliveryProperties();
+                    header = new Header(delvProps, header.getMessageProperties(), header.getNonStandardProperties());
+                    xfr.setHeader(header);
+                }
+                else
+                {
+                    delvProps = header.getDeliveryProperties();
+                }
+                if(delvProps.getExchange() == null && !xfr.getDestination().equals(delvProps.getRoutingKey()))
+                {
+                    delvProps.setExchange(xfr.getDestination());
+                }
+            }
+        }
+        else if(xfr.getHeader() != null
+                && xfr.getHeader().getDeliveryProperties() != null
+                && xfr.getHeader().getDeliveryProperties().getExchange() != null)
+        {
+            destination = addressSpace.getAttainedMessageDestination(xfr.getHeader().getDeliveryProperties().getExchange());
         }
         else
         {

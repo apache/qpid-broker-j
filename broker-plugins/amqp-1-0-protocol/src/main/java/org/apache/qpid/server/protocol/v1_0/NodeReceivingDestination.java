@@ -28,6 +28,7 @@ import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -76,8 +77,8 @@ public class NodeReceivingDestination implements ReceivingDestination
         return OUTCOMES;
     }
 
-    public Outcome send(final Message_1_0 message,
-                        ServerTransaction txn,
+    public Outcome send(final ServerMessage<?> message,
+                        final String routingAddress, ServerTransaction txn,
                         final Action<MessageInstance> action)
     {
         final InstanceProperties instanceProperties =
@@ -103,9 +104,6 @@ public class NodeReceivingDestination implements ReceivingDestination
                     return null;
                 }};
 
-        String routingAddress;
-        routingAddress = getRoutingAddress(message);
-
         int enqueues = _destination.send(message, routingAddress, instanceProperties, txn, action);
 
         if(enqueues == 0)
@@ -113,12 +111,11 @@ public class NodeReceivingDestination implements ReceivingDestination
             _eventLogger.message(ExchangeMessages.DISCARDMSG(_destination.getName(), routingAddress));
         }
 
-        return enqueues == 0 && !_discardUnroutable ? createdRejectedOutcome(message) : ACCEPTED;
+        return enqueues == 0 && !_discardUnroutable ? createdRejectedOutcome(routingAddress) : ACCEPTED;
     }
 
-    private Outcome createdRejectedOutcome(final Message_1_0 message)
+    private Outcome createdRejectedOutcome(String routingAddress)
     {
-        String routingAddress = getRoutingAddress(message);
         Rejected rejected = new Rejected();
         final Error notFoundError = new Error(AmqpError.NOT_FOUND, "Unknown destination '" + routingAddress + '"');
         rejected.setError(notFoundError);
@@ -132,10 +129,11 @@ public class NodeReceivingDestination implements ReceivingDestination
     }
 
     @Override
-    public void authorizePublish(final SecurityToken securityToken, final Message_1_0 message)
+    public void authorizePublish(final SecurityToken securityToken,
+                                 final String routingAddress)
     {
             _destination.authorisePublish(securityToken,
-                                          Collections.<String, Object>singletonMap("routingKey", getRoutingAddress(message)));
+                                          Collections.<String, Object>singletonMap("routingKey", routingAddress));
 
     }
 
@@ -143,32 +141,39 @@ public class NodeReceivingDestination implements ReceivingDestination
     public String getRoutingAddress(final Message_1_0 message)
     {
         MessageMetaData_1_0.MessageHeader_1_0 messageHeader = message.getMessageHeader();
-        String routingAddress = messageHeader.getSubject();
-        if(routingAddress == null)
+        String routingAddress;
+        final String to = messageHeader.getTo();
+        if (to != null
+            && (_destination.getName() == null || _destination.getName().trim().equals("")))
         {
-            if (messageHeader.getHeader("routing-key") instanceof String)
-            {
-                routingAddress = (String) messageHeader.getHeader("routing-key");
-            }
-            else if (messageHeader.getHeader("routing_key") instanceof String)
-            {
-                routingAddress = (String) messageHeader.getHeader("routing_key");
-            }
-            else if (messageHeader.getTo() != null
-                     && messageHeader.getTo().startsWith(_destination.getName() + "/"))
-            {
-                routingAddress = messageHeader.getTo().substring(1+_destination.getName().length());
-            }
-            else if (messageHeader.getTo() != null
-                     && (_destination.getName() == null || _destination.getName().trim().equals("")))
-            {
-                routingAddress = messageHeader.getTo();
-            }
-            else
-            {
-                routingAddress = "";
-            }
+            routingAddress = to;
         }
+        else if (to != null
+                 && to.startsWith(_destination.getName() + "/"))
+        {
+            routingAddress = to.substring(1 + _destination.getName().length());
+        }
+        else if (to != null && !to.equals(_destination.getName()))
+        {
+            routingAddress = to;
+        }
+        else if (messageHeader.getHeader("routing-key") instanceof String)
+        {
+            routingAddress = (String) messageHeader.getHeader("routing-key");
+        }
+        else if (messageHeader.getHeader("routing_key") instanceof String)
+        {
+            routingAddress = (String) messageHeader.getHeader("routing_key");
+        }
+        else if (messageHeader.getSubject() != null)
+        {
+            routingAddress = messageHeader.getSubject();
+        }
+        else
+        {
+            routingAddress = "";
+        }
+
         return routingAddress;
     }
 

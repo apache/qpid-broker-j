@@ -21,6 +21,7 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -38,7 +39,10 @@ public interface ReceivingDestination extends Destination
 
     Outcome[] getOutcomes();
 
-    Outcome send(Message_1_0 message, ServerTransaction txn, final Action<MessageInstance> postEnqueueAction);
+    Outcome send(ServerMessage<?> message,
+                 final String routingAddress,
+                 ServerTransaction txn,
+                 final Action<MessageInstance> postEnqueueAction);
 
     int getCredit();
 
@@ -46,5 +50,5 @@ public interface ReceivingDestination extends Destination
 
     String getAddress();
 
-    void authorizePublish(SecurityToken securityToken, final Message_1_0 message);
+    void authorizePublish(SecurityToken securityToken, final String routingAddress);
 }

@@ -40,16 +40,13 @@ public class ContentHeaderPropertiesFactory
              throws AMQFrameDecodingException
     {
         BasicContentHeaderProperties properties;
-        // AMQP version change: "Hardwired" version to major=8, minor=0
-        // TODO: Change so that the actual version is obtained from
-        // the ProtocolInitiation object for this session.
         if (classId == BasicConsumeBody.CLASS_ID)
         {
         	properties = new BasicContentHeaderProperties();
         }
         else
         {
-        	throw new AMQFrameDecodingException("Unsupport content header class id: " + classId, null);
+        	throw new AMQFrameDecodingException("Unsupported content header class id: " + classId, null);
         }
         properties.populatePropertiesFromBuffer(buffer, propertyFlags, size);
         return properties;

@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.logging.messages.ExchangeMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -76,7 +77,8 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
         return OUTCOMES;
     }
 
-    public Outcome send(final Message_1_0 message,
+    public Outcome send(final ServerMessage<?> message,
+                        final String routingAddress,
                         ServerTransaction txn,
                         final Action<MessageInstance> action)
     {
@@ -103,7 +105,6 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
                     return null;
                 }};
 
-        final String routingAddress = getRoutingAddress(message);
         int enqueues = _exchange.send(message,
                                       routingAddress,
                                       instanceProperties,
@@ -133,10 +134,11 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
     }
 
     @Override
-    public void authorizePublish(final SecurityToken securityToken, final Message_1_0 message)
+    public void authorizePublish(final SecurityToken securityToken,
+                                 final String routingAddress)
     {
         _exchange.authorisePublish(securityToken,
-                            Collections.<String,Object>singletonMap("routingKey", getRoutingAddress(message)));
+                            Collections.<String,Object>singletonMap("routingKey", routingAddress));
 
 
     }
@@ -148,27 +150,38 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
         MessageMetaData_1_0.MessageHeader_1_0 messageHeader = message.getMessageHeader();
         if(_initialRoutingAddress == null)
         {
-            routingAddress = messageHeader.getSubject();
-            if(routingAddress == null)
+            final String to = messageHeader.getTo();
+            if (to != null
+                && (_exchange.getName() == null || _exchange.getName().trim().equals("")))
             {
-                if (messageHeader.getHeader("routing-key") instanceof String)
-                {
-                    routingAddress = (String) messageHeader.getHeader("routing-key");
-                }
-                else if (messageHeader.getHeader("routing_key") instanceof String)
-                {
-                    routingAddress = (String) messageHeader.getHeader("routing_key");
-                }
-                else if (messageHeader.getTo() != null
-                        && messageHeader.getTo().startsWith(_exchange.getName() + "/"))
-                {
-                    routingAddress = messageHeader.getTo().substring(1+_exchange.getName().length());
-                }
-                else
-                {
-                    routingAddress = "";
-                }
+                routingAddress = to;
             }
+            else if (to != null
+                     && to.startsWith(_exchange.getName() + "/"))
+            {
+                routingAddress = to.substring(1 + _exchange.getName().length());
+            }
+            else if (to != null && !to.equals(_exchange.getName()))
+            {
+                routingAddress = to;
+            }
+            else if (messageHeader.getHeader("routing-key") instanceof String)
+            {
+                routingAddress = (String) messageHeader.getHeader("routing-key");
+            }
+            else if (messageHeader.getHeader("routing_key") instanceof String)
+            {
+                routingAddress = (String) messageHeader.getHeader("routing_key");
+            }
+            else if (messageHeader.getSubject() != null)
+            {
+                routingAddress = messageHeader.getSubject();
+            }
+            else
+            {
+                routingAddress = "";
+            }
+
         }
         else
         {

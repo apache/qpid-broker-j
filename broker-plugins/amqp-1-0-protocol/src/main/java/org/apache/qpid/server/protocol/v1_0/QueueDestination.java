@@ -27,6 +27,7 @@ import java.util.Set;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
+import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.protocol.v1_0.type.Outcome;
 import org.apache.qpid.server.protocol.v1_0.type.Symbol;
@@ -56,8 +57,8 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
         return OUTCOMES;
     }
 
-    public Outcome send(final Message_1_0 message,
-                        ServerTransaction txn,
+    public Outcome send(final ServerMessage<?> message,
+                        final String routingAddress, ServerTransaction txn,
                         final Action<MessageInstance> action)
     {
 
@@ -106,11 +107,12 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
     }
 
     @Override
-    public void authorizePublish(final SecurityToken securityToken, final Message_1_0 message)
+    public void authorizePublish(final SecurityToken securityToken,
+                                 final String routingAddress)
     {
 
         _queue.authorisePublish(securityToken,
-                                Collections.<String,Object>singletonMap("routingKey", getRoutingAddress(message)));
+                                Collections.<String,Object>emptyMap());
 
 
     }
