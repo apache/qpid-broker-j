@@ -21,6 +21,18 @@
 package org.apache.qpid.server.logging;
 
 
+import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CHANNEL_FORMAT;
+import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CONNECTION_FORMAT;
+import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.SOCKET_FORMAT;
+import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.USER_FORMAT;
+
+import java.security.AccessController;
+import java.security.Principal;
+import java.text.MessageFormat;
+import java.util.Set;
+
+import javax.security.auth.Subject;
+
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.logging.subjects.LogSubjectFormat;
@@ -29,17 +41,6 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
 import org.apache.qpid.server.security.auth.TaskPrincipal;
 import org.apache.qpid.server.transport.AMQPConnection;
-
-import javax.security.auth.Subject;
-import java.security.AccessController;
-import java.security.Principal;
-import java.text.MessageFormat;
-import java.util.Set;
-
-import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CHANNEL_FORMAT;
-import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CONNECTION_FORMAT;
-import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.SOCKET_FORMAT;
-import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.USER_FORMAT;
 
 public abstract class AbstractMessageLogger implements MessageLogger
 {
@@ -137,7 +138,15 @@ public abstract class AbstractMessageLogger implements MessageLogger
     {
         String remoteAddress = managementConnection.getRemoteAddress().toString();
         String user = userPrincipal == null ? "N/A" : userPrincipal.getName();
-        return "[" + MessageFormat.format(LogSubjectFormat.MANAGEMENT_FORMAT, user, remoteAddress) + "] ";
+        String sessionId = managementConnection.getSessionId();
+        if (sessionId == null)
+        {
+            sessionId = "N/A";
+        }
+        return "[" + MessageFormat.format(LogSubjectFormat.MANAGEMENT_FORMAT,
+                                          sessionId,
+                                          user,
+                                          remoteAddress) + "] ";
     }
 
     private String generateTaskMessage(final TaskPrincipal taskPrincipal)

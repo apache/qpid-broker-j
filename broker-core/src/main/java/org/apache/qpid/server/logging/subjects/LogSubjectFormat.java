@@ -39,10 +39,11 @@ public class LogSubjectFormat
 
     /**
      * LOG FORMAT for the ManagementActors,
-     * 0 - User ID
-     * 1 - IP[:Port]
+     * 0 - Session ID
+     * 1 - User ID
+     * 2 - IP[:Port]
      */
-    public static final String MANAGEMENT_FORMAT = "mng:{0}({1})";
+    public static final String MANAGEMENT_FORMAT = "mng:{0}({1}@{2})";
 
     /**
      * LOG FORMAT for the Subscription Log Subject

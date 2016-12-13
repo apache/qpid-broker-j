@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import javax.security.auth.Subject;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -41,8 +42,9 @@ import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.management.plugin.HttpRequestInteractiveAuthenticator;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
+import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 
-public class RedirectingAuthorisationFilter implements Filter
+public class RedirectingFilter implements Filter
 {
 
     private static final Collection<HttpRequestInteractiveAuthenticator> AUTHENTICATORS;
@@ -56,8 +58,6 @@ public class RedirectingAuthorisationFilter implements Filter
         AUTHENTICATORS = Collections.unmodifiableList(authenticators);
     }
 
-
-    private Broker _broker;
     private HttpManagementConfiguration _managementConfiguration;
 
     @Override
@@ -69,7 +69,6 @@ public class RedirectingAuthorisationFilter implements Filter
     public void init(FilterConfig config) throws ServletException
     {
         ServletContext servletContext = config.getServletContext();
-        _broker = HttpManagementUtil.getBroker(servletContext);
         _managementConfiguration = HttpManagementUtil.getManagementConfiguration(servletContext);
     }
 
@@ -79,12 +78,12 @@ public class RedirectingAuthorisationFilter implements Filter
     {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
-        try
+        Subject subject = HttpManagementUtil.getAuthorisedSubject(httpRequest);
+        if (subject != null && !subject.getPrincipals(AuthenticatedPrincipal.class).isEmpty())
         {
-            HttpManagementUtil.checkRequestAuthenticatedAndAccessAuthorized(httpRequest, _broker, _managementConfiguration);
             chain.doFilter(request, response);
         }
-        catch(SecurityException e)
+        else
         {
             HttpRequestInteractiveAuthenticator.AuthenticationHandler handler = null;
             for(HttpRequestInteractiveAuthenticator authenticator : AUTHENTICATORS)

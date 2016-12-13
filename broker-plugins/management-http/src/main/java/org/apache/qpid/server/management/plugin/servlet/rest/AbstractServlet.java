@@ -27,8 +27,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +34,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.zip.GZIPOutputStream;
 
-import javax.security.auth.Subject;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -71,7 +68,7 @@ public abstract class AbstractServlet extends HttpServlet
 {
     public static final int SC_UNPROCESSABLE_ENTITY = 422;
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractServlet.class);
-    public static final String CONTENT_DISPOSITION = "Content-disposition";
+    public static final String CONTENT_DISPOSITION = "Content-Disposition";
 
     private transient Broker<?> _broker;
     private transient HttpManagementConfiguration _managementConfiguration;
@@ -91,28 +88,6 @@ public abstract class AbstractServlet extends HttpServlet
         _broker = HttpManagementUtil.getBroker(servletContext);
         _managementConfiguration = HttpManagementUtil.getManagementConfiguration(servletContext);
         super.init();
-    }
-
-    @Override
-    protected final void doGet(final HttpServletRequest request, final HttpServletResponse resp) throws ServletException, IOException
-    {
-        doWithSubjectAndActor(
-            new PrivilegedExceptionAction<Void>()
-            {
-                @Override
-                public Void run() throws Exception
-                {
-                    ConfiguredObject<?> managedObject = getManagedObject(request, resp);
-                    if(managedObject != null)
-                    {
-                        doGetWithSubjectAndActor(request, resp, managedObject);
-                    }
-                    return null;
-                }
-            },
-            request,
-            resp
-        );
     }
 
     private ConfiguredObject<?> getManagedObject(final HttpServletRequest request, final HttpServletResponse resp)
@@ -139,13 +114,19 @@ public abstract class AbstractServlet extends HttpServlet
         }
     }
 
-    /**
-     * Performs the GET action as the logged-in {@link Subject}.
-     * Subclasses commonly override this method
-     */
-    protected void doGetWithSubjectAndActor(HttpServletRequest request,
-                                            HttpServletResponse resp,
-                                            ConfiguredObject<?> managedObject) throws ServletException, IOException
+    @Override
+    protected final void doGet(final HttpServletRequest request, final HttpServletResponse resp) throws ServletException, IOException
+    {
+        ConfiguredObject<?> managedObject = getManagedObject(request, resp);
+        if(managedObject != null)
+        {
+            doGet(request, resp, managedObject);
+        }
+    }
+
+    protected void doGet(HttpServletRequest request,
+                         HttpServletResponse resp,
+                         ConfiguredObject<?> managedObject) throws ServletException, IOException
     {
         throw new UnsupportedOperationException("GET not supported by this servlet");
     }
@@ -154,32 +135,16 @@ public abstract class AbstractServlet extends HttpServlet
     @Override
     protected final void doPost(final HttpServletRequest request, final HttpServletResponse resp) throws ServletException, IOException
     {
-        doWithSubjectAndActor(
-            new PrivilegedExceptionAction<Void>()
-            {
-                @Override
-                public Void run()  throws Exception
-                {
-                    ConfiguredObject<?> managedObject = getManagedObject(request, resp);
-                    if(managedObject != null)
-                    {
-                        doPostWithSubjectAndActor(request, resp, managedObject);
-                    }
-                    return null;
-                }
-            },
-            request,
-            resp
-        );
+        ConfiguredObject<?> managedObject = getManagedObject(request, resp);
+        if(managedObject != null)
+        {
+            doPost(request, resp, managedObject);
+        }
     }
 
-    /**
-     * Performs the POST action as the logged-in {@link Subject}.
-     * Subclasses commonly override this method
-     */
-    protected void doPostWithSubjectAndActor(HttpServletRequest req,
-                                             HttpServletResponse resp,
-                                             ConfiguredObject<?> managedObject) throws ServletException, IOException
+    protected void doPost(HttpServletRequest req,
+                          HttpServletResponse resp,
+                          ConfiguredObject<?> managedObject) throws ServletException, IOException
     {
         throw new UnsupportedOperationException("POST not supported by this servlet");
     }
@@ -187,38 +152,16 @@ public abstract class AbstractServlet extends HttpServlet
     @Override
     protected final void doPut(final HttpServletRequest request, final HttpServletResponse resp) throws ServletException, IOException
     {
-        doWithSubjectAndActor(
-            new PrivilegedExceptionAction<Void>()
-            {
-                @Override
-                public Void run() throws Exception
-                {
-                    ConfiguredObject<?> managedObject = getManagedObject(request, resp);
-                    if(managedObject != null)
-                    {
-                        doPutWithSubjectAndActor(request, resp, managedObject);
-                    }
-                    return null;
-                }
-            },
-            request,
-            resp
-        );
+        ConfiguredObject<?> managedObject = getManagedObject(request, resp);
+        if(managedObject != null)
+        {
+            doPut(request, resp, managedObject);
+        }
     }
 
-    public OutputStream getOutputStream(final HttpServletRequest request, final HttpServletResponse response)
-            throws IOException
-    {
-        return HttpManagementUtil.getOutputStream(request, response, _managementConfiguration);
-    }
-
-    /**
-     * Performs the PUT action as the logged-in {@link Subject}.
-     * Subclasses commonly override this method
-     */
-    protected void doPutWithSubjectAndActor(HttpServletRequest req,
-                                            HttpServletResponse resp,
-                                            final ConfiguredObject<?> managedObject) throws ServletException, IOException
+    protected void doPut(HttpServletRequest req,
+                         HttpServletResponse resp,
+                         final ConfiguredObject<?> managedObject) throws ServletException, IOException
     {
         throw new UnsupportedOperationException("PUT not supported by this servlet");
     }
@@ -227,91 +170,24 @@ public abstract class AbstractServlet extends HttpServlet
     protected final void doDelete(final HttpServletRequest request, final HttpServletResponse resp)
             throws ServletException, IOException
     {
-        doWithSubjectAndActor(
-            new PrivilegedExceptionAction<Void>()
-            {
-                @Override
-                public Void run() throws Exception
-                {
-                    ConfiguredObject<?> managedObject = getManagedObject(request, resp);
-                    if(managedObject != null)
-                    {
-                        doDeleteWithSubjectAndActor(request, resp, managedObject);
-                    }
-                    return null;
-                }
-            },
-            request,
-            resp
-        );
+        ConfiguredObject<?> managedObject = getManagedObject(request, resp);
+        if(managedObject != null)
+        {
+            doDelete(request, resp, managedObject);
+        }
     }
 
-    /**
-     * Performs the PUT action as the logged-in {@link Subject}.
-     * Subclasses commonly override this method
-     */
-    protected void doDeleteWithSubjectAndActor(HttpServletRequest req,
-                                               HttpServletResponse resp,
-                                               ConfiguredObject<?> managedObject) throws ServletException, IOException
+    protected void doDelete(HttpServletRequest req,
+                            HttpServletResponse resp,
+                            ConfiguredObject<?> managedObject) throws ServletException, IOException
     {
         throw new UnsupportedOperationException("DELETE not supported by this servlet");
     }
 
-    private void doWithSubjectAndActor(
-                    PrivilegedExceptionAction<Void> privilegedExceptionAction,
-                    final HttpServletRequest request,
-                    final HttpServletResponse resp) throws IOException
+    protected OutputStream getOutputStream(final HttpServletRequest request, final HttpServletResponse response)
+            throws IOException
     {
-        Subject subject;
-        try
-        {
-            subject = getAuthorisedSubject(request);
-        }
-        catch (SecurityException e)
-        {
-            sendError(resp, HttpServletResponse.SC_UNAUTHORIZED);
-            return;
-        }
-
-        try
-        {
-            Subject.doAs(subject, privilegedExceptionAction);
-        }
-        catch(RuntimeException e)
-        {
-            throw e;
-        }
-        catch (PrivilegedActionException e)
-        {
-            Throwable cause = e.getCause();
-
-            // Jetty uses EofException to signal an EOF from the peer (e.g. broken pipe etc). It arises in
-            // situations such as abnormal browser termination etc.
-            if (cause instanceof org.eclipse.jetty.io.EofException)
-            {
-                throw (IOException)cause;
-            }
-
-            if(cause instanceof RuntimeException)
-            {
-                throw (RuntimeException)cause;
-            }
-            else if(cause instanceof Error)
-            {
-                throw (Error)cause;
-            }
-            throw new ConnectionScopedRuntimeException(e.getCause());
-        }
-    }
-
-    protected Subject getAuthorisedSubject(HttpServletRequest request)
-    {
-        Subject subject = HttpManagementUtil.getAuthorisedSubject(request);
-        if (subject == null)
-        {
-            throw new SecurityException("Access to management rest interfaces is denied for un-authorised user");
-        }
-        return subject;
+        return HttpManagementUtil.getOutputStream(request, response, _managementConfiguration);
     }
 
     protected Broker<?> getBroker()

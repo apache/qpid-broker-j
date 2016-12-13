@@ -80,8 +80,8 @@ public class BrokerRestHttpsClientCertAuthTest extends QpidRestTestCase
         _restTestHelper.setKeystore(KEYSTORE, KEYSTORE_PASSWORD);
         _restTestHelper.setClientAuthAlias(CERT_ALIAS_APP1);
 
-        Map<String, Object> saslData = getRestTestHelper().getJsonAsMap("/service/sasl");
+        Map<String, Object> saslData = getRestTestHelper().getJsonAsSingletonList("broker");
 
-        Asserts.assertAttributesPresent(saslData, "user");
+        Asserts.assertAttributesPresent(saslData, "modelVersion");
     }
 }

@@ -40,9 +40,9 @@ public class StructureServlet extends AbstractServlet
     }
 
     @Override
-    protected void doGetWithSubjectAndActor(HttpServletRequest request,
-                                            HttpServletResponse response,
-                                            final ConfiguredObject<?> managedObject) throws IOException, ServletException
+    protected void doGet(HttpServletRequest request,
+                         HttpServletResponse response,
+                         final ConfiguredObject<?> managedObject) throws IOException, ServletException
     {
 
         // TODO filtering??? request.getParameter("filter"); // filter=1,2,3   /groups/*/*

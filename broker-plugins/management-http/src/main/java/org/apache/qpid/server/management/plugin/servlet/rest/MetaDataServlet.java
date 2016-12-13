@@ -67,9 +67,9 @@ public class MetaDataServlet extends AbstractServlet
     }
 
     @Override
-    protected void doGetWithSubjectAndActor(final HttpServletRequest request,
-                                            final HttpServletResponse response,
-                                            final ConfiguredObject<?> managedObject)
+    protected void doGet(final HttpServletRequest request,
+                         final HttpServletResponse response,
+                         final ConfiguredObject<?> managedObject)
             throws ServletException, IOException
     {
         response.setContentType("application/json");

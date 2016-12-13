@@ -103,26 +103,6 @@ public class HttpManagementUtil
         return (session == null ? null : (Subject) session.getAttribute(getRequestSpecificAttributeName(ATTR_SUBJECT,request)));
     }
 
-    public static void checkRequestAuthenticatedAndAccessAuthorized(HttpServletRequest request, Broker broker,
-            HttpManagementConfiguration managementConfig)
-    {
-        Subject subject = getAuthorisedSubject(request);
-        if (subject == null)
-        {
-            subject = tryToAuthenticate(request, managementConfig);
-            if (subject == null)
-            {
-                throw new SecurityException("Only authenticated users can access the management interface");
-            }
-
-            subject = createServletConnectionSubject(request, subject);
-
-            assertManagementAccess(broker, subject);
-
-            saveAuthorisedSubject(request, subject);
-        }
-    }
-
     public static Subject createServletConnectionSubject(final HttpServletRequest request, Subject original)
     {
         Subject subject = new Subject(false,

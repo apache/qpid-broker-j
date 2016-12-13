@@ -39,9 +39,9 @@ public class QueueReportServlet extends AbstractServlet
     private static final long serialVersionUID = 1L;
 
     @Override
-    protected void doGetWithSubjectAndActor(HttpServletRequest request,
-                                            HttpServletResponse response,
-                                            final ConfiguredObject<?> managedObject)
+    protected void doGet(HttpServletRequest request,
+                         HttpServletResponse response,
+                         final ConfiguredObject<?> managedObject)
             throws IOException, ServletException
     {
         List<String> pathInfoElements =

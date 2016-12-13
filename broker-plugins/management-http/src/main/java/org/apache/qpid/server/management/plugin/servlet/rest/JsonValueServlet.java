@@ -39,9 +39,9 @@ public class JsonValueServlet extends AbstractServlet
     }
 
     @Override
-    protected void doGetWithSubjectAndActor(final HttpServletRequest request,
-                                            final HttpServletResponse resp,
-                                            final ConfiguredObject<?> managedObject)
+    protected void doGet(final HttpServletRequest request,
+                         final HttpServletResponse resp,
+                         final ConfiguredObject<?> managedObject)
             throws ServletException, IOException
     {
         sendJsonResponse(_value, request, resp);

@@ -44,9 +44,9 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
 
 
     @Override
-    protected void doGetWithSubjectAndActor(HttpServletRequest request,
-                                            HttpServletResponse response,
-                                            final ConfiguredObject<?> managedObject)
+    protected void doGet(HttpServletRequest request,
+                         HttpServletResponse response,
+                         final ConfiguredObject<?> managedObject)
             throws IOException, ServletException
     {
         performQuery(request, response, managedObject);
@@ -54,9 +54,9 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
 
 
     @Override
-    protected void doPostWithSubjectAndActor(HttpServletRequest request,
-                                             HttpServletResponse response,
-                                             final ConfiguredObject<?> managedObject)
+    protected void doPost(HttpServletRequest request,
+                          HttpServletResponse response,
+                          final ConfiguredObject<?> managedObject)
             throws IOException, ServletException
     {
         performQuery(request, response, managedObject);

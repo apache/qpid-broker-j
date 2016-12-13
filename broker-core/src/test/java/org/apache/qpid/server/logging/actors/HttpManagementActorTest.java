@@ -50,7 +50,12 @@ public class HttpManagementActorTest extends BaseActorTestCase
     };
     private static final String IP = "127.0.0.1";
     private static final int PORT = 1;
-    private static final String SUFFIX = "(/" + IP + ":" + PORT + ")] ";
+    private static final String TEST_USER = "guest";
+    private static final String SESSION_ID = "testSession";
+
+    private static final String FORMAT = "[mng:%s(%s@/" + IP + ":" + PORT + ")] ";
+    private static final Object NA = "N/A";
+
     private ManagementConnectionPrincipal _connectionPrincipal;
 
     @Override
@@ -63,6 +68,12 @@ public class HttpManagementActorTest extends BaseActorTestCase
                                         public String getType()
                                         {
                                             return "HTTP";
+                                        }
+
+                                        @Override
+                                        public String getSessionId()
+                                        {
+                                            return SESSION_ID;
                                         }
 
                                         @Override
@@ -87,7 +98,7 @@ public class HttpManagementActorTest extends BaseActorTestCase
 
     public void testSubjectPrincipalNameAppearance()
     {
-        Subject subject = TestPrincipalUtils.createTestSubject("guest");
+        Subject subject = TestPrincipalUtils.createTestSubject(TEST_USER);
 
         subject.getPrincipals().add(_connectionPrincipal);
 
@@ -106,7 +117,8 @@ public class HttpManagementActorTest extends BaseActorTestCase
 
         String logMessage = logs.get(0).toString();
         assertTrue("Message was not found in log message", logMessage.contains(message));
-        assertTrue("Message does not contain expected value: " + logMessage, logMessage.contains("[mng:guest" + SUFFIX));
+        assertTrue("Message does not contain expected value: " + logMessage,
+                   logMessage.startsWith(String.format(FORMAT, SESSION_ID, TEST_USER)));
     }
 
     /** It's necessary to test successive calls because HttpManagementActor caches
@@ -137,8 +149,9 @@ public class HttpManagementActorTest extends BaseActorTestCase
 
                 String logMessage = logs.get(0).toString();
                 assertEquals("Unexpected log message",
-                             "[mng:" + "N/A" + SUFFIX,
+                             String.format(FORMAT, SESSION_ID, NA),
                              logMessage);
+
                 return null;
             }
         });
@@ -164,6 +177,6 @@ public class HttpManagementActorTest extends BaseActorTestCase
             }
         });
 
-        assertEquals("Unexpected log message", "[mng:" + principalName + SUFFIX, message);
+        assertTrue("Unexpected log message", message.startsWith(String.format(FORMAT, SESSION_ID, principalName)));
     }
 }

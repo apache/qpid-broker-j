@@ -27,8 +27,10 @@ import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE_PASSWORD;
 import static org.apache.qpid.test.utils.TestSSLConstants.UNTRUSTED_KEYSTORE;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
@@ -188,5 +190,18 @@ public class PreemtiveAuthRestTest extends QpidRestTestCase
         {
             e.printStackTrace();
         }
+    }
+
+    public void testPreemptiveDoesNotCreateSession() throws Exception
+    {
+        configure(false, false);
+        super.startDefaultBroker();
+        _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
+
+        _restTestHelper.setUsernameAndPassword(USERNAME, PASSWORD);
+        final HttpURLConnection firstConnection = _restTestHelper.openManagementConnection("broker", "GET");
+        assertEquals("Unexpected server response", HttpServletResponse.SC_OK, firstConnection.getResponseCode());
+        List<String> cookies = firstConnection.getHeaderFields().get("Set-Cookie");
+        assertNull("Should not create session cookies", cookies);
     }
 }

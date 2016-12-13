@@ -21,6 +21,8 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
+import java.security.AccessControlContext;
+import java.security.AccessController;
 import java.security.Principal;
 import java.security.SecureRandom;
 import java.util.LinkedHashMap;
@@ -69,11 +71,12 @@ public class SaslServlet extends AbstractServlet
         super();
     }
 
-    protected void doGetWithSubjectAndActor(HttpServletRequest request,
-                                            HttpServletResponse response,
-                                            final ConfiguredObject<?> managedObject) throws
-                                                                                   ServletException,
-                                                                                   IOException
+
+
+
+    protected void doGet(HttpServletRequest request,
+                         HttpServletResponse response,
+                         final ConfiguredObject<?> managedObject) throws ServletException, IOException
     {
         getRandom(request);
 
@@ -82,10 +85,10 @@ public class SaslServlet extends AbstractServlet
         String[] mechanisms = mechanismsList.toArray(new String[mechanismsList.size()]);
         Map<String, Object> outputObject = new LinkedHashMap<String, Object>();
 
-        final Subject subject = getAuthorisedSubject(request);
-        if(subject != null)
+        final Subject subject = Subject.getSubject(AccessController.getContext());
+        final Principal principal = AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(subject);
+        if(principal != null)
         {
-            Principal principal = AuthenticatedPrincipal.getAuthenticatedPrincipalFromSubject(subject);
             outputObject.put("user", principal.getName());
         }
         else if (request.getRemoteUser() != null)
@@ -117,9 +120,9 @@ public class SaslServlet extends AbstractServlet
 
 
     @Override
-    protected void doPostWithSubjectAndActor(final HttpServletRequest request,
-                                             final HttpServletResponse response,
-                                             final ConfiguredObject<?> managedObject) throws IOException
+    protected void doPost(final HttpServletRequest request,
+                          final HttpServletResponse response,
+                          final ConfiguredObject<?> managedObject) throws IOException
     {
         checkSaslAuthEnabled(request);
 
@@ -293,16 +296,4 @@ public class SaslServlet extends AbstractServlet
         return HttpManagementUtil.getManagementConfiguration(getServletContext()).getAuthenticationProvider(request).getSubjectCreator(
                 request.isSecure());
     }
-
-    @Override
-    protected Subject getAuthorisedSubject(HttpServletRequest request)
-    {
-        Subject subject = HttpManagementUtil.getAuthorisedSubject(request);
-        if(subject == null)
-        {
-            subject = HttpManagementUtil.tryToAuthenticate(request, HttpManagementUtil.getManagementConfiguration(getServletContext()));
-        }
-        return subject;
-    }
-
 }

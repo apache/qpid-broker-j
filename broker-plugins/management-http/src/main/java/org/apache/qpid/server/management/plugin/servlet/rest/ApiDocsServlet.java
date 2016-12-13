@@ -67,9 +67,9 @@ public class ApiDocsServlet extends AbstractServlet
     }
 
     @Override
-    protected void doGetWithSubjectAndActor(HttpServletRequest request,
-                                            HttpServletResponse response,
-                                            final ConfiguredObject<?> managedObject) throws ServletException, IOException
+    protected void doGet(HttpServletRequest request,
+                         HttpServletResponse response,
+                         final ConfiguredObject<?> managedObject) throws ServletException, IOException
     {
         ConfiguredObjectFinder finder = getConfiguredObjectFinder(managedObject);
 

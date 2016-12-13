@@ -20,10 +20,16 @@
  */
 package org.apache.qpid.server.management.plugin.servlet;
 
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
@@ -33,14 +39,37 @@ import org.apache.qpid.server.security.auth.SocketConnectionMetaData;
 public class ServletConnectionPrincipal implements ManagementConnectionPrincipal
 {
     private static final long serialVersionUID = 1L;
+    private static final String UTF8 = StandardCharsets.UTF_8.name();
+    private static final int HASH_TRUNCATION_LENGTH = 8;
 
     private final InetSocketAddress _address;
+    private final String _sessionId;
     private ServletRequestMetaData _metadata;
 
     public ServletConnectionPrincipal(HttpServletRequest request)
     {
         _address = new InetSocketAddress(request.getRemoteHost(), request.getRemotePort());
         _metadata = new ServletRequestMetaData(request);
+        HttpSession session =  request.getSession(false);
+        if (session != null)
+        {
+            MessageDigest md;
+            try
+            {
+                md = MessageDigest.getInstance("SHA-256");
+                md.update(session.getId().getBytes(UTF8));
+            }
+            catch (NoSuchAlgorithmException | UnsupportedEncodingException e)
+            {
+                throw new RuntimeException("Cannot create SHA-256 hash", e);
+            }
+            byte[] digest = md.digest();
+            _sessionId = DatatypeConverter.printBase64Binary(digest).substring(0, HASH_TRUNCATION_LENGTH);
+        }
+        else
+        {
+            _sessionId = null;
+        }
     }
 
     @Override
@@ -94,6 +123,13 @@ public class ServletConnectionPrincipal implements ManagementConnectionPrincipal
     {
         return "HTTP";
     }
+
+    @Override
+    public String getSessionId()
+    {
+        return _sessionId;
+    }
+
 
     private static class ServletRequestMetaData implements SocketConnectionMetaData
     {

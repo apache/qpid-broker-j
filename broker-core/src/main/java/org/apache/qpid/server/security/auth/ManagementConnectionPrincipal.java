@@ -22,5 +22,7 @@ package org.apache.qpid.server.security.auth;
 
 public interface ManagementConnectionPrincipal extends SocketConnectionPrincipal
 {
-    public String getType();
+    String getType();
+
+    String getSessionId();
 }

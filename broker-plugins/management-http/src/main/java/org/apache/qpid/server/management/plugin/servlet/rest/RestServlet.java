@@ -177,9 +177,9 @@ public class RestServlet extends AbstractServlet
     }
 
     @Override
-    protected void doGetWithSubjectAndActor(HttpServletRequest request,
-                                            HttpServletResponse response,
-                                            final ConfiguredObject<?> managedObject)
+    protected void doGet(HttpServletRequest request,
+                         HttpServletResponse response,
+                         final ConfiguredObject<?> managedObject)
             throws ServletException, IOException
     {
         ConfiguredObjectFinder finder = getConfiguredObjectFinder(managedObject);
@@ -379,9 +379,9 @@ public class RestServlet extends AbstractServlet
     }
 
     @Override
-    protected void doPutWithSubjectAndActor(HttpServletRequest request,
-                                            HttpServletResponse response,
-                                            final ConfiguredObject<?> managedObject)
+    protected void doPut(HttpServletRequest request,
+                         HttpServletResponse response,
+                         final ConfiguredObject<?> managedObject)
             throws ServletException, IOException
     {
         performCreateOrUpdate(request, response, managedObject);
@@ -1003,9 +1003,9 @@ public class RestServlet extends AbstractServlet
     }
 
     @Override
-    protected void doDeleteWithSubjectAndActor(HttpServletRequest request,
-                                               HttpServletResponse response,
-                                               final ConfiguredObject<?> managedObject) throws ServletException, IOException
+    protected void doDelete(HttpServletRequest request,
+                            HttpServletResponse response,
+                            final ConfiguredObject<?> managedObject) throws ServletException, IOException
     {
         ConfiguredObjectFinder finder = getConfiguredObjectFinder(managedObject);
         Class<? extends ConfiguredObject> configuredClass = getConfiguredClass(request, managedObject);
@@ -1059,9 +1059,9 @@ public class RestServlet extends AbstractServlet
     }
 
     @Override
-    protected void doPostWithSubjectAndActor(HttpServletRequest request,
-                                             HttpServletResponse response,
-                                             final ConfiguredObject<?> managedObject) throws ServletException, IOException
+    protected void doPost(HttpServletRequest request,
+                          HttpServletResponse response,
+                          final ConfiguredObject<?> managedObject) throws ServletException, IOException
     {
         performCreateOrUpdate(request, response, managedObject);
     }

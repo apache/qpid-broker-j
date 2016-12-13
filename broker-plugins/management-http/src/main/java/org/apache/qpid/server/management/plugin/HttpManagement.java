@@ -72,12 +72,11 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.messages.ManagementConsoleMessages;
 import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.management.plugin.connector.TcpAndSslSelectChannelConnector;
+import org.apache.qpid.server.management.plugin.filter.AuthenticationCheckFilter;
 import org.apache.qpid.server.management.plugin.filter.ExceptionHandlingFilter;
-import org.apache.qpid.server.management.plugin.filter.ForbiddingAuthorisationFilter;
 import org.apache.qpid.server.management.plugin.filter.ForbiddingTraceFilter;
 import org.apache.qpid.server.management.plugin.filter.LoggingFilter;
-import org.apache.qpid.server.management.plugin.filter.RedirectingAuthorisationFilter;
-import org.apache.qpid.server.management.plugin.filter.PreemptiveSessionInvalidationFilter;
+import org.apache.qpid.server.management.plugin.filter.RedirectingFilter;
 import org.apache.qpid.server.management.plugin.filter.RewriteRequestForUncompressedJavascript;
 import org.apache.qpid.server.management.plugin.servlet.FileServlet;
 import org.apache.qpid.server.management.plugin.servlet.RootServlet;
@@ -324,22 +323,20 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         corsFilter.setInitParameter(CrossOriginFilter.ALLOW_CREDENTIALS_PARAM, String.valueOf(getCorsAllowCredentials()));
         root.addFilter(corsFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
 
-        root.addFilter(new FilterHolder(new PreemptiveSessionInvalidationFilter()), "/api/*", EnumSet.of(DispatcherType.REQUEST));
+        root.addFilter(new FilterHolder(new ForbiddingTraceFilter()), "/*", EnumSet.of(DispatcherType.REQUEST));
 
         FilterHolder loggingFilter = new FilterHolder(new LoggingFilter());
         root.addFilter(loggingFilter, "/api/*", EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(loggingFilter, "/service/*", EnumSet.of(DispatcherType.REQUEST));
 
-        root.addFilter(new FilterHolder(new ForbiddingTraceFilter()), "/*", EnumSet.of(DispatcherType.REQUEST));
-        FilterHolder restAuthorizationFilter = new FilterHolder(new ForbiddingAuthorisationFilter());
-        restAuthorizationFilter.setInitParameter(ForbiddingAuthorisationFilter.INIT_PARAM_ALLOWED, "/service/sasl");
+        FilterHolder restAuthorizationFilter = new FilterHolder(new AuthenticationCheckFilter());
+        restAuthorizationFilter.setInitParameter(AuthenticationCheckFilter.INIT_PARAM_ALLOWED, "/service/sasl");
         root.addFilter(restAuthorizationFilter, "/api/*", EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(restAuthorizationFilter, "/apidocs/*", EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(restAuthorizationFilter, "/service/*", EnumSet.of(DispatcherType.REQUEST));
 
-        root.addFilter(new FilterHolder(new RedirectingAuthorisationFilter()), "/index.html", EnumSet.of(DispatcherType.REQUEST));
-        root.addFilter(new FilterHolder(new RedirectingAuthorisationFilter()), "/", EnumSet.of(DispatcherType.REQUEST));
-
+        root.addFilter(new FilterHolder(new RedirectingFilter()), "/index.html", EnumSet.of(DispatcherType.REQUEST));
+        root.addFilter(new FilterHolder(new RedirectingFilter()), "/", EnumSet.of(DispatcherType.REQUEST));
         if (_serveUncompressedDojo)
         {
             root.addFilter(RewriteRequestForUncompressedJavascript.class, "/dojo/dojo/*", EnumSet.of(DispatcherType.REQUEST));
