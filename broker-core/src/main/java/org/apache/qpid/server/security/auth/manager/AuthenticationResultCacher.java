@@ -71,13 +71,14 @@ public class AuthenticationResultCacher
     {
         try
         {
-            if (_authenticationCache == null)
+            final Subject subject = Subject.getSubject(AccessController.getContext());
+            if (_authenticationCache == null || subject == null)
             {
                 return loader.call();
             }
             else
             {
-                String credentialDigest = digestCredentials(credentials);
+                String credentialDigest = digestCredentials(subject, credentials);
                 return _authenticationCache.get(credentialDigest, new Callable<AuthenticationResult>()
                 {
                     @Override
@@ -106,13 +107,12 @@ public class AuthenticationResultCacher
         }
     }
 
-    private String digestCredentials(final String... content)
+    private String digestCredentials(final Subject subject, final String... content)
     {
         try
         {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
 
-            Subject subject = Subject.getSubject(AccessController.getContext());
             Set<SocketConnectionPrincipal> connectionPrincipals = subject.getPrincipals(SocketConnectionPrincipal.class);
             if (connectionPrincipals != null && !connectionPrincipals.isEmpty())
             {

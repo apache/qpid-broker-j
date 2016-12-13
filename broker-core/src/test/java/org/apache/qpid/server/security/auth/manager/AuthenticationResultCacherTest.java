@@ -138,4 +138,34 @@ public class AuthenticationResultCacherTest extends QpidTestCase
             }
         });
     }
+
+
+    public void testCacheMissForNullSubject() throws Exception
+    {
+        Subject.doAs(null, new PrivilegedAction<Void>()
+        {
+            @Override
+            public Void run()
+            {
+                AuthenticationResult result= _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
+                assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result);
+                assertEquals("Unexpected number of loads before cache hit", 1, _loadCallCount);
+                return null;
+            }
+        });
+
+        when(_connection.getRemoteSocketAddress()).thenReturn(new InetSocketAddress("example.com", 8888));
+        Subject.doAs(null, new PrivilegedAction<Void>()
+        {
+            @Override
+            public Void run()
+            {
+                AuthenticationResult result= _authenticationResultCacher.getOrLoad(new String[]{"credentials"}, _loader);
+                assertEquals("Unexpected AuthenticationResult", _successfulAuthenticationResult, result);
+                assertEquals("Unexpected number of loads before cache hit", 2, _loadCallCount);
+                return null;
+            }
+        });
+    }
+
 }
