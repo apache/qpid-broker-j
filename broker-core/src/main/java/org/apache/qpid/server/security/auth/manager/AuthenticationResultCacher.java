@@ -38,8 +38,8 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
+import org.apache.qpid.server.security.auth.SocketConnectionPrincipal;
 
 public class AuthenticationResultCacher
 {
@@ -113,10 +113,10 @@ public class AuthenticationResultCacher
             MessageDigest md = MessageDigest.getInstance("SHA-256");
 
             Subject subject = Subject.getSubject(AccessController.getContext());
-            Set<ConnectionPrincipal> connectionPrincipals = subject.getPrincipals(ConnectionPrincipal.class);
+            Set<SocketConnectionPrincipal> connectionPrincipals = subject.getPrincipals(SocketConnectionPrincipal.class);
             if (connectionPrincipals != null && !connectionPrincipals.isEmpty())
             {
-                ConnectionPrincipal connectionPrincipal = connectionPrincipals.iterator().next();
+                SocketConnectionPrincipal connectionPrincipal = connectionPrincipals.iterator().next();
                 md.update(connectionPrincipal.getRemoteAddress().toString().getBytes(UTF8));
             }
 
