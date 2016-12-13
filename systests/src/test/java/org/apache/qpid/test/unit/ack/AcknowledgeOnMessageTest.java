@@ -93,6 +93,7 @@ public class AcknowledgeOnMessageTest extends AcknowledgeTest implements Message
 
         // Wait for messages to arrive
         boolean complete = _receivedAll.await(10000L, TimeUnit.MILLISECONDS);
+        syncIfNotTransacted(transacted);
 
         // If the messasges haven't arrived
         while (!complete)

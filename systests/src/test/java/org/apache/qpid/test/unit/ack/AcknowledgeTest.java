@@ -179,7 +179,7 @@ public class AcknowledgeTest extends QpidBrokerTestCase
         testAcking(false, AMQSession.PRE_ACKNOWLEDGE);
     }
 
-    private void syncIfNotTransacted(boolean transacted) throws Exception
+    protected void syncIfNotTransacted(boolean transacted) throws Exception
     {
         if(!transacted)
         {
