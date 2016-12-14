@@ -31,7 +31,6 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
 
-import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.server.model.Consumer;
 
 /**
@@ -59,15 +58,18 @@ public class ConsumerLoggingTest extends AbstractTestLogging
     {
         setSystemProperty(Consumer.SUSPEND_NOTIFICATION_PERIOD, "100");
         super.setUp();
-        //Remove broker startup logging messages
-        _monitor.markDiscardPoint();
 
         _connection = getConnection();
 
         _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-        _queue = _session.createQueue(getTestQueueName() + "Queue");
-        _topic = _session.createTopic(getTestQueueName() + "Topic");
+        final String queueName = getTestQueueName() + "Queue";
+        final String topicName = getTestQueueName() + "Topic";
+        _queue = createTestQueue(_session, queueName);
+        _topic = createTopic(_connection, topicName);
+
+        //Remove broker startup logging messages
+        _monitor.markDiscardPoint();
     }
 
     /**
@@ -296,12 +298,11 @@ public class ConsumerLoggingTest extends AbstractTestLogging
     public void testSubscriptionSuspend() throws Exception, IOException
     {
         //Close session with large prefetch
-        _session.close();
-
+        _connection.close();
         int PREFETCH = 15;
+        _connection = getConnectionWithPrefetch(PREFETCH);
+        _session = _connection.createSession(true, Session.SESSION_TRANSACTED);
 
-        //Create new session with small prefetch
-        _session = ((AMQConnection) _connection).createSession(true, Session.SESSION_TRANSACTED, PREFETCH);
 
         MessageConsumer consumer = _session.createConsumer(_queue);
 
