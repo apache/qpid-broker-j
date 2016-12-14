@@ -799,7 +799,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
                 {
                     if (Boolean.TRUE.equals(source.getDynamic()))
                     {
-                        Queue<?> tempQueue = createTemporaryQueue(source.getDynamicNodeProperties());
+                        MessageSource tempQueue = createDynamicSource(source.getDynamicNodeProperties());
                         source.setAddress(tempQueue.getName());
                     }
                     String addr = source.getAddress();
@@ -976,7 +976,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
                         if (Boolean.TRUE.equals(target.getDynamic()))
                         {
 
-                            Queue<?> tempQueue = createTemporaryQueue(target.getDynamicNodeProperties());
+                            MessageDestination tempQueue = createDynamicDestination(target.getDynamicNodeProperties());
                             target.setAddress(tempQueue.getName());
                         }
 
@@ -1114,50 +1114,17 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
     }
 
 
-    private Queue<?> createTemporaryQueue(Map properties)
+    private MessageSource createDynamicSource(Map properties)
     {
         final String queueName = _primaryDomain + "TempQueue" + UUID.randomUUID().toString();
-        Queue<?> queue = null;
+        MessageSource queue = null;
         try
         {
-            LifetimePolicy lifetimePolicy = properties == null
-                                            ? null
-                                            : (LifetimePolicy) properties.get(LIFETIME_POLICY);
-            Map<String,Object> attributes = new HashMap<String,Object>();
-            attributes.put(org.apache.qpid.server.model.Queue.ID, UUID.randomUUID());
-            attributes.put(org.apache.qpid.server.model.Queue.NAME, queueName);
-            attributes.put(org.apache.qpid.server.model.Queue.DURABLE, false);
-
-            if(lifetimePolicy instanceof DeleteOnNoLinks)
-            {
-                attributes.put(org.apache.qpid.server.model.Queue.LIFETIME_POLICY,
-                               org.apache.qpid.server.model.LifetimePolicy.DELETE_ON_NO_LINKS);
-            }
-            else if(lifetimePolicy instanceof DeleteOnNoLinksOrMessages)
-            {
-                attributes.put(org.apache.qpid.server.model.Queue.LIFETIME_POLICY,
-                               org.apache.qpid.server.model.LifetimePolicy.IN_USE);
-            }
-            else if(lifetimePolicy instanceof DeleteOnClose)
-            {
-                attributes.put(org.apache.qpid.server.model.Queue.LIFETIME_POLICY,
-                               org.apache.qpid.server.model.LifetimePolicy.DELETE_ON_CONNECTION_CLOSE);
-            }
-            else if(lifetimePolicy instanceof DeleteOnNoMessages)
-            {
-                attributes.put(org.apache.qpid.server.model.Queue.LIFETIME_POLICY,
-                               org.apache.qpid.server.model.LifetimePolicy.IN_USE);
-            }
-            else
-            {
-                attributes.put(org.apache.qpid.server.model.Queue.LIFETIME_POLICY,
-                               org.apache.qpid.server.model.LifetimePolicy.DELETE_ON_CONNECTION_CLOSE);
-            }
+            Map<String, Object> attributes = convertDynamicNodePropertiesToAttributes(properties, queueName);
 
 
-            // TODO convert AMQP 1-0 node properties to queue attributes
 
-            queue = getAddressSpace().createMessageSource(Queue.class, attributes);
+            queue = getAddressSpace().createMessageSource(MessageSource.class, attributes);
         }
         catch (AccessControlException e)
         {
@@ -1174,6 +1141,75 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
         }
 
         return queue;
+    }
+
+
+    private MessageDestination createDynamicDestination(Map properties)
+    {
+        final String queueName = _primaryDomain + "TempQueue" + UUID.randomUUID().toString();
+        MessageDestination queue = null;
+        try
+        {
+            Map<String, Object> attributes = convertDynamicNodePropertiesToAttributes(properties, queueName);
+
+
+
+            queue = getAddressSpace().createMessageDestination(MessageDestination.class, attributes);
+        }
+        catch (AccessControlException e)
+        {
+            Error error = new Error();
+            error.setCondition(AmqpError.UNAUTHORIZED_ACCESS);
+            error.setDescription(e.getMessage());
+
+            _connection.close(error);
+        }
+        catch (AbstractConfiguredObject.DuplicateNameException e)
+        {
+            _logger.error("A temporary queue was created with a name which collided with an existing queue name");
+            throw new ConnectionScopedRuntimeException(e);
+        }
+
+        return queue;
+    }
+
+    private Map<String, Object> convertDynamicNodePropertiesToAttributes(final Map properties, final String queueName)
+    {
+        // TODO convert AMQP 1-0 node properties to queue attributes
+        LifetimePolicy lifetimePolicy = properties == null
+                                        ? null
+                                        : (LifetimePolicy) properties.get(LIFETIME_POLICY);
+        Map<String,Object> attributes = new HashMap<String,Object>();
+        attributes.put(Queue.ID, UUID.randomUUID());
+        attributes.put(Queue.NAME, queueName);
+        attributes.put(Queue.DURABLE, false);
+
+        if(lifetimePolicy instanceof DeleteOnNoLinks)
+        {
+            attributes.put(Queue.LIFETIME_POLICY,
+                           org.apache.qpid.server.model.LifetimePolicy.DELETE_ON_NO_LINKS);
+        }
+        else if(lifetimePolicy instanceof DeleteOnNoLinksOrMessages)
+        {
+            attributes.put(Queue.LIFETIME_POLICY,
+                           org.apache.qpid.server.model.LifetimePolicy.IN_USE);
+        }
+        else if(lifetimePolicy instanceof DeleteOnClose)
+        {
+            attributes.put(Queue.LIFETIME_POLICY,
+                           org.apache.qpid.server.model.LifetimePolicy.DELETE_ON_CONNECTION_CLOSE);
+        }
+        else if(lifetimePolicy instanceof DeleteOnNoMessages)
+        {
+            attributes.put(Queue.LIFETIME_POLICY,
+                           org.apache.qpid.server.model.LifetimePolicy.IN_USE);
+        }
+        else
+        {
+            attributes.put(Queue.LIFETIME_POLICY,
+                           org.apache.qpid.server.model.LifetimePolicy.DELETE_ON_CONNECTION_CLOSE);
+        }
+        return attributes;
     }
 
     ServerTransaction getTransaction(Binary transactionId)

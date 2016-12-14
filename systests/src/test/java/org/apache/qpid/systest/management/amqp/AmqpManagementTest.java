@@ -168,7 +168,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         message.setStringProperty("identity", "self");
         message.setStringProperty("type", "org.amqp.management");
         message.setStringProperty("operation", "QUERY");
-        message.setObject("attributeNames", new ArrayList<>());
+        message.setObject("attributeNames", "[]");
         message.setJMSReplyTo(_replyAddress);
 
         _producer.send(message);
@@ -217,7 +217,7 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         assertTrue("The attribute names are not a list", attributeNames instanceof Collection);
         attributeNamesCollection = (Collection)attributeNames;
         assertEquals("The attributeNames are no as expected", Arrays.asList("name", "identity", "type"), attributeNamesCollection);
-        Object resultsObject = ((MapMessage) responseMessage).getObject("results");
+        Object resultsObject = getValueFromMapResponse(responseMessage, "results");
         assertTrue("results is not a collection", resultsObject instanceof Collection);
         Collection results = (Collection)resultsObject;
 
@@ -295,11 +295,11 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         assertTrue("The response message does not have a status code",
                    Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
         assertEquals("The response code did not indicate success", 201, responseMessage.getIntProperty("statusCode"));
-        assertTrue("The response was not a MapMessage", responseMessage instanceof MapMessage);
-        assertEquals("The created queue was not a standard queue", "org.apache.qpid.StandardQueue", ((MapMessage)responseMessage).getString("type"));
-        assertEquals("The created queue was not a standard queue", "standard", ((MapMessage)responseMessage).getString("qpid-type"));
-        assertEquals("the created queue did not have the correct alerting threshold", 100L, ((MapMessage)responseMessage).getLong(ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES));
-        Object identity = ((MapMessage) responseMessage).getObject("identity");
+        checkResponseIsMapType(responseMessage);
+        assertEquals("The created queue was not a standard queue", "org.apache.qpid.StandardQueue", getValueFromMapResponse(responseMessage, "type"));
+        assertEquals("The created queue was not a standard queue", "standard", getValueFromMapResponse(responseMessage, "qpid-type"));
+        assertEquals("the created queue did not have the correct alerting threshold", 100L, getValueFromMapResponse(responseMessage,ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES));
+        Object identity = getValueFromMapResponse(responseMessage,"identity");
 
         message = _session.createMapMessage();
 
@@ -316,8 +316,8 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         assertTrue("The response message does not have a status code",
                    Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
         assertEquals("The response code did not indicate success", 200, responseMessage.getIntProperty("statusCode"));
-        assertTrue("The response was not a MapMessage", responseMessage instanceof MapMessage);
-        assertEquals("the created queue did not have the correct alerting threshold", 250L, ((MapMessage)responseMessage).getLong(ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES));
+        checkResponseIsMapType(responseMessage);
+        assertEquals("the created queue did not have the correct alerting threshold", 250L, getValueFromMapResponse(responseMessage, ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES));
 
         message = _session.createMapMessage();
 
@@ -530,9 +530,9 @@ public class AmqpManagementTest extends QpidBrokerTestCase
         assertTrue("The response message does not have a status code",
                    Collections.list(responseMessage.getPropertyNames()).contains("statusCode"));
         assertEquals("Incorrect response code", 200, responseMessage.getIntProperty("statusCode"));
-        assertTrue("The response was not a MapMessage", responseMessage instanceof MapMessage);
-        assertEquals("The name of the virtual host is not as expected", virtualHostName, ((MapMessage)responseMessage).getString("name"));
-        assertEquals("The type of the virtual host is not as expected", "Memory", ((MapMessage)responseMessage).getString("qpid-type"));
+        checkResponseIsMapType(responseMessage);
+        assertEquals("The name of the virtual host is not as expected", virtualHostName, getValueFromMapResponse(responseMessage, "name"));
+        assertEquals("The type of the virtual host is not as expected", "Memory", getValueFromMapResponse(responseMessage, "qpid-type"));
 
 
     }

@@ -2695,6 +2695,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             return (T) createChild((Class<? extends Queue>)clazz, attributes);
         }
+        else if(clazz.isAssignableFrom(Queue.class))
+        {
+            return (T) createChild(Queue.class, attributes);
+        }
         else
         {
             throw new IllegalArgumentException("Cannot create message source children of class " + clazz.getSimpleName());
@@ -2712,6 +2716,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         else if(Queue.class.isAssignableFrom(clazz))
         {
             return (T) createChild((Class<? extends Queue>)clazz, attributes);
+        }
+        else if(clazz.isAssignableFrom(Queue.class))
+        {
+            return (T) createChild(Queue.class, attributes);
         }
         else
         {

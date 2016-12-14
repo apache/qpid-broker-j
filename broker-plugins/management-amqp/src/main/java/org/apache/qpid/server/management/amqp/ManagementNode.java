@@ -48,6 +48,9 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerOption;
@@ -89,6 +92,7 @@ import org.apache.qpid.server.util.StateChangeListener;
 
 class ManagementNode implements MessageSource, MessageDestination
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ManagementNode.class);
 
     public static final String IDENTITY_ATTRIBUTE = "identity";
     public static final String INDEX_ATTRIBUTE = "index";
@@ -978,14 +982,13 @@ class ManagementNode implements MessageSource, MessageDestination
             AMQSessionModel publishingSession = sessionPrincipals.iterator().next().getSession();
             for (ManagementNodeConsumer candidate : _consumers)
             {
-                if (candidate.getTarget().getTargetAddress().equals(replyTo) && candidate.getSessionModel() == publishingSession)
+                if (candidate.getTarget().getTargetAddress().equals(replyTo) && candidate.getSessionModel().getConnectionReference() == publishingSession.getConnectionReference())
                 {
                     consumer = candidate;
                     break;
                 }
             }
         }
-
         return consumer == null ? _addressSpace.getDefaultDestination() : consumer;
     }
 

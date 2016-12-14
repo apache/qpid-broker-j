@@ -22,15 +22,25 @@ package org.apache.qpid.server.management.amqp;
 
 import java.nio.charset.StandardCharsets;
 import java.security.AccessControlException;
+import java.security.AccessController;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import javax.security.auth.Subject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.exchange.ExchangeDefaults;
+import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
@@ -41,6 +51,7 @@ import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.NamedAddressSpace;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.SystemAddressSpaceCreator;
+import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.LinkModel;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.security.SecurityToken;
@@ -62,6 +73,8 @@ public class ManagementAddressSpace implements NamedAddressSpace
     public static final String MANAGEMENT_ADDRESS_SPACE_NAME = "$management";
     private static final String MANAGEMENT_NODE_NAME = "$management";
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ManagementAddressSpace.class);
+
     private final String _name;
     private final SystemAddressSpaceCreator.AddressSpaceRegistry _addressSpaceRegistry;
     private final ManagementNode _managementNode;
@@ -73,6 +86,7 @@ public class ManagementAddressSpace implements NamedAddressSpace
     private final Broker<?> _broker;
     private final Principal _principal;
     private final UUID _id;
+    private final ConcurrentMap<Object, ConcurrentMap<String, ProxyMessageSource>> _connectionSpecificDestinations = new ConcurrentHashMap<>();
 
     public ManagementAddressSpace(final SystemAddressSpaceCreator.AddressSpaceRegistry addressSpaceRegistry)
     {
@@ -110,7 +124,10 @@ public class ManagementAddressSpace implements NamedAddressSpace
         {
             return _propertiesNode;
         }
-        return null;
+        else
+        {
+            return getProxyNode(name);
+        }
     }
 
     @Override
@@ -120,7 +137,38 @@ public class ManagementAddressSpace implements NamedAddressSpace
         {
             return _managementNode;
         }
+        else
+        {
+            MessageDestination connectionSpecificDestinations = getProxyNode(name);
+            if (connectionSpecificDestinations != null) return connectionSpecificDestinations;
+        }
+
         return null;
+    }
+
+    ProxyMessageSource getProxyNode(final String name)
+    {
+        LOGGER.debug("RG: looking for proxy source {}", name);
+        Subject currentSubject = Subject.getSubject(AccessController.getContext());
+        Set<SessionPrincipal> sessionPrincipals = currentSubject.getPrincipals(SessionPrincipal.class);
+        if (!sessionPrincipals.isEmpty())
+        {
+            Object connectionReference = sessionPrincipals.iterator().next().getSession().getConnectionReference();
+            Map<String, ProxyMessageSource>
+                    connectionSpecificDestinations = _connectionSpecificDestinations.get(connectionReference);
+            if(connectionSpecificDestinations != null)
+            {
+                LOGGER.debug("RG: ", connectionSpecificDestinations);
+
+                return connectionSpecificDestinations.get(name);
+            }
+        }
+        return null;
+    }
+
+    ManagementNode getManagementNode()
+    {
+        return _managementNode;
     }
 
     @Override
@@ -187,14 +235,78 @@ public class ManagementAddressSpace implements NamedAddressSpace
     @Override
     public <T extends MessageSource> T createMessageSource(final Class<T> clazz, final Map<String, Object> attributes)
     {
-        return null;
+        if(clazz == MessageSource.class)
+        {
+            return (T) createProxyNode(attributes);
+        }
+        else
+        {
+            return null;
+        }
     }
+
+    private ProxyMessageSource createProxyNode(final Map<String, Object> attributes)
+    {
+        LOGGER.debug("RG: in create proxy node");
+        Subject currentSubject = Subject.getSubject(AccessController.getContext());
+        Set<SessionPrincipal> sessionPrincipals = currentSubject.getPrincipals(SessionPrincipal.class);
+        if (!sessionPrincipals.isEmpty())
+        {
+            LOGGER.debug("RG: session principal present");
+            final ProxyMessageSource proxyMessageSource = new ProxyMessageSource(this, attributes);
+            final AMQSessionModel session = sessionPrincipals.iterator().next().getSession();
+            final Object connectionReference = session.getConnectionReference();
+            ConcurrentMap<String, ProxyMessageSource> connectionSpecificDestinations =
+                    _connectionSpecificDestinations.get(connectionReference);
+            if (connectionSpecificDestinations == null)
+            {
+                connectionSpecificDestinations = new ConcurrentHashMap<>();
+                if(_connectionSpecificDestinations.putIfAbsent(connectionReference, connectionSpecificDestinations) == null)
+                {
+                    session.getAMQPConnection().addDeleteTask(new Action()
+                    {
+                        @Override
+                        public void performAction(final Object object)
+                        {
+                            _connectionSpecificDestinations.remove(connectionReference);
+                        }
+                    });
+                }
+            }
+            connectionSpecificDestinations.put(proxyMessageSource.getName(), proxyMessageSource);
+            return proxyMessageSource;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    void removeProxyMessageSource(final Object connectionReference, final String name)
+    {
+        ConcurrentMap<String, ProxyMessageSource> connectionSpecificDestinations =
+                _connectionSpecificDestinations.get(connectionReference);
+        if(connectionSpecificDestinations != null)
+        {
+            connectionSpecificDestinations.remove(name);
+        }
+    }
+
 
     @Override
     public <T extends MessageDestination> T createMessageDestination(final Class<T> clazz,
                                                                      final Map<String, Object> attributes)
     {
-        return null;
+
+        LOGGER.debug("RG : requesting destination creation");
+        if(clazz == MessageDestination.class)
+        {
+            return (T) createProxyNode(attributes);
+        }
+        else
+        {
+            return null;
+        }
     }
 
     @Override
