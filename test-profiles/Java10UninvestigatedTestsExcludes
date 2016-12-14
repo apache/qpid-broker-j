@@ -20,7 +20,6 @@
 // This file should eventually be removed as all the systests are moved to either
 // working, defined as broken, or excluded as they test version specific functionality
 
-org.apache.qpid.server.AbruptClientDisconnectTest#*
 org.apache.qpid.server.logging.ConsumerLoggingTest#*
 org.apache.qpid.server.logging.DurableQueueLoggingTest#*
 org.apache.qpid.server.logging.QueueLoggingTest#*

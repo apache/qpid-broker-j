@@ -41,17 +41,17 @@ import javax.jms.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.client.AMQConnectionURL;
-import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TCPTunneler;
-import org.apache.qpid.url.URLSyntaxException;
 
+/**
+ * Tests the behaviour of the Broker when the client's connection is unexpectedly
+ * severed.  Test uses a TCP tunneller which is halted by the test in order to
+ * simulate a sudden client failure.
+ */
 public class AbruptClientDisconnectTest extends QpidBrokerTestCase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbruptClientDisconnectTest.class);
-    private static final String CONNECTION_URL_TEMPLATE =
-            "amqp://guest:guest@clientid/?brokerlist='localhost:%d?failover='false''";
 
     private TCPTunneler _tcpTunneler;
     private Connection _tunneledConnection;
@@ -60,24 +60,24 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
     private Connection _utilityConnection;
 
     @Override
-    protected void setUp() throws Exception
+    public void setUp() throws Exception
     {
         super.setUp();
         _executorService = Executors.newFixedThreadPool(3);
 
-        _testQueue = getTestQueue();
         _utilityConnection = getConnection();
         _utilityConnection.start();
+        final Session session = _utilityConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
         // create queue
-        consumeIgnoringLastSeenOmission(_utilityConnection, _testQueue, 1, 0, -1);
+        _testQueue = createTestQueue(session);
 
         _tcpTunneler = new TCPTunneler(getFailingPort(), "localhost", getDefaultAmqpPort(), 1);
         _tcpTunneler.start();
     }
 
     @Override
-    protected void tearDown() throws Exception
+    public void tearDown() throws Exception
     {
         try
         {
@@ -216,12 +216,15 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
 
 
     private Connection createTunneledConnection(final ClientMonitor clientMonitor)
-            throws URLSyntaxException, JMSException
+            throws Exception
     {
-        final ConnectionURL url = new AMQConnectionURL(String.format(CONNECTION_URL_TEMPLATE, _tcpTunneler.getLocalPort()));
-        Connection tunneledConnection = getConnection(url);
+        final int localPort = _tcpTunneler.getLocalPort();
+        setSystemProperty("test.port", String.valueOf(localPort));
+        setSystemProperty("test.port.alt", String.valueOf(localPort));
+
+        Connection tunneledConnection = getConnectionFactory("default").createConnection(GUEST_USERNAME, GUEST_PASSWORD);
         _tcpTunneler.addClientListener(clientMonitor);
-        final AtomicReference _exception = new AtomicReference();
+        final AtomicReference<JMSException> _exception = new AtomicReference<>();
         tunneledConnection.setExceptionListener(new ExceptionListener()
         {
             @Override
@@ -281,7 +284,7 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
     private class ClientMonitor implements TCPTunneler.TunnelListener
     {
         private final CountDownLatch _closeLatch = new CountDownLatch(1);
-        private final AtomicReference<InetSocketAddress> _clientAddress = new AtomicReference();
+        private final AtomicReference<InetSocketAddress> _clientAddress = new AtomicReference<>();
 
         @Override
         public void clientConnected(final InetSocketAddress clientAddress)
