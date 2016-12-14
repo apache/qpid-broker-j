@@ -209,7 +209,6 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
         @Override
         public void notifyWork()
         {
-            LOGGER.debug("RG: notifyWork called");
             _underlying.notifyWork();
         }
 

@@ -247,12 +247,10 @@ public class ManagementAddressSpace implements NamedAddressSpace
 
     private ProxyMessageSource createProxyNode(final Map<String, Object> attributes)
     {
-        LOGGER.debug("RG: in create proxy node");
         Subject currentSubject = Subject.getSubject(AccessController.getContext());
         Set<SessionPrincipal> sessionPrincipals = currentSubject.getPrincipals(SessionPrincipal.class);
         if (!sessionPrincipals.isEmpty())
         {
-            LOGGER.debug("RG: session principal present");
             final ProxyMessageSource proxyMessageSource = new ProxyMessageSource(this, attributes);
             final AMQSessionModel session = sessionPrincipals.iterator().next().getSession();
             final Object connectionReference = session.getConnectionReference();
@@ -298,7 +296,6 @@ public class ManagementAddressSpace implements NamedAddressSpace
                                                                      final Map<String, Object> attributes)
     {
 
-        LOGGER.debug("RG : requesting destination creation");
         if(clazz == MessageDestination.class)
         {
             return (T) createProxyNode(attributes);
