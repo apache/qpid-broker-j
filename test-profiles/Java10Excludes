@@ -37,6 +37,7 @@ org.apache.qpid.ra.QpidRAXAResourceTest#*
 org.apache.qpid.test.client.ImmediateAndMandatoryPublishingTest#*
 org.apache.qpid.test.client.CloseOnNoRouteForMandatoryMessageTest#*
 org.apache.qpid.server.exchange.ReturnUnroutableMandatoryMessageTest#*
+org.apache.qpid.server.queue.ModelTest#*
 
 // Exclude tests of connection URL failover method property
 org.apache.qpid.server.failover.FailoverMethodTest#*
