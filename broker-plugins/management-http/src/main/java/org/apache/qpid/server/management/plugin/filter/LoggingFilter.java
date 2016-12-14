@@ -51,14 +51,12 @@ public class LoggingFilter implements Filter
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         String method = null;
-        String user = null;
         String url = null;
         if (LOGGER.isDebugEnabled())
         {
             method = httpRequest.getMethod();
-            user = HttpManagementUtil.getRequestPrincipals(httpRequest);
             url = HttpManagementUtil.getRequestURL(httpRequest);
-            LOGGER.debug("REQUEST  user='{}' method='{}' url='{}'", user, method, url);
+            LOGGER.debug("REQUEST  method='{}' url='{}'", method, url);
         }
         try
         {
@@ -68,15 +66,9 @@ public class LoggingFilter implements Filter
         {
             if (LOGGER.isDebugEnabled())
             {
-                if (user == null)
-                {
-                    // user might have been set by subsequent filters
-                    user = HttpManagementUtil.getRequestPrincipals(httpRequest);
-                }
                 String responseStatus = String.valueOf(httpResponse.getStatus());
-                LOGGER.debug("RESPONSE user='{}' method='{}' url='{}' status='{}'", user, method, url, responseStatus);
+                LOGGER.debug("RESPONSE method='{}' url='{}' status='{}'", method, url, responseStatus);
             }
-
         }
     }
 
