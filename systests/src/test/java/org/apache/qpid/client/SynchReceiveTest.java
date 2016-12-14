@@ -25,29 +25,25 @@ import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class SynchReceiveTest extends QpidBrokerTestCase
 {
-    private static final long AWAIT_MESSAGE_TIMEOUT = 2000;
-    private static final long AWAIT_MESSAGE_TIMEOUT_NEGATIVE = 250;
     private static final int MSG_COUNT = 10;
-    private final String _testQueueName = getTestQueueName();
     private Connection _consumerConnection;
-    private Session _consumerSession;
     private MessageConsumer _consumer;
     private Queue _queue;
 
-    protected void setUp() throws Exception
+    @Override
+    public void setUp() throws Exception
     {
         super.setUp();
 
         _consumerConnection = getConnection();
         _consumerConnection.start();
-        _consumerSession = _consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        _queue = _consumerSession.createQueue(_testQueueName);
-        _consumer = _consumerSession.createConsumer(_queue);
+        Session consumerSession = _consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        _queue = createTestQueue(consumerSession);
+        _consumer = consumerSession.createConsumer(_queue);
 
         // Populate queue
         Connection producerConnection = getConnection();
@@ -60,10 +56,10 @@ public class SynchReceiveTest extends QpidBrokerTestCase
     {
         for (int msg = 0; msg < MSG_COUNT; msg++)
         {
-            assertNotNull("Expected message number " + msg, _consumer.receive(AWAIT_MESSAGE_TIMEOUT));
+            assertNotNull("Expected message number " + msg, _consumer.receive(getReceiveTimeout()));
         }
 
-        assertNull("Received too many messages", _consumer.receive(500));
+        assertNull("Received too many messages", _consumer.receive(getShortReceiveTimeout()));
     }
 
     public void testReceiveNoWait() throws Exception
@@ -73,16 +69,14 @@ public class SynchReceiveTest extends QpidBrokerTestCase
             assertNotNull("Expected message number " + msg, _consumer.receiveNoWait());
         }
 
-        assertNull("Received too many messages", _consumer.receive(500));
+        assertNull("Received too many messages", _consumer.receive(getShortReceiveTimeout()));
     }
 
     public void testTwoConsumersInterleaved() throws Exception
     {
-        //create a new connection with prefetch set to 1
         _consumerConnection.close();
-        setTestClientSystemProperty(ClientProperties.MAX_PREFETCH_PROP_NAME, new Integer(1).toString());
 
-        _consumerConnection = getConnection();
+        _consumerConnection = getConnectionWithPrefetch(0);
         _consumerConnection.start();
         Session consumerSession1 = _consumerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         MessageConsumer consumer1 = consumerSession1.createConsumer(_queue);
@@ -95,12 +89,12 @@ public class SynchReceiveTest extends QpidBrokerTestCase
         int loops = 0;
         while(msg < MSG_COUNT && loops < maxLoops)
         {
-            if (consumer1.receive(AWAIT_MESSAGE_TIMEOUT) != null)
+            if (consumer1.receive(getReceiveTimeout()) != null)
             {
                 msg++;
             }
 
-            if (consumer2.receive(AWAIT_MESSAGE_TIMEOUT) != null)
+            if (consumer2.receive(getReceiveTimeout()) != null)
             {
                 msg++;
             }
@@ -109,8 +103,8 @@ public class SynchReceiveTest extends QpidBrokerTestCase
         }
 
         assertEquals("Not all messages received.", MSG_COUNT, msg);
-        assertNull("Received too many messages", consumer1.receive(AWAIT_MESSAGE_TIMEOUT_NEGATIVE));
-        assertNull("Received too many messages", consumer2.receive(AWAIT_MESSAGE_TIMEOUT_NEGATIVE));
+        assertNull("Received too many messages", consumer1.receive(getShortReceiveTimeout()));
+        assertNull("Received too many messages", consumer2.receive(getShortReceiveTimeout()));
     }
 
     public void testIdleSecondConsumer() throws Exception
@@ -123,10 +117,10 @@ public class SynchReceiveTest extends QpidBrokerTestCase
 
         for (int msg = 0; msg < MSG_COUNT; msg++)
         {
-            assertNotNull("Expected message number " + msg, _consumer.receive(AWAIT_MESSAGE_TIMEOUT));
+            assertNotNull("Expected message number " + msg, _consumer.receive(getReceiveTimeout()));
         }
 
-        assertNull("Received too many messages", _consumer.receive(AWAIT_MESSAGE_TIMEOUT_NEGATIVE));
+        assertNull("Received too many messages", _consumer.receive(getShortReceiveTimeout()));
     }
 
 
