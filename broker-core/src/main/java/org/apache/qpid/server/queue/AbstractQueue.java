@@ -1960,28 +1960,18 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     if (sub.allocateCredit(node))
                     {
                         MessageReference messageReference = null;
-                        try
+                        if ((sub.acquires() && !assign(sub, node))
+                            || (!sub.acquires() && (messageReference = node.newMessageReference()) == null))
                         {
+                            // restore credit here that would have been taken away by allocateCredit since we didn't manage
+                            // to acquire the entry for this consumer
+                            sub.restoreCredit(node);
 
-                            if ((sub.acquires() && !assign(sub, node))
-                                || (!sub.acquires() && (messageReference = node.newMessageReference()) == null))
-                            {
-                                // restore credit here that would have been taken away by wouldSuspend since we didn't manage
-                                // to acquire the entry for this consumer
-                                sub.restoreCredit(node);
-                            }
-                            else
-                            {
-                                setLastSeenEntry(sub, node);
-                                messageContainer = new MessageContainer(node, messageReference, false);
-                            }
                         }
-                        finally
+                        else
                         {
-                            if (messageReference != null)
-                            {
-                                messageReference.release();
-                            }
+                            setLastSeenEntry(sub, node);
+                            messageContainer = new MessageContainer(node, messageReference, false);
                         }
                     }
                     else
