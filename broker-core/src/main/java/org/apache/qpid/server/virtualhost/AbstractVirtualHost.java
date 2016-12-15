@@ -1133,7 +1133,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
      */
     private void initialiseHouseKeeping(long period)
     {
-        if (period != 0L)
+        if (period > 0L)
         {
             scheduleHouseKeepingTask(period, new VirtualHostHouseKeepingTask());
         }
@@ -2523,6 +2523,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
 
         // propagate any exception thrown during recovery into HouseKeepingTaskExecutor to handle them accordingly
+        // TODO if message recovery fails we ought to be transitioning the VH into ERROR and releasing the thread-pools etc.
         final ListenableFuture<Void> recoveryResult = _messageStoreRecoverer.recover(this);
         recoveryResult.addListener(new Runnable()
         {
@@ -2555,12 +2556,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     protected void startFileSystemSpaceChecking()
     {
+        long housekeepingCheckPeriod = getHousekeepingCheckPeriod();
         File storeLocationAsFile = _messageStore.getStoreLocationAsFile();
-        if (storeLocationAsFile != null && _fileSystemMaxUsagePercent > 0)
+        if (storeLocationAsFile != null && _fileSystemMaxUsagePercent > 0 && housekeepingCheckPeriod > 0)
         {
             _fileSystemSpaceChecker.setFileSystem(storeLocationAsFile);
 
-            scheduleHouseKeepingTask(getHousekeepingCheckPeriod(), _fileSystemSpaceChecker);
+            scheduleHouseKeepingTask(housekeepingCheckPeriod, _fileSystemSpaceChecker);
         }
     }
 
@@ -2570,7 +2572,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return getBroker().getConnectionMetaData();
     }
 
-    @StateTransition( currentState = { State.STOPPED, State.ERRORED }, desiredState = State.ACTIVE )
+    @StateTransition( currentState = { State.STOPPED }, desiredState = State.ACTIVE )
     private ListenableFuture<Void> onRestart()
     {
         resetStatistics();
