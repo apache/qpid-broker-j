@@ -189,6 +189,14 @@ public class PublishMessageRestTest extends QpidRestTestCase
         assertEquals("Unexpected number of enqueues after queue creation", 1, enqueues);
     }
 
+    public void testPublishMissingMesssageParameter() throws Exception
+    {
+        getRestTestHelper().submitRequest(_publishMessageOpUrl,
+                                          "POST",
+                                          Collections.emptyMap(),
+                                          SC_UNPROCESSABLE_ENTITY);
+    }
+
     private <M extends Message> M publishMessageWithContent(final Object content, final Class<M> expectedMessageClass) throws Exception
     {
         Map<String, Object> messageBody = new HashMap<>();

@@ -704,6 +704,11 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public int publishMessage(@Param(name = "message") final ManageableMessage message)
     {
+        if (message == null)
+        {
+            throw new IllegalArgumentException("Message is not provided");
+        }
+
         final String address = message.getAddress();
         MessageDestination destination = address == null ? getDefaultDestination() : getAttainedMessageDestination(address);
         if(destination == null)
