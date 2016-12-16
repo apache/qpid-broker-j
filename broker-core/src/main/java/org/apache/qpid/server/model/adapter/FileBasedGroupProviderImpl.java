@@ -271,7 +271,7 @@ public class FileBasedGroupProviderImpl
         {
             if (_broker.isManagementMode())
             {
-                        LOGGER.warn("Failed to activate group provider: " + getName());
+                LOGGER.warn("Failed to activate group provider: {}", getName());
             }
             else
             {
