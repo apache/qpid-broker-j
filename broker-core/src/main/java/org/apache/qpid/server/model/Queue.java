@@ -327,7 +327,8 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                               @Param(name = "limit", defaultValue = "-1",
                                       description = "Number of bytes to return") long limit,
                               @Param(name = "returnJson", defaultValue = "false",
-                                      description = "If true, converts message content into JSON format.") boolean returnJson,
+                                      description = "If true, converts message content into JSON format. "
+                                                    + "If false, returned bytes may be in an encoded form") boolean returnJson,
                               @Param(name = "decompressBeforeLimiting", defaultValue = "false",
                                       description = "If true, the operation will attempt to decompress the message"
                                                     + "(should it be compressed) before applying any limit. If"
