@@ -83,7 +83,7 @@ public class HousekeepingExecutor extends ScheduledThreadPoolExecutor
         }
         if (t != null)
         {
-            LOGGER.error("Houskeeping task threw an exception:", t);
+            LOGGER.error("Housekeeping task threw an exception:", t);
 
             final Thread.UncaughtExceptionHandler uncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
             if (uncaughtExceptionHandler != null)
