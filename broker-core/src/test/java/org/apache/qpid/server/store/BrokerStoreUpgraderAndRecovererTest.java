@@ -23,21 +23,31 @@ package org.apache.qpid.server.store;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.JsonSystemConfig;
 import org.apache.qpid.server.model.JsonSystemConfigImpl;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.util.FileUtils;
 
 
 public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
@@ -136,16 +146,9 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
     private List<ConfiguredObjectRecord> upgrade(final DurableConfigurationStore dcs,
                                                  final BrokerStoreUpgraderAndRecoverer recoverer)
     {
-        final List<ConfiguredObjectRecord> records = new ArrayList<>();
-        dcs.openConfigurationStore(new ConfiguredObjectRecordHandler()
-        {
-            @Override
-            public void handle(final ConfiguredObjectRecord record)
-            {
-                records.add(record);
-            }
-        });
-        return recoverer.upgrade(dcs, records);
+        RecordRetrievingConfiguredObjectRecordHandler handler = new RecordRetrievingConfiguredObjectRecordHandler();
+        dcs.openConfigurationStore(handler);
+        return recoverer.upgrade(dcs, handler.getRecords());
     }
 
     public void testUpgradeVirtualHostWithJDBCStoreAndDefaultPool()
@@ -667,6 +670,160 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
                     authenticationProviders.get(0).getAttributes().containsKey("preferencesproviders"));
     }
 
+    public void testEndToEndUpgradeFromModelVersion1() throws Exception
+    {
+        final File workDir = TestFileUtils.createTestDirectory("qpid.work_dir", true);
+        try
+        {
+            File pathToStore_1_0 = copyResource("configuration/broker-config-1.0.json", workDir);
+            File pathToStoreLatest = copyResource("configuration/broker-config-latest.json", workDir);
+
+            List<ConfiguredObjectRecord> expected = getStoreRecords(pathToStoreLatest);
+
+            BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+            List<ConfiguredObjectRecord> records =
+                    recoverer.upgrade(mock(DurableConfigurationStore.class), getStoreRecords(pathToStore_1_0));
+
+            assertEquals("Unexpected number of records after upgrade", expected.size(), records.size());
+
+            for (ConfiguredObjectRecord expectedRecord : expected)
+            {
+                ConfiguredObjectRecord actualRecord = findActualForExpected(expectedRecord, expected, records);
+                assertNotNull("Missing record after upgrade :" + expectedRecord, actualRecord);
+                assertEquals("Unexpected record attributes after upgrade",
+                             getRecordAttributes(expectedRecord.getAttributes()),
+                             getRecordAttributes(actualRecord.getAttributes()));
+            }
+        }
+        finally
+        {
+            FileUtils.delete(workDir, true);
+        }
+    }
+
+    private Map<String, Object> getRecordAttributes(final Map<String, Object> attributes)
+    {
+        Map<String, Object> result = new TreeMap<>();
+        for (Map.Entry<String, Object> attribute : attributes.entrySet())
+        {
+            if (!(attribute.getValue() instanceof Collection) || !("id".equals(attribute.getKey())))
+            {
+                result.put(attribute.getKey(), attribute.getValue());
+            }
+        }
+        return result;
+    }
+
+    private ConfiguredObjectRecord findActualForExpected(final ConfiguredObjectRecord expectedRecord,
+                                                         final List<ConfiguredObjectRecord> expectedRecords,
+                                                         final List<ConfiguredObjectRecord> actualRecords)
+    {
+        for (ConfiguredObjectRecord actual : actualRecords)
+        {
+            if (actual.getId().equals(expectedRecord.getId()))
+            {
+                return actual;
+            }
+        }
+        String expectedName = String.valueOf(expectedRecord.getAttributes().get("name"));
+        List<ConfiguredObjectRecord> expectedParents = findParents(expectedRecord.getParents(), expectedRecords);
+        for (ConfiguredObjectRecord actual : actualRecords)
+        {
+            String actualName = String.valueOf(actual.getAttributes().get("name"));
+            List<ConfiguredObjectRecord> actualParents = findParents(actual.getParents(), actualRecords);
+            if (actual.getType().equals(expectedRecord.getType())
+                && expectedName.equals(actualName)
+                && equals(expectedParents, actualParents))
+            {
+                return actual;
+            }
+        }
+        return null;
+    }
+
+    private List<ConfiguredObjectRecord> findParents(final Map<String, UUID> parents,
+                                                     final List<ConfiguredObjectRecord> records)
+    {
+        List<ConfiguredObjectRecord> results = new ArrayList<>();
+        for (Map.Entry<String, UUID> parent : parents.entrySet())
+        {
+            ConfiguredObjectRecord parentRecord = null;
+            for (ConfiguredObjectRecord record : records)
+            {
+                if (record.getId().equals(parent.getValue()) && record.getType().equals(parent.getKey()))
+                {
+                    parentRecord = record;
+                    break;
+                }
+            }
+            if (parentRecord == null)
+            {
+                throw new RuntimeException("Parent record is not found for " + parent);
+            }
+            results.add(parentRecord);
+        }
+        return results;
+    }
+
+    private boolean equals(final List<ConfiguredObjectRecord> expectedRecords,
+                           final List<ConfiguredObjectRecord> actualRecords)
+    {
+        for (ConfiguredObjectRecord expectedRecord : expectedRecords)
+        {
+            String expectedName = String.valueOf(expectedRecord.getAttributes().get("name"));
+            for (ConfiguredObjectRecord actual : actualRecords)
+            {
+                if (actual.getId().equals(expectedRecord.getId()))
+                {
+                    return true;
+                }
+                String actualName = String.valueOf(actual.getAttributes().get("name"));
+                if (actual.getType().equals(expectedRecord.getType())
+                    && expectedName.equals(actualName))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private File copyResource(String resource, File workDir) throws IOException
+    {
+        File copy = new File(workDir, new File(resource).getName());
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream(resource))
+        {
+            Files.copy(is, copy.toPath());
+        }
+        return copy;
+    }
+
+    private List<ConfiguredObjectRecord> getStoreRecords(final File pathToStore)
+    {
+        JsonSystemConfig systemConfig = getJsonSystemConfigMock(pathToStore.getAbsolutePath());
+        JsonFileConfigStore jsonFileConfigStore = new JsonFileConfigStore(Broker.class);
+        try
+        {
+            jsonFileConfigStore.init(systemConfig);
+            RecordRetrievingConfiguredObjectRecordHandler handler = new RecordRetrievingConfiguredObjectRecordHandler();
+            jsonFileConfigStore.openConfigurationStore(handler);
+            return handler.getRecords();
+        }
+        finally
+        {
+            jsonFileConfigStore.closeConfigurationStore();
+        }
+    }
+
+    private JsonSystemConfig getJsonSystemConfigMock(final String pathToStore)
+    {
+        JsonSystemConfig systemConfig = mock(JsonSystemConfig.class);
+        when(systemConfig.getName()).thenReturn("test");
+        when(systemConfig.getStorePath()).thenReturn(pathToStore);
+        when(systemConfig.getModel()).thenReturn(BrokerModel.getInstance());
+        return systemConfig;
+    }
+
     private void upgradeBrokerRecordAndAssertUpgradeResults()
     {
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord);
@@ -792,6 +949,22 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
             {
                 handler.handle(record);
             }
+        }
+    }
+
+    private class RecordRetrievingConfiguredObjectRecordHandler implements ConfiguredObjectRecordHandler
+    {
+        private List<ConfiguredObjectRecord> _records = new ArrayList<>();
+
+        @Override
+        public void handle(final ConfiguredObjectRecord record)
+        {
+            _records.add(record);
+        }
+
+        public List<ConfiguredObjectRecord> getRecords()
+        {
+            return _records;
         }
     }
 }

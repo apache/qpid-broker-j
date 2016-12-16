@@ -353,7 +353,6 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
 
                 addLogger(record, "memory", "Memory");
                 addLogger(record, "logfile", "File");
-                getNextUpgrader().configuredObject(record);
             }
             else if (record.getType().equals("VirtualHostNode"))
             {
@@ -366,8 +365,6 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
                     String nodeName = (String) record.getAttributes().get("name");
                     _knownNonBdbHaVirtualHostNode.put(nodeName, record);
                 }
-                getNextUpgrader().configuredObject(record);
-
             }
             else if (record.getType().equals("Port") && "AMQP".equals(record.getAttributes().get("type")))
             {
@@ -378,9 +375,9 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
                     updatedAttributes.remove("sendBufferSize");
                     record = new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
                     getUpdateMap().put(record.getId(), record);
-                    getNextUpgrader().configuredObject(record);
                 }
             }
+            getNextUpgrader().configuredObject(record);
         }
 
         private void addLogger(final ConfiguredObjectRecord record, String name, String type)

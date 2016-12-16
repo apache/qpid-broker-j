@@ -1,0 +1,91 @@
+{
+  "accesscontrolproviders" : [ {
+    "id" : "bf5b8d69-7151-4283-bf70-7a709eb18f8a",
+    "name" : "acl",
+    "path" : "${json:qpid.work_dir}/allow-all.acl",
+    "type" : "AclFile"
+  } ],
+  "authenticationproviders" : [ {
+    "id" : "15b552ab-1919-4603-b1df-b5e0587c1121",
+    "name" : "ldap",
+    "providerUrl" : "ldap://localhost:10389",
+    "searchContext" : "ou=people,o=sevenSeas",
+    "searchFilter" : "uid={0}",
+    "type" : "SimpleLDAP"
+  }, {
+    "id" : "4b848ef6-f1ec-4732-be91-5c4d1de5b8f7",
+    "name" : "passwordFile",
+    "path" : "${json:qpid.work_dir}/passwd",
+    "type" : "PlainPasswordFile"
+  } ],
+  "defaultVirtualHost" : "default",
+  "groupproviders" : [ {
+    "id" : "11fbdef7-7e7c-479d-ad91-a659d4474941",
+    "name" : "test",
+    "path" : "${json:qpid.work_dir}/groups",
+    "type" : "GroupFile"
+  } ],
+  "id" : "cf8e892f-9e82-4366-9e95-bacc8f030905",
+  "keystores" : [ {
+    "id" : "8e178b73-e059-429a-adc2-2859de88f0c4",
+    "name" : "test",
+    "password" : "password",
+    "path" : "${json:test.ssl.resources}/java_broker_keystore.jks"
+  } ],
+  "modelVersion" : "1.0",
+  "name" : "Broker",
+  "plugins" : [ {
+    "id" : "00cfd5d6-8a01-41e0-8b08-17121c035435",
+    "name" : "jmxManagement",
+    "pluginType" : "MANAGEMENT-JMX"
+  }, {
+    "id" : "67d0d426-f4f0-49aa-a302-3696834403c7",
+    "name" : "httpManagement",
+    "pluginType" : "MANAGEMENT-HTTP"
+  } ],
+  "ports" : [ {
+    "authenticationProvider" : "passwordFile",
+    "id" : "9c0a2b4f-2977-4de8-a182-d5594c0721ac",
+    "name" : "HTTP",
+    "port" : "8080",
+    "protocols" : [ "HTTP" ]
+  }, {
+    "id" : "b17372a0-2395-4b62-b499-19a74eeaffab",
+    "name" : "RMI_REGISTRY",
+    "port" : "8999",
+    "protocols" : [ "RMI" ]
+  }, {
+    "authenticationProvider" : "passwordFile",
+    "id" : "d7b9f26a-193c-42c1-9290-7a546351ef9b",
+    "name" : "AMQP",
+    "port" : "5672"
+  }, {
+    "authenticationProvider" : "passwordFile",
+    "id" : "6153210f-c962-499e-b83b-a20572441ab5",
+    "keyStore" : "test",
+    "name" : "ssl",
+    "needClientAuth" : false,
+    "port" : 5671,
+    "transports" : [ "SSL" ],
+    "wantClientAuth" : false
+  }, {
+    "authenticationProvider" : "passwordFile",
+    "id" : "68c06ba0-709f-458c-b081-02de8670b7d7",
+    "name" : "JMX_CONNECTOR",
+    "port" : "9099",
+    "protocols" : [ "JMX_RMI" ]
+  } ],
+  "storeVersion" : 1,
+  "truststores" : [ {
+    "id" : "22b37d81-3ee9-45ef-b68b-e9ecd909d9b4",
+    "name" : "test",
+    "password" : "password",
+    "path" : "${json:test.ssl.resources}/java_broker_truststore.jks"
+  } ],
+  "virtualhosts" : [ {
+    "id" : "11849700-4d16-4b04-a732-ed8360c2236e",
+    "name" : "default",
+    "storePath" : "${json:qpid.work_dir}/messages",
+    "storeType" : "BDB"
+  } ]
+}
