@@ -46,7 +46,9 @@ public interface ManagedPeerCertificateTrustStore<X extends ManagedPeerCertifica
 
     @ManagedOperation(description = "Add a given certificate to the Trust Store",
             changesConfiguredObjectState = true)
-    void addCertificate(@Param(name = "certificate", description = "PEM or base64 encoded DER certificate to be added to the Trust Store")
+    void addCertificate(@Param(name = "certificate",
+                               description = "PEM or base64 encoded DER certificate to be added to the Trust Store",
+                               mandatory = true)
                         Certificate certificate);
 
     @DerivedAttribute(description = "List of details about the certificates like validity dates, SANs, issuer and subject names, etc.")

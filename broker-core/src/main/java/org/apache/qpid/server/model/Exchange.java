@@ -77,7 +77,7 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
 
 
     @ManagedOperation(changesConfiguredObjectState = true)
-    void bind(@Param(name="queue") Queue<?> queue,
+    void bind(@Param(name="queue", mandatory = true) Queue<?> queue,
               @Param(name="bindingKey") String bindingKey,
               @Param(name="arguments", defaultValue = "{}") Map<String,Object> arguments);
 
