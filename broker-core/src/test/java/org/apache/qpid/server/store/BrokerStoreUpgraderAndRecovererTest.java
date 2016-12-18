@@ -23,17 +23,11 @@ package org.apache.qpid.server.store;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.UUID;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -41,13 +35,10 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.JsonSystemConfig;
 import org.apache.qpid.server.model.JsonSystemConfigImpl;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.test.utils.TestFileUtils;
-import org.apache.qpid.util.FileUtils;
 
 
 public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
@@ -670,158 +661,117 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
                     authenticationProviders.get(0).getAttributes().containsKey("preferencesproviders"));
     }
 
-    public void testEndToEndUpgradeFromModelVersion1() throws Exception
+    public void testUpgradeTrustStoreRecordsFrom_6_0() throws Exception
     {
-        final File workDir = TestFileUtils.createTestDirectory("qpid.work_dir", true);
-        try
-        {
-            File pathToStore_1_0 = copyResource("configuration/broker-config-1.0.json", workDir);
-            File pathToStoreLatest = copyResource("configuration/broker-config-latest.json", workDir);
+        _brokerRecord.getAttributes().put("modelVersion", "6.0");
+        Map<String, UUID> parents = Collections.singletonMap("Broker", _brokerRecord.getId());
 
-            List<ConfiguredObjectRecord> expected = getStoreRecords(pathToStoreLatest);
+        Map<String, Object> trustStoreAttributes1 = new HashMap<>();
+        trustStoreAttributes1.put("name", "truststore1");
+        trustStoreAttributes1.put("type", "FileTrustStore");
+        trustStoreAttributes1.put("path", "${json:test.ssl.resources}/java_broker_truststore1.jks");
+        trustStoreAttributes1.put("password", "password");
+        ConfiguredObjectRecord trustStore1 = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "TrustStore",
+                                                                        trustStoreAttributes1,
+                                                                        parents);
 
-            BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
-            List<ConfiguredObjectRecord> records =
-                    recoverer.upgrade(mock(DurableConfigurationStore.class), getStoreRecords(pathToStore_1_0));
+        Map<String, Object> trustStoreAttributes2 = new HashMap<>();
+        trustStoreAttributes2.put("name", "truststore2");
+        trustStoreAttributes2.put("type", "FileTrustStore");
+        trustStoreAttributes2.put("path", "${json:test.ssl.resources}/java_broker_truststore2.jks");
+        trustStoreAttributes2.put("password", "password");
+        trustStoreAttributes2.put("includedVirtualHostMessageSources", "true");
+        ConfiguredObjectRecord trustStore2 = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "TrustStore",
+                                                                            trustStoreAttributes2,
+                                                                            parents);
 
-            assertEquals("Unexpected number of records after upgrade", expected.size(), records.size());
+        Map<String, Object> trustStoreAttributes3 = new HashMap<>();
+        trustStoreAttributes3.put("name", "truststore3");
+        trustStoreAttributes3.put("type", "FileTrustStore");
+        trustStoreAttributes3.put("path", "${json:test.ssl.resources}/java_broker_truststore3.jks");
+        trustStoreAttributes3.put("password", "password");
+        trustStoreAttributes3.put("excludedVirtualHostMessageSources", "true");
+        ConfiguredObjectRecord trustStore3 = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "TrustStore",
+                                                                            trustStoreAttributes3,
+                                                                            parents);
 
-            for (ConfiguredObjectRecord expectedRecord : expected)
-            {
-                ConfiguredObjectRecord actualRecord = findActualForExpected(expectedRecord, expected, records);
-                assertNotNull("Missing record after upgrade :" + expectedRecord, actualRecord);
-                assertEquals("Unexpected record attributes after upgrade",
-                             getRecordAttributes(expectedRecord.getAttributes()),
-                             getRecordAttributes(actualRecord.getAttributes()));
-            }
-        }
-        finally
-        {
-            FileUtils.delete(workDir, true);
-        }
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, trustStore1, trustStore2, trustStore3);
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
+
+        ConfiguredObjectRecord trustStore1Upgraded = findRecordById(trustStore1.getId(), records);
+        ConfiguredObjectRecord trustStore2Upgraded = findRecordById(trustStore2.getId(), records);
+        ConfiguredObjectRecord trustStore3Upgraded = findRecordById(trustStore3.getId(), records);
+
+        assertNotNull("Trust store 1 is not found after upgrade", trustStore1Upgraded);
+        assertNotNull("Trust store 2 is not found after upgrade", trustStore2Upgraded);
+        assertNotNull("Trust store 3 is not found after upgrade", trustStore3Upgraded);
+
+        assertEquals("Unexpected attributes after upgrade for Trust store 1",
+                     trustStoreAttributes1,
+                     new HashMap<>(trustStore1Upgraded.getAttributes()));
+
+        assertEquals("includedVirtualHostNodeMessageSources is not found",
+                     "true",
+                     trustStore2Upgraded.getAttributes().get("includedVirtualHostNodeMessageSources"));
+        assertNull("includedVirtualHostMessageSources is  found",
+                     trustStore2Upgraded.getAttributes().get("includedVirtualHostMessageSources"));
+
+        assertEquals("includedVirtualHostNodeMessageSources is not found",
+                     "true",
+                     trustStore3Upgraded.getAttributes().get("excludedVirtualHostNodeMessageSources"));
+        assertNull("includedVirtualHostMessageSources is  found",
+                   trustStore3Upgraded.getAttributes().get("excludedVirtualHostMessageSources"));
+        assertModelVersionUpgraded(records);
     }
 
-    private Map<String, Object> getRecordAttributes(final Map<String, Object> attributes)
+    public void testUpgradeJmxRecordsFrom_3_0() throws Exception
     {
-        Map<String, Object> result = new TreeMap<>();
-        for (Map.Entry<String, Object> attribute : attributes.entrySet())
-        {
-            if (!(attribute.getValue() instanceof Collection) || !("id".equals(attribute.getKey())))
-            {
-                result.put(attribute.getKey(), attribute.getValue());
-            }
-        }
-        return result;
+        _brokerRecord.getAttributes().put("modelVersion", "3.0");
+        Map<String, UUID> parents = Collections.singletonMap("Broker", _brokerRecord.getId());
+
+        Map<String, Object> jmxPortAttributes = new HashMap<>();
+        jmxPortAttributes.put("name", "jmx1");
+        jmxPortAttributes.put("type", "JMX");
+        ConfiguredObjectRecord jmxPort = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Port",
+                                                                        jmxPortAttributes,
+                                                                        parents);
+        Map<String, Object> rmiPortAttributes = new HashMap<>();
+        rmiPortAttributes.put("name", "rmi1");
+        rmiPortAttributes.put("type", "RMI");
+        ConfiguredObjectRecord rmiPort = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Port",
+                                                                        rmiPortAttributes,
+                                                                        parents);
+
+        Map<String, Object> jmxPluginAttributes = new HashMap<>();
+        jmxPluginAttributes.put("name", getTestName());
+        jmxPluginAttributes.put("type", "MANAGEMENT-JMX");
+
+        _brokerRecord.getAttributes().put("modelVersion", "6.0");
+
+        ConfiguredObjectRecord jmxManagement = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
+                                                                           "Plugin",
+                                                                           jmxPluginAttributes,
+                                                                           parents);
+
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, jmxPort, rmiPort, jmxManagement);
+
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
+
+        assertNull("Jmx port is not removed", findRecordById(jmxPort.getId(), records));
+        assertNull("Rmi port is not removed", findRecordById(rmiPort.getId(), records));
+        assertNull("Jmx plugin is not removed", findRecordById(jmxManagement.getId(), records));
+
+        assertModelVersionUpgraded(records);
     }
 
-    private ConfiguredObjectRecord findActualForExpected(final ConfiguredObjectRecord expectedRecord,
-                                                         final List<ConfiguredObjectRecord> expectedRecords,
-                                                         final List<ConfiguredObjectRecord> actualRecords)
+    private void assertModelVersionUpgraded(final List<ConfiguredObjectRecord> records)
     {
-        for (ConfiguredObjectRecord actual : actualRecords)
-        {
-            if (actual.getId().equals(expectedRecord.getId()))
-            {
-                return actual;
-            }
-        }
-        String expectedName = String.valueOf(expectedRecord.getAttributes().get("name"));
-        List<ConfiguredObjectRecord> expectedParents = findParents(expectedRecord.getParents(), expectedRecords);
-        for (ConfiguredObjectRecord actual : actualRecords)
-        {
-            String actualName = String.valueOf(actual.getAttributes().get("name"));
-            List<ConfiguredObjectRecord> actualParents = findParents(actual.getParents(), actualRecords);
-            if (actual.getType().equals(expectedRecord.getType())
-                && expectedName.equals(actualName)
-                && equals(expectedParents, actualParents))
-            {
-                return actual;
-            }
-        }
-        return null;
-    }
-
-    private List<ConfiguredObjectRecord> findParents(final Map<String, UUID> parents,
-                                                     final List<ConfiguredObjectRecord> records)
-    {
-        List<ConfiguredObjectRecord> results = new ArrayList<>();
-        for (Map.Entry<String, UUID> parent : parents.entrySet())
-        {
-            ConfiguredObjectRecord parentRecord = null;
-            for (ConfiguredObjectRecord record : records)
-            {
-                if (record.getId().equals(parent.getValue()) && record.getType().equals(parent.getKey()))
-                {
-                    parentRecord = record;
-                    break;
-                }
-            }
-            if (parentRecord == null)
-            {
-                throw new RuntimeException("Parent record is not found for " + parent);
-            }
-            results.add(parentRecord);
-        }
-        return results;
-    }
-
-    private boolean equals(final List<ConfiguredObjectRecord> expectedRecords,
-                           final List<ConfiguredObjectRecord> actualRecords)
-    {
-        for (ConfiguredObjectRecord expectedRecord : expectedRecords)
-        {
-            String expectedName = String.valueOf(expectedRecord.getAttributes().get("name"));
-            for (ConfiguredObjectRecord actual : actualRecords)
-            {
-                if (actual.getId().equals(expectedRecord.getId()))
-                {
-                    return true;
-                }
-                String actualName = String.valueOf(actual.getAttributes().get("name"));
-                if (actual.getType().equals(expectedRecord.getType())
-                    && expectedName.equals(actualName))
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private File copyResource(String resource, File workDir) throws IOException
-    {
-        File copy = new File(workDir, new File(resource).getName());
-        try (InputStream is = getClass().getClassLoader().getResourceAsStream(resource))
-        {
-            Files.copy(is, copy.toPath());
-        }
-        return copy;
-    }
-
-    private List<ConfiguredObjectRecord> getStoreRecords(final File pathToStore)
-    {
-        JsonSystemConfig systemConfig = getJsonSystemConfigMock(pathToStore.getAbsolutePath());
-        JsonFileConfigStore jsonFileConfigStore = new JsonFileConfigStore(Broker.class);
-        try
-        {
-            jsonFileConfigStore.init(systemConfig);
-            RecordRetrievingConfiguredObjectRecordHandler handler = new RecordRetrievingConfiguredObjectRecordHandler();
-            jsonFileConfigStore.openConfigurationStore(handler);
-            return handler.getRecords();
-        }
-        finally
-        {
-            jsonFileConfigStore.closeConfigurationStore();
-        }
-    }
-
-    private JsonSystemConfig getJsonSystemConfigMock(final String pathToStore)
-    {
-        JsonSystemConfig systemConfig = mock(JsonSystemConfig.class);
-        when(systemConfig.getName()).thenReturn("test");
-        when(systemConfig.getStorePath()).thenReturn(pathToStore);
-        when(systemConfig.getModel()).thenReturn(BrokerModel.getInstance());
-        return systemConfig;
+        ConfiguredObjectRecord upgradedBrokerRecord = findRecordById(_brokerRecord.getId(), records);
+        assertEquals("Unexpected model version",
+                     BrokerModel.MODEL_VERSION,
+                     upgradedBrokerRecord.getAttributes().get(Broker.MODEL_VERSION));
     }
 
     private void upgradeBrokerRecordAndAssertUpgradeResults()

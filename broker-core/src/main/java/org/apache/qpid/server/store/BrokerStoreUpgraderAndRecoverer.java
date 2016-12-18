@@ -562,8 +562,8 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
                 }
                 record = new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
                 getUpdateMap().put(record.getId(), record);
-                getNextUpgrader().configuredObject(record);
             }
+            getNextUpgrader().configuredObject(record);
         }
 
         @Override
