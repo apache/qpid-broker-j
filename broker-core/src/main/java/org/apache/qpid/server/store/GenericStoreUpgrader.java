@@ -22,8 +22,10 @@ package org.apache.qpid.server.store;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -31,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.BrokerModel;
-import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 
 public class GenericStoreUpgrader
 {
@@ -78,17 +79,27 @@ public class GenericStoreUpgrader
             LOGGER.info(_rootCategory + " store has model version " + version + ". Number of record(s) " + _records.size());
         }
 
-        DurableConfigurationStoreUpgrader upgrader = buildUpgraderChain(version);
-
-        for(ConfiguredObjectRecord record : _records.values())
+        Map<UUID, ConfiguredObjectRecord> updatedRecords = new HashMap<>();
+        Map<UUID, ConfiguredObjectRecord> records = new HashMap<>(_records);
+        for(DurableConfigurationStoreUpgrader upgrader: buildUpgraderList(version))
         {
-            upgrader.configuredObject(record);
+            for(ConfiguredObjectRecord record : records.values())
+            {
+                upgrader.configuredObject(record);
+            }
+
+            upgrader.complete();
+
+            Set<UUID> deleted = upgrader.getDeletedRecords().keySet();
+            updatedRecords.putAll(upgrader.getUpdatedRecords());
+            updatedRecords.keySet().removeAll(deleted);
+
+            records.keySet().removeAll(deleted);
+            records.putAll(updatedRecords);
         }
 
-        upgrader.complete();
-
-        Map<UUID, ConfiguredObjectRecord> deletedRecords = upgrader.getDeletedRecords();
-        Map<UUID, ConfiguredObjectRecord> updatedRecords = upgrader.getUpdatedRecords();
+        Map<UUID, ConfiguredObjectRecord> deletedRecords = new HashMap<>(_records);
+        deletedRecords.keySet().removeAll(records.keySet());
 
         if (LOGGER.isDebugEnabled())
         {
@@ -104,9 +115,9 @@ public class GenericStoreUpgrader
         _records.putAll(updatedRecords);
     }
 
-    private DurableConfigurationStoreUpgrader buildUpgraderChain(String version)
+    private List<DurableConfigurationStoreUpgrader> buildUpgraderList(String version)
     {
-        DurableConfigurationStoreUpgrader head = null;
+        List<DurableConfigurationStoreUpgrader> result = new LinkedList<>();
         while(!BrokerModel.MODEL_VERSION.equals(version))
         {
             if (LOGGER.isDebugEnabled())
@@ -119,28 +130,10 @@ public class GenericStoreUpgrader
             {
                 throw new IllegalConfigurationException("No phase upgrader for version " + version);
             }
-
-            if(head == null)
-            {
-                head = upgrader;
-            }
-            else
-            {
-                head.setNextUpgrader(upgrader);
-            }
             version = upgrader.getToVersion();
+            result.add(upgrader);
         }
-
-        if(head == null)
-        {
-            head = new NullUpgrader();
-        }
-        else
-        {
-            head.setNextUpgrader(new NullUpgrader());
-        }
-
-        return head;
+        return result;
     }
 
     private String getCurrentVersion()
@@ -155,14 +148,4 @@ public class GenericStoreUpgrader
         return BrokerModel.MODEL_VERSION;
     }
 
-    private class RecordCollectionHandler implements ConfiguredObjectRecordHandler
-    {
-
-        @Override
-        public void handle(final ConfiguredObjectRecord record)
-        {
-            _records.put(record.getId(), record);
-        }
-
-    }
 }

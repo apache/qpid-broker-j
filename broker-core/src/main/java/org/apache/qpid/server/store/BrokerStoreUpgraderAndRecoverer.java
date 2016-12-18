@@ -43,15 +43,13 @@ import org.apache.qpid.server.model.ContainerStoreUpgraderAndRecoverer;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHostAlias;
-import org.apache.qpid.server.util.Action;
 
-public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAndRecoverer<Broker>
+public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAndRecoverer<Broker>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BrokerStoreUpgraderAndRecoverer.class);
 
     public static final String VIRTUALHOSTS = "virtualhosts";
     private final SystemConfig<?> _systemConfig;
-    private final Map<String, StoreUpgraderPhase> _upgraders = new HashMap<String, StoreUpgraderPhase>();
 
     // Note: don't use externally defined constants in upgraders in case they change, the values here MUST stay the same
     // no matter what changes are made to the code in the future
@@ -69,11 +67,6 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
         register(new Upgrader_6_0_to_6_1());
     }
 
-    private void register(StoreUpgraderPhase upgrader)
-    {
-        _upgraders.put(upgrader.getFromVersion(), upgrader);
-    }
-
     private static final class Upgrader_1_0_to_1_1 extends StoreUpgraderPhase
     {
         private Upgrader_1_0_to_1_1()
@@ -87,7 +80,7 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
             if (record.getType().equals("Broker"))
             {
                 record = upgradeRootRecord(record);
-                record = createVirtualHostsRecordsFromBrokerRecordForModel_1_x(record, this);
+                createVirtualHostsRecordsFromBrokerRecordForModel_1_x(record, this);
             }
             else if (record.getType().equals("VirtualHost") && record.getAttributes().containsKey("storeType"))
             {
@@ -97,13 +90,11 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
                 getUpdateMap().put(record.getId(), record);
             }
 
-            getNextUpgrader().configuredObject(record);
         }
 
         @Override
         public void complete()
         {
-            getNextUpgrader().complete();
         }
 
     }
@@ -121,17 +112,13 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
             if (record.getType().equals("Broker"))
             {
                 record = upgradeRootRecord(record);
-                record = createVirtualHostsRecordsFromBrokerRecordForModel_1_x(record, this);
+                createVirtualHostsRecordsFromBrokerRecordForModel_1_x(record, this);
             }
-
-            getNextUpgrader().configuredObject(record);
-
         }
 
         @Override
         public void complete()
         {
-            getNextUpgrader().complete();
         }
 
     }
@@ -165,17 +152,13 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
             else if (record.getType().equals("Broker"))
             {
                 record = upgradeRootRecord(record);
-                record = createVirtualHostsRecordsFromBrokerRecordForModel_1_x(record, this);
+                createVirtualHostsRecordsFromBrokerRecordForModel_1_x(record, this);
             }
-
-            getNextUpgrader().configuredObject(record);
-
         }
 
         @Override
         public void complete()
         {
-            getNextUpgrader().complete();
         }
 
     }
@@ -215,17 +198,14 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
             else if (record.getType().equals("Broker"))
             {
                 record = upgradeRootRecord(record);
-                record = createVirtualHostsRecordsFromBrokerRecordForModel_1_x(record, this);
+                createVirtualHostsRecordsFromBrokerRecordForModel_1_x(record, this);
             }
-
-            getNextUpgrader().configuredObject(record);
 
         }
 
         @Override
         public void complete()
         {
-            getNextUpgrader().complete();
         }
 
     }
@@ -255,18 +235,16 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
             }
             else if (record.getType().equals("Broker"))
             {
-                record = upgradeRootRecord(record);
+                upgradeRootRecord(record);
             }
             else if("KeyStore".equals(record.getType()))
             {
-                record = upgradeKeyStoreRecordIfTypeTheSame(record, "FileKeyStore");
+                upgradeKeyStoreRecordIfTypeTheSame(record, "FileKeyStore");
             }
             else if("TrustStore".equals(record.getType()))
             {
-                record = upgradeKeyStoreRecordIfTypeTheSame(record, "FileTrustStore");
+                upgradeKeyStoreRecordIfTypeTheSame(record, "FileTrustStore");
             }
-
-            getNextUpgrader().configuredObject(record);
         }
 
         private ConfiguredObjectRecord upgradeKeyStoreRecordIfTypeTheSame(ConfiguredObjectRecord record, String expectedType)
@@ -311,13 +289,11 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
                                                                                  attributes,
                                                                                  Collections.singletonMap("Port", parent.getId()));
             getUpdateMap().put(record.getId(), record);
-            getNextUpgrader().configuredObject(record);
         }
 
         @Override
         public void complete()
         {
-            getNextUpgrader().complete();
         }
 
     }
@@ -377,7 +353,6 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
                     getUpdateMap().put(record.getId(), record);
                 }
             }
-            getNextUpgrader().configuredObject(record);
         }
 
         private void addLogger(final ConfiguredObjectRecord record, String name, String type)
@@ -394,7 +369,6 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
             addNameValueFilter("Qpid", logger, LogLevel.INFO, "org.apache.qpid.*");
             addNameValueFilter("Operational", logger, LogLevel.INFO, "qpid.message.*");
             getUpdateMap().put(logger.getId(), logger);
-            getNextUpgrader().configuredObject(logger);
         }
 
         private void addNameValueFilter(String inclusionRuleName,
@@ -415,8 +389,6 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
                                                                                        Collections.singletonMap("BrokerLogger",
                                                                                                                 loggerRecord.getId()));
             getUpdateMap().put(filterRecord.getId(), filterRecord);
-            getNextUpgrader().configuredObject(filterRecord);
-
         }
 
         @Override
@@ -458,7 +430,6 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
                 }
 
             }
-            getNextUpgrader().complete();
         }
 
     }
@@ -480,8 +451,6 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
             {
                 record = upgradeRootRecord(record);
                 _rootRecordId = record.getId();
-
-                getNextUpgrader().configuredObject(record);
             }
             else if (record.getType().equals("TrustStore"))
             {
@@ -505,10 +474,6 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
                     {
                         getDeleteMap().put(record.getId(), record);
                     }
-                    else
-                    {
-                        getNextUpgrader().configuredObject(record);
-                    }
                 }
                 else if (record.getType().equals("AuthenticationProvider") && attributes.containsKey("preferencesproviders"))
                 {
@@ -517,16 +482,11 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
                     updatedAttributes.remove("preferencesproviders");
                     record = new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
                     getUpdateMap().put(record.getId(), record);
-                    getNextUpgrader().configuredObject(record);
                 }
                 else if (record.getType().equals("PreferencesProvider"))
                 {
                     // removing of f Preferences Provider record for non-JSON configuration store
                     getDeleteMap().put(record.getId(), record);
-                }
-                else
-                {
-                    getNextUpgrader().configuredObject(record);
                 }
             }
         }
@@ -563,7 +523,6 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
                 record = new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
                 getUpdateMap().put(record.getId(), record);
             }
-            getNextUpgrader().configuredObject(record);
         }
 
         @Override
@@ -579,10 +538,8 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
                 ConfiguredObjectRecord allowAllAclRecord =
                         new ConfiguredObjectRecordImpl(allowAllACLId, "AccessControlProvider", attrs, Collections.singletonMap("Broker", _rootRecordId));
                 getUpdateMap().put(allowAllAclRecord.getId(), allowAllAclRecord);
-                getNextUpgrader().configuredObject(allowAllAclRecord);
 
             }
-            getNextUpgrader().complete();
         }
 
     }
@@ -934,46 +891,10 @@ public class BrokerStoreUpgraderAndRecoverer implements ContainerStoreUpgraderAn
         return _systemConfig.getContainer(Broker.class);
     }
 
-    List<ConfiguredObjectRecord> upgrade(final DurableConfigurationStore store,
-                                         final List<ConfiguredObjectRecord> records)
-    {
-        GenericStoreUpgrader upgrader = new GenericStoreUpgrader(Broker.class.getSimpleName(), Broker.MODEL_VERSION, store, _upgraders);
-        upgrader.upgrade(records);
-        return upgrader.getRecords();
-    }
 
-    private void applyRecursively(final ConfiguredObject<?> object, final RecursiveAction<ConfiguredObject<?>> action)
+    public List<ConfiguredObjectRecord> upgrade(final DurableConfigurationStore dcs,
+                                                final List<ConfiguredObjectRecord> records)
     {
-        applyRecursively(object, action, new HashSet<ConfiguredObject<?>>());
-    }
-
-    private void applyRecursively(final ConfiguredObject<?> object,
-                                  final RecursiveAction<ConfiguredObject<?>> action,
-                                  final HashSet<ConfiguredObject<?>> visited)
-    {
-        if(!visited.contains(object))
-        {
-            visited.add(object);
-            action.performAction(object);
-            if (action.applyToChildren(object))
-            {
-                for (Class<? extends ConfiguredObject> childClass : object.getModel().getChildTypes(object.getCategoryClass()))
-                {
-                    Collection<? extends ConfiguredObject> children = object.getChildren(childClass);
-                    if (children != null)
-                    {
-                        for (ConfiguredObject<?> child : children)
-                        {
-                            applyRecursively(child, action, visited);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private interface RecursiveAction<C> extends Action<C>
-    {
-        boolean applyToChildren(C object);
+        return upgrade(dcs, records, Broker.class.getSimpleName(), Broker.MODEL_VERSION);
     }
 }

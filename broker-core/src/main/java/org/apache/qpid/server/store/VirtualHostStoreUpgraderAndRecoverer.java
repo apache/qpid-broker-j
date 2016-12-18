@@ -21,10 +21,8 @@
 package org.apache.qpid.server.store;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,13 +44,11 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
-import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
-public class VirtualHostStoreUpgraderAndRecoverer
+public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationStoreUpgraderAndRecoverer
 {
     private final VirtualHostNode<?> _virtualHostNode;
-    private Map<String, StoreUpgraderPhase> _upgraders = new HashMap<String, StoreUpgraderPhase>();
 
     @SuppressWarnings("serial")
     private static final Map<String, String> DEFAULT_EXCHANGES = Collections.unmodifiableMap(new HashMap<String, String>()
@@ -84,11 +80,6 @@ public class VirtualHostStoreUpgraderAndRecoverer
             defaultExchangeIds.put(exchangeName, id);
         }
         _defaultExchangeIds = Collections.unmodifiableMap(defaultExchangeIds);
-    }
-
-    private void register(StoreUpgraderPhase upgrader)
-    {
-        _upgraders.put(upgrader.getFromVersion(), upgrader);
     }
 
     /*
@@ -164,7 +155,7 @@ public class VirtualHostStoreUpgraderAndRecoverer
                 UUID id = record.getId();
                 if ("org.apache.qpid.server.model.VirtualHost".equals(type))
                 {
-                    record = upgradeRootRecord(record);
+                    upgradeRootRecord(record);
                 }
                 else if(type.equals(Binding.class.getName()) && hasSelectorArguments(attributes) && !isTopicExchange(record))
                 {
@@ -176,10 +167,7 @@ public class VirtualHostStoreUpgraderAndRecoverer
                     entry.setValue(record);
 
                 }
-                getNextUpgrader().configuredObject(record);
             }
-
-            getNextUpgrader().complete();
         }
 
     }
@@ -204,7 +192,7 @@ public class VirtualHostStoreUpgraderAndRecoverer
 
             if ("VirtualHost".equals(type))
             {
-                newRecord = upgradeRootRecord(newRecord);
+                upgradeRootRecord(newRecord);
             }
         }
 
@@ -223,12 +211,7 @@ public class VirtualHostStoreUpgraderAndRecoverer
                     getDeleteMap().put(entry.getKey(), entry.getValue());
                     iterator.remove();
                 }
-                else
-                {
-                    getNextUpgrader().configuredObject(record);
-                }
             }
-            getNextUpgrader().complete();
         }
 
         private boolean unknownExchange(final UUID exchangeId)
@@ -273,7 +256,7 @@ public class VirtualHostStoreUpgraderAndRecoverer
         {
             if("VirtualHost".equals(record.getType()))
             {
-                record = upgradeRootRecord(record);
+                upgradeRootRecord(record);
             }
             else if("Queue".equals(record.getType()))
             {
@@ -289,13 +272,11 @@ public class VirtualHostStoreUpgraderAndRecoverer
                 getUpdateMap().put(record.getId(), record);
             }
 
-            getNextUpgrader().configuredObject(record);
         }
 
         @Override
         public void complete()
         {
-            getNextUpgrader().complete();
         }
 
     }
@@ -320,7 +301,7 @@ public class VirtualHostStoreUpgraderAndRecoverer
         {
             if("VirtualHost".equals(record.getType()))
             {
-                record = upgradeRootRecord(record);
+                upgradeRootRecord(record);
             }
             else if(Queue.class.getSimpleName().equals(record.getType()))
             {
@@ -346,14 +327,11 @@ public class VirtualHostStoreUpgraderAndRecoverer
                 record = new ConfiguredObjectRecordImpl(record.getId(),record.getType(),newAttributes, record.getParents());
                 getUpdateMap().put(record.getId(), record);
             }
-
-            getNextUpgrader().configuredObject(record);
         }
 
         @Override
         public void complete()
         {
-            getNextUpgrader().complete();
         }
 
     }
@@ -396,9 +374,8 @@ public class VirtualHostStoreUpgraderAndRecoverer
             }
             else if("Queue".equals(record.getType()))
             {
-                record = updateQueueRecordIfNecessary(record);
+                updateQueueRecordIfNecessary(record);
             }
-            getNextUpgrader().configuredObject(record);
         }
 
         @Override
@@ -432,11 +409,8 @@ public class VirtualHostStoreUpgraderAndRecoverer
                 ConfiguredObjectRecord record = new ConfiguredObjectRecordImpl(id, Exchange.class.getSimpleName(), attributes, Collections.singletonMap(_virtualHostRecord.getType(), _virtualHostRecord.getId()));
                 getUpdateMap().put(id, record);
 
-                getNextUpgrader().configuredObject(record);
-
             }
 
-            getNextUpgrader().complete();
         }
 
         private ConfiguredObjectRecord updateQueueRecordIfNecessary(ConfiguredObjectRecord record)
@@ -508,15 +482,13 @@ public class VirtualHostStoreUpgraderAndRecoverer
 
             if("VirtualHost".equals(record.getType()))
             {
-                record = upgradeRootRecord(record);
+                upgradeRootRecord(record);
             }
-            getNextUpgrader().configuredObject(record);
         }
 
         @Override
         public void complete()
         {
-            getNextUpgrader().complete();
         }
 
     }
@@ -533,15 +505,13 @@ public class VirtualHostStoreUpgraderAndRecoverer
 
             if("VirtualHost".equals(record.getType()))
             {
-                record = upgradeRootRecord(record);
+                upgradeRootRecord(record);
             }
-            getNextUpgrader().configuredObject(record);
         }
 
         @Override
         public void complete()
         {
-            getNextUpgrader().complete();
         }
 
     }
@@ -559,15 +529,13 @@ public class VirtualHostStoreUpgraderAndRecoverer
 
             if("VirtualHost".equals(record.getType()))
             {
-                record = upgradeRootRecord(record);
+                upgradeRootRecord(record);
             }
-            getNextUpgrader().configuredObject(record);
         }
 
         @Override
         public void complete()
         {
-            getNextUpgrader().complete();
         }
 
     }
@@ -575,7 +543,6 @@ public class VirtualHostStoreUpgraderAndRecoverer
     public boolean upgradeAndRecover(final DurableConfigurationStore durableConfigurationStore,
                                      final ConfiguredObjectRecord... initialRecords)
     {
-        String virtualHostCategory = VirtualHost.class.getSimpleName();
         final List<ConfiguredObjectRecord> records = new ArrayList<>();
         boolean isNew = durableConfigurationStore.openConfigurationStore(new ConfiguredObjectRecordHandler()
         {
@@ -586,10 +553,10 @@ public class VirtualHostStoreUpgraderAndRecoverer
             }
         }, initialRecords);
 
-        GenericStoreUpgrader upgraderHandler = new GenericStoreUpgrader(virtualHostCategory, VirtualHost.MODEL_VERSION, durableConfigurationStore, _upgraders);
-        upgraderHandler.upgrade(records);
-
-        List<ConfiguredObjectRecord> upgradedRecords = upgraderHandler.getRecords();
+        List<ConfiguredObjectRecord> upgradedRecords = upgrade(durableConfigurationStore,
+                                                               records,
+                                                               VirtualHost.class.getSimpleName(),
+                                                               VirtualHost.MODEL_VERSION);
         recover(durableConfigurationStore, upgradedRecords, isNew);
         return isNew;
     }
@@ -617,8 +584,14 @@ public class VirtualHostStoreUpgraderAndRecoverer
                 configChangeListener = new StoreConfigurationChangeListener(durableConfigurationStore);
         if(_virtualHostNode.getVirtualHost() != null)
         {
-            applyRecursively(_virtualHostNode.getVirtualHost(), new Action<ConfiguredObject<?>>()
+            applyRecursively(_virtualHostNode.getVirtualHost(), new RecursiveAction<ConfiguredObject<?>>()
             {
+                @Override
+                public boolean applyToChildren(final ConfiguredObject<?> object)
+                {
+                    return object.isDurable();
+                }
+
                 @Override
                 public void performAction(final ConfiguredObject<?> object)
                 {
@@ -633,8 +606,14 @@ public class VirtualHostStoreUpgraderAndRecoverer
             {
                 if(child instanceof VirtualHost)
                 {
-                    applyRecursively(child, new Action<ConfiguredObject<?>>()
+                    applyRecursively(child, new RecursiveAction<ConfiguredObject<?>>()
                     {
+                        @Override
+                        public boolean applyToChildren(final ConfiguredObject<?> object)
+                        {
+                            return object.isDurable();
+                        }
+
                         @Override
                         public void performAction(final ConfiguredObject<?> object)
                         {
@@ -664,33 +643,6 @@ public class VirtualHostStoreUpgraderAndRecoverer
             if(_virtualHostNode instanceof AbstractConfiguredObject)
             {
                 ((AbstractConfiguredObject)_virtualHostNode).forceUpdateAllSecureAttributes();
-            }
-        }
-    }
-
-    private void applyRecursively(final ConfiguredObject<?> object, final Action<ConfiguredObject<?>> action)
-    {
-        applyRecursively(object, action, new HashSet<ConfiguredObject<?>>());
-    }
-
-    private void applyRecursively(final ConfiguredObject<?> object,
-                                  final Action<ConfiguredObject<?>> action,
-                                  final HashSet<ConfiguredObject<?>> visited)
-    {
-        if(!visited.contains(object))
-        {
-            visited.add(object);
-            action.performAction(object);
-            for(Class<? extends ConfiguredObject> childClass : object.getModel().getChildTypes(object.getCategoryClass()))
-            {
-                Collection<? extends ConfiguredObject> children = object.getChildren(childClass);
-                if(children != null)
-                {
-                    for(ConfiguredObject<?> child : children)
-                    {
-                        applyRecursively(child, action, visited);
-                    }
-                }
             }
         }
     }

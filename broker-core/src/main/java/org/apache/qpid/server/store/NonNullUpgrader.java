@@ -24,34 +24,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public abstract class NonNullUpgrader implements DurableConfigurationStoreUpgrader
+abstract class NonNullUpgrader implements DurableConfigurationStoreUpgrader
 {
-    private DurableConfigurationStoreUpgrader _nextUpgrader;
-    private final Map<UUID, ConfiguredObjectRecord> _updates = new HashMap<UUID, ConfiguredObjectRecord>();
-    private final Map<UUID, ConfiguredObjectRecord> _deletes = new HashMap<UUID, ConfiguredObjectRecord>();
+    private final Map<UUID, ConfiguredObjectRecord> _updates = new HashMap<>();
+    private final Map<UUID, ConfiguredObjectRecord> _deletes = new HashMap<>();
 
-    public final void setNextUpgrader(final DurableConfigurationStoreUpgrader upgrader)
-    {
-        if(_nextUpgrader == null)
-        {
-            _nextUpgrader = upgrader;
-        }
-        else
-        {
-            _nextUpgrader.setNextUpgrader(upgrader);
-        }
-    }
-
-    protected DurableConfigurationStoreUpgrader getNextUpgrader()
-    {
-        return _nextUpgrader;
-    }
-
-    protected Map<UUID, ConfiguredObjectRecord> getUpdateMap()
+    Map<UUID, ConfiguredObjectRecord> getUpdateMap()
     {
         return _updates;
     }
-    protected Map<UUID, ConfiguredObjectRecord> getDeleteMap()
+
+    Map<UUID, ConfiguredObjectRecord> getDeleteMap()
     {
         return _deletes;
     }
@@ -59,8 +42,7 @@ public abstract class NonNullUpgrader implements DurableConfigurationStoreUpgrad
     @Override
     public final Map<UUID, ConfiguredObjectRecord> getUpdatedRecords()
     {
-        final Map<UUID, ConfiguredObjectRecord> updates = new HashMap<UUID, ConfiguredObjectRecord>(_updates);
-        updates.putAll(_nextUpgrader.getUpdatedRecords());
+        final Map<UUID, ConfiguredObjectRecord> updates = new HashMap<>(_updates);
         updates.keySet().removeAll(getDeletedRecords().keySet());
         return updates;
     }
@@ -68,8 +50,6 @@ public abstract class NonNullUpgrader implements DurableConfigurationStoreUpgrad
     @Override
     public final Map<UUID, ConfiguredObjectRecord> getDeletedRecords()
     {
-        final Map<UUID, ConfiguredObjectRecord> deletes = new HashMap<UUID, ConfiguredObjectRecord>(_deletes);
-        deletes.putAll(_nextUpgrader.getDeletedRecords());
-        return deletes;
+        return new HashMap<>(_deletes);
     }
 }

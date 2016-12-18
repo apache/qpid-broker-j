@@ -29,8 +29,6 @@ public interface DurableConfigurationStoreUpgrader
 
     void complete();
 
-    void setNextUpgrader(DurableConfigurationStoreUpgrader upgrader);
-
     Map<UUID, ConfiguredObjectRecord> getUpdatedRecords();
     Map<UUID, ConfiguredObjectRecord> getDeletedRecords();
 }
