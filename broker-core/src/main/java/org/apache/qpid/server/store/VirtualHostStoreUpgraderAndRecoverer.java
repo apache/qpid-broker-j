@@ -63,6 +63,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
 
     public VirtualHostStoreUpgraderAndRecoverer(VirtualHostNode<?> virtualHostNode)
     {
+        super("0.0");
         _virtualHostNode = virtualHostNode;
         register(new Upgrader_0_0_to_0_1());
         register(new Upgrader_0_1_to_0_2());

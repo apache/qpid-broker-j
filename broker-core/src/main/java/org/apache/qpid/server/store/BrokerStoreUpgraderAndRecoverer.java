@@ -55,6 +55,7 @@ public class BrokerStoreUpgraderAndRecoverer extends AbstractConfigurationStoreU
     // no matter what changes are made to the code in the future
     public BrokerStoreUpgraderAndRecoverer(SystemConfig<?> systemConfig)
     {
+        super("1.0");
         _systemConfig = systemConfig;
 
         register(new Upgrader_1_0_to_1_1());

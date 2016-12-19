@@ -29,9 +29,15 @@ import java.util.Map;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.util.Action;
 
-public class AbstractConfigurationStoreUpgraderAndRecoverer
+abstract class AbstractConfigurationStoreUpgraderAndRecoverer
 {
     private final Map<String, StoreUpgraderPhase> _upgraders = new HashMap<>();
+    private final String _initialVersion;
+
+    AbstractConfigurationStoreUpgraderAndRecoverer(final String initialVersion)
+    {
+        _initialVersion = initialVersion;
+    }
 
     List<ConfiguredObjectRecord> upgrade(final DurableConfigurationStore store,
                                          final List<ConfiguredObjectRecord> records,
@@ -46,7 +52,43 @@ public class AbstractConfigurationStoreUpgraderAndRecoverer
 
     void register(StoreUpgraderPhase upgrader)
     {
-        _upgraders.put(upgrader.getFromVersion(), upgrader);
+        final String fromVersion = upgrader.getFromVersion();
+        final String toVersion = upgrader.getToVersion();
+        if (_upgraders.containsKey(fromVersion))
+        {
+            throw new IllegalStateException(String.format(
+                    "Error in store upgrader chain. More than on upgrader from version %s",
+                    fromVersion));
+        }
+        if (fromVersion.equals(toVersion))
+        {
+            throw new IllegalStateException(String.format(
+                    "Error in store upgrader chain. From version %s cannot be equal to toVersion %s",
+                    fromVersion,
+                    toVersion));
+        }
+        if (!fromVersion.equals(_initialVersion))
+        {
+            boolean found = false;
+            for (StoreUpgraderPhase storeUpgraderPhase : _upgraders.values())
+            {
+                if (storeUpgraderPhase.getToVersion().equals(fromVersion))
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                throw new IllegalStateException(String.format(
+                        "Error in store upgrader chain."
+                        + "No previously defined upgrader to version %s found when registering upgrader from %s to %s",
+                        fromVersion,
+                        fromVersion,
+                        toVersion));
+            }
+        }
+        _upgraders.put(fromVersion, upgrader);
     }
 
     void applyRecursively(final ConfiguredObject<?> object, final RecursiveAction<ConfiguredObject<?>> action)
@@ -54,7 +96,7 @@ public class AbstractConfigurationStoreUpgraderAndRecoverer
         applyRecursively(object, action, new HashSet<ConfiguredObject<?>>());
     }
 
-    void applyRecursively(final ConfiguredObject<?> object,
+    private void applyRecursively(final ConfiguredObject<?> object,
                                   final RecursiveAction<ConfiguredObject<?>> action,
                                   final HashSet<ConfiguredObject<?>> visited)
     {
@@ -79,12 +121,9 @@ public class AbstractConfigurationStoreUpgraderAndRecoverer
         }
     }
 
-
-
     interface RecursiveAction<C> extends Action<C>
     {
         boolean applyToChildren(C object);
     }
-
 
 }
