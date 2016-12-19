@@ -26,7 +26,7 @@
     <parent>
         <groupId>org.apache.qpid</groupId>
         <artifactId>qpid-java-doc</artifactId>
-        <version>6.1.1-SNAPSHOT</version>
+        <version>6.1.1</version>
     </parent>
 
     <artifactId>qpid-java-doc-jms-client-0-10</artifactId>
