@@ -51,8 +51,6 @@ From: 'JolBox' (http://jolbox.com)
     License: Apache v2  (http://www.apache.org/licenses/LICENSE-2.0.html)
 
 From: 'Mort Bay Consulting' (http://www.mortbay.com)
-  - Jetty :: Asynchronous HTTP Client (http://www.eclipse.org/jetty) org.eclipse.jetty:jetty-client:jar:8.1.17.v20150415
-    License: Apache Software License - Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0)    License: Eclipse Public License - Version 1.0  (http://www.eclipse.org/org/documents/epl-v10.php)
   - Jetty :: Continuation (http://www.eclipse.org/jetty) org.eclipse.jetty:jetty-continuation:jar:8.1.17.v20150415
     License: Apache Software License - Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0)    License: Eclipse Public License - Version 1.0  (http://www.eclipse.org/org/documents/epl-v10.php)
   - Jetty :: Http Utility (http://www.eclipse.org/jetty) org.eclipse.jetty:jetty-http:jar:8.1.17.v20150415
