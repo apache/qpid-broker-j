@@ -33,6 +33,7 @@ import java.util.UUID;
 import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.JsonSystemConfigImpl;
@@ -137,16 +138,9 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
     private List<ConfiguredObjectRecord> upgrade(final DurableConfigurationStore dcs,
                                                  final BrokerStoreUpgraderAndRecoverer recoverer)
     {
-        final List<ConfiguredObjectRecord> records = new ArrayList<>();
-        dcs.openConfigurationStore(new ConfiguredObjectRecordHandler()
-        {
-            @Override
-            public void handle(final ConfiguredObjectRecord record)
-            {
-                records.add(record);
-            }
-        });
-        return recoverer.upgrade(dcs, records);
+        RecordRetrievingConfiguredObjectRecordHandler handler = new RecordRetrievingConfiguredObjectRecordHandler();
+        dcs.openConfigurationStore(handler);
+        return recoverer.upgrade(dcs, handler.getRecords());
     }
 
     public void testUpgradeVirtualHostWithJDBCStoreAndDefaultPool()
@@ -668,6 +662,119 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
                     authenticationProviders.get(0).getAttributes().containsKey("preferencesproviders"));
     }
 
+    public void testUpgradeTrustStoreRecordsFrom_6_0() throws Exception
+    {
+        _brokerRecord.getAttributes().put("modelVersion", "6.0");
+        Map<String, UUID> parents = Collections.singletonMap("Broker", _brokerRecord.getId());
+
+        Map<String, Object> trustStoreAttributes1 = new HashMap<>();
+        trustStoreAttributes1.put("name", "truststore1");
+        trustStoreAttributes1.put("type", "FileTrustStore");
+        trustStoreAttributes1.put("path", "${json:test.ssl.resources}/java_broker_truststore1.jks");
+        trustStoreAttributes1.put("password", "password");
+        ConfiguredObjectRecord trustStore1 = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "TrustStore",
+                                                                        trustStoreAttributes1,
+                                                                        parents);
+
+        Map<String, Object> trustStoreAttributes2 = new HashMap<>();
+        trustStoreAttributes2.put("name", "truststore2");
+        trustStoreAttributes2.put("type", "FileTrustStore");
+        trustStoreAttributes2.put("path", "${json:test.ssl.resources}/java_broker_truststore2.jks");
+        trustStoreAttributes2.put("password", "password");
+        trustStoreAttributes2.put("includedVirtualHostMessageSources", "true");
+        ConfiguredObjectRecord trustStore2 = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "TrustStore",
+                                                                            trustStoreAttributes2,
+                                                                            parents);
+
+        Map<String, Object> trustStoreAttributes3 = new HashMap<>();
+        trustStoreAttributes3.put("name", "truststore3");
+        trustStoreAttributes3.put("type", "FileTrustStore");
+        trustStoreAttributes3.put("path", "${json:test.ssl.resources}/java_broker_truststore3.jks");
+        trustStoreAttributes3.put("password", "password");
+        trustStoreAttributes3.put("excludedVirtualHostMessageSources", "true");
+        ConfiguredObjectRecord trustStore3 = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "TrustStore",
+                                                                            trustStoreAttributes3,
+                                                                            parents);
+
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, trustStore1, trustStore2, trustStore3);
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
+
+        ConfiguredObjectRecord trustStore1Upgraded = findRecordById(trustStore1.getId(), records);
+        ConfiguredObjectRecord trustStore2Upgraded = findRecordById(trustStore2.getId(), records);
+        ConfiguredObjectRecord trustStore3Upgraded = findRecordById(trustStore3.getId(), records);
+
+        assertNotNull("Trust store 1 is not found after upgrade", trustStore1Upgraded);
+        assertNotNull("Trust store 2 is not found after upgrade", trustStore2Upgraded);
+        assertNotNull("Trust store 3 is not found after upgrade", trustStore3Upgraded);
+
+        assertEquals("Unexpected attributes after upgrade for Trust store 1",
+                     trustStoreAttributes1,
+                     new HashMap<>(trustStore1Upgraded.getAttributes()));
+
+        assertEquals("includedVirtualHostNodeMessageSources is not found",
+                     "true",
+                     trustStore2Upgraded.getAttributes().get("includedVirtualHostNodeMessageSources"));
+        assertNull("includedVirtualHostMessageSources is  found",
+                     trustStore2Upgraded.getAttributes().get("includedVirtualHostMessageSources"));
+
+        assertEquals("includedVirtualHostNodeMessageSources is not found",
+                     "true",
+                     trustStore3Upgraded.getAttributes().get("excludedVirtualHostNodeMessageSources"));
+        assertNull("includedVirtualHostMessageSources is  found",
+                   trustStore3Upgraded.getAttributes().get("excludedVirtualHostMessageSources"));
+        assertModelVersionUpgraded(records);
+    }
+
+    public void testUpgradeJmxRecordsFrom_3_0() throws Exception
+    {
+        _brokerRecord.getAttributes().put("modelVersion", "3.0");
+        Map<String, UUID> parents = Collections.singletonMap("Broker", _brokerRecord.getId());
+
+        Map<String, Object> jmxPortAttributes = new HashMap<>();
+        jmxPortAttributes.put("name", "jmx1");
+        jmxPortAttributes.put("type", "JMX");
+        ConfiguredObjectRecord jmxPort = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Port",
+                                                                        jmxPortAttributes,
+                                                                        parents);
+        Map<String, Object> rmiPortAttributes = new HashMap<>();
+        rmiPortAttributes.put("name", "rmi1");
+        rmiPortAttributes.put("type", "RMI");
+        ConfiguredObjectRecord rmiPort = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Port",
+                                                                        rmiPortAttributes,
+                                                                        parents);
+
+        Map<String, Object> jmxPluginAttributes = new HashMap<>();
+        jmxPluginAttributes.put("name", getTestName());
+        jmxPluginAttributes.put("type", "MANAGEMENT-JMX");
+
+        _brokerRecord.getAttributes().put("modelVersion", "6.0");
+
+        ConfiguredObjectRecord jmxManagement = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
+                                                                           "Plugin",
+                                                                           jmxPluginAttributes,
+                                                                           parents);
+
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, jmxPort, rmiPort, jmxManagement);
+
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = upgrade(dcs, recoverer);
+
+        assertNull("Jmx port is not removed", findRecordById(jmxPort.getId(), records));
+        assertNull("Rmi port is not removed", findRecordById(rmiPort.getId(), records));
+        assertNull("Jmx plugin is not removed", findRecordById(jmxManagement.getId(), records));
+
+        assertModelVersionUpgraded(records);
+    }
+
+    private void assertModelVersionUpgraded(final List<ConfiguredObjectRecord> records)
+    {
+        ConfiguredObjectRecord upgradedBrokerRecord = findRecordById(_brokerRecord.getId(), records);
+        assertEquals("Unexpected model version",
+                     BrokerModel.MODEL_VERSION,
+                     upgradedBrokerRecord.getAttributes().get(Broker.MODEL_VERSION));
+    }
+
     private void upgradeBrokerRecordAndAssertUpgradeResults()
     {
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord);
@@ -793,6 +900,22 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
             {
                 handler.handle(record);
             }
+        }
+    }
+
+    private class RecordRetrievingConfiguredObjectRecordHandler implements ConfiguredObjectRecordHandler
+    {
+        private List<ConfiguredObjectRecord> _records = new ArrayList<>();
+
+        @Override
+        public void handle(final ConfiguredObjectRecord record)
+        {
+            _records.add(record);
+        }
+
+        public List<ConfiguredObjectRecord> getRecords()
+        {
+            return _records;
         }
     }
 }
