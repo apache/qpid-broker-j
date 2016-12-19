@@ -314,7 +314,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
             salt = generateSalt();
             storedKey = null;
             serverKey = null;
-            iterationCount = -1;
+            iterationCount = getIterationCount();
             exception = new SaslException("Authentication Failed");
         }
         else
