@@ -27,6 +27,7 @@ public class QueueConsumerNodeIterator implements Iterator<QueueConsumerNode>
 {
     private QueueConsumerNodeListEntry _previous;
     private QueueConsumerNodeListEntry _next;
+    private QueueConsumerNode _nextQueueConsumerNode;
 
     QueueConsumerNodeIterator(QueueConsumerNodeList list)
     {
@@ -36,7 +37,13 @@ public class QueueConsumerNodeIterator implements Iterator<QueueConsumerNode>
     @Override
     public boolean hasNext()
     {
-        _next = _previous.findNext();
+        do
+        {
+            _next = _previous.findNext();
+            _nextQueueConsumerNode = _next == null ? null : _next.getQueueConsumerNode();
+        }
+        while(_next != null && _nextQueueConsumerNode == null);
+
         return _next != null;
     }
 
@@ -45,15 +52,18 @@ public class QueueConsumerNodeIterator implements Iterator<QueueConsumerNode>
     {
         if(_next == null)
         {
-            _next = _previous.findNext();
-        }
-        if(_next == null)
-        {
-            throw new NoSuchElementException();
+            if (!hasNext())
+            {
+                throw new NoSuchElementException();
+            }
         }
         _previous = _next;
         _next = null;
-        return _previous.getQueueConsumerNode();
+
+        QueueConsumerNode node = _nextQueueConsumerNode;
+        _nextQueueConsumerNode = null;
+
+        return node;
     }
 
     @Override

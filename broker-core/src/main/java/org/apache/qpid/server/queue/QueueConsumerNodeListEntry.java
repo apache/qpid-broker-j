@@ -34,8 +34,7 @@ final class QueueConsumerNodeListEntry
             AtomicReferenceFieldUpdater.newUpdater(QueueConsumerNodeListEntry.class, QueueConsumerNodeListEntry.class, "_next");
     @SuppressWarnings("unused")
     private volatile QueueConsumerNodeListEntry _next;
-
-    private final QueueConsumerNode _queueConsumerNode;
+    private volatile QueueConsumerNode _queueConsumerNode;
     private final QueueConsumerNodeList _list;
 
     QueueConsumerNodeListEntry(final QueueConsumerNodeList list, final QueueConsumerNode queueConsumerNode)
@@ -121,7 +120,12 @@ final class QueueConsumerNodeListEntry
 
     boolean setDeleted()
     {
-        return DELETED_UPDATER.compareAndSet(this, 0, 1);
+        final boolean deleted = DELETED_UPDATER.compareAndSet(this, 0, 1);
+        if (deleted)
+        {
+            _queueConsumerNode = null;
+        }
+        return deleted;
     }
 
 }
