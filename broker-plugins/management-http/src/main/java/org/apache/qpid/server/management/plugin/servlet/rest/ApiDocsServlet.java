@@ -133,7 +133,7 @@ public class ApiDocsServlet extends AbstractServlet
                 Class<? extends ConfiguredObject> objClass = category;
                 String path = pathStem + category.getSimpleName().toLowerCase();
                 writer.println("<tr>");
-                writer.println("<td class=\"type\"><a href=\"latest/"+ objClass.getSimpleName().toLowerCase()+"\">"+objClass.getSimpleName()+"</a></td>");
+                writer.println("<td class=\"type\"><a href=" + ((servletPathParts.length == 2) ? "\"latest/" : "")+ objClass.getSimpleName().toLowerCase()+"\">"+objClass.getSimpleName()+"</a></td>");
                 writer.println("<td class=\"path\">" + path + "</td>");
                 writer.println("<td class=\"description\">"+
                                objClass.getAnnotation(ManagedObject.class).description()+"</td>");
@@ -146,7 +146,7 @@ public class ApiDocsServlet extends AbstractServlet
         else
         {
             final List<Class<? extends ConfiguredObject>> types = _typeSpecialisations.get(configuredClass);
-            writeCategoryDescription(writer, hierarchy, configuredClass);
+            writeCategoryDescription(writer, configuredClass);
             writeUsage(writer, request, hierarchy, configuredClass);
             writeTypes(writer, model, types);
             writeAttributes(writer, configuredClass, model, types);
@@ -196,7 +196,6 @@ public class ApiDocsServlet extends AbstractServlet
     }
 
     private void writeCategoryDescription(PrintWriter writer,
-                                          final Class<? extends ConfiguredObject>[] hierarchy,
                                           final Class<? extends ConfiguredObject> configuredClass)
     {
         writer.println("<h1>"+configuredClass.getSimpleName()+"</h1>");
