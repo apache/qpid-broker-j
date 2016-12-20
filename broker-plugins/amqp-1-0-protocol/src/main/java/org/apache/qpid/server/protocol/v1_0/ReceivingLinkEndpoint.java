@@ -21,14 +21,9 @@
 
 package org.apache.qpid.server.protocol.v1_0;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import org.apache.qpid.server.protocol.v1_0.type.Binary;
 import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
@@ -90,7 +85,6 @@ public class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLink_1_0>
     private Map<Binary, TransientState> _unsettledIds = new LinkedHashMap<Binary, TransientState>();
     private boolean _creditWindow;
     private boolean _remoteDrain;
-    private UnsignedInteger _remoteTransferCount;
     private UnsignedInteger _drainLimit;
 
 
@@ -262,14 +256,6 @@ public class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLink_1_0>
         sendFlowConditional();
     }
 
-    public void drain()
-    {
-        setDrain(true);
-        _creditWindow = false;
-        _drainLimit = getDeliveryCount().add(getLinkCredit());
-        sendFlowWithEcho();
-    }
-
     @Override
     public void receiveDeliveryState(final Delivery unsettled, final DeliveryState state, final Boolean settled)
     {
@@ -284,102 +270,9 @@ public class ReceivingLinkEndpoint extends LinkEndpoint<ReceivingLink_1_0>
         }
     }
 
-    public void requestTransactionalSend(Object txnId)
-    {
-        setDrain(true);
-        _creditWindow = false;
-        setTransactionId(txnId);
-        sendFlow();
-    }
-
-    private void sendFlow(final Object transactionId)
-    {
-        sendFlow();
-    }
 
 
-    public void clearDrain()
-    {
-        setDrain(false);
-        sendFlow();
-    }
 
-    public void updateAllDisposition(Binary deliveryTag, DeliveryState deliveryState, boolean settled)
-    {
-        if(!_unsettledIds.isEmpty())
-        {
-            Binary firstTag = _unsettledIds.keySet().iterator().next();
-            Binary lastTag = deliveryTag;
-            updateDispositions(firstTag, lastTag, deliveryState, settled);
-        }
-    }
-
-    private void updateDispositions(Binary firstTag, Binary lastTag, DeliveryState state, boolean settled)
-    {
-        SortedMap<UnsignedInteger, UnsignedInteger> ranges = new TreeMap<UnsignedInteger, UnsignedInteger>();
-
-        Iterator<Binary> iter = _unsettledIds.keySet().iterator();
-        List<Binary> tagsToUpdate = new ArrayList<Binary>();
-        Binary tag = null;
-
-        while (iter.hasNext() && !(tag = iter.next()).equals(firstTag)) ;
-
-        if (firstTag.equals(tag))
-        {
-            tagsToUpdate.add(tag);
-
-            UnsignedInteger deliveryId = _unsettledIds.get(firstTag).getDeliveryId();
-
-            UnsignedInteger first = deliveryId;
-            UnsignedInteger last = first;
-
-            if (!firstTag.equals(lastTag))
-            {
-                while (iter.hasNext())
-                {
-                    tag = iter.next();
-                    tagsToUpdate.add(tag);
-
-                    deliveryId = _unsettledIds.get(tag).getDeliveryId();
-
-                    if (deliveryId.equals(last.add(UnsignedInteger.ONE)))
-                    {
-                        last = deliveryId;
-                    }
-                    else
-                    {
-                        ranges.put(first, last);
-                        first = last = deliveryId;
-                    }
-
-                    if (tag.equals(lastTag))
-                    {
-                        break;
-                    }
-                }
-            }
-            ranges.put(first, last);
-        }
-
-        if (settled)
-        {
-
-            for (Binary deliveryTag : tagsToUpdate)
-            {
-                if (settled(deliveryTag) && _creditWindow)
-                {
-                    setLinkCredit(getLinkCredit().add(UnsignedInteger.ONE));
-                }
-            }
-            sendFlowConditional();
-        }
-
-
-        for (Map.Entry<UnsignedInteger, UnsignedInteger> range : ranges.entrySet())
-        {
-            getSession().updateDisposition(getRole(), range.getKey(), range.getValue(), state, settled);
-        }
-    }
 
     @Override
     public void settle(Binary deliveryTag)

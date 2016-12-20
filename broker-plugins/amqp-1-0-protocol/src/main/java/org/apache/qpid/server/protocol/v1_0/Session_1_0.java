@@ -142,7 +142,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
     private final Set<ConsumerTarget_1_0> _consumersWithPendingWork = new ScheduledConsumerTargetSet<>();
     private Iterator<ConsumerTarget_1_0> _processPendingIterator;
 
-    private SessionState _state ;
+    private SessionState _state;
 
     private final Map<String, SendingLinkEndpoint> _sendingLinkMap = new HashMap<>();
     private final Map<String, ReceivingLinkEndpoint> _receivingLinkMap = new HashMap<>();
@@ -315,23 +315,16 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
 
         disposition.setState(state);
 
-
-        if(settled)
+        if (settled)
         {
-            if(role == Role.RECEIVER)
+            final LinkedHashMap<UnsignedInteger, Delivery> unsettled =
+                    role == Role.RECEIVER ? _incomingUnsettled : _outgoingUnsettled;
+            SequenceNumber pos = new SequenceNumber(first.intValue());
+            SequenceNumber end = new SequenceNumber(last.intValue());
+            while (pos.compareTo(end) <= 0)
             {
-                SequenceNumber pos = new SequenceNumber(first.intValue());
-                SequenceNumber end = new SequenceNumber(last.intValue());
-                while(pos.compareTo(end)<=0)
-                {
-                    Delivery d = _incomingUnsettled.remove(new UnsignedInteger(pos.intValue()));
-
-/*
-                    _availableIncomingCredit += d.getTransfers().size();
-*/
-
-                    pos.incr();
-                }
+                unsettled.remove(new UnsignedInteger(pos.intValue()));
+                pos.incr();
             }
         }
 
@@ -355,35 +348,39 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
     {
         _nextOutgoingTransferId.incr();
         UnsignedInteger deliveryId;
-        if(newDelivery)
+        final boolean settled = Boolean.TRUE.equals(xfr.getSettled());
+        if (newDelivery)
         {
             deliveryId = UnsignedInteger.valueOf(_nextOutgoingDeliveryId++);
             endpoint.setLastDeliveryId(deliveryId);
+            if (!settled)
+            {
+                final Delivery delivery = new Delivery(xfr, endpoint);
+                _outgoingUnsettled.put(deliveryId, delivery);
+                _outgoingSessionCredit = _outgoingSessionCredit.subtract(UnsignedInteger.ONE);
+                endpoint.addUnsettled(delivery);
+            }
         }
         else
         {
             deliveryId = endpoint.getLastDeliveryId();
+            final Delivery delivery = _outgoingUnsettled.get(deliveryId);
+            if (delivery != null)
+            {
+                if (!settled)
+                {
+                    delivery.addTransfer(xfr);
+                    _outgoingSessionCredit = _outgoingSessionCredit.subtract(UnsignedInteger.ONE);
+                }
+                else
+                {
+                    _outgoingSessionCredit = _outgoingSessionCredit.add(new UnsignedInteger(delivery.getNumberOfTransfers()));
+                    endpoint.settle(delivery.getDeliveryTag());
+                    _outgoingUnsettled.remove(deliveryId);
+                }
+            }
         }
         xfr.setDeliveryId(deliveryId);
-
-        if(!Boolean.TRUE.equals(xfr.getSettled()))
-        {
-            Delivery delivery;
-            if((delivery = _outgoingUnsettled.get(deliveryId))== null)
-            {
-                delivery = new Delivery(xfr, endpoint);
-                _outgoingUnsettled.put(deliveryId, delivery);
-
-            }
-            else
-            {
-                delivery.addTransfer(xfr);
-            }
-            _outgoingSessionCredit = _outgoingSessionCredit.subtract(UnsignedInteger.ONE);
-            endpoint.addUnsettled(delivery);
-
-        }
-
 
         try
         {
@@ -395,31 +392,29 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
             {
                 // TODO - should make this iterative and not recursive
 
+                Transfer secondTransfer = new Transfer();
 
-                    Transfer secondTransfer = new Transfer();
+                secondTransfer.setDeliveryTag(xfr.getDeliveryTag());
+                secondTransfer.setHandle(xfr.getHandle());
+                secondTransfer.setSettled(xfr.getSettled());
+                secondTransfer.setState(xfr.getState());
+                secondTransfer.setMessageFormat(xfr.getMessageFormat());
+                secondTransfer.setPayload(payload);
 
-                    secondTransfer.setDeliveryTag(xfr.getDeliveryTag());
-                    secondTransfer.setHandle(xfr.getHandle());
-                    secondTransfer.setSettled(xfr.getSettled());
-                    secondTransfer.setState(xfr.getState());
-                    secondTransfer.setMessageFormat(xfr.getMessageFormat());
-                    secondTransfer.setPayload(payload);
+                sendTransfer(secondTransfer, endpoint, false);
 
-                    sendTransfer(secondTransfer, endpoint, false);
-
-                    secondTransfer.dispose();
-
+                secondTransfer.dispose();
             }
 
-            if(payload != null)
+            if (payload != null)
             {
-                for(QpidByteBuffer buf : payload)
+                for (QpidByteBuffer buf : payload)
                 {
                     buf.dispose();
                 }
             }
         }
-        catch(OversizeFrameException e)
+        catch (OversizeFrameException e)
         {
             throw new ConnectionScopedRuntimeException(e);
         }
@@ -453,10 +448,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
                 reply.setError(error);
                 _connection.sendEnd(sendChannel, reply, true);
                 break;
-
-
         }
-
     }
 
     public UnsignedInteger getNextOutgoingId()
@@ -545,8 +537,12 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
             if(delivery != null)
             {
                 delivery.getLinkEndpoint().receiveDeliveryState(delivery,
-                                                           disposition.getState(),
-                                                           disposition.getSettled());
+                                                                disposition.getState(),
+                                                                disposition.getSettled());
+                if (Boolean.TRUE.equals(disposition.getSettled()))
+                {
+                    unsettledTransfers.remove(deliveryId);
+                }
             }
             deliveryId = deliveryId.add(UnsignedInteger.ONE);
         }
@@ -1179,7 +1175,7 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
         LifetimePolicy lifetimePolicy = properties == null
                                         ? null
                                         : (LifetimePolicy) properties.get(LIFETIME_POLICY);
-        Map<String,Object> attributes = new HashMap<String,Object>();
+        Map<String,Object> attributes = new HashMap<>();
         attributes.put(Queue.ID, UUID.randomUUID());
         attributes.put(Queue.NAME, queueName);
         attributes.put(Queue.DURABLE, false);
@@ -1262,7 +1258,9 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
 
         byte[] data = txnId.getArray();
         if(data.length > 4)
+        {
             throw new IllegalArgumentException();
+        }
 
         int id = 0;
         for(int i = 0; i < data.length; i++)
@@ -1283,7 +1281,6 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
         data[1] = (byte) ((txnId & 0xff0000) >> 16);
         data[0] = (byte) ((txnId & 0xff000000) >> 24);
         return new Binary(data);
-
     }
 
     @Override
@@ -1394,9 +1391,9 @@ public class Session_1_0 implements AMQSessionModel<Session_1_0, ConsumerTarget_
 
     private boolean isQueueDestinationForLink(final Queue<?> queue, final ReceivingDestination recvDest)
     {
-        return (recvDest instanceof NodeReceivingDestination && queue == ((NodeReceivingDestination) recvDest).getDestination())
-                || recvDest instanceof QueueDestination && queue == ((QueueDestination) recvDest).getQueue();
-
+        return (recvDest instanceof NodeReceivingDestination
+                && queue == ((NodeReceivingDestination) recvDest).getDestination())
+               || recvDest instanceof QueueDestination && queue == ((QueueDestination) recvDest).getQueue();
     }
 
     @Override

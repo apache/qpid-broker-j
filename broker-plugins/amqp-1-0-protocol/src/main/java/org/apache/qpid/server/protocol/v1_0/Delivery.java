@@ -25,11 +25,12 @@ import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 
 public class Delivery
 {
-    private boolean _complete;
-    private boolean _settled;
     private final UnsignedInteger _deliveryId;
     private final Binary _deliveryTag;
     private final LinkEndpoint _linkEndpoint;
+    private boolean _complete;
+    private boolean _settled;
+    private int _numberOfTransfers = 0;
 
     public Delivery(Transfer transfer, final LinkEndpoint endpoint)
     {
@@ -60,8 +61,9 @@ public class Delivery
         _settled = settled;
     }
 
-    public void addTransfer(Transfer transfer)
+    public final void addTransfer(Transfer transfer)
     {
+        _numberOfTransfers++;
         if(Boolean.TRUE.equals(transfer.getAborted()) || !Boolean.TRUE.equals(transfer.getMore()))
         {
             setComplete(true);
@@ -85,5 +87,10 @@ public class Delivery
     public Binary getDeliveryTag()
     {
         return _deliveryTag;
+    }
+
+    public int getNumberOfTransfers()
+    {
+        return _numberOfTransfers;
     }
 }
