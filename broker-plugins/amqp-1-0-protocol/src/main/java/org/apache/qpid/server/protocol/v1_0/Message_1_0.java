@@ -61,13 +61,13 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
 
     public Message_1_0(final StoredMessage<MessageMetaData_1_0> storedMessage)
     {
-        super(storedMessage, null, storedMessage.getMetaData().getContentSize());
+        super(storedMessage, null);
     }
 
     public Message_1_0(final StoredMessage<MessageMetaData_1_0> storedMessage,
                        final Object connectionReference)
     {
-        super(storedMessage, connectionReference, storedMessage.getMetaData().getContentSize());
+        super(storedMessage, connectionReference);
     }
 
     public String getInitialRoutingAddress()

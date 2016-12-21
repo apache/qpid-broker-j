@@ -96,6 +96,12 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
                     }
 
                     @Override
+                    public int getContentSize()
+                    {
+                        return messageMetaData_0_10.getContentSize();
+                    }
+
+                    @Override
                     public void remove()
                     {
                         throw new UnsupportedOperationException();

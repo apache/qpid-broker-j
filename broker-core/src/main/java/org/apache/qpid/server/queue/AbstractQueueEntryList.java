@@ -90,7 +90,7 @@ abstract class AbstractQueueEntryList implements QueueEntryList
             case DELETED:
                 queueStatistics.removeFromQueue(size);
                 queueStatistics.addToDequeued(size);
-                if(_forcePersistent || (_respectPersistent && entry.getMessage().isPersistent()))
+                if(_forcePersistent || (_respectPersistent && entry.isPersistent()))
                 {
                     queueStatistics.addToPersistentDequeued(size);
                 }

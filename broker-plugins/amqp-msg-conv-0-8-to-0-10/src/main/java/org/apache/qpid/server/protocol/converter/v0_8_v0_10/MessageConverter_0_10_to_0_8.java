@@ -208,6 +208,12 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
             }
 
             @Override
+            public int getContentSize()
+            {
+                return metaData.getContentSize();
+            }
+
+            @Override
             public void remove()
             {
                 throw new UnsupportedOperationException();

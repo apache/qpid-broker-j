@@ -55,14 +55,14 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
                 final InternalMessageHeader header,
                 final Object messageBody)
     {
-        super(handle, null, handle.getMetaData().getContentSize());
+        super(handle, null);
         _header = header;
         _messageBody = messageBody;
     }
 
     InternalMessage(final StoredMessage<InternalMessageMetaData> msg)
     {
-        super(msg, null, msg.getMetaData().getContentSize());
+        super(msg, null);
         _header = msg.getMetaData().getHeader();
         Collection<QpidByteBuffer> bufs = msg.getContent(0, (int)getSize());
 
@@ -232,6 +232,12 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
                     public Collection<QpidByteBuffer> getContent(final int offset, final int length)
                     {
                         return Collections.singleton(QpidByteBuffer.wrap(bytes, offset, length));
+                    }
+
+                    @Override
+                    public int getContentSize()
+                    {
+                        return bytes.length;
                     }
 
                     @Override

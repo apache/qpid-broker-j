@@ -400,6 +400,12 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
+        public boolean isPersistent()
+        {
+            return false;
+        }
+
+        @Override
         public ServerMessage getMessage()
         {
             return _message;

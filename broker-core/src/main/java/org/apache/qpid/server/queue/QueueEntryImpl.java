@@ -709,9 +709,16 @@ public abstract class QueueEntryImpl implements QueueEntry
         _flags |= PERSISTENT_FLAG;
     }
 
+    @Override
     public boolean isRedelivered()
     {
         return (_flags & REDELIVERED_FLAG) != 0;
+    }
+
+    @Override
+    public boolean isPersistent()
+    {
+        return (_flags & PERSISTENT_FLAG) != 0;
     }
 
     @Override

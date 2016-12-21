@@ -38,7 +38,7 @@ public class AbstractServerMessageTest extends QpidTestCase
         public TestMessage(final StoredMessage<T> handle,
                            final Object connectionReference)
         {
-            super(handle, connectionReference, 0);
+            super(handle, connectionReference);
         }
 
         @Override

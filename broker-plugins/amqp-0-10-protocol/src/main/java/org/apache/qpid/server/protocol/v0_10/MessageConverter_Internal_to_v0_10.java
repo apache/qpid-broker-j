@@ -92,6 +92,12 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
                     }
 
                     @Override
+                    public int getContentSize()
+                    {
+                        return messageContent.length;
+                    }
+
+                    @Override
                     public void remove()
                     {
                         throw new UnsupportedOperationException();

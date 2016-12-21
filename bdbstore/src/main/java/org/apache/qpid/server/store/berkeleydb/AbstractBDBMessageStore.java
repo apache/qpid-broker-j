@@ -1027,7 +1027,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     {
 
         private final long _messageId;
-
+        private final int _contentSize;
         private MessageDataRef<T> _messageDataRef;
 
         StoredBDBMessage(long messageId, T metaData)
@@ -1047,6 +1047,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             {
                 _messageDataRef = new MessageDataSoftRef<>(metaData, null);
             }
+            _contentSize = metaData.getContentSize();
         }
 
         @Override
@@ -1170,6 +1171,12 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             return content;
         }
 
+        @Override
+        public int getContentSize()
+        {
+            return _contentSize;
+        }
+
         synchronized void store(Transaction txn)
         {
             if (!stored())
@@ -1221,15 +1228,19 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         public synchronized void remove()
         {
             checkMessageStoreOpen();
-            Collection<QpidByteBuffer> data = _messageDataRef.getData();
-
-            final T metaData = getMetaData();
-            int delta = metaData.getContentSize();
             if(stored())
             {
                 removeMessage(_messageId, false);
-                storedSizeChangeOccurred(-delta);
+                storedSizeChangeOccurred(-getContentSize());
             }
+
+            final T metaData;
+            if ((metaData =_messageDataRef.getMetaData()) != null)
+            {
+                metaData.dispose();
+            }
+
+            Collection<QpidByteBuffer> data = _messageDataRef.getData();
             if(data != null)
             {
                 _messageDataRef.setData(null);
@@ -1238,7 +1249,6 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                     buf.dispose();
                 }
             }
-            metaData.dispose();
             _messageDataRef = null;
         }
 

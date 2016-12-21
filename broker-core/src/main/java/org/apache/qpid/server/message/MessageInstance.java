@@ -251,6 +251,8 @@ public interface MessageInstance
 
     boolean isHeld();
 
+    boolean isPersistent();
+
     ServerMessage getMessage();
 
     InstanceProperties getInstanceProperties();

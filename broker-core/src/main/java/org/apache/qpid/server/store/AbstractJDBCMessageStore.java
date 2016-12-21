@@ -1410,6 +1410,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     {
 
         private final long _messageId;
+        private final int _contentSize;
 
         private MessageDataRef<T> _messageDataRef;
 
@@ -1433,6 +1434,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             {
                 _messageDataRef = new MessageDataSoftRef<>(metaData, null);
             }
+            _contentSize = metaData.getContentSize();
         }
 
 
@@ -1564,6 +1566,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             return content;
         }
 
+        @Override
+        public int getContentSize()
+        {
+            return _contentSize;
+        }
+
         synchronized void store(final Connection conn) throws SQLException
         {
             if (!stored())
@@ -1598,7 +1606,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                     {
                         store(conn);
                         conn.commit();
-                        storedSizeChange(getMetaData().getContentSize());
+                        storedSizeChange(getContentSize());
                     }
                     catch (SQLException e)
                     {
@@ -1616,15 +1624,19 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             getLogger().debug("REMOVE called on message: {}", _messageId);
 
             checkMessageStoreOpen();
-            Collection<QpidByteBuffer> data = _messageDataRef.getData();
-
-            final T metaData = getMetaData();
-            int delta = metaData.getContentSize();
             if(stored())
             {
                 AbstractJDBCMessageStore.this.removeMessage(_messageId);
-                storedSizeChange(-delta);
+                storedSizeChange(-getContentSize());
             }
+
+            final T metaData;
+            if ((metaData = _messageDataRef.getMetaData()) != null)
+            {
+                metaData.dispose();
+            }
+
+            Collection<QpidByteBuffer> data = _messageDataRef.getData();
             if(data != null)
             {
                 _messageDataRef.setData(null);
@@ -1633,7 +1645,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                     buf.dispose();
                 }
             }
-            metaData.dispose();
             _messageDataRef = null;
         }
 

@@ -167,6 +167,7 @@ public class MockMessageInstance implements MessageInstance
         return null;
     }
 
+    @Override
     public boolean isPersistent()
     {
         return false;

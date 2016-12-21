@@ -32,6 +32,7 @@ public interface StoredMessage<M extends StorableMessageMetaData>
 
     Collection<QpidByteBuffer> getContent(int offset, int length);
 
+    int getContentSize();
 
     void remove();
 

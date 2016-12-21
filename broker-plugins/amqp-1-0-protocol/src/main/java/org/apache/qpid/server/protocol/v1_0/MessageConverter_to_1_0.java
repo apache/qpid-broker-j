@@ -298,6 +298,12 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         }
 
         @Override
+        public int getContentSize()
+        {
+            return _metaData.getContentSize();
+        }
+
+        @Override
         public void remove()
         {
             throw new UnsupportedOperationException();

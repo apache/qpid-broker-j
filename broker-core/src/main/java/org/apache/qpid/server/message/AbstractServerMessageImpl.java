@@ -42,26 +42,24 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
 
     private static final AtomicReferenceFieldUpdater<AbstractServerMessageImpl, Collection> _resourcesUpdater =
             AtomicReferenceFieldUpdater.newUpdater(AbstractServerMessageImpl.class, Collection.class,"_resources");
-    private final long _size;
-
 
     private volatile int _referenceCount = 0;
     private final StoredMessage<T> _handle;
     private final Object _connectionReference;
+    @SuppressWarnings("unused")
     private volatile Collection<UUID> _resources;
 
 
-    public AbstractServerMessageImpl(StoredMessage<T> handle, Object connectionReference, final long size)
+    public AbstractServerMessageImpl(StoredMessage<T> handle, Object connectionReference)
     {
         _handle = handle;
         _connectionReference = connectionReference;
-        _size = size;
     }
 
     @Override
     public long getSize()
     {
-        return _size;
+        return _handle.getContentSize();
     }
 
     public StoredMessage<T> getStoredMessage()

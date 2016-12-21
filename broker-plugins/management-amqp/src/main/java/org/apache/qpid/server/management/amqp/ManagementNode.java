@@ -1711,6 +1711,12 @@ class ManagementNode implements MessageSource, MessageDestination
         }
 
         @Override
+        public boolean isPersistent()
+        {
+            return false;
+        }
+
+        @Override
         public ServerMessage getMessage()
         {
             return _message;

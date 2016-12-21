@@ -103,6 +103,12 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
             }
 
             @Override
+            public int getContentSize()
+            {
+                return messageContent.length;
+            }
+
+            @Override
             public void remove()
             {
                 throw new UnsupportedOperationException();

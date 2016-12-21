@@ -29,6 +29,7 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 public class StoredMemoryMessage<T extends StorableMessageMetaData> implements StoredMessage<T>, MessageHandle<T>
 {
     private final long _messageNumber;
+    private final int _contentSize;
     private QpidByteBuffer _content;
     private T _metaData;
 
@@ -36,6 +37,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
     {
         _messageNumber = messageNumber;
         _metaData = metaData;
+        _contentSize = _metaData.getContentSize();
     }
 
     public long getMessageNumber()
@@ -92,6 +94,12 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
             return Collections.emptyList();
         }
         return Collections.singleton(_content.view(offset, length));
+    }
+
+    @Override
+    public int getContentSize()
+    {
+        return _contentSize;
     }
 
     public T getMetaData()

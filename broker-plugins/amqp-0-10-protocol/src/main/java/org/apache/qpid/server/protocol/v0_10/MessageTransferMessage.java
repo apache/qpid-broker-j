@@ -38,7 +38,7 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
 
     public MessageTransferMessage(StoredMessage<MessageMetaData_0_10> storeMessage, Object connectionRef)
     {
-        super(storeMessage, connectionRef, storeMessage.getMetaData().getSize());
+        super(storeMessage, connectionRef);
     }
 
     private MessageMetaData_0_10 getMetaData()
