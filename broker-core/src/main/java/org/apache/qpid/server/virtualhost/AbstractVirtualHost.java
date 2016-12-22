@@ -1316,6 +1316,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
+    public Queue<?> getAttainedQueue(final String name)
+    {
+        return (Queue<?>) awaitChildClassToAttainState(Queue.class, name);
+    }
+
+    @Override
     public Broker<?> getBroker()
     {
         return _broker;
@@ -1359,6 +1365,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             destination = autoCreateNode(name, MessageDestination.class, true);
         }
         return destination;
+    }
+
+    @Override
+    public MessageDestination getSystemDestination(final String name)
+    {
+        return _systemNodeDestinations.get(name);
     }
 
     @Override

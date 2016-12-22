@@ -30,14 +30,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.apache.qpid.server.exchange.AbstractExchange;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.Filterable;
-import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Queue;
 
 public final class TopicExchangeResult implements TopicMatcherResult
 {
-    private final List<Binding<?>> _bindings = new CopyOnWriteArrayList<>();
+    private final List<AbstractExchange.BindingIdentifier> _bindings = new CopyOnWriteArrayList<>();
     private final Map<Queue<?>, Integer> _unfilteredQueues = new ConcurrentHashMap<>();
     private final ConcurrentMap<Queue<?>, Map<FilterManager,Integer>> _filteredQueues = new ConcurrentHashMap<>();
     private volatile ArrayList<Queue<?>> _unfilteredQueueList = new ArrayList<>(0);
@@ -81,17 +81,17 @@ public final class TopicExchangeResult implements TopicMatcherResult
         return _unfilteredQueues.keySet();
     }
 
-    public void addBinding(Binding<?> binding)
+    public void addBinding(AbstractExchange.BindingIdentifier binding)
     {
         _bindings.add(binding);
     }
     
-    public void removeBinding(Binding<?> binding)
+    public void removeBinding(AbstractExchange.BindingIdentifier binding)
     {
         _bindings.remove(binding);
     }
     
-    public List<Binding<?>> getBindings()
+    public List<AbstractExchange.BindingIdentifier> getBindings()
     {
         return new ArrayList<>(_bindings);
     }

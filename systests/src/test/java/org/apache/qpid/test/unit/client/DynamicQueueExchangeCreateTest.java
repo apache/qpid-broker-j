@@ -207,16 +207,8 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
         // binding to be deleted.  This will trigger the auto deleted exchange to be removed too
         consumer.close();
 
-        // Temporarily workaround the fact that exchange deletion is not completely atomic
-        // in the Apache Qpid Broker for Java.
-        long timeout = System.currentTimeMillis() + 10000;
-        boolean exchangeExists = true;
-        while (timeout > System.currentTimeMillis() && exchangeExists)
-        {
-            exchangeExists = exchangeExists(exchangeName);
-        }
         assertFalse("Exchange " + exchangeName + " should no longer exist",
-                    exchangeExists);
+                    exchangeExists(exchangeName));
     }
 
     private void checkExceptionErrorCode(JMSException original, int code)

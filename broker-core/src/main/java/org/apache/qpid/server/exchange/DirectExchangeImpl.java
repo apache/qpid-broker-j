@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,8 +38,8 @@ import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.FilterSupport;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.queue.BaseQueue;
@@ -51,74 +50,27 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
 
     private static final Logger _logger = LoggerFactory.getLogger(DirectExchangeImpl.class);
 
-    private static final class BindingSet
+    private final class BindingSet
     {
-        private CopyOnWriteArraySet<Binding<?>> _bindings = new CopyOnWriteArraySet<>();
-        private List<BaseQueue> _unfilteredQueues = new ArrayList<BaseQueue>();
-        private Map<BaseQueue, FilterManager> _filteredQueues = new HashMap<>();
+        private final Set<BaseQueue> _unfilteredQueues;
+        private final Map<BaseQueue, FilterManager> _filteredQueues;
 
-        public synchronized void addBinding(Binding<?> binding)
+        public BindingSet()
         {
-            _bindings.add(binding);
-            recalculateQueues();
+            _unfilteredQueues = Collections.emptySet();
+            _filteredQueues = Collections.emptyMap();
         }
 
-        public synchronized void removeBinding(Binding<?> binding)
+        private BindingSet(final Set<BaseQueue> unfilteredQueues,
+                           final Map<BaseQueue, FilterManager> filteredQueues)
         {
-            _bindings.remove(binding);
-            recalculateQueues();
-        }
-
-        public synchronized void updateBinding(Binding<?> binding)
-        {
-            recalculateQueues();
-        }
-
-        private void recalculateQueues()
-        {
-            List<BaseQueue> queues = new ArrayList<BaseQueue>(_bindings.size());
-            Map<BaseQueue, FilterManager> filteredQueues = new HashMap<>();
-
-            for(Binding<?> b : _bindings)
-            {
-
-                if(FilterSupport.argumentsContainFilter(b.getArguments()))
-                {
-                    try
-                    {
-                        FilterManager filter = FilterSupport.createMessageFilter(b.getArguments(), b.getQueue());
-                        filteredQueues.put(b.getQueue(),filter);
-                    }
-                    catch (AMQInvalidArgumentException e)
-                    {
-                        _logger.warn("Binding ignored: cannot parse filter on binding of queue '"+b.getQueue().getName()
-                                     + "' to exchange '" + b.getExchange().getName()
-                                     + "' with arguments: " + b.getArguments(), e);
-                    }
-
-                }
-                else
-                {
-
-                    if(!queues.contains(b.getQueue()))
-                    {
-                        queues.add(b.getQueue());
-                    }
-                }
-            }
-            _unfilteredQueues = queues;
+            _unfilteredQueues = unfilteredQueues;
             _filteredQueues = filteredQueues;
         }
 
-
-        public List<BaseQueue> getUnfilteredQueues()
+        public Set<BaseQueue> getUnfilteredQueues()
         {
             return _unfilteredQueues;
-        }
-
-        public CopyOnWriteArraySet<Binding<?>> getBindings()
-        {
-            return _bindings;
         }
 
         public boolean hasFilteredQueues()
@@ -126,9 +78,98 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
             return !_filteredQueues.isEmpty();
         }
 
+        boolean isEmpty()
+        {
+            return _unfilteredQueues.isEmpty() && _filteredQueues.isEmpty();
+        }
+
         public Map<BaseQueue,FilterManager> getFilteredQueues()
         {
             return _filteredQueues;
+        }
+
+        BindingSet putBinding(MessageDestination destination, Map<String, Object> arguments, boolean force)
+        {
+            if(!force && (_unfilteredQueues.contains(destination) || _filteredQueues.containsKey(destination)))
+            {
+                return this;
+            }
+            else if(FilterSupport.argumentsContainFilter(arguments))
+            {
+                try
+                {
+                    Set<BaseQueue> unfilteredQueues;
+                    Map<BaseQueue, FilterManager> filteredQueues;
+                    if (_unfilteredQueues.contains(destination))
+                    {
+                        unfilteredQueues = new HashSet<>(_unfilteredQueues);
+                        unfilteredQueues.remove(destination);
+                    }
+                    else
+                    {
+                        unfilteredQueues = _unfilteredQueues;
+                    }
+
+                    filteredQueues = new HashMap<>(_filteredQueues);
+                    filteredQueues.put((BaseQueue) destination,
+                                       FilterSupport.createMessageFilter(arguments, (Queue<?>) destination));
+
+                    return new BindingSet(Collections.unmodifiableSet(unfilteredQueues), Collections.unmodifiableMap(filteredQueues));
+
+                }
+                catch (AMQInvalidArgumentException e)
+                {
+                    _logger.warn("Binding ignored: cannot parse filter on binding of queue '" + destination.getName()
+                                 + "' to exchange '" + DirectExchangeImpl.this.getName()
+                                 + "' with arguments: " + arguments, e);
+                    return this;
+                }
+
+            }
+            else
+            {
+                Set<BaseQueue> unfilteredQueues;
+                Map<BaseQueue, FilterManager> filteredQueues;
+                if (_filteredQueues.containsKey(destination))
+                {
+                    filteredQueues = new HashMap<>(_filteredQueues);
+                    filteredQueues.remove(destination);
+                }
+                else
+                {
+                    filteredQueues = _filteredQueues;
+                }
+
+                unfilteredQueues = new HashSet<>(_unfilteredQueues);
+                unfilteredQueues.add((BaseQueue)destination);
+
+                return new BindingSet(Collections.unmodifiableSet(unfilteredQueues), Collections.unmodifiableMap(filteredQueues));
+
+            }
+        }
+
+        public BindingSet removeBinding(final MessageDestination destination)
+        {
+            Set<BaseQueue> unfilteredQueues;
+            Map<BaseQueue, FilterManager> filteredQueues;
+            if (_unfilteredQueues.contains(destination))
+            {
+                unfilteredQueues = new HashSet<>(_unfilteredQueues);
+                unfilteredQueues.remove(destination);
+
+                return new BindingSet(Collections.unmodifiableSet(unfilteredQueues),_filteredQueues);
+            }
+            else if(_filteredQueues.containsKey(destination))
+            {
+                filteredQueues = new HashMap<>(_filteredQueues);
+                filteredQueues.remove(destination);
+                return new BindingSet(_unfilteredQueues, Collections.unmodifiableMap(filteredQueues));
+            }
+            else
+            {
+                return this;
+            }
+
         }
     }
 
@@ -151,7 +192,8 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
 
         if(bindings != null)
         {
-            List<BaseQueue> queues = bindings.getUnfilteredQueues();
+            // TODO - remove this garbage generation
+            List<BaseQueue> queues = new ArrayList<>(bindings.getUnfilteredQueues());
 
             if(bindings.hasFilteredQueues())
             {
@@ -186,52 +228,43 @@ public class DirectExchangeImpl extends AbstractExchange<DirectExchangeImpl> imp
     }
 
     @Override
-    protected void onBindingUpdated(final Binding<?> binding, final Map<String, Object> oldArguments)
+    protected void onBindingUpdated(final BindingIdentifier binding, final Map<String, Object> newArguments)
     {
         String bindingKey = binding.getBindingKey();
-        Queue<?> queue = binding.getQueue();
-
-        assert queue != null;
-        assert bindingKey != null;
 
         BindingSet bindings = _bindingsByKey.get(bindingKey);
-        bindings.updateBinding(binding);
+        _bindingsByKey.put(bindingKey, bindings.putBinding(binding.getDestination(), newArguments, true));
     }
 
-    protected void onBind(final Binding<?> binding)
+    @Override
+    protected void onBind(final BindingIdentifier binding, final Map<String, Object> arguments)
     {
         String bindingKey = binding.getBindingKey();
-        Queue<?> queue = binding.getQueue();
-
-        assert queue != null;
-        assert bindingKey != null;
 
         BindingSet bindings = _bindingsByKey.get(bindingKey);
-
         if(bindings == null)
         {
             bindings = new BindingSet();
-            BindingSet newBindings;
-            if((newBindings = _bindingsByKey.putIfAbsent(bindingKey, bindings)) != null)
-            {
-                bindings = newBindings;
-            }
         }
-
-        bindings.addBinding(binding);
+        _bindingsByKey.put(bindingKey, bindings.putBinding(binding.getDestination(), arguments, true));
 
     }
 
-    protected void onUnbind(final Binding<?> binding)
+    @Override
+    protected void onUnbind(final BindingIdentifier binding)
     {
-        assert binding != null;
+        String bindingKey = binding.getBindingKey();
 
-        BindingSet bindings = _bindingsByKey.get(binding.getBindingKey());
-        if(bindings != null)
+        BindingSet bindings = _bindingsByKey.get(bindingKey);
+        final BindingSet replacementSet = bindings.removeBinding(binding.getDestination());
+        if(replacementSet.isEmpty())
         {
-            bindings.removeBinding(binding);
+            _bindingsByKey.remove(bindingKey);
         }
-
+        else
+        {
+            _bindingsByKey.put(bindingKey, replacementSet);
+        }
     }
 
 }

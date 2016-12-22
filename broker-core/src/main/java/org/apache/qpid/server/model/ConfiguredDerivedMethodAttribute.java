@@ -96,4 +96,11 @@ public class ConfiguredDerivedMethodAttribute<C extends ConfiguredObject, T>  ex
         return _secureValuePattern;
     }
 
+    public T convertValue(Object input, C configuredObject)
+    {
+        final AttributeValueConverter<T> converter =
+                AttributeValueConverter.getConverter(getType(), getGetter().getGenericReturnType());
+        return converter.convert(input, configuredObject);
+    }
+
 }

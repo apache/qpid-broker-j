@@ -158,6 +158,7 @@ public class HeadersExchangeTest extends QpidTestCase
     private Queue<?> create(String name)
     {
         Queue q = mock(Queue.class);
+        when(q.getName()).thenReturn(name);
         when(q.toString()).thenReturn(name);
         when(q.getVirtualHost()).thenReturn(_virtualHost);
         when(q.getParent(VirtualHost.class)).thenReturn(_virtualHost);
@@ -167,6 +168,7 @@ public class HeadersExchangeTest extends QpidTestCase
         TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         when(q.getTaskExecutor()).thenReturn(taskExecutor);
         when(q.getChildExecutor()).thenReturn(taskExecutor);
+        when(_virtualHost.getAttainedQueue(name)).thenReturn(q);
         return q;
     }
 

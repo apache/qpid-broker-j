@@ -21,6 +21,7 @@
 package org.apache.qpid.server.exchange;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.ListIterator;
 import java.util.Map;
@@ -32,12 +33,9 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.Binding;
-import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.queue.BaseQueue;
@@ -75,7 +73,7 @@ public class HeadersExchangeImpl extends AbstractExchange<HeadersExchangeImpl> i
 
     private static final Logger _logger = LoggerFactory.getLogger(HeadersExchangeImpl.class);
 
-    private final ConcurrentMap<String, CopyOnWriteArraySet<Binding<?>>> _bindingsByKey =
+    private final ConcurrentMap<String, CopyOnWriteArraySet<BindingIdentifier>> _bindingsByKey =
                             new ConcurrentHashMap<>();
 
     private final CopyOnWriteArrayList<HeadersBinding> _bindingHeaderMatchers =
@@ -100,16 +98,15 @@ public class HeadersExchangeImpl extends AbstractExchange<HeadersExchangeImpl> i
         {
             if (hb.matches(Filterable.Factory.newInstance(payload,instanceProperties)))
             {
-                Binding<?> b = hb.getBinding();
+                BindingIdentifier b = hb.getBinding();
 
-                b.incrementMatches();
 
                 if (_logger.isDebugEnabled())
                 {
                     _logger.debug("Exchange " + getName() + ": delivering message with headers " +
-                                  payload.getMessageHeader() + " to " + b.getQueue().getName());
+                                  payload.getMessageHeader() + " to " + b.getDestination().getName());
                 }
-                queues.add(b.getQueue());
+                queues.add((BaseQueue) b.getDestination());
             }
         }
 
@@ -117,20 +114,17 @@ public class HeadersExchangeImpl extends AbstractExchange<HeadersExchangeImpl> i
     }
 
     @Override
-    protected void onBind(final Binding<?> binding)
+    protected void onBind(final BindingIdentifier binding, Map<String,Object> arguments)
     {
         String bindingKey = binding.getBindingKey();
-        Queue<?> queue = binding.getQueue();
+        Queue<?> queue = (Queue<?>) binding.getDestination();
 
-        assert queue != null;
-        assert bindingKey != null;
-
-        CopyOnWriteArraySet<Binding<?>> bindings = _bindingsByKey.get(bindingKey);
+        CopyOnWriteArraySet<BindingIdentifier> bindings = _bindingsByKey.get(bindingKey);
 
         if(bindings == null)
         {
             bindings = new CopyOnWriteArraySet<>();
-            CopyOnWriteArraySet<Binding<?>> newBindings;
+            CopyOnWriteArraySet<BindingIdentifier> newBindings;
             if((newBindings = _bindingsByKey.putIfAbsent(bindingKey, bindings)) != null)
             {
                 bindings = newBindings;
@@ -140,18 +134,18 @@ public class HeadersExchangeImpl extends AbstractExchange<HeadersExchangeImpl> i
         if(_logger.isDebugEnabled())
         {
             _logger.debug("Exchange " + getName() + ": Binding " + queue.getName() +
-                          " with binding key '" +bindingKey + "' and args: " + binding.getArguments());
+                          " with binding key '" +bindingKey + "' and args: " + arguments);
         }
 
-        _bindingHeaderMatchers.add(new HeadersBinding(binding));
+        _bindingHeaderMatchers.add(new HeadersBinding(binding, arguments));
         bindings.add(binding);
 
     }
 
     @Override
-    protected void onBindingUpdated(final Binding<?> binding, final Map<String, Object> oldArguments)
+    protected void onBindingUpdated(final BindingIdentifier binding, final Map<String, Object> arguments)
     {
-        HeadersBinding headersBinding = new HeadersBinding(binding);
+        HeadersBinding headersBinding = new HeadersBinding(binding, arguments);
         ListIterator<HeadersBinding> iter = _bindingHeaderMatchers.listIterator();
         while(iter.hasNext())
         {
@@ -163,17 +157,17 @@ public class HeadersExchangeImpl extends AbstractExchange<HeadersExchangeImpl> i
 
     }
 
-    protected void onUnbind(final Binding<?> binding)
+    protected void onUnbind(final BindingIdentifier binding)
     {
         assert binding != null;
 
-        CopyOnWriteArraySet<Binding<?>> bindings = _bindingsByKey.get(binding.getBindingKey());
+        CopyOnWriteArraySet<BindingIdentifier> bindings = _bindingsByKey.get(binding.getBindingKey());
         if(bindings != null)
         {
             bindings.remove(binding);
         }
 
-        boolean removedBinding = _bindingHeaderMatchers.remove(new HeadersBinding(binding));
+        boolean removedBinding = _bindingHeaderMatchers.remove(new HeadersBinding(binding, Collections.<String,Object>emptyMap()));
         _logger.debug("Removing Binding: {}", removedBinding);
 
     }

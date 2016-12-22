@@ -25,6 +25,7 @@ import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageSender;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
@@ -131,4 +132,21 @@ public class DefaultDestination implements MessageDestination, PermissionedObjec
         }
     }
 
+    @Override
+    public boolean isDurable()
+    {
+        return true;
+    }
+
+    @Override
+    public void linkAdded(final MessageSender sender, final String linkName)
+    {
+
+    }
+
+    @Override
+    public void linkRemoved(final MessageSender sender, final String linkName)
+    {
+
+    }
 }

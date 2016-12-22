@@ -29,17 +29,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import org.junit.Assert;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.server.binding.BindingImpl;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
@@ -97,8 +94,7 @@ public class TopicExchangeTest extends QpidTestCase
     public void testNoRoute() throws Exception
     {
         Queue<?> queue = createQueue("a*#b");
-        createBinding(UUID.randomUUID(), "a.*.#.b", queue, _exchange, null);
-
+        _exchange.bind(queue.getName(), "a.*.#.b", null, false);
 
         routeMessage("a.b", 0l);
 
@@ -108,8 +104,7 @@ public class TopicExchangeTest extends QpidTestCase
     public void testDirectMatch() throws Exception
     {
         Queue<?> queue = createQueue("ab");
-        createBinding(UUID.randomUUID(), "a.b", queue, _exchange, null);
-
+        _exchange.bind(queue.getName(), "a.b", null, false);
 
         routeMessage("a.b",0l);
 
@@ -130,8 +125,7 @@ public class TopicExchangeTest extends QpidTestCase
     public void testStarMatch() throws Exception
     {
         Queue<?> queue = createQueue("a*");
-        createBinding(UUID.randomUUID(), "a.*", queue, _exchange, null);
-
+        _exchange.bind(queue.getName(), "a.*", null, false);
 
         routeMessage("a.b",0l);
 
@@ -161,8 +155,7 @@ public class TopicExchangeTest extends QpidTestCase
     public void testHashMatch() throws Exception
     {
         Queue<?> queue = createQueue("a#");
-        createBinding(UUID.randomUUID(), "a.#", queue, _exchange, null);
-
+        _exchange.bind(queue.getName(), "a.#", null, false);
 
         routeMessage("a.b.c",0l);
 
@@ -212,7 +205,7 @@ public class TopicExchangeTest extends QpidTestCase
     public void testMidHash() throws Exception
     {
         Queue<?> queue = createQueue("a");
-        createBinding(UUID.randomUUID(), "a.*.#.b", queue, _exchange, null);
+        _exchange.bind(queue.getName(), "a.*.#.b", null, false);
 
         routeMessage("a.c.d.b",0l);
 
@@ -237,8 +230,7 @@ public class TopicExchangeTest extends QpidTestCase
     public void testMatchAfterHash() throws Exception
     {
         Queue<?> queue = createQueue("a#");
-        createBinding(UUID.randomUUID(), "a.*.#.b.c", queue, _exchange, null);
-
+        _exchange.bind(queue.getName(), "a.*.#.b.c", null, false);
 
         int queueCount = routeMessage("a.c.b.b",0l);
         Assert.assertEquals("Message should not route to any queues", 0, queueCount);
@@ -277,11 +269,7 @@ public class TopicExchangeTest extends QpidTestCase
     public void testHashAfterHash() throws Exception
     {
         Queue<?> queue = createQueue("a#");
-        createBinding(UUID.randomUUID(),
-                      "a.*.#.b.c.#.d",
-                      queue,
-                      _exchange,
-                      null);
+        _exchange.bind(queue.getName(), "a.*.#.b.c.#.d", null, false);
 
         int queueCount = routeMessage("a.c.b.b.c",0l);
         Assert.assertEquals("Message should not route to any queues", 0, queueCount);
@@ -302,7 +290,7 @@ public class TopicExchangeTest extends QpidTestCase
     public void testHashHash() throws Exception
     {
         Queue<?> queue = createQueue("a#");
-        createBinding(UUID.randomUUID(), "a.#.*.#.d", queue, _exchange, null);
+        _exchange.bind(queue.getName(), "a.#.*.#.d", null, false);
 
         int queueCount = routeMessage("a.c.b.b.c",0l);
         Assert.assertEquals("Message should not route to any queues", 0, queueCount);
@@ -323,7 +311,7 @@ public class TopicExchangeTest extends QpidTestCase
     public void testSubMatchFails() throws Exception
     {
         Queue<?> queue = createQueue("a");
-        createBinding(UUID.randomUUID(), "a.b.c.d", queue, _exchange, null);
+        _exchange.bind(queue.getName(), "a.b.c.d", null, false);
 
         int queueCount = routeMessage("a.b.c",0l);
         Assert.assertEquals("Message should not route to any queues", 0, queueCount);
@@ -335,8 +323,7 @@ public class TopicExchangeTest extends QpidTestCase
     public void testMoreRouting() throws Exception
     {
         Queue<?> queue = createQueue("a");
-       createBinding(UUID.randomUUID(), "a.b", queue, _exchange, null);
-
+        _exchange.bind(queue.getName(), "a.b", null, false);
 
         int queueCount = routeMessage("a.b.c",0l);
         Assert.assertEquals("Message should not route to any queues", 0, queueCount);
@@ -348,8 +335,7 @@ public class TopicExchangeTest extends QpidTestCase
     public void testMoreQueue() throws Exception
     {
         Queue<?> queue = createQueue("a");
-        createBinding(UUID.randomUUID(), "a.b", queue, _exchange, null);
-
+        _exchange.bind(queue.getName(), "a.b", null, false);
 
         int queueCount = routeMessage("a",0l);
         Assert.assertEquals("Message should not route to any queues", 0, queueCount);
@@ -364,7 +350,7 @@ public class TopicExchangeTest extends QpidTestCase
         final String bindingKey = "bindingKey";
 
         Map<String, Object> bindArgs = Collections.<String, Object>singletonMap(JMS_SELECTOR.toString(), "arg > 5");
-        createBinding(UUID.randomUUID(), bindingKey, queue, _exchange, bindArgs);
+        _exchange.bind(queue.getName(), bindingKey, bindArgs, false);
 
         ServerMessage matchMsg1 = mock(ServerMessage.class);
         AMQMessageHeader msgHeader1 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 6));
@@ -398,7 +384,7 @@ public class TopicExchangeTest extends QpidTestCase
         final String bindingKey = "a";
 
         Map<String, Object> originalArgs = Collections.<String, Object>singletonMap(JMS_SELECTOR.toString(), "arg > 5");
-        createBinding(UUID.randomUUID(), bindingKey, queue, _exchange, originalArgs);
+        _exchange.bind(queue.getName(), bindingKey, originalArgs, false);
 
         AMQMessageHeader mgsHeader1 = createMessageHeader(Collections.<String, Object>singletonMap("arg", 6));
         ServerMessage msg1 = mock(ServerMessage.class);
@@ -436,7 +422,7 @@ public class TopicExchangeTest extends QpidTestCase
         Queue<?> queue = createQueue("queue1");
         final String bindingKey = "a";
 
-        BindingImpl binding = createBinding(UUID.randomUUID(), bindingKey, queue, _exchange, null);
+        _exchange.bind(queue.getName(), bindingKey, null, false);
 
         ServerMessage msg1 = mock(ServerMessage.class);
 
@@ -464,25 +450,6 @@ public class TopicExchangeTest extends QpidTestCase
         Assert.assertEquals(2, queue.getQueueDepthMessages());
 
         _exchange.delete();
-    }
-
-    private BindingImpl createBinding(UUID id,
-                                      String bindingKey,
-                                      Queue<?> queue,
-                                      Exchange<?> exchange,
-                                      Map<String, Object> arguments)
-    {
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(Binding.NAME, bindingKey);
-        if(arguments != null)
-        {
-            attributes.put(Binding.ARGUMENTS, arguments);
-        }
-        attributes.put(Binding.ID, id);
-
-        BindingImpl binding = (BindingImpl) _vhost.getObjectFactory().create(Binding.class, attributes, queue, exchange);
-        binding.open();
-        return binding;
     }
 
     private int routeMessage(String routingKey, long messageNumber)

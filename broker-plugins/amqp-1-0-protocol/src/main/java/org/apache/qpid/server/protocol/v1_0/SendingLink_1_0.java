@@ -22,7 +22,6 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import java.security.AccessControlException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -46,7 +45,6 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
@@ -221,6 +219,8 @@ public class SendingLink_1_0 implements Link_1_0
                 }
                 else
                 {
+                    // TODO - check the configuration of the existing durable subscription queue, and modify if necessary
+                    /*
                     Collection<? extends Binding<?>> bindings = queue.getBindings();
                     List<Binding<?>> bindingsToRemove = new ArrayList<>();
                     for(Binding<?> existingBinding : bindings)
@@ -234,6 +234,7 @@ public class SendingLink_1_0 implements Link_1_0
                     {
                         existingBinding.delete();
                     }
+                    */
                 }
 
 

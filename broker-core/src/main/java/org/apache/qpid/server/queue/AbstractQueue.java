@@ -60,7 +60,6 @@ import javax.security.auth.Subject;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -91,6 +90,7 @@ import org.apache.qpid.server.message.MessageInfo;
 import org.apache.qpid.server.message.MessageInfoImpl;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
+import org.apache.qpid.server.message.MessageSender;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.*;
@@ -224,7 +224,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private final AtomicBoolean _overfull = new AtomicBoolean(false);
     private final FlowToDiskChecker _flowToDiskChecker = new FlowToDiskChecker();
-    private final CopyOnWriteArrayList<Binding<?>> _bindings = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<Binding> _bindings = new CopyOnWriteArrayList<>();
     private Map<String, Object> _arguments;
 
     /** the maximum delivery count for each message on this queue or 0 if maximum delivery count is not to be enforced. */
@@ -232,6 +232,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private int _maximumDeliveryAttempts;
 
     private MessageGroupManager _messageGroupManager;
+
+    private final ConcurrentMap<MessageSender, Integer> _linkedSenders = new ConcurrentHashMap<>();
+
 
     private QueueNotificationListener  _notificationListener = NULL_NOTIFICATION_LISTENER;
     private final long[] _lastNotificationTimes = new long[NotificationCheck.values().length];
@@ -1030,26 +1033,15 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
 
-    public void addBinding(final Binding<?> binding)
+    public Collection<Binding> getBindings()
     {
-        _bindings.add(binding);
-        childAdded(binding);
-    }
-
-    public void removeBinding(final Binding<?> binding)
-    {
-        _bindings.remove(binding);
-        childRemoved(binding);
-    }
-
-    public Collection<Binding<?>> getBindings()
-    {
-        return getBindingsImpl();
-    }
-
-    private Collection<Binding<?>> getBindingsImpl()
-    {
-        return Collections.unmodifiableList(_bindings);
+        List<Binding> bindings = new ArrayList<>();
+        for(MessageSender sender : _linkedSenders.keySet())
+        {
+            //TODO - eliminate cast
+            bindings.addAll(((Exchange)sender).getBindingsForDestination(this));
+        }
+        return bindings;
     }
 
     public int getBindingCount()
@@ -1651,68 +1643,50 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         if (_deleted.compareAndSet(false, true))
         {
             final int queueDepthMessages = getQueueDepthMessages();
-            final List<ListenableFuture<Void>> removeBindingFutures = new ArrayList<>(_bindings.size());
-            final ArrayList<Binding<?>> bindingCopy = new ArrayList<>(_bindings);
 
-            // TODO - RG - Need to sort out bindings!
-            for (Binding<?> b : bindingCopy)
+            for(MessageSender sender : _linkedSenders.keySet())
             {
-                removeBindingFutures.add(b.deleteAsync());
+                sender.destinationRemoved(this);
             }
 
-            ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(removeBindingFutures);
-
-            addFutureCallback(combinedFuture, new FutureCallback<List<Void>>()
+            try
             {
-                @Override
-                public void onSuccess(final List<Void> result)
+
+                Iterator<QueueConsumer<?,?>> consumerIterator = _queueConsumerManager.getAllIterator();
+
+                while (consumerIterator.hasNext())
                 {
-                    try
+                    QueueConsumer<?,?> consumer = consumerIterator.next();
+
+                    if (consumer != null)
                     {
-
-                        Iterator<QueueConsumer<?,?>> consumerIterator = _queueConsumerManager.getAllIterator();
-
-                        while (consumerIterator.hasNext())
-                        {
-                            QueueConsumer<?,?> consumer = consumerIterator.next();
-
-                            if (consumer != null)
-                            {
-                                consumer.queueDeleted();
-                            }
-                        }
-
-                        final List<QueueEntry> entries = getMessagesOnTheQueue(new AcquireAllQueueEntryFilter());
-
-                        routeToAlternate(entries);
-
-                        preSetAlternateExchange();
-                        _alternateExchange = null;
-
-                        _stopped.set(true);
-                        _queueHouseKeepingTask.cancel();
-
-                        performQueueDeleteTasks();
-                        deleted();
-
-                        //Log Queue Deletion
-                        getEventLogger().message(_logSubject, QueueMessages.DELETED(getId().toString()));
-
-                        _deleteFuture.set(queueDepthMessages);
-                        setState(State.DELETED);
-                    }
-                    catch(Throwable e)
-                    {
-                        _deleteFuture.setException(e);
+                        consumer.queueDeleted();
                     }
                 }
 
-                @Override
-                public void onFailure(final Throwable t)
-                {
-                    _deleteFuture.setException(t);
-                }
-            }, getTaskExecutor());
+                final List<QueueEntry> entries = getMessagesOnTheQueue(new AcquireAllQueueEntryFilter());
+
+                routeToAlternate(entries);
+
+                preSetAlternateExchange();
+                _alternateExchange = null;
+
+                _stopped.set(true);
+                _queueHouseKeepingTask.cancel();
+
+                performQueueDeleteTasks();
+                deleted();
+
+                //Log Queue Deletion
+                getEventLogger().message(_logSubject, QueueMessages.DELETED(getId().toString()));
+
+                _deleteFuture.set(queueDepthMessages);
+                setState(State.DELETED);
+            }
+            catch(Throwable e)
+            {
+                _deleteFuture.setException(e);
+            }
 
         }
         return _deleteFuture;
@@ -2957,39 +2931,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public <C extends ConfiguredObject> Collection<C> getChildren(final Class<C> clazz)
     {
-        if(clazz == Binding.class)
-        {
-            return (Collection<C>) getBindingsImpl();
-        }
-        else if(clazz == org.apache.qpid.server.model.Consumer.class)
+        if(clazz == org.apache.qpid.server.model.Consumer.class)
         {
             return _queueConsumerManager == null
                     ? Collections.<C>emptySet()
                     : (Collection<C>) Lists.newArrayList(_queueConsumerManager.getAllIterator());
         }
         else return Collections.emptySet();
-    }
-
-    @Override
-    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
-                                                      final Map<String, Object> attributes,
-                                                      final ConfiguredObject... otherParents)
-    {
-        if(childClass == Binding.class && otherParents.length == 1 && otherParents[0] instanceof Exchange)
-        {
-            final String bindingKey = (String) attributes.get("name");
-            ((Exchange<?>)otherParents[0]).addBinding(bindingKey, this,
-                                                           (Map<String,Object>) attributes.get(Binding.ARGUMENTS));
-            for(Binding binding : _bindings)
-            {
-                if(binding.getExchange() == otherParents[0] && binding.getName().equals(bindingKey))
-                {
-                    return Futures.immediateFuture((C) binding);
-                }
-            }
-            return null;
-        }
-        return super.addChildAsync(childClass, attributes, otherParents);
     }
 
     @Override
@@ -3443,6 +3391,26 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     getNextAvailableEntry(sub);
                 }
             }
+        }
+    }
+
+    @Override
+    public void linkAdded(final MessageSender sender, final String linkName)
+    {
+        Integer oldValue = _linkedSenders.putIfAbsent(sender, 1);
+        if(oldValue != null)
+        {
+            _linkedSenders.put(sender, oldValue+1);
+        }
+    }
+
+    @Override
+    public void linkRemoved(final MessageSender sender, final String linkName)
+    {
+        int oldValue = _linkedSenders.remove(sender);
+        if(oldValue != 1)
+        {
+            _linkedSenders.put(sender, oldValue-1);
         }
     }
 }

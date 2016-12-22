@@ -29,19 +29,18 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 
-import org.apache.qpid.server.model.Binding;
-import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.model.LifetimePolicy;
-import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.UUIDGenerator;
-import org.apache.qpid.server.model.VirtualHost;
-
 import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Transaction;
+
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.UUIDGenerator;
+import org.apache.qpid.server.model.VirtualHost;
 
 public class UpgradeFrom7To8Test extends AbstractUpgradeTestCase
 {
@@ -204,8 +203,8 @@ public class UpgradeFrom7To8Test extends AbstractUpgradeTestCase
     private Map<UUID, Map<String, Object>> createExpectedBindingMap(String queueName, String bindingName, String exchangeName, Map<String, String> argumentMap)
     {
         Map<String, Object> expectedBinding = new HashMap<String, Object>();
-        expectedBinding.put(Binding.NAME, bindingName);
-        expectedBinding.put(Binding.ARGUMENTS, argumentMap == null ? Collections.emptyMap() : argumentMap);
+        expectedBinding.put("name", bindingName);
+        expectedBinding.put("arguments", argumentMap == null ? Collections.emptyMap() : argumentMap);
 
         UUID expectedUUID = UUIDGenerator.generateBindingUUID(exchangeName, queueName, bindingName, getVirtualHost().getName());
         return Collections.singletonMap(expectedUUID, expectedBinding);

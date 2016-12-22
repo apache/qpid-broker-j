@@ -31,6 +31,7 @@ import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
+import org.apache.qpid.server.message.MessageSender;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -148,6 +149,24 @@ class ManagementNodeConsumer<T extends ConsumerTarget> implements MessageInstanc
     {
         send((InternalMessage)message);
         return 1;
+    }
+
+    @Override
+    public boolean isDurable()
+    {
+        return false;
+    }
+
+    @Override
+    public void linkAdded(final MessageSender sender, final String linkName)
+    {
+
+    }
+
+    @Override
+    public void linkRemoved(final MessageSender sender, final String linkName)
+    {
+
     }
 
     @Override

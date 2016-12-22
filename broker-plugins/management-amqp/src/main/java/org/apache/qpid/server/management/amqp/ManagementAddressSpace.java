@@ -44,6 +44,7 @@ import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageSender;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
@@ -367,6 +368,24 @@ public class ManagementAddressSpace implements NamedAddressSpace
             {
                 return destination.send(message, routingAddress, instanceProperties, txn, postEnqueueAction);
             }
+        }
+
+        @Override
+        public boolean isDurable()
+        {
+            return true;
+        }
+
+        @Override
+        public void linkAdded(final MessageSender sender, final String linkName)
+        {
+
+        }
+
+        @Override
+        public void linkRemoved(final MessageSender sender, final String linkName)
+        {
+
         }
     }
 

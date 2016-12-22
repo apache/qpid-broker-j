@@ -26,6 +26,7 @@ import static org.apache.qpid.test.utils.TestBrokerConfiguration.ENTRY_NAME_ACL_
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,10 +35,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet;
 import org.apache.qpid.server.model.AccessControlProvider;
-import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.security.acl.AbstractACLTestCase;
 import org.apache.qpid.systest.rest.QpidRestTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
@@ -233,7 +232,7 @@ public class ExchangeRestACLTest extends QpidRestTestCase
 
         String bindingName = getTestName();
         int responseCode = createBinding(bindingName);
-        assertEquals("Binding creation should be allowed", 201, responseCode);
+        assertEquals("Binding creation should be allowed", 200, responseCode);
 
         assertBindingExists(bindingName);
     }
@@ -276,11 +275,10 @@ public class ExchangeRestACLTest extends QpidRestTestCase
     private int createBinding(String bindingName) throws IOException
     {
         Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(Binding.NAME, bindingName);
-        attributes.put(Binding.QUEUE, _queueName);
-        attributes.put(Binding.EXCHANGE, "amq.direct");
+        attributes.put("bindingKey", bindingName);
+        attributes.put("destination", _queueName);
 
-        int responseCode = getRestTestHelper().submitRequest("binding/test/test/amq.direct/" + _queueName + "/" + bindingName, "PUT", attributes);
+        int responseCode = getRestTestHelper().submitRequest("exchange/test/test/amq.direct/bind", "POST", attributes);
         return responseCode;
     }
 
@@ -296,7 +294,23 @@ public class ExchangeRestACLTest extends QpidRestTestCase
 
     private void assertBindingExistence(String bindingName, boolean exists) throws Exception
     {
-        String path = "binding/test/test/amq.direct/" + _queueName + "/" + bindingName;
-        getRestTestHelper().submitRequest(path, "GET", exists ? HttpServletResponse.SC_OK : HttpServletResponse.SC_NOT_FOUND);
+        String path = "exchange/test/test/amq.direct";
+
+        final Map<String, Object> exch = getRestTestHelper().getJsonAsSingletonList(path);
+        final Collection<Map<String, Object>> bindings = (Collection<Map<String, Object>>) exch.get("bindings");
+        boolean found = false;
+        if (bindings != null)
+        {
+            for(Map<String, Object> binding : bindings)
+            {
+                if (bindingName.equals(binding.get("bindingKey")))
+                {
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        assertEquals(exists, found);
     }
 }

@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 
 import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
@@ -256,6 +257,9 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
 
     Queue<?> getAttainedQueue(UUID id);
 
+    Queue<?> getAttainedQueue(String name);
+
+
     String getLocalAddress(String routingAddress);
 
     <T extends ConfiguredObject<?>> T getAttainedChildFromAddress(Class<T> childClass,
@@ -266,6 +270,8 @@ public interface QueueManagingVirtualHost<X extends QueueManagingVirtualHost<X>>
     long getTargetSize();
     void setTargetSize(long targetSize);
     long getTotalQueueDepthBytes();
+
+    MessageDestination getSystemDestination(String name);
 
     interface Transaction
     {

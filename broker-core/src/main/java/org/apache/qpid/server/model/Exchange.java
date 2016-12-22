@@ -23,17 +23,17 @@ package org.apache.qpid.server.model;
 import java.util.Collection;
 import java.util.Map;
 
-import com.google.common.util.concurrent.ListenableFuture;
-
 import org.apache.qpid.server.exchange.ExchangeReferrer;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.MessageDestination;
+import org.apache.qpid.server.message.MessageSender;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 @ManagedObject( description = Exchange.CLASS_DESCRIPTION,
         amqpName = "org.apache.qpid.Exchange"
         )
 public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, MessageDestination,
-                                                         ExchangeReferrer
+                                                         ExchangeReferrer, MessageSender
 {
     String CLASS_DESCRIPTION = "<p>An Exchange is a named entity within the Virtualhost which receives messages from "
                                + "producers and routes them to matching Queues within the Virtualhost.</p>"
@@ -41,6 +41,7 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
                                + "a different routing algorithm.</p>";
 
     String ALTERNATE_EXCHANGE                   = "alternateExchange";
+    String DURABLE_BINDINGS = "durableBindings";
 
     enum UnroutableMessageBehaviour
     {
@@ -55,9 +56,13 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
     @ManagedAttribute(description = "(AMQP 1.0 only) Default behaviour to apply when a message is not routed to any queues", defaultValue = "DISCARD")
     UnroutableMessageBehaviour getUnroutableMessageBehaviour();
 
-    //children
-    @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
-    Collection<Binding<?>> getBindings();
+    @DerivedAttribute
+    Collection<Binding> getBindings();
+
+    Collection<Binding> getBindingsForDestination(MessageDestination destination);
+
+    @DerivedAttribute(persist = true)
+    Collection<Binding> getDurableBindings();
 
     // Statistics
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Bindings")
@@ -77,24 +82,40 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
 
 
     @ManagedOperation(changesConfiguredObjectState = true)
-    void bind(@Param(name="queue", mandatory = true) Queue<?> queue,
-              @Param(name="bindingKey") String bindingKey,
-              @Param(name="arguments", defaultValue = "{}") Map<String,Object> arguments);
+    boolean bind(@Param(name = "destination", mandatory = true) String destination,
+                 @Param(name = "bindingKey") String bindingKey,
+                 @Param(name = "arguments", defaultValue = "{}") Map<String, Object> arguments,
+                 @Param(name = "replaceExistingArguments", defaultValue = "false") boolean replaceExistingArguments);
+
+    @ManagedOperation(changesConfiguredObjectState = true)
+    boolean unbind(@Param(name="destination", mandatory = true) String destination,
+                   @Param(name="bindingKey") String bindingKey);
+
 
     /**
      * @return true if the exchange will be deleted after all queues have been detached
      */
     boolean isAutoDelete();
 
-    boolean addBinding(String bindingKey, Queue<?> queue, Map<String, Object> arguments);
+    @DoOnConfigThread
+    boolean addBinding(@Param(name = "bindingKey") String bindingKey,
+                       @Param(name = "queue") Queue<?> queue,
+                       @Param(name = "arguments") Map<String, Object> arguments);
 
-    boolean deleteBinding(String bindingKey, Queue<?> queue);
+    @DoOnConfigThread
+    boolean deleteBinding(@Param(name = "bindingKey") String bindingKey,
+                          @Param(name = "queue") Queue<?> queue);
 
-    boolean hasBinding(String bindingKey, Queue<?> queue);
+    @DoOnConfigThread
+    boolean hasBinding(@Param(name = "bindingKey") String bindingKey,
+                       @Param(name = "queue") Queue<?> queue);
 
-    boolean replaceBinding(String bindingKey,
-                           Queue<?> queue,
-                           Map<String, Object> arguments);
+    @DoOnConfigThread
+    void replaceBinding(@Param(name = "bindingKey") String bindingKey,
+                        @Param(name = "queue") Queue<?> queue,
+                        @Param(name = "arguments") Map<String, Object> arguments);
+
+    QueueManagingVirtualHost<?> getVirtualHost();
 
     /**
      * Determines whether a message would be isBound to a particular queue using a specific routing key and arguments
@@ -103,8 +124,10 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
      * @param queue
      * @return
      */
-
-    boolean isBound(String bindingKey, Map<String, Object> arguments, Queue<?> queue);
+    @DoOnConfigThread
+    boolean isBound(@Param(name = "bindingKey") String bindingKey,
+                    @Param(name = "arguments") Map<String, Object> arguments,
+                    @Param(name = "queue") Queue<?> queue);
 
     /**
      * Determines whether a message would be isBound to a particular queue using a specific routing key
@@ -112,29 +135,38 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
      * @param queue
      * @return
      */
-
-    boolean isBound(String bindingKey, Queue<?> queue);
+    @DoOnConfigThread
+    boolean isBound(@Param(name = "bindingKey") String bindingKey,
+                    @Param(name = "queue") Queue<?> queue);
 
     /**
      * Determines whether a message is routing to any queue using a specific _routing key
      * @param bindingKey
      * @return
      */
-    boolean isBound(String bindingKey);
+    @DoOnConfigThread
+    boolean isBound(@Param(name = "bindingKey") String bindingKey);
 
     /**
      * Returns true if this exchange has at least one binding associated with it.
      * @return
      */
+    @DoOnConfigThread
     boolean hasBindings();
 
-    boolean isBound(Queue<?> queue);
+    @DoOnConfigThread
+    boolean isBound(@Param(name = "queue") Queue<?> queue);
 
-    boolean isBound(Map<String, Object> arguments);
+    @DoOnConfigThread
+    boolean isBound(@Param(name = "arguments") Map<String, Object> arguments);
 
-    boolean isBound(String bindingKey, Map<String, Object> arguments);
+    @DoOnConfigThread
+    boolean isBound(@Param(name = "bindingKey") String bindingKey,
+                    @Param(name = "arguments") Map<String, Object> arguments);
 
-    boolean isBound(Map<String, Object> arguments, Queue<?> queue);
+    @DoOnConfigThread
+    boolean isBound(@Param(name = "arguments") Map<String, Object> arguments,
+                    @Param(name = "queue") Queue<?> queue);
 
     void removeReference(ExchangeReferrer exchange);
 
@@ -142,9 +174,6 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
 
     boolean hasReferrers();
 
-    ListenableFuture<Void> removeBindingAsync(Binding<?> binding);
-
     EventLogger getEventLogger();
 
-    void addBinding(Binding<?> binding);
 }

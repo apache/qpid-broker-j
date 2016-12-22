@@ -56,7 +56,7 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
     private final Map<String, TopicExchangeResult> _topicExchangeResults =
             new ConcurrentHashMap<String, TopicExchangeResult>();
 
-    private final Map<Binding<?>, Map<String,Object>> _bindings = new HashMap<>();
+    private final Map<BindingIdentifier, Map<String,Object>> _bindings = new HashMap<>();
 
     @ManagedObjectFactoryConstructor
     public TopicExchangeImpl(final Map<String,Object> attributes, final QueueManagingVirtualHost<?> vhost)
@@ -65,14 +65,10 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
     }
 
     @Override
-    protected synchronized void onBindingUpdated(final Binding<?> binding, final Map<String, Object> oldArguments)
+    protected synchronized void onBindingUpdated(final BindingIdentifier binding, final Map<String, Object> newArguments)
     {
         final String bindingKey = binding.getBindingKey();
-        Queue<?> queue = binding.getQueue();
-        Map<String,Object> args = binding.getArguments();
-
-        assert queue != null;
-        assert bindingKey != null;
+        Queue<?> queue = (Queue<?>) binding.getDestination();
 
         _logger.debug("Updating binding of queue {} with routing key {}", queue.getName(), bindingKey);
 
@@ -84,21 +80,20 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
 
             if (_bindings.containsKey(binding))
             {
-                Map<String, Object> oldArgs = _bindings.get(binding);
-                _bindings.put(binding, args);
+                Map<String, Object> oldArgs = _bindings.put(binding, newArguments);
                 TopicExchangeResult result = _topicExchangeResults.get(routingKey);
 
-                if (FilterSupport.argumentsContainFilter(args))
+                if (FilterSupport.argumentsContainFilter(newArguments))
                 {
                     if (FilterSupport.argumentsContainFilter(oldArgs))
                     {
                         result.replaceQueueFilter(queue,
                                                   FilterSupport.createMessageFilter(oldArgs, queue),
-                                                  FilterSupport.createMessageFilter(args, queue));
+                                                  FilterSupport.createMessageFilter(newArguments, queue));
                     }
                     else
                     {
-                        result.addFilteredQueue(queue, FilterSupport.createMessageFilter(args, queue));
+                        result.addFilteredQueue(queue, FilterSupport.createMessageFilter(newArguments, queue));
                         result.removeUnfilteredQueue(queue);
                     }
                 }
@@ -126,14 +121,10 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
 
     }
 
-    protected synchronized void registerQueue(final Binding<?> binding) throws AMQInvalidArgumentException
+    protected synchronized void registerQueue(final BindingIdentifier binding, Map<String,Object> arguments) throws AMQInvalidArgumentException
     {
         final String bindingKey = binding.getBindingKey();
-        Queue<?> queue = binding.getQueue();
-        Map<String,Object> args = binding.getArguments();
-
-        assert queue != null;
-        assert bindingKey != null;
+        Queue<?> queue = (Queue<?>) binding.getDestination();
 
         _logger.debug("Registering queue {} with routing key {}", queue.getName(), bindingKey);
 
@@ -142,20 +133,20 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
 
         if(_bindings.containsKey(binding))
         {
-            Map<String,Object> oldArgs = _bindings.get(binding);
+            Map<String,Object> oldArgs = _bindings.put(binding, arguments);
             TopicExchangeResult result = _topicExchangeResults.get(routingKey);
 
-            if(FilterSupport.argumentsContainFilter(args))
+            if(FilterSupport.argumentsContainFilter(arguments))
             {
                 if(FilterSupport.argumentsContainFilter(oldArgs))
                 {
                     result.replaceQueueFilter(queue,
                                               FilterSupport.createMessageFilter(oldArgs, queue),
-                                              FilterSupport.createMessageFilter(args, queue));
+                                              FilterSupport.createMessageFilter(arguments, queue));
                 }
                 else
                 {
-                    result.addFilteredQueue(queue, FilterSupport.createMessageFilter(args, queue));
+                    result.addFilteredQueue(queue, FilterSupport.createMessageFilter(arguments, queue));
                     result.removeUnfilteredQueue(queue);
                 }
             }
@@ -183,9 +174,9 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
             if(result == null)
             {
                 result = new TopicExchangeResult();
-                if(FilterSupport.argumentsContainFilter(args))
+                if(FilterSupport.argumentsContainFilter(arguments))
                 {
-                    result.addFilteredQueue(queue, FilterSupport.createMessageFilter(args, queue));
+                    result.addFilteredQueue(queue, FilterSupport.createMessageFilter(arguments, queue));
                 }
                 else
                 {
@@ -196,9 +187,9 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
             }
             else
             {
-                if(FilterSupport.argumentsContainFilter(args))
+                if(FilterSupport.argumentsContainFilter(arguments))
                 {
-                    result.addFilteredQueue(queue, FilterSupport.createMessageFilter(args, queue));
+                    result.addFilteredQueue(queue, FilterSupport.createMessageFilter(arguments, queue));
                 }
                 else
                 {
@@ -207,7 +198,7 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
             }
 
             result.addBinding(binding);
-            _bindings.put(binding, args);
+            _bindings.put(binding, arguments);
         }
 
     }
@@ -246,7 +237,7 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
 
     }
 
-    private synchronized boolean deregisterQueue(final Binding<?> binding)
+    private synchronized boolean deregisterQueue(final BindingIdentifier binding)
     {
         if(_bindings.containsKey(binding))
         {
@@ -263,8 +254,8 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
             {
                 try
                 {
-                    result.removeFilteredQueue(binding.getQueue(), FilterSupport.createMessageFilter(bindingArgs,
-                            binding.getQueue()));
+                    result.removeFilteredQueue((Queue<?>) binding.getDestination(), FilterSupport.createMessageFilter(bindingArgs,
+                                                                                                                      (Queue<?>) binding.getDestination()));
                 }
                 catch (AMQInvalidArgumentException e)
                 {
@@ -273,7 +264,7 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
             }
             else
             {
-                result.removeUnfilteredQueue(binding.getQueue());
+                result.removeUnfilteredQueue((Queue<?>) binding.getDestination());
             }
             return true;
         }
@@ -301,11 +292,6 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
                 {
                     TopicExchangeResult res = (TopicExchangeResult)result;
 
-                    for(Binding<?> b : res.getBindings())
-                    {
-                        b.incrementMatches();
-                    }
-
                     queues = res.processMessage(message, queues);
                 }
                 return queues;
@@ -314,11 +300,12 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
 
     }
 
-    protected void onBind(final Binding<?> binding)
+    @Override
+    protected void onBind(final BindingIdentifier binding, Map<String, Object> arguments)
     {
         try
         {
-            registerQueue(binding);
+            registerQueue(binding, arguments);
         }
         catch (AMQInvalidArgumentException e)
         {
@@ -327,7 +314,8 @@ class TopicExchangeImpl extends AbstractExchange<TopicExchangeImpl> implements T
         }
     }
 
-    protected void onUnbind(final Binding<?> binding)
+    @Override
+    protected void onUnbind(final BindingIdentifier binding)
     {
         deregisterQueue(binding);
     }

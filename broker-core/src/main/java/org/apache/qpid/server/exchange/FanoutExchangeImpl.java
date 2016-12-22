@@ -23,9 +23,8 @@ package org.apache.qpid.server.exchange;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,8 +34,8 @@ import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.FilterSupport;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.queue.BaseQueue;
@@ -48,19 +47,181 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
 
     private static final Integer ONE = Integer.valueOf(1);
 
+    private final class BindingSet
+    {
+        private final Map<MessageDestination,Integer> _queues;
+
+        private final List<Queue<?>> _unfilteredQueues;
+        private final List<Queue<?>> _filteredQueues;
+
+        private final Map<Queue<?>,Map<BindingIdentifier, FilterManager>> _filteredBindings;
+
+        public BindingSet(final Map<MessageDestination, Integer> queues,
+                          final List<Queue<?>> unfilteredQueues,
+                          final List<Queue<?>> filteredQueues,
+                          final Map<Queue<?>, Map<BindingIdentifier, FilterManager>> filteredBindings)
+        {
+            _queues = queues;
+            _unfilteredQueues = unfilteredQueues;
+            _filteredQueues = filteredQueues;
+            _filteredBindings = filteredBindings;
+        }
+
+        public BindingSet()
+        {
+            _queues = Collections.emptyMap();
+            _unfilteredQueues = Collections.emptyList();
+            _filteredQueues = Collections.emptyList();
+            _filteredBindings = Collections.emptyMap();
+        }
+
+        public BindingSet addBinding(final BindingIdentifier binding, final Map<String, Object> arguments)
+        {
+                if(FilterSupport.argumentsContainFilter(arguments))
+                {
+                    try
+                    {
+                        List<Queue<?>> filteredQueues;
+                        if (!(_filteredQueues.contains(binding.getDestination())
+                              || _unfilteredQueues.contains(binding.getDestination())))
+                        {
+                            filteredQueues = new ArrayList<>(_filteredQueues);
+                            filteredQueues.add((Queue<?>) binding.getDestination());
+                            filteredQueues = Collections.unmodifiableList(filteredQueues);
+                        }
+                        else
+                        {
+                            filteredQueues = _filteredQueues;
+                        }
+                        Map<Queue<?>, Map<BindingIdentifier, FilterManager>> filteredBindings =
+                                new HashMap<>(_filteredBindings);
+                        Map<BindingIdentifier, FilterManager> bindingsForQueue =
+                                filteredBindings.get(binding.getDestination());
+                        if (bindingsForQueue == null)
+                        {
+                            bindingsForQueue = new HashMap<>();
+                        }
+                        else
+                        {
+                            bindingsForQueue = new HashMap<>(bindingsForQueue);
+                        }
+                        bindingsForQueue.put(binding,
+                                             FilterSupport.createMessageFilter(arguments,
+                                                                               (Queue<?>) binding.getDestination()));
+                        filteredBindings.put((Queue<?>) binding.getDestination(), bindingsForQueue);
+                        return new BindingSet(_queues, _unfilteredQueues, filteredQueues, Collections.unmodifiableMap(filteredBindings));
+                    }
+                    catch (AMQInvalidArgumentException e)
+                    {
+                        _logger.warn("Binding ignored: cannot parse filter on binding of queue '" + binding.getDestination().getName()
+                                     + "' to exchange '" + FanoutExchangeImpl.this.getName()
+                                     + "' with arguments: " + arguments, e);
+                        return this;
+                    }
+                }
+                else
+                {
+                    Map<MessageDestination, Integer> queues = new HashMap<>(_queues);
+                    List<Queue<?>> unfilteredQueues;
+                    List<Queue<?>> filteredQueues;
+                    if (queues.containsKey(binding.getDestination()))
+                    {
+                        queues.put(binding.getDestination(), queues.get(binding.getDestination()) + 1);
+                        unfilteredQueues = _unfilteredQueues;
+                        filteredQueues = _filteredQueues;
+                    }
+                    else
+                    {
+                        queues.put(binding.getDestination(), ONE);
+                        unfilteredQueues = new ArrayList<>(_unfilteredQueues);
+                        unfilteredQueues.add((Queue<?>)binding.getDestination());
+                        unfilteredQueues = Collections.unmodifiableList(unfilteredQueues);
+                        if(_filteredQueues.contains(binding.getDestination()))
+                        {
+                            filteredQueues = new ArrayList<>(_filteredQueues);
+                            filteredQueues.remove(binding.getDestination());
+                            filteredQueues = Collections.unmodifiableList(filteredQueues);
+                        }
+                        else
+                        {
+                            filteredQueues = _filteredQueues;
+                        }
+                    }
+                    return new BindingSet(queues, unfilteredQueues, filteredQueues, _filteredBindings);
+                }
+        }
+
+        public BindingSet updateBinding(final BindingIdentifier binding, final Map<String, Object> newArguments)
+        {
+
+            return removeBinding(binding).addBinding(binding, newArguments);
+        }
+
+        public BindingSet removeBinding(final BindingIdentifier binding)
+        {
+            Queue<?> queue = (Queue<?>) binding.getDestination();
+            if(_filteredBindings.get(queue).containsKey(binding))
+            {
+                final Map<Queue<?>, Map<BindingIdentifier, FilterManager>> filteredBindings = new HashMap<>(_filteredBindings);
+                final Map<BindingIdentifier, FilterManager> bindingsForQueue = new HashMap<>(filteredBindings.remove(queue));
+                bindingsForQueue.remove(binding);
+                List<Queue<?>> filteredQueues;
+                if(bindingsForQueue.isEmpty())
+                {
+                    filteredQueues = new ArrayList<>(_filteredQueues);
+                    filteredQueues.remove(queue);
+                    filteredQueues = Collections.unmodifiableList(filteredQueues);
+                }
+                else
+                {
+                    filteredBindings.put(queue, bindingsForQueue);
+                    filteredQueues = _filteredQueues;
+                }
+                return new BindingSet(_queues, _unfilteredQueues, filteredQueues, Collections.unmodifiableMap(filteredBindings));
+            }
+            else if(_unfilteredQueues.contains(queue))
+            {
+                Map<MessageDestination, Integer> queues = new HashMap<>(_queues);
+                int count = queues.remove(queue);
+                List<Queue<?>> unfilteredQueues;
+                List<Queue<?>> filteredQueues;
+                if(count > 1)
+                {
+                    queues.put(queue, --count);
+                    unfilteredQueues = _unfilteredQueues;
+                    filteredQueues = _filteredQueues;
+                }
+                else
+                {
+                    unfilteredQueues = new ArrayList<>(_unfilteredQueues);
+                    unfilteredQueues.remove(queue);
+                    unfilteredQueues = Collections.unmodifiableList(unfilteredQueues);
+                    if(_filteredBindings.containsKey(queue))
+                    {
+                        filteredQueues = new ArrayList<>(_filteredQueues);
+                        filteredQueues.add(queue);
+                        filteredQueues = Collections.unmodifiableList(filteredQueues);
+                    }
+                    else
+                    {
+                        filteredQueues = _filteredQueues;
+                    }
+                }
+                return new BindingSet(Collections.unmodifiableMap(queues), unfilteredQueues, filteredQueues, _filteredBindings);
+            }
+            else
+            {
+                return this;
+            }
+        }
+    }
+
+
+    private volatile BindingSet _bindingSet = new BindingSet();
+
     /**
      * Maps from queue name to queue instances
      */
-    private final Map<Queue<?>,Integer> _queues = new HashMap<>();
-    private final CopyOnWriteArrayList<Queue<?>> _unfilteredQueues = new CopyOnWriteArrayList<>();
-    private final CopyOnWriteArrayList<Queue<?>> _filteredQueues = new CopyOnWriteArrayList<>();
-
-    private final AtomicReference<Map<Queue<?>,Map<Binding<?>, FilterManager>>>  _filteredBindings =
-            new AtomicReference<>();
-    {
-        Map<Queue<?>,Map<Binding<?>, FilterManager>> emptyMap = Collections.emptyMap();
-        _filteredBindings.set(emptyMap);
-    }
 
     @ManagedObjectFactoryConstructor
     public FanoutExchangeImpl(final Map<String, Object> attributes, final QueueManagingVirtualHost<?> vhost)
@@ -74,20 +235,16 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
                                         final InstanceProperties instanceProperties)
     {
 
-        for(Binding<?> b : getBindings())
+        BindingSet bindingSet = _bindingSet;
+        final ArrayList<BaseQueue> result = new ArrayList<BaseQueue>(bindingSet._unfilteredQueues);
+
+
+        final Map<Queue<?>, Map<BindingIdentifier, FilterManager>> filteredBindings = bindingSet._filteredBindings;
+        if(!bindingSet._filteredQueues.isEmpty())
         {
-            b.incrementMatches();
-        }
-
-        final ArrayList<BaseQueue> result = new ArrayList<BaseQueue>(_unfilteredQueues);
-
-
-        final Map<Queue<?>, Map<Binding<?>, FilterManager>> filteredBindings = _filteredBindings.get();
-        if(!_filteredQueues.isEmpty())
-        {
-            for(Queue<?> q : _filteredQueues)
+            for(Queue<?> q : bindingSet._filteredQueues)
             {
-                final Map<Binding<?>, FilterManager> bindingMessageFilterMap = filteredBindings.get(q);
+                final Map<BindingIdentifier, FilterManager> bindingMessageFilterMap = filteredBindings.get(q);
                 if(!(bindingMessageFilterMap == null || result.contains(q)))
                 {
                     for(FilterManager filter : bindingMessageFilterMap.values())
@@ -111,185 +268,21 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
     }
 
     @Override
-    protected synchronized void onBindingUpdated(final Binding<?> binding, final Map<String, Object> oldArguments)
+    protected void onBindingUpdated(final BindingIdentifier binding,
+                                    final Map<String, Object> newArguments)
     {
-        Queue<?> queue = binding.getQueue();
-
-        if (binding.getArguments() == null || binding.getArguments().isEmpty() || !FilterSupport.argumentsContainFilter(
-                binding.getArguments()))
-        {
-            if(oldArguments != null && !oldArguments.isEmpty() && FilterSupport.argumentsContainFilter(oldArguments))
-            {
-                _unfilteredQueues.add(queue);
-                if(_queues.containsKey(queue))
-                {
-                    _queues.put(queue,_queues.get(queue)+1);
-                }
-                else
-                {
-                    _queues.put(queue, ONE);
-                }
-
-                // No longer any reason to check filters for this queue
-                _filteredQueues.remove(queue);
-            }
-            // else - nothing has changed, remains unfiltered
-        }
-        else
-        {
-            HashMap<Queue<?>,Map<Binding<?>, FilterManager>> filteredBindings =
-                    new HashMap<>(_filteredBindings.get());
-
-            Map<Binding<?>,FilterManager> bindingsForQueue;
-
-            final FilterManager messageFilter;
-
-            try
-            {
-                messageFilter = FilterSupport.createMessageFilter(binding.getArguments(), binding.getQueue());
-            }
-            catch (AMQInvalidArgumentException e)
-            {
-                _logger.warn("Cannot bind queue " + queue + " to exchange this " + this + " because selector cannot be parsed.", e);
-                return;
-            }
-
-
-            if (oldArguments != null && !oldArguments.isEmpty() && FilterSupport.argumentsContainFilter(oldArguments))
-            {
-                bindingsForQueue = new HashMap<>(filteredBindings.remove(binding.getQueue()));
-            }
-            else // previously unfiltered
-            {
-                bindingsForQueue = new HashMap<>();
-
-                Integer oldValue = _queues.remove(queue);
-                if (ONE.equals(oldValue))
-                {
-                    // should start checking filters for this queue
-                    _filteredQueues.add(queue);
-                    _unfilteredQueues.remove(queue);
-                }
-                else
-                {
-                    _queues.put(queue, oldValue - 1);
-                }
-
-            }
-            bindingsForQueue.put(binding, messageFilter);
-            filteredBindings.put(binding.getQueue(),bindingsForQueue);
-
-            _filteredBindings.set(filteredBindings);
-
-        }
-
+        _bindingSet = _bindingSet.updateBinding(binding, newArguments);
     }
 
     @Override
-    protected synchronized void onBind(final Binding<?> binding)
+    protected void onBind(final BindingIdentifier binding, final Map<String, Object> arguments)
     {
-        Queue<?> queue = binding.getQueue();
-        assert queue != null;
-        if(binding.getArguments() == null || binding.getArguments().isEmpty() || !FilterSupport.argumentsContainFilter(binding.getArguments()))
-        {
-
-            Integer oldVal;
-            if(_queues.containsKey(queue))
-            {
-                _queues.put(queue,_queues.get(queue)+1);
-            }
-            else
-            {
-                _queues.put(queue, ONE);
-                _unfilteredQueues.add(queue);
-                // No longer any reason to check filters for this queue
-                _filteredQueues.remove(queue);
-            }
-
-        }
-        else
-        {
-            try
-            {
-
-                HashMap<Queue<?>,Map<Binding<?>, FilterManager>> filteredBindings =
-                        new HashMap<>(_filteredBindings.get());
-
-                Map<Binding<?>, FilterManager> bindingsForQueue = filteredBindings.remove(binding.getQueue());
-                final FilterManager messageFilter =
-                        FilterSupport.createMessageFilter(binding.getArguments(), binding.getQueue());
-
-                if(bindingsForQueue != null)
-                {
-                    bindingsForQueue = new HashMap<>(bindingsForQueue);
-                    bindingsForQueue.put(binding, messageFilter);
-                }
-                else
-                {
-                    bindingsForQueue = Collections.<Binding<?>, FilterManager>singletonMap(binding, messageFilter);
-                    if(!_unfilteredQueues.contains(queue))
-                    {
-                        _filteredQueues.add(queue);
-                    }
-                }
-
-                filteredBindings.put(binding.getQueue(), bindingsForQueue);
-
-                _filteredBindings.set(filteredBindings);
-
-            }
-            catch (AMQInvalidArgumentException e)
-            {
-                _logger.warn("Cannot bind queue " + queue + " to exchange this " + this + " because selector cannot be parsed.", e);
-                return;
-            }
-        }
-        if (_logger.isDebugEnabled())
-        {
-            _logger.debug("Binding queue " + queue
-                          + " with routing key " + binding.getBindingKey() + " to exchange " + this);
-        }
+        _bindingSet = _bindingSet.addBinding(binding, arguments);
     }
 
     @Override
-    protected synchronized void onUnbind(final Binding<?> binding)
+    protected void onUnbind(final BindingIdentifier binding)
     {
-        Queue<?> queue = binding.getQueue();
-        if(binding.getArguments() == null || binding.getArguments().isEmpty() || !FilterSupport.argumentsContainFilter(binding.getArguments()))
-        {
-            Integer oldValue = _queues.remove(queue);
-            if(ONE.equals(oldValue))
-            {
-                // should start checking filters for this queue
-                if(_filteredBindings.get().containsKey(queue))
-                {
-                    _filteredQueues.add(queue);
-                }
-                _unfilteredQueues.remove(queue);
-            }
-            else
-            {
-                _queues.put(queue,oldValue-1);
-            }
-        }
-        else // we are removing a binding with filters
-        {
-            HashMap<Queue<?>,Map<Binding<?>, FilterManager>> filteredBindings =
-                    new HashMap<>(_filteredBindings.get());
-
-            Map<Binding<?>,FilterManager> bindingsForQueue = filteredBindings.remove(binding.getQueue());
-            if(bindingsForQueue.size()>1)
-            {
-                bindingsForQueue = new HashMap<>(bindingsForQueue);
-                bindingsForQueue.remove(binding);
-                filteredBindings.put(binding.getQueue(),bindingsForQueue);
-            }
-            else
-            {
-                _filteredQueues.remove(queue);
-            }
-            _filteredBindings.set(filteredBindings);
-
-        }
+        _bindingSet = _bindingSet.removeBinding(binding);
     }
 }

@@ -219,11 +219,57 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
                             processManagedOperation(pw, className, (ExecutableElement) element, annotationMirror);
                             break;
                         }
+                        else if(annotationMirror.getAnnotationType().toString().equals("org.apache.qpid.server.model.DoOnConfigThread"))
+                        {
+                            processedMethods.add(element.getSimpleName().toString());
+                            processDoOnConfigMethod(pw, className, (ExecutableElement) element, annotationMirror);
+                            break;
+                        }
                     }
                 }
             }
         }
 
+    }
+    private void processDoOnConfigMethod(final PrintWriter pw, final String className, final ExecutableElement methodElement, final AnnotationMirror annotationMirror)
+    {
+
+        pw.print("    public " + methodElement.getReturnType() + " " + methodElement.getSimpleName().toString() + "(");
+        boolean first = true;
+        for(VariableElement param : methodElement.getParameters())
+        {
+            if(first)
+            {
+                first = false;
+            }
+            else
+            {
+                pw.print(", ");
+            }
+            pw.print("final ");
+            pw.print(param.asType());
+            pw.print(" ");
+
+            pw.print(getParamName(param));
+        }
+        pw.println(")");
+        pw.println("    {");
+
+
+        final String parameterList = getParameterList(methodElement);
+
+        final String callToSuper = "super." + methodElement.getSimpleName().toString() + parameterList;
+
+        pw.print("        ");
+        if (methodElement.getReturnType().getKind() != TypeKind.VOID)
+        {
+            pw.print("return ");
+        }
+        pw.println(wrapByDoOnConfigThread(callToSuper, className, methodElement));
+
+
+        pw.println("    }");
+        pw.println();
     }
 
     private void processManagedOperation(final PrintWriter pw, final String className, final ExecutableElement methodElement, final AnnotationMirror annotationMirror)

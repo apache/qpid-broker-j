@@ -582,12 +582,12 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
             String routingKey, FieldTable arguments, String virtualHostName)
     {
         Map<String, Object> attributesMap = new HashMap<String, Object>();
-        attributesMap.put(Binding.NAME, routingKey);
-        attributesMap.put(Binding.EXCHANGE, UUIDGenerator.generateExchangeUUID(exchangeName, virtualHostName));
-        attributesMap.put(Binding.QUEUE, UUIDGenerator.generateQueueUUID(queueName, virtualHostName));
+        attributesMap.put("name", routingKey);
+        attributesMap.put("exchange", UUIDGenerator.generateExchangeUUID(exchangeName, virtualHostName));
+        attributesMap.put("queue", UUIDGenerator.generateQueueUUID(queueName, virtualHostName));
         if (arguments != null)
         {
-            attributesMap.put(Binding.ARGUMENTS, FieldTable.convertToMap(arguments));
+            attributesMap.put("arguments", FieldTable.convertToMap(arguments));
         }
         String json = serialiseMap(attributesMap);
         UpgradeConfiguredObjectRecord configuredObject = new UpgradeConfiguredObjectRecord(Binding.class.getName(), json);

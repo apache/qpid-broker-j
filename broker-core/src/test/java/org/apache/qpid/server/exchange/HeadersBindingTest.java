@@ -27,15 +27,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.server.binding.BindingImpl;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.AMQMessageHeader;
-import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
@@ -189,9 +186,9 @@ public class HeadersBindingTest extends QpidTestCase
 
         matchHeaders.setString("A", "Value of A");
 
-        BindingImpl b =
-                createBinding(UUID.randomUUID(), getQueueName(), _queue, _exchange, bindHeaders);
-        assertTrue(new HeadersBinding(b).matches(matchHeaders));
+        AbstractExchange.BindingIdentifier b =
+                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
     public void testDefault_2()
@@ -201,9 +198,9 @@ public class HeadersBindingTest extends QpidTestCase
         matchHeaders.setString("A", "Value of A");
         matchHeaders.setString("B", "Value of B");
 
-        BindingImpl b =
-                createBinding(UUID.randomUUID(), getQueueName(), _queue, _exchange, bindHeaders);
-        assertTrue(new HeadersBinding(b).matches(matchHeaders));
+        AbstractExchange.BindingIdentifier b =
+                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
     public void testDefault_3()
@@ -212,9 +209,9 @@ public class HeadersBindingTest extends QpidTestCase
 
         matchHeaders.setString("A", "Altered value of A");
 
-        BindingImpl b =
-                createBinding(UUID.randomUUID(), getQueueName(), _queue, _exchange, bindHeaders);
-        assertFalse(new HeadersBinding(b).matches(matchHeaders));
+        AbstractExchange.BindingIdentifier b =
+                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        assertFalse(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
     public void testAll_1()
@@ -224,9 +221,9 @@ public class HeadersBindingTest extends QpidTestCase
 
         matchHeaders.setString("A", "Value of A");
 
-        BindingImpl b =
-                createBinding(UUID.randomUUID(), getQueueName(), _queue, _exchange, bindHeaders);
-        assertTrue(new HeadersBinding(b).matches(matchHeaders));
+        AbstractExchange.BindingIdentifier b =
+                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
     public void testAll_2()
@@ -237,9 +234,9 @@ public class HeadersBindingTest extends QpidTestCase
 
         matchHeaders.setString("A", "Value of A");
 
-        BindingImpl b =
-                createBinding(UUID.randomUUID(), getQueueName(), _queue, _exchange, bindHeaders);
-        assertFalse(new HeadersBinding(b).matches(matchHeaders));
+        AbstractExchange.BindingIdentifier b =
+                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        assertFalse(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
     public void testAll_3()
@@ -251,9 +248,9 @@ public class HeadersBindingTest extends QpidTestCase
         matchHeaders.setString("A", "Value of A");
         matchHeaders.setString("B", "Value of B");
 
-        BindingImpl b =
-                createBinding(UUID.randomUUID(), getQueueName(), _queue, _exchange, bindHeaders);
-        assertTrue(new HeadersBinding(b).matches(matchHeaders));
+        AbstractExchange.BindingIdentifier b =
+                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
     public void testAll_4()
@@ -266,9 +263,9 @@ public class HeadersBindingTest extends QpidTestCase
         matchHeaders.setString("B", "Value of B");
         matchHeaders.setString("C", "Value of C");
 
-        BindingImpl b =
-                createBinding(UUID.randomUUID(), getQueueName(), _queue, _exchange, bindHeaders);
-        assertTrue(new HeadersBinding(b).matches(matchHeaders));
+        AbstractExchange.BindingIdentifier b =
+                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
     public void testAll_5()
@@ -281,9 +278,9 @@ public class HeadersBindingTest extends QpidTestCase
         matchHeaders.setString("B", "Altered value of B");
         matchHeaders.setString("C", "Value of C");
 
-        BindingImpl b =
-                createBinding(UUID.randomUUID(), getQueueName(), _queue, _exchange, bindHeaders);
-        assertFalse(new HeadersBinding(b).matches(matchHeaders));
+        AbstractExchange.BindingIdentifier b =
+                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        assertFalse(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
     public void testAny_1()
@@ -293,9 +290,9 @@ public class HeadersBindingTest extends QpidTestCase
 
         matchHeaders.setString("A", "Value of A");
 
-        BindingImpl b =
-                createBinding(UUID.randomUUID(), getQueueName(), _queue, _exchange, bindHeaders);
-        assertTrue(new HeadersBinding(b).matches(matchHeaders));
+        AbstractExchange.BindingIdentifier b =
+                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
     public void testAny_2()
@@ -306,9 +303,9 @@ public class HeadersBindingTest extends QpidTestCase
 
         matchHeaders.setString("A", "Value of A");
 
-        BindingImpl b =
-                createBinding(UUID.randomUUID(), getQueueName(), _queue, _exchange, bindHeaders);
-        assertTrue(new HeadersBinding(b).matches(matchHeaders));
+        AbstractExchange.BindingIdentifier b =
+                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
     public void testAny_3()
@@ -320,9 +317,9 @@ public class HeadersBindingTest extends QpidTestCase
         matchHeaders.setString("A", "Value of A");
         matchHeaders.setString("B", "Value of B");
 
-        BindingImpl b =
-                createBinding(UUID.randomUUID(), getQueueName(), _queue, _exchange, bindHeaders);
-        assertTrue(new HeadersBinding(b).matches(matchHeaders));
+        AbstractExchange.BindingIdentifier b =
+                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
     public void testAny_4()
@@ -335,9 +332,9 @@ public class HeadersBindingTest extends QpidTestCase
         matchHeaders.setString("B", "Value of B");
         matchHeaders.setString("C", "Value of C");
 
-        BindingImpl b =
-                createBinding(UUID.randomUUID(), getQueueName(), _queue, _exchange, bindHeaders);
-        assertTrue(new HeadersBinding(b).matches(matchHeaders));
+        AbstractExchange.BindingIdentifier b =
+                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
     public void testAny_5()
@@ -350,9 +347,9 @@ public class HeadersBindingTest extends QpidTestCase
         matchHeaders.setString("B", "Altered value of B");
         matchHeaders.setString("C", "Value of C");
 
-        BindingImpl b =
-                createBinding(UUID.randomUUID(), getQueueName(), _queue, _exchange, bindHeaders);
-        assertTrue(new HeadersBinding(b).matches(matchHeaders));
+        AbstractExchange.BindingIdentifier b =
+                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        assertTrue(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
     public void testAny_6()
@@ -365,27 +362,9 @@ public class HeadersBindingTest extends QpidTestCase
         matchHeaders.setString("B", "Altered value of B");
         matchHeaders.setString("C", "Value of C");
 
-        BindingImpl b =
-                createBinding(UUID.randomUUID(), getQueueName(), _queue, _exchange, bindHeaders);
-        assertFalse(new HeadersBinding(b).matches(matchHeaders));
-    }
-
-    public static BindingImpl createBinding(UUID id,
-                                            final String bindingKey,
-                                            final Queue<?> queue,
-                                            final Exchange<?> exchange,
-                                            final Map<String, Object> arguments)
-    {
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(Binding.NAME, bindingKey);
-        if(arguments != null)
-        {
-            attributes.put(Binding.ARGUMENTS, arguments);
-        }
-        attributes.put(Binding.ID, id);
-        BindingImpl binding = new BindingImpl(attributes, queue, exchange);
-        binding.open();
-        return binding;
+        AbstractExchange.BindingIdentifier b =
+                new AbstractExchange.BindingIdentifier(getQueueName(), _queue);
+        assertFalse(new HeadersBinding(b, bindHeaders).matches(matchHeaders));
     }
 
 

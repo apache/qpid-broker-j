@@ -107,47 +107,6 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         assertBrokerChildCreateAuthorization(accessControlProvider);
     }
 
-    public void testAuthoriseCreateBinding()
-    {
-        VirtualHost vh = getMockVirtualHost();
-
-        Exchange exchange = mock(Exchange.class);
-        when(exchange.getParent(VirtualHost.class)).thenReturn(_virtualHost);
-        when(exchange.getAttribute(Exchange.NAME)).thenReturn(TEST_EXCHANGE);
-        when(exchange.getName()).thenReturn(TEST_EXCHANGE);
-        when(exchange.getCategoryClass()).thenReturn(Exchange.class);
-        when(exchange.getParent(VirtualHost.class)).thenReturn(vh);
-        when(exchange.getModel()).thenReturn(BrokerModel.getInstance());
-
-        Queue queue = mock(Queue.class);
-        when(queue.getParent(VirtualHost.class)).thenReturn(_virtualHost);
-        when(queue.getAttribute(Queue.NAME)).thenReturn(TEST_QUEUE);
-        when(queue.getName()).thenReturn(TEST_QUEUE);
-        when(queue.getAttribute(Queue.DURABLE)).thenReturn(true);
-        when(queue.getAttribute(Queue.LIFETIME_POLICY)).thenReturn(LifetimePolicy.PERMANENT);
-        when(queue.getCategoryClass()).thenReturn(Queue.class);
-        when(queue.getParent(VirtualHost.class)).thenReturn(vh);
-
-        ObjectProperties properties = new ObjectProperties();
-        properties.put(ObjectProperties.Property.NAME, TEST_EXCHANGE);
-        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
-        properties.put(ObjectProperties.Property.QUEUE_NAME, TEST_QUEUE);
-        properties.put(ObjectProperties.Property.ROUTING_KEY, "bindingKey");
-        properties.put(ObjectProperties.Property.TEMPORARY, false);
-        properties.put(ObjectProperties.Property.DURABLE, true);
-
-        Binding binding = mock(Binding.class);
-        when(binding.getParent(Exchange.class)).thenReturn(exchange);
-        when(binding.getParent(Queue.class)).thenReturn(queue);
-        when(binding.getAttribute(Binding.NAME)).thenReturn("bindingKey");
-        when(binding.getName()).thenReturn("bindingKey");
-
-        when(binding.getCategoryClass()).thenReturn(Binding.class);
-
-        assertCreateAuthorization(binding, LegacyOperation.BIND, ObjectType.EXCHANGE, properties, exchange, queue);
-    }
-
-
     public void testAuthoriseCreateConsumer()
     {
         Queue queue = mock(Queue.class);
@@ -165,7 +124,6 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         QueueConsumer consumer = mock(QueueConsumer.class);
         when(consumer.getAttribute(QueueConsumer.NAME)).thenReturn("1");
         when(consumer.getParent(Queue.class)).thenReturn(queue);
-        when(consumer.getParent(Session.class)).thenReturn(session);
         when(consumer.getCategoryClass()).thenReturn(Consumer.class);
 
         ObjectProperties properties = new ObjectProperties();
@@ -215,40 +173,6 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         ObjectProperties properties = new ObjectProperties((String)mock.getName());
         assertDeleteAuthorization(mock, LegacyOperation.DELETE, ObjectType.VIRTUALHOST, properties, vhn);
     }
-
-    public void testAuthoriseDeleteBinding()
-    {
-        Exchange exchange = mock(Exchange.class);
-        when(exchange.getParent(VirtualHost.class)).thenReturn(_virtualHost);
-        when(exchange.getName()).thenReturn(TEST_EXCHANGE);
-        when(exchange.getAttribute(Exchange.NAME)).thenReturn(TEST_EXCHANGE);
-        when(exchange.getCategoryClass()).thenReturn(Exchange.class);
-
-        Queue queue = mock(Queue.class);
-        when(queue.getParent(VirtualHost.class)).thenReturn(_virtualHost);
-        when(queue.getName()).thenReturn(TEST_QUEUE);
-        when(queue.getAttribute(Queue.NAME)).thenReturn(TEST_QUEUE);
-        when(queue.getAttribute(Queue.DURABLE)).thenReturn(true);
-        when(queue.getAttribute(Queue.LIFETIME_POLICY)).thenReturn(LifetimePolicy.PERMANENT);
-        when(queue.getCategoryClass()).thenReturn(Queue.class);
-
-        Binding binding = mock(Binding.class);
-        when(binding.getParent(Exchange.class)).thenReturn(exchange);
-        when(binding.getParent(Queue.class)).thenReturn(queue);
-        when(binding.getName()).thenReturn("bindingKey");
-        when(binding.getCategoryClass()).thenReturn(Binding.class);
-
-        ObjectProperties properties = new ObjectProperties();
-        properties.put(ObjectProperties.Property.NAME, TEST_EXCHANGE);
-        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
-        properties.put(ObjectProperties.Property.QUEUE_NAME, TEST_QUEUE);
-        properties.put(ObjectProperties.Property.ROUTING_KEY, "bindingKey");
-        properties.put(ObjectProperties.Property.TEMPORARY, false);
-        properties.put(ObjectProperties.Property.DURABLE, true);
-
-        assertDeleteAuthorization(binding, LegacyOperation.UNBIND, ObjectType.EXCHANGE, properties, exchange, queue);
-    }
-
 
     public void testAuthoriseDeleteKeyStore()
     {
@@ -407,40 +331,6 @@ public class LegacyAccessControlAdapterTest extends QpidTestCase
         when(exchange.getCategoryClass()).thenReturn(Exchange.class);
 
         assertDeleteAuthorization(exchange, LegacyOperation.DELETE, ObjectType.EXCHANGE, expectedProperties, vh);
-    }
-
-    public void testAuthoriseUnbind()
-    {
-        Exchange exchange = mock(Exchange.class);
-        when(exchange.getParent(VirtualHost.class)).thenReturn(_virtualHost);
-        when(exchange.getName()).thenReturn(TEST_EXCHANGE);
-        when(exchange.getAttribute(Exchange.NAME)).thenReturn(TEST_EXCHANGE);
-        when(exchange.getCategoryClass()).thenReturn(Exchange.class);
-
-        Queue queue = mock(Queue.class);
-        when(queue.getParent(VirtualHost.class)).thenReturn(_virtualHost);
-        when(queue.getName()).thenReturn(TEST_QUEUE);
-        when(queue.getAttribute(Queue.NAME)).thenReturn(TEST_QUEUE);
-        when(queue.getAttribute(Queue.DURABLE)).thenReturn(true);
-        when(queue.getAttribute(Queue.LIFETIME_POLICY)).thenReturn(LifetimePolicy.PERMANENT);
-        when(queue.getCategoryClass()).thenReturn(Queue.class);
-
-        Binding binding = mock(Binding.class);
-        when(binding.getParent(Exchange.class)).thenReturn(exchange);
-        when(binding.getParent(Queue.class)).thenReturn(queue);
-        when(binding.getName()).thenReturn("bindingKey");
-        when(binding.getAttribute(Binding.NAME)).thenReturn("bindingKey");
-        when(binding.getCategoryClass()).thenReturn(Binding.class);
-
-        ObjectProperties properties = new ObjectProperties();
-        properties.put(ObjectProperties.Property.NAME, TEST_EXCHANGE);
-        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, TEST_VIRTUAL_HOST);
-        properties.put(ObjectProperties.Property.QUEUE_NAME, TEST_QUEUE);
-        properties.put(ObjectProperties.Property.ROUTING_KEY, "bindingKey");
-        properties.put(ObjectProperties.Property.TEMPORARY, false);
-        properties.put(ObjectProperties.Property.DURABLE, true);
-
-        assertDeleteAuthorization(binding, LegacyOperation.UNBIND, ObjectType.EXCHANGE, properties, exchange, queue);
     }
 
     public void testAuthoriseCreateVirtualHostNode()

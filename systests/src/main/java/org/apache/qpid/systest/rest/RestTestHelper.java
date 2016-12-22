@@ -53,7 +53,6 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.ssl.SSLContextFactory;
@@ -636,18 +635,17 @@ public class RestTestHelper
         for (int i = 0; i < EXPECTED_QUEUES.length; i++)
         {
             String queueName = EXPECTED_QUEUES[i];
-            Map<String, Object> queueData = new HashMap<String, Object>();
+            Map<String, Object> queueData = new HashMap<>();
             queueData.put(Queue.NAME, queueName);
             queueData.put(Queue.DURABLE, Boolean.FALSE);
             int responseCode = submitRequest("queue/test/test/" + queueName, "PUT", queueData);
             Assert.assertEquals("Unexpected response code creating queue" + queueName, 201, responseCode);
 
-            Map<String, Object> bindingData = new HashMap<String, Object>();
-            bindingData.put(Binding.NAME, queueName);
-            bindingData.put(Binding.QUEUE, queueName);
-            bindingData.put(Binding.EXCHANGE, "amq.direct");
-            responseCode = submitRequest("binding/test/test/amq.direct/" + queueName + "/" + queueName, "PUT", queueData);
-            Assert.assertEquals("Unexpected response code binding queue " + queueName, 201, responseCode);
+            Map<String, Object> bindingData = new HashMap<>();
+            bindingData.put("bindingKey", queueName);
+            bindingData.put("destination", queueName);
+            responseCode = submitRequest("exchange/test/test/amq.direct/bind", "POST", bindingData);
+            Assert.assertEquals("Unexpected response code binding queue " + queueName, 200, responseCode);
         }
     }
 

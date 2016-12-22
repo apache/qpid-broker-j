@@ -368,12 +368,12 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
     private Map<String, Object> createExpectedQueueBindingMapAndID(String queue, String bindingName, String exchangeName, Map<String, String> argumentMap, List<UUID> expectedBindingIDs)
     {
         Map<String, Object> expectedQueueBinding = new HashMap<String, Object>();
-        expectedQueueBinding.put(Binding.QUEUE, UUIDGenerator.generateQueueUUID(queue, getVirtualHost().getName()).toString());
-        expectedQueueBinding.put(Binding.NAME, bindingName);
-        expectedQueueBinding.put(Binding.EXCHANGE, UUIDGenerator.generateExchangeUUID(exchangeName, getVirtualHost().getName()).toString());
+        expectedQueueBinding.put("queue", UUIDGenerator.generateQueueUUID(queue, getVirtualHost().getName()).toString());
+        expectedQueueBinding.put("name", bindingName);
+        expectedQueueBinding.put("exchange", UUIDGenerator.generateExchangeUUID(exchangeName, getVirtualHost().getName()).toString());
         if (argumentMap != null)
         {
-            expectedQueueBinding.put(Binding.ARGUMENTS, argumentMap);
+            expectedQueueBinding.put("arguments", argumentMap);
         }
 
         expectedBindingIDs.add(UUIDGenerator.generateBindingUUID(exchangeName, queue, bindingName, getVirtualHost().getName()));

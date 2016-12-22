@@ -37,6 +37,7 @@ import javax.jms.JMSException;
 import javax.jms.MapMessage;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
+import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.naming.NamingException;
@@ -46,7 +47,6 @@ import com.google.common.collect.Maps;
 
 import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.client.AMQConnectionURL;
-import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Port;
@@ -133,10 +133,10 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         String messageText = createMessageText();
         Connection senderConnection = getConnection(senderCompresses);
         String virtualPath = ((AMQConnectionFactory)getConnectionFactory()).getVirtualPath();
-        String testQueueName = getTestQueueName();
-        createAndBindQueue(virtualPath, testQueueName);
+        Session senderSession = senderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Queue testQueue = createTestQueue(senderSession);
 
-        publishMessage(senderConnection, messageText);
+        publishMessage(senderConnection, messageText, testQueue);
 
         // get the number of bytes received at the broker on the connection
         List<Map<String, Object>> connectionRestOutput = _restTestHelper.getJsonAsList("/api/latest/connection");
@@ -196,12 +196,12 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         String messageText = createMessageText();
         Connection senderConnection = getConnection(true);
         String virtualPath = ((AMQConnectionFactory)getConnectionFactory()).getVirtualPath();
-        String testQueueName = getTestQueueName();
-        createAndBindQueue(virtualPath, testQueueName);
+        Session session = senderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Queue testQueue = createTestQueue(session);
 
-        publishMessage(senderConnection, messageText);
+        publishMessage(senderConnection, messageText, testQueue);
 
-        String queueRelativePath = "queue" + virtualPath + virtualPath + "/" + testQueueName;
+        String queueRelativePath = "queue" + virtualPath + virtualPath + "/" + testQueue.getQueueName();
 
         List<Map<String, Object>> messages = _restTestHelper.getJsonAsList(queueRelativePath + "/getMessageInfo");
         assertEquals("Unexpected number of messages", 1, messages.size());
@@ -225,12 +225,12 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         String messageText = createMessageText();
         Connection senderConnection = getConnection(true);
         String virtualPath = ((AMQConnectionFactory)getConnectionFactory()).getVirtualPath();
-        String testQueueName = getTestQueueName();
-        createAndBindQueue(virtualPath, testQueueName);
+        Session session = senderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Queue testQueue = createTestQueue(session);
 
-        publishMessage(senderConnection, messageText);
+        publishMessage(senderConnection, messageText, testQueue);
 
-        String queueRelativePath = "queue" + virtualPath + virtualPath + "/" + testQueueName;
+        String queueRelativePath = "queue" + virtualPath + virtualPath + "/" + testQueue.getQueueName();
 
         List<Map<String, Object>> messages = _restTestHelper.getJsonAsList(queueRelativePath + "/getMessageInfo");
         assertEquals("Unexpected number of messages", 1, messages.size());
@@ -253,12 +253,12 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         String messageText = createMessageText();
         Connection senderConnection = getConnection(true);
         String virtualPath = ((AMQConnectionFactory)getConnectionFactory()).getVirtualPath();
-        String testQueueName = getTestQueueName();
-        createAndBindQueue(virtualPath, testQueueName);
+        Session session = senderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Queue testQueue = createTestQueue(session);
 
-        publishMessage(senderConnection, messageText);
+        publishMessage(senderConnection, messageText, testQueue);
 
-        String queueRelativePath = "queue" + virtualPath + virtualPath + "/" + testQueueName;
+        String queueRelativePath = "queue" + virtualPath + virtualPath + "/" + testQueue.getQueueName();
 
         List<Map<String, Object>> messages = _restTestHelper.getJsonAsList(queueRelativePath + "/getMessageInfo");
         assertEquals("Unexpected number of messages", 1, messages.size());
@@ -291,13 +291,13 @@ public class MessageCompressionTest extends QpidBrokerTestCase
 
         Connection senderConnection = getConnection(true);
         String virtualPath = ((AMQConnectionFactory)getConnectionFactory()).getVirtualPath();
-        String testQueueName = getTestQueueName();
-        createAndBindQueue(virtualPath, testQueueName);
+        Session session = senderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Queue testQueue = createTestQueue(session);
 
         Map<String, Object> mapToSend = createMapToSend();
-        publishMapMessage(senderConnection, mapToSend);
+        publishMapMessage(senderConnection, mapToSend, testQueue);
 
-        String queueRelativePath = "queue" + virtualPath + virtualPath + "/" + testQueueName;
+        String queueRelativePath = "queue" + virtualPath + virtualPath + "/" + testQueue.getQueueName();
 
         List<Map<String, Object>> messages = _restTestHelper.getJsonAsList(queueRelativePath + "/getMessageInfo");
         assertEquals("Unexpected number of messages", 1, messages.size());
@@ -318,13 +318,14 @@ public class MessageCompressionTest extends QpidBrokerTestCase
 
         Connection senderConnection = getConnection(true);
         String virtualPath = ((AMQConnectionFactory)getConnectionFactory()).getVirtualPath();
-        String testQueueName = getTestQueueName();
-        createAndBindQueue(virtualPath, testQueueName);
+        Session session = senderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Queue testQueue = createTestQueue(session);
 
         Map<String, Object> mapToSend = createMapToSend();
-        publishMapMessage(senderConnection, mapToSend);
+        publishMapMessage(senderConnection, mapToSend, testQueue);
 
-        String queueRelativePath = "queue" + virtualPath + virtualPath + "/" + testQueueName;
+
+        String queueRelativePath = "queue" + virtualPath + virtualPath + "/" + testQueue.getQueueName();
 
         List<Map<String, Object>> messages = _restTestHelper.getJsonAsList(queueRelativePath + "/getMessageInfo");
         assertEquals("Unexpected number of messages", 1, messages.size());
@@ -379,12 +380,14 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         return content;
     }
 
-    private void publishMapMessage(final Connection senderConnection, final Map<String, Object> mapData)
+    private void publishMapMessage(final Connection senderConnection,
+                                   final Map<String, Object> mapData,
+                                   final Queue testQueue)
             throws JMSException, org.apache.qpid.QpidException
     {
-        Session session = senderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Session session = senderConnection.createSession(true, Session.SESSION_TRANSACTED);
 
-        MessageProducer producer = session.createProducer(getTestQueue());
+        MessageProducer producer = session.createProducer(testQueue);
         MapMessage sentMessage = session.createMapMessage();
         sentMessage.setStringProperty("bar", "foo");
         for(Map.Entry<String,Object> entry: mapData.entrySet())
@@ -406,39 +409,20 @@ public class MessageCompressionTest extends QpidBrokerTestCase
         }
 
         producer.send(sentMessage);
-        ((AMQSession) session).sync();
+        session.commit();
     }
 
-    private void publishMessage(final Connection senderConnection, final String messageText)
+    private void publishMessage(final Connection senderConnection, final String messageText, final Queue testQueue)
             throws JMSException, org.apache.qpid.QpidException
     {
-        Session session = senderConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Session session = senderConnection.createSession(true, Session.SESSION_TRANSACTED);
 
-        MessageProducer producer = session.createProducer(getTestQueue());
+        MessageProducer producer = session.createProducer(testQueue);
         TextMessage sentMessage = session.createTextMessage(messageText);
         sentMessage.setStringProperty("bar", "foo");
 
         producer.send(sentMessage);
-        ((AMQSession) session).sync();
-    }
-
-    private void createAndBindQueue(final String virtualPath, final String testQueueName) throws IOException
-    {
-        // create the queue using REST and bind it
-        assertEquals(201,
-                     _restTestHelper.submitRequest("/api/latest/queue"
-                                                   + virtualPath
-                                                   + virtualPath
-                                                   + "/"
-                                                   + testQueueName, "PUT", Collections.<String, Object>emptyMap()));
-        assertEquals(201,
-                     _restTestHelper.submitRequest("/api/latest/binding"
-                                                   + virtualPath
-                                                   + virtualPath
-                                                   + "/amq.direct/"
-                                                   + testQueueName
-                                                   + "/"
-                                                   + testQueueName, "PUT", Collections.<String, Object>emptyMap()));
+        session.commit();
     }
 
     private String createMessageText()

@@ -45,6 +45,7 @@ import org.apache.qpid.server.message.MessageContainer;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageInstanceConsumer;
+import org.apache.qpid.server.message.MessageSender;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -99,6 +100,24 @@ public class ProxyMessageSource implements MessageSource, MessageDestination
                                                                                  final Action<? super MessageInstance> postEnqueueAction)
     {
         return 0;
+    }
+
+    @Override
+    public boolean isDurable()
+    {
+        return false;
+    }
+
+    @Override
+    public void linkAdded(final MessageSender sender, final String linkName)
+    {
+
+    }
+
+    @Override
+    public void linkRemoved(final MessageSender sender, final String linkName)
+    {
+
     }
 
     @Override

@@ -514,11 +514,11 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
      * @param bindings     the set of bindings to validate
      * @param useSelectors if set, check the binding has a JMS_SELECTOR argument and the correct value for it
      */
-    private void validateBindingProperties(Collection<? extends Binding<?>> bindings, boolean useSelectors)
+    private void validateBindingProperties(Collection<? extends Binding> bindings, boolean useSelectors)
     {
         assertEquals("Each queue should only be bound once.", 1, bindings.size());
 
-        Binding<?> binding = bindings.iterator().next();
+        Binding binding = bindings.iterator().next();
 
         if (useSelectors)
         {

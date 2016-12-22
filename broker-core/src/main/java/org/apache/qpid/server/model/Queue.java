@@ -260,7 +260,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     //children
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
-    Collection<Binding<?>> getBindings();
+    Collection<Binding> getBindings();
 
 
     @ManagedOperation(nonModifying = true, changesConfiguredObjectState = false)
@@ -419,10 +419,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
                                    @Param(name = "includeHeaders", defaultValue = "true") boolean includeHeaders);
 
     boolean isExclusive();
-
-    void addBinding(Binding<?> binding);
-
-    void removeBinding(Binding<?> binding);
 
     LogSubject getLogSubject();
 

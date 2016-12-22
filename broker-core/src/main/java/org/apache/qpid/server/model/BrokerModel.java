@@ -53,9 +53,10 @@ public final class BrokerModel extends Model
      *     Bring model version and Qpid version into sync
      * 6.1 Remove JMX
      *     Remove PreferencesProvider
+     * 7.0 Remove bindings, Consumer sole parent is Queue
      */
-    public static final int MODEL_MAJOR_VERSION = 6;
-    public static final int MODEL_MINOR_VERSION = 1;
+    public static final int MODEL_MAJOR_VERSION = 7;
+    public static final int MODEL_MINOR_VERSION = 0;
     public static final String MODEL_VERSION = MODEL_MAJOR_VERSION + "." + MODEL_MINOR_VERSION;
     private static final Model MODEL_INSTANCE = new BrokerModel();
     private final Map<Class<? extends ConfiguredObject>, Collection<Class<? extends ConfiguredObject>>> _parents =
@@ -109,12 +110,7 @@ public final class BrokerModel extends Model
 
         addRelationship(Connection.class, Session.class);
 
-        addRelationship(Queue.class, Binding.class);
         addRelationship(Queue.class, Consumer.class);
-
-        addRelationship(Exchange.class, Binding.class);
-
-        addRelationship(Session.class, Consumer.class);
 
         _objectFactory = new ConfiguredObjectFactoryImpl(this);
         _typeRegistry = new ConfiguredObjectTypeRegistry((new QpidServiceLoader()).instancesOf(ConfiguredObjectRegistration.class),

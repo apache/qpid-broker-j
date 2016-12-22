@@ -44,6 +44,7 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
+import org.apache.qpid.server.util.FixedKeyMapCreator;
 import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationStoreUpgraderAndRecoverer
@@ -73,6 +74,8 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         register(new Upgrader_2_0_to_3_0());
         register(new Upgrader_3_0_to_6_0());
         register(new Upgrader_6_0_to_6_1());
+        register(new Upgrader_6_1_to_7_0());
+
 
         Map<String, UUID> defaultExchangeIds = new HashMap<String, UUID>();
         for (String exchangeName : DEFAULT_EXCHANGES.keySet())
@@ -106,10 +109,10 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         private void removeSelectorArguments(Map<String, Object> binding)
         {
             @SuppressWarnings("unchecked")
-            Map<String, Object> arguments = new LinkedHashMap<String, Object>((Map<String,Object>)binding.get(Binding.ARGUMENTS));
+            Map<String, Object> arguments = new LinkedHashMap<String, Object>((Map<String,Object>)binding.get("arguments"));
 
             FilterSupport.removeFilters(arguments);
-            binding.put(Binding.ARGUMENTS, arguments);
+            binding.put("arguments", arguments);
         }
 
         private boolean isTopicExchange(ConfiguredObjectRecord entry)
@@ -141,7 +144,7 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         private boolean hasSelectorArguments(Map<String, Object> binding)
         {
             @SuppressWarnings("unchecked")
-            Map<String, Object> arguments = (Map<String, Object>) binding.get(Binding.ARGUMENTS);
+            Map<String, Object> arguments = (Map<String, Object>) binding.get("arguments");
             return (arguments != null) && FilterSupport.argumentsContainFilter(arguments);
         }
 
@@ -540,6 +543,182 @@ public class VirtualHostStoreUpgraderAndRecoverer extends AbstractConfigurationS
         }
 
     }
+
+    private static final FixedKeyMapCreator BINDING_MAP_CREATOR = new FixedKeyMapCreator("bindingKey", "destination", "arguments");
+    private static final FixedKeyMapCreator NO_ARGUMENTS_BINDING_MAP_CREATOR = new FixedKeyMapCreator("bindingKey", "destination");
+
+    private class Upgrader_6_1_to_7_0 extends StoreUpgraderPhase
+    {
+        private final Map<UUID, List<BindingRecord>> _exchangeBindings = new HashMap<>();
+        private final Map<UUID, ConfiguredObjectRecord> _exchanges = new HashMap<>();
+        private final Map<UUID, String> _queues = new HashMap<>();
+        private final Map<String, List<Map<String,Object>>> _queueBindings = new HashMap<>();
+
+
+        public Upgrader_6_1_to_7_0()
+        {
+            super("modelVersion", "6.1", "7.0");
+        }
+
+        @Override
+        public void configuredObject(ConfiguredObjectRecord record)
+        {
+            if("VirtualHost".equals(record.getType()))
+            {
+                upgradeRootRecord(record);
+            }
+            else if("Binding".equals(record.getType()))
+            {
+                BindingRecord binding = new BindingRecord(String.valueOf(record.getAttributes().get("name")),
+                                                          record.getParents().get("Queue").toString(),
+                                                          record.getAttributes().get("arguments"));
+                final UUID exchangeId = record.getParents().get("Exchange");
+                List<BindingRecord> existingBindings = _exchangeBindings.get(exchangeId);
+                if(existingBindings == null)
+                {
+                    existingBindings = new ArrayList<>();
+                    _exchangeBindings.put(exchangeId, existingBindings);
+                }
+                existingBindings.add(binding);
+                getDeleteMap().put(record.getId(), record);
+            }
+            else if("Exchange".equals(record.getType()))
+            {
+                final UUID exchangeId = record.getId();
+                _exchanges.put(exchangeId, record);
+                if(record.getAttributes().containsKey("bindings"))
+                {
+                    List<BindingRecord> existingBindings = _exchangeBindings.get(exchangeId);
+                    if(existingBindings == null)
+                    {
+                        existingBindings = new ArrayList<>();
+                        _exchangeBindings.put(exchangeId, existingBindings);
+                    }
+
+                    List<Map<String,Object>> bindingList =
+                            (List<Map<String, Object>>) record.getAttributes().get("bindings");
+                    for(Map<String,Object> existingBinding : bindingList)
+                    {
+                        existingBindings.add(new BindingRecord((String)existingBinding.get("name"),
+                                                               String.valueOf(existingBinding.get("queue")),
+                                                               existingBinding.get("arguments")));
+                    }
+                }
+            }
+            else if("Queue".equals(record.getType()))
+            {
+                _queues.put(record.getId(), (String) record.getAttributes().get("name"));
+                if(record.getAttributes().containsKey("bindings"))
+                {
+                    _queueBindings.put(String.valueOf(record.getAttributes().get("name")),
+                                       (List<Map<String, Object>>) record.getAttributes().get("bindings"));
+                    Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
+                    updatedAttributes.remove("bindings");
+                    getUpdateMap().put(record.getId(), new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents()));
+                }
+            }
+        }
+
+        @Override
+        public void complete()
+        {
+            for(Map.Entry<String, List<Map<String,Object>>> entry : _queueBindings.entrySet())
+            {
+                for(Map<String, Object> existingBinding : entry.getValue())
+                {
+                    UUID exchangeId;
+                    if(existingBinding.get("exchange") instanceof UUID)
+                    {
+                        exchangeId = (UUID) existingBinding.get("exchange");
+                    }
+                    else
+                    {
+                        exchangeId = getExchangeIdFromNameOrId( existingBinding.get("exchange").toString());
+                    }
+                    List<BindingRecord> existingBindings = _exchangeBindings.get(exchangeId);
+                    if(existingBindings == null)
+                    {
+                        existingBindings = new ArrayList<>();
+                        _exchangeBindings.put(exchangeId, existingBindings);
+                    }
+                    existingBindings.add(new BindingRecord((String)existingBinding.get("name"),
+                                                           entry.getKey(),
+                                                           existingBinding.get("arguments")));
+                }
+            }
+
+            for(Map.Entry<UUID, List<BindingRecord>> entry : _exchangeBindings.entrySet())
+            {
+                ConfiguredObjectRecord exchangeRecord = _exchanges.get(entry.getKey());
+                if(exchangeRecord != null)
+                {
+                    final List<BindingRecord> bindingRecords = entry.getValue();
+                    List<Map<String,Object>> actualBindings = new ArrayList<>(bindingRecords.size());
+                    for(BindingRecord bindingRecord : bindingRecords)
+                    {
+                        if(bindingRecord._arguments == null)
+                        {
+                            actualBindings.add(NO_ARGUMENTS_BINDING_MAP_CREATOR.createMap(bindingRecord._name,
+                                                                                          getQueueFromIdOrName(bindingRecord)));
+                        }
+                        else
+                        {
+                            actualBindings.add(BINDING_MAP_CREATOR.createMap(bindingRecord._name,
+                                                                             getQueueFromIdOrName(bindingRecord), bindingRecord._arguments));
+                        }
+                    }
+                    Map<String, Object> updatedAttributes = new HashMap<>(exchangeRecord.getAttributes());
+                    updatedAttributes.remove("bindings");
+                    updatedAttributes.put("durableBindings", actualBindings);
+                    exchangeRecord = new ConfiguredObjectRecordImpl(exchangeRecord.getId(), exchangeRecord.getType(), updatedAttributes, exchangeRecord.getParents());
+                    getUpdateMap().put(exchangeRecord.getId(), exchangeRecord);
+                }
+
+            }
+        }
+
+        private UUID getExchangeIdFromNameOrId(final String exchange)
+        {
+            for(ConfiguredObjectRecord record : _exchanges.values())
+            {
+                if(exchange.equals(record.getAttributes().get("name")))
+                {
+                    return record.getId();
+                }
+            }
+            return UUID.fromString(exchange);
+        }
+
+        private String getQueueFromIdOrName(final BindingRecord bindingRecord)
+        {
+            final String queueIdOrName = bindingRecord._queueIdOrName;
+            try
+            {
+                UUID queueId = UUID.fromString(queueIdOrName);
+                String name = _queues.get(queueId);
+                return name == null ? queueIdOrName : name;
+            }
+            catch(IllegalArgumentException e)
+            {
+                return queueIdOrName;
+            }
+        }
+
+        private class BindingRecord
+        {
+            private final String _name;
+            private final String _queueIdOrName;
+            private final Object _arguments;
+
+            public BindingRecord(final String name, final String queueIdOrName, final Object arguments)
+            {
+                _name = name;
+                _queueIdOrName = queueIdOrName;
+                _arguments = arguments;
+            }
+        }
+    }
+
 
     public boolean upgradeAndRecover(final DurableConfigurationStore durableConfigurationStore,
                                      final ConfiguredObjectRecord... initialRecords)

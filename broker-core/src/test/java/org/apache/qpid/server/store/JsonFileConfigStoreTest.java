@@ -399,9 +399,6 @@ public class JsonFileConfigStoreTest extends QpidTestCase
 
         final UUID exchangeId = new UUID(0, 2);
 
-        final UUID bindingId = new UUID(0, 3);
-        final UUID binding2Id = new UUID(1, 3);
-
         Map<String, UUID> parents = getRootAsParentMap();
         Map<String, Object> queueAttr = Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "queue");
         final ConfiguredObjectRecordImpl queueRecord =
@@ -421,33 +418,12 @@ public class JsonFileConfigStoreTest extends QpidTestCase
                                                exchangeAttr,
                                                parents);
         _store.create(exchangeRecord);
-        Map<String,UUID> bindingParents = new HashMap();
-        bindingParents.put("Exchange", exchangeRecord.getId());
-        bindingParents.put("Queue", queueRecord.getId());
-        Map<String, Object> bindingAttr = Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "binding");
-        final ConfiguredObjectRecordImpl bindingRecord =
-                new ConfiguredObjectRecordImpl(bindingId, "Binding",
-                                               bindingAttr,
-                                               bindingParents);
-
-
-        Map<String,UUID> binding2Parents = new HashMap();
-        binding2Parents.put("Exchange", exchangeRecord.getId());
-        binding2Parents.put("Queue", queue2Record.getId());
-        Map<String, Object> binding2Attr = Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "binding2");
-        final ConfiguredObjectRecordImpl binding2Record =
-                new ConfiguredObjectRecordImpl(binding2Id, "Binding",
-                                               binding2Attr,
-                                               binding2Parents);
-        _store.update(true, bindingRecord, binding2Record);
         _store.closeConfigurationStore();
         _store.init(_parent);
         _store.openConfigurationStore(_handler);
         verify(_handler).handle(matchesRecord(queueId, "Queue", queueAttr));
         verify(_handler).handle(matchesRecord(queue2Id, "Queue", queue2Attr));
         verify(_handler).handle(matchesRecord(exchangeId, "Exchange", exchangeAttr));
-        verify(_handler).handle(matchesRecord(bindingId, "Binding", bindingAttr));
-        verify(_handler).handle(matchesRecord(binding2Id, "Binding", binding2Attr));
         _store.closeConfigurationStore();
 
     }

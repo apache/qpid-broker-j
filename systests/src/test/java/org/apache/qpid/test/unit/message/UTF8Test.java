@@ -116,7 +116,7 @@ public class UTF8Test extends QpidBrokerTestCase
             props.setProperty("topic.sendDest", exch +"/" + routkey);
             createEntityUsingAmqpManagement(exch, session, "org.apache.qpid.DirectExchange");
             final Map<String, Object> arguments = new HashMap<>();
-            arguments.put("queue",qname);
+            arguments.put("destination",qname);
             arguments.put("bindingKey", routkey);
             performOperationUsingAmqpManagement(exch, "bind", session, "org.apache.qpid.DirectExchange", arguments);
         }

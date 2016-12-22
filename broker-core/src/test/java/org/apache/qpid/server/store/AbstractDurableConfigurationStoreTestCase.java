@@ -41,11 +41,9 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.common.AMQPFilterTypes;
-import org.apache.qpid.server.binding.BindingImpl;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.BrokerTestHelper;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -193,33 +191,6 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         verify(_handler, never()).handle(any(ConfiguredObjectRecord.class));
     }
 
-    public void testBindQueue() throws Exception
-    {
-        Exchange<?> exchange = createTestExchange();
-        Queue<?> queue = createTestQueue(QUEUE_NAME, "queueOwner", false, null);
-        BindingImpl binding = createBinding(UUIDGenerator.generateRandomUUID(), ROUTING_KEY, queue,
-                                            exchange, _bindingArgs);
-        _configStore.create(exchange.asObjectRecord());
-        _configStore.create(queue.asObjectRecord());
-        _configStore.create(binding.asObjectRecord());
-
-        reopenStore();
-        _configStore.openConfigurationStore(_handler);
-
-        Map<String,Object> map = new HashMap<String, Object>();
-        map.put(Binding.NAME, ROUTING_KEY);
-        map.put(Binding.ARGUMENTS,_bindingArgs);
-        map.put(Binding.DURABLE,true);
-        map.put(Binding.TYPE, Binding.class.getSimpleName());
-
-        Map<String,UUID> parents = new HashMap<String, UUID>();
-
-        parents.put(Exchange.class.getSimpleName(), exchange.getId());
-        parents.put(Queue.class.getSimpleName(), queue.getId());
-
-        verify(_handler).handle(matchesRecord(binding.getId(), BINDING, map, parents));
-    }
-
 
     private ConfiguredObjectRecord matchesRecord(UUID id,
                                                  String type,
@@ -285,23 +256,6 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
             }
             return true;
         }
-    }
-
-    public void testUnbindQueue() throws Exception
-    {
-        Exchange<?> exchange = createTestExchange();
-        _configStore.create(exchange.asObjectRecord());
-
-        Queue<?> queue = createTestQueue(QUEUE_NAME, "queueOwner", false, null);
-        BindingImpl binding = createBinding(UUIDGenerator.generateRandomUUID(), ROUTING_KEY, queue,
-                                            exchange, _bindingArgs);
-        _configStore.create(binding.asObjectRecord());
-
-        _configStore.remove(binding.asObjectRecord());
-        reopenStore();
-
-        verify(_handler, never()).handle(matchesRecord(ANY_UUID, BINDING,
-                                                                         ANY_MAP));
     }
 
     public void testCreateQueueAMQQueue() throws Exception
@@ -554,21 +508,4 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
             _configStore.closeConfigurationStore();
         }
     }
-
-    private static BindingImpl createBinding(UUID id,
-                                             final String bindingKey,
-                                             final Queue<?> queue,
-                                             final Exchange<?> exchange,
-                                             final Map<String, Object> arguments)
-    {
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(Binding.NAME, bindingKey);
-        if(arguments != null)
-        {
-            attributes.put(Binding.ARGUMENTS, arguments);
-        }
-        attributes.put(Binding.ID, id);
-        return new BindingImpl(attributes, queue, exchange);
-    }
-
 }

@@ -32,7 +32,6 @@ import javax.jms.JMSException;
 
 import junit.framework.TestCase;
 
-import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -367,33 +366,6 @@ public class Asserts
                                 "messagesIn");
     }
 
-    public static void assertBinding(String bindingName, String queueName, String exchange, Map<String, Object> binding)
-    {
-        assertNotNull("Binding map should not be null", binding);
-        assertAttributesPresent(binding,
-                                BrokerModel.getInstance().getTypeRegistry().getAttributeNames(Binding.class),
-                                Binding.STATE,
-                                Binding.ARGUMENTS,
-                                ConfiguredObject.TYPE,
-                                ConfiguredObject.CREATED_BY,
-                                ConfiguredObject.CREATED_TIME,
-                                ConfiguredObject.LAST_UPDATED_BY,
-                                ConfiguredObject.LAST_UPDATED_TIME,
-                                ConfiguredObject.DESCRIPTION,
-                                ConfiguredObject.CONTEXT,
-                                ConfiguredObject.DESIRED_STATE);
-
-        assertEquals("Unexpected binding attribute " + Binding.NAME, bindingName, binding.get(Binding.NAME));
-        assertEquals("Unexpected binding attribute " + Binding.QUEUE, queueName, binding.get(Binding.QUEUE));
-        assertEquals("Unexpected binding attribute " + Binding.EXCHANGE, exchange, binding.get(Binding.EXCHANGE));
-        assertEquals("Unexpected binding attribute " + Binding.LIFETIME_POLICY, LifetimePolicy.PERMANENT.name(),
-                     binding.get(Binding.LIFETIME_POLICY));
-    }
-
-    public static void assertBinding(String queueName, String exchange, Map<String, Object> binding)
-    {
-        assertBinding(queueName, queueName, exchange, binding);
-    }
 
     public static void assertActualAndDesiredState(final String expectedDesiredState,
                                              final String expectedActualState,

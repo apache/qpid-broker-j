@@ -154,11 +154,9 @@ abstract class AbstractQueueTestBase extends QpidTestCase
                     _exchange.isBound(_routingKey,_queue));
         assertEquals("Exchange binding count", 1,
                      _queue.getBindings().size());
-        final Binding<?> firstBinding = _queue.getBindings().iterator().next();
-        assertEquals("Wrong exchange bound", _routingKey,
+        final Binding firstBinding = _queue.getBindings().iterator().next();
+        assertEquals("Wrong binding key", _routingKey,
                      firstBinding.getBindingKey());
-        assertEquals("Wrong exchange bound", _exchange,
-                     firstBinding.getExchange());
 
         _exchange.deleteBinding(_routingKey, _queue);
         assertFalse("Routing key was still bound",

@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.security.access.config;
 
+import static org.apache.qpid.server.security.access.config.LegacyOperation.BIND;
+import static org.apache.qpid.server.security.access.config.LegacyOperation.UNBIND;
 import static org.apache.qpid.server.security.access.config.ObjectType.EXCHANGE;
 import static org.apache.qpid.server.security.access.config.ObjectType.METHOD;
 import static org.apache.qpid.server.security.access.config.ObjectType.QUEUE;
@@ -41,6 +43,7 @@ import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.server.virtualhost.QueueManagingVirtualHost;
 
 class LegacyAccessControlAdapter
 {
@@ -214,21 +217,8 @@ class LegacyAccessControlAdapter
         String objectName = configuredObject.getName();
         Class<? extends ConfiguredObject> configuredObjectType = configuredObject.getCategoryClass();
         ObjectProperties properties = new ObjectProperties(objectName);
-        if (configuredObject instanceof Binding)
-        {
-            Exchange<?> exchange = (Exchange<?>)((Binding)configuredObject).getParent(Exchange.class);
-            Queue<?> queue = (Queue<?>)((Binding)configuredObject).getParent(Queue.class);
-            properties.setName((String)exchange.getAttribute(Exchange.NAME));
-            properties.put(ObjectProperties.Property.QUEUE_NAME, (String)queue.getAttribute(Queue.NAME));
-            properties.put(ObjectProperties.Property.ROUTING_KEY, objectName);
-            properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, (String)queue.getParent(VirtualHost.class).getAttribute(VirtualHost.NAME));
 
-            // The temporary attribute (inherited from the binding's queue) seems to exist to allow the user to
-            // express rules about the binding of temporary queues (whose names cannot be predicted).
-            properties.put(ObjectProperties.Property.TEMPORARY, queue.getAttribute(Queue.LIFETIME_POLICY) != LifetimePolicy.PERMANENT);
-            properties.put(ObjectProperties.Property.DURABLE, (Boolean)queue.getAttribute(Queue.DURABLE));
-        }
-        else if (configuredObject instanceof Queue)
+        if (configuredObject instanceof Queue)
         {
             setQueueProperties((Queue)configuredObject, properties);
         }
@@ -294,12 +284,7 @@ class LegacyAccessControlAdapter
     {
         if (operation == LegacyOperation.CREATE || operation == LegacyOperation.UPDATE)
         {
-            if (Binding.class.isAssignableFrom(category))
-            {
-                // CREATE BINDING is transformed into BIND EXCHANGE rule
-                return LegacyOperation.BIND;
-            }
-            else if (Consumer.class.isAssignableFrom(category))
+            if (Consumer.class.isAssignableFrom(category))
             {
                 // CREATE CONSUMER is transformed into CONSUME QUEUE rule
                 return LegacyOperation.CONSUME;
@@ -317,12 +302,7 @@ class LegacyAccessControlAdapter
         }
         else if (operation == LegacyOperation.DELETE)
         {
-            if (Binding.class.isAssignableFrom(category))
-            {
-                // DELETE BINDING is transformed into UNBIND EXCHANGE rule
-                return LegacyOperation.UNBIND;
-            }
-            else if (isBrokerType(category))
+            if (isBrokerType(category))
             {
                 // DELETE broker child is transformed into CONFIGURE BROKER rule
                 return LegacyOperation.CONFIGURE;
@@ -488,8 +468,51 @@ class LegacyAccessControlAdapter
                 authorise(LegacyOperation.UPDATE, configuredObject);
             }
         }
+        else if (categoryClass == Exchange.class)
+        {
+            if ("bind".equals(methodName))
+            {
+                final ObjectProperties properties = createArgsForExchangeBind(arguments, configuredObject);
+                return _accessControl.authorise(BIND, EXCHANGE, properties);
+            }
+            else if ("unbind".equals(methodName))
+            {
+                final ObjectProperties properties = createArgsForExchangeBind(arguments, configuredObject);
+                return _accessControl.authorise(UNBIND, EXCHANGE, properties);
+            }
+
+        }
         return Result.ALLOWED;
 
+    }
+
+    private ObjectProperties createArgsForExchangeBind(final Map<String, Object> arguments,
+                                           final PermissionedObject configuredObject)
+    {
+        ObjectProperties properties = new ObjectProperties();
+        Exchange<?> exchange = (Exchange<?>) configuredObject;
+        final QueueManagingVirtualHost virtualhost = exchange.getVirtualHost();
+
+        properties.setName(exchange.getName());
+        final String destination = (String) arguments.get("destination");
+        properties.put(ObjectProperties.Property.QUEUE_NAME, destination);
+        properties.put(ObjectProperties.Property.ROUTING_KEY, (String)arguments.get("bindingKey"));
+        properties.put(ObjectProperties.Property.VIRTUALHOST_NAME, virtualhost.getName());
+
+        MessageDestination dest = virtualhost.getAttainedMessageDestination(destination);
+        if (dest != null)
+        {
+            // The temporary attribute (inherited from the binding's queue) seems to exist to allow the user to
+            // express rules about the binding of temporary queues (whose names cannot be predicted).
+            if (dest instanceof ConfiguredObject)
+            {
+                ConfiguredObject queue = (ConfiguredObject) dest;
+                properties.put(ObjectProperties.Property.TEMPORARY, queue.getLifetimePolicy() != LifetimePolicy.PERMANENT);
+            }
+            properties.put(ObjectProperties.Property.DURABLE, dest.isDurable());
+
+        }
+        return properties;
     }
 
 

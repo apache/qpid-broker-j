@@ -22,7 +22,6 @@ package org.apache.qpid.server.model.adapter;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +35,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.NamedAddressSpace;
@@ -129,19 +127,6 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
     public Collection<org.apache.qpid.server.model.Consumer> getConsumers()
     {
         return (Collection<Consumer>) _session.getConsumers();
-    }
-
-    @Override
-    public <C extends ConfiguredObject> Collection<C> getChildren(Class<C> clazz)
-    {
-        if (clazz == org.apache.qpid.server.model.Consumer.class)
-        {
-            return (Collection<C>) getConsumers();
-        }
-        else
-        {
-            return Collections.emptySet();
-        }
     }
 
     @Override

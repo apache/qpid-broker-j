@@ -20,12 +20,13 @@
  */
 package org.apache.qpid.server.model;
 
-import java.util.Map;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-@ManagedAttributeValueType
-public interface Binding extends ManagedAttributeValue
+@Retention(RetentionPolicy.SOURCE)
+@Target(ElementType.METHOD)
+public @interface DoOnConfigThread
 {
-    String getBindingKey();
-    String getDestination();
-    Map<String,Object> getArguments();
 }

@@ -50,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.VirtualHostNode;
@@ -354,8 +353,8 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
         assertEquals(1, bindings.size());
         for(Map<String, Object> binding : bindings)
         {
-            String bindingKey = (String) binding.get(Binding.NAME);
-            String queueName = (String) binding.get(Binding.QUEUE);
+            String bindingKey = (String) binding.get("name");
+            String queueName = (String) binding.get("queue");
 
             //Because its a fanout exchange, we just return a single '*' key with all bound queues
             assertEquals("unexpected binding key", "dlq", bindingKey);

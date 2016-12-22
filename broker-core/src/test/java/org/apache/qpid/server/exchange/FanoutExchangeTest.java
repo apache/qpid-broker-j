@@ -21,6 +21,7 @@
 package org.apache.qpid.server.exchange;
 
 import static org.mockito.Matchers.anySet;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -142,6 +143,8 @@ public class FanoutExchangeTest extends QpidTestCase
     private Queue<?> mockQueue()
     {
         Queue queue = mock(Queue.class);
+        String name = UUID.randomUUID().toString();
+        when(queue.getName()).thenReturn(name);
         when(queue.getVirtualHost()).thenReturn(_virtualHost);
         when(queue.getCategoryClass()).thenReturn(Queue.class);
         when(queue.getModel()).thenReturn(BrokerModel.getInstance());
@@ -149,6 +152,7 @@ public class FanoutExchangeTest extends QpidTestCase
         when(queue.getTaskExecutor()).thenReturn(taskExecutor);
         when(queue.getChildExecutor()).thenReturn(taskExecutor);
         when(queue.getParent(VirtualHost.class)).thenReturn(_virtualHost);
+        when(_virtualHost.getAttainedQueue(eq(name))).thenReturn(queue);
         return queue;
     }
 

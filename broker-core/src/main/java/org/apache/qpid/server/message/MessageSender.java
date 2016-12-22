@@ -18,14 +18,9 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
+package org.apache.qpid.server.message;
 
-import java.util.Map;
-
-@ManagedAttributeValueType
-public interface Binding extends ManagedAttributeValue
+public interface MessageSender
 {
-    String getBindingKey();
-    String getDestination();
-    Map<String,Object> getArguments();
+    void destinationRemoved(MessageDestination destination);
 }

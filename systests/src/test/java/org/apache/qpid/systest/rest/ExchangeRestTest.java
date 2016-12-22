@@ -20,11 +20,11 @@
  */
 package org.apache.qpid.systest.rest;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Exchange;
 
 public class ExchangeRestTest extends QpidRestTestCase
@@ -107,12 +107,12 @@ public class ExchangeRestTest extends QpidRestTestCase
 
     private void assertBindings(Map<String, Object> exchange)
     {
-        @SuppressWarnings("unchecked")
         List<Map<String, Object>> bindings = (List<Map<String, Object>>) exchange.get("bindings");
-        for (String queueName : RestTestHelper.EXPECTED_QUEUES)
+        assertEquals(RestTestHelper.EXPECTED_QUEUES.length, bindings.size());
+        for (Map<String, Object> binding : bindings)
         {
-            Map<String, Object> binding = getRestTestHelper().find(Binding.NAME, queueName, bindings);
-            Asserts.assertBinding(queueName, (String) exchange.get(Exchange.NAME), binding);
+            String destination = (String) binding.get("destination");
+            assertTrue(Arrays.asList(RestTestHelper.EXPECTED_QUEUES).contains(destination));
         }
     }
 

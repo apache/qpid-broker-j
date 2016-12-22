@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.systest.rest;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +31,6 @@ import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 
-import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Consumer;
@@ -42,7 +40,6 @@ import org.apache.qpid.server.model.Queue;
 public class QueueRestTest extends QpidRestTestCase
 {
     private static final String QUEUE_ATTRIBUTE_CONSUMERS = "consumers";
-    private static final String QUEUE_ATTRIBUTE_BINDINGS = "bindings";
 
     /**
      * Message number to publish into queue
@@ -86,19 +83,6 @@ public class QueueRestTest extends QpidRestTestCase
         {
             Map<String, Object> queueDetails = getRestTestHelper().find(Queue.NAME, name, queues);
             Asserts.assertQueue(name, "standard", queueDetails);
-
-            if(!isBroker10())
-            {
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> bindings =
-                        (List<Map<String, Object>>) queueDetails.get(QUEUE_ATTRIBUTE_BINDINGS);
-                assertNotNull("Queue bindings are not found", bindings);
-                assertEquals("Unexpected number of bindings", 1, bindings.size());
-
-                Map<String, Object> directExchangeBinding =
-                        getRestTestHelper().find(Binding.EXCHANGE, "amq.direct", bindings);
-                Asserts.assertBinding(name, "amq.direct", directExchangeBinding);
-            }
         }
     }
 
@@ -109,21 +93,6 @@ public class QueueRestTest extends QpidRestTestCase
         Asserts.assertQueue(queueName, "standard", queueDetails);
         assertStatistics(queueDetails);
 
-        // For 1.0 we won't have bound the queue to an exchange
-        if(!isBroker10())
-        {
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> bindings = (List<Map<String, Object>>) queueDetails.get(QUEUE_ATTRIBUTE_BINDINGS);
-
-            assertNotNull("Queue bindings are not found", bindings);
-            assertEquals("Unexpected number of bindings", isBroker10() ? 0 : 1, bindings.size());
-            if (!isBroker10())
-            {
-                Map<String, Object> directExchangeBinding =
-                        getRestTestHelper().find(Binding.EXCHANGE, "amq.direct", bindings);
-                Asserts.assertBinding(queueName, "amq.direct", directExchangeBinding);
-            }
-        }
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> consumers = (List<Map<String, Object>>) queueDetails.get(QUEUE_ATTRIBUTE_CONSUMERS);
         assertNotNull("Queue consumers are not found", consumers);
@@ -167,48 +136,6 @@ public class QueueRestTest extends QpidRestTestCase
         assertEquals("Unexpected " + Queue.ALERT_THRESHOLD_MESSAGE_SIZE, 30000, queueData.get(Queue.ALERT_THRESHOLD_MESSAGE_SIZE) );
         assertEquals("Unexpected " + Queue.ALERT_THRESHOLD_QUEUE_DEPTH_BYTES, 40000, queueData.get(Queue.ALERT_THRESHOLD_QUEUE_DEPTH_BYTES) );
         assertEquals("Unexpected " + Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES, 50000, queueData.get(Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES) );
-    }
-
-    public void testPutCreateBinding() throws Exception
-    {
-        String queueName = getTestQueueName();
-        String bindingName = queueName + 2;
-        String[] exchanges = { "amq.direct", "amq.fanout", "amq.topic", "amq.match" };
-
-        for (int i = 0; i < exchanges.length; i++)
-        {
-            createBinding(bindingName, exchanges[i], queueName);
-        }
-
-        Map<String, Object> queueDetails = getRestTestHelper().getJsonAsSingletonList("queue/test/test/" + queueName);
-        Asserts.assertQueue(queueName, "standard", queueDetails);
-
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> bindings = (List<Map<String, Object>>) queueDetails.get(QUEUE_ATTRIBUTE_BINDINGS);
-        assertNotNull("Queue bindings are not found", bindings);
-        assertEquals("Unexpected number of bindings", exchanges.length + (isBroker10() ? 0 : 1), bindings.size());
-
-        Map<String, Object> searchAttributes = new HashMap<String, Object>();
-        searchAttributes.put(Binding.NAME, bindingName);
-
-        for (int i = 0; i < exchanges.length; i++)
-        {
-            searchAttributes.put(Binding.EXCHANGE, exchanges[i]);
-            Map<String, Object> binding = getRestTestHelper().find(searchAttributes, bindings);
-            Asserts.assertBinding(bindingName, queueName, exchanges[i], binding);
-        }
-    }
-
-    private void createBinding(String bindingName, String exchangeName, String queueName) throws IOException
-    {
-        Map<String, Object> bindingData = new HashMap<String, Object>();
-        bindingData.put(Binding.NAME, bindingName);
-        bindingData.put(Binding.EXCHANGE, exchangeName);
-        bindingData.put(Binding.QUEUE, queueName);
-
-        String url = "binding/test/test/" + getRestTestHelper().encodeAsUTF(exchangeName) + "/" + queueName + "/" + bindingName;
-        int responseCode = getRestTestHelper().submitRequest(url, "PUT", bindingData);
-        assertEquals("Unexpected response code", 201, responseCode);
     }
 
     private void assertConsumer(Map<String, Object> consumer)

@@ -54,4 +54,9 @@ public interface MessageDestination extends MessageNode
                                                                           InstanceProperties instanceProperties,
                                                                           ServerTransaction txn,
                                                                           Action<? super MessageInstance> postEnqueueAction);
+
+    boolean isDurable();
+
+    void linkAdded(MessageSender sender, String linkName);
+    void linkRemoved(MessageSender sender, String linkName);
 }

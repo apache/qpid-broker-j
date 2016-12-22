@@ -35,7 +35,7 @@ import org.apache.qpid.server.filter.FilterSupport;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.message.AMQMessageHeader;
-import org.apache.qpid.server.model.Binding;
+import org.apache.qpid.server.model.Queue;
 
 /**
  * Defines binding and matching based on a set of headers.
@@ -45,7 +45,7 @@ class HeadersBinding
     private static final Logger _logger = LoggerFactory.getLogger(HeadersBinding.class);
 
     private final Map<String,Object> _mappings;
-    private final Binding<?> _binding;
+    private final AbstractExchange.BindingIdentifier _binding;
     private final Set<String> required = new HashSet<String>();
     private final Map<String,Object> matches = new HashMap<String,Object>();
     private boolean matchAny;
@@ -59,12 +59,11 @@ class HeadersBinding
      *
      * @param binding the binding to create a header binding using
      */
-    public HeadersBinding(Binding<?> binding)
+    public HeadersBinding(AbstractExchange.BindingIdentifier binding, Map<String,Object> arguments)
     {
         _binding = binding;
         if(_binding !=null)
         {
-            Map<String, Object> arguments = _binding.getArguments();
             _mappings = arguments == null ? Collections.<String,Object>emptyMap() : arguments;
             initMappings();
         }
@@ -80,13 +79,12 @@ class HeadersBinding
         {
             try
             {
-                _filter = FilterSupport.createMessageFilter(_mappings,_binding.getQueue());
+                _filter = FilterSupport.createMessageFilter(_mappings, (Queue<?>) _binding.getDestination());
             }
             catch (AMQInvalidArgumentException e)
             {
-                _logger.warn("Invalid filter in binding queue '"+_binding.getQueue().getName()
-                             +"' to exchange '"+_binding.getExchange().getName()
-                             +"' with arguments: " + _binding.getArguments());
+                _logger.warn("Invalid filter in binding queue '"+_binding.getDestination().getName()
+                             +"' with arguments: " + _mappings);
                 _filter = new FilterManager();
 
                 _filter.add("x-exclude-all", new ExcludeAllFilter());
@@ -111,7 +109,7 @@ class HeadersBinding
         }
     }
 
-    public Binding<?> getBinding()
+    public AbstractExchange.BindingIdentifier getBinding()
     {
         return _binding;
     }
