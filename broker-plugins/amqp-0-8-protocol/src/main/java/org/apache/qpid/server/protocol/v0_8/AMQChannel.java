@@ -3082,7 +3082,7 @@ public class AMQChannel
     @Override
     public void receiveQueueBind(final AMQShortString queueName,
                                  final AMQShortString exchange,
-                                 AMQShortString routingKey,
+                                 AMQShortString bindingKey,
                                  final boolean nowait,
                                  final FieldTable argumentsTable)
     {
@@ -3090,7 +3090,7 @@ public class AMQChannel
         {
             _logger.debug("RECV[" + _channelId + "] QueueBind[" +" queue: " + queueName +
                           " exchange: " + exchange +
-                          " bindingKey: " + routingKey +
+                          " bindingKey: " + bindingKey +
                           " nowait: " + nowait + " arguments: " + argumentsTable + " ]");
         }
 
@@ -3103,16 +3103,15 @@ public class AMQChannel
 
             if (queue != null)
             {
-                if (routingKey == null)
+                if (bindingKey == null)
                 {
-                    routingKey = AMQShortString.valueOf(queue.getName());
+                    bindingKey = AMQShortString.valueOf(queue.getName());
                 }
             }
         }
         else
         {
             queue = getQueue(queueName.toString());
-            routingKey = routingKey == null ? AMQShortString.EMPTY_STRING : routingKey;
         }
 
         if (queue == null)
@@ -3146,16 +3145,16 @@ public class AMQChannel
                 {
 
                     Map<String, Object> arguments = FieldTable.convertToMap(argumentsTable);
-                    String bindingKey = String.valueOf(routingKey);
+                    String bindingKeyStr = AMQShortString.toString(bindingKey);
 
-                    if (!exch.isBound(bindingKey, arguments, queue))
+                    if (!exch.isBound(bindingKeyStr, arguments, queue))
                     {
 
-                        if (!exch.addBinding(bindingKey, queue, arguments)
+                        if (!exch.addBinding(bindingKeyStr, queue, arguments)
                             && ExchangeDefaults.TOPIC_EXCHANGE_CLASS.equals(
                                 exch.getType()))
                         {
-                            exch.replaceBinding(bindingKey, queue, arguments);
+                            exch.replaceBinding(bindingKeyStr, queue, arguments);
                         }
                     }
 
@@ -3166,7 +3165,7 @@ public class AMQChannel
                                      + " to exchange "
                                      + exch
                                      + " with routing key "
-                                     + routingKey);
+                                     + bindingKeyStr);
                     }
                     if (!nowait)
                     {
@@ -3547,14 +3546,13 @@ public class AMQChannel
         }
         else
         {
-
             final Exchange<?> exch = getExchange(exchange.toString());
 
             if (exch == null)
             {
                 closeChannel(ErrorCodes.NOT_FOUND, "Exchange '" + exchange + "' does not exist.");
             }
-            else if (!exch.hasBinding(String.valueOf(bindingKey), queue))
+            else if (!exch.hasBinding(AMQShortString.toString(bindingKey), queue))
             {
                 closeChannel(ErrorCodes.NOT_FOUND, "No such binding");
             }
@@ -3562,7 +3560,7 @@ public class AMQChannel
             {
                 try
                 {
-                    exch.deleteBinding(String.valueOf(bindingKey), queue);
+                    exch.deleteBinding(AMQShortString.toString(bindingKey), queue);
 
                     final AMQMethodBody responseBody = _connection.getMethodRegistry().createQueueUnbindOkBody();
                     sync();

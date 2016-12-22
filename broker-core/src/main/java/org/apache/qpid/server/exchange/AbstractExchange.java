@@ -281,8 +281,13 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         return _virtualHost;
     }
 
+    @Override
     public boolean isBound(String bindingKey, Map<String,Object> arguments, Queue<?> queue)
     {
+        if (bindingKey == null)
+        {
+            bindingKey = "";
+        }
         for(Binding b : _bindings)
         {
             if(bindingKey.equals(b.getBindingKey()) && queue.getName().equals(b.getDestination()))
@@ -295,8 +300,14 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         return false;
     }
 
+    @Override
     public boolean isBound(String bindingKey, Queue<?> queue)
     {
+        if (bindingKey == null)
+        {
+            bindingKey = "";
+        }
+
         for(Binding b : _bindings)
         {
             if(bindingKey.equals(b.getBindingKey()) && queue.getName().equals(b.getDestination()))
@@ -307,8 +318,14 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         return false;
     }
 
+    @Override
     public boolean isBound(String bindingKey)
     {
+        if (bindingKey == null)
+        {
+            bindingKey = "";
+        }
+
         for(Binding b : _bindings)
         {
             if(bindingKey.equals(b.getBindingKey()))
@@ -319,6 +336,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         return false;
     }
 
+    @Override
     public boolean isBound(Queue<?> queue)
     {
         for(Binding b : _bindings)
@@ -347,7 +365,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         return false;
     }
 
-
+    @Override
     public boolean isBound(Map<String, Object> arguments)
     {
         for(Binding b : _bindings)
@@ -366,6 +384,11 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     @Override
     public boolean isBound(String bindingKey, Map<String, Object> arguments)
     {
+        if (bindingKey == null)
+        {
+            bindingKey = "";
+        }
+
         for(Binding b : _bindings)
         {
             if(b.getBindingKey().equals(bindingKey) &&
@@ -379,11 +402,13 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         return false;
     }
 
+    @Override
     public boolean hasBindings()
     {
         return !_bindings.isEmpty();
     }
 
+    @Override
     public Exchange<?> getAlternateExchange()
     {
         return _alternateExchange;
@@ -406,11 +431,13 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         }
     }
 
+    @Override
     public void removeReference(ExchangeReferrer exchange)
     {
         _referrers.remove(exchange);
     }
 
+    @Override
     public void addReference(ExchangeReferrer exchange)
     {
         _referrers.put(exchange, Boolean.TRUE);
@@ -434,11 +461,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     protected abstract void onUnbind(final BindingIdentifier binding);
 
-    public Map<String, Object> getArguments()
-    {
-        return Collections.emptyMap();
-    }
-
+    @Override
     public long getBindingCount()
     {
         return getBindings().size();
@@ -485,6 +508,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         return queues;
     }
 
+    @Override
     public final  <M extends ServerMessage<? extends StorableMessageMetaData>> int send(final M message,
                                                                                         final String routingAddress,
                                                                                         final InstanceProperties instanceProperties,
@@ -773,19 +797,6 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         bind(queue.getName(), bindingKey, arguments, true);
     }
 
-
-    private ListenableFuture<Void> autoDeleteIfNecessaryAsync()
-    {
-        if (isAutoDeletePending())
-        {
-            _logger.debug("Auto-deleting exchange: {}", this);
-
-            return deleteAsync();
-        }
-
-        return Futures.immediateFuture(null);
-    }
-
     private boolean autoDeleteIfNecessary()
     {
         if (isAutoDeletePending())
@@ -899,8 +910,12 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     }
 
     @Override
-    public boolean hasBinding(final String bindingKey, final Queue<?> queue)
+    public boolean hasBinding(String bindingKey, final Queue<?> queue)
     {
+        if (bindingKey == null)
+        {
+            bindingKey = "";
+        }
         for (Binding b : _bindings)
         {
             if (b.getBindingKey().equals(bindingKey) && b.getDestination().equals(queue.getName()))

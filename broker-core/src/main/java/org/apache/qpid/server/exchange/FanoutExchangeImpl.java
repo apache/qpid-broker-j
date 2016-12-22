@@ -160,7 +160,7 @@ class FanoutExchangeImpl extends AbstractExchange<FanoutExchangeImpl> implements
         public BindingSet removeBinding(final BindingIdentifier binding)
         {
             Queue<?> queue = (Queue<?>) binding.getDestination();
-            if(_filteredBindings.get(queue).containsKey(binding))
+            if(_filteredBindings.containsKey(queue) && _filteredBindings.get(queue).containsKey(binding))
             {
                 final Map<Queue<?>, Map<BindingIdentifier, FilterManager>> filteredBindings = new HashMap<>(_filteredBindings);
                 final Map<BindingIdentifier, FilterManager> bindingsForQueue = new HashMap<>(filteredBindings.remove(queue));
