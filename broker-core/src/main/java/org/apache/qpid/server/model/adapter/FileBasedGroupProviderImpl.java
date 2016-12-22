@@ -195,7 +195,7 @@ public class FileBasedGroupProviderImpl
 
     @Override
     public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
-            Map<String, Object> attributes, ConfiguredObject... otherParents)
+                                                                          Map<String, Object> attributes)
     {
         if (childClass == Group.class)
         {
@@ -360,8 +360,7 @@ public class FileBasedGroupProviderImpl
 
         @Override
         public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
-                Map<String, Object> attributes,
-                ConfiguredObject... otherParents)
+                                                                              Map<String, Object> attributes)
         {
             if (childClass == GroupMember.class)
             {

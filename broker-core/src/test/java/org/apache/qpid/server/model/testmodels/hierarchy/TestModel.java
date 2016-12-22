@@ -93,11 +93,9 @@ public class TestModel extends Model
     }
 
     @Override
-    public Collection<Class<? extends ConfiguredObject>> getParentTypes(final Class<? extends ConfiguredObject> child)
+    public Class<? extends ConfiguredObject> getParentType(final Class<? extends ConfiguredObject> child)
     {
-        return TestEngine.class.isAssignableFrom(child)
-                ? Collections.<Class<? extends ConfiguredObject>>singleton(TestCar.class)
-                : Collections.<Class<? extends ConfiguredObject>>emptySet();
+        return TestEngine.class.isAssignableFrom(child) ? TestCar.class : null;
     }
 
     @Override

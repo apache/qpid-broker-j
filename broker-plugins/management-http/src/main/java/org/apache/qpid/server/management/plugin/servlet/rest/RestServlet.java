@@ -36,8 +36,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -432,22 +430,18 @@ public class RestServlet extends AbstractServlet
                 }
 
                 ConfiguredObject theParent = managedObject;
-                ConfiguredObject[] otherParents = null;
                 Class<? extends ConfiguredObject> objClass = configuredClass;
                 if (hierarchy.length > 1)
                 {
 
-                    List<ConfiguredObject> parents =
-                            finder.findObjectParentsFromPath(names, hierarchy, configuredClass);
-                    theParent = parents.remove(0);
-                    otherParents = parents.toArray(new ConfiguredObject[parents.size()]);
+                    theParent = finder.findObjectParentsFromPath(names, hierarchy, configuredClass);
                 }
 
                 if (isFullObjectURL)
                 {
                     providedObject.put("name", names.get(names.size() - 1));
                     ConfiguredObject<?> configuredObject =
-                            findObjectToUpdateInParent(objClass, providedObject, theParent, otherParents);
+                            findObjectToUpdateInParent(objClass, providedObject, theParent);
 
                     if (configuredObject != null)
                     {
@@ -465,7 +459,7 @@ public class RestServlet extends AbstractServlet
                     }
                 }
 
-                ConfiguredObject<?> configuredObject = theParent.createChild(objClass, providedObject, otherParents);
+                ConfiguredObject<?> configuredObject = theParent.createChild(objClass, providedObject);
                 StringBuffer requestURL = request.getRequestURL();
                 if (!isFullObjectURL)
                 {
@@ -718,19 +712,17 @@ public class RestServlet extends AbstractServlet
         else
         {
             ConfiguredObject theParent = managedObject;
-            ConfiguredObject[] otherParents = null;
             if (hierarchy.length > 1)
             {
 
-                List<ConfiguredObject> parents =
+                ConfiguredObject parent =
                         finder.findObjectParentsFromPath(names, hierarchy, configuredClass);
-                theParent = parents.remove(0);
-                otherParents = parents.toArray(new ConfiguredObject[parents.size()]);
+                theParent = parent;
             }
             Class<? extends ConfiguredObject> objClass = configuredClass;
             Map<String, Object> objectName =
                     Collections.<String, Object>singletonMap("name", names.get(names.size() - 1));
-            target = findObjectToUpdateInParent(objClass, objectName, theParent, otherParents);
+            target = findObjectToUpdateInParent(objClass, objectName, theParent);
             if (target == null)
             {
 
@@ -865,50 +857,21 @@ public class RestServlet extends AbstractServlet
         return providedObject;
     }
 
-    private ConfiguredObject<?> findObjectToUpdateInParent(Class<? extends ConfiguredObject> objClass, Map<String, Object> providedObject, ConfiguredObject theParent, ConfiguredObject[] otherParents)
+    private ConfiguredObject<?> findObjectToUpdateInParent(Class<? extends ConfiguredObject> objClass,
+                                                           Map<String, Object> providedObject,
+                                                           ConfiguredObject theParent)
     {
         Collection<? extends ConfiguredObject> existingChildren = theParent.getChildren(objClass);
 
         for (ConfiguredObject obj : existingChildren)
         {
             if ((providedObject.containsKey("id") && String.valueOf(providedObject.get("id")).equals(obj.getId().toString()))
-                    || (obj.getName().equals(providedObject.get("name")) && sameOtherParents(obj, otherParents, objClass)))
+                    || (obj.getName().equals(providedObject.get("name")) ))
             {
                 return obj;
             }
         }
         return null;
-    }
-
-    private boolean sameOtherParents(ConfiguredObject obj, ConfiguredObject[] otherParents, Class<? extends ConfiguredObject> objClass)
-    {
-        Collection<Class<? extends ConfiguredObject>> parentClasses = obj.getModel().getParentTypes(objClass);
-
-        if(otherParents == null || otherParents.length == 0)
-        {
-            return parentClasses.size() == 1;
-        }
-
-
-        for (ConfiguredObject parent : otherParents)
-        {
-            boolean found = false;
-            for (Class<? extends ConfiguredObject> parentClass : parentClasses)
-            {
-                if (parent == obj.getParent(parentClass))
-                {
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found)
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     private void setResponseStatus(HttpServletRequest request, HttpServletResponse response, Throwable e)

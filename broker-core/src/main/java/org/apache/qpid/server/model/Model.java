@@ -91,11 +91,12 @@ public abstract class Model
         }
         else
         {
-            for(Class<? extends ConfiguredObject> parentClass : getParentTypes(category))
+            Class<? extends ConfiguredObject> parentClass = getParentType(category);
+            if(parentClass != null)
             {
                 ConfiguredObject<?> parent = object.getParent(parentClass);
                 C ancestor = getAncestor(ancestorClass, parentClass, parent);
-                if(ancestor != null)
+                if (ancestor != null)
                 {
                     return ancestor;
                 }
@@ -123,7 +124,11 @@ public abstract class Model
             candidateClasses = new HashSet<>();
             for(Class<? extends ConfiguredObject> prev : previous)
             {
-                candidateClasses.addAll(getParentTypes(prev));
+                final Class<? extends ConfiguredObject> parentType = getParentType(prev);
+                if(parentType != null)
+                {
+                    candidateClasses.add(parentType);
+                }
             }
         }
         return null;
@@ -168,7 +173,8 @@ public abstract class Model
     public final Collection<Class<? extends ConfiguredObject>> getAncestorCategories(Class<? extends ConfiguredObject> category)
     {
         Set<Class<? extends ConfiguredObject>> allAncestors = new HashSet<>();
-        for(Class<? extends ConfiguredObject> clazz : getParentTypes(category))
+        Class<? extends ConfiguredObject> clazz = getParentType(category);
+        if(clazz != null)
         {
             if(allAncestors.add(clazz))
             {
@@ -184,7 +190,8 @@ public abstract class Model
 
     public abstract Class<? extends ConfiguredObject> getRootCategory();
 
-    public abstract Collection<Class<? extends ConfiguredObject>> getParentTypes(Class<? extends ConfiguredObject> child);
+    public abstract Class<? extends ConfiguredObject> getParentType(Class<? extends ConfiguredObject> child);
+
     public abstract int getMajorVersion();
     public abstract int getMinorVersion();
 

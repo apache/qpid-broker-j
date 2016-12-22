@@ -77,8 +77,7 @@ public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCa
 
     @Override
     protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
-                                                                             final Map<String, Object> attributes,
-                                                                             final ConfiguredObject... otherParents)
+                                                                             final Map<String, Object> attributes)
     {
         return getObjectFactory().createAsync(childClass, attributes, this);
     }

@@ -806,7 +806,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass, Map<String, Object> attributes, ConfiguredObject... otherParents)
+    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
+                                                                             Map<String, Object> attributes)
     {
         checkVHostStateIsActive();
         if(childClass == Exchange.class)

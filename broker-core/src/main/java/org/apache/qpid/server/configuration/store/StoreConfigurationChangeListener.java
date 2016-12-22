@@ -60,9 +60,9 @@ public class StoreConfigurationChangeListener implements ConfigurationChangeList
             if(object.isDurable() && child.isDurable())
             {
                 Model model = child.getModel();
-                Collection<Class<? extends ConfiguredObject>> parentTypes =
-                        model.getParentTypes(child.getCategoryClass());
-                if(parentTypes.size() == 1 || parentTypes.iterator().next().equals(object.getCategoryClass()))
+                Class<? extends ConfiguredObject> parentType =
+                        model.getParentType(child.getCategoryClass());
+                if(parentType.equals(object.getCategoryClass()))
                 {
                     child.addChangeListener(this);
                     _store.update(true, child.asObjectRecord());

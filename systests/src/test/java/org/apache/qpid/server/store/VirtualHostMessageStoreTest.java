@@ -154,7 +154,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, Object> attrs =  objectMapper.readValue(bluePrint, Map.class);
         virtualHostAttributes.putAll(attrs);
-        _node.createChild(VirtualHost.class, virtualHostAttributes, _node);
+        _node.createChild(VirtualHost.class, virtualHostAttributes);
 
         _virtualHost = (QueueManagingVirtualHost<?>)_node.getVirtualHost();
 

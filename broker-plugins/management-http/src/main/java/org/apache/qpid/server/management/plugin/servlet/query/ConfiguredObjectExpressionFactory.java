@@ -289,7 +289,7 @@ public class ConfiguredObjectExpressionFactory
             {
                 if(PARENT_ATTR.equals(_propertyName))
                 {
-                    return object.getParent(object.getModel().getParentTypes(object.getCategoryClass()).iterator().next());
+                    return object.getParent(object.getModel().getParentType(object.getCategoryClass()));
                 }
                 else
                 {

@@ -59,8 +59,8 @@ public final class BrokerModel extends Model
     public static final int MODEL_MINOR_VERSION = 0;
     public static final String MODEL_VERSION = MODEL_MAJOR_VERSION + "." + MODEL_MINOR_VERSION;
     private static final Model MODEL_INSTANCE = new BrokerModel();
-    private final Map<Class<? extends ConfiguredObject>, Collection<Class<? extends ConfiguredObject>>> _parents =
-            new HashMap<Class<? extends ConfiguredObject>, Collection<Class<? extends ConfiguredObject>>>();
+    private final Map<Class<? extends ConfiguredObject>, Class<? extends ConfiguredObject>> _parents =
+            new HashMap<>();
 
     private final Map<Class<? extends ConfiguredObject>, Collection<Class<? extends ConfiguredObject>>> _children =
             new HashMap<Class<? extends ConfiguredObject>, Collection<Class<? extends ConfiguredObject>>>();
@@ -136,11 +136,10 @@ public final class BrokerModel extends Model
         return _rootCategory;
     }
 
-    public Collection<Class<? extends ConfiguredObject>> getParentTypes(Class<? extends ConfiguredObject> child)
+    @Override
+    public Class<? extends ConfiguredObject> getParentType(final Class<? extends ConfiguredObject> child)
     {
-        Collection<Class<? extends ConfiguredObject>> parentTypes = _parents.get(child);
-        return parentTypes == null ? Collections.<Class<? extends ConfiguredObject>>emptyList()
-                : Collections.unmodifiableCollection(parentTypes);
+        return _parents.get(child);
     }
 
     @Override
@@ -181,13 +180,14 @@ public final class BrokerModel extends Model
 
     private void addRelationship(Class<? extends ConfiguredObject> parent, Class<? extends ConfiguredObject> child)
     {
-        Collection<Class<? extends ConfiguredObject>> parents = _parents.get(child);
-        if (parents == null)
+        if(!_parents.containsKey(child))
         {
-            parents = new ArrayList<Class<? extends ConfiguredObject>>();
-            _parents.put(child, parents);
+            _parents.put(child,parent);
         }
-        parents.add(parent);
+        else
+        {
+            throw new IllegalArgumentException("Child class " + child.getSimpleName() + " already has parent " + _parents.get(child).getSimpleName());
+        }
 
         Collection<Class<? extends ConfiguredObject>> children = _children.get(parent);
         if (children == null)

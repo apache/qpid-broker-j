@@ -231,8 +231,7 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
 
 
     <C extends ConfiguredObject> C createChild(Class<C> childClass,
-                                               Map<String, Object> attributes,
-                                               ConfiguredObject... otherParents);
+                                               Map<String, Object> attributes);
 
     <C extends ConfiguredObject> ListenableFuture<C> getAttainedChildById(Class<C> childClass,
                                                                           UUID id);
@@ -240,8 +239,7 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>> extends Context
     <C extends ConfiguredObject> ListenableFuture<C> getAttainedChildByName(Class<C> childClass, String name);
 
     <C extends ConfiguredObject> ListenableFuture<C> createChildAsync(Class<C> childClass,
-                                                                      Map<String, Object> attributes,
-                                                                      ConfiguredObject... otherParents);
+                                                                      Map<String, Object> attributes);
 
     void setAttributes(Map<String, Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException;
     ListenableFuture<Void> setAttributesAsync(Map<String, Object> attributes) throws IllegalStateException, AccessControlException, IllegalArgumentException;

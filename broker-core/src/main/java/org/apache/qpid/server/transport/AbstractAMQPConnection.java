@@ -636,7 +636,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C,
     }
 
     @Override
-    public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass, Map<String, Object> attributes, ConfiguredObject... otherParents)
+    public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
+                                                                          Map<String, Object> attributes)
     {
         if(childClass == Session.class)
         {

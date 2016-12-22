@@ -200,10 +200,10 @@ public class ConfiguredObjectToMapConverter
     private void collectInheritedActualContext(ConfiguredObject<?> confObject, Map<String, Object> contextValues)
     {
         Model model = confObject.getModel();
-        Collection<Class<? extends ConfiguredObject>> parents = model.getParentTypes(confObject.getCategoryClass());
-        if(parents != null && !parents.isEmpty())
+        Class<? extends ConfiguredObject> parentType = model.getParentType(confObject.getCategoryClass());
+        if(parentType != null)
         {
-            ConfiguredObject parent = confObject.getParent(parents.iterator().next());
+            ConfiguredObject parent = confObject.getParent(parentType);
             if(parent != null)
             {
                 collectInheritedActualContext(parent, contextValues);

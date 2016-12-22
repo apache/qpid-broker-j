@@ -600,7 +600,8 @@ class ManagementNode implements MessageSource, MessageDestination
                                                  "Cannot change the value of '" + IDENTITY_ATTRIBUTE + "'");
                 }
                 String path = (String) attributes.remove(OBJECT_PATH);
-                for (Class<? extends ConfiguredObject> parentType : _model.getParentTypes(clazz))
+                Class<? extends ConfiguredObject> parentType = _model.getParentType(clazz);
+                if(parentType != null)
                 {
                     String attributeName = parentType.getSimpleName().toLowerCase();
                     final Object parentValue = attributes.remove(attributeName);
@@ -721,22 +722,20 @@ class ManagementNode implements MessageSource, MessageDestination
                 String path = String.valueOf(attributes.remove(OBJECT_PATH));
 
                 ConfiguredObject theParent = _managedObject;
-                ConfiguredObject[] otherParents = null;
 
                 final Class<? extends ConfiguredObject>[] hierarchy = _configuredObjectFinder.getHierarchy(clazz);
                 if (hierarchy.length > 1)
                 {
 
-                    List<ConfiguredObject> parents =
+                    ConfiguredObject parent =
                             _configuredObjectFinder.findObjectParentsFromPath(Arrays.asList(getPathElements(path)), hierarchy, ConfiguredObjectTypeRegistry.getCategory(clazz));
-                    if(parents.isEmpty())
+                    if(parent == null)
                     {
                         return createFailureResponse(message, STATUS_CODE_NOT_FOUND, "The '"+OBJECT_PATH+"' "+path+" does not identify a valid parent");
                     }
-                    theParent = parents.remove(0);
-                    otherParents = parents.toArray(new ConfiguredObject[parents.size()]);
+                    theParent = parent;
                 }
-                return doCreate(clazz, message, responseHeader, attributes, theParent, otherParents);
+                return doCreate(clazz, message, responseHeader, attributes, theParent);
 
             }
             else if(_configuredObjectFinder.getHierarchy(clazz).length == 1 && attributes.containsKey(ConfiguredObject.NAME))
@@ -759,8 +758,7 @@ class ManagementNode implements MessageSource, MessageDestination
                                      final InternalMessage message,
                                      final MutableMessageHeader responseHeader,
                                      final Map<String, Object> attributes,
-                                     final ConfiguredObject<?> primaryParent,
-                                     final ConfiguredObject<?>... otherParents)
+                                     final ConfiguredObject<?> parent)
     {
         try
         {
@@ -777,7 +775,7 @@ class ManagementNode implements MessageSource, MessageDestination
                 }
 
 
-                final ConfiguredObject object = primaryParent.createChild(ConfiguredObjectTypeRegistry.getCategory(clazz), attributes, otherParents);
+                final ConfiguredObject object = parent.createChild(ConfiguredObjectTypeRegistry.getCategory(clazz), attributes);
                 return InternalMessage.createMapMessage(_addressSpace.getMessageStore(), responseHeader,
                                                         _managementOutputConverter.convertToOutput(object, true));
             }
@@ -1348,12 +1346,10 @@ class ManagementNode implements MessageSource, MessageDestination
             if(category != _managedObject.getCategoryClass()
                && !isSyntheticChildClass(category))
             {
-                for (Class<? extends ConfiguredObject> parentType : _model.getParentTypes(category))
+                Class<? extends ConfiguredObject> parentType = _model.getParentType(category);
+                if (parentType != _managedObject.getCategoryClass())
                 {
-                    if (parentType != _managedObject.getCategoryClass())
-                    {
-                        attributeNames.add(parentType.getSimpleName().toLowerCase());
-                    }
+                    attributeNames.add(parentType.getSimpleName().toLowerCase());
                 }
             }
 

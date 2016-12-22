@@ -152,15 +152,15 @@ public class AncestorAttributeResolver implements Strings.Resolver
         }
 
 
-        Collection<Class<? extends ConfiguredObject>> parentCategories = _object.getModel().getParentTypes(objectCategory);
-        for (Class<? extends ConfiguredObject> parentCategory: parentCategories)
+        Class<? extends ConfiguredObject> parentCategory = _object.getModel().getParentType(objectCategory);
+        if(parentCategory != null)
         {
-            Class<? extends ConfiguredObject> targetCategoryClass = findAncestorCategoryBySimpleClassName(targetCategorySimpleClassName,parentCategory );
+            Class<? extends ConfiguredObject> targetCategoryClass =
+                    findAncestorCategoryBySimpleClassName(targetCategorySimpleClassName, parentCategory);
             if (targetCategoryClass != null)
             {
                 return targetCategoryClass;
             }
-
         }
 
         return null;

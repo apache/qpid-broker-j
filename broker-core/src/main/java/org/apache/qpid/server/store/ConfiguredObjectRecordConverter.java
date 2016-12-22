@@ -157,34 +157,6 @@ public class ConfiguredObjectRecordConverter
         if(parentId != null)
         {
             parentMap.put(parentClass.getSimpleName(),parentId);
-            for(Class<? extends ConfiguredObject> otherParent : _model.getParentTypes(clazz))
-            {
-                if(otherParent != parentClass)
-                {
-                    final String otherParentAttr = otherParent.getSimpleName().toLowerCase();
-                    Object otherParentId = data.remove(otherParentAttr);
-                    if(otherParentId instanceof String)
-                    {
-                        try
-                        {
-                            parentMap.put(otherParent.getSimpleName(), UUID.fromString((String) otherParentId));
-                        }
-                        catch(IllegalArgumentException e)
-                        {
-                            final String ancestorClassName =
-                                    _model.getAncestorClassWithGivenDescendant(clazz, otherParent).getSimpleName();
-                            final String parentName = (String) otherParentId;
-                            final String parentType = otherParent.getSimpleName();
-
-                            requiringResolution.add(new AncestorFindingResolver(id,
-                                                                                parentType,
-                                                                                parentName,
-                                                                                ancestorClassName));
-                        }
-                    }
-                }
-
-            }
         }
 
         records.put(id, new ConfiguredObjectRecordImpl(id, type, data, parentMap));

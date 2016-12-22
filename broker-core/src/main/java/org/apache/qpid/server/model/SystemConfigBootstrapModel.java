@@ -68,9 +68,10 @@ public final class SystemConfigBootstrapModel extends Model
         return _rootCategory;
     }
 
-    public Collection<Class<? extends ConfiguredObject>> getParentTypes(Class<? extends ConfiguredObject> child)
+    @Override
+    public Class<? extends ConfiguredObject> getParentType(final Class<? extends ConfiguredObject> child)
     {
-        return Collections.<Class<? extends ConfiguredObject>>emptyList();
+        return null;
     }
 
     @Override

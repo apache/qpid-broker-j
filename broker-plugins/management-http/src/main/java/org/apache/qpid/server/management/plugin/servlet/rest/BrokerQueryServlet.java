@@ -88,15 +88,15 @@ public class BrokerQueryServlet extends QueryServlet<Broker<?>>
             while (element != null && element != Broker.class)
             {
                 hierarchy.add(element);
-                final Collection<Class<? extends ConfiguredObject>> parentTypes =
-                        brokerModel.getParentTypes(element);
-                if(parentTypes == null || parentTypes.isEmpty())
+                Class<? extends ConfiguredObject> parentType =
+                        brokerModel.getParentType(element);
+                if(parentType == null)
                 {
                     break;
                 }
                 else
                 {
-                    element = parentTypes.iterator().next();
+                    element = parentType;
                 }
             }
             Collections.reverse(hierarchy);

@@ -319,15 +319,12 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
             {
                 continue;
             }
-            Collection<Class<? extends ConfiguredObject>> parentTypes =
-                    model.getParentTypes(_classNameMapping.get(record.getType()));
-            if (parentTypes != null && !parentTypes.isEmpty())
+            Class<? extends ConfiguredObject> parentType =
+                    model.getParentType(_classNameMapping.get(record.getType()));
+            if (parentType != null)
             {
 
-                final Class<? extends ConfiguredObject> primaryParentCategory =
-                        parentTypes.iterator().next();
-
-                String parentCategoryName = primaryParentCategory.getSimpleName();
+                String parentCategoryName = parentType.getSimpleName();
 
                 UUID parentId = record.getParents().get(parentCategoryName);
 
@@ -357,21 +354,6 @@ public class JsonFileConfigStore extends AbstractJsonFileStore implements Durabl
     {
         ConfiguredObjectRecord record = _objectsById.get(id);
         Map<String,Object> map = new LinkedHashMap<>();
-
-        Collection<Class<? extends ConfiguredObject>> parentTypes = _parent.getModel().getParentTypes(type);
-        if(parentTypes.size() > 1)
-        {
-            Iterator<Class<? extends ConfiguredObject>> iter = parentTypes.iterator();
-            // skip the first parent, which is given by structure
-            iter.next();
-            // for all other parents add a fake attribute with name being the parent type in lower case, and the value
-            // being the parents id
-            while(iter.hasNext())
-            {
-                String parentType = iter.next().getSimpleName();
-                map.put(parentType.toLowerCase(), record.getParents().get(parentType));
-            }
-        }
 
         map.put("id", id);
         map.putAll(record.getAttributes());

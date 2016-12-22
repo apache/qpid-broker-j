@@ -35,7 +35,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -297,14 +296,13 @@ public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
 
     @Override
     public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
-                                                                          final Map<String, Object> attributes,
-                                                                          final ConfiguredObject... otherParents)
+                                                                          final Map<String, Object> attributes)
     {
         if (VirtualHostAlias.class.isAssignableFrom(childClass))
         {
             return getObjectFactory().createAsync(childClass, attributes, this);
         }
-        return super.addChildAsync(childClass, attributes, otherParents);
+        return super.addChildAsync(childClass, attributes);
     }
 
     protected State onActivate()

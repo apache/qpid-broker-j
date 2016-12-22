@@ -2091,14 +2091,14 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             public Map<String, UUID> getParents()
             {
                 Map<String, UUID> parents = new LinkedHashMap<>();
-                for(Class<? extends ConfiguredObject> parentClass : getModel().getParentTypes(getCategoryClass()))
+                Class<? extends ConfiguredObject> parentClass = getModel().getParentType(getCategoryClass());
+
+                ConfiguredObject parent = getParent(parentClass);
+                if(parent != null)
                 {
-                    ConfiguredObject parent = getParent(parentClass);
-                    if(parent != null)
-                    {
-                        parents.put(parentClass.getSimpleName(), parent.getId());
-                    }
+                    parents.put(parentClass.getSimpleName(), parent.getId());
                 }
+
                 return parents;
             }
 
@@ -2113,24 +2113,22 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     @SuppressWarnings("unchecked")
     @Override
-    public <C extends ConfiguredObject> C createChild(final Class<C> childClass, final Map<String, Object> attributes,
-                                                      final ConfiguredObject... otherParents)
+    public <C extends ConfiguredObject> C createChild(final Class<C> childClass, final Map<String, Object> attributes)
     {
-        return doSync(createChildAsync(childClass, attributes, otherParents));
+        return doSync(createChildAsync(childClass, attributes));
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <C extends ConfiguredObject> ListenableFuture<C> createChildAsync(final Class<C> childClass, final Map<String, Object> attributes,
-                                                      final ConfiguredObject... otherParents)
+    public <C extends ConfiguredObject> ListenableFuture<C> createChildAsync(final Class<C> childClass, final Map<String, Object> attributes)
     {
         return doOnConfigThread(new Task<ListenableFuture<C>, RuntimeException>()
         {
             @Override
             public ListenableFuture<C> execute()
             {
-                authoriseCreateChild(childClass, attributes, otherParents);
-                return doAfter(addChildAsync(childClass, attributes, otherParents),
+                authoriseCreateChild(childClass, attributes);
+                return doAfter(addChildAsync(childClass, attributes),
                                 new CallableWithArgument<ListenableFuture<C>, C>()
                                 {
 
@@ -2171,7 +2169,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     }
 
 
-    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass, Map<String, Object> attributes, ConfiguredObject... otherParents)
+    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
+                                                                             Map<String, Object> attributes)
     {
         throw new UnsupportedOperationException();
     }
@@ -2188,15 +2187,12 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             {
                 throw new DuplicateIdException(existingWithSameId);
             }
-            if(getModel().getParentTypes(categoryClass).size() == 1)
+            ConfiguredObject<?> existingWithSameName = _childrenByName.get(categoryClass).putIfAbsent(name, child);
+            if (existingWithSameName != null)
             {
-                ConfiguredObject<?> existingWithSameName = _childrenByName.get(categoryClass).putIfAbsent(name, child);
-                if (existingWithSameName != null)
-                {
-                    throw new DuplicateNameException(existingWithSameName);
-                }
-                _childrenByName.get(categoryClass).put(name, child);
+                throw new DuplicateNameException(existingWithSameName);
             }
+            _childrenByName.get(categoryClass).put(name, child);
             _children.get(categoryClass).add(child);
             _childrenById.get(categoryClass).put(childId,child);
         }
@@ -2346,11 +2342,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     public final <C extends ConfiguredObject> C getChildByName(final Class<C> clazz, final String name)
     {
         Class<? extends ConfiguredObject> categoryClass = ConfiguredObjectTypeRegistry.getCategory(clazz);
-        if(getModel().getParentTypes(categoryClass).size() != 1)
-        {
-            throw new UnsupportedOperationException("Cannot use getChildByName for objects of category "
-                                                    + categoryClass.getSimpleName() + " as it has more than one parent");
-        }
         return (C) _childrenByName.get(categoryClass).get(name);
     }
 
@@ -2936,19 +2927,18 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     private ConfiguredObject<?> createProxyForAuthorisation(final Class<? extends ConfiguredObject> category,
                                                             final Map<String, Object> attributes,
-                                                            final ConfiguredObject<?> parent,
-                                                            final ConfiguredObject<?>... otherParents)
+                                                            final ConfiguredObject<?> parent)
     {
         return (ConfiguredObject<?>) Proxy.newProxyInstance(getClass().getClassLoader(),
                                                             new Class<?>[]{category},
                                                             new AuthorisationProxyInvocationHandler(attributes,
                                                                                                     getTypeRegistry().getAttributeTypes(category),
-                                                                                                    category, parent, otherParents));
+                                                                                                    category, parent));
     }
 
-    protected final <C extends ConfiguredObject<?>> void authoriseCreateChild(Class<C> childClass, Map<String, Object> attributes, ConfiguredObject... otherParents) throws AccessControlException
+    protected final <C extends ConfiguredObject<?>> void authoriseCreateChild(Class<C> childClass, Map<String, Object> attributes) throws AccessControlException
     {
-        ConfiguredObject<?> configuredObject = createProxyForAuthorisation(childClass, attributes, this, otherParents);
+        ConfiguredObject<?> configuredObject = createProxyForAuthorisation(childClass, attributes, this);
         authorise(configuredObject, null, Operation.CREATE, Collections.<String,Object>emptyMap());
     }
 
@@ -3006,22 +2996,20 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                         operationName, categoryClass.getSimpleName(), objectName));
                 Model model = configuredObject.getModel();
 
-                Collection<Class<? extends ConfiguredObject>> parentClasses = model.getParentTypes(categoryClass);
-                if (parentClasses != null)
+                Class<? extends ConfiguredObject> parentClass = model.getParentType(categoryClass);
+                if (parentClass != null)
                 {
                     exceptionMessage.append(" on");
-                    for (Class<? extends ConfiguredObject> parentClass : parentClasses)
+                    String objectCategory = parentClass.getSimpleName();
+                    ConfiguredObject<?> parent = configuredObject.getParent(parentClass);
+                    exceptionMessage.append(" ").append(objectCategory);
+                    if (parent != null)
                     {
-                        String objectCategory = parentClass.getSimpleName();
-                        ConfiguredObject<?> parent = configuredObject.getParent(parentClass);
-                        exceptionMessage.append(" ").append(objectCategory);
-                        if (parent != null)
-                        {
-                            exceptionMessage.append(" '")
-                                    .append(parent.getAttribute(ConfiguredObject.NAME))
-                                    .append("'");
-                        }
+                        exceptionMessage.append(" '")
+                                .append(parent.getAttribute(ConfiguredObject.NAME))
+                                .append("'");
                     }
+
                 }
                 throw new AccessControlException(exceptionMessage.toString());
             }
@@ -3414,11 +3402,11 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     static void generateInheritedContext(final Model model, final ConfiguredObject<?> object,
                                          final Map<String, String> inheritedContext)
     {
-        Collection<Class<? extends ConfiguredObject>> parents =
-                model.getParentTypes(object.getCategoryClass());
-        if(parents != null && !parents.isEmpty())
+        Class<? extends ConfiguredObject> parentClass =
+                model.getParentType(object.getCategoryClass());
+        if(parentClass != null)
         {
-            ConfiguredObject parent = object.getParent(parents.iterator().next());
+            ConfiguredObject parent = object.getParent(parentClass);
             if(parent != null)
             {
                 generateInheritedContext(model, parent, inheritedContext);
@@ -3602,21 +3590,13 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         AuthorisationProxyInvocationHandler(Map<String, Object> attributes,
                                             Map<String, ConfiguredObjectAttribute<?, ?>> attributeTypes,
                                             Class<? extends ConfiguredObject> categoryClass,
-                                            ConfiguredObject<?> parent,
-                                            ConfiguredObject<?>... parents)
+                                            ConfiguredObject<?> parent)
         {
             super(attributes, attributeTypes, null);
             _parent = parent;
             _category = categoryClass;
             _parents = new HashMap<>();
             _attributes = attributes;
-            if (parents != null)
-            {
-                for (ConfiguredObject<?> parentObject : parents)
-                {
-                    _parents.put(parentObject.getCategoryClass(), parentObject);
-                }
-            }
             _parents.put(parent.getCategoryClass(), parent);
         }
 

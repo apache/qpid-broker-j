@@ -127,15 +127,15 @@ public class VirtualHostQueryServlet extends QueryServlet<VirtualHost<?>>
             while (element != null && element != VirtualHost.class)
             {
                 hierarchy.add(element);
-                final Collection<Class<? extends ConfiguredObject>> parentTypes =
-                        model.getParentTypes(element);
-                if(parentTypes == null || parentTypes.isEmpty())
+                final Class<? extends ConfiguredObject> parentType =
+                        model.getParentType(element);
+                if(parentType == null)
                 {
                     break;
                 }
                 else
                 {
-                    element = parentTypes.iterator().next();
+                    element = parentType;
                 }
             }
             Collections.reverse(hierarchy);
@@ -159,15 +159,15 @@ public class VirtualHostQueryServlet extends QueryServlet<VirtualHost<?>>
                 while (element != null && element != Connection.class)
                 {
                     hierarchy.add(element);
-                    final Collection<Class<? extends ConfiguredObject>> parentTypes =
-                            model.getParentTypes(element);
-                    if (parentTypes == null || parentTypes.isEmpty())
+                    final Class<? extends ConfiguredObject> parentType =
+                            model.getParentType(element);
+                    if (parentType == null)
                     {
                         break;
                     }
                     else
                     {
-                        element = parentTypes.iterator().next();
+                        element = parentType;
                     }
                 }
                 Collections.reverse(hierarchy);

@@ -115,14 +115,13 @@ class ManagementOutputConverter
 
         if(object != _managementNode.getManagedObject() && !_managementNode.isSyntheticChildClass(object.getCategoryClass()))
         {
-            for (Class<? extends ConfiguredObject> parentType : object.getModel()
-                                                                      .getParentTypes(object.getCategoryClass()))
+            Class<? extends ConfiguredObject> parentType = object.getModel().getParentType(object.getCategoryClass());
+
+            if (parentType != _managementNode.getManagedObject().getCategoryClass())
             {
-                if (parentType != _managementNode.getManagedObject().getCategoryClass())
-                {
-                    attributes.put(parentType.getSimpleName().toLowerCase(), object.getParent(parentType));
-                }
+                attributes.put(parentType.getSimpleName().toLowerCase(), object.getParent(parentType));
             }
+
         }
 
         for(String name : object.getAttributeNames())

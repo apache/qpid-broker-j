@@ -243,11 +243,9 @@ public class TestConfiguredObject extends AbstractConfiguredObject
         }
 
         @Override
-        public Collection<Class<? extends ConfiguredObject>> getParentTypes(final Class<? extends ConfiguredObject> child)
+        public Class<? extends ConfiguredObject> getParentType(final Class<? extends ConfiguredObject> child)
         {
-            return TestConfiguredObject.class.isAssignableFrom(child)
-                    ? CATEGORIES
-                    : Collections.<Class<? extends ConfiguredObject>>emptySet();
+            return TestConfiguredObject.class.isAssignableFrom(child) ? TestConfiguredObject.class : null;
         }
 
         @Override

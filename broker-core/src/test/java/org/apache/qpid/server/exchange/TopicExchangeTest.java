@@ -63,7 +63,7 @@ public class TopicExchangeTest extends QpidTestCase
         attributes.put(Exchange.DURABLE, false);
         attributes.put(Exchange.TYPE, ExchangeDefaults.TOPIC_EXCHANGE_CLASS);
 
-        _exchange = (TopicExchangeImpl) _vhost.createChild(Exchange.class, attributes, _vhost);
+        _exchange = (TopicExchangeImpl) _vhost.createChild(Exchange.class, attributes);
         _exchange.open();
     }
 

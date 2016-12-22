@@ -280,15 +280,15 @@ public class RedirectingVirtualHostNodeImpl
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
-    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass, Map<String, Object> attributes,
-                                                                             ConfiguredObject... otherParents)
+    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass,
+                                                                             Map<String, Object> attributes)
     {
         if(childClass == VirtualHost.class)
         {
             throw new UnsupportedOperationException("The redirecting virtualhost node automatically manages the creation"
                                                     + " of the redirecting virtualhost. Creating it explicitly is not supported.");
         }
-        return super.addChildAsync(childClass, attributes, otherParents);
+        return super.addChildAsync(childClass, attributes);
     }
 
     public static Map<String, Collection<String>> getSupportedChildTypes()

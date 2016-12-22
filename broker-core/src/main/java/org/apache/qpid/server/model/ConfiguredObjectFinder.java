@@ -304,9 +304,9 @@ public class ConfiguredObjectFinder
         return parents;
     }
 
-    public List<ConfiguredObject> findObjectParentsFromPath(final List<String> names,
-                                                            final Class<? extends ConfiguredObject>[] hierarchy,
-                                                            final Class<? extends ConfiguredObject> objClass)
+    public ConfiguredObject findObjectParentsFromPath(final List<String> names,
+                                                      final Class<? extends ConfiguredObject>[] hierarchy,
+                                                      final Class<? extends ConfiguredObject> objClass)
     {
         Model model = _root.getModel();
         Collection<ConfiguredObject<?>>[] objects = new Collection[hierarchy.length];
@@ -360,16 +360,14 @@ public class ConfiguredObjectFinder
                 }
             }
         }
-        List<ConfiguredObject> parents = new ArrayList<>();
-        Collection<Class<? extends ConfiguredObject>> parentClasses =
-                model.getParentTypes(objClass);
+        Class<? extends ConfiguredObject> parentClass = model.getParentType(objClass);
         for (int i = hierarchy.length - 2; i >= 0; i--)
         {
-            if (parentClasses.contains(hierarchy[i]))
+            if (parentClass.equals(hierarchy[i]))
             {
                 if (objects[i].size() == 1)
                 {
-                    parents.add(objects[i].iterator().next());
+                    return (objects[i].iterator().next());
                 }
                 else
                 {
@@ -378,7 +376,7 @@ public class ConfiguredObjectFinder
                 }
             }
         }
-        return parents;
+        return null;
     }
 
     public String getPath(final ConfiguredObject<?> object)
@@ -423,28 +421,20 @@ public class ConfiguredObjectFinder
 
         if (category != rootClass)
         {
-            Collection<Class<? extends ConfiguredObject>> parentCategories;
+            Class<? extends ConfiguredObject> parentCategory;
 
             hierarchyList.add(category);
 
-            while (!(parentCategories = model.getParentTypes(category)).contains(rootClass))
+            while (!rootClass.equals(parentCategory = model.getParentType(category)))
             {
-                hierarchyList.addAll(parentCategories);
-                if (!parentCategories.isEmpty())
+                if (parentCategory != null)
                 {
-                    Iterator<Class<? extends ConfiguredObject>> iterator = parentCategories.iterator();
-                    category = iterator.next();
-                    if (!model.getAncestorCategories(category).contains(rootClass))
+                    hierarchyList.add(parentCategory);
+                    if (!model.getAncestorCategories(parentCategory).contains(rootClass))
                     {
-                        if (iterator.hasNext())
-                        {
-                            category = iterator.next();
-                        }
-                        else
-                        {
-                            break;
-                        }
+                        break;
                     }
+                    category = parentCategory;
                 }
                 else
                 {

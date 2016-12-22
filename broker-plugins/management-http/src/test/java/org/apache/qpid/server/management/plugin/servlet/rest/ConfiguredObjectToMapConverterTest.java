@@ -333,7 +333,7 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         // set actual values
         when(mockChild.getActualAttributes()).thenReturn(Collections.singletonMap("secureAttribute", "secret"));
         when(_configuredObject.getChildren(TestChild.class)).thenReturn(Arrays.asList(mockChild));
-        when(model.getParentTypes(TestChild.class)).thenReturn(Collections.<Class<? extends ConfiguredObject>>singleton(TestChild.class));
+        when(model.getParentType(TestChild.class)).thenReturn((Class)TestChild.class);
         when(_configuredObject.getCategoryClass()).thenReturn(TestChild.class);
         when(mockChild.isDurable()).thenReturn(true);
 

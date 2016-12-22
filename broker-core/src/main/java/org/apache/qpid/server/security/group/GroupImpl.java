@@ -50,8 +50,7 @@ public class GroupImpl extends AbstractConfiguredObject<GroupImpl> implements Gr
 
     @Override
     protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
-                                                      final Map<String, Object> attributes,
-                                                      final ConfiguredObject... otherParents)
+                                                                             final Map<String, Object> attributes)
     {
         if(childClass == GroupMember.class)
         {
@@ -59,7 +58,7 @@ public class GroupImpl extends AbstractConfiguredObject<GroupImpl> implements Gr
         }
         else
         {
-            return super.addChildAsync(childClass, attributes, otherParents);
+            return super.addChildAsync(childClass, attributes);
         }
     }
 

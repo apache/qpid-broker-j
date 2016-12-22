@@ -223,8 +223,7 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
 
     @Override
     public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
-                                                   final Map<String, Object> attributes,
-                                                   final ConfiguredObject... otherParents)
+                                                                          final Map<String, Object> attributes)
     {
         if(childClass == User.class)
         {
@@ -238,7 +237,7 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
             user.create();
             return Futures.immediateFuture((C)getUser(username));
         }
-        return super.addChildAsync(childClass, attributes, otherParents);
+        return super.addChildAsync(childClass, attributes);
     }
 
     abstract void validateUser(final ManagedUser managedUser);

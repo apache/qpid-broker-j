@@ -48,8 +48,6 @@ public class ConfigurationExtractor
 
         results.putAll(extractAttributeValues(object, includeSecure));
 
-        results.putAll(extractNonPrimaryParentsAsAttributes(object));
-
         results.putAll(extractChildren(object, includeSecure));
 
         return results;
@@ -230,32 +228,6 @@ public class ConfigurationExtractor
         return argType instanceof Class ? (Class) argType : (Class) ((ParameterizedType)argType).getRawType();
     }
 
-    private Map<String, Object> extractNonPrimaryParentsAsAttributes(final ConfiguredObject<?> object)
-    {
-        final Model model = object.getModel();
-        Map<String, Object> results = new LinkedHashMap<>();
-
-        Collection<Class<? extends ConfiguredObject>> parentTypes = model.getParentTypes(object.getCategoryClass());
-
-        if(parentTypes.size() > 1)
-        {
-            Iterator<Class<? extends ConfiguredObject>>
-                    parentClassIter = parentTypes.iterator();
-
-            for(int i = 1; i < parentTypes.size(); i++)
-            {
-                Class<? extends ConfiguredObject> parentClass = parentClassIter.next();
-                ConfiguredObject parent = object.getParent(parentClass);
-                if(parent != null)
-                {
-                    results.put(parentClass.getSimpleName().toLowerCase(), parent.getName());
-                }
-            }
-        }
-
-        return results;
-    }
-
 
     private Map<String, Object> extractChildren(final ConfiguredObject<?> object,
                                                 final boolean includeSecure)
@@ -271,9 +243,8 @@ public class ConfigurationExtractor
             for (Class<? extends ConfiguredObject> childClass : model
                     .getChildTypes(object.getCategoryClass()))
             {
-                ArrayList<Class<? extends ConfiguredObject>> parentClasses =
-                        new ArrayList<>(model.getParentTypes(childClass));
-                if (parentClasses.get(parentClasses.size() - 1).equals(object.getCategoryClass()))
+                Class<? extends ConfiguredObject> parentClass = model.getParentType(childClass);
+                if (parentClass.equals(object.getCategoryClass()))
                 {
                     List<Map<String, Object>> children = new ArrayList<>();
                     for (ConfiguredObject child : object.getChildren(childClass))
