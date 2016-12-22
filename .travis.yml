@@ -2,3 +2,7 @@ language: java
 sudo: false
 jdk:
   - oraclejdk7
+env:
+  - profile=java-mms.1-0
+  - profile=java-mms.0-9
+script: "mvn verify -P{profile}"
