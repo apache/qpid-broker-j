@@ -72,6 +72,7 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
 
         try
         {
+            _storeState.set(StoreState.OPENED);
             ModelVersion currentVersion =
                     new ModelVersion(BrokerModel.MODEL_MAJOR_VERSION, BrokerModel.MODEL_MINOR_VERSION);
             ModelVersion storedVersion = getStoredVersion();
@@ -95,7 +96,6 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
                 replace(ids, records);
             }
 
-            _storeState.set(StoreState.OPENED);
             return records;
         }
         catch (Exception e)
@@ -158,9 +158,10 @@ abstract class AbstractBDBPreferenceStore implements PreferenceStore
         _useOrCloseRWLock.readLock().lock();
         try
         {
-            if (!getStoreState().equals(StoreState.OPENED))
+            final StoreState storeState = getStoreState();
+            if (!storeState.equals(StoreState.OPENED))
             {
-                throw new IllegalStateException("PreferenceStore is not opened");
+                throw new IllegalStateException(String.format("PreferenceStore is not opened. Actual state : %s", storeState));
             }
 
             if (preferenceRecordsToRemove.isEmpty() && preferenceRecordsToAdd.isEmpty())

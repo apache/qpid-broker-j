@@ -79,6 +79,8 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
 
         try
         {
+            _storeState.set(StoreState.OPENED);
+
             Collection<PreferenceRecord> records;
 
             try (Connection connection = getConnection())
@@ -107,7 +109,6 @@ public abstract class AbstractJDBCPreferenceStore implements PreferenceStore
                 }
             }
 
-            _storeState.set(StoreState.OPENED);
             return records;
         }
         catch (SQLException e)

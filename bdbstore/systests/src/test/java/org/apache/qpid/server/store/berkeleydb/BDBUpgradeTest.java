@@ -353,8 +353,8 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
         assertEquals(1, bindings.size());
         for(Map<String, Object> binding : bindings)
         {
-            String bindingKey = (String) binding.get("name");
-            String queueName = (String) binding.get("queue");
+            String bindingKey = (String) binding.get("bindingKey");
+            String queueName = (String) binding.get("destination");
 
             //Because its a fanout exchange, we just return a single '*' key with all bound queues
             assertEquals("unexpected binding key", "dlq", bindingKey);
